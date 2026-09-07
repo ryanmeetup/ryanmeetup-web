@@ -30,6 +30,9 @@ export const ACTIVITY_EVENT_OPTIONS = [
 export type ActivityEventKind =
   (typeof ACTIVITY_EVENT_OPTIONS)[number]["value"];
 
+/** The one action a status move is recorded under, matched in three places. */
+export const TASK_MOVE_ACTION = "moved task";
+
 const TASK_COMMENT_ACTIONS = new Set([
   "added a comment",
   "edited a comment",
@@ -42,7 +45,7 @@ export function activityEventKind(action: string): ActivityEventKind {
   // actions whose text is fixed.
   if (action === "created the task") return "created";
   if (action === "updated the task") return "updated";
-  if (action === "moved task") return "moved";
+  if (action === TASK_MOVE_ACTION) return "moved";
   if (action === "task.delete") return "deleted";
   if (TASK_COMMENT_ACTIONS.has(action) || action.startsWith("note.comment"))
     return "comment";

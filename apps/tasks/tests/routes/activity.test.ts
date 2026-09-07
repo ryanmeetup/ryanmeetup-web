@@ -113,6 +113,58 @@ async function visibleActions(
   return body;
 }
 
+/** One recorded status move, as the feed reads it back off `task_activity`. */
+const movedTask = (
+  id: string,
+  from: string | null,
+  to: string | null,
+): Record<string, unknown> => ({
+  id,
+  task_id: `task-${id}`,
+  actor_id: userId,
+  action: "moved task",
+  details: { from_status_id: from, status_id: to },
+  created_at: "2026-08-31T12:00:00.000Z",
+  tasks: { id: `task-${id}`, project_id: projectId },
+});
+
+/** Runs the route over a set of moves and returns the event ids it kept. */
+async function movesMatching(query: string) {
+  const rows = [
+    movedTask("todo-to-done", "s1", "s2"),
+    movedTask("backlog-to-done", "s0", "s2"),
+    movedTask("todo-to-progress", "s1", "s3"),
+    movedTask("no-origin-to-done", null, "s2"),
+  ].map((row, index) => ({
+    ...row,
+    created_at: new Date(
+      Date.UTC(2026, 7, 31, 12) - index * 1000,
+    ).toISOString(),
+  }));
+  authorize.mockResolvedValue({
+    user: { id: userId },
+    supabase: {
+      rpc: rpcFor(),
+      from: (table: string) =>
+        builderFor(
+          table === "task_activity"
+            ? rows
+            : table === "projects"
+              ? [{ id: projectId }]
+              : [],
+        ),
+    },
+  });
+  getAdminClient.mockReturnValue({ from: () => builderFor([]) });
+  const { GET } = await import("@/app/api/activity/route");
+  const response = await GET(
+    new Request(`http://localhost/api/activity?${query}`),
+  );
+  expect(response.status).toBe(200);
+  const body = (await response.json()) as { activity: { id: string }[] };
+  return body.activity.map((item) => item.id);
+}
+
 describe("GET /api/activity", () => {
   beforeEach(() => {
     authorize.mockReset();
@@ -266,6 +318,26 @@ describe("GET /api/activity", () => {
     expect(activity.map((item) => item.details.detail)).toEqual([
       undefined,
       "Added Sam",
+    ]);
+  });
+
+  it("filters moves by where a task landed, and by the transition", async () => {
+    expect(await movesMatching("moves=to:s2")).toEqual([
+      "todo-to-done",
+      "backlog-to-done",
+      "no-origin-to-done",
+    ]);
+    expect(await movesMatching("moves=to:s2,from:s1")).toEqual([
+      "todo-to-done",
+    ]);
+    expect(await movesMatching("moves=to:s2,to:s3")).toEqual([
+      "todo-to-done",
+      "backlog-to-done",
+      "todo-to-progress",
+      "no-origin-to-done",
+    ]);
+    expect(await movesMatching("excludeMoves=to:s2")).toEqual([
+      "todo-to-progress",
     ]);
   });
 

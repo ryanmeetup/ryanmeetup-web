@@ -12,12 +12,15 @@ import { Fragment, type ReactNode } from "react";
 
 export type ActivityFilterOption = {
   avatar?: AvatarProps;
+  /** Swatch for options that carry one of their own, such as a status. */
+  color?: string | null;
   group?: { color?: string | null; icon?: ReactNode; label: string };
   label: string;
   value: string;
 };
 
 export function ActivityFilterMenu({
+  emptyLabel,
   excludedValues,
   includedValues,
   label,
@@ -28,6 +31,8 @@ export function ActivityFilterMenu({
   proximityValue,
   stackLabelOnMobile = false,
 }: {
+  /** Summary shown while nothing is picked. Defaults to "Any <label>". */
+  emptyLabel?: string;
   excludedValues: string[];
   includedValues: string[];
   label: string;
@@ -48,7 +53,7 @@ export function ActivityFilterMenu({
   const active = included.size > 0 || excluded.size > 0;
   const summary =
     included.size === 0 && excluded.size === 0
-      ? `Any ${label.toLowerCase()}`
+      ? (emptyLabel ?? `Any ${label.toLowerCase()}`)
       : [
           included.size ? `${included.size} included` : "",
           excluded.size ? `${excluded.size} excluded` : "",
@@ -128,6 +133,13 @@ export function ActivityFilterMenu({
                 )}
                 <div className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-black/5 dark:hover:bg-white/10">
                   {option.avatar && <Avatar {...option.avatar} size="sm" />}
+                  {option.color && (
+                    <i
+                      aria-hidden
+                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: option.color }}
+                    />
+                  )}
                   <span className="min-w-0 flex-1 truncate text-sm font-medium">
                     {option.label}
                   </span>

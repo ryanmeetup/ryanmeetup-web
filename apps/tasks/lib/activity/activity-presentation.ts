@@ -1,4 +1,5 @@
 import { profileDisplayName } from "@/lib/presentation";
+import { TASK_MOVE_ACTION } from "./activity-events";
 import { taskActivityLabel, taskStatusChange } from "./task-activity";
 import {
   taskActivityChanges,
@@ -54,7 +55,7 @@ export function describeActivity(
   statuses: Status[],
   changes: TaskChangeDetail[] = [],
 ): ActivityDescription {
-  if (item.action !== "moved task") {
+  if (item.action !== TASK_MOVE_ACTION) {
     const label = taskActivityLabel(item.action);
     return changes.length
       ? { kind: "changes", label, changes }

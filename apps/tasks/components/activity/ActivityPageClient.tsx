@@ -39,6 +39,10 @@ import {
   buildActivityQuery,
 } from "@/lib/activity/activity-query";
 import { ACTIVITY_EVENT_OPTIONS } from "@/lib/activity/activity-events";
+import {
+  COMPLETED_STATUS_TARGET,
+  moveFilterValue,
+} from "@/lib/activity/activity-moves";
 
 export function ActivityPageClient({
   initialData,
@@ -67,6 +71,11 @@ export function ActivityPageClient({
     "excludeEvents",
     "",
   );
+  const [moveFilter, setMoveFilter] = useQueryParamState("moves", "");
+  const [excludedMoves, setExcludedMoves] = useQueryParamState(
+    "excludeMoves",
+    "",
+  );
   const [timeFilter, setTimeFilter] = useQueryParamState("when", "all");
   const { page, pageSize, setPage, setPageSize, syncPage, syncPageSize } =
     usePagination();
@@ -90,6 +99,42 @@ export function ActivityPageClient({
   const excludedPersonValues = splitCommaSeparated(excludedPeople);
   const includedEventValues = splitCommaSeparated(kindFilter);
   const excludedEventValues = splitCommaSeparated(excludedEvents);
+  const includedMoveValues = splitCommaSeparated(moveFilter);
+  const excludedMoveValues = splitCommaSeparated(excludedMoves);
+  // One menu, two groups: picking only from "Moved into" answers "what landed
+  // in Done?", and adding a "Moved out of" entry narrows that to the single
+  // transition rather than widening it to a second pile of rows.
+  const moveOptions = useMemo(
+    () =>
+      (
+        [
+          { direction: "to", label: "Moved into" },
+          { direction: "from", label: "Moved out of" },
+        ] as const
+      ).flatMap(({ direction, label }) => {
+        const group = { label };
+        return [
+          ...(data.statuses.some((status) => status.is_completed)
+            ? [
+                {
+                  group,
+                  label: "Any done status",
+                  value: moveFilterValue(direction, COMPLETED_STATUS_TARGET),
+                },
+              ]
+            : []),
+          ...[...data.statuses]
+            .sort((a, b) => a.sort_order - b.sort_order)
+            .map((status) => ({
+              color: status.color,
+              group,
+              label: status.name,
+              value: moveFilterValue(direction, status.name),
+            })),
+        ];
+      }),
+    [data.statuses],
+  );
   const filters = useMemo(
     () => ({
       projects: projectFilter,
@@ -98,13 +143,17 @@ export function ActivityPageClient({
       excludePeople: excludedPeople,
       events: kindFilter,
       excludeEvents: excludedEvents,
+      moves: moveFilter,
+      excludeMoves: excludedMoves,
       when: timeFilter,
     }),
     [
       excludedEvents,
+      excludedMoves,
       excludedPeople,
       excludedProjects,
       kindFilter,
+      moveFilter,
       personFilter,
       projectFilter,
       timeFilter,
@@ -125,6 +174,8 @@ export function ActivityPageClient({
     setExcludedPeople("");
     setKindFilter("");
     setExcludedEvents("");
+    setMoveFilter("");
+    setExcludedMoves("");
     setTimeFilter("all");
     setPage(1);
   }
@@ -174,7 +225,12 @@ export function ActivityPageClient({
   useEffect(() => {
     if (demoMode) return;
     const controller = new AbortController();
-    const params = buildActivityQuery(filters, data.projects, data.profiles);
+    const params = buildActivityQuery(
+      filters,
+      data.projects,
+      data.profiles,
+      data.statuses,
+    );
     if (previewKind && previewSubjectId) {
       params.set(
         previewKind === "group" ? "viewAsGroup" : "viewAsUser",
@@ -224,10 +280,13 @@ export function ActivityPageClient({
     filters,
     data.profiles,
     data.projects,
+    data.statuses,
     excludedEvents,
+    excludedMoves,
     excludedPeople,
     excludedProjects,
     kindFilter,
+    moveFilter,
     page,
     pageSize,
     personFilter,
@@ -339,6 +398,20 @@ export function ActivityPageClient({
                 setFilter(setExcludedEvents, values.join(","))
               }
               options={[...ACTIVITY_EVENT_OPTIONS]}
+              stackLabelOnMobile
+            />
+            <ActivityFilterMenu
+              label="Status"
+              emptyLabel="Any status change"
+              includedValues={includedMoveValues}
+              excludedValues={excludedMoveValues}
+              onIncludedChange={(values) =>
+                setFilter(setMoveFilter, values.join(","))
+              }
+              onExcludedChange={(values) =>
+                setFilter(setExcludedMoves, values.join(","))
+              }
+              options={moveOptions}
               stackLabelOnMobile
             />
             <DropdownSelect

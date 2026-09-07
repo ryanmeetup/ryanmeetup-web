@@ -7,6 +7,12 @@ import type { Task } from "@/lib/tasks/task-types";
 import type { TaskActivity } from "@/lib/activity/activity-types";
 import { activityEventKind } from "@/lib/activity/activity-events";
 import {
+  activityStatusMove,
+  matchesExcludedMoves,
+  matchesIncludedMoves,
+  parseMoveFilter,
+} from "@/lib/activity/activity-moves";
+import {
   ACCESS_PREVIEW_PARAM,
   USER_ACCESS_PREVIEW_PARAM,
 } from "@/lib/access/access-preview";
@@ -400,6 +406,11 @@ export async function GET(request: Request) {
   const excludedPeople = values("excludePeople");
   const includedEvents = values("events");
   const excludedEvents = values("excludeEvents");
+  // Status ids, already resolved by the caller. Like event kinds these stay
+  // out of SQL: the pair lives in `details`, and only half of a move is a
+  // column the task query could narrow on.
+  const includedMoves = parseMoveFilter(values("moves"));
+  const excludedMoves = parseMoveFilter(values("excludeMoves"));
   const cutoffTime = cutoff?.getTime() ?? null;
   const allActivity = [...taskActivity, ...resourceActivity]
     .filter((item) => {
@@ -408,6 +419,7 @@ export async function GET(request: Request) {
       const projectValue = projectId ?? "none";
       const actorValue = item.actor_id ?? "system";
       const kind = activityEventKind(item.action);
+      const move = activityStatusMove(item);
       return (
         (!includedProjects.length || includedProjects.includes(projectValue)) &&
         !excludedProjects.includes(projectValue) &&
@@ -415,6 +427,8 @@ export async function GET(request: Request) {
         !excludedPeople.includes(actorValue) &&
         (!includedEvents.length || includedEvents.includes(kind)) &&
         !excludedEvents.includes(kind) &&
+        matchesIncludedMoves(move, includedMoves) &&
+        !matchesExcludedMoves(move, excludedMoves) &&
         (!cutoffTime || new Date(item.created_at).getTime() >= cutoffTime) &&
         (!previewProjectIds ||
           !projectId ||
