@@ -8,6 +8,11 @@ import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import { TaskBoardCard } from "./TaskBoardCard";
 import { BoardColumnTasks } from "./BoardColumnTasks";
 import type { TaskBoardDropTarget } from "@/hooks/useTaskBoardDrag";
+import {
+  boardColumnHeaderProps,
+  boardColumnProps,
+  useBoardStickyHeaders,
+} from "@/hooks/useBoardStickyHeaders";
 
 function indexByTask<T extends { task_id: string }>(rows: T[]) {
   const index = new Map<string, T[]>();
@@ -95,6 +100,8 @@ export function TaskBoardView({
     tasks,
   ]);
 
+  useBoardStickyHeaders(scrollRef);
+
   const renderTask = (task: Task) => {
     const card = model.cards.get(task.id)!;
     return (
@@ -123,6 +130,7 @@ export function TaskBoardView({
         return (
           <section
             key={status.id}
+            {...boardColumnProps}
             onDragEnter={(event) => {
               event.preventDefault();
               drag.enterColumn(status.id);
@@ -146,9 +154,12 @@ export function TaskBoardView({
                 status.id,
               );
             }}
-            className={`${collapsed ? "w-[168px] self-start sm:w-[240px]" : "w-[min(240px,70vw)] sm:w-[min(320px,calc(100vw-3rem))]"} mb-6 shrink-0 rounded-2xl p-2 transition-[width,background-color,box-shadow] sm:p-3 ${drag.state.dragOverStatusId === status.id ? "bg-[#d9dcd7] ring-2 ring-inset ring-black/30 dark:bg-[#242424] dark:ring-white/40" : "bg-[#e7e8e5] dark:bg-[#1b1b1b]"}`}
+            className={`${collapsed ? "w-[168px] self-start sm:w-[240px]" : "w-[min(240px,70vw)] sm:w-[min(320px,calc(100vw-3rem))]"} group/column relative mb-6 shrink-0 rounded-2xl p-2 transition-[width,background-color,box-shadow] sm:p-3 ${drag.state.dragOverStatusId === status.id ? "bg-[#d9dcd7] ring-2 ring-inset ring-black/30 dark:bg-[#242424] dark:ring-white/40" : "bg-[#e7e8e5] dark:bg-[#1b1b1b]"}`}
           >
-            <div className="flex items-center gap-1.5 px-1 sm:gap-2">
+            <div
+              {...boardColumnHeaderProps}
+              className="relative z-10 -mx-1 flex items-center gap-1.5 rounded-lg bg-inherit px-2 py-1 ring-0 ring-inset ring-black/10 transition-shadow group-data-stuck/column:shadow-lg group-data-stuck/column:ring-1 sm:gap-2 dark:ring-white/15"
+            >
               <i
                 className="h-2.5 w-2.5 shrink-0 rounded-full"
                 style={{ backgroundColor: status.color }}
@@ -178,7 +189,7 @@ export function TaskBoardView({
               </IconButton>
             </div>
             {!collapsed && (
-              <p className="mt-1.5 line-clamp-2 h-8 px-1 text-xs leading-snug text-black/60 sm:mt-2 sm:h-10 sm:text-sm dark:text-white/60">
+              <p className="mt-0.5 line-clamp-2 h-8 px-1 text-xs leading-snug text-black/60 sm:mt-1 sm:h-10 sm:text-sm dark:text-white/60">
                 {status.description}
               </p>
             )}

@@ -44,13 +44,19 @@ import { editorTriggers, InstanceWordmark } from "@/components/global";
  * what state it is in. Every state is tinted with the exact colour its option
  * shows in the project status dropdown, so two projects in the same state
  * always look the same regardless of which section they land in.
+ *
+ * The selected row inverts to a solid light background, where a hairline
+ * outline carries too little of the tint to read as a colour at all, so the
+ * glyph fills in: same hue, enough of it to see.
  */
 function ProjectLifecycleIcon({
   status,
   favorite = false,
+  selected = false,
 }: {
   status: ProjectStatus;
   favorite?: boolean;
+  selected?: boolean;
 }) {
   const { color, label } = projectStatusDetails(status);
   const Icon = favorite ? FiStar : FiFolder;
@@ -61,7 +67,7 @@ function ProjectLifecycleIcon({
           aria-hidden
           className="shrink-0"
           style={{ color }}
-          fill={favorite ? "currentColor" : undefined}
+          fill={favorite || selected ? "currentColor" : undefined}
         />
         {/* Colour is never the only carrier: the state reaches the row's
             accessible name too. */}
@@ -197,7 +203,11 @@ export function TasksSidebar({
           onClick={closeSidebar}
           className={`${linkClass(selected)} pr-11`}
         >
-          <ProjectLifecycleIcon status={project.status} favorite={favorite} />
+          <ProjectLifecycleIcon
+            status={project.status}
+            favorite={favorite}
+            selected={selected}
+          />
           <SidebarItemLabel>{project.name}</SidebarItemLabel>
         </Link>
         <span className="absolute right-1 top-1/2 -translate-y-1/2">
