@@ -72,14 +72,29 @@ the connected calendar.
 
 ## Google Cloud setup
 
+Each deployment gets its own OAuth client and its own credentials. RMT and PRD
+never share one: the client is pinned to a single redirect URI, and a shared
+token key would mean one instance's key decrypts the other's stored grant.
+
 1. Create or select a Google Cloud project and enable the Google Calendar API.
-2. Configure the OAuth consent screen. Add the scopes `openid`, `email`, and
-   `https://www.googleapis.com/auth/calendar.events.owned`.
+2. Add the scopes `openid`, `email`, and
+   `https://www.googleapis.com/auth/calendar.events.owned`. In the current
+   console these live under **Google Auth Platform → Data Access**, not the
+   OAuth consent screen; the calendar scope is not in the filter list, so paste
+   it into **Manually add scopes**.
 3. Create an OAuth client with application type **Web application**.
-4. Add the production redirect URI:
-   `https://tasks.ryanmeetup.com/api/integrations/google-calendar/callback`.
-   Add the equivalent localhost or preview URI only in the corresponding
+4. Add one authorized redirect URI, the deployment's own origin followed by
+   `/api/integrations/google-calendar/callback` — so
+   `https://tasks.ryanmeetup.com/...` for RMT and
+   `https://projects.ryanle.dev/...` for PRD. It must match character for
+   character, with no trailing slash. Add
+   the equivalent localhost or preview URI only in the corresponding
    environment's OAuth client.
+
+   Leave **Authorized JavaScript origins** empty. The whole flow is server-side
+   redirects; no browser code calls Google, so the field is unused and an empty
+   row there only blocks the form with "URI must not be empty". Delete the row.
+
 5. Configure these server-only environment variables for the Tasks deployment:
 
    - `GOOGLE_CALENDAR_CLIENT_ID`
@@ -90,13 +105,42 @@ the connected calendar.
      primary calendar. For a separate calendar, use its calendar ID from Google
      Calendar's **Settings and sharing → Integrate calendar** section.
 
-Keep the token key stable. Changing it invalidates existing connections, which
-must then be disconnected and authorized again.
+   `TASKS_APP_URL` must already name the deployment's origin. The redirect URI
+   is built from the request origin when it is allowlisted and from
+   `TASKS_APP_URL` otherwise, so an instance that does not know its own name
+   sends Google a URI that will not match the client.
 
-Google refresh tokens are encrypted with AES-256-GCM before being stored in the
-locked workspace integration table. Access tokens are short-lived and are
-never persisted. Disconnecting revokes the Google grant and removes the saved
-connection.
+   Redeploy after adding them. They are read from the build's environment, and
+   until `isGoogleCalendarConfigured()` returns true the connect route bounces
+   straight back to `/calendar?google=unavailable` without reaching Google.
+
+The token key is generated here, not issued by Google. It is the AES-256-GCM
+key that encrypts the Google refresh token before it is stored in the locked
+workspace integration table, so the database holds an unusable blob and the key
+lives only in the deployment's environment. It must decode to exactly 32 bytes;
+a passphrase or a hex key leaves the integration reporting itself unconfigured.
+
+Keep the token key stable. There is no rotation path — the decrypt side
+understands only the `v1` envelope it wrote — so changing it invalidates
+existing connections, which must then be disconnected and authorized again.
+
+Access tokens are short-lived and are never persisted. Disconnecting revokes the
+Google grant and removes the saved connection.
+
+## Publishing status
+
+Under **Audience**, an External app left in **Testing** expires refresh tokens
+after seven days. Because the stored refresh token is the only credential the
+integration keeps, the calendar works for a week and then quietly stops
+returning Google events, long after the setup that caused it. Publish the app
+to production.
+
+A personal Google account cannot use **Internal**, so the calendar scope stays
+sensitive and unverified production shows a "Google hasn't verified this app"
+interstitial — **Advanced → Go to** the deployment origin completes the
+connection. Verification only removes the warning and the 100-user cap. While
+the app is still in Testing, every account that connects must be listed as a
+test user.
 
 ## Connect and grant access
 
@@ -105,6 +149,18 @@ connection.
    Google account that owns the calendar and approve the requested access.
 3. Open **Access**, create or edit an access group, and enable **View the
    workspace Google Calendar** for each group that should see Google events.
+
+The callback names why it failed in the URL it returns to, which is the fastest
+way to tell a misconfigured client from a rejected grant:
+
+| `/calendar?google=` | Meaning |
+| --- | --- |
+| `connected` | The refresh token was stored. |
+| `unavailable` | Credentials missing, malformed token key, or not yet redeployed. |
+| `invalid` | State or cookie mismatch, usually a redirect URI that does not match the client. |
+| `auth` | The signed-in user is not an onboarded owner. |
+| `refresh-token` | Google returned no refresh token to store. |
+| `failed` | The token exchange or the database write threw; the reason is in the server log. |
 
 Owners can always view and manage the connection. Other users see neither the
 Google events nor the connection card unless their effective access-group
