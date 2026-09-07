@@ -200,10 +200,88 @@ test("keeps the board scroller next to the footer", async ({
   expect(columnBackground).not.toMatch(/^rgba\(.+, 0\.\d+\)$/);
 });
 
-test("shrinks collapsed board columns to their header", async ({
+test("keeps a column's search and divider in view while its tasks scroll", async ({
   page,
   baseURL,
 }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await enterDemoWorkspace(page, baseURL);
+  await page.goto("/board");
+
+  const search = page.getByRole("searchbox", {
+    name: "Search In Progress tasks",
+  });
+  await expect(search).toBeVisible();
+
+  const chrome = page.locator("[data-board-column-header]").first();
+  // The divider is the edge the tasks scroll into, so it is part of the
+  // column at rest rather than something the scroll position turns on.
+  await expect(chrome).toHaveCSS("border-bottom-width", "1px");
+
+  await page.mouse.wheel(0, 800);
+  const appHeader = page.locator(".tasks-app-header").first();
+  await expect
+    .poll(async () => {
+      const [searchBox, chromeBox] = await Promise.all([
+        search.boundingBox(),
+        appHeader.boundingBox(),
+      ]);
+      return searchBox!.y - (chromeBox!.y + chromeBox!.height);
+    })
+    .toBeGreaterThan(0);
+  await expect(search).toBeInViewport();
+});
+
+test("keeps a task's icons from painting over the pinned column chrome", async ({
+  page,
+  baseURL,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await enterDemoWorkspace(page, baseURL);
+  await page.goto("/board");
+  await expect(
+    page.getByRole("searchbox", { name: "Search In Progress tasks" }),
+  ).toBeVisible();
+
+  const link = await page.evaluate(async () => {
+    const column = [...document.querySelectorAll("[data-board-column]")].find(
+      (section) => section.querySelector("h2")?.textContent === "In Progress",
+    )!;
+    const chrome = column.querySelector("[data-board-column-header]")!;
+    const icon = column.querySelector<HTMLElement>('a[aria-label^="Go to"]')!;
+    const settle = () =>
+      new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      );
+
+    // Creep down until a card's link is behind the pinned block, then ask the
+    // browser what is on top of it: a card that paints above the block shows
+    // its icons through an otherwise opaque surface.
+    for (let step = 0; step < 120; step += 1) {
+      const block = chrome.getBoundingClientRect();
+      const rect = icon.getBoundingClientRect();
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + rect.height / 2;
+      if (y < block.top) break;
+      if (y < block.bottom - 2) {
+        const hit = document.elementFromPoint(x, y);
+        return { behind: true, covered: !!hit && chrome.contains(hit) };
+      }
+      window.scrollBy(0, 12);
+      await settle();
+    }
+    return { behind: false, covered: false };
+  });
+
+  expect(link.behind).toBe(true);
+  expect(link.covered).toBe(true);
+});
+
+test("keeps a collapsed board column's header in view", async ({
+  page,
+  baseURL,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
   await enterDemoWorkspace(page, baseURL);
   await page.goto("/board");
 
@@ -219,12 +297,31 @@ test("shrinks collapsed board columns to their header", async ({
     doneColumn.getByRole("button", { name: "Expand “Done”" }),
   ).toBeVisible();
 
+  // Collapsing takes away the cards and narrows the column, but leaves its
+  // full height in place: the heading is all that is left to pin, and a column
+  // that shrank to its own heading would carry it off the top of the board.
+  await expect(
+    doneColumn.getByRole("button", { name: /^Open / }).first(),
+  ).toBeHidden();
+  const [collapsed, expanded] = await Promise.all([
+    doneColumn.boundingBox(),
+    inProgressColumn.boundingBox(),
+  ]);
+  expect(collapsed!.width).toBeLessThan(expanded!.width);
+  expect(collapsed!.height).toBeGreaterThan(400);
+
+  await page.mouse.wheel(0, 800);
+  const heading = doneColumn.locator("[data-board-column-header]");
+  const appHeader = page.locator(".tasks-app-header").first();
   await expect
-    .poll(async () => (await doneColumn.boundingBox())?.height)
-    .toBeLessThan(100);
-  await expect
-    .poll(async () => (await inProgressColumn.boundingBox())?.height)
-    .toBeGreaterThan(400);
+    .poll(async () => {
+      const [headingBox, chromeBox] = await Promise.all([
+        heading.boundingBox(),
+        appHeader.boundingBox(),
+      ]);
+      return Math.abs(headingBox!.y - (chromeBox!.y + chromeBox!.height));
+    })
+    .toBeLessThan(2);
 });
 
 test.describe("mobile workspace navigation", () => {

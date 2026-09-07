@@ -1,79 +1,37 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { FiLoader, FiSearch, FiX } from "react-icons/fi";
-import { useSearchFilter } from "@ryanmeetup/hooks";
 import type { Task } from "@/lib/tasks/task-types";
-import { taskKey } from "@/lib/tasks/task-key";
 
 export function BoardColumnTasks({
-  statusId,
   statusName,
   tasks,
+  query,
+  isPending,
   renderTask,
   onCreate,
 }: {
-  statusId: string;
   statusName: string;
+  /** Already narrowed to the column's search. */
   tasks: Task[];
+  query: string;
+  /** The column carries `aria-busy`; this only dims the stale results. */
+  isPending: boolean;
   renderTask: (task: Task) => ReactNode;
   onCreate: () => void;
 }) {
-  const {
-    query,
-    setQuery,
-    filtered: filteredTasks,
-    isPending,
-  } = useSearchFilter({
-    data: tasks,
-    buildHaystack: (task) =>
-      `${taskKey(task)} ${task.title} ${task.description ?? ""}`.toLowerCase(),
-    queryParam: `column-${statusId}`,
-  });
-
   return (
-    <div className="space-y-2 p-1 sm:space-y-3" aria-busy={isPending}>
-      <div className="relative">
-        <FiSearch
-          aria-hidden
-          className="absolute left-2.5 top-1/2 -translate-y-1/2 text-black/40 sm:left-3 dark:text-white/40"
-        />
-        <input
-          type="search"
-          aria-label={`Search ${statusName} tasks`}
-          aria-busy={isPending}
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder={`Search ${statusName}...`}
-          className="h-8 w-full rounded-lg border border-black/10 bg-white pl-8 pr-8 text-xs outline-none focus:border-black/30 focus:ring-2 focus:ring-black/10 sm:h-9 sm:pl-9 sm:pr-9 sm:text-sm dark:border-white/10 dark:bg-white/5 dark:focus:border-white/30 [&::-webkit-search-cancel-button]:appearance-none"
-        />
-        {isPending && (
-          <FiLoader
-            aria-label={`Filtering ${statusName} tasks`}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 animate-spin text-black/45 motion-reduce:animate-none sm:right-3 dark:text-white/45"
-          />
-        )}
-        {!isPending && query && (
-          <button
-            type="button"
-            aria-label={`Clear ${statusName} search`}
-            onClick={() => setQuery("")}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-sm text-black/55 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 sm:right-3 dark:text-white/55 dark:hover:text-white dark:focus-visible:ring-white/30"
-          >
-            <FiX aria-hidden />
-          </button>
-        )}
-      </div>
+    <div className="space-y-2 p-1 sm:space-y-3">
       <div
         className={`space-y-2 transition-opacity sm:space-y-3 ${isPending ? "pointer-events-none opacity-55" : ""}`}
       >
-        {filteredTasks.map(renderTask)}
-        {filteredTasks.length === 0 && query.trim() && (
+        {tasks.map(renderTask)}
+        {tasks.length === 0 && query.trim() && (
           <div className="rounded-xl border border-dashed border-black/15 px-3 py-6 text-center text-xs text-black/50 sm:py-8 dark:border-white/15 dark:text-white/50">
             No {statusName} tasks match this search.
           </div>
         )}
-        {filteredTasks.length === 0 && !query.trim() && (
+        {tasks.length === 0 && !query.trim() && (
           <button
             onClick={onCreate}
             className="w-full rounded-xl border border-dashed border-black/15 px-3 py-6 text-xs text-black/40 hover:border-black/30 hover:text-black/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 sm:py-8 dark:border-white/15 dark:text-white/40 dark:hover:border-white/30 dark:hover:text-white/60 dark:focus-visible:ring-white/30"

@@ -116,7 +116,7 @@ export function TaskBoardCard({
         );
       }}
       onDragEnd={onDragEnd}
-      className={`group relative w-full cursor-grab rounded-xl border border-black/10 bg-white p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-black/25 hover:shadow-md active:cursor-grabbing sm:p-4 dark:border-white/10 dark:bg-zinc-900 dark:hover:border-white/30 ${
+      className={`group relative isolate w-full cursor-grab rounded-xl border border-black/10 bg-white p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-black/25 hover:shadow-md active:cursor-grabbing sm:p-4 dark:border-white/10 dark:bg-zinc-900 dark:hover:border-white/30 ${
         dropTarget?.taskId === task.id
           ? dropTarget.edge === "before"
             ? "relative before:absolute before:-top-2 before:right-2 before:left-2 before:h-1 before:rounded-full before:bg-blue-500 before:content-[''] dark:before:bg-blue-400"

@@ -143,7 +143,9 @@ test("keeps stale board results inert while a search is pending", async ({
   const search = page.getByRole("searchbox", {
     name: "Search In Progress tasks",
   });
-  const column = search.locator("../..");
+  const column = page.locator("section").filter({
+    has: page.getByRole("heading", { level: 2, name: "In Progress" }),
+  });
   await expect(column.getByText("Confirm launch venue")).toBeVisible();
 
   await search.fill("nothing matches this task");
