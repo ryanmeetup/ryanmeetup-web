@@ -6,6 +6,7 @@ import { AnimatedCollapse, Button, toast } from "@ryanmeetup/ui";
 import type { IconType } from "react-icons";
 import {
   FiAlertTriangle,
+  FiBookOpen,
   FiChevronDown,
   FiCalendar,
   FiClock,
@@ -26,6 +27,7 @@ import type {
 } from "@/lib/server/integration-health";
 import { mutate } from "@/lib/mutation-client";
 import { errorMessage } from "@/lib/presentation";
+import { IntegrationSetupModal } from "./IntegrationSetupModal";
 
 type Accent = "emerald" | "violet" | "sky" | "indigo" | "amber" | "teal";
 
@@ -135,6 +137,10 @@ export function IntegrationStatusList({
   const router = useRouter();
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const [repairing, setRepairing] = useState<string | null>(null);
+  const [setupKey, setSetupKey] = useState<string | null>(null);
+  const setupFor = integrations.find(
+    (integration) => integration.key === setupKey,
+  );
 
   async function repair(integration: IntegrationCheck) {
     if (!integration.action) return;
@@ -160,127 +166,165 @@ export function IntegrationStatusList({
     });
 
   return (
-    <ul className="grid gap-3">
-      {integrations.map((integration) => {
-        const missing =
-          integration.state === "missing" || integration.state === "attention";
-        const open = expanded.has(integration.key);
-        const panelId = `integration-${integration.key}`;
-        const { icon: Icon, accent } =
-          identity[integration.key] ?? fallbackIdentity;
-        const tone = accents[missing ? "amber" : accent];
+    <>
+      <ul className="grid gap-3">
+        {integrations.map((integration) => {
+          const missing =
+            integration.state === "missing" ||
+            integration.state === "attention";
+          const open = expanded.has(integration.key);
+          const panelId = `integration-${integration.key}`;
+          const { icon: Icon, accent } =
+            identity[integration.key] ?? fallbackIdentity;
+          const tone = accents[missing ? "amber" : accent];
 
-        return (
-          <li
-            key={integration.key}
-            className={`relative overflow-hidden rounded-2xl border shadow-sm ${missing ? missingCard : presentCard}`}
-          >
-            <span
-              aria-hidden
-              className={`absolute inset-y-0 left-0 w-1.5 ${tone.rail}`}
-            />
-            <button
-              type="button"
-              aria-expanded={open}
-              aria-controls={panelId}
-              onClick={() => toggle(integration.key)}
-              className="flex w-full items-start gap-3 p-4 pl-5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/30 dark:focus-visible:ring-white/30 sm:pl-6"
+          return (
+            <li
+              key={integration.key}
+              className={`relative overflow-hidden rounded-2xl border shadow-sm ${missing ? missingCard : presentCard}`}
             >
               <span
                 aria-hidden
-                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${tone.tile}`}
+                className={`absolute inset-y-0 left-0 w-1.5 ${tone.rail}`}
+              />
+              <button
+                type="button"
+                aria-expanded={open}
+                aria-controls={panelId}
+                onClick={() => toggle(integration.key)}
+                className="flex w-full items-start gap-3 p-4 pl-5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/30 dark:focus-visible:ring-white/30 sm:pl-6"
               >
-                <Icon className="h-4 w-4" />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="flex flex-wrap items-center gap-2">
-                  <span className="font-semibold">{integration.label}</span>
-                  <span
-                    className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${stateStyle[integration.state]}`}
-                  >
-                    <span
-                      aria-hidden
-                      className="h-1.5 w-1.5 rounded-full bg-current"
-                    />
-                    {stateLabel[integration.state]}
-                  </span>
-                </span>
-                <span className="mt-1 block text-sm text-black/55 dark:text-white/55">
-                  {integration.blurb}
-                </span>
-                {integration.consequence ? (
-                  <span className="mt-1.5 flex items-start gap-2 text-sm text-amber-800 dark:text-amber-200">
-                    <FiAlertTriangle
-                      aria-hidden
-                      className="mt-0.5 h-3.5 w-3.5 shrink-0"
-                    />
-                    {integration.consequence}
-                  </span>
-                ) : null}
-              </span>
-              <span className="flex shrink-0 items-center gap-2 pt-0.5 text-xs text-black/40 dark:text-white/40">
-                <span className="hidden sm:inline">
-                  {integration.facts.length} setting
-                  {integration.facts.length === 1 ? "" : "s"}
-                </span>
-                <FiChevronDown
+                <span
                   aria-hidden
-                  className={`transition-transform duration-200 motion-reduce:transition-none ${open ? "rotate-180" : ""}`}
-                />
-              </span>
-            </button>
-
-            <AnimatedCollapse id={panelId} open={open}>
-              <dl className="space-y-1.5 border-t border-black/[0.07] px-4 py-3 pl-5 dark:border-white/[0.07] sm:pl-6">
-                {integration.facts.map((fact) => {
-                  const FactIcon = factIcon[fact.kind];
-                  return (
-                    <div
-                      key={`${fact.label}-${fact.source}`}
-                      className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm"
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${tone.tile}`}
+                >
+                  <Icon className="h-4 w-4" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="font-semibold">{integration.label}</span>
+                    <span
+                      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${stateStyle[integration.state]}`}
                     >
-                      <FactIcon
+                      <span
                         aria-hidden
-                        className="h-3.5 w-3.5 shrink-0 translate-y-0.5 text-black/30 dark:text-white/30"
+                        className="h-1.5 w-1.5 rounded-full bg-current"
                       />
-                      <dt className="w-32 shrink-0 text-xs uppercase tracking-[0.12em] text-black/45 dark:text-white/45">
-                        {fact.label}
-                      </dt>
-                      <dd
-                        className={
-                          fact.value === null
-                            ? "text-sm font-medium text-amber-700 dark:text-amber-300"
-                            : `min-w-0 break-all ${fact.mono === false ? "text-sm text-black/80 dark:text-white/80" : "font-mono text-[13px] tracking-tight text-black/80 dark:text-white/80"}`
-                        }
+                      {stateLabel[integration.state]}
+                    </span>
+                  </span>
+                  <span className="mt-1 block text-sm text-black/55 dark:text-white/55">
+                    {integration.blurb}
+                  </span>
+                  {integration.consequence ? (
+                    <span className="mt-1.5 flex items-start gap-2 text-sm text-amber-800 dark:text-amber-200">
+                      <FiAlertTriangle
+                        aria-hidden
+                        className="mt-0.5 h-3.5 w-3.5 shrink-0"
+                      />
+                      {integration.consequence}
+                    </span>
+                  ) : null}
+                </span>
+                <span className="flex shrink-0 items-center gap-2 pt-0.5 text-xs text-black/40 dark:text-white/40">
+                  <span className="hidden sm:inline">
+                    {integration.facts.length} setting
+                    {integration.facts.length === 1 ? "" : "s"}
+                  </span>
+                  <FiChevronDown
+                    aria-hidden
+                    className={`transition-transform duration-200 motion-reduce:transition-none ${open ? "rotate-180" : ""}`}
+                  />
+                </span>
+              </button>
+
+              {integration.setup ? (
+                <div
+                  className={`flex flex-wrap items-center gap-x-3 gap-y-1 border-t px-4 py-2.5 pl-5 sm:pl-6 ${missing ? "border-amber-500/20 dark:border-amber-400/20" : "border-black/[0.07] dark:border-white/[0.07]"}`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setSetupKey(integration.key)}
+                    className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 ${
+                      missing
+                        ? "border-amber-500/40 bg-amber-500/10 text-amber-900 hover:bg-amber-500/20 focus-visible:ring-amber-500/50 dark:border-amber-400/40 dark:text-amber-100 dark:hover:bg-amber-400/20"
+                        : "border-black/15 bg-black/[0.03] text-black/70 hover:bg-black/[0.06] focus-visible:ring-black/30 dark:border-white/15 dark:bg-white/[0.05] dark:text-white/70 dark:hover:bg-white/10 dark:focus-visible:ring-white/30"
+                    }`}
+                  >
+                    <FiBookOpen aria-hidden className="h-3.5 w-3.5" />
+                    How to set this up
+                  </button>
+                  <span className="text-xs text-black/50 dark:text-white/50">
+                    {integration.setup.steps.length} step
+                    {integration.setup.steps.length === 1 ? "" : "s"}
+                    {integration.setup.variables.length
+                      ? `, ${integration.setup.variables.length} variable${integration.setup.variables.length === 1 ? "" : "s"}`
+                      : ""}
+                  </span>
+                </div>
+              ) : null}
+
+              <AnimatedCollapse id={panelId} open={open}>
+                <dl className="space-y-1.5 border-t border-black/[0.07] px-4 py-3 pl-5 dark:border-white/[0.07] sm:pl-6">
+                  {integration.facts.map((fact) => {
+                    const FactIcon = factIcon[fact.kind];
+                    return (
+                      <div
+                        key={`${fact.label}-${fact.source}`}
+                        className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm"
                       >
-                        {fact.value ?? "Not set"}
-                      </dd>
-                      <code className={`ml-auto ${sourceBadge}`}>
-                        {fact.source}
-                      </code>
+                        <FactIcon
+                          aria-hidden
+                          className="h-3.5 w-3.5 shrink-0 translate-y-0.5 text-black/30 dark:text-white/30"
+                        />
+                        <dt className="w-32 shrink-0 text-xs uppercase tracking-[0.12em] text-black/45 dark:text-white/45">
+                          {fact.label}
+                        </dt>
+                        <dd
+                          className={
+                            fact.value === null
+                              ? "text-sm font-medium text-amber-700 dark:text-amber-300"
+                              : `min-w-0 break-all ${fact.mono === false ? "text-sm text-black/80 dark:text-white/80" : "font-mono text-[13px] tracking-tight text-black/80 dark:text-white/80"}`
+                          }
+                        >
+                          {fact.value ?? "Not set"}
+                        </dd>
+                        <code className={`ml-auto ${sourceBadge}`}>
+                          {fact.source}
+                        </code>
+                      </div>
+                    );
+                  })}
+                  {integration.action ? (
+                    <div className="pt-3">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        disabled={repairing === integration.key}
+                        onClick={() => repair(integration)}
+                      >
+                        {repairing === integration.key
+                          ? "Repairing…"
+                          : integration.action.label}
+                      </Button>
                     </div>
-                  );
-                })}
-                {integration.action ? (
-                  <div className="pt-3">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      disabled={repairing === integration.key}
-                      onClick={() => repair(integration)}
-                    >
-                      {repairing === integration.key
-                        ? "Repairing…"
-                        : integration.action.label}
-                    </Button>
-                  </div>
-                ) : null}
-              </dl>
-            </AnimatedCollapse>
-          </li>
-        );
-      })}
-    </ul>
+                  ) : null}
+                </dl>
+              </AnimatedCollapse>
+            </li>
+          );
+        })}
+      </ul>
+      {setupFor ? (
+        <IntegrationSetupModal
+          integration={setupFor}
+          open
+          setIsOpen={(next) => {
+            if (!next) setSetupKey(null);
+          }}
+        />
+      ) : null}
+    </>
   );
 }
