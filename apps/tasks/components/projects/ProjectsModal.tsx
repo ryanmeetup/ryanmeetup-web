@@ -54,7 +54,10 @@ import {
   shouldOfferProjectArchive,
 } from "@/lib/resources/project-status";
 import { projectPath } from "@/lib/resources/project-route";
-import { defaultProjectStartDate } from "@/lib/resources/project-timeline";
+import {
+  defaultProjectStartDate,
+  inferredProjectStartDate,
+} from "@/lib/resources/project-timeline";
 import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import {
   ExpandableResourceEditor,
@@ -1215,6 +1218,9 @@ export function ProjectsModal({
                       <ProjectTimelineFields
                         startDate={editingStartDate}
                         dueDate={editingDueDate}
+                        inheritedStartDate={inferredProjectStartDate(
+                          project.created_at,
+                        )}
                         onStartDateChange={setEditingStartDate}
                         onDueDateChange={setEditingDueDate}
                         disabled={renaming}

@@ -3,6 +3,7 @@ import {
   calendarDayGap,
   defaultProjectStartDate,
   formatDaySpan,
+  inferredProjectStartDate,
   projectTimeline,
 } from "@/lib/resources/project-timeline";
 
@@ -27,6 +28,23 @@ describe("defaultProjectStartDate", () => {
   it("uses the local calendar day when the project editor opens", () => {
     expect(defaultProjectStartDate(new Date(2026, 8, 8, 23, 30))).toBe(
       "2026-09-08",
+    );
+  });
+});
+
+describe("inferredProjectStartDate", () => {
+  it("collapses the creation instant into the reader's calendar day", () => {
+    expect(
+      inferredProjectStartDate(new Date(2026, 8, 8, 23, 30).toISOString()),
+    ).toBe("2026-09-08");
+  });
+
+  it("names the date a blank start date falls back to", () => {
+    const record = project({
+      created_at: new Date(2026, 5, 1, 9, 0).toISOString(),
+    });
+    expect(inferredProjectStartDate(record.created_at)).toBe(
+      projectTimeline(record, today).start.date,
     );
   });
 });

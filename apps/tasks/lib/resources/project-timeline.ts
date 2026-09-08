@@ -9,6 +9,15 @@ export function defaultProjectStartDate(today = new Date()) {
 }
 
 /**
+ * The start date a project falls back to when it never recorded one: the day
+ * it was added here. `created_at` is an instant, so it is collapsed into the
+ * reader's own calendar day the same way every other date is.
+ */
+export function inferredProjectStartDate(createdAt: string) {
+  return localDateValue(new Date(createdAt));
+}
+
+/**
  * Calendar days between two `YYYY-MM-DD` values, anchored at midday so a
  * daylight-saving shift can never round a whole day away.
  */
@@ -103,7 +112,7 @@ export function projectTimeline(
   // own calendar days, so both are collapsed the same way `today` is.
   const start = project.start_date
     ? { date: project.start_date, inferred: false }
-    : { date: localDateValue(new Date(project.created_at)), inferred: true };
+    : { date: inferredProjectStartDate(project.created_at), inferred: true };
   const endValue = project.archived_at
     ? localDateValue(new Date(project.archived_at))
     : todayValue;
