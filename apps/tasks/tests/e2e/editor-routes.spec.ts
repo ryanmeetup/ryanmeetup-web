@@ -88,33 +88,29 @@ for (const route of editorRoutes) {
  * columns are crushed into the width one column needed. `EditorPageSurface`
  * reads the same `size` the dialog does — this is the assertion that it still
  * does.
+ *
+ * The task editor is the only one left that makes the gesture. The project
+ * editor used to be here too, until its links, notes, and files moved out of a
+ * "Supporting details" disclosure and onto the overview as `ProjectContextCard`
+ * — the page form it left behind is one narrow column at every size.
  */
-for (const { name, href, expand } of [
-  { name: "task", href: "/task/new", expand: /Task details/ },
-  {
-    name: "project",
-    href: "/projects/website-refresh/edit",
-    expand: /Supporting details/,
-  },
-]) {
-  test(`${name} editor page widens when its details open`, async ({
-    page,
-    baseURL,
-  }) => {
-    await enterDemoWorkspace(page, baseURL);
-    await page.setViewportSize({ width: 1800, height: 1000 });
-    await page.goto(href);
-    await page.waitForLoadState("networkidle");
+test("task editor page widens when its details open", async ({
+  page,
+  baseURL,
+}) => {
+  await enterDemoWorkspace(page, baseURL);
+  await page.setViewportSize({ width: 1800, height: 1000 });
+  await page.goto("/task/new");
+  await page.waitForLoadState("networkidle");
 
-    const column = page.locator("[data-editor-page]");
-    const collapsed = (await column.boundingBox())?.width ?? 0;
-    expect(collapsed).toBeGreaterThan(0);
+  const column = page.locator("[data-editor-page]");
+  const collapsed = (await column.boundingBox())?.width ?? 0;
+  expect(collapsed).toBeGreaterThan(0);
 
-    await page.getByRole("button", { name: expand }).click();
-    // The column animates its max-width; wait for it to settle rather than
-    // sampling mid-transition.
-    await expect
-      .poll(async () => (await column.boundingBox())?.width ?? 0)
-      .toBeGreaterThan(collapsed + 100);
-  });
-}
+  await page.getByRole("button", { name: /Task details/ }).click();
+  // The column animates its max-width; wait for it to settle rather than
+  // sampling mid-transition.
+  await expect
+    .poll(async () => (await column.boundingBox())?.width ?? 0)
+    .toBeGreaterThan(collapsed + 100);
+});
