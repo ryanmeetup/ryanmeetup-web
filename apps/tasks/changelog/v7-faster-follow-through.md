@@ -69,6 +69,13 @@ Creating or editing a task, project, category, contact, or calendar event uses a
 
 **Profile → Preferences** now has **Create and edit forms**. Leave it on _Match the screen_ and nothing changes: a dialog on a desktop, a full page on a phone. Choose _Always a dialog_ to keep the board or list behind every form at any size, or _Always a full page_ to give every form the whole screen. The setting follows your account rather than the browser you happen to be using.
 
+### Open the calendar on what matters
+
+**Profile → Preferences** now lets each person choose what the Calendar shows
+first: everything, task deadlines, time away, important dates, or Google
+Calendar. The choice belongs to the profile in that deployment, so RMT and PRD
+can open differently while the Show menu remains available for quick changes.
+
 ### Contact links you can read
 
 Editing a contact now happens at an address that names it — `/contacts/the-lantern-room/edit` — with nothing else appended. Older links built from the contact's id keep working, and two contacts sharing a display name keep theirs. Leaving the editor returns you to the directory exactly as you left it, search and scroll position included.
