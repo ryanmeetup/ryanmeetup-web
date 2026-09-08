@@ -6,6 +6,12 @@ import { boardStickyOffset } from "@/lib/tasks/board-sticky";
 /** Spread onto the column and its heading so the hook can find them. */
 export const boardColumnProps = { "data-board-column": "" };
 export const boardColumnHeaderProps = { "data-board-column-header": "" };
+/**
+ * Spread onto the padded page container around the board. Its top padding is
+ * the gap a pinned heading keeps from the app header, so the inset is written
+ * once, in the layout, instead of being restated as a number in here.
+ */
+export const boardInsetProps = { "data-board-inset": "" };
 
 /**
  * Keeps every column heading in view as the page scrolls past the top of the
@@ -21,10 +27,15 @@ export function useBoardStickyHeaders(
     let frame = 0;
     let sizes: ResizeObserver | null = null;
 
+    const inset = board.closest<HTMLElement>("[data-board-inset]");
+
     const update = () => {
       frame = 0;
       const appHeader = document.querySelector(".tasks-app-header");
       const pinTop = appHeader?.getBoundingClientRect().bottom ?? 0;
+      const gap = inset
+        ? Number.parseFloat(getComputedStyle(inset).paddingTop) || 0
+        : 0;
       for (const column of board.querySelectorAll<HTMLElement>(
         "[data-board-column]",
       )) {
@@ -43,6 +54,7 @@ export function useBoardStickyHeaders(
           headerTop: header.offsetTop,
           headerHeight: header.offsetHeight,
           pinTop,
+          gap,
         });
         header.style.transform = offset ? `translateY(${offset}px)` : "";
         column.toggleAttribute("data-stuck", offset > 0);

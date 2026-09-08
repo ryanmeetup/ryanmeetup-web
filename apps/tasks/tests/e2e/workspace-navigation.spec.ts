@@ -313,13 +313,24 @@ test("keeps a collapsed board column's header in view", async ({
   await page.mouse.wheel(0, 800);
   const heading = doneColumn.locator("[data-board-column-header]");
   const appHeader = page.locator(".tasks-app-header").first();
+  // A pinned heading rests an inset below the app header, not against it: the
+  // board keeps the top padding it has when the page is scrolled to the top.
+  const inset = await page.evaluate(() =>
+    Number.parseFloat(
+      getComputedStyle(document.querySelector("[data-board-inset]")!)
+        .paddingTop,
+    ),
+  );
+  expect(inset).toBeGreaterThan(0);
   await expect
     .poll(async () => {
       const [headingBox, chromeBox] = await Promise.all([
         heading.boundingBox(),
         appHeader.boundingBox(),
       ]);
-      return Math.abs(headingBox!.y - (chromeBox!.y + chromeBox!.height));
+      return Math.abs(
+        headingBox!.y - (chromeBox!.y + chromeBox!.height) - inset,
+      );
     })
     .toBeLessThan(2);
 });

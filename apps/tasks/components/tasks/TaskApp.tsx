@@ -17,6 +17,7 @@ import { useTaskFilters } from "@/hooks/useTaskFilters";
 import { usePagination } from "@/hooks/usePagination";
 import { useCollapsedStatuses } from "@/hooks/useCollapsedStatuses";
 import { useBoardAutoScroll } from "@/hooks/useBoardAutoScroll";
+import { boardInsetProps } from "@/hooks/useBoardStickyHeaders";
 import { createTaskMutationService } from "@/lib/tasks/task-mutations";
 import { taskKey, taskPath, parseTaskKey } from "@/lib/tasks/task-key";
 import { errorMessage } from "@/lib/presentation";
@@ -278,6 +279,7 @@ export function TaskApp({
         contentClassName="flex min-h-0 flex-1 flex-col"
       >
         <div
+          {...boardInsetProps}
           className={`flex min-h-0 flex-1 flex-col px-4 pt-4 sm:px-6 sm:pt-6 lg:px-8 lg:pt-8 ${view === "board" ? "" : "pb-4 sm:pb-6 lg:pb-8"}`}
         >
           <TaskWorkspaceHeader

@@ -24,6 +24,12 @@ describe("board sticky headings", () => {
     ).toBe(44);
   });
 
+  it("rests the heading an inset below the app header", () => {
+    expect(boardStickyOffset({ ...column, columnTop: -100, gap: 32 })).toBe(
+      184,
+    );
+  });
+
   it("never moves a heading that fills its whole column", () => {
     expect(
       boardStickyOffset({ ...column, columnTop: -5000, columnHeight: 56 }),
