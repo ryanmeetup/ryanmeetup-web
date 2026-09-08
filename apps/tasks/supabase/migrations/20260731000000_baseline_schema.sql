@@ -1939,7 +1939,9 @@ CREATE TABLE IF NOT EXISTS "public"."profiles" (
     "favorite_project_ids" "uuid"[] DEFAULT '{}'::"uuid"[] NOT NULL,
     "assign_new_tasks_to_self" boolean DEFAULT false NOT NULL,
     "editor_surface" "text" DEFAULT 'auto'::"text" NOT NULL,
-    CONSTRAINT "profiles_editor_surface_check" CHECK (("editor_surface" = ANY (ARRAY['auto'::"text", 'modal'::"text", 'page'::"text"])))
+    "calendar_default_view" "text" DEFAULT 'all'::"text" NOT NULL,
+    CONSTRAINT "profiles_editor_surface_check" CHECK (("editor_surface" = ANY (ARRAY['auto'::"text", 'modal'::"text", 'page'::"text"]))),
+    CONSTRAINT "profiles_calendar_default_view_check" CHECK (("calendar_default_view" = ANY (ARRAY['all'::"text", 'task'::"text", 'away'::"text", 'important'::"text", 'google'::"text"])))
 );
 
 
@@ -1955,6 +1957,10 @@ COMMENT ON COLUMN "public"."profiles"."assign_new_tasks_to_self" IS 'When true, 
 
 
 COMMENT ON COLUMN "public"."profiles"."editor_surface" IS 'Where create and edit forms open for this profile: auto (dialog from the sm breakpoint up, page below it), modal, or page.';
+
+
+
+COMMENT ON COLUMN "public"."profiles"."calendar_default_view" IS 'Source selected when this profile opens Calendar: all, task, away, important, or google.';
 
 
 

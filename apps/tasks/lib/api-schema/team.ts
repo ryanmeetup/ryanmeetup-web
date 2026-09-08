@@ -1,4 +1,5 @@
 import { isEditorSurface } from "@/lib/workspace/editor-surface";
+import { isCalendarDefaultView } from "@/lib/calendar/calendar-view-preference";
 import {
   objectWithKeys,
   optionalTrimmedText,
@@ -29,6 +30,7 @@ export function profileSchema(value: unknown) {
     "taskDetailsOpenByDefault",
     "assignNewTasksToSelf",
     "editorSurface",
+    "calendarDefaultView",
   ]);
   if (
     !body ||
@@ -44,11 +46,13 @@ export function profileSchema(value: unknown) {
   if (typeof body.taskDetailsOpenByDefault !== "boolean") return null;
   if (typeof body.assignNewTasksToSelf !== "boolean") return null;
   if (!isEditorSurface(body.editorSurface)) return null;
+  if (!isCalendarDefaultView(body.calendarDefaultView)) return null;
   return {
     displayName: body.displayName,
     avatarPath: body.avatarPath as string | undefined,
     taskDetailsOpenByDefault: body.taskDetailsOpenByDefault,
     assignNewTasksToSelf: body.assignNewTasksToSelf,
     editorSurface: body.editorSurface,
+    calendarDefaultView: body.calendarDefaultView,
   };
 }

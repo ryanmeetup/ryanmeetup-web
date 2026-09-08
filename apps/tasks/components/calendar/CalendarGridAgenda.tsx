@@ -21,6 +21,11 @@ import type { CalendarItem } from "@/lib/calendar/calendar-types";
 import { itemsOnDate } from "@/lib/calendar/calendar-types";
 import { moveCalendarMonth } from "@/lib/calendar/calendar-view";
 import type { GoogleCalendarConnection } from "@/lib/calendar/google-calendar-types";
+import {
+  calendarDefaultViewOptions,
+  isCalendarDefaultView,
+  type CalendarDefaultView,
+} from "@/lib/calendar/calendar-view-preference";
 
 const monthFormatter = new Intl.DateTimeFormat("en-US", {
   month: "long",
@@ -113,8 +118,8 @@ export function CalendarGridAgenda({
     limit?: number,
   ) => ReactNode;
   setMonth: (month: string) => void;
-  setSource: (source: string) => void;
-  source: string;
+  setSource: (source: CalendarDefaultView) => void;
+  source: CalendarDefaultView;
   today: string;
   upcomingDates: string[];
 }) {
@@ -159,16 +164,16 @@ export function CalendarGridAgenda({
               className="h-9"
               label="Show"
               value={source}
-              onChange={setSource}
-              options={[
-                { label: "Everything", value: "all" },
-                { label: "Deadlines", value: "task" },
-                { label: "Time away", value: "away" },
-                { label: "Important dates", value: "important" },
-                ...(googleCanView && googleConnection.connected
-                  ? [{ label: "Google Calendar", value: "google" }]
-                  : []),
-              ]}
+              onChange={(value) => {
+                if (isCalendarDefaultView(value)) setSource(value);
+              }}
+              options={calendarDefaultViewOptions
+                .filter(
+                  (option) =>
+                    option.value !== "google" ||
+                    (googleCanView && googleConnection.connected),
+                )
+                .map(({ label, value }) => ({ label, value }))}
             />
             <Button
               size="sm"

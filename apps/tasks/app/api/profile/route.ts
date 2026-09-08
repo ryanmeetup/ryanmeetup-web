@@ -37,6 +37,7 @@ export async function PATCH(request: Request) {
     task_details_open_by_default: parsed.data.taskDetailsOpenByDefault,
     assign_new_tasks_to_self: parsed.data.assignNewTasksToSelf,
     editor_surface: parsed.data.editorSurface,
+    calendar_default_view: parsed.data.calendarDefaultView,
     ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
   };
   const { data: profile, error } = await context.admin

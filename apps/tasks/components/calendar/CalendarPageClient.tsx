@@ -61,6 +61,7 @@ import type {
   GoogleCalendarConnection,
   GoogleCalendarEvent,
 } from "@/lib/calendar/google-calendar-types";
+import { availableCalendarDefaultView } from "@/lib/calendar/calendar-view-preference";
 
 const dayFormatter = new Intl.DateTimeFormat("en-US", {
   weekday: "short",
@@ -233,7 +234,12 @@ export function CalendarPageClient({
     date: string;
     items: CalendarItem[];
   } | null>(null);
-  const [source, setSource] = useState("all");
+  const [source, setSource] = useState(() =>
+    availableCalendarDefaultView(
+      initialData.currentProfile.calendar_default_view,
+      googleCanView && initialGoogleConnection.connected,
+    ),
+  );
   const previewing = Boolean(data.accessPreview);
   const triggers = editorTriggers(data.currentProfile.editor_surface);
   const google = useCalendarGoogle({

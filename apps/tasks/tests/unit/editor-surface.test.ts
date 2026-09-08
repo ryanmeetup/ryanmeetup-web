@@ -12,6 +12,7 @@ const validProfileBody = {
   taskDetailsOpenByDefault: false,
   assignNewTasksToSelf: false,
   editorSurface: "auto",
+  calendarDefaultView: "all",
 };
 
 describe("editorSurface", () => {

@@ -48,7 +48,7 @@ export default async function ProfilePage({
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select(
-        "id,full_name,avatar_url,onboarding_completed,task_details_open_by_default,assign_new_tasks_to_self,editor_surface,favorite_project_ids,app_role",
+        "id,full_name,avatar_url,onboarding_completed,task_details_open_by_default,assign_new_tasks_to_self,editor_surface,calendar_default_view,favorite_project_ids,app_role",
       )
       .eq("id", auth.user.id)
       .maybeSingle();

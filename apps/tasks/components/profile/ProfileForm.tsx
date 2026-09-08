@@ -27,6 +27,11 @@ import {
   paginationPageSizePreferenceKey,
 } from "@/lib/user-preferences";
 import { ProfileAvatarField } from "./ProfileAvatarField";
+import {
+  calendarDefaultViewOptions,
+  isCalendarDefaultView,
+  type CalendarDefaultView,
+} from "@/lib/calendar/calendar-view-preference";
 
 const avatarTypes = ["image/jpeg", "image/png", "image/webp"];
 const maxAvatarSize = 5 * 1024 * 1024;
@@ -64,6 +69,9 @@ export function ProfileForm({
     profile.assign_new_tasks_to_self,
   );
   const [editorSurface, setEditorSurface] = useState(profile.editor_surface);
+  const [calendarDefaultView, setCalendarDefaultView] = useState(
+    profile.calendar_default_view,
+  );
   const [paginationPageSize, setPaginationPageSize] = useState(
     10 as 10 | 25 | 50 | 100,
   );
@@ -175,6 +183,7 @@ export function ProfileForm({
           taskDetailsOpenByDefault,
           assignNewTasksToSelf,
           editorSurface,
+          calendarDefaultView,
         }),
       });
       setDisplayName(result.profile.full_name || "");
@@ -230,11 +239,21 @@ export function ProfileForm({
     router.refresh();
   }
 
+  async function changeCalendarDefaultView(nextValue: CalendarDefaultView) {
+    const previousValue = calendarDefaultView;
+    setCalendarDefaultView(nextValue);
+    await savePreferences({ calendarDefaultView: nextValue }, () =>
+      setCalendarDefaultView(previousValue),
+    );
+    router.refresh();
+  }
+
   async function savePreferences(
     changed: {
       taskDetailsOpenByDefault?: boolean;
       assignNewTasksToSelf?: boolean;
       editorSurface?: EditorSurfacePreference;
+      calendarDefaultView?: CalendarDefaultView;
     },
     revert: () => void,
   ) {
@@ -249,6 +268,7 @@ export function ProfileForm({
           taskDetailsOpenByDefault,
           assignNewTasksToSelf,
           editorSurface,
+          calendarDefaultView,
           ...changed,
         }),
       });
@@ -477,6 +497,31 @@ export function ProfileForm({
                     void changeEditorSurfacePreference(value);
                 }}
                 options={editorSurfaceOptions.map((option) => ({
+                  label: option.label,
+                  value: option.value,
+                }))}
+              />
+            </div>
+            <div className="flex flex-col gap-3 rounded-xl border border-black/10 bg-black/[0.02] p-4 dark:border-white/10 dark:bg-white/[0.025]">
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold">
+                  Default calendar view
+                </span>
+                <span className="mt-1 block text-xs leading-relaxed text-black/55 dark:text-white/55">
+                  {calendarDefaultViewOptions.find(
+                    (option) => option.value === calendarDefaultView,
+                  )?.description ?? "Choose what appears when Calendar opens."}
+                </span>
+              </span>
+              <DropdownSelect
+                label="Show"
+                value={calendarDefaultView}
+                disabled={saving || savingPreferences}
+                onChange={(value) => {
+                  if (isCalendarDefaultView(value))
+                    void changeCalendarDefaultView(value);
+                }}
+                options={calendarDefaultViewOptions.map((option) => ({
                   label: option.label,
                   value: option.value,
                 }))}
