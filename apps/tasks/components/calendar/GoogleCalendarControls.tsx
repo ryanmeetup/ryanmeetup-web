@@ -23,15 +23,16 @@ export function GoogleCalendarStatusButton({
         ? "Connect"
         : "Setup needed";
 
-  // Built on the shared Button rather than styled by hand: it sits beside
-  // "Add to calendar" in the page header, and inheriting the primitive keeps
-  // the radius, height, and uppercase tracking identical to its neighbour for
-  // free. The dot carries the connection state, so the button itself does not
-  // need a colour of its own competing with the primary action next to it.
+  // A chip, not a button, even though it sits in the action row and clicks
+  // through to the settings dialog. It reports a state the workspace is
+  // already in; "Add to calendar" beside it performs something. Built on the
+  // same round, low-contrast, `text-[11px]` treatment as FilterChip so it
+  // reads as the same class of object, and deliberately shorter and quieter
+  // than the Button primitive so it never competes with the primary action.
+  // The dot carries the connection state on its own.
   return (
-    <Button
-      size="sm"
-      variant="secondary"
+    <button
+      type="button"
       onClick={onClick}
       aria-label={
         connection.connected
@@ -40,15 +41,14 @@ export function GoogleCalendarStatusButton({
             ? "Google Calendar is ready to connect. Open connection settings."
             : "Google Calendar needs setup. Open connection settings."
       }
-      leftIcon={
-        <span
-          aria-hidden
-          className={`block h-2 w-2 rounded-full ${connection.connected ? "bg-emerald-500" : "bg-black/30 dark:bg-white/30"}`}
-        />
-      }
+      className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/80 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-black/70 transition hover:border-black/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:border-white/10 dark:bg-white/10 dark:text-white/70 dark:hover:border-white/40 dark:focus-visible:ring-white/30"
     >
+      <span
+        aria-hidden
+        className={`block h-2 w-2 rounded-full ${connection.connected ? "bg-emerald-500" : "bg-black/30 dark:bg-white/30"}`}
+      />
       Google · {state}
-    </Button>
+    </button>
   );
 }
 
