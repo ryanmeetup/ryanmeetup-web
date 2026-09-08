@@ -121,7 +121,7 @@ The workspace sits on a subtle paper texture with solid task columns that stay r
 Collapsed board columns now keep their description and search controls while hiding the task stack instead of leaving an empty full-height lane. Expand one and its tasks slide back into view; pick up a task and collapsed columns temporarily open into large, clearly labeled drop targets, keeping moves easy without the dead space.
 Starting a search from a collapsed column slides it open automatically so the matching tasks appear without an extra click.
 Column headers stay in place above their own taller scrolling task lists, while the page canvas supplies the breathing room outside the rounded columns.
-The board uses the full available screen height beneath the toolbar and outside inset, adapts when the window resizes, and omits the footer to keep the page focused on tasks.
+The board fills the available screen height with equal outside spacing above and below, adapts when the window resizes, and omits the footer. Page scrolling stops at that padded position while each task list continues scrolling; scrolling back up reveals the heading and filters.
 Task lists now run flush to each column's rounded bottom edge, without a separate divider or fixed bottom strip.
 
 Form labels now use the same clear sentence-case heading treatment throughout task, note, resource, calendar, profile, and admin editors.

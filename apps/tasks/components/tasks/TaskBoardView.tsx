@@ -115,13 +115,13 @@ export function TaskBoardView({
   };
 
   return (
-    // Once scrolled up to the toolbar's outside inset, the board fills the
-    // remaining viewport. Its task lists scroll independently, while the
-    // page still scrolls to reach the heading and filters above the board.
+    // The document ends with the board framed by the page's top and bottom
+    // insets. Task lists can keep scrolling at that natural page limit;
+    // scrolling back up still reveals the heading and filters.
     <div
       ref={scrollRef}
       data-board-scroller=""
-      className="-mx-4 flex h-[calc(100dvh-var(--board-top-inset,6rem))] min-h-80 flex-none flex-nowrap items-stretch gap-3 overflow-x-auto overscroll-x-contain px-4 scroll-px-4 sm:-mx-6 sm:gap-4 sm:px-6 sm:scroll-px-6 lg:-mx-8 lg:px-8 lg:scroll-px-8"
+      className="-mx-4 flex h-[calc(100dvh-var(--board-top-inset,6rem)-var(--board-bottom-inset,2rem))] min-h-80 flex-none flex-nowrap items-stretch gap-3 overflow-x-auto overscroll-x-contain px-4 scroll-px-4 sm:-mx-6 sm:gap-4 sm:px-6 sm:scroll-px-6 lg:-mx-8 lg:px-8 lg:scroll-px-8"
     >
       {statuses.map((status) => (
         <BoardColumn
