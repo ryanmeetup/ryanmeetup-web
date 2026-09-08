@@ -2,8 +2,8 @@ import { FiCalendar } from "react-icons/fi";
 import { FormSection } from "@/components/resources";
 
 /**
- * A project's own dates. Both are optional: a project with neither still
- * reports how long it has been running, counted from the day it was added.
+ * A project's own dates. New projects begin today by default, but the author
+ * can move or clear that value when the work began on a different day.
  */
 export function ProjectTimelineFields({
   startDate,
@@ -23,7 +23,7 @@ export function ProjectTimelineFields({
   return (
     <FormSection
       title="Timeline"
-      description="Optional. The start date is when work actually began, which is not always the day the project was added here."
+      description="Starts today by default. Change it if the work began on another day."
       icon={<FiCalendar className="h-4 w-4" />}
     >
       <div className="grid gap-4 sm:grid-cols-2">

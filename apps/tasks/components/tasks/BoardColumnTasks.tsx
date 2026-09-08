@@ -21,9 +21,18 @@ export function BoardColumnTasks({
   onCreate: () => void;
 }) {
   return (
-    <div className="space-y-2 p-1 sm:space-y-3">
+    // The board's own vertical scroller: one per column, running flush from
+    // the rule above it to the rule below. The gutter that holds the first
+    // and last task off those rules is inside the scroller, on the content —
+    // so it is room the tasks rest in and scroll away with, and a task on its
+    // way past is clipped at the rule itself rather than short of it. The
+    // side padding is split with the row below to leave a focus ring room
+    // inside the clip. Scrolling chains out of it at either end rather than
+    // being contained: the columns cover most of the page, and the page above
+    // them still has a heading and filters to scroll past.
+    <div className="min-h-0 flex-1 overflow-y-auto px-2 sm:px-3">
       <div
-        className={`space-y-2 transition-opacity sm:space-y-3 ${isPending ? "pointer-events-none opacity-55" : ""}`}
+        className={`space-y-2 px-1 py-3 transition-opacity sm:space-y-3 sm:py-4 ${isPending ? "pointer-events-none opacity-55" : ""}`}
       >
         {tasks.map(renderTask)}
         {tasks.length === 0 && query.trim() && (

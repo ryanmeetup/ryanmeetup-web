@@ -4,6 +4,7 @@ export * from "./AppError";
 export * from "./Blurb";
 export * from "./Breadcrumbs";
 export * from "./Card";
+export * from "./CardAction";
 export * from "./ClearFiltersButton";
 export * from "./DisclosureCard";
 export * from "./Divider";

@@ -25,6 +25,13 @@ import {
  * whatever display the component asks for. This is also why the pinned
  * preferences drop a trigger from the tree instead of hiding it: there is no
  * breakpoint to hang a variant off, and a plain `hidden` would not stick.
+ *
+ * On `IconButton` these go to `tooltipTriggerClassName`, not `className`.
+ * `IconButton` wraps its control in a tooltip trigger span, and hiding the
+ * control leaves that span in the row as a zero-width flex item — so a `gap`
+ * row pays the gap on both sides of nothing and the surviving trigger drifts
+ * away from its neighbours. Hiding the wrapper removes the flex item outright.
+ * `Button` has no such wrapper, so `className` is right there.
  */
 const mobileEditorTrigger = "sm:hidden";
 const desktopEditorTrigger = "max-sm:hidden sm:inline-flex";

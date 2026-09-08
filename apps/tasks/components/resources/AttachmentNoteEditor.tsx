@@ -41,8 +41,12 @@ export function AttachmentNoteEditor({
     }
   }
   return (
-    <div className="space-y-3 rounded-lg border border-black/10 bg-white/60 p-3 dark:border-white/10 dark:bg-black/10">
+    <div className="mb-3 space-y-3 rounded-xl border border-blue-500/20 bg-blue-50/50 p-3 dark:border-blue-400/20 dark:bg-blue-950/20">
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-700 dark:text-blue-300">
+        {initialTitle ? "Edit note" : "New note"}
+      </p>
       <Input
+        autoFocus
         label="Note title"
         required
         name={`${kind}-note-title-${resourceId ?? "new"}`}

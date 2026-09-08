@@ -2,6 +2,20 @@ import { useId, type ReactNode } from "react";
 import { AnimatedCollapse, Button, Heading } from "@ryanmeetup/ui";
 import { FiChevronDown } from "react-icons/fi";
 
+/**
+ * Where the supporting details open.
+ *
+ * `"beside"` seats them in a second column and widens the surface to pay for
+ * it, which suits a form whose own fields are a single column: the column
+ * stays put and the panel arrives next to it.
+ *
+ * `"below"` opens them underneath at full width. Use it when the form already
+ * spends the width on its own columns — otherwise opening the panel evicts
+ * whatever held the right-hand side, and a section the reader was just looking
+ * at jumps to the bottom of the other column.
+ */
+export type ExpandableResourceEditorLayout = "beside" | "below";
+
 export function ExpandableResourceEditor({
   expanded,
   setExpanded,
@@ -9,6 +23,7 @@ export function ExpandableResourceEditor({
   secondary,
   title = "Supporting details",
   summary = "Notes, attachments, and useful links",
+  layout = "beside",
 }: {
   expanded: boolean;
   setExpanded: (expanded: boolean) => void;
@@ -16,19 +31,20 @@ export function ExpandableResourceEditor({
   secondary: ReactNode;
   title?: string;
   summary?: string;
+  layout?: ExpandableResourceEditorLayout;
 }) {
   const detailsId = useId();
+  const below = layout === "below";
+  const containerClassName = below
+    ? "space-y-4"
+    : expanded
+      ? "grid items-start transition-[grid-template-columns,gap] duration-300 ease-out motion-reduce:transition-none lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-8"
+      : "grid items-start transition-[grid-template-columns,gap] duration-300 ease-out motion-reduce:transition-none lg:grid-cols-[minmax(0,1fr)_0fr] lg:gap-0";
   return (
-    <div
-      className={
-        expanded
-          ? "grid items-start transition-[grid-template-columns,gap] duration-300 ease-out motion-reduce:transition-none lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-8"
-          : "grid items-start transition-[grid-template-columns,gap] duration-300 ease-out motion-reduce:transition-none lg:grid-cols-[minmax(0,1fr)_0fr] lg:gap-0"
-      }
-    >
+    <div className={containerClassName}>
       <div
         className={`min-w-0 space-y-4 ${
-          expanded ? "lg:sticky lg:top-6" : ""
+          !below && expanded ? "lg:sticky lg:top-6" : ""
         }`}
       >
         {primary}
@@ -58,8 +74,12 @@ export function ExpandableResourceEditor({
       <AnimatedCollapse
         id={detailsId}
         open={expanded}
-        className={expanded ? "mt-6 min-w-0 lg:mt-0" : "min-w-0"}
-        contentClassName="min-w-0 lg:border-l lg:border-black/10 lg:pl-8 lg:dark:border-white/10"
+        className={below || !expanded ? "min-w-0" : "mt-6 min-w-0 lg:mt-0"}
+        contentClassName={
+          below
+            ? "min-w-0"
+            : "min-w-0 lg:border-l lg:border-black/10 lg:pl-8 lg:dark:border-white/10"
+        }
       >
         <div className="mb-5 flex flex-col items-stretch gap-3 border-b border-black/10 pb-3 dark:border-white/10 sm:flex-row sm:items-center sm:justify-between">
           <div className="w-full min-w-0">

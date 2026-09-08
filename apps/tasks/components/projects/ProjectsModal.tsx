@@ -31,7 +31,6 @@ import {
   FiFolder,
   FiPlus,
   FiRotateCcw,
-  FiLock,
   FiStar,
   FiTrash2,
   FiUsers,
@@ -45,7 +44,6 @@ import {
   editorTriggers,
   ManagementCard,
   ManagementCardTitle,
-  ResourceOwnerSelect,
   useEditorReturnPath,
 } from "@/components/global";
 import { errorMessage } from "@/lib/presentation";
@@ -56,10 +54,10 @@ import {
   shouldOfferProjectArchive,
 } from "@/lib/resources/project-status";
 import { projectPath } from "@/lib/resources/project-route";
+import { defaultProjectStartDate } from "@/lib/resources/project-timeline";
 import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import {
   ExpandableResourceEditor,
-  FormSection,
   ResourceFields,
   useResourceModalState,
   useResourceMutations,
@@ -75,10 +73,8 @@ import {
   type ArchiveFilter,
 } from "@/lib/resources/resource-management";
 import { useProjectFavorites } from "@/hooks/useProjectFavorites";
-import {
-  ProjectAccessFields,
-  type ProjectAccessGroup,
-} from "./ProjectAccessFields";
+import { type ProjectAccessGroup } from "./ProjectAccessFields";
+import { ProjectAccessSection } from "./ProjectAccessSection";
 import { ProjectStatusField } from "./ProjectStatusField";
 import { ProjectTimelineFields } from "./ProjectTimelineFields";
 
@@ -165,6 +161,12 @@ export function ProjectsModal({
    * Each one names the record it is editing, so the trail is built per surface
    * rather than once for the component.
    */
+  /**
+   * Two columns are a dialog remedy: a dialog caps its own height, so a tall
+   * form scrolls inside a card. The page scrolls with the document and keeps
+   * the single narrow column the rest of the app's forms use.
+   */
+  const splitPrimary = presentation !== "page";
   const pageSurface = (crumb: string) =>
     presentation === "page"
       ? {
@@ -212,7 +214,9 @@ export function ProjectsModal({
     useState<Project["access_mode"]>("owners");
   const [newAccessGroupIds, setNewAccessGroupIds] = useState<string[]>([]);
   const [newStatus, setNewStatus] = useState(defaultProjectStatus);
-  const [newStartDate, setNewStartDate] = useState("");
+  const [newStartDate, setNewStartDate] = useState(() =>
+    defaultProjectStartDate(),
+  );
   const [newDueDate, setNewDueDate] = useState("");
   const [editingStatus, setEditingStatus] = useState(
     directEditProject?.status ?? defaultProjectStatus,
@@ -257,25 +261,19 @@ export function ProjectsModal({
   );
   const {
     resourceId: editingProjectId,
-    detailsOpen: editDetailsOpen,
-    setDetailsOpen: setEditDetailsOpen,
     saving: renaming,
     setSaving: setRenaming,
   } = editState;
   const {
     name: editingName,
     description: editingDescription,
-    links: editingLinks,
     ownerIds: editingOwnerIds,
   } = editState.draft;
   const {
     setName: setEditingName,
     setDescription: setEditingDescription,
-    setLinks: setEditingLinks,
     setOwnerIds: setEditingOwnerIds,
   } = editState.changes;
-  const [supportingDetailsChanged, setSupportingDetailsChanged] =
-    useState(false);
   const [collapsedStatuses, setCollapsedStatuses] = useState<
     Set<Project["status"]>
   >(new Set());
@@ -433,7 +431,7 @@ export function ProjectsModal({
       setNewAccessMode("owners");
       setNewAccessGroupIds([]);
       setNewStatus(defaultProjectStatus);
-      setNewStartDate("");
+      setNewStartDate(defaultProjectStartDate());
       setNewDueDate("");
       toast.success(`${project.name} created.`);
       await onCreated?.(project);
@@ -478,7 +476,6 @@ export function ProjectsModal({
           id: project.id,
           name: nextName,
           description: nextDescription,
-          links: editingLinks,
           status: editingStatus,
           startDate: editingStartDate || null,
           dueDate: editingDueDate || null,
@@ -498,7 +495,6 @@ export function ProjectsModal({
         ...project,
         name: nextName,
         description: nextDescription,
-        links: editingLinks,
         status: editingStatus,
         start_date: editingStartDate || null,
         due_date: editingDueDate || null,
@@ -533,7 +529,6 @@ export function ProjectsModal({
         setArchivePromptTarget(updatedProject);
       }
       accessState.commit();
-      setSupportingDetailsChanged(false);
       editState.complete();
       if (editProjectId) setOpen?.(false);
     } catch (error) {
@@ -546,7 +541,6 @@ export function ProjectsModal({
   }
 
   function beginRename(project: Project) {
-    setSupportingDetailsChanged(false);
     editState.begin(
       project,
       data.projectOwners
@@ -561,7 +555,6 @@ export function ProjectsModal({
   }
 
   function closeEditor() {
-    setSupportingDetailsChanged(false);
     if (editState.close() && editProjectId) setOpen?.(false);
   }
 
@@ -816,7 +809,7 @@ export function ProjectsModal({
                     href={`/projects/${project.id}/edit?from=${encodeURIComponent(listPath)}`}
                     label={`Edit “${project.name}”`}
                     variant="edit"
-                    className={triggers.routeClassName}
+                    tooltipTriggerClassName={triggers.routeClassName}
                   >
                     <FiEdit2 />
                   </IconButton.Link>
@@ -825,7 +818,7 @@ export function ProjectsModal({
                   <IconButton
                     label={`Edit “${project.name}”`}
                     variant="edit"
-                    className={triggers.dialogClassName}
+                    tooltipTriggerClassName={triggers.dialogClassName}
                     onClick={() => beginRename(project)}
                   >
                     <FiEdit2 />
@@ -880,8 +873,9 @@ export function ProjectsModal({
         descriptionPlaceholder: "What is this project working toward?",
       }}
       hideOwners
+      primaryLayout={splitPrimary ? "split" : "stack"}
       primarySlot={
-        <div className="space-y-4">
+        <>
           <ProjectStatusField
             value={newStatus}
             onChange={setNewStatus}
@@ -894,30 +888,23 @@ export function ProjectsModal({
             onDueDateChange={setNewDueDate}
             disabled={creating}
           />
-          <FormSection
-            title="Who can use it"
-            description="Project owners always retain access. Members of selected groups can see the project and work on its tasks."
-            icon={<FiLock className="h-4 w-4" />}
-          >
-            <ProjectAccessFields
-              groups={accessGroups}
-              accessMode={newAccessMode}
-              groupIds={newAccessGroupIds}
-              onAccessModeChange={setNewAccessMode}
-              onGroupIdsChange={setNewAccessGroupIds}
-              disabled={creating || !accessLoaded}
-              loaded={accessLoaded}
-              owner={data.currentProfile.app_role === "owner"}
-            />
-            <ResourceOwnerSelect
-              label="Project owners"
-              profiles={data.profiles}
-              value={newOwnerIds}
-              onChange={setNewOwnerIds}
-              disabled={creating}
-            />
-          </FormSection>
-        </div>
+        </>
+      }
+      asideSlot={
+        <ProjectAccessSection
+          groups={accessGroups}
+          accessMode={newAccessMode}
+          groupIds={newAccessGroupIds}
+          onAccessModeChange={setNewAccessMode}
+          onGroupIdsChange={setNewAccessGroupIds}
+          profiles={data.profiles}
+          ownerIds={newOwnerIds}
+          onOwnerIdsChange={setNewOwnerIds}
+          disabled={creating}
+          loaded={accessLoaded}
+          owner={data.currentProfile.app_role === "owner"}
+          column={splitPrimary}
+        />
       }
     />
   );
@@ -1016,14 +1003,7 @@ export function ProjectsModal({
             pendingLabel="Creating..."
           />
         }
-        size={
-          createOnly && createDetailsOpen ? "2xl" : createOnly ? "lg" : "xl"
-        }
-        panelClassName={
-          createOnly
-            ? "transition-[max-width] duration-300 ease-out motion-reduce:transition-none"
-            : undefined
-        }
+        size={splitPrimary ? "xl" : "lg"}
         footerContent={
           !createOnly ? (
             <form
@@ -1036,6 +1016,7 @@ export function ProjectsModal({
                 setExpanded={setCreateDetailsOpen}
                 primary={createProjectPrimaryFields}
                 secondary={createProjectSecondaryFields}
+                layout="below"
               />
             </form>
           ) : undefined
@@ -1061,6 +1042,7 @@ export function ProjectsModal({
                 setExpanded={setCreateDetailsOpen}
                 primary={createProjectPrimaryFields}
                 secondary={createProjectSecondaryFields}
+                layout="below"
               />
             </form>
           ) : (
@@ -1164,9 +1146,6 @@ export function ProjectsModal({
             editingStatus !== project.status ||
             editingStartDate !== (project.start_date ?? "") ||
             editingDueDate !== (project.due_date ?? "") ||
-            JSON.stringify(editingLinks) !==
-              JSON.stringify(project.links ?? []) ||
-            supportingDetailsChanged ||
             !sameIds(savedOwnerIds, editingOwnerIds) ||
             savedAccessMode !== editingAccessMode ||
             !sameIds(savedAccessGroupIds, editingAccessGroupIds);
@@ -1178,8 +1157,7 @@ export function ProjectsModal({
               }}
               title={`Edit ${project.name}`}
               description="Update what this project is for, who owns it, and who can reach it."
-              size={editDetailsOpen ? "2xl" : "lg"}
-              panelClassName="transition-[max-width] duration-300 ease-out motion-reduce:transition-none"
+              size={splitPrimary ? "xl" : "lg"}
               actions={
                 <ModalActions
                   confirmDisabled={!projectChanged}
@@ -1200,112 +1178,66 @@ export function ProjectsModal({
                   void updateProject(project, editingName.trim());
                 }}
               >
-                <ExpandableResourceEditor
-                  expanded={editDetailsOpen}
-                  setExpanded={setEditDetailsOpen}
-                  primary={
-                    <ResourceFields
-                      section="primary"
-                      resource={{ kind: "project", id: project.id }}
-                      values={{
-                        name: editingName,
-                        description: editingDescription,
-                        ownerIds: editingOwnerIds,
-                        links: editingLinks,
-                      }}
-                      changes={{
-                        setName: setEditingName,
-                        setDescription: setEditingDescription,
-                        setOwnerIds: setEditingOwnerIds,
-                        setLinks: setEditingLinks,
-                      }}
-                      editor={{
-                        disabled: renaming,
-                        demoMode,
-                        currentUserId: data.currentProfile.id,
-                        profiles: data.profiles,
-                      }}
-                      copy={{
-                        nameLabel: "Project name",
-                        namePlaceholder: "Project name",
-                        descriptionPlaceholder:
-                          "What is this project working toward?",
-                      }}
-                      hideOwners
-                      primarySlot={
-                        <div className="space-y-4">
-                          <ProjectStatusField
-                            value={editingStatus}
-                            onChange={setEditingStatus}
-                            disabled={renaming}
-                          />
-                          <ProjectTimelineFields
-                            startDate={editingStartDate}
-                            dueDate={editingDueDate}
-                            onStartDateChange={setEditingStartDate}
-                            onDueDateChange={setEditingDueDate}
-                            disabled={renaming}
-                          />
-                          <FormSection
-                            title="Who can use it"
-                            description="Project owners always retain access. Members of selected groups can see the project and work on its tasks."
-                            icon={<FiLock className="h-4 w-4" />}
-                          >
-                            <ProjectAccessFields
-                              groups={accessGroups}
-                              accessMode={editingAccessMode}
-                              groupIds={editingAccessGroupIds}
-                              onAccessModeChange={setEditingAccessMode}
-                              onGroupIdsChange={setEditingAccessGroupIds}
-                              disabled={renaming || !accessLoaded}
-                              loaded={accessLoaded}
-                              owner={
-                                data.currentProfile.app_role === "owner" ||
-                                editingOwnerIds.includes(data.currentProfile.id)
-                              }
-                            />
-                            <ResourceOwnerSelect
-                              label="Project owners"
-                              profiles={data.profiles}
-                              value={editingOwnerIds}
-                              onChange={setEditingOwnerIds}
-                              disabled={renaming}
-                            />
-                          </FormSection>
-                        </div>
-                      }
-                    />
+                <ResourceFields
+                  section="primary"
+                  resource={{ kind: "project", id: project.id }}
+                  values={{
+                    name: editingName,
+                    description: editingDescription,
+                    ownerIds: editingOwnerIds,
+                  }}
+                  changes={{
+                    setName: setEditingName,
+                    setDescription: setEditingDescription,
+                    setOwnerIds: setEditingOwnerIds,
+                  }}
+                  editor={{
+                    disabled: renaming,
+                    demoMode,
+                    currentUserId: data.currentProfile.id,
+                    profiles: data.profiles,
+                  }}
+                  copy={{
+                    nameLabel: "Project name",
+                    namePlaceholder: "Project name",
+                    descriptionPlaceholder:
+                      "What is this project working toward?",
+                  }}
+                  hideOwners
+                  primaryLayout={splitPrimary ? "split" : "stack"}
+                  primarySlot={
+                    <>
+                      <ProjectStatusField
+                        value={editingStatus}
+                        onChange={setEditingStatus}
+                        disabled={renaming}
+                      />
+                      <ProjectTimelineFields
+                        startDate={editingStartDate}
+                        dueDate={editingDueDate}
+                        onStartDateChange={setEditingStartDate}
+                        onDueDateChange={setEditingDueDate}
+                        disabled={renaming}
+                      />
+                    </>
                   }
-                  secondary={
-                    <ResourceFields
-                      section="supporting"
-                      resource={{ kind: "project", id: project.id }}
-                      values={{
-                        name: editingName,
-                        description: editingDescription,
-                        ownerIds: editingOwnerIds,
-                        links: editingLinks,
-                      }}
-                      changes={{
-                        setName: setEditingName,
-                        setDescription: setEditingDescription,
-                        setOwnerIds: setEditingOwnerIds,
-                        setLinks: setEditingLinks,
-                      }}
-                      editor={{
-                        disabled: renaming,
-                        demoMode,
-                        currentUserId: data.currentProfile.id,
-                        profiles: data.profiles,
-                        onSupportingMutation: () =>
-                          setSupportingDetailsChanged(true),
-                      }}
-                      copy={{
-                        nameLabel: "Project name",
-                        namePlaceholder: "Project name",
-                        descriptionPlaceholder:
-                          "What is this project working toward?",
-                      }}
+                  asideSlot={
+                    <ProjectAccessSection
+                      groups={accessGroups}
+                      accessMode={editingAccessMode}
+                      groupIds={editingAccessGroupIds}
+                      onAccessModeChange={setEditingAccessMode}
+                      onGroupIdsChange={setEditingAccessGroupIds}
+                      profiles={data.profiles}
+                      ownerIds={editingOwnerIds}
+                      onOwnerIdsChange={setEditingOwnerIds}
+                      disabled={renaming}
+                      loaded={accessLoaded}
+                      owner={
+                        data.currentProfile.app_role === "owner" ||
+                        editingOwnerIds.includes(data.currentProfile.id)
+                      }
+                      column={splitPrimary}
                     />
                   }
                 />

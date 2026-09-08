@@ -6,7 +6,6 @@ import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import { TaskBoardCard } from "./TaskBoardCard";
 import { BoardColumn } from "./BoardColumn";
 import type { TaskBoardDropTarget } from "@/hooks/useTaskBoardDrag";
-import { useBoardStickyHeaders } from "@/hooks/useBoardStickyHeaders";
 
 function indexByTask<T extends { task_id: string }>(rows: T[]) {
   const index = new Map<string, T[]>();
@@ -23,6 +22,7 @@ export function TaskBoardView({
   scrollRef,
   drag,
   onToggleStatus,
+  onExpandStatus,
   onCreate,
   onOpen,
 }: {
@@ -46,6 +46,7 @@ export function TaskBoardView({
     cleanup: () => void;
   };
   onToggleStatus: (id: string) => void;
+  onExpandStatus: (id: string) => void;
   onCreate: (statusId: string) => void;
   onOpen: (task: Task) => void;
 }) {
@@ -94,8 +95,6 @@ export function TaskBoardView({
     tasks,
   ]);
 
-  useBoardStickyHeaders(scrollRef);
-
   const renderTask = (task: Task) => {
     const card = model.cards.get(task.id)!;
     return (
@@ -114,9 +113,17 @@ export function TaskBoardView({
   };
 
   return (
+    // The board takes a screen of its own and scrolls sideways only: each
+    // column takes that height and scrolls its own tasks within it, so no
+    // heading has to chase the page. The height is the viewport less the
+    // fixed header above it and the page's bottom padding below — a bound the
+    // columns can scroll against, rather than the room left under this page's
+    // heading and filters, which would leave them a fraction of a screen. The
+    // page itself scrolls as every other view does: past the heading and
+    // filters, on to the board at its full height, and down to the footer.
     <div
       ref={scrollRef}
-      className="-mx-4 flex min-h-[28rem] flex-1 flex-nowrap items-stretch gap-3 overflow-x-auto overscroll-x-contain px-4 scroll-px-4 sm:-mx-6 sm:gap-4 sm:px-6 sm:scroll-px-6 lg:-mx-8 lg:px-8 lg:scroll-px-8"
+      className="-mx-4 flex min-h-[28rem] flex-1 flex-nowrap items-stretch gap-3 overflow-x-auto overscroll-x-contain px-4 scroll-px-4 sm:-mx-6 sm:gap-4 sm:px-6 sm:scroll-px-6 lg:-mx-8 lg:h-[calc(100dvh-6rem)] lg:min-h-0 lg:flex-none lg:px-8 lg:scroll-px-8"
     >
       {statuses.map((status) => (
         <BoardColumn
@@ -124,11 +131,13 @@ export function TaskBoardView({
           status={status}
           tasks={model.columns.get(status.id) ?? []}
           collapsed={collapsedStatusIds?.has(status.id) ?? false}
+          dragActive={drag.state.draggedTaskId !== null}
           isDropTarget={drag.state.dragOverStatusId === status.id}
           onDragEnterColumn={() => drag.enterColumn(status.id)}
           onDragLeaveColumn={() => drag.leaveColumn(status.id)}
           onDropOnColumn={(taskId) => drag.dropOnColumn(taskId, status.id)}
           onToggle={() => onToggleStatus(status.id)}
+          onExpand={() => onExpandStatus(status.id)}
           onCreate={() => onCreate(status.id)}
           renderTask={renderTask}
         />

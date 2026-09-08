@@ -17,7 +17,6 @@ import { useTaskFilters } from "@/hooks/useTaskFilters";
 import { usePagination } from "@/hooks/usePagination";
 import { useCollapsedStatuses } from "@/hooks/useCollapsedStatuses";
 import { useBoardAutoScroll } from "@/hooks/useBoardAutoScroll";
-import { boardInsetProps } from "@/hooks/useBoardStickyHeaders";
 import { createTaskMutationService } from "@/lib/tasks/task-mutations";
 import { taskKey, taskPath, parseTaskKey } from "@/lib/tasks/task-key";
 import { errorMessage } from "@/lib/presentation";
@@ -100,7 +99,8 @@ export function TaskApp({
   const { sort, visibility } = filters;
   const resolved = useResolvedTaskFilters(data, filters);
   useReadableFilterParams({ data, filters, resolved });
-  const { collapsedStatusIds, toggleStatusSection } = useCollapsedStatuses();
+  const { collapsedStatusIds, expandStatusSection, toggleStatusSection } =
+    useCollapsedStatuses();
   const { loading: taskPageLoading, loadTaskPage } = useTaskPageLoader({
     demoMode,
     preview: data.accessPreview,
@@ -278,10 +278,7 @@ export function TaskApp({
         setData={setData}
         contentClassName="flex min-h-0 flex-1 flex-col"
       >
-        <div
-          {...boardInsetProps}
-          className={`flex min-h-0 flex-1 flex-col px-4 pt-4 sm:px-6 sm:pt-6 lg:px-8 lg:pt-8 ${view === "board" ? "" : "pb-4 sm:pb-6 lg:pb-8"}`}
-        >
+        <div className="flex min-h-0 flex-1 flex-col p-4 sm:p-6 lg:p-8">
           <TaskWorkspaceHeader
             scope={{
               assignee: filters.assignee,
@@ -355,6 +352,7 @@ export function TaskApp({
                 scrollRef={boardScrollRef}
                 drag={boardDrag}
                 onToggleStatus={toggleStatusSection}
+                onExpandStatus={expandStatusSection}
                 onCreate={editor.openCreate}
                 onOpen={editor.openEdit}
               />

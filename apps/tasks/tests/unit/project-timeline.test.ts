@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   calendarDayGap,
+  defaultProjectStartDate,
   formatDaySpan,
   projectTimeline,
 } from "@/lib/resources/project-timeline";
@@ -20,6 +21,14 @@ const project = (
   due_date: null,
   archived_at: null,
   ...overrides,
+});
+
+describe("defaultProjectStartDate", () => {
+  it("uses the local calendar day when the project editor opens", () => {
+    expect(defaultProjectStartDate(new Date(2026, 8, 8, 23, 30))).toBe(
+      "2026-09-08",
+    );
+  });
 });
 
 describe("calendarDayGap", () => {

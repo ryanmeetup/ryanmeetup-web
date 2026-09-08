@@ -8,9 +8,8 @@ import {
   Breadcrumbs,
   Button,
   Card,
+  CardAction,
   EmptyState,
-  FormattedText,
-  Modal,
   Tooltip,
 } from "@ryanmeetup/ui";
 import {
@@ -22,9 +21,6 @@ import {
   FiClock,
   FiColumns,
   FiEdit2,
-  FiExternalLink,
-  FiFile,
-  FiFileText,
   FiFolder,
   FiLink,
   FiPlus,
@@ -46,7 +42,6 @@ import {
   TaskPriorityBadge,
 } from "@/components/tasks";
 import { ActivityRows } from "@/components/activity/ActivityRows";
-import { ResourceLinks } from "@/components/resources";
 import { useProjectFavorites } from "@/hooks/useProjectFavorites";
 import { withAccessPreview } from "@/lib/access/access-preview";
 import { canViewWorkspaceArea } from "@/lib/access/workspace-areas";
@@ -56,7 +51,7 @@ import {
 } from "@/lib/calendar/calendar-types";
 import { formatCalendarDate } from "@/lib/date-format";
 import { resolveActivityRows } from "@/lib/activity/activity-presentation";
-import { profileDisplayName, formatFileSize } from "@/lib/presentation";
+import { profileDisplayName } from "@/lib/presentation";
 import {
   projectBoardPresetPath,
   projectNeedsAttention,
@@ -75,6 +70,7 @@ import type {
 import { taskPath } from "@/lib/tasks/task-key";
 import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import { ProjectFavoriteButton } from "./ProjectFavoriteButton";
+import { ProjectContextCard } from "./ProjectContextCard";
 import { ProjectsModal } from "./ProjectsModal";
 import { ProjectTimelineSummary } from "./ProjectTimelineSummary";
 
@@ -132,7 +128,6 @@ export function ProjectOverviewPageClient({
   const [projectCreateOpen, setProjectCreateOpen] = useState(false);
   const [categoryCreateOpen, setCategoryCreateOpen] = useState(false);
   const [projectEditOpen, setProjectEditOpen] = useState(false);
-  const [openNoteId, setOpenNoteId] = useState<string | null>(null);
   const router = useRouter();
   const favorites = useProjectFavorites({ data, setData, demoMode });
   const triggers = editorTriggers(data.currentProfile.editor_surface);
@@ -198,9 +193,6 @@ export function ProjectOverviewPageClient({
     categories: data.categories,
     statuses: data.statuses,
   }).slice(0, 6);
-  const notes = attachments.filter((item) => item.kind === "note");
-  const openNote = notes.find((note) => note.id === openNoteId) ?? null;
-  const files = attachments.filter((item) => item.kind === "file");
   const status = projectStatusDetails(project.status);
   const timeline = projectTimeline(project);
   const isFavorite = favorites.isFavorite(project.id);
@@ -241,7 +233,7 @@ export function ProjectOverviewPageClient({
           />
 
           <PageHeader
-            className="border-b border-black/10 pb-6 dark:border-white/10 sm:items-center"
+            className="border-b border-black/10 pb-6 dark:border-white/10 sm:items-center sm:gap-8 xl:gap-12"
             title={project.name}
             kicker={
               <span className="flex flex-wrap items-center gap-2">
@@ -455,12 +447,9 @@ export function ProjectOverviewPageClient({
                   title="Progress by status"
                   icon={<FiCheckCircle aria-hidden />}
                   action={
-                    <Link
-                      href={boardHref}
-                      className="text-xs font-semibold hover:underline"
-                    >
+                    <CardAction.Link href={boardHref}>
                       Open board
-                    </Link>
+                    </CardAction.Link>
                   }
                 />
                 {progress.length ? (
@@ -543,12 +532,9 @@ export function ProjectOverviewPageClient({
                   title="Recent activity"
                   icon={<FiActivity aria-hidden />}
                   action={
-                    <Link
-                      href={activityHref}
-                      className="text-xs font-semibold hover:underline"
-                    >
+                    <CardAction.Link href={activityHref}>
                       View all
-                    </Link>
+                    </CardAction.Link>
                   }
                 />
                 <ActivityRows
@@ -628,15 +614,14 @@ export function ProjectOverviewPageClient({
                   icon={<FiCalendar aria-hidden />}
                   action={
                     canOpenCalendar ? (
-                      <Link
+                      <CardAction.Link
                         href={withAccessPreview(
                           "/calendar",
                           data.accessPreview,
                         )}
-                        className="text-xs font-semibold hover:underline"
                       >
                         Calendar
-                      </Link>
+                      </CardAction.Link>
                     ) : undefined
                   }
                 />
@@ -670,106 +655,33 @@ export function ProjectOverviewPageClient({
                 )}
               </Card>
 
-              <Card size="none" className="overflow-hidden">
-                <SectionHeading
-                  title="Project context"
-                  icon={<FiLink aria-hidden />}
-                />
-                <div className="space-y-5 p-4 sm:p-5">
-                  {project.links.length > 0 && (
-                    <div>
-                      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-black/45 dark:text-white/45">
-                        Links
-                      </p>
-                      <ResourceLinks links={project.links} />
-                    </div>
-                  )}
-                  {notes.length > 0 && (
-                    <div>
-                      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-black/45 dark:text-white/45">
-                        Notes
-                      </p>
-                      <ul className="space-y-2">
-                        {notes.map((note) => (
-                          <li key={note.id}>
-                            <button
-                              type="button"
-                              onClick={() => setOpenNoteId(note.id)}
-                              className="flex w-full cursor-pointer items-center gap-3 rounded-xl border border-black/10 p-3 text-left text-sm transition hover:bg-black/[0.035] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:border-white/10 dark:hover:bg-white/[0.04] dark:focus-visible:ring-white/40"
-                            >
-                              <FiFileText aria-hidden className="shrink-0" />
-                              <span className="min-w-0 flex-1 truncate font-semibold">
-                                {note.name}
-                              </span>
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {files.length > 0 && (
-                    <div>
-                      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-black/45 dark:text-white/45">
-                        Files
-                      </p>
-                      <ul className="space-y-2">
-                        {files.map((file) => (
-                          <li key={file.id}>
-                            <a
-                              href={file.url || undefined}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              aria-disabled={!file.url || undefined}
-                              className={`flex items-center gap-3 rounded-xl border border-black/10 p-3 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:border-white/10 dark:focus-visible:ring-white/40 ${file.url ? "hover:bg-black/[0.035] dark:hover:bg-white/[0.04]" : "pointer-events-none opacity-55"}`}
-                            >
-                              <FiFile aria-hidden className="shrink-0" />
-                              <span className="min-w-0 flex-1">
-                                <span className="block truncate font-semibold">
-                                  {file.name}
-                                </span>
-                                <span className="block text-xs text-black/50 dark:text-white/50">
-                                  {formatFileSize(file.size_bytes) || "File"}
-                                </span>
-                              </span>
-                              <FiExternalLink
-                                aria-hidden
-                                className="shrink-0"
-                              />
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {!project.links.length && !notes.length && !files.length && (
-                    <EmptyState
-                      variant="plain"
-                      message="Add links, notes, or files while editing the project."
-                    />
-                  )}
-                </div>
-              </Card>
+              <ProjectContextCard
+                project={project}
+                attachments={attachments}
+                canEdit={canEditProject && !data.accessPreview}
+                demoMode={demoMode}
+                currentUserId={data.currentProfile.id}
+                onLinksSaved={(links) =>
+                  setData((current) => ({
+                    ...current,
+                    projects: current.projects.map((item) =>
+                      item.id === project.id ? { ...item, links } : item,
+                    ),
+                  }))
+                }
+                heading={(action) => (
+                  <SectionHeading
+                    title="Project context"
+                    icon={<FiLink aria-hidden />}
+                    action={action}
+                  />
+                )}
+              />
             </aside>
           </div>
         </div>
       </WorkspacePageShell>
 
-      {openNote && (
-        <Modal
-          open
-          setIsOpen={(next) => {
-            if (!next) setOpenNoteId(null);
-          }}
-          title={openNote.name}
-          size="lg"
-          dismissOnOutsideClick
-        >
-          <FormattedText
-            text={openNote.body ?? ""}
-            className="text-sm text-black/70 dark:text-white/70"
-          />
-        </Modal>
-      )}
       {newTaskOpen && !data.accessPreview && (
         <NewTaskModal
           data={data}

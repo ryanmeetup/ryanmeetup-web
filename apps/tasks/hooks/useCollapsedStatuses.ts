@@ -36,5 +36,18 @@ export function useCollapsedStatuses() {
     });
   };
 
-  return { collapsedStatusIds, toggleStatusSection };
+  const expandStatusSection = (statusId: string) => {
+    setCollapsedStatusIds((current) => {
+      if (!current?.has(statusId)) return current;
+      const next = new Set(current);
+      next.delete(statusId);
+      return next;
+    });
+  };
+
+  return {
+    collapsedStatusIds,
+    expandStatusSection,
+    toggleStatusSection,
+  };
 }

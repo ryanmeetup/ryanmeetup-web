@@ -3,6 +3,11 @@ import type { Project } from "./resource-types";
 
 const dayMs = 24 * 60 * 60 * 1000;
 
+/** The start date shown when somebody opens a fresh project editor. */
+export function defaultProjectStartDate(today = new Date()) {
+  return localDateValue(today);
+}
+
 /**
  * Calendar days between two `YYYY-MM-DD` values, anchored at midday so a
  * daylight-saving shift can never round a whole day away.

@@ -34,6 +34,10 @@ filters already applied. A board shortcut beside each sidebar project keeps the
 old straight-to-work path just as quick. On wider screens, the project team,
 upcoming dates, and context stay in view while the main overview scrolls; the
 team includes project owners plus everyone assigned work in that project.
+Project context now opens in its own focused editor, where saved links collapse
+into compact rows and use each page's social preview image when one is available.
+New project timelines begin on the day they are created by default, while still
+allowing an earlier start date when the work was already underway.
 
 ### Duplicate the work, not the setup
 
@@ -113,6 +117,10 @@ A workspace uses one instance name for page titles, digest emails, link previews
 ### A calmer canvas
 
 The workspace sits on a subtle paper texture with solid task columns that stay readable over it. The board fills the space above the footer, keeping its horizontal scroller against the bottom edge, and the latest-release card starts collapsed on smaller screens.
+
+Collapsed board columns now keep their description and search controls while hiding the task stack instead of leaving an empty full-height lane. Expand one and its tasks slide back into view; pick up a task and collapsed columns temporarily open into large, clearly labeled drop targets, keeping moves easy without the dead space.
+Starting a search from a collapsed column slides it open automatically so the matching tasks appear without an extra click.
+Pinned column headers now mask the breathing room beneath the app toolbar, keeping scrolled task cards from peeking through above their column controls.
 
 Form labels now use the same clear sentence-case heading treatment throughout task, note, resource, calendar, profile, and admin editors.
 

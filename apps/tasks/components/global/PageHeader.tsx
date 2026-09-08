@@ -38,7 +38,7 @@ export function PageHeader({
         className,
       )}
     >
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         {kicker && (
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-black/50 dark:text-white/50">
             {kicker}
@@ -68,7 +68,13 @@ export function PageHeader({
         </div>
         {description && <Text className="mt-2 text-sm">{description}</Text>}
       </div>
-      {actions}
+      {/*
+        `shrink-0` is load-bearing. The actions sit behind `sm:justify-end` at
+        their own call sites, and a container that shrinks below its buttons
+        overflows a justify-end row from the *left* — the buttons ride out over
+        the description instead of the description wrapping short of them.
+      */}
+      {actions && <div className="w-full sm:w-auto sm:shrink-0">{actions}</div>}
     </div>
   );
 }

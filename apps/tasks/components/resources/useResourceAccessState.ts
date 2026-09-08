@@ -18,6 +18,12 @@ export function useResourceAccessState<TGroup, TMode>({
 }) {
   const requests = useRef(new LatestRequestTracker());
   const [groups, setGroups] = useState<TGroup[]>([]);
+  /**
+   * The mode the editor opened with, straight off the record. The mode field
+   * renders from it immediately instead of waiting on the access request, so
+   * this is also the marker for "the reader has not touched it yet".
+   */
+  const seededAccessMode = useRef(initialAccessMode);
   const [accessMode, setAccessMode] = useState(initialAccessMode);
   const [savedAccessMode, setSavedAccessMode] = useState(initialAccessMode);
   const [groupIds, setGroupIds] = useState<string[]>([]);
@@ -35,6 +41,7 @@ export function useResourceAccessState<TGroup, TMode>({
   function begin(nextAccessMode: TMode) {
     const active = requests.current.getActive();
     if (active) requests.current.abort(active);
+    seededAccessMode.current = nextAccessMode;
     setAccessMode(nextAccessMode);
     setSavedAccessMode(nextAccessMode);
     setGroupIds([]);
@@ -43,7 +50,9 @@ export function useResourceAccessState<TGroup, TMode>({
   }
 
   async function load(
-    request: (signal: AbortSignal) => Promise<ResourceAccessResult<TGroup, TMode>>,
+    request: (
+      signal: AbortSignal,
+    ) => Promise<ResourceAccessResult<TGroup, TMode>>,
     { applySelection = true }: { applySelection?: boolean } = {},
   ) {
     const ticket = requests.current.start();
@@ -54,8 +63,15 @@ export function useResourceAccessState<TGroup, TMode>({
       setGroups(result.groups);
       if (applySelection) {
         if (result.accessMode !== undefined) {
-          setAccessMode(result.accessMode);
-          setSavedAccessMode(result.accessMode);
+          const fetched = result.accessMode;
+          // The field is live while this request is in flight, so adopt the
+          // fetched mode only if the reader has not already picked one. The
+          // saved copy always takes it: it is the baseline the editor compares
+          // against to decide whether there is anything to save.
+          setAccessMode((current) =>
+            current === seededAccessMode.current ? fetched : current,
+          );
+          setSavedAccessMode(fetched);
         }
         const nextGroupIds = result.groupIds ?? [];
         setGroupIds(nextGroupIds);

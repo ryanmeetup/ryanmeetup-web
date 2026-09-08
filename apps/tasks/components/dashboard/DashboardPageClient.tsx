@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Button,
+  CardAction,
   ConfirmationDialog,
   EmptyState,
   IconButton,
@@ -274,12 +275,9 @@ export function DashboardPageClient({
                 icon={<FiCheckCircle />}
                 tone="blue"
                 action={
-                  <Link
-                    href={viewAllAssigned}
-                    className="text-xs font-semibold hover:underline"
-                  >
+                  <CardAction.Link href={viewAllAssigned}>
                     View all
-                  </Link>
+                  </CardAction.Link>
                 }
               >
                 <DashboardTaskList
@@ -306,12 +304,11 @@ export function DashboardPageClient({
                   icon={<FiStar />}
                   tone="gold"
                   action={
-                    <Link
+                    <CardAction.Link
                       href={withAccessPreview("/projects", data.accessPreview)}
-                      className="text-xs font-semibold hover:underline"
                     >
                       View all
-                    </Link>
+                    </CardAction.Link>
                   }
                 >
                   {favoriteProjects.length ? (
@@ -477,15 +474,14 @@ export function DashboardPageClient({
                 icon={<FiSend />}
                 tone="violet"
                 action={
-                  <Link
+                  <CardAction.Link
                     href={withAccessPreview(
                       `/board?view=list&reporter=${encodeURIComponent(subjectName)}`,
                       data.accessPreview,
                     )}
-                    className="text-xs font-semibold hover:underline"
                   >
                     View all
-                  </Link>
+                  </CardAction.Link>
                 }
               >
                 <DashboardTaskList
@@ -510,15 +506,14 @@ export function DashboardPageClient({
                 icon={<FiClock />}
                 tone="green"
                 action={
-                  <Link
+                  <CardAction.Link
                     href={withAccessPreview(
                       "/activity?events=moved",
                       data.accessPreview,
                     )}
-                    className="text-xs font-semibold hover:underline"
                   >
                     All activity
-                  </Link>
+                  </CardAction.Link>
                 }
               >
                 {recentActivity.length ? (

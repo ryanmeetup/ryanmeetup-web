@@ -27,12 +27,19 @@ export function useResourceAttachments({
   demoMode,
   currentUserId,
   draftState,
+  initialItems,
   onMutation,
 }: {
   kind: ResourceKind;
   resourceId?: string;
   demoMode: boolean;
   currentUserId: string;
+  /**
+   * What the server already rendered, so a view that was handed the list does
+   * not blank out and refill while its own fetch runs. The fetch still happens
+   * and still wins; this only decides what is on screen until it lands.
+   */
+  initialItems?: ResourceAttachmentDraft[];
   draftState?: {
     drafts: ResourceAttachmentDraft[];
     onChange: (drafts: ResourceAttachmentDraft[]) => void;
@@ -42,7 +49,7 @@ export function useResourceAttachments({
   const idKey = kind === "category" ? "categoryId" : "projectId";
   const endpoint = `/api/${kind}-attachments`;
   const [items, setItems] = useState<ResourceAttachmentDraft[]>(
-    draftState?.drafts ?? [],
+    draftState?.drafts ?? initialItems ?? [],
   );
   // Which resource the items on hand were fetched for. Tracking this instead of
   // a loading flag keeps the pending state derived: this view outlives the

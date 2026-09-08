@@ -153,7 +153,7 @@ export function CategoriesModal({
    */
   const pageSurface = (crumb: string) =>
     presentation === "page"
-      ? ({
+      ? {
           presentation: "page" as const,
           parents: [
             {
@@ -163,7 +163,7 @@ export function CategoriesModal({
             },
           ],
           crumb: { title: crumb },
-        })
+        }
       : ({ presentation: "modal" } as const);
   const createOnly = createOnlyOption ?? !embedded;
   const { onCreate, onCategoryUpdated } = events ?? {};
@@ -1044,7 +1044,9 @@ export function CategoriesModal({
                                 href={`/categories/${category.id}/edit?from=${encodeURIComponent(listPath)}`}
                                 label={`Edit “${category.name}”`}
                                 variant="edit"
-                                className={triggers.routeClassName}
+                                tooltipTriggerClassName={
+                                  triggers.routeClassName
+                                }
                               >
                                 <FiEdit2 />
                               </IconButton.Link>
@@ -1053,7 +1055,9 @@ export function CategoriesModal({
                               <IconButton
                                 label={`Edit “${category.name}”`}
                                 variant="edit"
-                                className={triggers.dialogClassName}
+                                tooltipTriggerClassName={
+                                  triggers.dialogClassName
+                                }
                                 onClick={() => beginEdit(category)}
                               >
                                 <FiEdit2 />

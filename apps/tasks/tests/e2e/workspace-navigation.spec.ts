@@ -162,7 +162,7 @@ test("aligns board column searches across description lengths", async ({
   expect(Math.max(...topPositions) - Math.min(...topPositions)).toBeLessThan(1);
 });
 
-test("keeps the board scroller next to the footer", async ({
+test("gives the board a screen of its own without taking the page's scroll", async ({
   page,
   baseURL,
 }) => {
@@ -175,32 +175,46 @@ test("keeps the board scroller next to the footer", async ({
     has: page.getByRole("heading", { level: 2, name: "Done" }),
   });
   const boardScroller = doneColumn.locator("..");
-  const footer = page.locator(".tasks-footer");
   await expect(boardScroller).toBeVisible();
-  await expect(footer).toBeVisible();
 
-  const [boardBox, columnBox, footerBox] = await Promise.all([
+  const [boardBox, columnBox] = await Promise.all([
     boardScroller.boundingBox(),
     doneColumn.boundingBox(),
-    footer.boundingBox(),
   ]);
   expect(boardBox).not.toBeNull();
   expect(columnBox).not.toBeNull();
-  expect(footerBox).not.toBeNull();
-  const gap = footerBox!.y - (boardBox!.y + boardBox!.height);
-  expect(gap).toBeGreaterThanOrEqual(0);
-  expect(gap).toBeLessThanOrEqual(1);
-  const columnInset =
-    boardBox!.y + boardBox!.height - (columnBox!.y + columnBox!.height);
-  expect(columnInset).toBeGreaterThanOrEqual(24);
+  // Each column holds its own scroller, so the board has to be given a height
+  // rather than growing to one — a screen less the fixed header above it and
+  // the page's own bottom padding below, not the room left under the heading
+  // and filters. The column takes all of that.
+  expect(Math.round(boardBox!.height)).toBe(1000 - 64 - 32);
+  expect(
+    Math.abs(
+      columnBox!.y + columnBox!.height - (boardBox!.y + boardBox!.height),
+    ),
+  ).toBeLessThan(1);
 
   const columnBackground = await doneColumn.evaluate(
     (column) => getComputedStyle(column).backgroundColor,
   );
   expect(columnBackground).not.toMatch(/^rgba\(.+, 0\.\d+\)$/);
+
+  // Bounding the board costs the page nothing: it scrolls as every other view
+  // does, past the heading and filters and on to a footer you can still reach.
+  const footer = page.locator(".tasks-footer");
+  await expect(footer).toBeAttached();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollHeight - window.innerHeight,
+    ),
+  ).toBeGreaterThan(0);
+  await page.evaluate(() =>
+    window.scrollTo(0, document.documentElement.scrollHeight),
+  );
+  await expect(footer).toBeInViewport();
 });
 
-test("keeps a column's search and divider in view while its tasks scroll", async ({
+test("holds a column's chrome still while its own tasks scroll", async ({
   page,
   baseURL,
 }) => {
@@ -213,26 +227,64 @@ test("keeps a column's search and divider in view while its tasks scroll", async
   });
   await expect(search).toBeVisible();
 
-  const chrome = page.locator("[data-board-column-header]").first();
+  const column = page.locator("[data-board-column]").filter({
+    has: page.getByRole("heading", { level: 2, name: "In Progress" }),
+  });
+  const chrome = column.locator("[data-board-column-header]");
   // The divider is the edge the tasks scroll into, so it is part of the
-  // column at rest rather than something the scroll position turns on.
-  await expect(chrome).toHaveCSS("border-bottom-width", "1px");
+  // column at rest rather than something a scroll position turns on.
+  const divider = chrome.locator("> :first-child");
+  await expect(divider).toHaveCSS("border-bottom-width", "1px");
 
-  await page.mouse.wheel(0, 800);
-  const appHeader = page.locator(".tasks-app-header").first();
-  await expect
-    .poll(async () => {
-      const [searchBox, chromeBox] = await Promise.all([
-        search.boundingBox(),
-        appHeader.boundingBox(),
-      ]);
-      return searchBox!.y - (chromeBox!.y + chromeBox!.height);
-    })
-    .toBeGreaterThan(0);
+  const measure = () =>
+    column.evaluate((section) => {
+      const round = (n: number) => Math.round(n * 10) / 10;
+      const list = section.querySelector<HTMLElement>(
+        "[data-board-column-header] ~ * [class*='overflow-y-auto']",
+      )!;
+      const rule = section
+        .querySelector("[data-board-column-header]")!
+        .firstElementChild!.getBoundingClientRect();
+      const card = section.querySelector('[draggable="true"]')!;
+      return {
+        scrollTop: list.scrollTop,
+        scrollable: list.scrollHeight > list.clientHeight,
+        // The scroller starts on the rule, so this is 0 at every scroll
+        // position: nothing sits between the two for a task to stop short at.
+        gutter: round(list.getBoundingClientRect().top - rule.bottom),
+        rule: round(rule.bottom),
+        // The room the first task rests in belongs to the scroller, so it
+        // travels with the task rather than holding it off the rule.
+        cardOffset: round(card.getBoundingClientRect().top - rule.bottom),
+        sideInset: round(
+          card.getBoundingClientRect().left -
+            section.getBoundingClientRect().left,
+        ),
+      };
+    });
+
+  const atRest = await measure();
+  expect(atRest.scrollable).toBe(true);
+  expect(atRest.scrollTop).toBe(0);
+  expect(atRest.gutter).toBe(0);
+  // At rest that room matches the inset the cards keep at their sides.
+  expect(atRest.cardOffset).toBe(atRest.sideInset);
+
+  // Scrolling is the column's own, so the page never moves and the chrome
+  // never has to chase it.
+  await column.locator('[draggable="true"]').first().hover();
+  await page.mouse.wheel(0, 400);
+  await expect.poll(async () => (await measure()).scrollTop).toBeGreaterThan(0);
+  const scrolled = await measure();
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  expect(scrolled.rule).toBe(atRest.rule);
+  expect(scrolled.gutter).toBe(0);
+  // The resting room went with the task, up past the rule and out of sight.
+  expect(scrolled.cardOffset).toBeLessThan(0);
   await expect(search).toBeInViewport();
 });
 
-test("keeps a task's icons from painting over the pinned column chrome", async ({
+test("clips a scrolling task at the column's rule, not short of it", async ({
   page,
   baseURL,
 }) => {
@@ -248,36 +300,67 @@ test("keeps a task's icons from painting over the pinned column chrome", async (
       (section) => section.querySelector("h2")?.textContent === "In Progress",
     )!;
     const chrome = column.querySelector("[data-board-column-header]")!;
+    const list = column.querySelector<HTMLElement>(
+      "[class*='overflow-y-auto']",
+    )!;
     const icon = column.querySelector<HTMLElement>('a[aria-label^="Go to"]')!;
+    const card = icon.closest('[draggable="true"]')!;
     const settle = () =>
       new Promise((resolve) =>
         requestAnimationFrame(() => requestAnimationFrame(resolve)),
       );
 
-    // Creep down until a card's link is behind the pinned block, then ask the
-    // browser what is on top of it: a card that paints above the block shows
-    // its icons through an otherwise opaque surface.
-    for (let step = 0; step < 120; step += 1) {
+    // Follow a card link up to the top of the list and past it, in steps small
+    // enough to sample either side of the rule. The card has to keep being
+    // painted and keep taking clicks all the way to the rule — stopping short
+    // of it would leave the strip of dead space this is guarding against —
+    // and to stop at once above it, where the column shows its own chrome.
+    let lastPainted = Infinity;
+    let firstCovered = -Infinity;
+    let flush = Infinity;
+    let ruleBottom = 0;
+    for (let step = 0; step < 400; step += 1) {
       const block = chrome.getBoundingClientRect();
+      const rule = chrome.firstElementChild!.getBoundingClientRect();
+      ruleBottom = rule.bottom;
+      flush = Math.min(flush, list.getBoundingClientRect().top - rule.bottom);
       const rect = icon.getBoundingClientRect();
       const x = rect.left + rect.width / 2;
       const y = rect.top + rect.height / 2;
+      const hit = document.elementFromPoint(x, y);
+      const covered = !hit || !card.contains(hit);
+      if (covered) firstCovered = Math.max(firstCovered, y);
+      else lastPainted = Math.min(lastPainted, y);
       if (y < block.top) break;
-      if (y < block.bottom - 2) {
-        const hit = document.elementFromPoint(x, y);
-        return { behind: true, covered: !!hit && chrome.contains(hit) };
-      }
-      window.scrollBy(0, 12);
+      list.scrollTop += 4;
       await settle();
     }
-    return { behind: false, covered: false };
+    return {
+      // How far the list's own top sits from the rule: flush, so a task runs
+      // right into it.
+      flush: Math.round(flush * 10) / 10,
+      // Where the card stopped being painted, relative to the rule.
+      lastPainted: Math.round((lastPainted - ruleBottom) * 10) / 10,
+      firstCovered: Math.round((firstCovered - ruleBottom) * 10) / 10,
+      // Nothing chases the page: the column clips its own overflow.
+      overflow: getComputedStyle(column).overflow,
+      radius: getComputedStyle(column).borderTopLeftRadius,
+      pageScrolled: window.scrollY,
+    };
   });
 
-  expect(link.behind).toBe(true);
-  expect(link.covered).toBe(true);
+  expect(link.flush).toBe(0);
+  // Painted right up to the rule and no further: the crossover is the rule
+  // itself, within the step the loop scrolls by.
+  expect(link.lastPainted).toBeGreaterThanOrEqual(-1);
+  expect(link.lastPainted).toBeLessThanOrEqual(5);
+  expect(link.firstCovered).toBeLessThanOrEqual(1);
+  expect(link.overflow).toBe("hidden");
+  expect(link.radius).not.toBe("0px");
+  expect(link.pageScrolled).toBe(0);
 });
 
-test("keeps a collapsed board column's header in view", async ({
+test("turns a collapsed board column into a drag landing lane", async ({
   page,
   baseURL,
 }) => {
@@ -297,42 +380,107 @@ test("keeps a collapsed board column's header in view", async ({
     doneColumn.getByRole("button", { name: "Expand “Done”" }),
   ).toBeVisible();
 
-  // Collapsing takes away the cards and narrows the column, but leaves its
-  // full height in place: the heading is all that is left to pin, and a column
-  // that shrank to its own heading would carry it off the top of the board.
+  // At rest, a collapsed status keeps its useful context and search controls,
+  // but not an empty column that happens to retain the board's full height.
   await expect(
     doneColumn.getByRole("button", { name: /^Open / }).first(),
   ).toBeHidden();
-  const [collapsed, expanded] = await Promise.all([
-    doneColumn.boundingBox(),
-    inProgressColumn.boundingBox(),
-  ]);
-  expect(collapsed!.width).toBeLessThan(expanded!.width);
-  expect(collapsed!.height).toBeGreaterThan(400);
-
-  await page.mouse.wheel(0, 800);
-  const heading = doneColumn.locator("[data-board-column-header]");
-  const appHeader = page.locator(".tasks-app-header").first();
-  // A pinned heading rests an inset below the app header, not against it: the
-  // board keeps the top padding it has when the page is scrolled to the top.
-  const inset = await page.evaluate(() =>
-    Number.parseFloat(
-      getComputedStyle(document.querySelector("[data-board-inset]")!)
-        .paddingTop,
+  await expect(
+    doneColumn.getByRole("searchbox", { name: "Search Done tasks" }),
+  ).toBeVisible();
+  await expect(
+    doneColumn.getByText("Finished work that no longer needs action.", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  const [collapsed, expanded, collapsedDivider, expandedDivider] =
+    await Promise.all([
+      doneColumn.boundingBox(),
+      inProgressColumn.boundingBox(),
+      doneColumn
+        .locator("[data-board-column-header] > :first-child")
+        .boundingBox(),
+      inProgressColumn
+        .locator("[data-board-column-header] > :first-child")
+        .boundingBox(),
+    ]);
+  expect(Math.abs(collapsed!.width - expanded!.width)).toBeLessThan(1);
+  // Line the dividers up, not the blocks around them: only a column with
+  // tasks underneath carries the gutter they scroll into.
+  expect(
+    Math.abs(
+      collapsedDivider!.y +
+        collapsedDivider!.height -
+        (expandedDivider!.y + expandedDivider!.height),
     ),
-  );
-  expect(inset).toBeGreaterThan(0);
+  ).toBeLessThan(1);
   await expect
-    .poll(async () => {
-      const [headingBox, chromeBox] = await Promise.all([
-        heading.boundingBox(),
-        appHeader.boundingBox(),
-      ]);
-      return Math.abs(
-        headingBox!.y - (chromeBox!.y + chromeBox!.height) - inset,
+    .poll(async () => (await doneColumn.boundingBox())?.height ?? Infinity)
+    .toBeLessThan(240);
+
+  // As soon as a card is picked up, collapsed statuses become full-height,
+  // named targets. That keeps them easy to reach without leaving dead space
+  // on the board the rest of the time.
+  await inProgressColumn
+    .locator('[draggable="true"]')
+    .first()
+    .evaluate((card) => {
+      card.dispatchEvent(
+        new DragEvent("dragstart", {
+          bubbles: true,
+          dataTransfer: new DataTransfer(),
+        }),
       );
-    })
-    .toBeLessThan(2);
+    });
+  await expect(
+    doneColumn.getByText("Drop in Done", { exact: true }),
+  ).toBeVisible();
+  await expect
+    .poll(async () => (await doneColumn.boundingBox())?.height ?? 0)
+    .toBeGreaterThan(400);
+
+  await inProgressColumn
+    .locator('[draggable="true"]')
+    .first()
+    .evaluate((card) => {
+      card.dispatchEvent(new DragEvent("dragend", { bubbles: true }));
+    });
+  await expect(
+    doneColumn.getByText("Drop in Done", { exact: true }),
+  ).toBeHidden();
+
+  await doneColumn.getByRole("button", { name: "Expand “Done”" }).click();
+  const expandedTasks = doneColumn.locator('[id^="status-column-"] > div');
+  await expect(expandedTasks).toHaveCSS("transition-property", /transform/);
+  await expect(
+    doneColumn.getByRole("button", { name: /^Open / }).first(),
+  ).toBeVisible();
+});
+
+test("expands a collapsed board column when its search begins", async ({
+  page,
+  baseURL,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await enterDemoWorkspace(page, baseURL);
+  await page.goto("/board");
+
+  const doneColumn = page.locator("section").filter({
+    has: page.getByRole("heading", { level: 2, name: "Done" }),
+  });
+  await doneColumn.getByRole("button", { name: "Collapse “Done”" }).click();
+
+  await doneColumn
+    .getByRole("searchbox", { name: "Search Done tasks" })
+    .fill("launch");
+
+  await expect(
+    doneColumn.getByRole("button", { name: "Collapse “Done”" }),
+  ).toBeVisible();
+  await expect(doneColumn).not.toHaveAttribute("data-collapsed", "");
+  const expandedTasks = doneColumn.locator('[id^="status-column-"] > div');
+  await expect(expandedTasks).toHaveCSS("transition-property", /transform/);
+  await expect(expandedTasks).toHaveCSS("transition-duration", "0.3s");
 });
 
 test.describe("mobile workspace navigation", () => {
