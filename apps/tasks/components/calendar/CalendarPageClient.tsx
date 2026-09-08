@@ -46,7 +46,10 @@ import {
   compareTaskItems,
   moveCalendarMonth,
 } from "@/lib/calendar/calendar-view";
-import { GoogleCalendarSettingsModal } from "./GoogleCalendarControls";
+import {
+  GoogleCalendarSettingsModal,
+  GoogleCalendarStatusButton,
+} from "./GoogleCalendarControls";
 import { CalendarGridAgenda } from "./CalendarGridAgenda";
 import { CalendarEventEditorModal } from "./CalendarEventEditorModal";
 import { useCalendarGoogle } from "./useCalendarGoogle";
@@ -406,60 +409,72 @@ export function CalendarPageClient({
           }
           description="Deadlines, important dates, meetings, and time away—one place to see what the team has coming up."
           actions={
-            previewing ? (
-              <Tooltip content="Exit access preview to change the calendar">
-                <Button
-                  size="sm"
-                  className="w-full sm:w-auto"
-                  leftIcon={<FiPlus />}
-                  disabled
-                >
-                  Add to calendar
-                </Button>
-              </Tooltip>
-            ) : (
-              <>
-                {/* Route or dialog, per the profile — see editor-routes.ts. */}
-                {triggers.route && (
-                  <Button.Link
-                    href={`/calendar/event/new?date=${today || `${month}-01`}&from=${encodeURIComponent(returnPath)}`}
-                    size="sm"
-                    className={`w-full ${triggers.routeClassName}`}
-                    leftIcon={<FiPlus />}
-                  >
-                    Add to calendar
-                  </Button.Link>
-                )}
-                {triggers.dialog && (
+            /* The Google control sits with the page actions rather than in the
+               month toolbar: connecting is a workspace action, not a way to
+               filter the month. An owner sees it whether or not Google is
+               connected, since connecting is the thing they came here to do;
+               everyone else only once there is a connection to describe. */
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+              {(googleCanManage ||
+                (googleCanView && googleConnection.connected)) && (
+                <GoogleCalendarStatusButton
+                  configured={googleConfigured}
+                  connection={googleConnection}
+                  loading={googleLoading}
+                  onClick={() => google.setSettingsOpen(true)}
+                />
+              )}
+              {previewing ? (
+                <Tooltip content="Exit access preview to change the calendar">
                   <Button
                     size="sm"
-                    className={triggers.dialogClassName}
+                    className="w-full sm:w-auto"
                     leftIcon={<FiPlus />}
-                    onClick={() => openNew("important")}
+                    disabled
                   >
                     Add to calendar
                   </Button>
-                )}
-              </>
-            )
+                </Tooltip>
+              ) : (
+                <>
+                  {/* Route or dialog, per the profile — see editor-routes.ts. */}
+                  {triggers.route && (
+                    <Button.Link
+                      href={`/calendar/event/new?date=${today || `${month}-01`}&from=${encodeURIComponent(returnPath)}`}
+                      size="sm"
+                      className={`w-full sm:w-auto ${triggers.routeClassName}`}
+                      leftIcon={<FiPlus />}
+                    >
+                      Add to calendar
+                    </Button.Link>
+                  )}
+                  {triggers.dialog && (
+                    <Button
+                      size="sm"
+                      className={triggers.dialogClassName}
+                      leftIcon={<FiPlus />}
+                      onClick={() => openNew("important")}
+                    >
+                      Add to calendar
+                    </Button>
+                  )}
+                </>
+              )}
+            </div>
           }
         >
           <CalendarGridAgenda
             agendaDates={agendaDates}
             calendarSidebarOpen={calendarSidebarOpen}
             days={days}
-            googleCanManage={googleCanManage}
             googleCanView={googleCanView}
-            googleConfigured={googleConfigured}
             googleConnection={googleConnection}
-            googleLoading={googleLoading}
             googleSyncing={googleSyncing}
             initialMonth={initialMonth}
             items={items}
             month={month}
             monthItems={monthItems}
             monthNumber={monthNumber}
-            onOpenGoogleSettings={() => google.setSettingsOpen(true)}
             onOpenNew={(date) => openNew("important", date)}
             onToggleSidebar={toggleCalendarSidebar}
             renderDayItems={renderDayItems}

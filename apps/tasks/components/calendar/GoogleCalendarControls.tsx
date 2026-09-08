@@ -15,11 +15,24 @@ export function GoogleCalendarStatusButton({
   loading: boolean;
   onClick: () => void;
 }) {
+  const state = loading
+    ? "Syncing"
+    : connection.connected
+      ? "Connected"
+      : configured
+        ? "Connect"
+        : "Setup needed";
+
+  // Built on the shared Button rather than styled by hand: it sits beside
+  // "Add to calendar" in the page header, and inheriting the primitive keeps
+  // the radius, height, and uppercase tracking identical to its neighbour for
+  // free. The dot carries the connection state, so the button itself does not
+  // need a colour of its own competing with the primary action next to it.
   return (
-    <button
-      type="button"
+    <Button
+      size="sm"
+      variant="secondary"
       onClick={onClick}
-      className={`inline-flex h-9 items-center gap-2 rounded-full border px-3 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 ${connection.connected ? "border-blue-500/30 bg-blue-500/10 text-blue-800 hover:bg-blue-500/15 focus-visible:ring-blue-500/30 dark:border-blue-400/30 dark:text-blue-200" : "border-black/15 bg-black/[0.035] text-black/65 hover:bg-black/[0.07] focus-visible:ring-black/30 dark:border-white/15 dark:bg-white/[0.06] dark:text-white/65 dark:hover:bg-white/10 dark:focus-visible:ring-white/30"}`}
       aria-label={
         connection.connected
           ? "Google Calendar is connected. Open connection settings."
@@ -27,23 +40,15 @@ export function GoogleCalendarStatusButton({
             ? "Google Calendar is ready to connect. Open connection settings."
             : "Google Calendar needs setup. Open connection settings."
       }
+      leftIcon={
+        <span
+          aria-hidden
+          className={`block h-2 w-2 rounded-full ${connection.connected ? "bg-emerald-500" : "bg-black/30 dark:bg-white/30"}`}
+        />
+      }
     >
-      <span
-        className={`h-2 w-2 rounded-full ${connection.connected ? "bg-emerald-500" : "bg-black/30 dark:bg-white/30"}`}
-        aria-hidden
-      />
-      <FiCalendar aria-hidden />
-      <span>
-        Google ·{" "}
-        {loading
-          ? "Syncing"
-          : connection.connected
-            ? "Connected"
-            : configured
-              ? "Connect"
-              : "Setup needed"}
-      </span>
-    </button>
+      Google · {state}
+    </Button>
   );
 }
 
