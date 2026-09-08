@@ -145,8 +145,11 @@ test user.
 ## Connect and grant access
 
 1. Deploy the environment variables and sign in to Tasks as an app owner.
-2. Open **Calendar** and choose **Connect workspace calendar**. Sign in with the
-   Google account that owns the calendar and approve the requested access.
+2. Open **Calendar** and click the **Google · Connect** pill in the month
+   toolbar, then **Continue with Google** in the dialog. Sign in with the
+   account that owns the calendar and approve the requested access. The pill
+   is the only entry point: Admin reports whether the credentials are present,
+   but nothing there starts the grant.
 3. Open **Access**, create or edit an access group, and enable **View the
    workspace Google Calendar** for each group that should see Google events.
 

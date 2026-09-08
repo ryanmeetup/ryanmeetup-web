@@ -448,14 +448,18 @@ export function CalendarPageClient({
             agendaDates={agendaDates}
             calendarSidebarOpen={calendarSidebarOpen}
             days={days}
+            googleCanManage={googleCanManage}
             googleCanView={googleCanView}
+            googleConfigured={googleConfigured}
             googleConnection={googleConnection}
+            googleLoading={googleLoading}
             googleSyncing={googleSyncing}
             initialMonth={initialMonth}
             items={items}
             month={month}
             monthItems={monthItems}
             monthNumber={monthNumber}
+            onOpenGoogleSettings={() => google.setSettingsOpen(true)}
             onOpenNew={(date) => openNew("important", date)}
             onToggleSidebar={toggleCalendarSidebar}
             renderDayItems={renderDayItems}

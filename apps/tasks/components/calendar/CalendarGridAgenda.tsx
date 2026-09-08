@@ -21,6 +21,7 @@ import type { CalendarItem } from "@/lib/calendar/calendar-types";
 import { itemsOnDate } from "@/lib/calendar/calendar-types";
 import { moveCalendarMonth } from "@/lib/calendar/calendar-view";
 import type { GoogleCalendarConnection } from "@/lib/calendar/google-calendar-types";
+import { GoogleCalendarStatusButton } from "./GoogleCalendarControls";
 
 const monthFormatter = new Intl.DateTimeFormat("en-US", {
   month: "long",
@@ -77,14 +78,18 @@ export function CalendarGridAgenda({
   agendaDates,
   calendarSidebarOpen,
   days,
+  googleCanManage,
   googleCanView,
+  googleConfigured,
   googleConnection,
+  googleLoading,
   googleSyncing,
   initialMonth,
   items,
   month,
   monthItems,
   monthNumber,
+  onOpenGoogleSettings,
   onOpenNew,
   onToggleSidebar,
   renderDayItems,
@@ -97,14 +102,18 @@ export function CalendarGridAgenda({
   agendaDates: string[];
   calendarSidebarOpen: boolean;
   days: string[];
+  googleCanManage: boolean;
   googleCanView: boolean;
+  googleConfigured: boolean;
   googleConnection: GoogleCalendarConnection;
+  googleLoading: boolean;
   googleSyncing: boolean;
   initialMonth: string;
   items: CalendarItem[];
   month: string;
   monthItems: CalendarItem[];
   monthNumber: number;
+  onOpenGoogleSettings: () => void;
   onOpenNew: (date: string) => void;
   onToggleSidebar: () => void;
   renderDayItems: (
@@ -155,6 +164,22 @@ export function CalendarGridAgenda({
               its own width. From `sm` up they sit with the rest, right of the
               month. */}
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2 sm:flex sm:flex-wrap sm:justify-end">
+            {/* An owner sees this whether or not Google is connected, because
+                connecting is the thing they came here to do. Everyone else
+                only sees it once there is a connection to describe. The pill
+                takes its own row on a phone; `col-span-2` is inert once the
+                wrapper becomes a flex row at `sm`. */}
+            {(googleCanManage ||
+              (googleCanView && googleConnection.connected)) && (
+              <span className="col-span-2 justify-self-start sm:col-span-1">
+                <GoogleCalendarStatusButton
+                  configured={googleConfigured}
+                  connection={googleConnection}
+                  loading={googleLoading}
+                  onClick={onOpenGoogleSettings}
+                />
+              </span>
+            )}
             <DropdownSelect
               className="h-9"
               label="Show"
