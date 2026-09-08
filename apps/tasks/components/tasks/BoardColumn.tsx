@@ -152,13 +152,6 @@ export function BoardColumn({
             : `Drop in ${status.name}`}
         </div>
       )}
-      {/* A list that scrolls needs an edge at both ends: the header's divider
-          above, this rule below. Without it the last task clips into nothing.
-          Like the divider, it sits flush against the list — the gutter that
-          holds a task off it belongs to the scroller, not to this rule. */}
-      {!collapsed && (
-        <div className="shrink-0 border-t border-black/10 pb-3 sm:pb-4 dark:border-white/10" />
-      )}
     </section>
   );
 }

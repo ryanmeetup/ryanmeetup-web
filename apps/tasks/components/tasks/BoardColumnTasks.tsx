@@ -22,8 +22,8 @@ export function BoardColumnTasks({
 }) {
   return (
     // The board's own vertical scroller: one per column, running flush from
-    // the rule above it to the rule below. The gutter that holds the first
-    // and last task off those rules is inside the scroller, on the content —
+    // the header divider to the column's rounded bottom edge. The gutter
+    // around the first and last task is inside the scroller, on the content —
     // so it is room the tasks rest in and scroll away with, and a task on its
     // way past is clipped at the rule itself rather than short of it. The
     // side padding is split with the row below to leave a focus ring room

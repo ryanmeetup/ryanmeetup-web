@@ -278,6 +278,10 @@ test("holds a column's chrome still while its own tasks scroll", async ({
         // The scroller starts on the rule, so this is 0 at every scroll
         // position: nothing sits between the two for a task to stop short at.
         gutter: round(list.getBoundingClientRect().top - rule.bottom),
+        bottomGutter: round(
+          section.getBoundingClientRect().bottom -
+            list.getBoundingClientRect().bottom,
+        ),
         rule: round(rule.bottom),
         // The room the first task rests in belongs to the scroller, so it
         // travels with the task rather than holding it off the rule.
@@ -293,6 +297,7 @@ test("holds a column's chrome still while its own tasks scroll", async ({
   expect(atRest.scrollable).toBe(true);
   expect(atRest.scrollTop).toBe(0);
   expect(atRest.gutter).toBe(0);
+  expect(atRest.bottomGutter).toBe(0);
   // At rest that room matches the inset the cards keep at their sides.
   expect(atRest.cardOffset).toBe(atRest.sideInset);
 
@@ -305,6 +310,7 @@ test("holds a column's chrome still while its own tasks scroll", async ({
   expect(await page.evaluate(() => window.scrollY)).toBe(0);
   expect(scrolled.rule).toBe(atRest.rule);
   expect(scrolled.gutter).toBe(0);
+  expect(scrolled.bottomGutter).toBe(0);
   // The resting room went with the task, up past the rule and out of sight.
   expect(scrolled.cardOffset).toBeLessThan(0);
   await expect(search).toBeInViewport();
