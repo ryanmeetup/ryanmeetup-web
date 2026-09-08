@@ -23,6 +23,8 @@ export async function POST(request: Request) {
       requested_access_mode: parsed.data.accessMode,
       requested_group_ids: parsed.data.accessGroupIds,
       requested_status: parsed.data.status,
+      requested_start_date: parsed.data.startDate,
+      requested_due_date: parsed.data.dueDate,
     },
   );
   if (error)

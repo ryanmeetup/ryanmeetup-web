@@ -80,6 +80,7 @@ import {
   type ProjectAccessGroup,
 } from "./ProjectAccessFields";
 import { ProjectStatusField } from "./ProjectStatusField";
+import { ProjectTimelineFields } from "./ProjectTimelineFields";
 
 type ProjectsModalOptions = {
   embedded?: boolean;
@@ -211,8 +212,16 @@ export function ProjectsModal({
     useState<Project["access_mode"]>("owners");
   const [newAccessGroupIds, setNewAccessGroupIds] = useState<string[]>([]);
   const [newStatus, setNewStatus] = useState(defaultProjectStatus);
+  const [newStartDate, setNewStartDate] = useState("");
+  const [newDueDate, setNewDueDate] = useState("");
   const [editingStatus, setEditingStatus] = useState(
     directEditProject?.status ?? defaultProjectStatus,
+  );
+  const [editingStartDate, setEditingStartDate] = useState(
+    directEditProject?.start_date ?? "",
+  );
+  const [editingDueDate, setEditingDueDate] = useState(
+    directEditProject?.due_date ?? "",
   );
   const accessState = useResourceAccessState<
     ProjectAccessGroup,
@@ -365,6 +374,10 @@ export function ProjectsModal({
       toast.error("Choose at least one access group.");
       return;
     }
+    if (newStartDate && newDueDate && newDueDate < newStartDate) {
+      toast.error("The due date cannot fall before the start date.");
+      return;
+    }
     setCreating(true);
     try {
       let project: Project = {
@@ -375,6 +388,8 @@ export function ProjectsModal({
         created_by: data.currentProfile.id,
         archived_at: null,
         created_at: new Date().toISOString(),
+        start_date: newStartDate || null,
+        due_date: newDueDate || null,
         status: newStatus,
         access_mode: newAccessMode,
       };
@@ -389,6 +404,8 @@ export function ProjectsModal({
             accessGroupIds:
               newAccessMode === "restricted" ? newAccessGroupIds : [],
             status: newStatus,
+            startDate: newStartDate || null,
+            dueDate: newDueDate || null,
           })
         ).project!;
       if (!demoMode && attachments.length > 0) {
@@ -416,6 +433,8 @@ export function ProjectsModal({
       setNewAccessMode("owners");
       setNewAccessGroupIds([]);
       setNewStatus(defaultProjectStatus);
+      setNewStartDate("");
+      setNewDueDate("");
       toast.success(`${project.name} created.`);
       await onCreated?.(project);
       if (createOnly) setOpen?.(false);
@@ -440,6 +459,14 @@ export function ProjectsModal({
       toast.error("Choose at least one access group.");
       return;
     }
+    if (
+      editingStartDate &&
+      editingDueDate &&
+      editingDueDate < editingStartDate
+    ) {
+      toast.error("The due date cannot fall before the start date.");
+      return;
+    }
     const currentOwnerIds = data.projectOwners
       .filter((item) => item.project_id === project.id)
       .map((item) => item.profile_id);
@@ -453,6 +480,8 @@ export function ProjectsModal({
           description: nextDescription,
           links: editingLinks,
           status: editingStatus,
+          startDate: editingStartDate || null,
+          dueDate: editingDueDate || null,
           ...(ownersChanged ? { ownerIds: editingOwnerIds } : {}),
         });
       if (
@@ -471,6 +500,8 @@ export function ProjectsModal({
         description: nextDescription,
         links: editingLinks,
         status: editingStatus,
+        start_date: editingStartDate || null,
+        due_date: editingDueDate || null,
         access_mode: editingAccessMode,
       };
       onProjectUpdated?.(updatedProject);
@@ -524,6 +555,8 @@ export function ProjectsModal({
     );
     accessState.begin(project.access_mode);
     setEditingStatus(project.status);
+    setEditingStartDate(project.start_date ?? "");
+    setEditingDueDate(project.due_date ?? "");
     void loadProjectAccess(project.id);
   }
 
@@ -854,6 +887,13 @@ export function ProjectsModal({
             onChange={setNewStatus}
             disabled={creating}
           />
+          <ProjectTimelineFields
+            startDate={newStartDate}
+            dueDate={newDueDate}
+            onStartDateChange={setNewStartDate}
+            onDueDateChange={setNewDueDate}
+            disabled={creating}
+          />
           <FormSection
             title="Who can use it"
             description="Project owners always retain access. Members of selected groups can see the project and work on its tasks."
@@ -1122,6 +1162,8 @@ export function ProjectsModal({
             editingName.trim() !== project.name ||
             editingDescription.trim() !== (project.description ?? "") ||
             editingStatus !== project.status ||
+            editingStartDate !== (project.start_date ?? "") ||
+            editingDueDate !== (project.due_date ?? "") ||
             JSON.stringify(editingLinks) !==
               JSON.stringify(project.links ?? []) ||
             supportingDetailsChanged ||
@@ -1195,6 +1237,13 @@ export function ProjectsModal({
                           <ProjectStatusField
                             value={editingStatus}
                             onChange={setEditingStatus}
+                            disabled={renaming}
+                          />
+                          <ProjectTimelineFields
+                            startDate={editingStartDate}
+                            dueDate={editingDueDate}
+                            onStartDateChange={setEditingStartDate}
+                            onDueDateChange={setEditingDueDate}
                             disabled={renaming}
                           />
                           <FormSection

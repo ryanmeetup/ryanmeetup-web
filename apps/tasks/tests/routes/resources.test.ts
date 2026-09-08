@@ -199,6 +199,8 @@ describe("project route contracts", () => {
       requested_access_mode: "owners",
       requested_group_ids: [],
       requested_status: "active",
+      requested_start_date: null,
+      requested_due_date: null,
     });
   });
 

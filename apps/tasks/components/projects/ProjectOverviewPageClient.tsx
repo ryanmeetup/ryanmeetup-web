@@ -67,6 +67,7 @@ import {
 } from "@/lib/resources/project-overview";
 import { projectPath } from "@/lib/resources/project-route";
 import { projectStatusDetails } from "@/lib/resources/project-status";
+import { projectTimeline } from "@/lib/resources/project-timeline";
 import type {
   ProjectAttachment,
   Project,
@@ -75,6 +76,20 @@ import { taskPath } from "@/lib/tasks/task-key";
 import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import { ProjectFavoriteButton } from "./ProjectFavoriteButton";
 import { ProjectsModal } from "./ProjectsModal";
+import { ProjectTimelineSummary } from "./ProjectTimelineSummary";
+
+/**
+ * Project-level chips sit beside the title and describe the project itself,
+ * so they share the status chip's shape rather than the neighbouring buttons'.
+ */
+const chipClassName =
+  "inline-flex items-center gap-2 rounded-full border border-black/10 bg-black/[0.035] px-2.5 py-1 font-sans text-[11px] font-semibold uppercase tracking-[0.12em] dark:border-white/10 dark:bg-white/[0.07]";
+
+const dueChipToneClass = {
+  danger: "text-red-700 dark:text-red-300",
+  warning: "text-amber-700 dark:text-amber-300",
+  neutral: "text-black/65 dark:text-white/70",
+} as const;
 
 function SectionHeading({
   action,
@@ -187,6 +202,7 @@ export function ProjectOverviewPageClient({
   const openNote = notes.find((note) => note.id === openNoteId) ?? null;
   const files = attachments.filter((item) => item.kind === "file");
   const status = projectStatusDetails(project.status);
+  const timeline = projectTimeline(project);
   const isFavorite = favorites.isFavorite(project.id);
   const canOpenCalendar = canViewWorkspaceArea(
     data.accessibleAreas,
@@ -228,13 +244,26 @@ export function ProjectOverviewPageClient({
             className="border-b border-black/10 pb-6 dark:border-white/10 sm:items-center"
             title={project.name}
             kicker={
-              <span className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-black/[0.035] px-2.5 py-1 font-sans text-[11px] font-semibold uppercase tracking-[0.12em] text-black/65 dark:border-white/10 dark:bg-white/[0.07] dark:text-white/70">
+              <span className="flex flex-wrap items-center gap-2">
                 <span
-                  aria-hidden
-                  className="h-2 w-2 rounded-full"
-                  style={{ backgroundColor: status.color }}
-                />
-                {status.label}
+                  className={`${chipClassName} text-black/65 dark:text-white/70`}
+                >
+                  <span
+                    aria-hidden
+                    className="h-2 w-2 rounded-full"
+                    style={{ backgroundColor: status.color }}
+                  />
+                  {status.label}
+                </span>
+                {timeline.due && (
+                  <span
+                    className={`${chipClassName} ${dueChipToneClass[timeline.due.tone]}`}
+                  >
+                    <FiCalendar aria-hidden className="h-3 w-3" />
+                    {timeline.due.daysRemaining < 0 ? "Overdue" : "Due"}{" "}
+                    {formatCalendarDate(timeline.due.date)}
+                  </span>
+                )}
               </span>
             }
             titleActions={
@@ -536,6 +565,16 @@ export function ProjectOverviewPageClient({
               data-testid="project-overview-sidebar"
               className="min-w-0 space-y-6 xl:sticky xl:top-24"
             >
+              <Card size="none" className="overflow-hidden">
+                <SectionHeading
+                  title="Timeline"
+                  icon={<FiClock aria-hidden />}
+                />
+                <div className="p-4 sm:p-5">
+                  <ProjectTimelineSummary project={project} />
+                </div>
+              </Card>
+
               <Card size="none" className="overflow-hidden">
                 <SectionHeading
                   title="Project team"

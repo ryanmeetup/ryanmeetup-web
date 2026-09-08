@@ -33,6 +33,10 @@ export type Project = {
   created_by: string;
   archived_at: string | null;
   created_at: string;
+  /** The day work began. Null reads as `created_at`. */
+  start_date: string | null;
+  /** The day the work is meant to land. Never earlier than `start_date`. */
+  due_date: string | null;
   status: ProjectStatus;
   access_mode: "owners" | "open" | "restricted";
 };

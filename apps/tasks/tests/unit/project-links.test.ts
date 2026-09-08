@@ -87,6 +87,62 @@ describe("ensureHttpUrlScheme", () => {
     ).toBeNull();
   });
 
+  it("takes optional project dates and keeps them in order", () => {
+    const project = {
+      name: "Website refresh",
+      description: "Give the website a fresh coat of Ryan.",
+      links: [],
+      ownerIds: ["7b27db83-577d-4de1-b4ca-9f088832f25b"],
+      accessMode: "owners",
+      accessGroupIds: [],
+    };
+    expect(projectCreateSchema(project)).toMatchObject({
+      startDate: null,
+      dueDate: null,
+    });
+    expect(
+      projectCreateSchema({
+        ...project,
+        startDate: "2026-01-15",
+        dueDate: "2026-06-30",
+      }),
+    ).toMatchObject({ startDate: "2026-01-15", dueDate: "2026-06-30" });
+    expect(
+      projectCreateSchema({ ...project, startDate: "", dueDate: null }),
+    ).toMatchObject({ startDate: null, dueDate: null });
+    expect(
+      projectCreateSchema({
+        ...project,
+        startDate: "2026-06-30",
+        dueDate: "2026-01-15",
+      }),
+    ).toBeNull();
+    expect(
+      projectCreateSchema({ ...project, dueDate: "2026-02-31" }),
+    ).toBeNull();
+    expect(
+      projectCreateSchema({ ...project, dueDate: "30/06/2026" }),
+    ).toBeNull();
+  });
+
+  it("leaves project dates alone when a patch does not send them", () => {
+    const id = "7b27db83-577d-4de1-b4ca-9f088832f25b";
+    expect(projectPatchSchema({ id, name: "Renamed" })).toMatchObject({
+      startDate: undefined,
+      dueDate: undefined,
+    });
+    expect(projectPatchSchema({ id, dueDate: null })).toMatchObject({
+      dueDate: null,
+    });
+    expect(
+      projectPatchSchema({
+        id,
+        startDate: "2026-06-30",
+        dueDate: "2026-01-15",
+      }),
+    ).toBeNull();
+  });
+
   it("normalizes and validates category links through the same API boundary", () => {
     const ownerId = "7b27db83-577d-4de1-b4ca-9f088832f25b";
     expect(

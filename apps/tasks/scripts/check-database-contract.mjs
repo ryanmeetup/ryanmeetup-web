@@ -126,4 +126,21 @@ if (!contactMethodsResponse.ok) {
   process.exit(1);
 }
 
+const projectDatesResponse = await fetch(
+  `${url}/rest/v1/projects?select=start_date,due_date&limit=0`,
+  {
+    headers: {
+      apikey: secret,
+      authorization: `Bearer ${secret}`,
+    },
+    signal: AbortSignal.timeout(15_000),
+  },
+);
+if (!projectDatesResponse.ok) {
+  console.error(
+    "Database contract preflight failed: project start and due dates are missing.",
+  );
+  process.exit(1);
+}
+
 console.log(`Database contract preflight passed for ${projectRef}.`);
