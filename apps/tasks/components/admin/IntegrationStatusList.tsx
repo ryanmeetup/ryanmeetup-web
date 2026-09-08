@@ -265,19 +265,19 @@ export function IntegrationStatusList({
               ) : null}
 
               <AnimatedCollapse id={panelId} open={open}>
-                <dl className="space-y-1.5 border-t border-black/[0.07] px-4 py-3 pl-5 dark:border-white/[0.07] sm:pl-6">
+                <dl className="grid grid-cols-[auto_max-content_minmax(0,1fr)_auto] items-baseline gap-x-2 gap-y-1.5 border-t border-black/[0.07] px-4 py-3 pl-5 dark:border-white/[0.07] sm:pl-6">
                   {integration.facts.map((fact) => {
                     const FactIcon = factIcon[fact.kind];
                     return (
                       <div
                         key={`${fact.label}-${fact.source}`}
-                        className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm"
+                        className="contents text-sm"
                       >
                         <FactIcon
                           aria-hidden
                           className="h-3.5 w-3.5 shrink-0 translate-y-0.5 text-black/30 dark:text-white/30"
                         />
-                        <dt className="w-32 shrink-0 text-xs uppercase tracking-[0.12em] text-black/45 dark:text-white/45">
+                        <dt className="whitespace-nowrap text-xs uppercase tracking-[0.12em] text-black/45 dark:text-white/45">
                           {fact.label}
                         </dt>
                         <dd
@@ -289,14 +289,14 @@ export function IntegrationStatusList({
                         >
                           {fact.value ?? "Not set"}
                         </dd>
-                        <code className={`ml-auto ${sourceBadge}`}>
+                        <code className={`justify-self-end ${sourceBadge}`}>
                           {fact.source}
                         </code>
                       </div>
                     );
                   })}
                   {integration.action ? (
-                    <div className="pt-3">
+                    <div className="col-span-full pt-3">
                       <Button
                         type="button"
                         variant="secondary"
