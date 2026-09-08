@@ -132,7 +132,7 @@ export function GoogleCalendarSettingsModal({
               loading={disconnecting}
               onClick={onDisconnect}
             >
-              Disconnect Google Calendar
+              Disconnect calendar
             </Button>
           ) : !configured ? (
             <Button.Link
