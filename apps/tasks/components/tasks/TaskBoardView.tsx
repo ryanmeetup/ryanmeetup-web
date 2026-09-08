@@ -6,6 +6,7 @@ import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import { TaskBoardCard } from "./TaskBoardCard";
 import { BoardColumn } from "./BoardColumn";
 import type { TaskBoardDropTarget } from "@/hooks/useTaskBoardDrag";
+import { useBoardViewportHeight } from "@/hooks/useBoardViewportHeight";
 
 function indexByTask<T extends { task_id: string }>(rows: T[]) {
   const index = new Map<string, T[]>();
@@ -50,6 +51,7 @@ export function TaskBoardView({
   onCreate: (statusId: string) => void;
   onOpen: (task: Task) => void;
 }) {
+  useBoardViewportHeight(scrollRef);
   const model = useMemo(() => {
     const profiles = new Map(data.profiles.map((item) => [item.id, item]));
     const categories = new Map(data.categories.map((item) => [item.id, item]));
@@ -113,17 +115,13 @@ export function TaskBoardView({
   };
 
   return (
-    // The board takes a screen of its own and scrolls sideways only: each
-    // column takes that height and scrolls its own tasks within it, so no
-    // heading has to chase the page. The height is the viewport less the
-    // fixed header above it and the page's bottom padding below — a bound the
-    // columns can scroll against, rather than the room left under this page's
-    // heading and filters, which would leave them a fraction of a screen. The
-    // page itself scrolls as every other view does: past the heading and
-    // filters, on to the board at its full height, and down to the footer.
+    // Once scrolled up to the toolbar's outside inset, the board fills the
+    // remaining viewport. Its task lists scroll independently, while the
+    // page still scrolls to reach the heading and filters above the board.
     <div
       ref={scrollRef}
-      className="-mx-4 flex min-h-[28rem] flex-1 flex-nowrap items-stretch gap-3 overflow-x-auto overscroll-x-contain px-4 scroll-px-4 sm:-mx-6 sm:gap-4 sm:px-6 sm:scroll-px-6 lg:-mx-8 lg:h-[calc(100dvh-6rem)] lg:min-h-0 lg:flex-none lg:px-8 lg:scroll-px-8"
+      data-board-scroller=""
+      className="-mx-4 flex h-[calc(100dvh-var(--board-top-inset,6rem))] min-h-80 flex-none flex-nowrap items-stretch gap-3 overflow-x-auto overscroll-x-contain px-4 scroll-px-4 sm:-mx-6 sm:gap-4 sm:px-6 sm:scroll-px-6 lg:-mx-8 lg:px-8 lg:scroll-px-8"
     >
       {statuses.map((status) => (
         <BoardColumn

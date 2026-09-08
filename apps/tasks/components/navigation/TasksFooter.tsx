@@ -27,7 +27,7 @@ export function TasksFooter({ inShell = false }: { inShell?: boolean }) {
 
   const signedOut =
     signedOutRoutes.has(pathname) || pathname.startsWith("/auth/");
-  if (inShell === signedOut) return null;
+  if (inShell === signedOut || pathname === "/board") return null;
 
   const socialLinks: SiteFooterLink[] = instance.footerSocials.map(
     ({ platform, url }) => ({

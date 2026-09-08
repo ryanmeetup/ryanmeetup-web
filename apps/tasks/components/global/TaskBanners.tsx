@@ -11,7 +11,10 @@ export function TaskBanners({
   preview?: AccessPreview;
 }) {
   return (
-    <div className="sticky top-[6.5rem] z-10 sm:top-16">
+    <div
+      data-workspace-banners=""
+      className="sticky top-[6.5rem] z-10 sm:top-16"
+    >
       {demoMode ? <DemoBanner /> : <InstanceBanner />}
       <AccessPreviewBanner preview={preview} />
     </div>

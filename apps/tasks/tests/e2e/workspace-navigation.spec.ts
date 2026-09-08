@@ -188,10 +188,10 @@ test("aligns board column searches across description lengths", async ({
   expect(Math.max(...topPositions) - Math.min(...topPositions)).toBeLessThan(1);
 });
 
-test("gives the board a screen of its own without taking the page's scroll", async ({
+test("fills the available viewport without a board footer", async ({
   page,
   baseURL,
-}) => {
+}, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.addInitScript(() => localStorage.setItem("theme", "light"));
   await enterDemoWorkspace(page, baseURL);
@@ -209,11 +209,6 @@ test("gives the board a screen of its own without taking the page's scroll", asy
   ]);
   expect(boardBox).not.toBeNull();
   expect(columnBox).not.toBeNull();
-  // Each column holds its own scroller, so the board has to be given a height
-  // rather than growing to one — a screen less the fixed header above it and
-  // the page's own bottom padding below, not the room left under the heading
-  // and filters. The column takes all of that.
-  expect(Math.round(boardBox!.height)).toBe(1000 - 64 - 32);
   expect(
     Math.abs(
       columnBox!.y + columnBox!.height - (boardBox!.y + boardBox!.height),
@@ -225,10 +220,67 @@ test("gives the board a screen of its own without taking the page's scroll", asy
   );
   expect(columnBackground).not.toMatch(/^rgba\(.+, 0\.\d+\)$/);
 
-  // Bounding the board costs the page nothing: it scrolls as every other view
-  // does, past the heading and filters and on to a footer you can still reach.
   const footer = page.locator(".tasks-footer");
-  await expect(footer).toBeAttached();
+  await expect(footer).toHaveCount(0);
+  // Resize the same mounted board across the mobile and desktop boundaries.
+  // Align its top with the toolbar + notices + outside page gap, then check
+  // the visible column extends all the way down to the viewport edge.
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 1024, height: 768 },
+    { width: 1280, height: 900 },
+    { width: 1536, height: 1100 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await expect
+      .poll(async () =>
+        boardScroller.evaluate((board) => {
+          const header = document.querySelector(".tasks-app-header")!;
+          const notices = document.querySelector("[data-workspace-banners]")!;
+          const gap = parseFloat(
+            getComputedStyle(board.closest("[data-board-page]")!).paddingTop,
+          );
+          const top =
+            header.getBoundingClientRect().height +
+            notices.getBoundingClientRect().height +
+            gap;
+          return Math.abs(
+            board.getBoundingClientRect().height - (window.innerHeight - top),
+          );
+        }),
+      )
+      .toBeLessThan(1);
+    await boardScroller.evaluate((board) => {
+      const inset = parseFloat(
+        getComputedStyle(board).getPropertyValue("--board-top-inset"),
+      );
+      window.scrollBy(0, board.getBoundingClientRect().top - inset);
+    });
+    await expect
+      .poll(async () =>
+        boardScroller.evaluate((board) =>
+          Math.abs(board.getBoundingClientRect().bottom - window.innerHeight),
+        ),
+      )
+      .toBeLessThan(1);
+    const visibleColumn = page.locator("[data-board-column]").first();
+    const list = visibleColumn.locator("[class*='overflow-y-auto']");
+    expect(
+      Math.abs(
+        (await list.boundingBox())!.y +
+          (await list.boundingBox())!.height -
+          viewport.height,
+      ),
+    ).toBeLessThan(1);
+    await page.evaluate(
+      (dark) => document.documentElement.classList.toggle("dark", dark),
+      viewport.width >= 1280,
+    );
+    await page.screenshot({
+      path: testInfo.outputPath(`board-${viewport.width}.png`),
+      animations: "disabled",
+    });
+  }
   expect(
     await page.evaluate(
       () => document.documentElement.scrollHeight - window.innerHeight,
@@ -237,7 +289,17 @@ test("gives the board a screen of its own without taking the page's scroll", asy
   await page.evaluate(() =>
     window.scrollTo(0, document.documentElement.scrollHeight),
   );
-  await expect(footer).toBeInViewport();
+  await expect(footer).toHaveCount(0);
+  await page
+    .locator("[data-workspace-sidebar]")
+    .getByRole("link", { name: "Contacts", exact: true })
+    .click();
+  await expect(footer).toHaveCount(1);
+  await page
+    .locator("[data-workspace-sidebar]")
+    .getByRole("link", { name: "Tasks", exact: true })
+    .click();
+  await expect(footer).toHaveCount(0);
 });
 
 test("holds a column's chrome still while its own tasks scroll", async ({
