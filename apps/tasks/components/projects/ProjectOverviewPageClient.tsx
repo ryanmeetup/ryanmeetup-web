@@ -107,6 +107,31 @@ function SectionHeading({
   );
 }
 
+/**
+ * A card can hold more than one list, so each group announces itself under the
+ * card's own heading rather than being split into a separate card.
+ */
+function GroupHeading({
+  action,
+  divider,
+  label,
+}: {
+  action?: React.ReactNode;
+  divider?: boolean;
+  label: string;
+}) {
+  return (
+    <div
+      className={`flex items-center gap-3 border-b border-black/10 bg-black/[0.02] px-4 py-2.5 dark:border-white/10 dark:bg-white/[0.025] sm:px-5 ${divider ? "border-t" : ""}`}
+    >
+      <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-black/50 dark:text-white/50">
+        {label}
+      </h3>
+      {action && <div className="ml-auto">{action}</div>}
+    </div>
+  );
+}
+
 export function ProjectOverviewPageClient({
   initialData,
   projectId,
@@ -358,10 +383,13 @@ export function ProjectOverviewPageClient({
           </section>
 
           <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(20rem,1fr)]">
-            <div className="min-w-0 space-y-6">
+            <div
+              data-testid="project-overview-main"
+              className="min-w-0 space-y-6"
+            >
               <Card size="none" className="overflow-hidden">
                 <SectionHeading
-                  title="Needs attention"
+                  title="Attention & dates"
                   icon={<FiAlertCircle aria-hidden />}
                   action={
                     !data.accessPreview ? (
@@ -376,6 +404,7 @@ export function ProjectOverviewPageClient({
                     ) : undefined
                   }
                 />
+                <GroupHeading label="Needs attention" />
                 {attention.length ? (
                   <ul className="divide-y divide-black/10 dark:divide-white/10">
                     {attention.map(({ task, reason, tone }) => (
@@ -418,7 +447,7 @@ export function ProjectOverviewPageClient({
                     ))}
                   </ul>
                 ) : (
-                  <div className="px-5 py-8">
+                  <>
                     <EmptyState
                       variant="plain"
                       message={
@@ -428,7 +457,7 @@ export function ProjectOverviewPageClient({
                       }
                     />
                     {!data.accessPreview && tasks.length === 0 && (
-                      <div className="mt-4 flex justify-center">
+                      <div className="flex justify-center pb-8">
                         <Button
                           size="sm"
                           leftIcon={<FiPlus aria-hidden />}
@@ -438,7 +467,51 @@ export function ProjectOverviewPageClient({
                         </Button>
                       </div>
                     )}
-                  </div>
+                  </>
+                )}
+                <GroupHeading
+                  divider
+                  label="Next 90 days"
+                  action={
+                    canOpenCalendar ? (
+                      <CardAction.Link
+                        href={withAccessPreview(
+                          "/calendar",
+                          data.accessPreview,
+                        )}
+                      >
+                        Calendar
+                      </CardAction.Link>
+                    ) : undefined
+                  }
+                />
+                {upcoming.length ? (
+                  <ul className="divide-y divide-black/10 dark:divide-white/10">
+                    {upcoming.map((item) => (
+                      <li key={item.id}>
+                        {item.href ? (
+                          <Link
+                            href={withAccessPreview(
+                              item.href,
+                              data.accessPreview,
+                            )}
+                            className="group flex gap-3 px-4 py-3.5 transition hover:bg-black/[0.025] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/30 dark:hover:bg-white/[0.035] dark:focus-visible:ring-white/40 sm:px-5"
+                          >
+                            <UpcomingDate item={item} />
+                          </Link>
+                        ) : (
+                          <div className="flex gap-3 px-4 py-3.5 sm:px-5">
+                            <UpcomingDate item={item} />
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <EmptyState
+                    variant="plain"
+                    message="No project dates in the next 90 days."
+                  />
                 )}
               </Card>
 
@@ -606,53 +679,6 @@ export function ProjectOverviewPageClient({
                     </p>
                   )}
                 </div>
-              </Card>
-
-              <Card size="none" className="overflow-hidden">
-                <SectionHeading
-                  title="Upcoming dates"
-                  icon={<FiCalendar aria-hidden />}
-                  action={
-                    canOpenCalendar ? (
-                      <CardAction.Link
-                        href={withAccessPreview(
-                          "/calendar",
-                          data.accessPreview,
-                        )}
-                      >
-                        Calendar
-                      </CardAction.Link>
-                    ) : undefined
-                  }
-                />
-                {upcoming.length ? (
-                  <ul className="divide-y divide-black/10 dark:divide-white/10">
-                    {upcoming.map((item) => (
-                      <li key={item.id}>
-                        {item.href ? (
-                          <Link
-                            href={withAccessPreview(
-                              item.href,
-                              data.accessPreview,
-                            )}
-                            className="group flex gap-3 px-4 py-3.5 transition hover:bg-black/[0.025] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/30 dark:hover:bg-white/[0.035] dark:focus-visible:ring-white/40 sm:px-5"
-                          >
-                            <UpcomingDate item={item} />
-                          </Link>
-                        ) : (
-                          <div className="flex gap-3 px-4 py-3.5 sm:px-5">
-                            <UpcomingDate item={item} />
-                          </div>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <EmptyState
-                    variant="plain"
-                    message="No project dates in the next 90 days."
-                  />
-                )}
               </Card>
 
               <ProjectContextCard

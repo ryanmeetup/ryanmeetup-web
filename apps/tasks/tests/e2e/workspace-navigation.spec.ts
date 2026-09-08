@@ -67,7 +67,13 @@ test("opens a project overview from the sidebar", async ({ page, baseURL }) => {
     page.getByRole("heading", { level: 1, name: /Website Refresh/ }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { level: 2, name: "Needs attention" }),
+    page.getByRole("heading", { level: 2, name: "Attention & dates" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 3, name: "Needs attention" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 3, name: "Next 90 days" }),
   ).toBeVisible();
   await expect(
     page.getByRole("heading", { level: 2, name: "Progress by status" }),
@@ -135,10 +141,30 @@ test("keeps project details in view while the overview scrolls", async ({
   await page.goto("/projects/website-refresh");
 
   const sidebar = page.getByTestId("project-overview-sidebar");
-  const initialBox = await sidebar.boundingBox();
-  expect(initialBox?.y).toBeGreaterThan(96);
+  const start = Math.round((await sidebar.boundingBox())?.y ?? -1);
+  expect(start).toBeGreaterThan(96);
 
-  await page.evaluate(() => window.scrollTo(0, 700));
+  /*
+    A sticky column can only pin while the column beside it is taller, so the
+    sidebar must hold cards whose height the project's data cannot grow. Lists
+    that stretch with the workspace belong in the main column instead.
+  */
+  const sidebarHeight = (await sidebar.boundingBox())?.height ?? 0;
+  const mainHeight =
+    (await page.getByTestId("project-overview-main").boundingBox())?.height ??
+    0;
+  expect(sidebarHeight).toBeLessThan(mainHeight);
+
+  /*
+    Scroll by exactly where the sidebar starts, so its natural position lands
+    at the top of the screen and holding the 96px offset costs 96px of travel.
+    A fixed, larger scroll would not do: a sticky element stops at the bottom
+    of its containing block, and the sidebar carries the project context card
+    now, so its column runs out of slack sooner than it used to. Asking for the
+    least travel that still proves the pin keeps this about `xl:top-24` rather
+    than about how tall the two columns happen to be.
+  */
+  await page.evaluate((y) => window.scrollTo(0, y), start);
   await expect
     .poll(async () => Math.round((await sidebar.boundingBox())?.y ?? -1))
     .toBe(96);
@@ -551,8 +577,12 @@ test.describe("mobile workspace navigation", () => {
     await expect(projectTeam.getByText("Alex Morgan")).toBeVisible();
     await expect(projectTeam.getByText("Jordan Lee")).toBeVisible();
     await expect(projectTeam.getByText("Team members")).toBeVisible();
+    // Project dates moved into the main column, so the sticky sidebar stays
+    // shorter than the content it sticks against.
     await expect(
-      page.getByRole("heading", { level: 2, name: "Upcoming dates" }),
-    ).toBeVisible();
+      page
+        .getByTestId("project-overview-sidebar")
+        .getByRole("heading", { name: "Next 90 days" }),
+    ).toHaveCount(0);
   });
 });
