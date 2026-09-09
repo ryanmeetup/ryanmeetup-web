@@ -12,12 +12,10 @@ import {
 } from "@ryanmeetup/ui";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { InstanceWordmark, ThemeToggle } from "@/components/global";
 
 export function LoginForm({ notice = "" }: { notice?: string }) {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState(notice);
@@ -46,12 +44,22 @@ export function LoginForm({ notice = "" }: { notice?: string }) {
     setMessage("");
     const supabase = createClient();
     const result = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
     if (result.error) {
+      setLoading(false);
       setEmailError(true);
       setPasswordError(true);
       setMessage("Error: username or password is incorrect");
-    } else router.push("/");
+      return;
+    }
+    // A document load, not `router.push`. Everything this page prefetched was
+    // answered for a signed-out visitor, so the router cached `/` as a redirect
+    // back here; replaying that after signing in bounces the two routes off
+    // each other for as long as the tab is open, painting nothing but the
+    // footer. The client-side cache cannot be told that the session changed
+    // under it, so the sign-in leaves it behind entirely. `replace` keeps this
+    // form out of history, where going back would only redirect forward again.
+    // The form stays in its loading state until the workspace paints.
+    window.location.replace("/");
   }
 
   return (

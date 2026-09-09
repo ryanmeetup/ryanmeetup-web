@@ -102,6 +102,8 @@ Comments, checklist updates, attachments, and activity written by the server app
 
 Changing task filters, searches, sorting, pages, or views while results load keeps the newest request, so a slower earlier response cannot replace the choice you just made.
 
+Signing in opens the workspace on the first try. It used to flicker between the sign-in screen and a page holding nothing but the footer, and only a full page reload settled it.
+
 ### Activity tells the fuller story
 
 Activity now covers access groups, visibility grants, teammates, statuses, digest settings and runs, workspace identity and banner changes, Google Calendar connections, and email administration. Task updates show field-level changes, and status explanations appear alongside the change that prompted them.
