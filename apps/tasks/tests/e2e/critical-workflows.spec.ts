@@ -378,19 +378,58 @@ test("keeps the task due date inside the create form on mobile", async ({
     .locator("form .date-field")
     .filter({ hasText: "Due date" });
   const dueDateInput = dueDateField.locator('input[type="date"]');
+  const titleInput = page.getByLabel("Task title");
   await expect(dueDateInput).toBeVisible();
 
   const bounds = await Promise.all([
     dueDateField.boundingBox(),
     dueDateInput.boundingBox(),
+    titleInput.boundingBox(),
   ]);
   expect(bounds[0]).not.toBeNull();
   expect(bounds[1]).not.toBeNull();
+  expect(bounds[2]).not.toBeNull();
   expect(bounds[1]!.x + bounds[1]!.width).toBeLessThanOrEqual(
     bounds[0]!.x + bounds[0]!.width + 1,
   );
+  expect(bounds[1]!.x).toBeCloseTo(bounds[2]!.x, 0);
+  expect(bounds[1]!.x + bounds[1]!.width).toBeCloseTo(
+    bounds[2]!.x + bounds[2]!.width,
+    0,
+  );
   await expect(dueDateField).toHaveCSS("min-width", "0px");
   await expect(dueDateInput).toHaveCSS("min-width", "0px");
+
+  // iOS Safari zooms the page when a focused text control is below 16px.
+  await expect(titleInput).toHaveCSS("font-size", "16px");
+  await expect(
+    page.locator('[contenteditable="true"][aria-label="Description"]'),
+  ).toHaveCSS("font-size", "16px");
+  await expect(dueDateInput).toHaveCSS("font-size", "16px");
+
+  // Safari can retain a phantom root scroll region after closing its keyboard.
+  // Reproduce that geometry and verify the footer remains the reachable end.
+  await page.evaluate(() => {
+    const phantomSpace = document.createElement("div");
+    phantomSpace.dataset.testPhantomScroll = "";
+    phantomSpace.style.height = "300px";
+    document.body.append(phantomSpace);
+    window.scrollTo(0, document.documentElement.scrollHeight);
+  });
+  await expect
+    .poll(() =>
+      page
+        .locator(".tasks-footer")
+        .evaluate((footer) =>
+          Math.round(
+            footer.getBoundingClientRect().bottom - window.innerHeight,
+          ),
+        ),
+    )
+    .toBe(0);
+  await page.locator("[data-test-phantom-scroll]").evaluate((node) => {
+    node.remove();
+  });
 });
 
 test("updates category owners through the resource editor", async ({

@@ -159,6 +159,8 @@ Buttons that sit beside fields now match the input height with tighter typograph
 
 On phones, calendar navigation keeps the month centered, places filters and Today on one tidy row, and leaves the agenda to carry the detail instead of squeezing in the desktop rail. The navigation drawer also closes as soon as a destination opens.
 
+Phone-sized form fields now stay aligned and use a Safari-safe text size, so focusing an input no longer zooms the page and leaves the workspace magnified afterward. The page also stops at the footer instead of scrolling into Safari's empty post-keyboard space.
+
 New contacts now finish with Create and Cancel after the People section, encouraging a complete contact record before it is saved. Existing-contact actions stay beside the contact details for quicker edits.
 
 Projects lead with active work, follow their lifecycle order, and default to Discovery. Project and category visibility controls stay with their own editors instead of appearing as a second set of controls on the Access page.

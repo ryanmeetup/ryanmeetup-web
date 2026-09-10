@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { SiteFooter, type SiteFooterLink } from "@ryanmeetup/ui";
 import { usePathname } from "next/navigation";
 import { InstanceWordmark, useInstance } from "@/components/global";
@@ -27,7 +28,45 @@ export function TasksFooter({ inShell = false }: { inShell?: boolean }) {
 
   const signedOut =
     signedOutRoutes.has(pathname) || pathname.startsWith("/auth/");
-  if (inShell === signedOut || pathname === "/board") return null;
+  const hidden = inShell === signedOut || pathname === "/board";
+
+  useEffect(() => {
+    if (hidden) return;
+
+    let frame = 0;
+    const keepFooterAtDocumentEnd = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        const footer = document.querySelector<HTMLElement>(".tasks-footer");
+        if (!footer) return;
+
+        const footerBottom =
+          footer.getBoundingClientRect().bottom + window.scrollY;
+        const maximumScroll = Math.max(0, footerBottom - window.innerHeight);
+        if (window.scrollY > maximumScroll + 1) {
+          window.scrollTo({ top: maximumScroll, behavior: "auto" });
+        }
+      });
+    };
+
+    window.addEventListener("scroll", keepFooterAtDocumentEnd, {
+      passive: true,
+    });
+    window.addEventListener("resize", keepFooterAtDocumentEnd);
+    window.visualViewport?.addEventListener("resize", keepFooterAtDocumentEnd);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", keepFooterAtDocumentEnd);
+      window.removeEventListener("resize", keepFooterAtDocumentEnd);
+      window.visualViewport?.removeEventListener(
+        "resize",
+        keepFooterAtDocumentEnd,
+      );
+    };
+  }, [hidden]);
+
+  if (hidden) return null;
 
   const socialLinks: SiteFooterLink[] = instance.footerSocials.map(
     ({ platform, url }) => ({
