@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Avatar,
   Breadcrumbs,
   Button,
   Card,
@@ -22,7 +21,6 @@ import {
   FiColumns,
   FiEdit2,
   FiFolder,
-  FiLink,
   FiPlus,
   FiUsers,
 } from "react-icons/fi";
@@ -51,7 +49,6 @@ import {
 } from "@/lib/calendar/calendar-types";
 import { formatCalendarDate } from "@/lib/date-format";
 import { resolveActivityRows } from "@/lib/activity/activity-presentation";
-import { profileDisplayName } from "@/lib/presentation";
 import {
   projectBoardPresetPath,
   projectNeedsAttention,
@@ -70,9 +67,8 @@ import type {
 import { taskPath } from "@/lib/tasks/task-key";
 import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import { ProjectFavoriteButton } from "./ProjectFavoriteButton";
-import { ProjectContextCard } from "./ProjectContextCard";
+import { ProjectDetailsCard } from "./ProjectDetailsCard";
 import { ProjectsModal } from "./ProjectsModal";
-import { ProjectTimelineSummary } from "./ProjectTimelineSummary";
 import { statusOutcomeLabel } from "@/lib/tasks/status-outcome";
 
 /**
@@ -102,8 +98,11 @@ function SectionHeading({
       <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-black/5 text-black/55 dark:bg-white/10 dark:text-white/60">
         {icon}
       </span>
-      <h2 className="text-base font-semibold">{title}</h2>
-      {action && <div className="ml-auto">{action}</div>}
+      <h2 className="min-w-0 text-base font-semibold">{title}</h2>
+      {/* The action keeps its natural width: these labels are uppercase and
+          widely tracked, so a shrinking button wraps its own words long before
+          the heading beside it runs out of room. */}
+      {action && <div className="ml-auto shrink-0">{action}</div>}
     </div>
   );
 }
@@ -125,10 +124,10 @@ function GroupHeading({
     <div
       className={`flex items-center gap-3 border-b border-black/10 bg-black/[0.02] px-4 py-2.5 dark:border-white/10 dark:bg-white/[0.025] sm:px-5 ${divider ? "border-t" : ""}`}
     >
-      <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-black/50 dark:text-white/50">
+      <h3 className="min-w-0 text-xs font-semibold uppercase tracking-[0.16em] text-black/50 dark:text-white/50">
         {label}
       </h3>
-      {action && <div className="ml-auto">{action}</div>}
+      {action && <div className="ml-auto shrink-0">{action}</div>}
     </div>
   );
 }
@@ -184,10 +183,17 @@ export function ProjectOverviewPageClient({
     `/activity?projects=${encodeURIComponent(project.name)}`,
     data.accessPreview,
   );
+  /*
+    Dates that belong to the work on this project: its task deadlines and its
+    own calendar events, both already scoped to it by the loader. No projects
+    are passed, which is what keeps every other project's start and due date
+    off this list -- and this project's own two, which the header states
+    already and the Timeline card repeats.
+  */
   const upcoming = calendarItems(
     tasks,
     initialEvents,
-    data.projects,
+    [],
     data.categories,
     data.profiles,
     [],
@@ -273,13 +279,34 @@ export function ProjectOverviewPageClient({
                   />
                   {status.label}
                 </span>
+                <span
+                  className={`${chipClassName} text-black/65 dark:text-white/70`}
+                >
+                  <FiClock aria-hidden className="h-3 w-3" />
+                  {/* A project with no start date of its own is dated by the
+                      day it was added here, so the chip says "added" rather
+                      than claiming a start nobody recorded. */}
+                  {timeline.start.inferred ? "Added" : "Started"}{" "}
+                  {formatCalendarDate(timeline.start.date)}
+                </span>
+                <span
+                  className={`${chipClassName} text-black/65 dark:text-white/70`}
+                >
+                  {timeline.running.ended
+                    ? `Ran ${timeline.running.label}`
+                    : `${timeline.running.label} in`}
+                </span>
                 {timeline.due && (
                   <span
                     className={`${chipClassName} ${dueChipToneClass[timeline.due.tone]}`}
                   >
                     <FiCalendar aria-hidden className="h-3 w-3" />
-                    {timeline.due.daysRemaining < 0 ? "Overdue" : "Due"}{" "}
-                    {formatCalendarDate(timeline.due.date)}
+                    Due {formatCalendarDate(timeline.due.date)}
+                    {" · "}
+                    {/* "Due today" would read as "Due Sep 10 · Due today". */}
+                    {timeline.due.daysRemaining === 0
+                      ? "today"
+                      : timeline.due.label}
                   </span>
                 )}
               </span>
@@ -299,11 +326,18 @@ export function ProjectOverviewPageClient({
               "A shared view of the work, dates, and context that move this project forward."
             }
             actions={
-              <div className="flex w-full gap-2 sm:w-auto sm:items-center sm:justify-end">
+              /*
+                Stacked on a phone. These labels are uppercase and widely
+                tracked, so two of them side by side wrap to three lines each
+                well before the viewport runs out; one per row keeps both on a
+                single line.
+              */
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
                 <Button.Link
                   href={boardHref}
                   size="lg"
-                  className="flex-1 sm:flex-none"
+                  fullWidth
+                  className="sm:w-auto"
                   leftIcon={<FiColumns aria-hidden />}
                   rightIcon={<FiArrowRight aria-hidden />}
                 >
@@ -314,8 +348,9 @@ export function ProjectOverviewPageClient({
                     href={`/projects/${project.id}/edit?from=${encodeURIComponent(projectUrl)}`}
                     variant="secondary"
                     size="lg"
+                    fullWidth
                     leftIcon={<FiEdit2 aria-hidden />}
-                    className={`flex-1 sm:flex-none ${triggers.routeClassName}`}
+                    className={`sm:w-auto ${triggers.routeClassName}`}
                   >
                     Edit project
                   </Button.Link>
@@ -324,9 +359,10 @@ export function ProjectOverviewPageClient({
                   <Button
                     variant="secondary"
                     size="lg"
+                    fullWidth
                     leftIcon={<FiEdit2 aria-hidden />}
                     onClick={() => setProjectEditOpen(true)}
-                    className={`flex-1 sm:flex-none ${triggers.dialogClassName}`}
+                    className={`sm:w-auto ${triggers.dialogClassName}`}
                   >
                     Edit project
                   </Button>
@@ -390,21 +426,14 @@ export function ProjectOverviewPageClient({
               className="min-w-0 space-y-6"
             >
               <Card size="none" className="overflow-hidden">
+                {/*
+                  No action here: the workspace header already carries New task
+                  on every screen, and a second one in this heading only
+                  crowded the title on a phone.
+                */}
                 <SectionHeading
                   title="Attention & dates"
                   icon={<FiAlertCircle aria-hidden />}
-                  action={
-                    !data.accessPreview ? (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        leftIcon={<FiPlus aria-hidden />}
-                        onClick={() => setNewTaskOpen(true)}
-                      >
-                        New task
-                      </Button>
-                    ) : undefined
-                  }
                 />
                 <GroupHeading label="Needs attention" />
                 {attention.length ? (
@@ -488,7 +517,10 @@ export function ProjectOverviewPageClient({
                   }
                 />
                 {upcoming.length ? (
-                  <ul className="divide-y divide-black/10 dark:divide-white/10">
+                  <ul
+                    data-testid="project-upcoming"
+                    className="divide-y divide-black/10 dark:divide-white/10"
+                  >
                     {upcoming.map((item) => (
                       <li key={item.id}>
                         {item.href ? (
@@ -512,7 +544,7 @@ export function ProjectOverviewPageClient({
                 ) : (
                   <EmptyState
                     variant="plain"
-                    message="No project dates in the next 90 days."
+                    message="No task deadlines or project events in the next 90 days."
                   />
                 )}
               </Card>
@@ -558,7 +590,10 @@ export function ProjectOverviewPageClient({
                                   {count} {taskLabel} · {percentage}% of project
                                 </span>
                                 <span className="mt-0.5 block opacity-75">
-                                  Counts as {statusOutcomeLabel(item.outcome).toLowerCase()}{" "}
+                                  Counts as{" "}
+                                  {statusOutcomeLabel(
+                                    item.outcome,
+                                  ).toLowerCase()}{" "}
                                   work
                                 </span>
                               </span>
@@ -625,69 +660,14 @@ export function ProjectOverviewPageClient({
               data-testid="project-overview-sidebar"
               className="min-w-0 space-y-6 xl:sticky xl:top-24"
             >
-              <Card size="none" className="overflow-hidden">
-                <SectionHeading
-                  title="Timeline"
-                  icon={<FiClock aria-hidden />}
-                />
-                <div className="p-4 sm:p-5">
-                  <ProjectTimelineSummary project={project} />
-                </div>
-              </Card>
-
-              <Card size="none" className="overflow-hidden">
-                <SectionHeading
-                  title="Project team"
-                  icon={<FiUsers aria-hidden />}
-                />
-                <div className="p-4 sm:p-5">
-                  {team.length ? (
-                    <div className="space-y-5">
-                      {teamGroups.map((group) => (
-                        <div key={group.label}>
-                          <p className="mb-2.5 text-xs font-semibold uppercase tracking-[0.16em] text-black/45 dark:text-white/45">
-                            {group.label}
-                          </p>
-                          {group.members.length ? (
-                            <ul className="grid gap-3 sm:grid-cols-2">
-                              {group.members.map(({ profile }) => (
-                                <li
-                                  key={profile.id}
-                                  className="flex items-center gap-3"
-                                >
-                                  <Avatar
-                                    name={profileDisplayName(profile)}
-                                    src={profile.avatar_url}
-                                    size="md"
-                                  />
-                                  <span className="min-w-0 truncate text-sm font-semibold">
-                                    {profileDisplayName(profile)}
-                                  </span>
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className="text-sm text-black/50 dark:text-white/50">
-                              {group.emptyMessage}
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-black/55 dark:text-white/55">
-                      No project team assigned yet.
-                    </p>
-                  )}
-                </div>
-              </Card>
-
-              <ProjectContextCard
+              <ProjectDetailsCard
                 project={project}
                 attachments={attachments}
                 canEdit={canEditProject && !data.accessPreview}
                 demoMode={demoMode}
                 currentUserId={data.currentProfile.id}
+                teamGroups={teamGroups}
+                hasTeam={team.length > 0}
                 onLinksSaved={(links) =>
                   setData((current) => ({
                     ...current,
@@ -698,8 +678,8 @@ export function ProjectOverviewPageClient({
                 }
                 heading={(action) => (
                   <SectionHeading
-                    title="Project context"
-                    icon={<FiLink aria-hidden />}
+                    title="Project details"
+                    icon={<FiUsers aria-hidden />}
                     action={action}
                   />
                 )}
