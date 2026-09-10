@@ -490,7 +490,7 @@ export function ProfileForm({
                 </span>
               </span>
               <DropdownSelect
-                label="Open in"
+                label="Form layout"
                 value={editorSurface}
                 disabled={saving || savingPreferences}
                 onChange={(value) => {

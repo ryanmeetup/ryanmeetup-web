@@ -31,6 +31,7 @@ describe("editorSurface", () => {
       "modal",
       "page",
     ]);
+    expect(editorSurfaceOptions[0].label).toBe("Automatic");
   });
 });
 

@@ -71,7 +71,11 @@ Creating or editing a task, project, category, contact, or calendar event uses a
 
 ### Choose where forms open
 
-**Profile → Preferences** now has **Create and edit forms**. Leave it on _Match the screen_ and nothing changes: a dialog on a desktop, a full page on a phone. Choose _Always a dialog_ to keep the board or list behind every form at any size, or _Always a full page_ to give every form the whole screen. The setting follows your account rather than the browser you happen to be using.
+**Profile → Preferences** now has **Create and edit forms**. Leave it on
+_Automatic_ for a dialog on desktop and a full page on phone. Choose _Always a
+dialog_ to keep the board or list behind every form at any size, or _Always a
+full page_ to give every form the whole screen. The setting follows your account
+rather than the browser you happen to be using.
 
 ### Open the calendar on what matters
 

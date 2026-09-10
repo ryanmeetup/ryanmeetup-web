@@ -23,9 +23,9 @@ export const editorSurfaceOptions: readonly {
 }[] = [
   {
     value: "auto",
-    label: "Match the screen",
+    label: "Automatic",
     description:
-      "A dialog on a desktop, a full page on a phone. This is the default.",
+      "Dialog on desktop; full page on phone. This is the default.",
   },
   {
     value: "modal",
