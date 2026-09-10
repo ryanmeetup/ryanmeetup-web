@@ -190,7 +190,7 @@ test("aligns board column searches across description lengths", async ({
   expect(Math.max(...topPositions) - Math.min(...topPositions)).toBeLessThan(1);
 });
 
-test("fills the available viewport without a board footer", async ({
+test("stops page scrolling with equal space above and below the board", async ({
   page,
   baseURL,
 }, testInfo) => {
@@ -225,8 +225,7 @@ test("fills the available viewport without a board footer", async ({
   const footer = page.locator(".tasks-footer");
   await expect(footer).toHaveCount(0);
   // Resize the same mounted board across the mobile and desktop boundaries.
-  // Align its top with the toolbar + notices + outside page gap, then check
-  // the visible column extends all the way down to the viewport edge.
+  // Scroll to the document's actual end, then check both outside gaps.
   for (const viewport of [
     { width: 390, height: 844 },
     { width: 1024, height: 768 },
@@ -247,33 +246,50 @@ test("fills the available viewport without a board footer", async ({
             notices.getBoundingClientRect().height +
             gap;
           return Math.abs(
-            board.getBoundingClientRect().height - (window.innerHeight - top),
+            board.getBoundingClientRect().height -
+              (window.innerHeight - top - gap),
           );
         }),
       )
       .toBeLessThan(1);
-    await boardScroller.evaluate((board) => {
-      const inset = parseFloat(
-        getComputedStyle(board).getPropertyValue("--board-top-inset"),
-      );
-      window.scrollBy(0, board.getBoundingClientRect().top - inset);
-    });
+    await page.evaluate(() =>
+      window.scrollTo(0, document.documentElement.scrollHeight),
+    );
     await expect
       .poll(async () =>
-        boardScroller.evaluate((board) =>
-          Math.abs(board.getBoundingClientRect().bottom - window.innerHeight),
-        ),
+        boardScroller.evaluate((board) => {
+          const header = document.querySelector(".tasks-app-header")!;
+          const notices = document.querySelector("[data-workspace-banners]")!;
+          const top = Math.max(
+            header.getBoundingClientRect().bottom,
+            notices.getBoundingClientRect().bottom,
+          );
+          const bounds = board.getBoundingClientRect();
+          return Math.abs(
+            bounds.top - top - (window.innerHeight - bounds.bottom),
+          );
+        }),
       )
-      .toBeLessThan(1);
+      .toBeLessThanOrEqual(1);
     const visibleColumn = page.locator("[data-board-column]").first();
     const list = visibleColumn.locator("[class*='overflow-y-auto']");
+    const listBox = (await list.boundingBox())!;
+    const boardBounds = (await boardScroller.boundingBox())!;
     expect(
-      Math.abs(
-        (await list.boundingBox())!.y +
-          (await list.boundingBox())!.height -
-          viewport.height,
-      ),
+      viewport.height - boardBounds.y - boardBounds.height,
+    ).toBeGreaterThanOrEqual(16);
+    expect(
+      Math.abs(listBox.y + listBox.height - boardBounds.y - boardBounds.height),
     ).toBeLessThan(1);
+    const pageScroll = await page.evaluate(() => window.scrollY);
+    await list.evaluate((element) => {
+      element.scrollTop = element.scrollHeight;
+    });
+    await list.hover();
+    await page.mouse.wheel(0, 800);
+    await expect
+      .poll(() => page.evaluate(() => window.scrollY))
+      .toBe(pageScroll);
     await page.evaluate(
       (dark) => document.documentElement.classList.toggle("dark", dark),
       viewport.width >= 1280,
@@ -288,9 +304,8 @@ test("fills the available viewport without a board footer", async ({
       () => document.documentElement.scrollHeight - window.innerHeight,
     ),
   ).toBeGreaterThan(0);
-  await page.evaluate(() =>
-    window.scrollTo(0, document.documentElement.scrollHeight),
-  );
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect(page.getByRole("heading", { level: 1 })).toBeInViewport();
   await expect(footer).toHaveCount(0);
   await page
     .locator("[data-workspace-sidebar]")
