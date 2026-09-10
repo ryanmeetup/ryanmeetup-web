@@ -31,7 +31,7 @@ export const demoData: WorkspaceData = {
     task_details_open_by_default: false,
     assign_new_tasks_to_self: false,
     editor_surface: "auto",
-    calendar_default_view: "all",
+    calendar_default_view: ["task", "away", "important", "google"],
     favorite_project_ids: ["website-refresh"],
   },
   profiles: [
@@ -43,7 +43,7 @@ export const demoData: WorkspaceData = {
       task_details_open_by_default: false,
       assign_new_tasks_to_self: false,
       editor_surface: "auto",
-      calendar_default_view: "all",
+      calendar_default_view: ["task", "away", "important", "google"],
       favorite_project_ids: ["website-refresh"],
     },
     {
@@ -54,7 +54,7 @@ export const demoData: WorkspaceData = {
       task_details_open_by_default: false,
       assign_new_tasks_to_self: false,
       editor_surface: "auto",
-      calendar_default_view: "all",
+      calendar_default_view: ["task", "away", "important", "google"],
       favorite_project_ids: [],
     },
     {
@@ -65,7 +65,7 @@ export const demoData: WorkspaceData = {
       task_details_open_by_default: false,
       assign_new_tasks_to_self: false,
       editor_surface: "auto",
-      calendar_default_view: "all",
+      calendar_default_view: ["task", "away", "important", "google"],
       favorite_project_ids: [],
     },
   ],

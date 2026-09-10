@@ -5,8 +5,8 @@ import {
   AnimatedCollapse,
   Button,
   Card,
-  DropdownSelect,
   EmptyState,
+  MultiSelect,
   Spinner,
 } from "@ryanmeetup/ui";
 import {
@@ -22,7 +22,7 @@ import { itemsOnDate } from "@/lib/calendar/calendar-types";
 import { moveCalendarMonth } from "@/lib/calendar/calendar-view";
 import type { GoogleCalendarConnection } from "@/lib/calendar/google-calendar-types";
 import {
-  calendarDefaultViewOptions,
+  calendarSourceOptions,
   isCalendarDefaultView,
   type CalendarDefaultView,
 } from "@/lib/calendar/calendar-view-preference";
@@ -160,20 +160,24 @@ export function CalendarGridAgenda({
               its own width. From `sm` up they sit with the rest, right of the
               month. */}
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2 sm:flex sm:flex-wrap sm:justify-end">
-            <DropdownSelect
-              className="h-9"
+            <MultiSelect
+              className="[&>button]:bg-white dark:[&>button]:bg-[#242424]"
               label="Show"
               value={source}
-              onChange={(value) => {
-                if (isCalendarDefaultView(value)) setSource(value);
+              onChange={(values) => {
+                if (isCalendarDefaultView(values)) setSource(values);
               }}
-              options={calendarDefaultViewOptions
+              options={calendarSourceOptions
                 .filter(
                   (option) =>
                     option.value !== "google" ||
                     (googleCanView && googleConnection.connected),
                 )
                 .map(({ label, value }) => ({ label, value }))}
+              placeholder="Choose at least one source"
+              required
+              searchable={false}
+              summaryLimit={1}
             />
             <Button
               size="sm"

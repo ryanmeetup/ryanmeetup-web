@@ -273,8 +273,7 @@ export function CalendarPageClient({
   const googleEvent =
     googleEvents.find((event) => event.id === googleEventId) ?? null;
   const googleLoading = google.loading;
-  const googleSyncing =
-    googleLoading && (source === "all" || source === "google");
+  const googleSyncing = googleLoading && source.includes("google");
   const { days, monthNumber } = monthBounds(month);
   const currentDate = new Date().toISOString().slice(0, 10);
   const today = currentDate.slice(0, 7) === month ? currentDate : "";
@@ -300,10 +299,7 @@ export function CalendarPageClient({
     googleEvents,
     month,
   ]);
-  const items =
-    source === "all"
-      ? allItems
-      : allItems.filter((item) => item.source === source);
+  const items = allItems.filter((item) => source.includes(item.source));
   const monthStart = `${month}-01`;
   const monthEnd = `${moveCalendarMonth(month, 1)}-01`;
   const monthItems = items.filter(

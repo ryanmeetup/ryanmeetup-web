@@ -41,6 +41,23 @@ test("opens the important-date editor from the calendar", async ({
   await expect(editor.getByRole("checkbox", { name: "All day" })).toBeChecked();
 });
 
+test("shows multiple calendar sources at once", async ({ page, baseURL }) => {
+  await openDemoCalendar(page, baseURL);
+
+  const showSources = page.getByRole("button", { name: /^Show/ });
+  await expect(showSources).toContainText("Deadlines +2");
+  await showSources.click();
+  await page.getByRole("option", { name: "Time away" }).click();
+
+  await expect(showSources).toContainText("Deadlines +1");
+  await expect(
+    page.getByRole("option", { name: "Deadlines" }),
+  ).toHaveAttribute("aria-selected", "true");
+  await expect(
+    page.getByRole("option", { name: "Important dates" }),
+  ).toHaveAttribute("aria-selected", "true");
+});
+
 test("switches the one editor between a date and time away", async ({
   page,
   baseURL,

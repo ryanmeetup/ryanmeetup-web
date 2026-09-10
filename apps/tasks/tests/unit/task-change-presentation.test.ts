@@ -26,7 +26,7 @@ const lookups: TaskChangeLookups = {
       task_details_open_by_default: true,
       assign_new_tasks_to_self: false,
       editor_surface: "auto",
-      calendar_default_view: "all",
+      calendar_default_view: ["task", "away", "important", "google"],
     },
     {
       id: "alex",
@@ -36,7 +36,7 @@ const lookups: TaskChangeLookups = {
       task_details_open_by_default: true,
       assign_new_tasks_to_self: false,
       editor_surface: "auto",
-      calendar_default_view: "all",
+      calendar_default_view: ["task", "away", "important", "google"],
     },
   ],
   categories: [

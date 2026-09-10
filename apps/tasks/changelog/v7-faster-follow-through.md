@@ -75,10 +75,11 @@ Creating or editing a task, project, category, contact, or calendar event uses a
 
 ### Open the calendar on what matters
 
-**Profile → Preferences** now lets each person choose what the Calendar shows
-first: everything, task deadlines, time away, important dates, or Google
-Calendar. The choice belongs to the profile in that deployment, so RMT and PRD
-can open differently while the Show menu remains available for quick changes.
+**Profile → Preferences** now lets each person choose any combination of what
+the Calendar shows first: task deadlines, time away, important dates, and
+Google Calendar. The choice belongs to the profile in that deployment, so RMT
+and PRD can open differently — including everything except Google — while the
+multi-select Show menu remains available for quick changes.
 
 ### Contact links you can read
 

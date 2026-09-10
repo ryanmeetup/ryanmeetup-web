@@ -12,7 +12,7 @@ const validProfileBody = {
   taskDetailsOpenByDefault: false,
   assignNewTasksToSelf: false,
   editorSurface: "auto",
-  calendarDefaultView: "all",
+  calendarDefaultView: ["task", "away", "important", "google"],
 };
 
 describe("editorSurface", () => {

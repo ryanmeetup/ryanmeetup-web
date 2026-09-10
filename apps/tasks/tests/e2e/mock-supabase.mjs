@@ -76,7 +76,7 @@ const profile = {
   task_details_open_by_default: true,
   assign_new_tasks_to_self: false,
   editor_surface: "auto",
-  calendar_default_view: "all",
+  calendar_default_view: ["task", "away", "important", "google"],
   favorite_project_ids: [],
   app_role: "owner",
 };
