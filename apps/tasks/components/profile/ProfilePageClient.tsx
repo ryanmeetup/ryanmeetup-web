@@ -117,7 +117,7 @@ export function ProfilePageClient({
         setData={setData}
         contentClassName="p-4 sm:p-6 lg:p-8"
       >
-        <div className="mx-auto max-w-5xl">
+        <div className="mx-auto w-full min-w-0 max-w-5xl">
           <PageHeader
             kicker="Your account"
             icon={FiUser}
