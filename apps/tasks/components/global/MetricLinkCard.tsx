@@ -40,14 +40,21 @@ export function MetricLinkCard({
           : ""
       } ${toneClasses[tone]}`}
     >
-      <span className="flex items-center gap-1.5 pr-4 text-[0.625rem] font-semibold uppercase tracking-[0.08em] text-black/50 dark:text-white/50 sm:gap-2 sm:pr-8 sm:text-xs sm:tracking-[0.16em]">
+      <span className="flex items-center gap-1.5 whitespace-nowrap text-[0.625rem] font-semibold uppercase tracking-[0.08em] text-black/50 dark:text-white/50 sm:gap-2 sm:text-xs sm:tracking-[0.16em]">
         {icon}
         <span className="sm:hidden">{mobileLabel}</span>
         <span className="hidden sm:inline">{label}</span>
       </span>
-      <p className="mt-4 font-cooper text-3xl leading-none sm:mt-5 sm:text-5xl">
-        {value}
-      </p>
+      <div className="relative z-10 mt-4 flex items-end justify-between gap-2 sm:mt-5">
+        <p className="font-cooper text-3xl leading-none sm:text-5xl">{value}</p>
+        {href && (
+          <FiArrowRight
+            aria-hidden
+            data-metric-link-arrow
+            className="mb-0.5 shrink-0 text-sm text-black/35 transition group-hover:translate-x-1 group-hover:text-black/70 motion-reduce:transform-none dark:text-white/35 dark:group-hover:text-white/75 sm:mb-1 sm:text-base"
+          />
+        )}
+      </div>
       {detail && (
         <p className="mt-1 text-xs font-medium text-black/50 dark:text-white/50">
           {detail}
@@ -63,12 +70,6 @@ export function MetricLinkCard({
       >
         {icon}
       </span>
-      {href && (
-        <FiArrowRight
-          aria-hidden
-          className="absolute right-2 top-2 z-10 text-sm text-black/35 transition group-hover:translate-x-1 group-hover:text-black/70 motion-reduce:transform-none dark:text-white/35 dark:group-hover:text-white/75 sm:right-4 sm:top-4 sm:text-base"
-        />
-      )}
     </Card>
   );
 
