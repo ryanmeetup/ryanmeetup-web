@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Avatar } from "@ryanmeetup/ui";
 import {
+  FiArchive,
   FiArrowUpRight,
   FiCalendar,
   FiCheckSquare,
@@ -13,9 +14,10 @@ import {
 } from "react-icons/fi";
 import type { Task, TaskAssignee } from "@/lib/tasks/task-types";
 import type { Profile } from "@/lib/workspace/workspace-types";
-import type {
-  TaskSearchGroup,
-  TaskSearchRelatedResults,
+import {
+  ARCHIVED_SEARCH_GROUP_ORDER,
+  type TaskSearchGroup,
+  type TaskSearchRelatedResults,
 } from "@/lib/tasks/task-search";
 import { profileDisplayName } from "@/lib/presentation";
 import { TaskKeyBadge, TaskPriorityBadge } from "@/components/tasks";
@@ -26,6 +28,8 @@ type Props = {
   isPending: boolean;
   isTooShort: boolean;
   results: Task[];
+  /** Matches that have already left the board, shown beneath everything live. */
+  archivedResults: Task[];
   related: TaskSearchRelatedResults;
   groupOrder: ReadonlyMap<TaskSearchGroup, number>;
   activeIndex: number;
@@ -76,6 +80,7 @@ function TaskResultItem({
   projectName,
   statusName,
   assignees,
+  archived = false,
 }: {
   task: Task;
   id: string;
@@ -85,6 +90,7 @@ function TaskResultItem({
   projectName?: string;
   statusName?: string;
   assignees: Profile[];
+  archived?: boolean;
 }) {
   return (
     <button
@@ -131,13 +137,21 @@ function TaskResultItem({
               </span>
             </span>
           )}
-          {task.due_date && (
-            <span className="inline-flex items-center gap-1">
-              <FiCalendar aria-hidden />
-              <span className="sr-only">Due </span>
-              {formatCalendarDay(task.due_date)}
-            </span>
-          )}
+          {archived
+            ? task.completed_at && (
+                <span className="inline-flex items-center gap-1">
+                  <FiArchive aria-hidden />
+                  <span className="sr-only">Closed </span>
+                  {formatCalendarDay(task.completed_at.slice(0, 10))}
+                </span>
+              )
+            : task.due_date && (
+                <span className="inline-flex items-center gap-1">
+                  <FiCalendar aria-hidden />
+                  <span className="sr-only">Due </span>
+                  {formatCalendarDay(task.due_date)}
+                </span>
+              )}
         </span>
       </span>
       <FiArrowUpRight
@@ -154,6 +168,7 @@ export function TaskSearchResults(props: Props) {
     isPending,
     isTooShort,
     results,
+    archivedResults,
     related,
     groupOrder,
     activeIndex,
@@ -172,7 +187,16 @@ export function TaskSearchResults(props: Props) {
     (count, items) => count + items.length,
     0,
   );
-  const hasResults = Boolean(results.length || relatedCount);
+  const hasResults = Boolean(
+    results.length || relatedCount || archivedResults.length,
+  );
+  const assigneesFor = (task: Task) =>
+    taskAssignees
+      .filter((row) => row.task_id === task.id)
+      .flatMap((row) => {
+        const profile = profilesById.get(row.profile_id);
+        return profile ? [profile] : [];
+      });
 
   return (
     <div
@@ -234,12 +258,7 @@ export function TaskSearchResults(props: Props) {
                         : undefined
                     }
                     statusName={statusNames.get(task.status_id)}
-                    assignees={taskAssignees
-                      .filter((row) => row.task_id === task.id)
-                      .flatMap((row) => {
-                        const profile = profilesById.get(row.profile_id);
-                        return profile ? [profile] : [];
-                      })}
+                    assignees={assigneesFor(task)}
                   />
                 ))}
               </section>
@@ -353,6 +372,37 @@ export function TaskSearchResults(props: Props) {
                     />
                     <span className="truncate font-semibold">{item.name}</span>
                   </Link>
+                ))}
+              </section>
+            )}
+            {archivedResults.length > 0 && (
+              <section
+                aria-labelledby={`${listboxId}-archived`}
+                style={{ order: ARCHIVED_SEARCH_GROUP_ORDER }}
+              >
+                <GroupHeading
+                  id={`${listboxId}-archived`}
+                  icon={<FiArchive aria-hidden />}
+                >
+                  Archived tasks
+                </GroupHeading>
+                {archivedResults.map((task, index) => (
+                  <TaskResultItem
+                    key={task.id}
+                    task={task}
+                    id={`${listboxId}-${task.id}`}
+                    archived
+                    active={results.length + index === activeIndex}
+                    onActivate={() => setActiveIndex(results.length + index)}
+                    onSelect={() => selectTask(task)}
+                    projectName={
+                      task.project_id
+                        ? projectNames.get(task.project_id)
+                        : undefined
+                    }
+                    statusName={statusNames.get(task.status_id)}
+                    assignees={assigneesFor(task)}
+                  />
                 ))}
               </section>
             )}

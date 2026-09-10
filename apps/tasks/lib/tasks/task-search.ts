@@ -15,8 +15,30 @@ export type TaskSearchRelatedResults = {
   statuses: Status[];
 };
 
-export type TaskSearchGroup = keyof TaskSearchRelatedResults | "issues";
+export type TaskSearchGroup =
+  | keyof TaskSearchRelatedResults
+  | "issues"
+  | "archived";
 export type TaskSearchPreview = Record<string, string | null | undefined>;
+
+/**
+ * Splits matches into the work still on the board and the work that has left
+ * it. Archived tasks are answers too — a task key that resolves to one used to
+ * find nothing — but they belong under everything still live rather than
+ * competing with it, so they are ranked and shown apart.
+ */
+export function partitionArchivedTasks(tasks: Task[], clock = Date.now()) {
+  const active: Task[] = [];
+  const archived: Task[] = [];
+  for (const task of tasks) {
+    const archivedAt = task.archived_at
+      ? new Date(task.archived_at).getTime()
+      : null;
+    if (archivedAt !== null && archivedAt <= clock) archived.push(task);
+    else active.push(task);
+  }
+  return { active, archived };
+}
 
 export function normalizeSearchText(value: string | null | undefined) {
   return value?.toLocaleLowerCase().trim() ?? "";
@@ -116,6 +138,13 @@ export function orderTaskSearchGroups(
       .map(([name], index) => [name, index]),
   );
 }
+
+/**
+ * Ordered after every live group, however many of those there are. The archive
+ * is the last thing a reader should reach, never something they scroll past on
+ * the way to a live task.
+ */
+export const ARCHIVED_SEARCH_GROUP_ORDER = 99;
 
 function appendPreview(params: URLSearchParams, preview: TaskSearchPreview) {
   Object.entries(preview).forEach(([name, value]) => {

@@ -135,6 +135,14 @@ due, newest first. The board is no longer offered there: only a status that
 closes work can hold an archived task, so the old archived board was a row of
 permanently empty columns.
 
+### Search reaches into the archive
+
+Searching now finds archived work as well, listed at the very bottom under an
+**Archived tasks** heading so it never competes with what is still live. Each
+archived result shows when it closed rather than when it had been due. Typing
+the key of an archived task finds it, which it previously did not, even though
+opening that task's link had always worked.
+
 ### A calmer canvas
 
 The workspace sits on a subtle paper texture with solid task columns that stay readable over it. The board keeps its horizontal scroller against the bottom edge, and the latest-release card starts collapsed on smaller screens.

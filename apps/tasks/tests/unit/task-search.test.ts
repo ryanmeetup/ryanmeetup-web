@@ -6,6 +6,7 @@ import {
   findRelatedTaskSearchResults,
   firstRelatedTaskSearchHref,
   orderTaskSearchGroups,
+  partitionArchivedTasks,
   rankTaskSearchResults,
   taskSearchAllHref,
   taskSearchFilterHref,
@@ -29,6 +30,27 @@ const task = (
   }) as Task;
 
 describe("task search", () => {
+  it("separates work that has left the board from work still on it", () => {
+    const clock = Date.parse("2026-09-10T12:00:00Z");
+    const tasks = [
+      task("open", 1, "Alpha"),
+      task("archived", 2, "Alpha", {
+        archived_at: "2026-09-01T12:00:00Z",
+        completed_at: "2026-08-18T12:00:00Z",
+      }),
+      // Finished, but still inside its grace period: it is on the board.
+      task("closing", 3, "Alpha", {
+        archived_at: "2026-09-20T12:00:00Z",
+        completed_at: "2026-09-06T12:00:00Z",
+      }),
+    ];
+
+    const { active, archived } = partitionArchivedTasks(tasks, clock);
+
+    expect(active.map((item) => item.id)).toEqual(["open", "closing"]);
+    expect(archived.map((item) => item.id)).toEqual(["archived"]);
+  });
+
   it("normalizes, ranks, tie-breaks, and limits task matches", () => {
     const tasks = [
       task("description", 4, "Elsewhere", { description: "Alpha detail" }),

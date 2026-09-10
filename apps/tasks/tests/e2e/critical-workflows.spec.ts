@@ -471,3 +471,38 @@ test("requires a reason before a task can be declined", async ({
   await expect(page.getByRole("heading", { name: "Edit Task" })).toBeVisible();
   await expect(reason).toHaveCount(0);
 });
+
+/**
+ * Archived work used to be missing from search entirely, even when the query
+ * was the exact task key, though the task's own URL still opened it. It is
+ * findable now, and it sits under everything still live rather than competing
+ * with it.
+ */
+test("finds archived tasks beneath the live search results", async ({
+  page,
+  baseURL,
+}) => {
+  await enterDemoWorkspace(page, baseURL);
+  await page.goto("/board");
+
+  // "launch" matches a live task by title and the archived one by project, so
+  // the dropdown has to place both.
+  await page.getByRole("combobox", { name: "Search tasks" }).fill("launch");
+
+  const suggestions = page.getByRole("listbox", { name: "Task suggestions" });
+  const archived = suggestions.getByRole("option", {
+    name: /Print branded lanyards/,
+  });
+  await expect(
+    suggestions.getByRole("option", { name: /Confirm launch venue/ }),
+  ).toBeVisible();
+  await expect(archived).toBeVisible();
+
+  // Last of everything the dropdown offers, whatever else matched.
+  const headings = suggestions.locator("section > p");
+  await expect(headings.first()).not.toHaveText(/Archived tasks/);
+  await expect(headings.last()).toHaveText(/Archived tasks/);
+
+  await archived.click();
+  await expect(page).toHaveURL(/\/task\/RMT-15/);
+});

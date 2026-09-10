@@ -17,6 +17,7 @@ import {
   findRelatedTaskSearchResults,
   firstRelatedTaskSearchHref,
   orderTaskSearchGroups,
+  partitionArchivedTasks,
   rankTaskSearchResults,
   taskSearchAllHref,
   taskSearchFilterHref,
@@ -56,6 +57,9 @@ export function TaskSearch({
   const [query, setQuery] = useState("");
   const [deferredQuery, setDeferredQuery] = useState("");
   const [remoteTasks, setRemoteTasks] = useState<Task[] | null>(null);
+  const [remoteArchivedTasks, setRemoteArchivedTasks] = useState<Task[] | null>(
+    null,
+  );
   const [remoteTaskAssignees, setRemoteTaskAssignees] = useState<
     TaskAssignee[] | null
   >(null);
@@ -104,12 +108,14 @@ export function TaskSearch({
         if (!response.ok) throw new Error("Task search failed");
         return (await response.json()) as {
           tasks?: Task[];
+          archivedTasks?: Task[];
           taskAssignees?: TaskAssignee[];
           totalCount?: number;
         };
       })
       .then((result) => {
         setRemoteTasks(result.tasks ?? []);
+        setRemoteArchivedTasks(result.archivedTasks ?? []);
         setRemoteTaskAssignees(result.taskAssignees ?? []);
         setRemoteTotalCount(result.totalCount ?? 0);
       })
@@ -117,6 +123,7 @@ export function TaskSearch({
         if (error instanceof DOMException && error.name === "AbortError")
           return;
         setRemoteTasks(null);
+        setRemoteArchivedTasks(null);
         setRemoteTaskAssignees(null);
         setRemoteTotalCount(null);
       })
@@ -126,14 +133,31 @@ export function TaskSearch({
     return () => controller.abort();
   }, [deferredQuery, preview]);
 
+  // Demo mode has no search endpoint, so the local list is both sources at
+  // once and has to be split the way the server splits its two queries.
+  const local = useMemo(() => partitionArchivedTasks(tasks), [tasks]);
   const results = useMemo(
     () =>
       rankTaskSearchResults({
-        tasks: remoteTasks ?? tasks,
+        tasks: remoteTasks ?? local.active,
         query: deferredQuery,
         projectNames,
       }),
-    [deferredQuery, projectNames, remoteTasks, tasks],
+    [deferredQuery, local.active, projectNames, remoteTasks],
+  );
+  const archivedResults = useMemo(
+    () =>
+      rankTaskSearchResults({
+        tasks: remoteArchivedTasks ?? local.archived,
+        query: deferredQuery,
+        projectNames,
+      }),
+    [deferredQuery, local.archived, projectNames, remoteArchivedTasks],
+  );
+  // One index space for the keyboard, in the order the two sections read.
+  const options = useMemo(
+    () => [...results, ...archivedResults],
+    [archivedResults, results],
   );
   const related = useMemo(
     () =>
@@ -151,13 +175,14 @@ export function TaskSearch({
     [related, remoteTotalCount, results.length],
   );
   const { open, setOpen, activeIndex, setActiveIndex, reset, onKeyDown } =
-    useSearchCombobox(results.length, isPending);
+    useSearchCombobox(options.length, isPending);
   const showDropdown = open && Boolean(query.trim());
 
   function clear(close = true) {
     setQuery("");
     setDeferredQuery("");
     setRemoteTasks(null);
+    setRemoteArchivedTasks(null);
     setRemoteTaskAssignees(null);
     setRemoteTotalCount(null);
     setIsFetching(false);
@@ -172,7 +197,7 @@ export function TaskSearch({
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (isPending) return;
-    const selected = results[activeIndex] ?? results[0];
+    const selected = options[activeIndex] ?? options[0];
     const href = selected
       ? taskSearchResultHref(selected, preview)
       : firstRelatedTaskSearchHref(related, preview, projects);
@@ -201,8 +226,8 @@ export function TaskSearch({
         aria-controls={listboxId}
         aria-expanded={showDropdown}
         aria-activedescendant={
-          showDropdown && !isPending && results[activeIndex]
-            ? `${listboxId}-${results[activeIndex].id}`
+          showDropdown && !isPending && options[activeIndex]
+            ? `${listboxId}-${options[activeIndex].id}`
             : undefined
         }
         aria-busy={isPending}
@@ -248,6 +273,7 @@ export function TaskSearch({
           isPending={isPending}
           isTooShort={isTooShort}
           results={results}
+          archivedResults={archivedResults}
           related={related}
           groupOrder={groupOrder}
           activeIndex={activeIndex}
