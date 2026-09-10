@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import { Avatar, Button, Heading, Tooltip } from "@ryanmeetup/ui";
 import {
   FiArchive,
@@ -58,6 +58,73 @@ export type TaskWorkspaceHeaderControls = {
   onSetView: (value: "board" | "list") => void;
   onSetVisibility: (value: "active" | "archived") => void;
 };
+
+/**
+ * Header details that collapse on mobile and stay open from `md` up.
+ *
+ * The panel was a native `<details>`, which snaps between states with no
+ * animation. Animating the row track instead lets it grow and fade at the
+ * same pace as the rest of the app's collapses. Desktop keeps the panel open
+ * through `max-md:` overrides rather than the media-query state, so the wide
+ * layout is right on the first paint instead of after the effect runs.
+ */
+function WorkspaceHeaderDetails({
+  children,
+  desktop,
+  icon,
+  label,
+  open,
+  setOpen,
+}: {
+  children: ReactNode;
+  desktop: boolean;
+  icon: ReactNode;
+  label: string;
+  open: boolean;
+  setOpen: (open: boolean) => void;
+}) {
+  const panelId = useId();
+  return (
+    <div className="mt-3 rounded-2xl border border-black/10 bg-white/80 shadow-sm dark:border-white/10 dark:bg-white/5 md:border-0 md:bg-transparent md:shadow-none md:dark:bg-transparent">
+      <div className="md:hidden">
+        <button
+          type="button"
+          aria-controls={panelId}
+          aria-expanded={open}
+          onClick={() => setOpen(!open)}
+          className="flex w-full items-center gap-2 rounded-2xl p-4 text-left text-xs font-semibold uppercase tracking-widest text-black/50 transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/30 dark:text-white/50 dark:hover:text-white dark:focus-visible:ring-white/30"
+        >
+          {icon}
+          {label}
+          <FiChevronDown
+            aria-hidden
+            className={`ml-auto shrink-0 transition-transform duration-200 ease-out motion-reduce:transition-none ${
+              open ? "-rotate-180" : ""
+            }`}
+          />
+        </button>
+      </div>
+      <div
+        id={panelId}
+        aria-hidden={!open && !desktop}
+        className={`grid grid-rows-[1fr] opacity-100 transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none ${
+          open
+            ? ""
+            : "max-md:pointer-events-none max-md:grid-rows-[0fr] max-md:opacity-0"
+        }`}
+      >
+        <div
+          inert={!open && !desktop}
+          className="min-h-0 overflow-hidden md:overflow-visible"
+        >
+          <div className="flex flex-wrap items-start gap-x-6 gap-y-3 px-4 pb-4 md:p-0">
+            {children}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function TaskWorkspaceHeader({
   scope,
@@ -162,145 +229,123 @@ export function TaskWorkspaceHeader({
           </p>
         )}
         {selectedProject && (
-          <details
-            open={desktopDetails || projectDetailsOpen}
-            onToggle={(event) => {
-              if (!desktopDetails)
-                setProjectDetailsOpen(event.currentTarget.open);
-            }}
-            className="group mt-3 rounded-2xl border border-black/10 bg-white/80 shadow-sm dark:border-white/10 dark:bg-white/5 md:border-0 md:bg-transparent md:shadow-none md:dark:bg-transparent"
+          <WorkspaceHeaderDetails
+            label="Project details"
+            icon={<FiFolder aria-hidden />}
+            open={projectDetailsOpen}
+            setOpen={setProjectDetailsOpen}
+            desktop={desktopDetails}
           >
-            <summary className="flex w-full cursor-pointer list-none items-center gap-2 rounded-2xl p-4 text-left text-xs font-semibold uppercase tracking-widest text-black/50 transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/30 dark:text-white/50 dark:hover:text-white dark:focus-visible:ring-white/30 md:hidden [&::-webkit-details-marker]:hidden">
-              <FiFolder aria-hidden />
-              Project details
-              <FiChevronDown
-                aria-hidden
-                className="ml-auto shrink-0 transition-transform group-open:-rotate-180 motion-reduce:transition-none"
-              />
-            </summary>
-            <div className="hidden flex-wrap items-start gap-x-6 gap-y-3 px-4 pb-4 group-open:flex md:flex md:p-0">
+            <div className="min-w-0">
+              <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-black/45 dark:text-white/45">
+                Owners
+              </p>
+              <div className="flex min-h-8 min-w-0 items-center gap-3">
+                {projectOwners.length > 0 ? (
+                  <Tooltip
+                    content={projectOwners
+                      .map((owner) => owner.full_name)
+                      .join(", ")}
+                    placement="bottom"
+                  >
+                    <div
+                      className="flex shrink-0 -space-x-2"
+                      aria-label={`${projectOwners.length} ${projectOwners.length === 1 ? "project owner" : "project owners"}`}
+                    >
+                      {projectOwners.slice(0, 3).map((owner) => (
+                        <Avatar
+                          key={owner.id}
+                          name={owner.full_name}
+                          src={owner.avatar_url}
+                          size="md"
+                          className="ring-2 ring-[#f1f2ef] dark:ring-[#101010]"
+                        />
+                      ))}
+                    </div>
+                  </Tooltip>
+                ) : (
+                  <>
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-dashed border-black/25 text-black/45 dark:border-white/25 dark:text-white/45">
+                      <FiUsers aria-hidden size={14} />
+                    </span>
+                    <p className="text-xs font-medium text-black/70 dark:text-white/70">
+                      Unassigned
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
+            {selectedProject.links.length > 0 && (
               <div className="min-w-0">
                 <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-black/45 dark:text-white/45">
-                  Owners
+                  Useful links
                 </p>
-                <div className="flex min-h-8 min-w-0 items-center gap-3">
-                  {projectOwners.length > 0 ? (
-                    <Tooltip
-                      content={projectOwners
-                        .map((owner) => owner.full_name)
-                        .join(", ")}
-                      placement="bottom"
-                    >
-                      <div
-                        className="flex shrink-0 -space-x-2"
-                        aria-label={`${projectOwners.length} ${projectOwners.length === 1 ? "project owner" : "project owners"}`}
-                      >
-                        {projectOwners.slice(0, 3).map((owner) => (
-                          <Avatar
-                            key={owner.id}
-                            name={owner.full_name}
-                            src={owner.avatar_url}
-                            size="md"
-                            className="ring-2 ring-[#f1f2ef] dark:ring-[#101010]"
-                          />
-                        ))}
-                      </div>
-                    </Tooltip>
-                  ) : (
-                    <>
-                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-dashed border-black/25 text-black/45 dark:border-white/25 dark:text-white/45">
-                        <FiUsers aria-hidden size={14} />
-                      </span>
-                      <p className="text-xs font-medium text-black/70 dark:text-white/70">
-                        Unassigned
-                      </p>
-                    </>
-                  )}
-                </div>
+                <ResourceLinks links={selectedProject.links} />
               </div>
-              {selectedProject.links.length > 0 && (
-                <div className="min-w-0">
-                  <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-black/45 dark:text-white/45">
-                    Useful links
-                  </p>
-                  <ResourceLinks links={selectedProject.links} />
-                </div>
-              )}
-              {(projectAttachmentsPending ||
-                projectAttachments.notes.length > 0 ||
-                projectAttachments.files.length > 0) && (
-                <div className="min-w-0">
-                  <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-black/45 dark:text-white/45">
-                    Attachments
-                  </p>
-                  {projectAttachmentsPending ? (
-                    <ResourceChipsSkeleton
-                      count={projectAttachmentCount}
-                      label="Loading project attachments"
-                    />
-                  ) : (
-                    <ResourceAttachmentsPreview
-                      notes={projectAttachments.notes}
-                      files={projectAttachments.files}
-                    />
-                  )}
-                </div>
-              )}
-            </div>
-          </details>
+            )}
+            {(projectAttachmentsPending ||
+              projectAttachments.notes.length > 0 ||
+              projectAttachments.files.length > 0) && (
+              <div className="min-w-0">
+                <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-black/45 dark:text-white/45">
+                  Attachments
+                </p>
+                {projectAttachmentsPending ? (
+                  <ResourceChipsSkeleton
+                    count={projectAttachmentCount}
+                    label="Loading project attachments"
+                  />
+                ) : (
+                  <ResourceAttachmentsPreview
+                    notes={projectAttachments.notes}
+                    files={projectAttachments.files}
+                  />
+                )}
+              </div>
+            )}
+          </WorkspaceHeaderDetails>
         )}
         {selectedCategory &&
           ((selectedCategory.links ?? []).length > 0 ||
             categoryAttachmentsPending ||
             categoryAttachments.notes.length > 0 ||
             categoryAttachments.files.length > 0) && (
-            <details
-              open={desktopDetails || categoryDetailsOpen}
-              onToggle={(event) => {
-                if (!desktopDetails)
-                  setCategoryDetailsOpen(event.currentTarget.open);
-              }}
-              className="group mt-3 rounded-2xl border border-black/10 bg-white/80 shadow-sm dark:border-white/10 dark:bg-white/5 md:border-0 md:bg-transparent md:shadow-none md:dark:bg-transparent"
+            <WorkspaceHeaderDetails
+              label="Category details"
+              icon={<FiTag aria-hidden />}
+              open={categoryDetailsOpen}
+              setOpen={setCategoryDetailsOpen}
+              desktop={desktopDetails}
             >
-              <summary className="flex w-full cursor-pointer list-none items-center gap-2 rounded-2xl p-4 text-left text-xs font-semibold uppercase tracking-widest text-black/50 transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/30 dark:text-white/50 dark:hover:text-white dark:focus-visible:ring-white/30 md:hidden [&::-webkit-details-marker]:hidden">
-                <FiTag aria-hidden />
-                Category details
-                <FiChevronDown
-                  aria-hidden
-                  className="ml-auto shrink-0 transition-transform group-open:-rotate-180 motion-reduce:transition-none"
-                />
-              </summary>
-              <div className="hidden flex-wrap items-start gap-x-6 gap-y-3 px-4 pb-4 group-open:flex md:flex md:p-0">
-                {(selectedCategory.links ?? []).length > 0 && (
-                  <div className="min-w-0">
-                    <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-black/45 dark:text-white/45">
-                      Useful links
-                    </p>
-                    <ResourceLinks links={selectedCategory.links ?? []} />
-                  </div>
-                )}
-                {(categoryAttachmentsPending ||
-                  categoryAttachments.notes.length > 0 ||
-                  categoryAttachments.files.length > 0) && (
-                  <div className="min-w-0">
-                    <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-black/45 dark:text-white/45">
-                      Attachments
-                    </p>
-                    {categoryAttachmentsPending ? (
-                      <ResourceChipsSkeleton
-                        count={categoryAttachmentCount}
-                        label="Loading category attachments"
-                      />
-                    ) : (
-                      <ResourceAttachmentsPreview
-                        notes={categoryAttachments.notes}
-                        files={categoryAttachments.files}
-                      />
-                    )}
-                  </div>
-                )}
-              </div>
-            </details>
+              {(selectedCategory.links ?? []).length > 0 && (
+                <div className="min-w-0">
+                  <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-black/45 dark:text-white/45">
+                    Useful links
+                  </p>
+                  <ResourceLinks links={selectedCategory.links ?? []} />
+                </div>
+              )}
+              {(categoryAttachmentsPending ||
+                categoryAttachments.notes.length > 0 ||
+                categoryAttachments.files.length > 0) && (
+                <div className="min-w-0">
+                  <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-black/45 dark:text-white/45">
+                    Attachments
+                  </p>
+                  {categoryAttachmentsPending ? (
+                    <ResourceChipsSkeleton
+                      count={categoryAttachmentCount}
+                      label="Loading category attachments"
+                    />
+                  ) : (
+                    <ResourceAttachmentsPreview
+                      notes={categoryAttachments.notes}
+                      files={categoryAttachments.files}
+                    />
+                  )}
+                </div>
+              )}
+            </WorkspaceHeaderDetails>
           )}
       </div>
       <div className="flex w-full flex-col gap-2 xl:w-auto xl:items-end">
