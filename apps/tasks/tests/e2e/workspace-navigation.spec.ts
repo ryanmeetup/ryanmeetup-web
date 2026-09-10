@@ -798,7 +798,7 @@ test("reads the archive as a record rather than a board", async ({
   const layout = page.getByRole("group", { name: "Task layout" });
   await expect(layout).toBeVisible();
   await page
-    .getByRole("group", { name: "Task visibility" })
+    .getByRole("group", { name: "Task status" })
     .getByRole("button", { name: "Archive" })
     .click();
 
@@ -820,7 +820,7 @@ test("reads the archive as a record rather than a board", async ({
   await expect(page.getByRole("columnheader", { name: "Due" })).toHaveCount(0);
 
   await page
-    .getByRole("group", { name: "Task visibility" })
+    .getByRole("group", { name: "Task status" })
     .getByRole("button", { name: "Active" })
     .click();
   await expect(page.locator("[data-board-scroller]")).toBeVisible();

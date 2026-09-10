@@ -64,6 +64,11 @@ export default defineConfig({
             // step above, not just for the server it starts.
             NEXT_PUBLIC_SUPABASE_URL: supabaseOrigin,
             NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_test",
+            // The double serves no statuses, so the first signed-in request
+            // reaches the bootstrap that seeds them, and that one needs the
+            // admin key. A working tree has it from `.env.local`; CI has no
+            // such file, so sign-in failed there and only there.
+            SUPABASE_SECRET_KEY: "sb_secret_test",
           },
         },
       ],
