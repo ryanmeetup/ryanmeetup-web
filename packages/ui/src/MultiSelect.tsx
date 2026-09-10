@@ -10,7 +10,10 @@ import {
 import { Fragment, useId } from "react";
 import { FiCheck, FiChevronDown, FiSearch } from "react-icons/fi";
 import { Avatar, type AvatarProps } from "./Avatar";
-import { getFieldLabelClasses } from "./fieldStyles";
+import {
+  fieldSelectButtonClasses,
+  getFieldLabelClasses,
+} from "./fieldStyles";
 import { useDropdownSearch } from "./useDropdownSearch";
 
 export type MultiSelectOption = {
@@ -88,9 +91,9 @@ const MultiSelect = ({
       </label>
       <ListboxButton
         id={buttonId}
-        aria-required={required}
+        aria-required={required || undefined}
         onClick={() => setQuery("")}
-        className="inline-flex w-full items-center justify-between gap-2 rounded-lg border border-black/20 bg-white px-4 py-2.5 text-sm font-semibold text-black shadow-sm transition hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/20 dark:bg-white/10 dark:text-white dark:hover:bg-white/15 dark:focus-visible:ring-white/30"
+        className={fieldSelectButtonClasses}
       >
         <span className="inline-flex min-w-0 items-center gap-2">
           {selectedOptions.some((option) => option.avatar) && (

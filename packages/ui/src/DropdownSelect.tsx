@@ -10,7 +10,10 @@ import {
 import { Fragment, useId, type ReactNode } from "react";
 import { FiCheck, FiChevronDown, FiSearch } from "react-icons/fi";
 import { Avatar, type AvatarProps } from "./Avatar";
-import { getFieldLabelClasses } from "./fieldStyles";
+import {
+  fieldSelectButtonClasses,
+  getFieldLabelClasses,
+} from "./fieldStyles";
 import { getFilterControlClasses } from "./filterStyles";
 import { useDropdownSearch } from "./useDropdownSearch";
 import { useProximityOptions } from "./useProximityOptions";
@@ -160,7 +163,7 @@ const DropdownSelect = ({
         id={buttonId}
         aria-required={required || undefined}
         onClick={() => setQuery("")}
-        className={`${field ? "inline-flex w-full items-center justify-between gap-2 rounded-lg border border-black/20 bg-white px-4 py-2.5 text-sm font-semibold text-black shadow-sm transition hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:border-white/20 dark:bg-white/10 dark:text-white dark:hover:bg-white/10 dark:focus-visible:ring-white/30" : `${getFilterControlClasses(active)} shrink-0 ${stackLabelOnMobile ? "!grid grid-cols-[7rem_minmax(0,1fr)_auto] justify-stretch gap-3 px-3 py-2.5 text-left lg:!inline-flex lg:w-auto lg:justify-center lg:gap-2 lg:px-3 lg:py-1.5" : ""}`} disabled:cursor-not-allowed disabled:opacity-40 ${className ?? ""}`}
+        className={`${field ? fieldSelectButtonClasses : `${getFilterControlClasses(active)} shrink-0 ${stackLabelOnMobile ? "!grid grid-cols-[7rem_minmax(0,1fr)_auto] justify-stretch gap-3 px-3 py-2.5 text-left lg:!inline-flex lg:w-auto lg:justify-center lg:gap-2 lg:px-3 lg:py-1.5" : ""} disabled:cursor-not-allowed disabled:opacity-40`} ${className ?? ""}`}
       >
         {!field && (
           <span
