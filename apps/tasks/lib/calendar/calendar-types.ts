@@ -1,4 +1,5 @@
 import type { Category, Project } from "@/lib/resources/resource-types";
+import { projectPath } from "@/lib/resources/project-route";
 import { taskPath } from "@/lib/tasks/task-key";
 import type { Task } from "@/lib/tasks/task-types";
 import type { Profile } from "@/lib/workspace/workspace-types";
@@ -149,6 +150,36 @@ export function calendarItems(
     categories.map((category) => [category.id, category]),
   );
   const profileMap = new Map(profiles.map((profile) => [profile.id, profile]));
+  const projectItems: CalendarItem[] = projects.flatMap((project) => {
+    if (project.archived_at) return [];
+    const href = projectPath(project, projects);
+    const milestones: CalendarItem[] = [];
+    if (project.start_date)
+      milestones.push({
+        id: `project:${project.id}:start`,
+        source: "important",
+        title: project.name,
+        start: project.start_date,
+        end: project.start_date,
+        allDay: true,
+        color: "#059669",
+        href,
+        meta: "Project starts",
+      });
+    if (project.due_date)
+      milestones.push({
+        id: `project:${project.id}:due`,
+        source: "important",
+        title: project.name,
+        start: project.due_date,
+        end: project.due_date,
+        allDay: true,
+        color: "#7c3aed",
+        href,
+        meta: "Project due",
+      });
+    return milestones;
+  });
   const taskItems: CalendarItem[] = tasks.flatMap((task) => {
     if (!task.due_date || task.archived_at || task.completed_at) return [];
     const project = task.project_id
@@ -180,11 +211,11 @@ export function calendarItems(
     const color =
       event.kind === "away"
         ? "#d97706"
-        : category?.color ?? (project ? "#7c3aed" : "#059669");
+        : (category?.color ?? (project ? "#7c3aed" : "#059669"));
     const owner =
       event.kind === "away"
         ? `${profileMap.get(event.profile_id ?? "")?.full_name ?? "A teammate"} · Away`
-        : project?.name ?? category?.name;
+        : (project?.name ?? category?.name);
     const sameDay = datePart(event.starts_at) === datePart(event.ends_at);
     return occurrencesInRange(
       {
@@ -251,7 +282,9 @@ export function calendarItems(
             event.start === event.end,
           ),
     }));
-  return [...taskItems, ...eventItems, ...googleItems].sort(compareCalendarItems);
+  return [...projectItems, ...taskItems, ...eventItems, ...googleItems].sort(
+    compareCalendarItems,
+  );
 }
 
 export function monthBounds(month: string) {

@@ -7,6 +7,7 @@ import {
   type CalendarEvent,
 } from "@/lib/calendar/calendar-types";
 import type { Task } from "@/lib/tasks/task-types";
+import type { Project } from "@/lib/resources/resource-types";
 import { calendarEventSchema } from "@/lib/api-schema/calendar";
 import { workspaceGoogleEventId } from "@/lib/calendar/google-calendar-sync";
 
@@ -48,6 +49,21 @@ const away: CalendarEvent = {
   created_at: "2026-08-20T12:00:00Z",
   updated_at: "2026-08-20T12:00:00Z",
 };
+
+const project = (overrides: Partial<Project> = {}): Project => ({
+  id: "website-refresh",
+  name: "Website Refresh",
+  description: null,
+  links: [],
+  created_by: "ryan",
+  archived_at: null,
+  created_at: "2026-08-01T12:00:00Z",
+  start_date: "2026-08-20",
+  due_date: "2026-09-15",
+  status: "active",
+  access_mode: "open",
+  ...overrides,
+});
 
 describe("workspace time zone labels", () => {
   it("names the offset the date actually runs in", () => {
@@ -103,6 +119,52 @@ describe("calendar view models", () => {
     expect(items.map((item) => item.source)).toEqual(["task", "away"]);
     expect(items[0].href).toBe("/task/TASK-12");
     expect(items[0].task?.title).toBe("Book the venue");
+  });
+
+  it("creates linked milestones for explicit dates on active projects", () => {
+    const items = calendarItems(
+      [],
+      [],
+      [
+        project(),
+        project({
+          id: "undated",
+          name: "Undated",
+          start_date: null,
+          due_date: null,
+        }),
+        project({
+          id: "archived",
+          name: "Archived",
+          archived_at: "2026-08-30T12:00:00Z",
+        }),
+      ],
+      [],
+      [],
+      [],
+      range,
+    );
+
+    expect(items).toEqual([
+      expect.objectContaining({
+        id: "project:website-refresh:start",
+        source: "important",
+        title: "Website Refresh",
+        start: "2026-08-20",
+        end: "2026-08-20",
+        href: "/projects/website-refresh",
+        meta: "Project starts",
+      }),
+      expect.objectContaining({
+        id: "project:website-refresh:due",
+        source: "important",
+        title: "Website Refresh",
+        start: "2026-09-15",
+        end: "2026-09-15",
+        href: "/projects/website-refresh",
+        meta: "Project due",
+      }),
+    ]);
   });
 
   it("includes a multi-day away entry on every date in its range", () => {

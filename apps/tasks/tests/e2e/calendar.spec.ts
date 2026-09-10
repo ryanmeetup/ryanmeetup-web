@@ -3,6 +3,8 @@ import {
   DEMO_PREVIEW_COOKIE,
   DEMO_PREVIEW_VALUE,
 } from "../../lib/demo-preview";
+import { moveCalendarMonth } from "../../lib/calendar/calendar-view";
+import { demoData } from "../../lib/workspace/demo-data";
 
 async function openDemoCalendar(page: Page, baseURL: string | undefined) {
   await page.context().addCookies([
@@ -61,6 +63,36 @@ test("switches the one editor between a date and time away", async ({
   ).toBeVisible();
   await expect(editor.getByLabel("Title")).toHaveValue("Out of office");
   await expect(editor.getByRole("button", { name: "Visibility" })).toBeHidden();
+});
+
+test("shows explicit project milestones in the month grid", async ({
+  page,
+  baseURL,
+}) => {
+  const project = demoData.projects.find(
+    (candidate) => candidate.id === "website-refresh",
+  );
+  if (!project?.due_date) throw new Error("Demo project needs a due date.");
+
+  await openDemoCalendar(page, baseURL);
+  let visibleMonth = new Date().toISOString().slice(0, 7);
+  const dueMonth = project.due_date.slice(0, 7);
+  const direction = dueMonth > visibleMonth ? 1 : -1;
+  const monthButton = page.getByRole("button", {
+    name: direction === 1 ? "Next month" : "Previous month",
+  });
+  while (visibleMonth !== dueMonth) {
+    await monthButton.click();
+    visibleMonth = moveCalendarMonth(visibleMonth, direction);
+  }
+
+  const milestone = page
+    .locator("[data-calendar-month-grid]")
+    .locator('a[href="/projects/website-refresh"]', {
+      hasText: "Project due",
+    });
+  await expect(milestone).toHaveCount(1);
+  await expect(milestone).toContainText("Website Refresh");
 });
 
 test.describe("mobile calendar", () => {
