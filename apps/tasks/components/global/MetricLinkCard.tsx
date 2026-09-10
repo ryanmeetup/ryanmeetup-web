@@ -34,27 +34,27 @@ export function MetricLinkCard({
   const card = (
     <Card
       size="none"
-      className={`relative h-full min-h-24 overflow-hidden p-3 sm:min-h-32 sm:p-4 ${
+      className={`relative h-full min-h-24 overflow-hidden px-2 py-3 sm:min-h-32 sm:p-4 ${
         href
           ? "cursor-pointer transition duration-200 group-hover:-translate-y-1 group-hover:shadow-lg motion-reduce:transform-none"
           : ""
       } ${toneClasses[tone]}`}
     >
-      <span className="flex items-center gap-1.5 whitespace-nowrap text-[0.625rem] font-semibold uppercase tracking-[0.08em] text-black/50 dark:text-white/50 sm:gap-2 sm:text-xs sm:tracking-[0.16em]">
-        {icon}
-        <span className="sm:hidden">{mobileLabel}</span>
-        <span className="hidden sm:inline">{label}</span>
-      </span>
-      <div className="relative z-10 mt-4 flex items-end justify-between gap-2 sm:mt-5">
-        <p className="font-cooper text-3xl leading-none sm:text-5xl">{value}</p>
+      <span className="relative z-10 flex items-center gap-1 whitespace-nowrap text-[0.625rem] font-semibold uppercase tracking-[0.08em] text-black/50 dark:text-white/50 sm:gap-2 sm:text-xs sm:tracking-[0.16em]">
+        <span className="shrink-0">{icon}</span>
+        <span className="shrink-0 md:hidden">{mobileLabel}</span>
+        <span className="hidden shrink-0 md:inline">{label}</span>
         {href && (
           <FiArrowRight
             aria-hidden
             data-metric-link-arrow
-            className="mb-0.5 shrink-0 text-sm text-black/35 transition group-hover:translate-x-1 group-hover:text-black/70 motion-reduce:transform-none dark:text-white/35 dark:group-hover:text-white/75 sm:mb-1 sm:text-base"
+            className="ml-auto shrink-0 text-sm text-black/35 transition group-hover:translate-x-1 group-hover:text-black/70 motion-reduce:transform-none dark:text-white/35 dark:group-hover:text-white/75 sm:text-base"
           />
         )}
-      </div>
+      </span>
+      <p className="relative z-10 mt-4 font-cooper text-3xl leading-none sm:mt-5 sm:text-5xl">
+        {value}
+      </p>
       {detail && (
         <p className="mt-1 text-xs font-medium text-black/50 dark:text-white/50">
           {detail}

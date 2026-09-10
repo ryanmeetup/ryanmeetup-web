@@ -53,6 +53,7 @@ const ModalActions = ({
       form={confirmForm}
       variant={destructive ? "danger" : "primary"}
       size={size}
+      className="w-full sm:w-auto"
       leftIcon={confirmIcon}
       loading={pending}
       loadingText={pendingLabel ?? `${confirmLabel}...`}
@@ -77,8 +78,20 @@ const ModalActions = ({
         </Button>
       )}
       {confirmTooltip ? (
-        <Tooltip content={confirmTooltip} disabled={!confirmDisabled}>
-          <span tabIndex={confirmDisabled ? 0 : -1}>{confirm}</span>
+        // The tooltip's trigger sits between the footer's action group and the
+        // button, so the group's stacking rule cannot reach the button on its
+        // own. Both wrappers carry the same width as the button they hold.
+        <Tooltip
+          content={confirmTooltip}
+          disabled={!confirmDisabled}
+          triggerClassName="w-full sm:w-auto"
+        >
+          <span
+            className="block w-full sm:w-auto"
+            tabIndex={confirmDisabled ? 0 : -1}
+          >
+            {confirm}
+          </span>
         </Tooltip>
       ) : (
         confirm

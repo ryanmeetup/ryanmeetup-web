@@ -8,6 +8,7 @@ import { taskPath } from "../../lib/tasks/task-key";
 // The build's own key builder, so these routes stay right whatever prefix the
 // server under test was compiled with. See `playwright.config.ts`.
 const editedTask = taskPath({ task_number: 5 });
+const movedTask = taskPath({ task_number: 1 });
 
 // These workflows all render the full demo workspace. Keeping them serial
 // avoids three simultaneous cold hydrations obscuring the transition each test
@@ -230,6 +231,12 @@ test("keeps category tags subordinate across task surfaces", async ({
   await expect(
     categoriesSection.getByText("Bug", { exact: true }),
   ).toBeVisible();
+  await expect(
+    categoriesSection.getByRole("list", {
+      name: "Tags in Product / Tools",
+      exact: true,
+    }),
+  ).toContainText("Bug");
 });
 
 test("preserves existing assignees when another person is added", async ({
@@ -283,6 +290,21 @@ test("returns to the task after saving from the mobile editor", async ({
   await expect(
     page.getByRole("heading", { name: "Confirm launch venue" }),
   ).toBeVisible();
+});
+
+test("names both statuses in task move activity", async ({ page, baseURL }) => {
+  await enterDemoWorkspace(page, baseURL);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(movedTask);
+  await page.waitForLoadState("networkidle");
+
+  const activity = page
+    .getByRole("button", { name: /Activity/ })
+    .locator("..")
+    .locator("..");
+  await expect(activity).toContainText("Alex Morgan moved the task");
+  await expect(activity).toContainText("In Review");
+  await expect(activity).toContainText("Done");
 });
 
 test("keeps the mobile duplicate editor open for create another", async ({

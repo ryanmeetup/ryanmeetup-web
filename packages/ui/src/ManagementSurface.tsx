@@ -3,6 +3,8 @@ import { Heading } from "./Heading";
 
 export type ManagementSurfaceProps = {
   title: ReactNode;
+  /** Compact status or control displayed beside the page title. */
+  titleAccessory?: ReactNode;
   description?: ReactNode;
   actions?: ReactNode;
   children: ReactNode;
@@ -16,6 +18,7 @@ export type ManagementSurfaceProps = {
  */
 const ManagementSurface = ({
   title,
+  titleAccessory,
   description,
   actions,
   children,
@@ -27,9 +30,14 @@ const ManagementSurface = ({
     {title && (
       <div className="flex flex-col gap-4 border-b border-black/10 px-5 py-4 dark:border-white/10 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <Heading size="h1" className="text-2xl sm:text-3xl">
-            {title}
-          </Heading>
+          <div className="flex min-w-0 items-center gap-2">
+            <Heading size="h1" className="min-w-0 text-2xl sm:text-3xl">
+              {title}
+            </Heading>
+            {titleAccessory && (
+              <div className="flex shrink-0 items-center">{titleAccessory}</div>
+            )}
+          </div>
           {description && (
             <div className="mt-2 text-sm leading-relaxed text-black/65 dark:text-white/65">
               {description}

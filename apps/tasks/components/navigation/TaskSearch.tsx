@@ -34,6 +34,7 @@ import { useSearchCombobox } from "@/hooks/useSearchCombobox";
 import { TaskSearchResults } from "./TaskSearchResults";
 
 const DEBOUNCE_MS = 200;
+const DESKTOP_SEARCH_PLACEHOLDER_QUERY = "(min-width: 64rem)";
 
 export function TaskSearch({
   tasks,
@@ -55,6 +56,7 @@ export function TaskSearch({
   const listboxId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
+  const [showDetailedPlaceholder, setShowDetailedPlaceholder] = useState(false);
   const [deferredQuery, setDeferredQuery] = useState("");
   const [remoteTasks, setRemoteTasks] = useState<Task[] | null>(null);
   const [remoteArchivedTasks, setRemoteArchivedTasks] = useState<Task[] | null>(
@@ -86,6 +88,15 @@ export function TaskSearch({
     }),
     [searchParams],
   );
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(DESKTOP_SEARCH_PLACEHOLDER_QUERY);
+    const updatePlaceholder = () =>
+      setShowDetailedPlaceholder(mediaQuery.matches);
+    updatePlaceholder();
+    mediaQuery.addEventListener("change", updatePlaceholder);
+    return () => mediaQuery.removeEventListener("change", updatePlaceholder);
+  }, []);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -242,7 +253,11 @@ export function TaskSearch({
           setActiveIndex(0);
           setOpen(true);
         }}
-        placeholder="Search tasks by title, ID, or project..."
+        placeholder={
+          showDetailedPlaceholder
+            ? "Search tasks by title, ID, or project..."
+            : "Search tasks…"
+        }
         className="h-10 w-full rounded-lg border border-black/10 bg-white pl-10 pr-20 text-sm outline-none focus:border-black/30 focus:ring-2 focus:ring-black/10 [&::-webkit-search-cancel-button]:appearance-none dark:border-white/10 dark:bg-white/5 dark:focus:border-white/30"
       />
       {query && (

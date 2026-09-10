@@ -77,7 +77,7 @@ export function ProfileForm({
   const [paginationPageSize, setPaginationPageSize] = useState(
     10 as 10 | 25 | 50 | 100,
   );
-  const [filterPanelsExpanded, setFilterPanelsExpanded] = useState(true);
+  const [filterPanelsExpanded, setFilterPanelsExpanded] = useState(false);
 
   useEffect(() => {
     const saved = Number.parseInt(
@@ -483,7 +483,10 @@ export function ProfileForm({
                 <span className="pointer-events-none absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-5 dark:bg-black" />
               </span>
             </label>
-            <div className="flex flex-col gap-3 rounded-xl border border-black/10 bg-black/[0.02] p-4 dark:border-white/10 dark:bg-white/[0.025]">
+            <div
+              data-profile-preference="editor-surface"
+              className="flex flex-col gap-3 rounded-xl border border-black/10 bg-black/[0.02] p-4 dark:border-white/10 dark:bg-white/[0.025]"
+            >
               <span className="min-w-0">
                 <span className="block text-sm font-semibold">
                   Create and edit forms
@@ -492,21 +495,27 @@ export function ProfileForm({
                   {editorSurfaceDescription}
                 </span>
               </span>
-              <DropdownSelect
-                label="Form layout"
-                value={editorSurface}
-                disabled={saving || savingPreferences}
-                onChange={(value) => {
-                  if (isEditorSurface(value))
-                    void changeEditorSurfacePreference(value);
-                }}
-                options={editorSurfaceOptions.map((option) => ({
-                  label: option.label,
-                  value: option.value,
-                }))}
-              />
+              <div className="mt-auto">
+                <DropdownSelect
+                  label="Form layout"
+                  value={editorSurface}
+                  disabled={saving || savingPreferences}
+                  onChange={(value) => {
+                    if (isEditorSurface(value))
+                      void changeEditorSurfacePreference(value);
+                  }}
+                  options={editorSurfaceOptions.map((option) => ({
+                    label: option.label,
+                    value: option.value,
+                  }))}
+                  variant="field"
+                />
+              </div>
             </div>
-            <div className="flex flex-col gap-3 rounded-xl border border-black/10 bg-black/[0.02] p-4 dark:border-white/10 dark:bg-white/[0.025]">
+            <div
+              data-profile-preference="calendar-sources"
+              className="flex flex-col gap-3 rounded-xl border border-black/10 bg-black/[0.02] p-4 dark:border-white/10 dark:bg-white/[0.025]"
+            >
               <span className="min-w-0">
                 <span className="block text-sm font-semibold">
                   Default calendar view
@@ -515,25 +524,30 @@ export function ProfileForm({
                   {calendarDefaultViewDescription(calendarDefaultView)}
                 </span>
               </span>
-              <MultiSelect
-                label="Show"
-                value={calendarDefaultView}
-                disabled={saving || savingPreferences}
-                onChange={(values) => {
-                  if (isCalendarDefaultView(values))
-                    void changeCalendarDefaultView(values);
-                }}
-                options={calendarSourceOptions.map((option) => ({
-                  label: option.label,
-                  value: option.value,
-                }))}
-                placeholder="Choose at least one source"
-                required
-                searchable={false}
-                summaryLimit={3}
-              />
+              <div className="mt-auto">
+                <MultiSelect
+                  label="Show"
+                  value={calendarDefaultView}
+                  disabled={saving || savingPreferences}
+                  onChange={(values) => {
+                    if (isCalendarDefaultView(values))
+                      void changeCalendarDefaultView(values);
+                  }}
+                  options={calendarSourceOptions.map((option) => ({
+                    label: option.label,
+                    value: option.value,
+                  }))}
+                  placeholder="Choose at least one source"
+                  required
+                  searchable={false}
+                  summaryLimit={3}
+                />
+              </div>
             </div>
-            <div className="flex flex-col gap-3 rounded-xl border border-black/10 bg-black/[0.02] p-4 dark:border-white/10 dark:bg-white/[0.025]">
+            <div
+              data-profile-preference="page-size"
+              className="flex flex-col gap-3 rounded-xl border border-black/10 bg-black/[0.02] p-4 dark:border-white/10 dark:bg-white/[0.025]"
+            >
               <span className="min-w-0">
                 <span className="block text-sm font-semibold">
                   Default rows per page
@@ -543,20 +557,23 @@ export function ProfileForm({
                   override.
                 </span>
               </span>
-              <DropdownSelect
-                label="Rows"
-                value={String(paginationPageSize)}
-                disabled={saving}
-                onChange={(value) =>
-                  changePaginationPageSize(
-                    Number.parseInt(value, 10) as 10 | 25 | 50 | 100,
-                  )
-                }
-                options={[10, 25, 50, 100].map((size) => ({
-                  label: String(size),
-                  value: String(size),
-                }))}
-              />
+              <div className="mt-auto">
+                <DropdownSelect
+                  label="Rows"
+                  value={String(paginationPageSize)}
+                  disabled={saving}
+                  onChange={(value) =>
+                    changePaginationPageSize(
+                      Number.parseInt(value, 10) as 10 | 25 | 50 | 100,
+                    )
+                  }
+                  options={[10, 25, 50, 100].map((size) => ({
+                    label: String(size),
+                    value: String(size),
+                  }))}
+                  variant="field"
+                />
+              </div>
             </div>
           </div>
           <p className="text-sm text-black/65 dark:text-white/65">

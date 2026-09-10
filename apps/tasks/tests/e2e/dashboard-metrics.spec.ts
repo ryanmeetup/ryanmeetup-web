@@ -29,8 +29,15 @@ test("keeps narrow dashboard metric labels on one line", async ({
 
   const labelBox = await label.boundingBox();
   const arrowBox = await arrow.boundingBox();
+  const cardBox = await dueSoonCard.boundingBox();
 
   expect(labelBox).not.toBeNull();
   expect(arrowBox).not.toBeNull();
-  expect(arrowBox!.y).toBeGreaterThan(labelBox!.y + labelBox!.height);
+  expect(cardBox).not.toBeNull();
+  await expect(label).toHaveCSS("flex-shrink", "0");
+  expect(Math.abs(arrowBox!.y - labelBox!.y)).toBeLessThan(labelBox!.height);
+  expect(arrowBox!.x).toBeGreaterThanOrEqual(labelBox!.x + labelBox!.width);
+  expect(arrowBox!.x + arrowBox!.width).toBeLessThanOrEqual(
+    cardBox!.x + cardBox!.width,
+  );
 });

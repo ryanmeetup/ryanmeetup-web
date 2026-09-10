@@ -22,6 +22,41 @@ async function enterDemoWorkspace(page: Page, baseURL: string | undefined) {
   await page.goto("/");
 }
 
+test("keeps sidebar resource dividers flush with their scroller", async ({
+  page,
+  baseURL,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 500 });
+  await enterDemoWorkspace(page, baseURL);
+
+  const scroller = page
+    .locator("[data-workspace-sidebar]")
+    .locator("[data-sidebar-resource-scroll]");
+  const createMenu = page.locator("[data-sidebar-create-menu]");
+  await expect(scroller).toBeVisible();
+  await expect(scroller).toHaveCSS("border-bottom-width", "1px");
+  expect(
+    await scroller.evaluate(
+      (element) => element.scrollHeight > element.clientHeight,
+    ),
+  ).toBe(true);
+  const createBounds = (await createMenu.boundingBox())!;
+  const scrollBounds = (await scroller.boundingBox())!;
+  const sidebarBounds = (await page
+    .locator("[data-workspace-sidebar]")
+    .boundingBox())!;
+  expect(
+    Math.abs(createBounds.y + createBounds.height - scrollBounds.y),
+  ).toBeLessThanOrEqual(1);
+  expect(
+    Math.abs(
+      scrollBounds.y +
+        scrollBounds.height -
+        (sidebarBounds.y + sidebarBounds.height),
+    ),
+  ).toBeLessThanOrEqual(1);
+});
+
 test("workspace chrome persists across page navigation", async ({
   page,
   baseURL,
@@ -54,6 +89,82 @@ test("workspace chrome persists across page navigation", async ({
   ).toBe(true);
   await expect(sidebar).toBeVisible();
   await expect(page.locator("[data-workspace-content-loading]")).toHaveCount(0);
+});
+
+/**
+ * The upcoming list used to be built from every project in the workspace, so a
+ * project page listed other projects' start and due dates as if they were its
+ * own. Its own two milestones were no better: the header states the due date
+ * and the Timeline card states both, so repeating them here said nothing new.
+ * The list holds the work on this project now.
+ */
+test("lists only this project's own dates as upcoming", async ({
+  page,
+  baseURL,
+}) => {
+  await enterDemoWorkspace(page, baseURL);
+  await page.goto("/projects/website-refresh");
+
+  const upcoming = page.getByTestId("project-upcoming");
+  await expect(upcoming).toBeVisible();
+  await expect(
+    upcoming
+      .getByRole("listitem")
+      .filter({ hasText: "Review homepage copy deck" }),
+  ).toBeVisible();
+
+  // No milestone rows: neither this project's, nor any other project's.
+  await expect(upcoming.getByText("Project due")).toHaveCount(0);
+  await expect(upcoming.getByText("Project starts")).toHaveCount(0);
+  await expect(
+    upcoming.getByRole("listitem").filter({ hasText: "Fall Launch" }),
+  ).toHaveCount(0);
+
+  // Every row that links goes to a task, never to a project.
+  for (const href of await upcoming
+    .getByRole("link")
+    .evaluateAll((links) =>
+      links.map((link) => link.getAttribute("href") ?? ""),
+    )) {
+    expect(href).not.toMatch(/^\/projects\//);
+  }
+});
+
+/**
+ * The details card sits in a sticky column, so its natural height is the whole
+ * viewport's budget. Links, notes, and files grow without limit, which is what
+ * used to push the column past the fold, so each group caps what it draws. The
+ * rest unfolds in place rather than moving into the edit dialog: a reader
+ * without edit rights has no dialog to open.
+ */
+test("caps a long link list so the sticky column keeps its height", async ({
+  page,
+  baseURL,
+}) => {
+  await enterDemoWorkspace(page, baseURL);
+  await page.goto("/projects/website-refresh");
+
+  const details = page.getByTestId("project-overview-sidebar");
+  await details.getByRole("button", { name: /Edit project links/ }).click();
+  const dialog = page.locator('[role="dialog"]');
+  for (let index = 2; index <= 9; index += 1) {
+    await dialog.getByRole("button", { name: "Add link" }).click();
+    await dialog.getByLabel("Label").fill(`Reference ${index}`);
+    await dialog.getByLabel("URL").fill(`https://example.com/${index}`);
+    await dialog.getByRole("button", { name: "Done" }).click();
+  }
+  await dialog.getByRole("button", { name: "Save link changes" }).click();
+
+  const links = details.locator('nav[aria-label="Resource links"] a');
+  await expect(links).toHaveCount(6);
+  const showAll = details.getByRole("button", { name: "Show all 9 links" });
+  await expect(showAll).toBeVisible();
+
+  await showAll.click();
+  await expect(links).toHaveCount(9);
+  await expect(
+    details.getByRole("button", { name: "Show fewer" }),
+  ).toBeVisible();
 });
 
 test("opens a project overview from the sidebar", async ({ page, baseURL }) => {
@@ -651,17 +762,17 @@ test.describe("mobile workspace navigation", () => {
       page.getByRole("heading", { level: 1, name: /Website Refresh/ }),
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { level: 2, name: "Project team" }),
+      page.getByRole("heading", { level: 2, name: "Project details" }),
     ).toBeVisible();
-    const projectTeam = page
-      .getByRole("heading", { level: 2, name: "Project team" })
+    const details = page
+      .getByRole("heading", { level: 2, name: "Project details" })
       .locator("..")
       .locator("..");
-    await expect(projectTeam.getByText("Taylor Brooks")).toBeVisible();
-    await expect(projectTeam.getByText("Project owners")).toBeVisible();
-    await expect(projectTeam.getByText("Alex Morgan")).toBeVisible();
-    await expect(projectTeam.getByText("Jordan Lee")).toBeVisible();
-    await expect(projectTeam.getByText("Team members")).toBeVisible();
+    await expect(details.getByText("Taylor Brooks")).toBeVisible();
+    await expect(details.getByText("Project owners")).toBeVisible();
+    await expect(details.getByText("Alex Morgan")).toBeVisible();
+    await expect(details.getByText("Jordan Lee")).toBeVisible();
+    await expect(details.getByText("Team members")).toBeVisible();
     // Project dates moved into the main column, so the sticky sidebar stays
     // shorter than the content it sticks against.
     await expect(
@@ -696,12 +807,16 @@ test("reads the archive as a record rather than a board", async ({
   await expect(layout).toHaveCount(0);
 
   const rows = page.getByRole("row");
-  await expect(rows.filter({ hasText: "Send customer interview thank-yous" })).toBeVisible();
+  await expect(
+    rows.filter({ hasText: "Send customer interview thank-yous" }),
+  ).toBeVisible();
   await expect(
     rows.filter({ hasText: "Print branded lanyards for every attendee" }),
   ).toBeVisible();
   // The last column dates the ending instead of the deadline.
-  await expect(page.getByRole("columnheader", { name: "Closed" })).toBeVisible();
+  await expect(
+    page.getByRole("columnheader", { name: "Closed" }),
+  ).toBeVisible();
   await expect(page.getByRole("columnheader", { name: "Due" })).toHaveCount(0);
 
   await page

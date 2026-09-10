@@ -371,81 +371,105 @@ export function TaskWorkspaceHeader({
             Edit category
           </Button>
         )}
-        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
-          <div
-            role="group"
-            className="grid min-w-0 grid-cols-2 rounded-lg border border-black/10 bg-white p-1 dark:border-white/10 dark:bg-white/5 sm:flex"
-            aria-label="Task scope"
-          >
-            <button
-              aria-pressed={assignee === "all"}
-              onClick={() => onSetAssignee("all")}
-              className={`view-button min-w-0 px-2 tracking-[0.08em] sm:px-3 sm:tracking-[0.14em] ${assignee === "all" ? "view-button-active" : ""}`}
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+          <div className="grid w-full min-w-0 grid-cols-[4.75rem_minmax(0,1fr)] items-center gap-3 sm:block sm:w-auto">
+            <p
+              aria-hidden="true"
+              className="text-[9px] font-semibold uppercase tracking-[0.16em] text-black/45 dark:text-white/45 sm:hidden"
             >
-              All
-            </button>
-            {viewingAsGroup ? (
-              <Tooltip content="Mine is unavailable when viewing as an access group because a group is not a task assignee.">
+              Assignee
+            </p>
+            <div
+              role="group"
+              className="grid min-w-0 grid-cols-2 rounded-lg border border-black/10 bg-white p-1 dark:border-white/10 dark:bg-white/5 sm:flex"
+              aria-label="Task assignee"
+            >
+              <button
+                aria-pressed={assignee === "all"}
+                onClick={() => onSetAssignee("all")}
+                className={`view-button min-h-11 min-w-0 px-2 tracking-[0.08em] sm:min-h-0 sm:px-3 sm:tracking-[0.14em] ${assignee === "all" ? "view-button-active" : ""}`}
+              >
+                All
+              </button>
+              {viewingAsGroup ? (
+                <Tooltip content="Mine is unavailable when viewing as an access group because a group is not a task assignee.">
+                  <button
+                    type="button"
+                    disabled
+                    className="view-button min-h-11 min-w-0 px-2 tracking-[0.08em] opacity-40 sm:min-h-0 sm:px-3 sm:tracking-[0.14em]"
+                  >
+                    Mine
+                  </button>
+                </Tooltip>
+              ) : (
                 <button
-                  type="button"
-                  disabled
-                  className="view-button min-w-0 px-2 tracking-[0.08em] opacity-40 sm:px-3 sm:tracking-[0.14em]"
+                  aria-pressed={isMyTasks}
+                  onClick={() => onSetAssignee(myTasksName)}
+                  className={`view-button min-h-11 min-w-0 px-2 tracking-[0.08em] sm:min-h-0 sm:px-3 sm:tracking-[0.14em] ${isMyTasks ? "view-button-active" : ""}`}
                 >
                   Mine
                 </button>
-              </Tooltip>
-            ) : (
-              <button
-                aria-pressed={isMyTasks}
-                onClick={() => onSetAssignee(myTasksName)}
-                className={`view-button min-w-0 px-2 tracking-[0.08em] sm:px-3 sm:tracking-[0.14em] ${isMyTasks ? "view-button-active" : ""}`}
-              >
-                Mine
-              </button>
-            )}
+              )}
+            </div>
           </div>
-          <div
-            role="group"
-            className="grid min-w-0 grid-cols-2 rounded-lg border border-black/10 bg-white p-1 dark:border-white/10 dark:bg-white/5 sm:flex"
-            aria-label="Task visibility"
-          >
-            <button
-              aria-pressed={visibility === "active"}
-              onClick={() => onSetVisibility("active")}
-              className={`view-button min-w-0 px-2 tracking-[0.08em] sm:px-3 sm:tracking-[0.14em] ${visibility === "active" ? "view-button-active" : ""}`}
+          <div className="grid w-full min-w-0 grid-cols-[4.75rem_minmax(0,1fr)] items-center gap-3 sm:block sm:w-auto">
+            <p
+              aria-hidden="true"
+              className="text-[9px] font-semibold uppercase tracking-[0.16em] text-black/45 dark:text-white/45 sm:hidden"
             >
-              Active
-            </button>
-            <button
-              aria-pressed={visibility === "archived"}
-              onClick={() => onSetVisibility("archived")}
-              className={`view-button min-w-0 gap-1 px-2 tracking-[0.08em] sm:gap-2 sm:px-3 sm:tracking-[0.14em] ${visibility === "archived" ? "view-button-active" : ""}`}
+              Status
+            </p>
+            <div
+              role="group"
+              className="grid min-w-0 grid-cols-2 rounded-lg border border-black/10 bg-white p-1 dark:border-white/10 dark:bg-white/5 sm:flex"
+              aria-label="Task status"
             >
-              <FiArchive /> Archive
-            </button>
+              <button
+                aria-pressed={visibility === "active"}
+                onClick={() => onSetVisibility("active")}
+                className={`view-button min-h-11 min-w-0 px-2 tracking-[0.08em] sm:min-h-0 sm:px-3 sm:tracking-[0.14em] ${visibility === "active" ? "view-button-active" : ""}`}
+              >
+                Active
+              </button>
+              <button
+                aria-pressed={visibility === "archived"}
+                onClick={() => onSetVisibility("archived")}
+                className={`view-button min-h-11 min-w-0 gap-1 px-2 tracking-[0.08em] sm:min-h-0 sm:gap-2 sm:px-3 sm:tracking-[0.14em] ${visibility === "archived" ? "view-button-active" : ""}`}
+              >
+                <FiArchive aria-hidden className="hidden sm:block" /> Archive
+              </button>
+            </div>
           </div>
           {/* Archived work has no board: only a status that closes work can
               hold an archived task, so the lanes would be empty. */}
           {visibility === "active" && (
-            <div
-              role="group"
-              className="grid min-w-0 grid-cols-2 rounded-lg border border-black/10 bg-white p-1 dark:border-white/10 dark:bg-white/5 sm:flex"
-              aria-label="Task layout"
-            >
-              <button
-                aria-pressed={view === "board"}
-                onClick={() => onSetView("board")}
-                className={`view-button min-w-0 gap-1 px-2 tracking-[0.08em] sm:gap-2 sm:px-3 sm:tracking-[0.14em] ${view === "board" ? "view-button-active" : ""}`}
+            <div className="grid w-full min-w-0 grid-cols-[4.75rem_minmax(0,1fr)] items-center gap-3 sm:block sm:w-auto">
+              <p
+                aria-hidden="true"
+                className="text-[9px] font-semibold uppercase tracking-[0.16em] text-black/45 dark:text-white/45 sm:hidden"
               >
-                <FiGrid /> Board
-              </button>
-              <button
-                aria-pressed={view === "list"}
-                onClick={() => onSetView("list")}
-                className={`view-button min-w-0 gap-1 px-2 tracking-[0.08em] sm:gap-2 sm:px-3 sm:tracking-[0.14em] ${view === "list" ? "view-button-active" : ""}`}
+                Layout
+              </p>
+              <div
+                role="group"
+                className="grid min-w-0 grid-cols-2 rounded-lg border border-black/10 bg-white p-1 dark:border-white/10 dark:bg-white/5 sm:flex"
+                aria-label="Task layout"
               >
-                <FiList /> List
-              </button>
+                <button
+                  aria-pressed={view === "board"}
+                  onClick={() => onSetView("board")}
+                  className={`view-button min-h-11 min-w-0 gap-1 px-2 tracking-[0.08em] sm:min-h-0 sm:gap-2 sm:px-3 sm:tracking-[0.14em] ${view === "board" ? "view-button-active" : ""}`}
+                >
+                  <FiGrid aria-hidden /> Board
+                </button>
+                <button
+                  aria-pressed={view === "list"}
+                  onClick={() => onSetView("list")}
+                  className={`view-button min-h-11 min-w-0 gap-1 px-2 tracking-[0.08em] sm:min-h-0 sm:gap-2 sm:px-3 sm:tracking-[0.14em] ${view === "list" ? "view-button-active" : ""}`}
+                >
+                  <FiList aria-hidden /> List
+                </button>
+              </div>
             </div>
           )}
         </div>

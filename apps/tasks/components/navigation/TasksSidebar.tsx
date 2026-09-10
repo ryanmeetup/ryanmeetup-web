@@ -341,7 +341,10 @@ export function TasksSidebar({
         )}
       </nav>
       {(isOwner || canManageCategories) && (
-        <section className="mt-4 border-y border-black/10 py-3 dark:border-white/10">
+        <section
+          data-sidebar-create-menu
+          className="mt-4 border-y border-black/10 py-3 dark:border-white/10"
+        >
           <DropdownMenu>
             <DropdownMenuButton
               unstyled
@@ -410,7 +413,14 @@ export function TasksSidebar({
           </DropdownMenu>
         </section>
       )}
-      <div className="mt-4 min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain pb-4 pr-1 [scrollbar-gutter:stable]">
+      {/* The create menu's bottom rule is this viewport's top fence, while the
+          rail owns its bottom rule. With no create menu, the rail supplies both
+          edges itself. Child borders only divide Favorites, Categories, and
+          Projects inside the shared scroller. */}
+      <div
+        data-sidebar-resource-scroll
+        className={`min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain border-b border-black/10 py-4 pr-1 [scrollbar-gutter:stable] dark:border-white/10 ${isOwner || canManageCategories ? "" : "mt-4 border-t"}`}
+      >
         {favoriteProjects.length > 0 && (
           <section className="shrink-0 border-b border-black/10 pb-4 dark:border-white/10">
             <div className="flex items-center justify-between px-3">

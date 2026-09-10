@@ -28,6 +28,7 @@ import {
   FiFolder,
   FiLink,
   FiMoreHorizontal,
+  FiTag,
   FiTrash2,
   FiUser,
   FiUserCheck,
@@ -215,11 +216,11 @@ export function TaskPageClient({
               },
             ]}
           />
-          <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] items-start gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(320px,480px)] xl:gap-6">
-            <h1 className="min-w-0 break-words text-3xl font-bold leading-tight sm:text-4xl">
+          <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] items-start gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(320px,480px)] xl:gap-6">
+            <h1 className="min-w-0 break-words text-2xl font-bold leading-tight sm:text-4xl">
               {task.title}
             </h1>
-            <div className="flex shrink-0 items-center gap-2 sm:justify-self-end xl:w-full xl:self-end xl:justify-end">
+            <div className="flex w-full shrink-0 items-center justify-end gap-2 sm:w-auto sm:justify-self-end xl:w-full xl:self-end">
               {!data.accessPreview && (
                 <>
                   {/* Route or dialog, per the profile — see editor-routes.ts. */}
@@ -227,8 +228,9 @@ export function TaskPageClient({
                     <Button.Link
                       href={taskEditPath(task)}
                       size="sm"
+                      fullWidth
                       leftIcon={<FiEdit3 />}
-                      className={triggers.routeClassName}
+                      className={`${triggers.routeClassName} sm:w-auto`}
                     >
                       Edit task
                     </Button.Link>
@@ -236,9 +238,10 @@ export function TaskPageClient({
                   {triggers.dialog && (
                     <Button
                       size="sm"
+                      fullWidth
                       leftIcon={<FiEdit3 />}
                       onClick={openEditor}
-                      className={triggers.dialogClassName}
+                      className={`${triggers.dialogClassName} sm:w-auto`}
                     >
                       Edit task
                     </Button>
@@ -249,7 +252,7 @@ export function TaskPageClient({
                 <DropdownMenuButton
                   unstyled
                   aria-label="More task actions"
-                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-black/10 text-black transition hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:border-white/10 dark:text-white dark:hover:bg-white/10 dark:focus-visible:ring-white/30"
+                  className="inline-flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-lg border border-black/10 text-black transition hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:border-white/10 dark:text-white dark:hover:bg-white/10 dark:focus-visible:ring-white/30"
                 >
                   <FiMoreHorizontal aria-hidden />
                 </DropdownMenuButton>
@@ -318,9 +321,28 @@ export function TaskPageClient({
                             {category.name}
                           </span>
                           {categoryTags.length > 0 && (
-                            <p className="mt-1.5 break-words text-xs leading-relaxed text-black/55 dark:text-white/60">
-                              {categoryTags.join(" · ")}
-                            </p>
+                            <ul
+                              className="mt-2 flex flex-wrap gap-1.5"
+                              aria-label={`Tags in ${category.name}`}
+                            >
+                              {categoryTags.map((tag) => (
+                                <li
+                                  key={tag}
+                                  className="inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium leading-none text-black/65 dark:text-white/70"
+                                  style={{
+                                    borderColor: `${category.color}55`,
+                                    backgroundColor: `${category.color}14`,
+                                  }}
+                                >
+                                  <FiTag
+                                    aria-hidden
+                                    className="h-3 w-3 shrink-0"
+                                    style={{ color: category.color }}
+                                  />
+                                  <span className="min-w-0 break-words">{tag}</span>
+                                </li>
+                              ))}
+                            </ul>
                           )}
                         </div>
                       );

@@ -273,6 +273,8 @@ export function CalendarPageClient({
   const googleEvent =
     googleEvents.find((event) => event.id === googleEventId) ?? null;
   const googleLoading = google.loading;
+  const showGoogleStatus =
+    googleCanManage || (googleCanView && googleConnection.connected);
   const googleSyncing = googleLoading && source.includes("google");
   const { days, monthNumber } = monthBounds(month);
   const currentDate = new Date().toISOString().slice(0, 10);
@@ -409,25 +411,41 @@ export function CalendarPageClient({
               </CountBadge>
             </>
           }
-          description="Deadlines, important dates, meetings, and time away—one place to see what the team has coming up."
-          actions={
-            /* The Google control sits with the page actions rather than in the
-               month toolbar: connecting is a workspace action, not a way to
-               filter the month. An owner sees it whether or not Google is
-               connected, since connecting is the thing they came here to do;
-               everyone else only once there is a connection to describe. */
-            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-              {(googleCanManage ||
-                (googleCanView && googleConnection.connected)) && (
+          titleAccessory={
+            showGoogleStatus ? (
+              <span className="sm:hidden">
                 <GoogleCalendarStatusButton
+                  compact
                   configured={googleConfigured}
                   connection={googleConnection}
                   loading={googleLoading}
                   onClick={() => google.setSettingsOpen(true)}
                 />
+              </span>
+            ) : null
+          }
+          description="Deadlines, important dates, meetings, and time away—one place to see what the team has coming up."
+          actions={
+            /* Google stays with the page heading/actions rather than the month
+               toolbar: connecting is a workspace action, not a month filter.
+               The compact mobile status lives beside the title; this row owns
+               the full status on desktop and the primary action everywhere. */
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+              {showGoogleStatus && (
+                <span className="hidden sm:inline-flex">
+                  <GoogleCalendarStatusButton
+                    configured={googleConfigured}
+                    connection={googleConnection}
+                    loading={googleLoading}
+                    onClick={() => google.setSettingsOpen(true)}
+                  />
+                </span>
               )}
               {previewing ? (
-                <Tooltip content="Exit access preview to change the calendar">
+                <Tooltip
+                  content="Exit access preview to change the calendar"
+                  triggerClassName="w-full sm:w-auto"
+                >
                   <Button
                     size="sm"
                     className="w-full sm:w-auto"
@@ -453,7 +471,7 @@ export function CalendarPageClient({
                   {triggers.dialog && (
                     <Button
                       size="sm"
-                      className={triggers.dialogClassName}
+                      className={`w-full sm:w-auto ${triggers.dialogClassName}`}
                       leftIcon={<FiPlus />}
                       onClick={() => openNew("important")}
                     >

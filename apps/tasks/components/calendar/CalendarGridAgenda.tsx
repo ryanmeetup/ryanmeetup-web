@@ -180,7 +180,7 @@ export function CalendarGridAgenda({
               summaryLimit={1}
             />
             <Button
-              size="sm"
+              size="field"
               variant="secondary"
               leftIcon={<FiCalendar />}
               onClick={() => setMonth(initialMonth)}

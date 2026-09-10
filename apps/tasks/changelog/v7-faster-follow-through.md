@@ -162,7 +162,11 @@ Form labels now use the same clear sentence-case heading treatment throughout ta
 
 Buttons that sit beside fields now match the input height with tighter typography and padding, while standalone quick actions use the same compact sizing as save and cancel controls.
 
+On phones, the task board's assignee, status, and layout switches now have clear labels, full-width controls, and roomier tap targets instead of competing for two cramped columns.
+
 On phones, calendar navigation keeps the month centered, places filters and Today on one tidy row, and leaves the agenda to carry the detail instead of squeezing in the desktop rail. The navigation drawer also closes as soon as a destination opens.
+
+Sidebar resource dividers now meet the shared Categories, Favorites, and Projects scroller cleanly at both ends.
 
 Phone-sized form fields now stay aligned and use a Safari-safe text size, so focusing an input no longer zooms the page and leaves the workspace magnified afterward. The page also stops at the footer instead of scrolling into Safari's empty post-keyboard space.
 

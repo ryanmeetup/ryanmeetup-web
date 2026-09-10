@@ -5,11 +5,13 @@ import { FiCalendar, FiCheck, FiLogIn, FiSettings, FiX } from "react-icons/fi";
 import type { GoogleCalendarConnection } from "@/lib/calendar/google-calendar-types";
 
 export function GoogleCalendarStatusButton({
+  compact = false,
   configured,
   connection,
   loading,
   onClick,
 }: {
+  compact?: boolean;
   configured: boolean;
   connection: GoogleCalendarConnection;
   loading: boolean;
@@ -27,23 +29,19 @@ export function GoogleCalendarStatusButton({
   // blocked upstream. `loading` only happens once connected, so a month change
   // reads as "Syncing" without the chip changing colour underneath it.
   const tone = connection.connected
-    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 hover:border-emerald-500/50 dark:text-emerald-300"
+    ? "border-emerald-500/35 bg-emerald-500/10 text-emerald-700 hover:border-emerald-500/55 dark:text-emerald-300"
     : configured
-      ? "border-amber-500/30 bg-amber-500/10 text-amber-700 hover:border-amber-500/50 dark:text-amber-300"
-      : "border-red-500/30 bg-red-500/10 text-red-700 hover:border-red-500/50 dark:text-red-300";
+      ? "border-amber-500/35 bg-amber-500/10 text-amber-700 hover:border-amber-500/55 dark:text-amber-300"
+      : "border-red-500/35 bg-red-500/10 text-red-700 hover:border-red-500/55 dark:text-red-300";
   const dot = connection.connected
     ? "bg-emerald-500"
     : configured
       ? "bg-amber-500"
       : "bg-red-500";
 
-  // A chip, not a button, even though it sits in the action row and clicks
-  // through to the settings dialog. It reports a state the workspace is
-  // already in; "Add to calendar" beside it performs something. Built on the
-  // round, `text-[11px]` treatment FilterChip uses so it reads as the same
-  // class of object, and deliberately shorter than the Button primitive so it
-  // never competes with the primary action. The whole chip carries the state
-  // rather than just the dot, so the row is scannable without being read.
+  // The compact form sits beside a page title and lets its accessible name
+  // carry the full connection state. The regular form spells that state out in
+  // an action row. Both open the same connection settings.
   return (
     <button
       type="button"
@@ -55,10 +53,13 @@ export function GoogleCalendarStatusButton({
             ? "Google Calendar is ready to connect. Open connection settings."
             : "Google Calendar needs setup. Open connection settings."
       }
-      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/30 ${tone}`}
+      className={`inline-flex shrink-0 items-center gap-2 border font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/30 ${compact ? "h-6 rounded-full px-2 font-sans text-[10px] normal-case tracking-normal" : "h-[34px] rounded-lg px-3 text-xs"} ${tone}`}
     >
-      <span aria-hidden className={`block h-2 w-2 rounded-full ${dot}`} />
-      Google · {state}
+      <span
+        aria-hidden
+        className={`block rounded-full ${compact ? "h-1.5 w-1.5" : "h-2 w-2"} ${dot}`}
+      />
+      {compact ? "Google" : `Google ${state}`}
     </button>
   );
 }

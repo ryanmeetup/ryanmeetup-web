@@ -37,6 +37,35 @@ test("defaults Calendar to any selected combination of sources", async ({
   ).toBeVisible();
 });
 
+test("aligns preference selectors to matching card bottoms", async ({ page }) => {
+  await signIn(page);
+  await page.goto("/profile");
+
+  const cards = await page.locator("[data-profile-preference]").all();
+  expect(cards).toHaveLength(3);
+  const buttonHeights: number[] = [];
+  const bottomInsets: number[] = [];
+
+  for (const card of cards) {
+    const cardBox = await card.boundingBox();
+    const button = card.getByRole("button");
+    await expect(button).toHaveCount(1);
+    const buttonBox = await button.boundingBox();
+    expect(cardBox).not.toBeNull();
+    expect(buttonBox).not.toBeNull();
+    if (!cardBox || !buttonBox) continue;
+    buttonHeights.push(buttonBox.height);
+    bottomInsets.push(
+      cardBox.y + cardBox.height - buttonBox.y - buttonBox.height,
+    );
+  }
+
+  expect(new Set(buttonHeights)).toEqual(new Set([42]));
+  expect(
+    Math.max(...bottomInsets) - Math.min(...bottomInsets),
+  ).toBeLessThanOrEqual(1);
+});
+
 test("keeps equal page margins around profile fields on mobile", async ({
   page,
 }) => {

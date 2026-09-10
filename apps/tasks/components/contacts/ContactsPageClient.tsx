@@ -225,7 +225,10 @@ export function ContactsPageClient({
                 {allExpanded ? "Collapse All" : "Expand All"}
               </Button>
               {previewing ? (
-                <Tooltip content="Exit access preview to change contacts">
+                <Tooltip
+                  content="Exit access preview to change contacts"
+                  triggerClassName="w-full sm:w-auto"
+                >
                   <Button
                     type="button"
                     size="sm"
