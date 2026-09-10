@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { NewTaskPageClient } from "@/components/tasks";
 import { demoData } from "@/lib/workspace/demo-data";
 import {
-  editorBackHref,
   EDITOR_COLLECTIONS,
   redirectAccessPreviewAway,
 } from "@/lib/server/editor-page-loader";
@@ -27,8 +26,7 @@ export default async function NewTaskPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const query = await searchParams;
-  const backHref = editorBackHref(query.from, "/board");
-  redirectAccessPreviewAway(query, backHref);
+  redirectAccessPreviewAway(query, "/board");
   const requestedProject =
     typeof query.project === "string" ? query.project : undefined;
 
@@ -37,7 +35,6 @@ export default async function NewTaskPage({
       <NewTaskPageClient
         initialData={demoData}
         demoMode
-        backHref={backHref}
         initialValues={{
           project_id:
             demoData.projects.find(
@@ -55,7 +52,6 @@ export default async function NewTaskPage({
     <NewTaskPageClient
       initialData={data}
       demoMode={false}
-      backHref={backHref}
       initialValues={{
         project_id:
           data.projects.find(

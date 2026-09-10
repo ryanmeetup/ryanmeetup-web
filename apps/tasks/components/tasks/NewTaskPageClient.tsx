@@ -15,6 +15,14 @@ import { NewTaskModal } from "./NewTaskModal";
 import { BOARD_CRUMB } from "./task-crumbs";
 
 /**
+ * The path this document opened at, before any client-side navigation.
+ * A matching path means `/task/new` was opened directly or reloaded, so
+ * Cancel should stay inside the workspace instead of leaving the site.
+ */
+const documentEntryPath =
+  typeof window === "undefined" ? null : window.location.pathname;
+
+/**
  * `/task/new` — the create flow as its own screen, for phones where the dialog
  * leaves too little room to fill the form in. The desktop dialog is unchanged
  * and this route shares its entire form; only the surface around it differs —
@@ -23,17 +31,19 @@ import { BOARD_CRUMB } from "./task-crumbs";
 export function NewTaskPageClient({
   initialData,
   demoMode,
-  backHref,
   initialValues,
 }: {
   initialData: WorkspaceData;
   demoMode: boolean;
-  backHref: string;
   initialValues?: Partial<TaskDraft>;
 }) {
   const { data, setData } = useWorkspaceData(initialData, demoMode);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const router = useRouter();
+  const leaveEditor = () => {
+    if (documentEntryPath === window.location.pathname) router.push("/board");
+    else router.back();
+  };
   /**
    * Where a finished form goes. `NewTaskModal` only closes when the author is
    * not creating another, so leaving the navigation to the close keeps "Create
@@ -59,7 +69,8 @@ export function NewTaskPageClient({
         setData={setData}
         setOpen={(next) => {
           if (next) return;
-          router.push(created.current ? taskPath(created.current) : backHref);
+          if (created.current) router.push(taskPath(created.current));
+          else leaveEditor();
         }}
         onCreated={(task) => {
           created.current = task;

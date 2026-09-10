@@ -24,7 +24,6 @@ import type { Profile } from "@/lib/workspace/workspace-types";
 import {
   editorTriggers,
   ThemeToggle,
-  useEditorReturnPath,
   useTheme,
 } from "@/components/global";
 import { ADMIN_ROOT } from "@/lib/admin/admin-routes";
@@ -52,7 +51,6 @@ export function TaskHeaderActions({
   onNewTask: () => void;
 }) {
   const router = useRouter();
-  const returnPath = useEditorReturnPath();
   const { theme, setTheme } = useTheme();
   // Demo builds hide /admin entirely, so the entry points go with it.
   const isOwner = !previewing && !demoMode && profile.app_role === "owner";
@@ -189,7 +187,7 @@ export function TaskHeaderActions({
             */}
             {triggers.route && (
               <Button.Link
-                href={`/task/new?from=${encodeURIComponent(returnPath)}`}
+                href="/task/new"
                 size="sm"
                 leftIcon={<FiPlus />}
                 aria-label="New task"

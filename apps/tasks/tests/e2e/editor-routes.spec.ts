@@ -82,6 +82,37 @@ for (const route of editorRoutes) {
   });
 }
 
+test("returns from new task through browser history without a from parameter", async ({
+  page,
+  baseURL,
+}) => {
+  await enterDemoWorkspace(page, baseURL);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/board?view=list");
+  await page.waitForLoadState("networkidle");
+
+  const newTask = page.getByRole("link", { name: "New task", exact: true });
+  await expect(newTask).toHaveAttribute("href", "/task/new");
+  await newTask.click();
+  await expect(page).toHaveURL(/\/task\/new$/);
+
+  await page.getByRole("button", { name: "Cancel" }).click();
+  await expect(page).toHaveURL(/\/board\?view=list$/);
+});
+
+test("returns a directly opened new task page to the board", async ({
+  page,
+  baseURL,
+}) => {
+  await enterDemoWorkspace(page, baseURL);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/task/new");
+  await page.waitForLoadState("networkidle");
+
+  await page.getByRole("button", { name: "Cancel" }).click();
+  await expect(page).toHaveURL(/\/board$/);
+});
+
 /**
  * Supporting details open into a second column beside the form. The dialog
  * widens its card for that; the page has to widen its own column, or the two
