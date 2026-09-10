@@ -284,32 +284,42 @@ workspace that is set up wrong, like
 
 ## Outstanding
 
-- **PRD is four migrations behind: `20260929000000` through
-  `20261002000000`.** Read from PRD's own history on 2026-09-06 — its latest
-  applied version is `20260928000000`.
+- **PRD is six migrations behind, and one of them is not at the end.** Read
+  from PRD's own history on 2026-09-10: it holds everything through
+  `20260928000000`, then `20261003000000`, and is missing `20260929000000`,
+  `20260930000000`, `20261001000000`, `20261002000000`, `20261004000000`, and
+  `20261005000000`.
 
-  This entry said eleven behind, then twenty, and both were wrong by the time
-  they were read: PRD had quietly caught up to `20260928000000` in between.
-  That is the third time a number written here outlived the fact. Run the
-  query below before believing this bullet, and read the whole list rather
-  than the five most recent — an instance can be behind in the middle as
-  easily as at the end.
+  This entry said eleven behind, then twenty, then four, and each was wrong by
+  the time it was read. Run the query below before believing this bullet, and
+  read the whole list rather than the five most recent — a gap in the middle is
+  what PRD actually had, and the latest version alone hides it.
 
   PRD does not get CLI commands: hand over the SQL as one paste-ready block
   for its dashboard SQL Editor, with a verification query, stated explicitly
-  as running on PRD. `scripts/build-catchup-sql.mjs <version it is on>` writes
-  that block — every migration after that version in one transaction, guarded
-  so it refuses a database it does not fit, ending with the rows that record
-  it. Verify the block before handing it over, the same way the one on
-  2026-09-06 was:
+  as running on PRD. `scripts/build-catchup-sql.mjs` writes that block — every
+  migration the instance lacks, in one transaction, guarded so it refuses a
+  database it does not fit, ending with the rows that record it. **Pass it the
+  history query's own output**, quoted, rather than a single version: a single
+  version means "everything up to here is applied", which was true of PRD
+  until it applied `20261003000000` on its own, and a block built that way
+  would have carried a migration it already had. Verify the block before
+  handing it over, the same way the one on 2026-09-06 was, and reproduce the
+  instance's real history rather than a tidy prefix of it when it has a gap:
 
   ```sh
   supabase db reset --local --no-seed                        # every migration
   pg_dump --schema-only --schema=public --schema=storage     # keep this dump
-  supabase db reset --local --no-seed --version <version it is on>
+  supabase db reset --local --no-seed --version <its last ungapped version>
+  psql -f <each migration it has beyond that>                # rebuild its gap
   psql -v ON_ERROR_STOP=1 -f catchup.sql                     # the block itself
   pg_dump --schema-only --schema=public --schema=storage     # must match
   ```
+
+  The 2026-09-10 block was verified that way, against a local database rebuilt
+  to PRD's real history, `20261003000000` applied before its four predecessors
+  and all. The resulting schema matched a clean run of every migration exactly,
+  so applying those four after it is safe.
 
   Never `--linked`: that resets RMT.
 
