@@ -9,6 +9,7 @@ import { useWorkspaceData } from "@/hooks/useWorkspaceData";
 import type { Status } from "@/lib/tasks/task-types";
 import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import { AdminPageShell } from "./AdminPageShell";
+import { taskCompletionLifecycle } from "@/lib/tasks/status-outcome";
 
 export function AdminStatusesPageClient({
   initialData,
@@ -55,32 +56,19 @@ export function AdminStatusesPageClient({
         statuses={data.statuses}
         demoMode={demoMode}
         onStatusesChange={updateStatuses}
-        onStatusCompletionChange={(id, isCompleted) => {
-          const now = new Date().toISOString();
-          const archiveDelayMs = 14 * 24 * 60 * 60 * 1000;
+        onStatusOutcomeChange={(id, outcome) => {
           setData((current) => ({
             ...current,
             statuses: current.statuses.map((status) =>
-              status.id === id
-                ? { ...status, is_completed: isCompleted }
-                : status,
+              status.id === id ? { ...status, outcome } : status,
             ),
-            tasks: current.tasks.map((task) => {
-              if (task.status_id !== id) return task;
-              return {
-                ...task,
-                ...(isCompleted
-                  ? {
-                      completed_at: task.completed_at ?? now,
-                      archived_at:
-                        task.archived_at ??
-                        new Date(
-                          new Date(now).getTime() + archiveDelayMs,
-                        ).toISOString(),
-                    }
-                  : { completed_at: null, archived_at: null }),
-              };
-            }),
+            // What the database does for us on the next read: a status that
+            // starts or stops closing work re-dates every task sitting in it.
+            tasks: current.tasks.map((task) =>
+              task.status_id === id
+                ? { ...task, ...taskCompletionLifecycle({ outcome }, task) }
+                : task,
+            ),
           }));
         }}
       />

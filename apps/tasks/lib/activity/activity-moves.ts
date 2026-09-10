@@ -1,6 +1,7 @@
 import type { Status } from "@/lib/tasks/task-types";
 import { TASK_MOVE_ACTION } from "./activity-events";
 import type { TaskActivity } from "./activity-types";
+import { deliversWork } from "@/lib/tasks/status-outcome";
 
 /**
  * The status-move half of the Activity filters: which column a task landed in,
@@ -57,9 +58,7 @@ export function moveFilterIsEmpty(filter: MoveFilter) {
  */
 export function resolveMoveTarget(target: string, statuses: Status[]) {
   if (target === COMPLETED_STATUS_TARGET) {
-    const completed = statuses
-      .filter((status) => status.is_completed)
-      .map((status) => status.id);
+    const completed = statuses.filter(deliversWork).map((status) => status.id);
     // With no completed status configured the sentinel matches no status id,
     // which is the honest answer -- dropping it would widen the filter to
     // every move instead of narrowing it to none.

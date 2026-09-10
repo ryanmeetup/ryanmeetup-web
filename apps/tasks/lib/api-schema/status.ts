@@ -1,3 +1,7 @@
+import {
+  isStatusOutcome,
+  type StatusOutcome,
+} from "@/lib/tasks/status-outcome";
 import { colorSchema } from "./common";
 import {
   objectWithKeys,
@@ -23,7 +27,7 @@ export function statusPatchSchema(value: unknown) {
     "name",
     "description",
     "color",
-    "isCompleted",
+    "outcome",
     "requiresReason",
     "orderedIds",
     "expectedRevision",
@@ -51,14 +55,14 @@ export function statusPatchSchema(value: unknown) {
   );
   const patchColor =
     body.color === undefined ? undefined : colorSchema(body.color);
-  const isCompleted = body.isCompleted;
+  const outcome = body.outcome;
   const requiresReason = body.requiresReason;
   if (
     !id ||
     name === null ||
     description === null ||
     patchColor === null ||
-    (isCompleted !== undefined && typeof isCompleted !== "boolean") ||
+    (outcome !== undefined && !isStatusOutcome(outcome)) ||
     (requiresReason !== undefined && typeof requiresReason !== "boolean")
   )
     return null;
@@ -66,7 +70,7 @@ export function statusPatchSchema(value: unknown) {
     name === undefined &&
     description === undefined &&
     patchColor === undefined &&
-    isCompleted === undefined &&
+    outcome === undefined &&
     requiresReason === undefined
   )
     return null;
@@ -75,7 +79,7 @@ export function statusPatchSchema(value: unknown) {
     name,
     description: description === undefined ? undefined : description || null,
     color: patchColor,
-    isCompleted: isCompleted as boolean | undefined,
+    outcome: outcome as StatusOutcome | undefined,
     requiresReason: requiresReason as boolean | undefined,
   };
 }

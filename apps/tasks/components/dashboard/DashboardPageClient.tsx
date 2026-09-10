@@ -49,6 +49,7 @@ import {
   WidgetPagination,
   widgetPageSize,
 } from "./DashboardWidgets";
+import { closedStatusIds } from "@/lib/tasks/status-outcome";
 
 const dayMs = 24 * 60 * 60 * 1000;
 
@@ -110,18 +111,13 @@ export function DashboardPageClient({
     data.accessPreview?.kind === "user"
       ? data.accessPreview.subjectName
       : profileDisplayName(data.currentProfile);
-  const completedStatusIds = useMemo(
-    () =>
-      new Set(
-        data.statuses
-          .filter((status) => status.is_completed)
-          .map((status) => status.id),
-      ),
+  const closedStatuses = useMemo(
+    () => closedStatusIds(data.statuses),
     [data.statuses],
   );
   const activeTasks = useMemo(
-    () => data.tasks.filter((task) => !completedStatusIds.has(task.status_id)),
-    [completedStatusIds, data.tasks],
+    () => data.tasks.filter((task) => !closedStatuses.has(task.status_id)),
+    [closedStatuses, data.tasks],
   );
   const assigneesByTask = useMemo(() => {
     const result = new Map<string, Set<string>>();

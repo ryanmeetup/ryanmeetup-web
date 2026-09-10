@@ -103,14 +103,21 @@ seed was not run, and the server repairs an older empty instance on its next
 authenticated workspace load. A workspace without at least one status is
 unusable: the board has no columns and no task can be created.
 
-| Name        | Color     | Order | Completes tasks |
-| ----------- | --------- | ----- | --------------- |
-| Backlog     | `#64748b` | 0     | no              |
-| Todo        | `#2563eb` | 1     | no              |
-| In Progress | `#d97706` | 2     | no              |
-| In Review   | `#7c3aed` | 3     | no              |
-| Done        | `#059669` | 4     | **yes**         |
-| Will Not Do | `#f51b2b` | 5     | no              |
+| Name        | Color     | Order | Outcome     |
+| ----------- | --------- | ----- | ----------- |
+| Backlog     | `#64748b` | 0     | open        |
+| Todo        | `#2563eb` | 1     | open        |
+| In Progress | `#d97706` | 2     | open        |
+| In Review   | `#7c3aed` | 3     | open        |
+| Done        | `#059669` | 4     | `delivered` |
+| Will Not Do | `#f51b2b` | 5     | `declined`  |
+
+`statuses.outcome` is what ends a task. Both `delivered` and `declined` stamp
+`completed_at`, archive the task fourteen days later, and take it out of every
+open count; only `delivered` counts toward what a project completed. The older
+`is_completed` column remains as a generated projection of
+`outcome = 'delivered'` so a deployment from before that change keeps reading a
+sensible answer during a rollout. Nothing writes it.
 
 It is guarded with `where not exists (select 1 from public.statuses)` rather
 than `on conflict`. The unique constraint on `statuses` is deferrable, and

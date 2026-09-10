@@ -18,6 +18,7 @@ import { TaskCategoryBadge } from "./TaskCategoryBadge";
 import { TaskDueDate } from "./TaskDueDate";
 import { TaskKeyBadge } from "./TaskKeyBadge";
 import { TaskPriorityBadge } from "./TaskPriorityBadge";
+import { closesWork } from "@/lib/tasks/status-outcome";
 
 export type TaskDropEdge = "before" | "after";
 
@@ -185,7 +186,7 @@ export function TaskBoardCard({
           {task.due_date && (
             <TaskDueDate
               dueDate={task.due_date}
-              isCompleted={status?.is_completed ?? false}
+              isCompleted={status ? closesWork(status) : false}
               showIcon
             />
           )}

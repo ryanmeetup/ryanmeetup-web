@@ -57,6 +57,7 @@ import { TaskDueDate } from "./TaskDueDate";
 import { TaskEditor } from "./TaskEditor";
 import { NewTaskModal } from "./NewTaskModal";
 import { TaskPriorityBadge } from "./TaskPriorityBadge";
+import { closesWork } from "@/lib/tasks/status-outcome";
 
 export function TaskPageClient({
   initialData,
@@ -373,7 +374,7 @@ export function TaskPageClient({
                     {task.due_date ? (
                       <TaskDueDate
                         dueDate={task.due_date}
-                        isCompleted={status?.is_completed ?? false}
+                        isCompleted={status ? closesWork(status) : false}
                         showIcon
                       />
                     ) : (

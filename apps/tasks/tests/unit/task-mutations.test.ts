@@ -80,8 +80,8 @@ describe("task mutations", () => {
     let data = {
       currentProfile: { id: "profile-1" },
       statuses: [
-        { id: "todo", is_completed: false },
-        { id: "doing", is_completed: false },
+        { id: "todo", outcome: "open" },
+        { id: "doing", outcome: "open" },
       ],
       tasks: [task],
       activity: [],
@@ -141,8 +141,8 @@ describe("task mutations", () => {
     let data = {
       currentProfile: { id: "profile-1" },
       statuses: [
-        { id: "todo", is_completed: false, requires_reason: false },
-        { id: "declined", is_completed: false, requires_reason: true },
+        { id: "todo", outcome: "open", requires_reason: false },
+        { id: "declined", outcome: "declined", requires_reason: true },
       ],
       tasks: [task],
       comments: [],
@@ -195,8 +195,8 @@ describe("task mutations", () => {
     let data = {
       currentProfile: { id: "profile-1" },
       statuses: [
-        { id: "todo", is_completed: false, requires_reason: false },
-        { id: "declined", is_completed: false, requires_reason: true },
+        { id: "todo", outcome: "open", requires_reason: false },
+        { id: "declined", outcome: "declined", requires_reason: true },
       ],
       tasks: [task],
       comments: [],
@@ -232,7 +232,7 @@ describe("task mutations", () => {
     let data = {
       currentProfile: { id: "profile-1" },
       statuses: [
-        { id: "declined", is_completed: false, requires_reason: true },
+        { id: "declined", outcome: "declined", requires_reason: true },
       ],
       tasks: [task],
       comments: [],

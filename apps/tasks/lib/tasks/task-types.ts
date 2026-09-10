@@ -1,3 +1,5 @@
+import type { StatusOutcome } from "./status-outcome";
+
 export type Priority = "low" | "medium" | "high" | "urgent";
 
 export type Status = {
@@ -8,7 +10,8 @@ export type Status = {
   sort_order: number;
   order_revision: number;
   is_default: boolean;
-  is_completed: boolean;
+  /** Whether work here is still open, was delivered, or was declined. */
+  outcome: StatusOutcome;
   /** Moving a task into this status requires a reason, kept as a comment. */
   requires_reason: boolean;
 };

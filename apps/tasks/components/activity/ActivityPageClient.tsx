@@ -43,6 +43,7 @@ import {
   COMPLETED_STATUS_TARGET,
   moveFilterValue,
 } from "@/lib/activity/activity-moves";
+import { deliversWork } from "@/lib/tasks/status-outcome";
 
 export function ActivityPageClient({
   initialData,
@@ -114,7 +115,7 @@ export function ActivityPageClient({
       ).flatMap(({ direction, label }) => {
         const group = { label };
         return [
-          ...(data.statuses.some((status) => status.is_completed)
+          ...(data.statuses.some(deliversWork)
             ? [
                 {
                   group,

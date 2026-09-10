@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   Button,
   ConfirmationDialog,
+  DropdownSelect,
   IconButton,
   Input,
   Pill,
@@ -12,13 +13,16 @@ import {
   toast,
 } from "@ryanmeetup/ui";
 import {
-  FiCheckCircle,
   FiChevronDown,
-  FiCircle,
   FiEdit2,
   FiMessageSquare,
   FiTrash2,
 } from "react-icons/fi";
+import {
+  statusOutcome,
+  statusOutcomeOptions,
+  type StatusOutcome,
+} from "@/lib/tasks/status-outcome";
 import type { Status } from "@/lib/tasks/task-types";
 import { errorMessage } from "@/lib/presentation";
 import { mutate } from "@/lib/mutation-client";
@@ -31,12 +35,12 @@ import { mutate } from "@/lib/mutation-client";
 export function StatusSettings({
   statuses,
   onStatusesChange,
-  onStatusCompletionChange,
+  onStatusOutcomeChange,
   demoMode,
 }: {
   statuses: Status[];
   onStatusesChange: (update: (current: Status[]) => Status[]) => void;
-  onStatusCompletionChange: (id: string, isCompleted: boolean) => void;
+  onStatusOutcomeChange: (id: string, outcome: StatusOutcome) => void;
   demoMode: boolean;
 }) {
   const [editingStatusId, setEditingStatusId] = useState<string | null>(null);
@@ -131,17 +135,19 @@ export function StatusSettings({
     }
   }
 
-  async function toggleCompletedStatus(id: string, isCompleted: boolean) {
+  async function changeStatusOutcome(id: string, outcome: StatusOutcome) {
     setSettingActionPending(true);
     try {
       if (!demoMode) {
-        await statusRequest("PATCH", { id, isCompleted });
+        await statusRequest("PATCH", { id, outcome });
       }
-      onStatusCompletionChange(id, isCompleted);
+      onStatusOutcomeChange(id, outcome);
       toast.success(
-        isCompleted
-          ? "Tasks in this status will archive after 14 days."
-          : "This is now an active status.",
+        outcome === "open"
+          ? "This is now an active status."
+          : outcome === "delivered"
+            ? "Tasks here count as completed and archive after 14 days."
+            : "Tasks here archive after 14 days without counting as completed.",
       );
     } catch (error) {
       toast.error(
@@ -335,33 +341,28 @@ export function StatusSettings({
                   <div className="flex shrink-0 flex-wrap items-center gap-2">
                     <Tooltip
                       content={
-                        item.is_completed
-                          ? "Tasks here are complete and archive after 14 days. Select to make it an active status."
-                          : "Select to make this status complete tasks."
+                        statusOutcomeOptions.find(
+                          (option) => option.value === item.outcome,
+                        )?.description ?? ""
                       }
                     >
-                      <button
-                        type="button"
-                        aria-label={`${item.name} ${item.is_completed ? "currently completes tasks and archives them after 14 days" : "is an active workflow status"}`}
-                        aria-pressed={item.is_completed}
-                        disabled={settingActionPending}
-                        onClick={() =>
-                          void toggleCompletedStatus(
-                            item.id,
-                            !item.is_completed,
-                          )
-                        }
-                        className={`inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-[11px] font-semibold uppercase tracking-[0.12em] transition focus:outline-none focus:ring-2 focus:ring-black/20 disabled:opacity-50 dark:focus:ring-white/30 ${item.is_completed ? "border-emerald-500/35 bg-emerald-500/15 text-emerald-800 dark:text-emerald-200" : "border-black/10 text-black/50 hover:border-black/25 hover:text-black dark:border-white/10 dark:text-white/50 dark:hover:border-white/25 dark:hover:text-white"}`}
-                      >
-                        {item.is_completed ? (
-                          <FiCheckCircle aria-hidden className="h-3.5 w-3.5" />
-                        ) : (
-                          <FiCircle aria-hidden className="h-3.5 w-3.5" />
-                        )}
-                        {item.is_completed
-                          ? "Completes tasks"
-                          : "Active status"}
-                      </button>
+                      <span className="inline-flex">
+                        <DropdownSelect
+                          label="Outcome"
+                          value={item.outcome}
+                          disabled={settingActionPending}
+                          options={statusOutcomeOptions.map((option) => ({
+                            label: option.label,
+                            value: option.value,
+                          }))}
+                          onChange={(value) =>
+                            void changeStatusOutcome(
+                              item.id,
+                              statusOutcome(value),
+                            )
+                          }
+                        />
+                      </span>
                     </Tooltip>
                     <Tooltip
                       content={

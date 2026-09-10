@@ -13,7 +13,7 @@ export const defaultStatuses = [
     color: "#64748b",
     sort_order: 0,
     is_default: true,
-    is_completed: false,
+    outcome: "open",
     requires_reason: false,
   },
   {
@@ -22,7 +22,7 @@ export const defaultStatuses = [
     color: "#2563eb",
     sort_order: 1,
     is_default: true,
-    is_completed: false,
+    outcome: "open",
     requires_reason: false,
   },
   {
@@ -31,7 +31,7 @@ export const defaultStatuses = [
     color: "#d97706",
     sort_order: 2,
     is_default: true,
-    is_completed: false,
+    outcome: "open",
     requires_reason: false,
   },
   {
@@ -40,7 +40,7 @@ export const defaultStatuses = [
     color: "#7c3aed",
     sort_order: 3,
     is_default: true,
-    is_completed: false,
+    outcome: "open",
     requires_reason: false,
   },
   {
@@ -49,7 +49,7 @@ export const defaultStatuses = [
     color: "#059669",
     sort_order: 4,
     is_default: true,
-    is_completed: true,
+    outcome: "delivered",
     requires_reason: false,
   },
   {
@@ -58,7 +58,7 @@ export const defaultStatuses = [
     color: "#f51b2b",
     sort_order: 5,
     is_default: true,
-    is_completed: false,
+    outcome: "declined",
     requires_reason: true,
   },
 ] as const satisfies readonly DefaultStatus[];

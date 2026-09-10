@@ -8,6 +8,7 @@ import { TaskDueDate } from "./TaskDueDate";
 import { TaskKeyBadge } from "./TaskKeyBadge";
 import { TaskPriorityBadge } from "./TaskPriorityBadge";
 import type { TaskListData } from "./TaskListView";
+import { closesWork } from "@/lib/tasks/status-outcome";
 
 type TaskListItem = {
   task: Task;
@@ -101,7 +102,7 @@ export function TaskListCards({
         {task.due_date && (
           <TaskDueDate
             dueDate={task.due_date}
-            isCompleted={status?.is_completed ?? false}
+            isCompleted={status ? closesWork(status) : false}
             showIcon
           />
         )}
@@ -185,7 +186,7 @@ export function TaskListRows({
       <td className="px-3 py-4">
         <TaskDueDate
           dueDate={task.due_date}
-          isCompleted={status?.is_completed ?? false}
+          isCompleted={status ? closesWork(status) : false}
           size="list"
         />
       </td>

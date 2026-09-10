@@ -60,7 +60,7 @@ describe("demo workspace", () => {
     const now = Date.now();
     const completed = new Set(
       demoData.statuses
-        .filter((status) => status.is_completed)
+        .filter((status) => status.outcome === "delivered")
         .map((status) => status.id),
     );
     const upcoming = demoData.tasks.filter((task) => {

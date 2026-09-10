@@ -73,6 +73,7 @@ import { ProjectFavoriteButton } from "./ProjectFavoriteButton";
 import { ProjectContextCard } from "./ProjectContextCard";
 import { ProjectsModal } from "./ProjectsModal";
 import { ProjectTimelineSummary } from "./ProjectTimelineSummary";
+import { statusOutcomeLabel } from "@/lib/tasks/status-outcome";
 
 /**
  * Project-level chips sit beside the title and describe the project itself,
@@ -366,6 +367,7 @@ export function ProjectOverviewPageClient({
                 value: `${metrics.completionPercentage}%`,
                 detail: `${metrics.completed} of ${metrics.total}`,
                 icon: <FiCheckCircle />,
+                href: projectMetricHref("complete"),
                 tone: "green" as const,
               },
             ].map((item) => (
@@ -556,8 +558,7 @@ export function ProjectOverviewPageClient({
                                   {count} {taskLabel} · {percentage}% of project
                                 </span>
                                 <span className="mt-0.5 block opacity-75">
-                                  Counts as{" "}
-                                  {item.is_completed ? "completed" : "open"}{" "}
+                                  Counts as {statusOutcomeLabel(item.outcome).toLowerCase()}{" "}
                                   work
                                 </span>
                               </span>
@@ -565,7 +566,7 @@ export function ProjectOverviewPageClient({
                           >
                             <span
                               tabIndex={0}
-                              aria-label={`${item.name}: ${count} ${taskLabel}, ${percentage}% of project tasks; counts as ${item.is_completed ? "completed" : "open"} work`}
+                              aria-label={`${item.name}: ${count} ${taskLabel}, ${percentage}% of project tasks; counts as ${statusOutcomeLabel(item.outcome).toLowerCase()} work`}
                               className="h-full w-full cursor-help focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white"
                               style={{ backgroundColor: item.color }}
                             />

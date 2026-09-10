@@ -111,8 +111,8 @@ export async function PATCH(request: Request) {
       ? { description: parsed.data.description }
       : {}),
     ...(parsed.data.color !== undefined ? { color: parsed.data.color } : {}),
-    ...(parsed.data.isCompleted !== undefined
-      ? { is_completed: parsed.data.isCompleted }
+    ...(parsed.data.outcome !== undefined
+      ? { outcome: parsed.data.outcome }
       : {}),
     ...(parsed.data.requiresReason !== undefined
       ? { requires_reason: parsed.data.requiresReason }

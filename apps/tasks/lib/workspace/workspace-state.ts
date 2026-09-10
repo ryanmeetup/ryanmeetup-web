@@ -1,4 +1,5 @@
 import type { WorkspaceData } from "@/lib/workspace/workspace-types";
+import { statusOutcome } from "@/lib/tasks/status-outcome";
 
 export type RealtimeRow = Record<string, unknown>;
 export type RealtimePayload = {
@@ -28,7 +29,7 @@ export function restoreWorkspace(
     taskLabels: restored.taskLabels ?? [],
     statuses: (restored.statuses ?? initial.statuses).map((status) => ({
       ...status,
-      is_completed: status.is_completed ?? status.name.toLowerCase() === "done",
+      outcome: statusOutcome(status.outcome),
     })),
     tasks: restored.tasks.map((task) => ({
       ...task,

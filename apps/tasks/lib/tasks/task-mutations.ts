@@ -17,6 +17,7 @@ import { withRecordedRows } from "@/lib/activity/activity-state";
 import type { TaskActivity } from "@/lib/activity/activity-types";
 import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import { withNormalizedTaskSchedule } from "@/lib/tasks/task-scheduling";
+import { taskCompletionLifecycle } from "./status-outcome";
 
 export type TaskDraft = Pick<
   Task,
@@ -62,8 +63,6 @@ export type SavedTask = {
   comment?: TaskComment | null;
 };
 
-const archiveDelayMs = 14 * 24 * 60 * 60 * 1000;
-
 /** The reason a demo move records, matching what `save_task` inserts. */
 function reasonComment(
   taskId: string,
@@ -86,16 +85,10 @@ function completionLifecycle(
   statuses: Status[],
   current?: Pick<Task, "completed_at" | "archived_at">,
 ) {
-  if (!statuses.find((status) => status.id === statusId)?.is_completed) {
-    return { completed_at: null, archived_at: null };
-  }
-  const completedAt = current?.completed_at ?? new Date().toISOString();
-  return {
-    completed_at: completedAt,
-    archived_at:
-      current?.archived_at ??
-      new Date(new Date(completedAt).getTime() + archiveDelayMs).toISOString(),
-  };
+  return taskCompletionLifecycle(
+    statuses.find((candidate) => candidate.id === statusId),
+    current,
+  );
 }
 
 export function createTaskMutationService(context: MutationContext) {

@@ -156,7 +156,7 @@ describe("status route contracts", () => {
     const status = {
       id: statusId,
       name: "Complete",
-      is_completed: true,
+      outcome: "delivered",
       requires_reason: false,
     };
     const builder = updateQuery({ data: status, error: null });
@@ -168,7 +168,7 @@ describe("status route contracts", () => {
       request("PATCH", {
         id: statusId,
         name: "Complete",
-        isCompleted: true,
+        outcome: "delivered",
         requiresReason: false,
       }),
     );
@@ -176,7 +176,7 @@ describe("status route contracts", () => {
     expect(response.status).toBe(200);
     expect(builder.update).toHaveBeenCalledWith({
       name: "Complete",
-      is_completed: true,
+      outcome: "delivered",
       requires_reason: false,
     });
     expect(recordWorkspaceActivity).toHaveBeenCalledWith(

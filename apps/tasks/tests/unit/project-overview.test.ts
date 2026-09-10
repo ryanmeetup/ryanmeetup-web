@@ -14,19 +14,25 @@ const statuses = [
     id: "todo",
     name: "Todo",
     sort_order: 0,
-    is_completed: false,
+    outcome: "open",
   },
   {
     id: "doing",
     name: "Doing",
     sort_order: 1,
-    is_completed: false,
+    outcome: "open",
   },
   {
     id: "done",
     name: "Done",
     sort_order: 2,
-    is_completed: true,
+    outcome: "delivered",
+  },
+  {
+    id: "declined",
+    name: "Will Not Do",
+    sort_order: 3,
+    outcome: "declined",
   },
 ] as Status[];
 
@@ -69,24 +75,66 @@ describe("project overview selectors", () => {
       overdue: 1,
       dueSoon: 1,
       completed: 1,
+      declined: 0,
       total: 3,
       completionPercentage: 33,
     });
   });
 
+  it("counts declined work apart from delivered work", () => {
+    const tasks = [
+      task("task-1"),
+      task("task-2", {
+        status_id: "done",
+        completed_at: "2026-09-02T12:00:00Z",
+      }),
+      // Declined and overdue: closed work must stop asking for attention.
+      task("task-3", {
+        status_id: "declined",
+        due_date: "2026-08-01",
+        completed_at: "2026-09-02T12:00:00Z",
+      }),
+    ];
+    const metrics = projectOverviewMetrics(tasks, statuses, today);
+
+    expect(metrics).toEqual({
+      open: 1,
+      overdue: 0,
+      dueSoon: 0,
+      completed: 1,
+      declined: 1,
+      // A decline was taken off the plan, so it is not left in the denominator
+      // holding the bar down the way an unfinished task would.
+      total: 2,
+      completionPercentage: 50,
+    });
+    expect(
+      projectNeedsAttention(tasks, statuses, [], today).map(
+        (item) => item.task.id,
+      ),
+    ).not.toContain("task-3");
+  });
+
   it("builds readable board links for each project measure", () => {
+    // Every "still open" link excludes both endings, while the completed link
+    // names only the delivered one.
     expect(projectBoardPresetPath("Website Refresh", statuses, "open")).toBe(
-      "/board?project=Website+Refresh&excludeStatuses=Done",
+      "/board?project=Website+Refresh&excludeStatuses=Done%2CWill+Not+Do",
     );
     expect(projectBoardPresetPath("Website Refresh", statuses, "overdue")).toBe(
-      "/board?project=Website+Refresh&excludeStatuses=Done&dueWithin=overdue",
+      "/board?project=Website+Refresh&excludeStatuses=Done%2CWill+Not+Do&dueWithin=overdue",
     );
     expect(
       projectBoardPresetPath("Website Refresh", statuses, "due-soon"),
-    ).toBe("/board?project=Website+Refresh&excludeStatuses=Done&dueWithin=14");
+    ).toBe(
+      "/board?project=Website+Refresh&excludeStatuses=Done%2CWill+Not+Do&dueWithin=14",
+    );
     expect(
       projectBoardPresetPath("Website Refresh", statuses, "complete"),
     ).toBe("/board?project=Website+Refresh&status=Done");
+    expect(
+      projectBoardPresetPath("Website Refresh", statuses, "declined"),
+    ).toBe("/board?project=Website+Refresh&status=Will+Not+Do");
   });
 
   it("ranks exceptions and leaves future dates to the schedule", () => {

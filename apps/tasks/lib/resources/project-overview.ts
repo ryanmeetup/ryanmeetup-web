@@ -1,4 +1,8 @@
 import { localDateValue } from "@/lib/tasks/task-scheduling";
+import {
+  closedStatusIds,
+  deliveredStatusIds,
+} from "@/lib/tasks/status-outcome";
 import type { Status, Task, TaskAssignee } from "@/lib/tasks/task-types";
 import type { ProjectOwner } from "@/lib/resources/resource-types";
 import type { Profile } from "@/lib/workspace/workspace-types";
@@ -14,11 +18,17 @@ export type ProjectOverviewMetrics = {
   overdue: number;
   dueSoon: number;
   completed: number;
+  declined: number;
   total: number;
   completionPercentage: number;
 };
 
-export type ProjectBoardPreset = "complete" | "due-soon" | "open" | "overdue";
+export type ProjectBoardPreset =
+  | "complete"
+  | "declined"
+  | "due-soon"
+  | "open"
+  | "overdue";
 
 export type ProjectTeamMember = {
   profile: Profile;
@@ -58,14 +68,26 @@ export function projectBoardPresetPath(
   preset: ProjectBoardPreset,
 ) {
   const params = new URLSearchParams({ project: projectName });
-  const completedStatuses = statuses
-    .filter((status) => status.is_completed)
-    .map((status) => status.name)
-    .join(",");
+  const named = (ids: Set<string>) =>
+    statuses
+      .filter((status) => ids.has(status.id))
+      .map((status) => status.name)
+      .join(",");
+  const delivered = named(deliveredStatusIds(statuses));
+  const closed = named(closedStatusIds(statuses));
   if (preset === "complete") {
-    if (completedStatuses) params.set("status", completedStatuses);
+    if (delivered) params.set("status", delivered);
+  } else if (preset === "declined") {
+    const declined = named(
+      new Set(
+        statuses
+          .filter((status) => status.outcome === "declined")
+          .map((status) => status.id),
+      ),
+    );
+    if (declined) params.set("status", declined);
   } else {
-    if (completedStatuses) params.set("excludeStatuses", completedStatuses);
+    if (closed) params.set("excludeStatuses", closed);
     if (preset === "overdue") params.set("dueWithin", "overdue");
     if (preset === "due-soon") params.set("dueWithin", "14");
   }
@@ -77,16 +99,16 @@ export function projectOverviewMetrics(
   statuses: Status[],
   today = new Date(),
 ): ProjectOverviewMetrics {
-  const completedStatusIds = new Set(
-    statuses.filter((status) => status.is_completed).map((status) => status.id),
-  );
+  const delivered = deliveredStatusIds(statuses);
+  const closed = closedStatusIds(statuses);
   const todayValue = localDateValue(today);
   const soonValue = dateAfter(today, 14);
-  const completed = tasks.filter((task) =>
-    completedStatusIds.has(task.status_id),
+  const completed = tasks.filter((task) => delivered.has(task.status_id)).length;
+  const declined = tasks.filter(
+    (task) => closed.has(task.status_id) && !delivered.has(task.status_id),
   ).length;
   const active = tasks.filter(
-    (task) => !completedStatusIds.has(task.status_id) && !task.archived_at,
+    (task) => !closed.has(task.status_id) && !task.archived_at,
   );
   const overdue = active.filter(
     (task) => task.due_date && task.due_date < todayValue,
@@ -97,12 +119,16 @@ export function projectOverviewMetrics(
       task.due_date >= todayValue &&
       task.due_date <= soonValue,
   ).length;
+  // Declined work is counted, but never in the denominator: it was removed
+  // from the plan rather than left undone, so it should not hold the bar down
+  // the way an open task does.
   const total = active.length + completed;
   return {
     open: active.length,
     overdue,
     dueSoon,
     completed,
+    declined,
     total,
     completionPercentage: total ? Math.round((completed / total) * 100) : 0,
   };
@@ -121,15 +147,11 @@ export function projectNeedsAttention(
   today = new Date(),
   limit = 6,
 ): ProjectAttention[] {
-  const completedStatusIds = new Set(
-    statuses.filter((status) => status.is_completed).map((status) => status.id),
-  );
+  const closed = closedStatusIds(statuses);
   const assignedTaskIds = new Set(assignees.map((row) => row.task_id));
   const todayValue = localDateValue(today);
   return tasks
-    .filter(
-      (task) => !completedStatusIds.has(task.status_id) && !task.archived_at,
-    )
+    .filter((task) => !closed.has(task.status_id) && !task.archived_at)
     .flatMap((task): Array<ProjectAttention & { rank: number }> => {
       if (task.due_date && task.due_date < todayValue) {
         const days = Math.max(
@@ -177,11 +199,9 @@ export function projectNeedsAttention(
 }
 
 export function projectProgress(tasks: Task[], statuses: Status[]) {
-  const completedStatusIds = new Set(
-    statuses.filter((status) => status.is_completed).map((status) => status.id),
-  );
+  const closed = closedStatusIds(statuses);
   const includedTasks = tasks.filter(
-    (task) => !task.archived_at || completedStatusIds.has(task.status_id),
+    (task) => !task.archived_at || closed.has(task.status_id),
   );
   return [...statuses]
     .sort((left, right) => left.sort_order - right.sort_order)

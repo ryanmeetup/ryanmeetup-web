@@ -11,9 +11,9 @@ describe("activity query controller", () => {
   const projects = [{ id: "p1", name: "Meetup" }] as Project[];
   const profiles = [{ id: "u1", full_name: "Ryan Le" }] as Profile[];
   const statuses = [
-    { id: "s1", name: "Todo", is_completed: false },
-    { id: "s2", name: "Done", is_completed: true },
-    { id: "s3", name: "Shipped", is_completed: true },
+    { id: "s1", name: "Todo", outcome: "open" },
+    { id: "s2", name: "Done", outcome: "delivered" },
+    { id: "s3", name: "Shipped", outcome: "delivered" },
   ] as Status[];
   const filters = {
     projects: "Meetup",

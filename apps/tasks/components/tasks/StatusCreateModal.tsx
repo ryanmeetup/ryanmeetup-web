@@ -49,7 +49,7 @@ export function StatusCreateModal({
       sort_order: statuses.length,
       order_revision: statuses[0]?.order_revision ?? 0,
       is_default: false,
-      is_completed: false,
+      outcome: "open",
       requires_reason: false,
     };
     try {
