@@ -20,6 +20,7 @@ export {
 } from "./InstanceProvider";
 export { InstanceWordmark } from "./InstanceWordmark";
 export { ManagementCard, ManagementCardTitle } from "./ManagementCard";
+export type { ManagementCardAction } from "./ManagementCard";
 export { MetricLinkCard } from "./MetricLinkCard";
 export { PageHeader } from "./PageHeader";
 export { ResourceOwnerSelect } from "./ResourceOwnerSelect";

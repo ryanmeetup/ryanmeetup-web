@@ -14,7 +14,6 @@ import {
   Button,
   ConfirmationDialog,
   FilterChip,
-  IconButton,
   ManagementSurface,
   ModalActions,
   PendingResults,
@@ -44,6 +43,7 @@ import {
   editorTriggers,
   ManagementCard,
   ManagementCardTitle,
+  type ManagementCardAction,
   useEditorReturnPath,
 } from "@/components/global";
 import { errorMessage } from "@/lib/presentation";
@@ -653,9 +653,67 @@ export function ProjectsModal({
         );
         return profile ? [profile] : [];
       });
+    const favoriteClassName = isFavorite
+      ? "!border-amber-500/35 !bg-amber-400/15 !text-amber-700 hover:!bg-amber-400/25 dark:!border-amber-300/30 dark:!bg-amber-300/10 dark:!text-amber-200 dark:hover:!bg-amber-300/20"
+      : undefined;
+    const actions: ManagementCardAction[] = [];
+    if (!data.accessPreview && !project.archived_at)
+      actions.push({
+        key: "favorite",
+        label: isFavorite ? "Favorited" : "Favorite",
+        description: `${isFavorite ? "Remove" : "Add"} \u201C${project.name}\u201D ${isFavorite ? "from" : "to"} favorites`,
+        icon: <FiStar fill={isFavorite ? "currentColor" : "none"} />,
+        disabled: favorites.isPending(project.id),
+        onClick: () => void favorites.toggle(project),
+        iconClassName: favoriteClassName,
+        buttonClassName: favoriteClassName,
+      });
+    if (!readOnly) {
+      /* Route or dialog, per the profile — see editor-routes.ts. */
+      if (triggers.route)
+        actions.push({
+          key: "edit-route",
+          label: "Edit",
+          description: `Edit \u201C${project.name}\u201D`,
+          icon: <FiEdit2 />,
+          href: `/projects/${project.id}/edit?from=${encodeURIComponent(listPath)}`,
+          iconVariant: "edit",
+          triggerClassName: triggers.routeClassName,
+        });
+      if (triggers.dialog)
+        actions.push({
+          key: "edit-dialog",
+          label: "Edit",
+          description: `Edit \u201C${project.name}\u201D`,
+          icon: <FiEdit2 />,
+          onClick: () => beginRename(project),
+          iconVariant: "edit",
+          triggerClassName: triggers.dialogClassName,
+        });
+      actions.push(
+        taskCount > 0
+          ? {
+              key: "archive",
+              label: project.archived_at ? "Restore" : "Archive",
+              description: `${project.archived_at ? "Restore" : "Archive"} \u201C${project.name}\u201D`,
+              icon: project.archived_at ? <FiRotateCcw /> : <FiArchive />,
+              onClick: () => void toggleArchived(project),
+              iconVariant: "archive",
+            }
+          : {
+              key: "delete",
+              label: "Delete",
+              description: `Delete \u201C${project.name}\u201D`,
+              icon: <FiTrash2 />,
+              onClick: () => setDeleteTarget(project),
+              iconVariant: "danger",
+            },
+      );
+    }
     return (
       <ManagementCard
         key={project.id}
+        actions={actions}
         className={
           isFavorite
             ? "min-w-0 overflow-hidden border-amber-500/40 bg-amber-400/10 shadow-sm shadow-amber-900/5 dark:border-amber-400/35 dark:bg-amber-300/[0.08] dark:shadow-none"
@@ -758,7 +816,7 @@ export function ProjectsModal({
           </>
         }
       >
-        <div className="min-w-0 flex-1 py-1">
+        <div className="w-full min-w-0 py-1 sm:flex-1">
           <ManagementCardTitle
             className={
               project.archived_at
@@ -787,66 +845,6 @@ export function ProjectsModal({
           >
             Archived
           </Pill>
-        )}
-        {((!data.accessPreview && !project.archived_at) || !readOnly) && (
-          <div className="flex shrink-0 items-center gap-3">
-            {!data.accessPreview && !project.archived_at && (
-              <IconButton
-                label={`${isFavorite ? "Remove" : "Add"} “${project.name}” ${isFavorite ? "from" : "to"} favorites`}
-                disabled={favorites.isPending(project.id)}
-                onClick={() => void favorites.toggle(project)}
-                className={
-                  isFavorite
-                    ? "!border-amber-500/35 !bg-amber-400/15 !text-amber-700 hover:!bg-amber-400/25 dark:!border-amber-300/30 dark:!bg-amber-300/10 dark:!text-amber-200 dark:hover:!bg-amber-300/20"
-                    : undefined
-                }
-              >
-                <FiStar fill={isFavorite ? "currentColor" : "none"} />
-              </IconButton>
-            )}
-            {!readOnly && (
-              <>
-                {/* Route or dialog, per the profile — see editor-routes.ts. */}
-                {triggers.route && (
-                  <IconButton.Link
-                    href={`/projects/${project.id}/edit?from=${encodeURIComponent(listPath)}`}
-                    label={`Edit “${project.name}”`}
-                    variant="edit"
-                    tooltipTriggerClassName={triggers.routeClassName}
-                  >
-                    <FiEdit2 />
-                  </IconButton.Link>
-                )}
-                {triggers.dialog && (
-                  <IconButton
-                    label={`Edit “${project.name}”`}
-                    variant="edit"
-                    tooltipTriggerClassName={triggers.dialogClassName}
-                    onClick={() => beginRename(project)}
-                  >
-                    <FiEdit2 />
-                  </IconButton>
-                )}
-                {taskCount > 0 ? (
-                  <IconButton
-                    label={`${project.archived_at ? "Restore" : "Archive"} “${project.name}”`}
-                    variant="archive"
-                    onClick={() => void toggleArchived(project)}
-                  >
-                    {project.archived_at ? <FiRotateCcw /> : <FiArchive />}
-                  </IconButton>
-                ) : (
-                  <IconButton
-                    label={`Delete “${project.name}”`}
-                    variant="danger"
-                    onClick={() => setDeleteTarget(project)}
-                  >
-                    <FiTrash2 />
-                  </IconButton>
-                )}
-              </>
-            )}
-          </div>
         )}
       </ManagementCard>
     );

@@ -45,6 +45,7 @@ import {
   editorTriggers,
   ManagementCard,
   ManagementCardTitle,
+  type ManagementCardAction,
   ResourceOwnerSelect,
   useEditorReturnPath,
 } from "@/components/global";
@@ -856,9 +857,55 @@ export function CategoriesModal({
                         );
                         return profile ? [profile] : [];
                       });
+                    const actions: ManagementCardAction[] = [];
+                    if (!readOnly) {
+                      /* Route or dialog, per the profile. */
+                      if (triggers.route)
+                        actions.push({
+                          key: "edit-route",
+                          label: "Edit",
+                          description: `Edit \u201C${category.name}\u201D`,
+                          icon: <FiEdit2 />,
+                          href: `/categories/${category.id}/edit?from=${encodeURIComponent(listPath)}`,
+                          iconVariant: "edit",
+                          triggerClassName: triggers.routeClassName,
+                        });
+                      if (triggers.dialog)
+                        actions.push({
+                          key: "edit-dialog",
+                          label: "Edit",
+                          description: `Edit \u201C${category.name}\u201D`,
+                          icon: <FiEdit2 />,
+                          onClick: () => beginEdit(category),
+                          iconVariant: "edit",
+                          triggerClassName: triggers.dialogClassName,
+                        });
+                      actions.push({
+                        key: "archive",
+                        label: category.archived_at ? "Restore" : "Archive",
+                        description: `${category.archived_at ? "Restore" : "Archive"} \u201C${category.name}\u201D`,
+                        icon: category.archived_at ? (
+                          <FiRotateCcw />
+                        ) : (
+                          <FiArchive />
+                        ),
+                        onClick: () => void toggleArchived(category),
+                        iconVariant: "archive",
+                      });
+                      if (taskCount === 0)
+                        actions.push({
+                          key: "delete",
+                          label: "Delete",
+                          description: `Delete \u201C${category.name}\u201D`,
+                          icon: <FiTrash2 />,
+                          onClick: () => setDeleteTarget(category),
+                          iconVariant: "danger",
+                        });
+                    }
                     return (
                       <ManagementCard
                         key={category.id}
+                        actions={actions}
                         body={
                           category.description ||
                           (category.links ?? []).length ||
@@ -1001,31 +1048,35 @@ export function CategoriesModal({
                           </>
                         }
                       >
-                        <span
-                          aria-hidden
-                          className="h-4 w-4 shrink-0 rounded-full ring-4 ring-black/5 dark:ring-white/5"
-                          style={{ backgroundColor: category.color }}
-                        />
-                        <div className="min-w-0 flex-1 py-1">
-                          <ManagementCardTitle
-                            className={
-                              category.archived_at
-                                ? "text-black/60 dark:text-white/60"
-                                : undefined
-                            }
-                          >
-                            <span className="inline-flex max-w-full items-center gap-2">
-                              <span className="truncate">{category.name}</span>
-                              <Tooltip
-                                content={`${taskCount} ${taskCount === 1 ? "task" : "tasks"} in this category`}
-                                placement="top"
-                              >
-                                <CountBadge label="task" className="shrink-0">
-                                  {taskCount}
-                                </CountBadge>
-                              </Tooltip>
-                            </span>
-                          </ManagementCardTitle>
+                        <div className="flex w-full min-w-0 items-center gap-3 sm:flex-1">
+                          <span
+                            aria-hidden
+                            className="h-4 w-4 shrink-0 rounded-full ring-4 ring-black/5 dark:ring-white/5"
+                            style={{ backgroundColor: category.color }}
+                          />
+                          <div className="min-w-0 flex-1 py-1">
+                            <ManagementCardTitle
+                              className={
+                                category.archived_at
+                                  ? "text-black/60 dark:text-white/60"
+                                  : undefined
+                              }
+                            >
+                              <span className="inline-flex max-w-full items-center gap-2">
+                                <span className="truncate">
+                                  {category.name}
+                                </span>
+                                <Tooltip
+                                  content={`${taskCount} ${taskCount === 1 ? "task" : "tasks"} in this category`}
+                                  placement="top"
+                                >
+                                  <CountBadge label="task" className="shrink-0">
+                                    {taskCount}
+                                  </CountBadge>
+                                </Tooltip>
+                              </span>
+                            </ManagementCardTitle>
+                          </div>
                         </div>
                         {category.archived_at && (
                           <Pill
@@ -1035,55 +1086,6 @@ export function CategoriesModal({
                           >
                             Archived
                           </Pill>
-                        )}
-                        {!readOnly && (
-                          <>
-                            {/* Route or dialog, per the profile. */}
-                            {triggers.route && (
-                              <IconButton.Link
-                                href={`/categories/${category.id}/edit?from=${encodeURIComponent(listPath)}`}
-                                label={`Edit “${category.name}”`}
-                                variant="edit"
-                                tooltipTriggerClassName={
-                                  triggers.routeClassName
-                                }
-                              >
-                                <FiEdit2 />
-                              </IconButton.Link>
-                            )}
-                            {triggers.dialog && (
-                              <IconButton
-                                label={`Edit “${category.name}”`}
-                                variant="edit"
-                                tooltipTriggerClassName={
-                                  triggers.dialogClassName
-                                }
-                                onClick={() => beginEdit(category)}
-                              >
-                                <FiEdit2 />
-                              </IconButton>
-                            )}
-                            <IconButton
-                              label={`${category.archived_at ? "Restore" : "Archive"} “${category.name}”`}
-                              variant="archive"
-                              onClick={() => void toggleArchived(category)}
-                            >
-                              {category.archived_at ? (
-                                <FiRotateCcw />
-                              ) : (
-                                <FiArchive />
-                              )}
-                            </IconButton>
-                            {taskCount === 0 && (
-                              <IconButton
-                                label={`Delete “${category.name}”`}
-                                variant="danger"
-                                onClick={() => setDeleteTarget(category)}
-                              >
-                                <FiTrash2 />
-                              </IconButton>
-                            )}
-                          </>
                         )}
                       </ManagementCard>
                     );
