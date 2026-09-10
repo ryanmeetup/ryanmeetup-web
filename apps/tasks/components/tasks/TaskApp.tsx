@@ -71,7 +71,6 @@ export function TaskApp({
     [demoMode, getData, setData],
   );
   const [viewParam, setView] = useQueryParamState("view", "board");
-  const view: View = viewParam === "list" ? "list" : "board";
   const [committedSearch] = useQueryParamState("q", "");
   const { page, pageSize, setPage, setPageSize, syncPage, syncPageSize } =
     usePagination();
@@ -97,6 +96,11 @@ export function TaskApp({
   });
   const filters = useTaskFilters(setSearch);
   const { sort, visibility } = filters;
+  // Archived work is a record rather than a workflow. A board of it is mostly
+  // empty lanes, because only a status that closes work can hold an archived
+  // task, so the archive always reads as a list.
+  const view: View =
+    visibility === "archived" ? "list" : viewParam === "list" ? "list" : "board";
   const resolved = useResolvedTaskFilters(data, filters);
   useReadableFilterParams({ data, filters, resolved });
   const { collapsedStatusIds, expandStatusSection, toggleStatusSection } =
@@ -120,7 +124,6 @@ export function TaskApp({
   const favorites = useProjectFavorites({ data, setData, demoMode });
   const filterCount = countResolvedTaskFilters(resolved, {
     isMyTasks: scope.isMyTasks,
-    visibility,
   });
 
   const categoriesByTask = useMemo(
@@ -311,6 +314,7 @@ export function TaskApp({
               view,
               viewTitle: scope.viewTitle,
               viewingAsGroup: scope.viewingAsGroup,
+              visibility,
             }}
             controls={{
               onEditProject: () => {
@@ -329,6 +333,7 @@ export function TaskApp({
               },
               onSetAssignee: filters.setAssignee,
               onSetView: setView,
+              onSetVisibility: filters.setVisibility,
             }}
           />
           <TaskFilterBar
@@ -371,6 +376,7 @@ export function TaskApp({
                   tasks: listTasks,
                 }}
                 loading={taskPageLoading}
+                archived={visibility === "archived"}
                 onOpenTask={editor.openEdit}
                 pagination={{
                   page: data.taskPage?.page ?? page,
@@ -391,8 +397,12 @@ export function TaskApp({
                     setView("list");
                     filters.setSort(nextSort);
                   },
+                  // The header cell toggles between the column it names and
+                  // the view's own default order.
                   onToggle: () =>
-                    filters.setSort(sort === "due" ? "updated" : "due"),
+                    visibility === "archived"
+                      ? filters.setSort(sort === "closed" ? "updated" : "closed")
+                      : filters.setSort(sort === "due" ? "updated" : "due"),
                 }}
               />
             )}

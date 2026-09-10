@@ -73,6 +73,13 @@ type TaskViewFilters = {
   excludedTags: CategoryTagFilter[];
 };
 
+export const taskSorts: readonly string[] = [
+  "updated",
+  "due",
+  "priority",
+  "closed",
+];
+
 export function deriveVisibleTasks({
   assigneesByTask,
   categoriesByTask,
@@ -153,6 +160,8 @@ export function deriveVisibleTasks({
           : sort === "priority"
             ? taskPriorities.indexOf(b.priority) -
               taskPriorities.indexOf(a.priority)
-            : b.updated_at.localeCompare(a.updated_at),
+            : sort === "closed"
+              ? (b.completed_at ?? "").localeCompare(a.completed_at ?? "")
+              : b.updated_at.localeCompare(a.updated_at),
     );
 }

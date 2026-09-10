@@ -38,12 +38,15 @@ export function TaskListView({
   pagination,
   sorting,
   loading,
+  archived = false,
   onOpenTask,
 }: {
   data: TaskListData;
   pagination: TaskListPagination;
   sorting: TaskListSorting;
   loading: boolean;
+  /** The archive reads as a record: grouped by month, dated by when it closed. */
+  archived?: boolean;
   onOpenTask: (task: Task) => void;
 }) {
   const { page, pageSize, totalCount, onPageChange, onPageSizeChange } =
@@ -62,13 +65,14 @@ export function TaskListView({
       <div className="md:hidden" aria-busy={loading}>
         <div className="flex items-center justify-between gap-3 border-b border-black/10 bg-black/[0.025] px-4 py-3 dark:border-white/10 dark:bg-white/[0.025]">
           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-black/50 dark:text-white/50">
-            Tasks
+            {archived ? "Archive" : "Tasks"}
           </p>
           <DropdownSelect
             label="Sort"
             value={sort}
             onChange={onSortChange}
             options={[
+              ...(archived ? [{ label: "Closed", value: "closed" }] : []),
               { label: "Updated", value: "updated" },
               { label: "Due", value: "due" },
               { label: "Priority", value: "priority" },
@@ -77,7 +81,11 @@ export function TaskListView({
           />
         </div>
         <div className="divide-y divide-black/5 dark:divide-white/5">
-          <TaskListCards items={items} onOpenTask={onOpenTask} />
+          <TaskListCards
+            items={items}
+            archived={archived}
+            onOpenTask={onOpenTask}
+          />
         </div>
       </div>
       <div className="hidden overflow-x-auto md:block" aria-busy={loading}>
@@ -104,13 +112,17 @@ export function TaskListView({
                   className="flex items-center gap-1 whitespace-nowrap"
                   onClick={onToggleSort}
                 >
-                  Due <FiChevronDown />
+                  {archived ? "Closed" : "Due"} <FiChevronDown />
                 </button>
               </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-black/5 dark:divide-white/5">
-            <TaskListRows items={items} onOpenTask={onOpenTask} />
+            <TaskListRows
+              items={items}
+              archived={archived}
+              onOpenTask={onOpenTask}
+            />
           </tbody>
         </table>
       </div>

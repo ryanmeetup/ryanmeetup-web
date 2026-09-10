@@ -1,4 +1,4 @@
-import { DropdownSelect, FilterPanel } from "@ryanmeetup/ui";
+import { FilterPanel } from "@ryanmeetup/ui";
 import type { Category, Project } from "@/lib/resources/resource-types";
 import type { Priority, Status } from "@/lib/tasks/task-types";
 import type { Profile } from "@/lib/workspace/workspace-types";
@@ -37,11 +37,9 @@ export type TaskFilterOptions = {
 
 export type TaskFilterController = {
   count: number;
-  visibility: string;
   categories: InclusionSelection;
   selections: Record<TaskFilterKey, InclusionSelection>;
   clear: () => void;
-  setVisibility: (value: string) => void;
   setCategories: (kind: "included" | "excluded", values: string[]) => void;
   setSelection: (
     filter: TaskFilterKey,
@@ -62,11 +60,9 @@ export function TaskFilters({
   const favoriteProjectIds = new Set(options.favoriteProjectIds);
   const {
     count,
-    visibility,
     categories: categorySelection,
     selections,
     clear,
-    setVisibility,
     setCategories,
     setSelection,
   } = controller;
@@ -81,17 +77,6 @@ export function TaskFilters({
       onClear={clear}
       preferenceStorageKey={filterPanelsExpandedPreferenceKey}
     >
-      <DropdownSelect
-        label="Visibility"
-        active={visibility === "archived"}
-        value={visibility === "archived" ? "Archived tasks" : "Active tasks"}
-        onChange={setVisibility}
-        stackLabelOnMobile
-        options={[
-          { label: "Active tasks", value: "active" },
-          { label: "Archived tasks", value: "archived" },
-        ]}
-      />
       <InclusionFilterMenu
         label="Assignee"
         proximityValue={currentProfileId}

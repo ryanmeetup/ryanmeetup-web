@@ -293,9 +293,13 @@ export async function GET(request: Request): Promise<NextResponse> {
       ? query
           .order("due_date", { ascending: true, nullsFirst: false })
           .order("id", { ascending: true })
-      : query
-          .order("updated_at", { ascending: false })
-          .order("id", { ascending: false });
+      : sort === "closed"
+        ? query
+            .order("completed_at", { ascending: false, nullsFirst: false })
+            .order("id", { ascending: false })
+        : query
+            .order("updated_at", { ascending: false })
+            .order("id", { ascending: false });
   if (paginated) {
     const requestedFrom = (requestedPage - 1) * pageSize;
     query = query.range(requestedFrom, requestedFrom + pageSize - 1);
@@ -426,9 +430,13 @@ export async function GET(request: Request): Promise<NextResponse> {
         ? corrected
             .order("due_date", { ascending: true, nullsFirst: false })
             .order("id", { ascending: true })
-        : corrected
-            .order("updated_at", { ascending: false })
-            .order("id", { ascending: false });
+        : sort === "closed"
+          ? corrected
+              .order("completed_at", { ascending: false, nullsFirst: false })
+              .order("id", { ascending: false })
+          : corrected
+              .order("updated_at", { ascending: false })
+              .order("id", { ascending: false });
     result = await corrected.range(pageState.from, pageState.to);
     if (result.error)
       return databaseFailure(request, "tasks.list", result.error, {

@@ -89,25 +89,27 @@ test("opens a project overview from the sidebar", async ({ page, baseURL }) => {
     page.getByRole("link", { name: "View open tasks", exact: true }),
   ).toHaveAttribute(
     "href",
-    "/board?project=Website+Refresh&excludeStatuses=Done",
+    "/board?project=Website+Refresh&excludeStatuses=Done%2CWill+Not+Do",
   );
   await expect(
     page.getByRole("link", { name: "View overdue", exact: true }),
   ).toHaveAttribute(
     "href",
-    "/board?project=Website+Refresh&excludeStatuses=Done&dueWithin=overdue",
+    "/board?project=Website+Refresh&excludeStatuses=Done%2CWill+Not+Do&dueWithin=overdue",
   );
   await expect(
     page.getByRole("link", { name: "View due in 14 days", exact: true }),
   ).toHaveAttribute(
     "href",
-    "/board?project=Website+Refresh&excludeStatuses=Done&dueWithin=14",
+    "/board?project=Website+Refresh&excludeStatuses=Done%2CWill+Not+Do&dueWithin=14",
   );
   const metrics = page.getByRole("region", { name: "Project at a glance" });
   await expect(metrics.getByText("Complete", { exact: true })).toHaveCount(2);
+  // Delivered work is reachable from the tile that measures it; a decline is
+  // named by its own status rather than counted as something completed.
   await expect(
     metrics.getByRole("link", { name: "View complete", exact: true }),
-  ).toHaveCount(0);
+  ).toHaveAttribute("href", "/board?project=Website+Refresh&status=Done");
 });
 
 test("opens a project's board directly from the sidebar", async ({
@@ -653,4 +655,43 @@ test.describe("mobile workspace navigation", () => {
         .getByRole("heading", { name: "Next 90 days" }),
     ).toHaveCount(0);
   });
+});
+
+/**
+ * Archived work used to be a mode of the board, which meant a full row of
+ * status lanes where only the ones that close work could ever hold a card.
+ * It is a record now: a list, grouped by the month work closed.
+ */
+test("reads the archive as a record rather than a board", async ({
+  page,
+  baseURL,
+}) => {
+  await enterDemoWorkspace(page, baseURL);
+  await page.goto("/board");
+
+  const layout = page.getByRole("group", { name: "Task layout" });
+  await expect(layout).toBeVisible();
+  await page
+    .getByRole("group", { name: "Task visibility" })
+    .getByRole("button", { name: "Archive" })
+    .click();
+
+  // No board, and no board switch to get back to one.
+  await expect(page.locator("[data-board-scroller]")).toHaveCount(0);
+  await expect(layout).toHaveCount(0);
+
+  const rows = page.getByRole("row");
+  await expect(rows.filter({ hasText: "Send customer interview thank-yous" })).toBeVisible();
+  await expect(
+    rows.filter({ hasText: "Print branded lanyards for every attendee" }),
+  ).toBeVisible();
+  // The last column dates the ending instead of the deadline.
+  await expect(page.getByRole("columnheader", { name: "Closed" })).toBeVisible();
+  await expect(page.getByRole("columnheader", { name: "Due" })).toHaveCount(0);
+
+  await page
+    .getByRole("group", { name: "Task visibility" })
+    .getByRole("button", { name: "Active" })
+    .click();
+  await expect(page.locator("[data-board-scroller]")).toBeVisible();
 });

@@ -116,6 +116,25 @@ Contact image uploads save together with their contact, and replacing, removing,
 
 A workspace uses one instance name for page titles, digest emails, link previews, the sidebar wordmark, and the footer. Owners write the workspace notice under **Banner** in Settings, including an optional link and label. Updating the message brings the banner back for teammates who dismissed an older notice, while an untouched setting continues to use the deployment default.
 
+### Work you decided against is finished too
+
+A status now says how work ends: open, delivered, or declined. **Will Not Do**
+is a declined ending, so a task you turn down closes the same way finished work
+does. It leaves your open counts, stops arriving in the weekday digest, comes
+off the calendar, stops showing up as overdue on a project, and archives after
+two weeks. It is never counted as something the team completed, and a project's
+progress bar no longer treats an abandoned task as delivered. Owners set the
+ending for any status under **Statuses** in the admin section.
+
+### The archive reads like a record
+
+Active and Archived are now a switch beside the board and list controls, rather
+than a setting inside the filters panel. Archived work opens as a list grouped
+by the month it closed, showing when each task ended instead of when it had been
+due, newest first. The board is no longer offered there: only a status that
+closes work can hold an archived task, so the old archived board was a row of
+permanently empty columns.
+
 ### A calmer canvas
 
 The workspace sits on a subtle paper texture with solid task columns that stay readable over it. The board keeps its horizontal scroller against the bottom edge, and the latest-release card starts collapsed on smaller screens.

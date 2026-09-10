@@ -1,7 +1,9 @@
+import { Fragment } from "react";
 import { Avatar, EmptyState } from "@ryanmeetup/ui";
 import type { Category, Project } from "@/lib/resources/resource-types";
 import type { Profile } from "@/lib/workspace/workspace-types";
 import type { Status, Task } from "@/lib/tasks/task-types";
+import { formatMonth, formatTimestampDate } from "@/lib/date-format";
 import { profileDisplayName } from "@/lib/presentation";
 import { TaskCategoryBadge } from "./TaskCategoryBadge";
 import { TaskDueDate } from "./TaskDueDate";
@@ -17,6 +19,25 @@ type TaskListItem = {
   project?: Project | null;
   people: Profile[];
 };
+
+/**
+ * Archived rows read as a record of what happened, so they are grouped by the
+ * month work closed rather than running as one undifferentiated list. Anything
+ * without a closing date sits in its own group at the end; a task can only get
+ * there by having its status reopened after it was archived.
+ */
+export function groupTasksByClosedMonth(items: TaskListItem[]) {
+  const groups: { key: string; label: string; items: TaskListItem[] }[] = [];
+  for (const item of items) {
+    const closedAt = item.task.completed_at;
+    const key = closedAt ? closedAt.slice(0, 7) : "unknown";
+    const label = closedAt ? formatMonth(closedAt) : "No closing date";
+    const current = groups.at(-1);
+    if (current?.key === key) current.items.push(item);
+    else groups.push({ key, label, items: [item] });
+  }
+  return groups;
+}
 
 export function resolveTaskListItems(data: TaskListData): TaskListItem[] {
   return data.tasks.map((task) => ({
@@ -61,18 +82,40 @@ function Assignees({
 
 export function TaskListCards({
   items,
+  archived = false,
+  grouped = archived,
   onOpenTask,
 }: {
   items: TaskListItem[];
+  archived?: boolean;
+  grouped?: boolean;
   onOpenTask: (task: Task) => void;
 }) {
   if (items.length === 0)
     return (
       <EmptyState
         variant="plain"
-        message="No tasks found. Try clearing a filter or add the first task in this view."
+        message={
+          archived
+            ? "Nothing archived yet. Finished and declined work moves here once it has been closed for two weeks."
+            : "No tasks found. Try clearing a filter or add the first task in this view."
+        }
       />
     );
+  if (grouped)
+    return groupTasksByClosedMonth(items).map((group) => (
+      <Fragment key={group.key}>
+        <p className="bg-black/[0.025] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-black/50 dark:bg-white/[0.025] dark:text-white/50">
+          {group.label}
+        </p>
+        <TaskListCards
+          items={group.items}
+          archived={archived}
+          grouped={false}
+          onOpenTask={onOpenTask}
+        />
+      </Fragment>
+    ));
   return items.map(({ task, status, categories, project, people }) => (
     <button
       type="button"
@@ -99,13 +142,17 @@ export function TaskListCards({
         )}
         {project && <span>{project.name}</span>}
         <Assignees people={people} compact />
-        {task.due_date && (
+        {archived ? (
+          task.completed_at && (
+            <span>Closed {formatTimestampDate(task.completed_at)}</span>
+          )
+        ) : task.due_date ? (
           <TaskDueDate
             dueDate={task.due_date}
             isCompleted={status ? closesWork(status) : false}
             showIcon
           />
-        )}
+        ) : null}
       </span>
       {categories.length > 0 && (
         <span className="mt-3 flex flex-wrap gap-1.5">
@@ -124,9 +171,15 @@ export function TaskListCards({
 
 export function TaskListRows({
   items,
+  archived = false,
+  grouped = archived,
   onOpenTask,
 }: {
   items: TaskListItem[];
+  /** Show when work closed rather than when it was due. */
+  archived?: boolean;
+  /** Split the rows into month headings. Off for the rows inside one. */
+  grouped?: boolean;
   onOpenTask: (task: Task) => void;
 }) {
   if (items.length === 0)
@@ -135,11 +188,35 @@ export function TaskListRows({
         <td colSpan={7}>
           <EmptyState
             variant="plain"
-            message="No tasks found. Try clearing a filter or add the first task in this view."
+            message={
+              archived
+                ? "Nothing archived yet. Finished and declined work moves here once it has been closed for two weeks."
+                : "No tasks found. Try clearing a filter or add the first task in this view."
+            }
           />
         </td>
       </tr>
     );
+  if (grouped)
+    return groupTasksByClosedMonth(items).map((group) => (
+      <Fragment key={group.key}>
+        <tr>
+          <th
+            scope="colgroup"
+            colSpan={7}
+            className="bg-black/[0.025] px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.16em] text-black/50 dark:bg-white/[0.025] dark:text-white/50"
+          >
+            {group.label}
+          </th>
+        </tr>
+        <TaskListRows
+          items={group.items}
+          archived={archived}
+          grouped={false}
+          onOpenTask={onOpenTask}
+        />
+      </Fragment>
+    ));
   return items.map(({ task, status, categories, project, people }) => (
     <tr
       key={task.id}
@@ -184,11 +261,17 @@ export function TaskListRows({
         <TaskPriorityBadge priority={task.priority} />
       </td>
       <td className="px-3 py-4">
-        <TaskDueDate
-          dueDate={task.due_date}
-          isCompleted={status ? closesWork(status) : false}
-          size="list"
-        />
+        {archived ? (
+          <span className="whitespace-nowrap text-sm text-black/80 dark:text-white/80">
+            {task.completed_at ? formatTimestampDate(task.completed_at) : "—"}
+          </span>
+        ) : (
+          <TaskDueDate
+            dueDate={task.due_date}
+            isCompleted={status ? closesWork(status) : false}
+            size="list"
+          />
+        )}
       </td>
     </tr>
   ));

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Avatar, Button, Heading, Tooltip } from "@ryanmeetup/ui";
 import {
+  FiArchive,
   FiChevronDown,
   FiEdit2,
   FiFolder,
@@ -44,6 +45,7 @@ export type TaskWorkspaceHeaderScope = {
   selectedProject: Project | null | undefined;
   taskCount: number;
   view: "board" | "list";
+  visibility: "active" | "archived";
   viewTitle: string;
   viewingAsGroup: boolean;
 };
@@ -54,6 +56,7 @@ export type TaskWorkspaceHeaderControls = {
   onEditCategory: () => void;
   onSetAssignee: (value: string) => void;
   onSetView: (value: "board" | "list") => void;
+  onSetVisibility: (value: "active" | "archived") => void;
 };
 
 export function TaskWorkspaceHeader({
@@ -93,12 +96,14 @@ export function TaskWorkspaceHeader({
     view,
     viewTitle,
     viewingAsGroup,
+    visibility,
   } = scope;
   const {
     onEditProject,
     onEditCategory,
     onSetAssignee,
     onSetView,
+    onSetVisibility,
     onToggleProjectFavorite,
   } = controls;
   // Favorites belong to the viewer's own profile, so an access preview - which
@@ -357,23 +362,47 @@ export function TaskWorkspaceHeader({
           <div
             role="group"
             className="grid min-w-0 grid-cols-2 rounded-lg border border-black/10 bg-white p-1 dark:border-white/10 dark:bg-white/5 sm:flex"
-            aria-label="Task layout"
+            aria-label="Task visibility"
           >
             <button
-              aria-pressed={view === "board"}
-              onClick={() => onSetView("board")}
-              className={`view-button min-w-0 gap-1 px-2 tracking-[0.08em] sm:gap-2 sm:px-3 sm:tracking-[0.14em] ${view === "board" ? "view-button-active" : ""}`}
+              aria-pressed={visibility === "active"}
+              onClick={() => onSetVisibility("active")}
+              className={`view-button min-w-0 px-2 tracking-[0.08em] sm:px-3 sm:tracking-[0.14em] ${visibility === "active" ? "view-button-active" : ""}`}
             >
-              <FiGrid /> Board
+              Active
             </button>
             <button
-              aria-pressed={view === "list"}
-              onClick={() => onSetView("list")}
-              className={`view-button min-w-0 gap-1 px-2 tracking-[0.08em] sm:gap-2 sm:px-3 sm:tracking-[0.14em] ${view === "list" ? "view-button-active" : ""}`}
+              aria-pressed={visibility === "archived"}
+              onClick={() => onSetVisibility("archived")}
+              className={`view-button min-w-0 gap-1 px-2 tracking-[0.08em] sm:gap-2 sm:px-3 sm:tracking-[0.14em] ${visibility === "archived" ? "view-button-active" : ""}`}
             >
-              <FiList /> List
+              <FiArchive /> Archive
             </button>
           </div>
+          {/* Archived work has no board: only a status that closes work can
+              hold an archived task, so the lanes would be empty. */}
+          {visibility === "active" && (
+            <div
+              role="group"
+              className="grid min-w-0 grid-cols-2 rounded-lg border border-black/10 bg-white p-1 dark:border-white/10 dark:bg-white/5 sm:flex"
+              aria-label="Task layout"
+            >
+              <button
+                aria-pressed={view === "board"}
+                onClick={() => onSetView("board")}
+                className={`view-button min-w-0 gap-1 px-2 tracking-[0.08em] sm:gap-2 sm:px-3 sm:tracking-[0.14em] ${view === "board" ? "view-button-active" : ""}`}
+              >
+                <FiGrid /> Board
+              </button>
+              <button
+                aria-pressed={view === "list"}
+                onClick={() => onSetView("list")}
+                className={`view-button min-w-0 gap-1 px-2 tracking-[0.08em] sm:gap-2 sm:px-3 sm:tracking-[0.14em] ${view === "list" ? "view-button-active" : ""}`}
+              >
+                <FiList /> List
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

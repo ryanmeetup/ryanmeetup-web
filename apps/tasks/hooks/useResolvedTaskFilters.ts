@@ -240,11 +240,12 @@ export function useResolvedTaskFilters(
 /**
  * The badge count on the filter button. An assignee filter that only narrows to
  * the viewer is already spelled out by the "My Tasks" title, so it is not
- * counted twice.
+ * counted twice, and neither is the archive: it is a switch in the header with
+ * its own visible state rather than something hidden inside the panel.
  */
 export function countResolvedTaskFilters(
   resolved: ResolvedTaskFilters,
-  { isMyTasks, visibility }: { isMyTasks: boolean; visibility: string },
+  { isMyTasks }: { isMyTasks: boolean },
 ) {
   return (
     (isMyTasks ? 0 : resolved.includedAssigneeIds.length) +
@@ -262,7 +263,6 @@ export function countResolvedTaskFilters(
     resolved.includedDueValues.length +
     resolved.excludedDueValues.length +
     resolved.includedTagFilters.length +
-    resolved.excludedTagFilters.length +
-    (visibility === "archived" ? 1 : 0)
+    resolved.excludedTagFilters.length
   );
 }

@@ -610,6 +610,28 @@ export const demoData: WorkspaceData = {
       created_at: at(-18),
       updated_at: at(-18),
     },
+    // Declined work, already archived: the fixture that shows the archive
+    // holding both endings rather than only the finished ones.
+    {
+      id: "15",
+      task_number: 15,
+      title: "Print branded lanyards for every attendee",
+      description: "Priced out at three vendors and cut from this event.",
+      status_id: "will-not-do",
+      project_id: "fall-launch",
+      created_by: "taylor",
+      reported_by: "jordan",
+      start_date: null,
+      due_date: on(-20),
+      due_time: null,
+      reminder_at: null,
+      priority: "low",
+      board_position: 15360,
+      completed_at: at(-17, 11, 30),
+      archived_at: at(-3),
+      created_at: at(-24),
+      updated_at: at(-17, 11, 30),
+    },
   ],
 };
 

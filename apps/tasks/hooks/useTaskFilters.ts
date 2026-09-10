@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useQueryParamState } from "@ryanmeetup/hooks";
+import { taskSorts } from "@/lib/tasks/task-view";
 
 function useInclusionQueryParams(name: string, excludedName: string) {
   const [included, setIncluded] = useQueryParamState(name, "all");
@@ -32,10 +33,14 @@ export function useTaskFilters(setSearch: (value: string) => void) {
   );
   const visibility: "active" | "archived" =
     visibilityParam === "archived" ? "archived" : "active";
-  const [sortParam, setSort] = useQueryParamState("sort", "updated");
-  const sort = ["updated", "due", "priority"].includes(sortParam)
+  // No `sort` in the URL means the view picks its own: the archive is read by
+  // when work ended, everything else by what changed last.
+  const [sortParam, setSort] = useQueryParamState("sort", "");
+  const sort = taskSorts.includes(sortParam)
     ? sortParam
-    : "updated";
+    : visibility === "archived"
+      ? "closed"
+      : "updated";
   const [clock, setClock] = useState(() => Date.now());
 
   useEffect(() => {
@@ -63,7 +68,7 @@ export function useTaskFilters(setSearch: (value: string) => void) {
     tags.setIncluded("all");
     tags.setExcluded("");
     setVisibility("active");
-    setSort("updated");
+    setSort("");
   }
 
   return {

@@ -64,7 +64,6 @@ export function TaskFilterBar({
       }}
       controller={{
         count: filterCount,
-        visibility: filters.visibility,
         categories: {
           included: includedCategoryIds,
           excluded: excludedCategoryIds,
@@ -100,7 +99,6 @@ export function TaskFilterBar({
           },
         },
         clear: filters.clear,
-        setVisibility: filters.setVisibility,
         setCategories: (kind, ids) => {
           if (kind === "included") {
             filters.setGroup("all");

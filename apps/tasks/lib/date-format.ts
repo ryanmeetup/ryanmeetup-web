@@ -3,7 +3,7 @@
  *
  * Every screen that shows a moment in time was building its own
  * `Intl.DateTimeFormat`, which is both expensive to construct and easy to let
- * drift. These five formats are the whole vocabulary; reach for one of them
+ * drift. These formats are the whole vocabulary; reach for one of them
  * rather than spelling out options at a call site.
  *
  * Calendar, digest, and Google Calendar code deliberately keeps its own
@@ -59,6 +59,9 @@ export const formatCalendarDay = calendarFormatter({
   month: "short",
   day: "numeric",
 });
+
+/** The month a group of rows belongs to: `August 2026`. */
+export const formatMonth = formatter({ month: "long", year: "numeric" });
 
 /** A calendar date in full: `Aug 27, 2026`. */
 export const formatCalendarDate = calendarFormatter({

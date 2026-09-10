@@ -36,6 +36,13 @@ export function resolveAssigneeTaskFilters(
   };
 }
 
+/** The orders `GET /api/tasks` can ask Postgres for. */
+function taskListSort(value: string | null): "due" | "closed" | "updated" {
+  if (value === "due") return "due";
+  if (value === "closed") return "closed";
+  return "updated";
+}
+
 export function parseTaskListQuery(params: URLSearchParams, now = new Date()) {
   const parseAssigneeIds = (name: string) =>
     (params.get(name) ?? "").split(",").filter(isUuid);
@@ -75,7 +82,9 @@ export function parseTaskListQuery(params: URLSearchParams, now = new Date()) {
     paginated: params.get("paginated") === "1",
     requestedPage,
     pageSize,
-    sort: params.get("sort") === "due" ? "due" : "updated",
+    // Only the orders the database can apply. Priority is a client-side sort,
+    // so it arrives here as the default and is reordered after the page loads.
+    sort: taskListSort(params.get("sort")),
     dueWithinDays,
     excludedDueDays,
     hasDueWithinFilter: dueWithinDays !== null,
