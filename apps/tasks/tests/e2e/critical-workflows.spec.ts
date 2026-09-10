@@ -365,6 +365,34 @@ test("keeps form labels consistent with the Categories heading", async ({
   }
 });
 
+test("keeps the task due date inside the create form on mobile", async ({
+  page,
+  baseURL,
+}) => {
+  await enterDemoWorkspace(page, baseURL);
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.goto("/task/new");
+  await page.waitForLoadState("networkidle");
+
+  const dueDateField = page
+    .locator("form .date-field")
+    .filter({ hasText: "Due date" });
+  const dueDateInput = dueDateField.locator('input[type="date"]');
+  await expect(dueDateInput).toBeVisible();
+
+  const bounds = await Promise.all([
+    dueDateField.boundingBox(),
+    dueDateInput.boundingBox(),
+  ]);
+  expect(bounds[0]).not.toBeNull();
+  expect(bounds[1]).not.toBeNull();
+  expect(bounds[1]!.x + bounds[1]!.width).toBeLessThanOrEqual(
+    bounds[0]!.x + bounds[0]!.width + 1,
+  );
+  await expect(dueDateField).toHaveCSS("min-width", "0px");
+  await expect(dueDateInput).toHaveCSS("min-width", "0px");
+});
+
 test("updates category owners through the resource editor", async ({
   page,
   baseURL,
