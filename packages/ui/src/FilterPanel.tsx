@@ -23,15 +23,19 @@ const FilterPanel = ({
   count,
   className,
   controlsClassName,
-  defaultExpanded = true,
+  defaultExpanded = false,
   onClear,
   preferenceStorageKey,
 }: FilterPanelProps) => {
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   useEffect(() => {
+    const mobileQuery = collapseOnMobile
+      ? window.matchMedia("(max-width: 639px)")
+      : null;
+
     queueMicrotask(() => {
-      if (collapseOnMobile && window.matchMedia("(max-width: 639px)").matches) {
+      if (mobileQuery?.matches) {
         setExpanded(false);
         return;
       }
@@ -40,6 +44,13 @@ const FilterPanel = ({
       const saved = localStorage.getItem(preferenceStorageKey);
       if (saved !== null) setExpanded(saved === "true");
     });
+
+    function handleMobileChange(event: MediaQueryListEvent) {
+      if (event.matches) setExpanded(false);
+    }
+
+    mobileQuery?.addEventListener("change", handleMobileChange);
+    return () => mobileQuery?.removeEventListener("change", handleMobileChange);
   }, [collapseOnMobile, preferenceStorageKey]);
 
   return (

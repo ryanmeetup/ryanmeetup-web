@@ -73,7 +73,6 @@ export function TaskFilters({
       count={count}
       className="mb-6"
       controlsClassName="grid grid-cols-1 gap-3 overflow-visible sm:grid-cols-2 lg:flex lg:gap-2 lg:overflow-x-auto"
-      defaultExpanded
       onClear={clear}
       preferenceStorageKey={filterPanelsExpandedPreferenceKey}
     >
