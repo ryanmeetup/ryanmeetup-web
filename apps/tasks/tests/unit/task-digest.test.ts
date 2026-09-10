@@ -140,6 +140,10 @@ describe("task workload digests", () => {
     expect(html).toContain("TASK-53");
     expect(html).toContain("📁&nbsp; tasks.ryanmeetup.com");
     expect(html).toContain("📅&nbsp; Due Aug 20");
+    expect(html).toContain(
+      '<td align="right" style="color:#374151;font-weight:750;white-space:nowrap">View task&nbsp; →</td>',
+    );
+    expect(html).not.toContain("float:right");
     expect(html).not.toContain("&nbsp; · &nbsp;");
   });
 
