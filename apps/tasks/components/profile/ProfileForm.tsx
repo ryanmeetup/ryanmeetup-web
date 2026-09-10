@@ -404,7 +404,10 @@ export function ProfileForm({
               Choose how views and forms behave when you open them.
             </p>
           </div>
-          <div className="grid gap-3 lg:grid-cols-2">
+          <div
+            data-profile-preferences-grid
+            className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3 lg:grid-cols-2 [&>*]:min-w-0"
+          >
             <label className="flex cursor-pointer items-center justify-between gap-5 rounded-xl border border-black/10 bg-black/[0.02] p-4 transition hover:border-black/20 dark:border-white/10 dark:bg-white/[0.025] dark:hover:border-white/20">
               <span className="min-w-0">
                 <span className="block text-sm font-semibold">

@@ -45,11 +45,37 @@ test("keeps equal page margins around profile fields on mobile", async ({
   await page.goto("/profile");
 
   const displayNameBox = await page.getByLabel("Display name").boundingBox();
+  const preferencesBox = await page
+    .locator("[data-profile-preferences-grid]")
+    .boundingBox();
   expect(displayNameBox).not.toBeNull();
-  if (!displayNameBox) return;
+  expect(preferencesBox).not.toBeNull();
+  if (!displayNameBox || !preferencesBox) return;
 
   const leftMargin = displayNameBox.x;
   const rightMargin = 390 - displayNameBox.x - displayNameBox.width;
   expect(leftMargin).toBeGreaterThanOrEqual(16);
   expect(Math.abs(leftMargin - rightMargin)).toBeLessThanOrEqual(1);
+
+  const preferencesLeftMargin = preferencesBox.x;
+  const preferencesRightMargin =
+    390 - preferencesBox.x - preferencesBox.width;
+  expect(preferencesLeftMargin).toBeGreaterThanOrEqual(16);
+  expect(
+    Math.abs(preferencesLeftMargin - preferencesRightMargin),
+  ).toBeLessThanOrEqual(1);
+
+  const preferenceCards = await page
+    .locator("[data-profile-preferences-grid] > *")
+    .all();
+  expect(preferenceCards).toHaveLength(6);
+  for (const card of preferenceCards) {
+    const cardBox = await card.boundingBox();
+    expect(cardBox).not.toBeNull();
+    if (!cardBox) continue;
+    expect(cardBox.x).toBeGreaterThanOrEqual(preferencesBox.x);
+    expect(cardBox.x + cardBox.width).toBeLessThanOrEqual(
+      preferencesBox.x + preferencesBox.width,
+    );
+  }
 });
