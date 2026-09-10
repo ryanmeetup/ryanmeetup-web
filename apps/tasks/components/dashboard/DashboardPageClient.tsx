@@ -38,7 +38,10 @@ import { demoTaskDrafts } from "@/lib/workspace/demo-drafts";
 import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import { taskPath } from "@/lib/tasks/task-key";
 import { profileDisplayName } from "@/lib/presentation";
-import { taskStatusChange } from "@/lib/activity/task-activity";
+import {
+  taskStatusChange,
+  taskStatusChangesForTasks,
+} from "@/lib/activity/task-activity";
 import { formatShortTimestamp } from "@/lib/date-format";
 import { projectPath } from "@/lib/resources/project-route";
 import {
@@ -158,8 +161,9 @@ export function DashboardPageClient({
     () => new Set([...assignedToMe, ...reportedByMe].map((task) => task.id)),
     [reportedByMe, assignedToMe],
   );
-  const recentActivity = data.activity.filter((item) =>
-    item.task_id ? relevantTaskIds.has(item.task_id) : false,
+  const recentActivity = taskStatusChangesForTasks(
+    data.activity,
+    relevantTaskIds,
   );
   const favoriteProjects = data.projects.filter(
     (project) =>

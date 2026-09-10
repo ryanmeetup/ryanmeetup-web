@@ -1,12 +1,18 @@
 import { Button, DisclosureCard } from "@ryanmeetup/ui";
 import { FiClock } from "react-icons/fi";
-import { ActivityActorAvatar, ActivityChangeList } from "@/components/activity";
+import {
+  ActivityActorAvatar,
+  ActivityChangeList,
+  ActivityStatusChange,
+} from "@/components/activity";
 import { CountBadge } from "@/components/global";
 import { profileDisplayName } from "@/lib/presentation";
 import {
   taskActivityChanges,
   type TaskChangeLookups,
 } from "@/lib/activity/task-change-presentation";
+import { TASK_MOVE_ACTION } from "@/lib/activity/activity-events";
+import { taskStatusChange } from "@/lib/activity/task-activity";
 import type { TaskActivity } from "@/lib/activity/activity-types";
 import { formatTimestamp } from "@/lib/date-format";
 
@@ -64,6 +70,10 @@ export function TaskActivityPanel({
           );
           const name = profileDisplayName(profile, "System");
           const changes = taskActivityChanges(item, lookups);
+          const statusChange =
+            item.action === TASK_MOVE_ACTION
+              ? taskStatusChange(item, lookups.statuses)
+              : null;
           return (
             <div
               key={item.id}
@@ -76,8 +86,19 @@ export function TaskActivityPanel({
               </span>
               <div className="min-w-0 flex-1">
                 <p>
-                  <strong>{name}</strong> {item.action}
+                  <strong>{name}</strong>{" "}
+                  {item.action === TASK_MOVE_ACTION
+                    ? "moved the task"
+                    : item.action}
                 </p>
+                {statusChange && (
+                  <div className="mt-1 text-xs text-black/60 dark:text-white/60">
+                    <ActivityStatusChange
+                      from={statusChange.from}
+                      to={statusChange.to}
+                    />
+                  </div>
+                )}
                 <ActivityChangeList changes={changes} className="mt-1" />
                 <p className="mt-1 flex items-center gap-2 text-xs text-black/45 dark:text-white/45">
                   <FiClock

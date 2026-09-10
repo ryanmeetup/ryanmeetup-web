@@ -1,7 +1,25 @@
 import type { Status } from "@/lib/tasks/task-types";
 import type { TaskActivity } from "@/lib/activity/activity-types";
+import { TASK_MOVE_ACTION } from "@/lib/activity/activity-events";
 
-export function taskStatusChange(item: TaskActivity, statuses: Status[]) {
+export function taskStatusChangesForTasks(
+  activity: TaskActivity[],
+  taskIds: ReadonlySet<string>,
+) {
+  return activity.filter(
+    (item) =>
+      item.action === TASK_MOVE_ACTION &&
+      item.task_id !== null &&
+      taskIds.has(item.task_id),
+  );
+}
+
+export function taskStatusChange<
+  T extends Pick<Status, "id" | "name" | "color">,
+>(
+  item: TaskActivity,
+  statuses: T[],
+) {
   const fromId =
     typeof item.details.from_status_id === "string"
       ? item.details.from_status_id

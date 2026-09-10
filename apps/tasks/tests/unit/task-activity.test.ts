@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   taskActivityLabel,
   taskStatusChange,
+  taskStatusChangesForTasks,
 } from "@/lib/activity/task-activity";
 import type { Status } from "@/lib/tasks/task-types";
 import type { TaskActivity } from "@/lib/activity/activity-types";
@@ -12,6 +13,39 @@ const statuses = [
 ] as Status[];
 
 describe("task activity", () => {
+  it("keeps only status moves for the requested tasks", () => {
+    const activity = [
+      {
+        id: "created",
+        task_id: "task",
+        actor_id: null,
+        action: "created the task",
+        details: {},
+        created_at: "2026-08-13T00:00:00.000Z",
+      },
+      {
+        id: "move",
+        task_id: "task",
+        actor_id: null,
+        action: "moved task",
+        details: { from_status_id: "todo", status_id: "done" },
+        created_at: "2026-08-14T00:00:00.000Z",
+      },
+      {
+        id: "other-task-move",
+        task_id: "other-task",
+        actor_id: null,
+        action: "moved task",
+        details: { from_status_id: "todo", status_id: "done" },
+        created_at: "2026-08-15T00:00:00.000Z",
+      },
+    ] satisfies TaskActivity[];
+
+    expect(taskStatusChangesForTasks(activity, new Set(["task"]))).toEqual([
+      activity[1],
+    ]);
+  });
+
   it("resolves status changes from activity details", () => {
     const activity = {
       id: "activity",

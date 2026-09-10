@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { EmptyState, Spinner } from "@ryanmeetup/ui";
-import { FiArrowRight } from "react-icons/fi";
 import { CategoryLabel } from "@/components/categories";
 import { TaskKeyBadge } from "@/components/tasks";
 import { withAccessPreview } from "@/lib/access/access-preview";
@@ -14,8 +13,8 @@ import type { AccessPreview } from "@/lib/workspace/workspace-types";
 import { ActivityActorAvatar } from "./ActivityActorAvatar";
 import {
   ActivityChangeList,
+  ActivityStatusChange,
   activityChangeSummary,
-  StatusLabel,
 } from "./ActivityChangeList";
 
 function activityDescription(
@@ -33,28 +32,9 @@ function activityDescription(
     );
   }
   if (description.kind === "status") {
-    const { from: fromStatus, to: toStatus } = description;
-    if (fromStatus && toStatus) {
-      return (
-        <span className="flex items-center gap-2">
-          <StatusLabel status={fromStatus} />
-          <FiArrowRight
-            aria-label="moved to"
-            className="shrink-0 text-black/40 dark:text-white/40"
-          />
-          <StatusLabel status={toStatus} />
-        </span>
-      );
-    }
-    if (toStatus) {
-      return (
-        <span className="flex items-center gap-2">
-          <span className="text-black/55 dark:text-white/55">Moved to</span>
-          <StatusLabel status={toStatus} />
-        </span>
-      );
-    }
-    return "Task moved";
+    return (
+      <ActivityStatusChange from={description.from} to={description.to} />
+    );
   }
   return description.detail ? (
     <span>

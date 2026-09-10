@@ -12,6 +12,7 @@ import {
   FiType,
   FiUser,
   FiUserCheck,
+  FiArrowRight,
 } from "react-icons/fi";
 import { taskChangeSentence } from "@/lib/activity/task-change-presentation";
 import type { TaskChangeDetail } from "@/lib/activity/task-change-presentation";
@@ -33,6 +34,37 @@ export function StatusLabel({
       {status.name}
     </span>
   );
+}
+
+/** A task's previous and next board columns, shared by every activity surface. */
+export function ActivityStatusChange({
+  from: fromStatus,
+  to: toStatus,
+}: {
+  from?: Pick<Status, "name" | "color">;
+  to?: Pick<Status, "name" | "color">;
+}) {
+  if (fromStatus && toStatus) {
+    return (
+      <span className="flex flex-wrap items-center gap-2">
+        <StatusLabel status={fromStatus} />
+        <FiArrowRight
+          aria-label="moved to"
+          className="shrink-0 text-black/40 dark:text-white/40"
+        />
+        <StatusLabel status={toStatus} />
+      </span>
+    );
+  }
+  if (toStatus) {
+    return (
+      <span className="flex flex-wrap items-center gap-2">
+        <span className="text-black/55 dark:text-white/55">Moved to</span>
+        <StatusLabel status={toStatus} />
+      </span>
+    );
+  }
+  return "Task moved";
 }
 
 // Reuses the icon each concept already carries elsewhere in the app: projects
