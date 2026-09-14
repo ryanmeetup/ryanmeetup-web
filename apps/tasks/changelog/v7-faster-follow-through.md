@@ -61,6 +61,10 @@ Notes, Contacts, and the Calendar can each be restricted to selected access grou
 
 ## Improved
 
+### Project history says what changed
+
+Project activity now names status, date, name, description, and link changes. Saving a project no longer claims its access became restricted when that setting was already selected.
+
 ### Access with a reason, not a riddle
 
 App ownership, organizational tiers, teams, and resource visibility now have distinct jobs on **Admin → Access**. An owner can promote a successor and replace one person's role, required tier, and optional teams in a single save; the last owner cannot be demoted. The default tier for new members is labeled and can be changed deliberately, and each group page lists the projects, categories, pages, and Google Calendar feed it opens — including whether access is direct, inherited, workspace-wide, or simply open to everyone.
