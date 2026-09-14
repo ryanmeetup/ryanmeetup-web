@@ -1,29 +1,43 @@
 import { describe, expect, it } from "vitest";
 import {
+  filterProjects,
   groupProjectsByStatus,
+  isCurrentProject,
+  projectListFilter,
   projectStatusDetails,
   projectStatusOptions,
-  shouldOfferProjectArchive,
 } from "@/lib/resources/project-status";
 import type { ProjectStatus } from "@/lib/resources/resource-types";
 
-describe("project status transitions", () => {
-  it("offers to archive an active project when it becomes complete", () => {
-    expect(shouldOfferProjectArchive("active", "complete", null)).toBe(true);
+describe("project list filters", () => {
+  const projects = [
+    { name: "Current", status: "active" as const, archived_at: null },
+    { name: "Complete", status: "complete" as const, archived_at: null },
+    {
+      name: "Archived",
+      status: "complete" as const,
+      archived_at: "2026-08-27T12:00:00.000Z",
+    },
+  ];
+
+  it("keeps existing active links on the current view", () => {
+    expect(projectListFilter("active")).toBe("current");
+    expect(projectListFilter("unexpected")).toBe("current");
+    expect(projectListFilter("completed")).toBe("completed");
   });
 
-  it("does not offer again when a complete project is edited", () => {
-    expect(shouldOfferProjectArchive("complete", "complete", null)).toBe(false);
-  });
-
-  it("does not offer to archive a project that is already archived", () => {
-    expect(
-      shouldOfferProjectArchive(
-        "active",
-        "complete",
-        "2026-08-27T12:00:00.000Z",
-      ),
-    ).toBe(false);
+  it("keeps completed projects out of the default view without archiving them", () => {
+    expect(projects.map(isCurrentProject)).toEqual([true, false, false]);
+    expect(filterProjects(projects, "current").map((item) => item.name)).toEqual([
+      "Current",
+    ]);
+    expect(filterProjects(projects, "completed").map((item) => item.name)).toEqual([
+      "Complete",
+    ]);
+    expect(filterProjects(projects, "archived").map((item) => item.name)).toEqual([
+      "Archived",
+    ]);
+    expect(filterProjects(projects, "all")).toHaveLength(3);
   });
 });
 

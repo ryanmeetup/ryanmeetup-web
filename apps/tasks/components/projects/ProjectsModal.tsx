@@ -50,8 +50,10 @@ import { errorMessage } from "@/lib/presentation";
 import type { Project } from "@/lib/resources/resource-types";
 import {
   defaultProjectStatus,
+  filterProjects,
   groupProjectsByStatus,
-  shouldOfferProjectArchive,
+  projectListFilter,
+  type ProjectListFilter,
 } from "@/lib/resources/project-status";
 import { projectPath } from "@/lib/resources/project-route";
 import {
@@ -68,13 +70,7 @@ import {
   useResourceAccessState,
   ResourceLinks,
 } from "@/components/resources";
-import {
-  archiveFilter,
-  filterAndSortResources,
-  resourceSearchText,
-  sameIds,
-  type ArchiveFilter,
-} from "@/lib/resources/resource-management";
+import { resourceSearchText, sameIds } from "@/lib/resources/resource-management";
 import { useProjectFavorites } from "@/hooks/useProjectFavorites";
 import { type ProjectAccessGroup } from "./ProjectAccessFields";
 import { ProjectAccessSection } from "./ProjectAccessSection";
@@ -123,13 +119,11 @@ export type ProjectsModalProps = ProjectsModalCommonProps &
       }
   );
 
-// "Active" now names a lifecycle status, so the archive filter says "ongoing"
-// for the projects it keeps: everything that has not been archived, whatever
-// its status.
-const archiveFilterLabels: Record<ArchiveFilter, string> = {
-  active: "ongoing",
-  archived: "archived",
-  all: "all",
+const projectFilterLabels: Record<ProjectListFilter, string> = {
+  current: "Current",
+  completed: "Completed",
+  archived: "Archived",
+  all: "All",
 };
 
 export function ProjectsModal({
@@ -249,11 +243,11 @@ export function ProjectsModal({
     setGroupIds: setEditingAccessGroupIds,
   } = accessState.changes;
   const accessLoaded = accessState.loaded;
-  const [projectStatusParam, setProjectStatus] = useQueryParamState(
+  const [projectFilterParam, setProjectFilter] = useQueryParamState(
     "project-status",
-    "active",
+    "current",
   );
-  const projectStatus = archiveFilter(projectStatusParam);
+  const projectFilter = projectListFilter(projectFilterParam);
   const editState = useResourceEditState(
     directEditProject,
     directEditProject
@@ -282,9 +276,6 @@ export function ProjectsModal({
   >(new Set());
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
   const [deletePending, setDeletePending] = useState(false);
-  const [archivePromptTarget, setArchivePromptTarget] =
-    useState<Project | null>(null);
-  const [archivePending, setArchivePending] = useState(false);
   const {
     query: projectQuery,
     setQuery: setProjectQuery,
@@ -436,7 +427,11 @@ export function ProjectsModal({
       setNewStatus(defaultProjectStatus);
       setNewStartDate(defaultProjectStartDate());
       setNewDueDate("");
-      toast.success(`${project.name} created.`);
+      toast.success(
+        project.status === "complete"
+          ? `${project.name} created. Find it under Completed projects.`
+          : `${project.name} created.`,
+      );
       await onCreated?.(project);
       if (createOnly) setOpen?.(false);
     } catch (error) {
@@ -523,16 +518,11 @@ export function ProjectsModal({
             ]
           : current.projectOwners,
       }));
-      toast.success(`${nextName} updated.`);
-      if (
-        shouldOfferProjectArchive(
-          project.status,
-          editingStatus,
-          project.archived_at,
-        )
-      ) {
-        setArchivePromptTarget(updatedProject);
-      }
+      toast.success(
+        project.status !== "complete" && editingStatus === "complete"
+          ? `${nextName} completed. Find it under Completed projects.`
+          : `${nextName} updated.`,
+      );
       accessState.commit();
       editState.complete();
       if (editProjectId) setOpen?.(false);
@@ -587,14 +577,6 @@ export function ProjectsModal({
     }
   }
 
-  async function archiveCompletedProject() {
-    if (!archivePromptTarget) return;
-    setArchivePending(true);
-    const archived = await toggleArchived(archivePromptTarget);
-    setArchivePending(false);
-    if (archived) setArchivePromptTarget(null);
-  }
-
   async function deleteProject() {
     if (!deleteTarget) return;
     const project = deleteTarget;
@@ -624,8 +606,8 @@ export function ProjectsModal({
   }
 
   const projects = useMemo(
-    () => filterAndSortResources(searchedProjects, projectStatus),
-    [projectStatus, searchedProjects],
+    () => filterProjects(searchedProjects, projectFilter),
+    [projectFilter, searchedProjects],
   );
   const projectGroups = useMemo(
     () => groupProjectsByStatus(projects),
@@ -693,7 +675,9 @@ export function ProjectsModal({
           triggerClassName: triggers.dialogClassName,
         });
       actions.push(
-        taskCount > 0
+        taskCount > 0 ||
+        project.status === "complete" ||
+        Boolean(project.archived_at)
           ? {
               key: "archive",
               label: project.archived_at ? "Restore" : "Archive",
@@ -1068,20 +1052,22 @@ export function ProjectsModal({
                   pendingLabel="Loading project results"
                 />
                 <div
-                  className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap"
+                  className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap"
                   aria-label="Filter projects"
                 >
-                  {(["active", "archived", "all"] as const).map((status) => (
-                    <FilterChip
-                      key={status}
-                      active={projectStatus === status}
-                      variant="soft"
-                      onClick={() => setProjectStatus(status)}
-                      className="h-10 w-full justify-center px-2 py-0 sm:w-auto sm:px-4"
-                    >
-                      {archiveFilterLabels[status]}
-                    </FilterChip>
-                  ))}
+                  {(["current", "completed", "archived", "all"] as const).map(
+                    (filter) => (
+                      <FilterChip
+                        key={filter}
+                        active={projectFilter === filter}
+                        variant="soft"
+                        onClick={() => setProjectFilter(filter)}
+                        className="h-10 w-full justify-center px-2 py-0 sm:w-auto sm:px-4"
+                      >
+                        {projectFilterLabels[filter]}
+                      </FilterChip>
+                    ),
+                  )}
                 </div>
               </div>
               <PendingResults pending={searchPending} label="Loading projects">
@@ -1251,18 +1237,6 @@ export function ProjectsModal({
             </EditorSurface>
           );
         })()}
-      <ConfirmationDialog
-        open={Boolean(archivePromptTarget)}
-        setOpen={(nextOpen) =>
-          !nextOpen && !archivePending && setArchivePromptTarget(null)
-        }
-        title="Archive this completed project?"
-        description={`“${archivePromptTarget?.name ?? "This project"}” is now complete. Would you like to archive it?`}
-        confirmLabel="Archive project"
-        pendingLabel="Archiving project..."
-        pending={archivePending}
-        onConfirm={() => void archiveCompletedProject()}
-      />
       <ConfirmationDialog
         open={Boolean(deleteTarget)}
         setOpen={(nextOpen) =>

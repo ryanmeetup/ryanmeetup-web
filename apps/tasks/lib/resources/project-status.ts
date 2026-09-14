@@ -1,4 +1,5 @@
-import type { ProjectStatus } from "./resource-types";
+import type { Project, ProjectStatus } from "./resource-types";
+import { filterAndSortResources } from "./resource-management";
 
 export const projectStatusOptions: {
   color: string;
@@ -37,16 +38,33 @@ export function projectStatusDetails(status: ProjectStatus) {
   );
 }
 
-export function shouldOfferProjectArchive(
-  previousStatus: ProjectStatus,
-  nextStatus: ProjectStatus,
-  archivedAt: string | null,
+export type ProjectListFilter = "current" | "completed" | "archived" | "all";
+
+export function projectListFilter(value: string): ProjectListFilter {
+  if (value === "completed" || value === "archived" || value === "all")
+    return value;
+  // Older shared links used "active" for all unarchived projects.
+  return "current";
+}
+
+export function isCurrentProject(
+  project: Pick<Project, "status" | "archived_at">,
 ) {
-  return (
-    previousStatus !== "complete" &&
-    nextStatus === "complete" &&
-    archivedAt === null
+  return !project.archived_at && project.status !== "complete";
+}
+
+export function filterProjects<
+  T extends Pick<Project, "status" | "archived_at" | "name">,
+>(projects: T[], filter: ProjectListFilter) {
+  const visible = filterAndSortResources(
+    projects,
+    filter === "archived" || filter === "all" ? filter : "active",
   );
+  if (filter === "current")
+    return visible.filter(isCurrentProject);
+  if (filter === "completed")
+    return visible.filter((project) => project.status === "complete");
+  return visible;
 }
 
 export function groupProjectsByStatus<T extends { status: ProjectStatus }>(

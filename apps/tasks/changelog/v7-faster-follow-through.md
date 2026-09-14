@@ -61,6 +61,10 @@ Notes, Contacts, and the Calendar can each be restricted to selected access grou
 
 ## Improved
 
+### Completed projects leave the current list
+
+Projects marked Complete move out of the Current view and the sidebar, including Favorites. They remain easy to find under Completed without being archived or crowding the projects that still need attention.
+
 ### Project history says what changed
 
 Project activity now names status, date, name, description, and link changes. Saving a project no longer claims its access became restricted when that setting was already selected.

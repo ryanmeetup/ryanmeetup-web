@@ -33,7 +33,10 @@ import type { ProjectStatus } from "@/lib/resources/resource-types";
 import { useSidebarSections } from "@/hooks/useSidebarSections";
 import { withAccessPreview } from "@/lib/access/access-preview";
 import { canViewWorkspaceArea } from "@/lib/access/workspace-areas";
-import { projectStatusDetails } from "@/lib/resources/project-status";
+import {
+  isCurrentProject,
+  projectStatusDetails,
+} from "@/lib/resources/project-status";
 import { projectPath } from "@/lib/resources/project-route";
 import { editorTriggers, InstanceWordmark } from "@/components/global";
 
@@ -126,22 +129,20 @@ export function TasksSidebar({
   const canManageCategories =
     !data.accessPreview && (demoMode || data.canManageCategories);
   const triggers = editorTriggers(data.currentProfile.editor_surface);
-  const activeProjects = data.projects.filter(
-    (project) => !project.archived_at,
-  );
+  const currentProjects = data.projects.filter(isCurrentProject);
   const activeCategories = data.categories.filter(
     (category) => !category.archived_at,
   );
   const accessibleCategoryIds = data.accessPreview?.accessibleCategoryIds
     ? new Set(data.accessPreview.accessibleCategoryIds)
     : null;
-  const favoriteProjects = activeProjects.filter((project) =>
+  const favoriteProjects = currentProjects.filter((project) =>
     (data.currentProfile.favorite_project_ids ?? []).includes(project.id),
   );
   const favoriteProjectIds = new Set(
     favoriteProjects.map((project) => project.id),
   );
-  const otherProjects = activeProjects.filter(
+  const otherProjects = currentProjects.filter(
     (project) => !favoriteProjectIds.has(project.id),
   );
   const {
@@ -189,7 +190,7 @@ export function TasksSidebar({
   const linkClass = (active: boolean) =>
     `sidebar-link ${active ? "sidebar-link-active" : ""}`;
   const projectSidebarRow = (
-    project: (typeof activeProjects)[number],
+    project: (typeof currentProjects)[number],
     favorite = false,
   ) => {
     const selected = isProjectSelected(project.id, project.name);
