@@ -22,7 +22,7 @@ import {
 } from "@/components/global";
 import { ProjectsModal } from "@/components/projects";
 import { createClient } from "@/lib/supabase/client";
-import type { WorkspaceData } from "@/lib/workspace/workspace-types";
+import type { Profile, WorkspaceData } from "@/lib/workspace/workspace-types";
 
 export function ProfilePageClient({
   initialData,
@@ -47,6 +47,16 @@ export function ProfilePageClient({
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [passwordSaving, setPasswordSaving] = useState(false);
   const passwordFormId = "change-password-form";
+
+  function updateProfile(profile: Profile) {
+    setData((current) => ({
+      ...current,
+      currentProfile: profile,
+      profiles: current.profiles.map((member) =>
+        member.id === profile.id ? profile : member,
+      ),
+    }));
+  }
 
   // Onboarding is a gate, not a page inside the workspace: every other route
   // redirects back here until the profile is complete, so showing the sidebar
@@ -99,6 +109,7 @@ export function ProfilePageClient({
               onboardingRequired
               returnTo={returnTo}
               onChangePassword={() => undefined}
+              onProfileUpdated={updateProfile}
             />
           </div>
         </Card>
@@ -138,6 +149,7 @@ export function ProfilePageClient({
               onboardingRequired={false}
               returnTo="/"
               onChangePassword={() => setPasswordOpen(true)}
+              onProfileUpdated={updateProfile}
             />
           </div>
         </div>

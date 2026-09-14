@@ -9,6 +9,7 @@ import {
   Heading,
   Input,
   MultiSelect,
+  Spinner,
   SuccessCallout,
   toast,
 } from "@ryanmeetup/ui";
@@ -44,12 +45,14 @@ export function ProfileForm({
   onboardingRequired,
   returnTo,
   onChangePassword,
+  onProfileUpdated,
 }: {
   profile: Profile;
   email: string;
   onboardingRequired: boolean;
   returnTo: string;
   onChangePassword: () => void;
+  onProfileUpdated: (profile: Profile) => void;
 }) {
   const router = useRouter();
   const [displayName, setDisplayName] = useState(profile.full_name || "");
@@ -188,6 +191,7 @@ export function ProfileForm({
           calendarDefaultView,
         }),
       });
+      onProfileUpdated(result.profile);
       setDisplayName(result.profile.full_name || "");
       setSavedDisplayName(result.profile.full_name || "");
       setAvatarFile(null);
@@ -214,16 +218,22 @@ export function ProfileForm({
   async function changeTaskDetailsPreference(nextValue: boolean) {
     const previousValue = taskDetailsOpenByDefault;
     setTaskDetailsOpenByDefault(nextValue);
-    await savePreferences({ taskDetailsOpenByDefault: nextValue }, () =>
-      setTaskDetailsOpenByDefault(previousValue),
+    await savePreferences(
+      { taskDetailsOpenByDefault: nextValue },
+      () => setTaskDetailsOpenByDefault(previousValue),
+      `Task details will ${nextValue ? "open" : "stay collapsed"} by default.`,
     );
   }
 
   async function changeAssignToSelfPreference(nextValue: boolean) {
     const previousValue = assignNewTasksToSelf;
     setAssignNewTasksToSelf(nextValue);
-    await savePreferences({ assignNewTasksToSelf: nextValue }, () =>
-      setAssignNewTasksToSelf(previousValue),
+    await savePreferences(
+      { assignNewTasksToSelf: nextValue },
+      () => setAssignNewTasksToSelf(previousValue),
+      nextValue
+        ? "New tasks will be assigned to you by default."
+        : "New tasks will start unassigned.",
     );
   }
 
@@ -232,20 +242,22 @@ export function ProfileForm({
   ) {
     const previousValue = editorSurface;
     setEditorSurface(nextValue);
-    await savePreferences({ editorSurface: nextValue }, () =>
-      setEditorSurface(previousValue),
+    const saved = await savePreferences(
+      { editorSurface: nextValue },
+      () => setEditorSurface(previousValue),
+      `Form layout set to ${editorSurfaceOptions.find((option) => option.value === nextValue)?.label}.`,
     );
-    // Every create and edit trigger reads this off the profile its page was
-    // server-rendered with, so the router cache would keep handing back the old
-    // surface on the way out of here.
-    router.refresh();
+    // Clear cached route payloads so the next page reads the saved preference.
+    if (saved) router.refresh();
   }
 
   async function changeCalendarDefaultView(nextValue: CalendarDefaultView) {
     const previousValue = calendarDefaultView;
     setCalendarDefaultView(nextValue);
-    await savePreferences({ calendarDefaultView: nextValue }, () =>
-      setCalendarDefaultView(previousValue),
+    await savePreferences(
+      { calendarDefaultView: nextValue },
+      () => setCalendarDefaultView(previousValue),
+      "Default calendar view saved.",
     );
   }
 
@@ -257,12 +269,13 @@ export function ProfileForm({
       calendarDefaultView?: CalendarDefaultView;
     },
     revert: () => void,
-  ) {
+    successMessage: string,
+  ): Promise<boolean> {
     setSavingPreferences(true);
     setMessage("");
     setHasError(false);
     try {
-      await mutate<{ profile: Profile }>("/api/profile", {
+      const result = await mutate<{ profile: Profile }>("/api/profile", {
         method: "PATCH",
         body: JSON.stringify({
           displayName: savedDisplayName,
@@ -273,6 +286,9 @@ export function ProfileForm({
           ...changed,
         }),
       });
+      onProfileUpdated(result.profile);
+      toast.success(successMessage);
+      return true;
     } catch (error) {
       revert();
       const errorMessage = getErrorMessage(
@@ -282,6 +298,7 @@ export function ProfileForm({
       setMessage(errorMessage);
       setHasError(true);
       toast.error(errorMessage);
+      return false;
     } finally {
       setSavingPreferences(false);
     }
@@ -290,11 +307,13 @@ export function ProfileForm({
   function changeFilterPanelsPreference(nextValue: boolean) {
     setFilterPanelsExpanded(nextValue);
     localStorage.setItem(filterPanelsExpandedPreferenceKey, String(nextValue));
+    toast.success(`Filter panels will start ${nextValue ? "expanded" : "collapsed"}.`);
   }
 
   function changePaginationPageSize(nextValue: 10 | 25 | 50 | 100) {
     setPaginationPageSize(nextValue);
     localStorage.setItem(paginationPageSizePreferenceKey, String(nextValue));
+    toast.success(`Default rows per page set to ${nextValue}.`);
   }
 
   // The labels are short enough to fit the control; what each one actually does
@@ -395,8 +414,21 @@ export function ProfileForm({
         </p>
       )}
       {!onboardingRequired && (
-        <section className="space-y-5 border-t border-black/10 pt-8 dark:border-white/10">
+        <section
+          className="relative space-y-5 border-t border-black/10 pt-8 dark:border-white/10"
+          aria-busy={savingPreferences}
+        >
           <div>
+            {savingPreferences && (
+              <div className="absolute inset-0 z-10 rounded-xl bg-[#f1f2ef]/80 backdrop-blur-sm dark:bg-[#101010]/80">
+                <div role="status" className="sticky top-20 flex justify-center p-4">
+                  <span className="flex items-center gap-3 rounded-xl border border-black/15 bg-white px-5 py-3 text-sm font-semibold shadow-lg dark:border-white/15 dark:bg-[#181818]">
+                    <Spinner aria-hidden size={20} />
+                    Saving preferences
+                  </span>
+                </div>
+              </div>
+            )}
             <Heading size="h2" className="text-2xl">
               Preferences
             </Heading>
@@ -561,7 +593,7 @@ export function ProfileForm({
                 <DropdownSelect
                   label="Rows"
                   value={String(paginationPageSize)}
-                  disabled={saving}
+                  disabled={saving || savingPreferences}
                   onChange={(value) =>
                     changePaginationPageSize(
                       Number.parseInt(value, 10) as 10 | 25 | 50 | 100,

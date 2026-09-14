@@ -37,6 +37,72 @@ test("defaults Calendar to any selected combination of sources", async ({
   ).toBeVisible();
 });
 
+test("uses a changed form layout for New task without a hard refresh", async ({
+  page,
+}) => {
+  await signIn(page);
+  await page.goto("/profile");
+
+  let finishSave!: () => void;
+  const savePending = new Promise<void>((resolve) => {
+    finishSave = resolve;
+  });
+  await page.route("**/api/profile", async (route) => {
+    await savePending;
+    const body = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      json: {
+        profile: {
+          id: "current-member",
+          full_name: body.displayName,
+          avatar_url: null,
+          onboarding_completed: true,
+          task_details_open_by_default: body.taskDetailsOpenByDefault,
+          assign_new_tasks_to_self: body.assignNewTasksToSelf,
+          editor_surface: body.editorSurface,
+          calendar_default_view: body.calendarDefaultView,
+          app_role: "member",
+        },
+      },
+    });
+  });
+
+  await page.getByRole("button", { name: "Form layout" }).click();
+  await page.getByRole("option", { name: "Always a full page" }).click();
+
+  const preferences = page.locator("section").filter({
+    has: page.getByRole("heading", { name: "Preferences" }),
+  });
+  await expect(preferences).toHaveAttribute("aria-busy", "true");
+  await expect(page.getByRole("status").filter({ hasText: "Saving preferences" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Rows" })).toBeDisabled();
+  await expect(page.getByText("Form layout set to Always a full page.")).toHaveCount(0);
+  finishSave();
+
+  await expect(preferences).toHaveAttribute("aria-busy", "false");
+  await expect(page.getByText("Form layout set to Always a full page.")).toBeVisible();
+  const newTask = page.getByRole("link", { name: "New task", exact: true });
+  await expect(newTask).toHaveAttribute("href", "/task/new");
+  await expect(
+    page.getByRole("button", { name: "New task", exact: true }),
+  ).toHaveCount(0);
+  await newTask.click();
+  await expect(page).toHaveURL(/\/task\/new$/);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+});
+
+test("confirms a browser preference immediately", async ({ page }) => {
+  await signIn(page);
+  await page.goto("/profile");
+
+  await page.getByRole("button", { name: "Rows" }).click();
+  await page.getByRole("option", { name: "25" }).click();
+
+  await expect(page.getByText("Default rows per page set to 25.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Rows" })).toContainText("25");
+});
+
 test("aligns preference selectors to matching card bottoms", async ({ page }) => {
   await signIn(page);
   await page.goto("/profile");
