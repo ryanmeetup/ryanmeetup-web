@@ -8,6 +8,12 @@ import {
   recordWorkspaceActivity,
 } from "@/lib/server/privileged-api";
 
+const accessModeLabel = {
+  owners: "Owners only",
+  open: "Open",
+  restricted: "Restricted",
+} as const;
+
 export async function GET(request: Request) {
   const context = await privilegedContext();
   if ("response" in context) return context.response;
@@ -82,6 +88,39 @@ export async function POST(request: Request) {
   if ("response" in parsed) return parsed.response;
   const context = await privilegedContext();
   if ("response" in context) return context.response;
+  const { data: allowed, error: permissionError } = await context.supabase.rpc(
+    "can_administer_project_access",
+    { requested_project_id: parsed.data.projectId },
+  );
+  if (permissionError || !allowed)
+    return apiError(403, "FORBIDDEN", "You cannot manage project visibility.");
+  const [projectResult, grantsResult] = await Promise.all([
+    context.admin
+      .from("projects")
+      .select("access_mode")
+      .eq("id", parsed.data.projectId)
+      .single(),
+    context.admin
+      .from("project_group_grants")
+      .select("group_id")
+      .eq("project_id", parsed.data.projectId),
+  ]);
+  if (projectResult.error || grantsResult.error)
+    return databaseFailure(
+      request,
+      "project-access.read-before-update",
+      projectResult.error ?? grantsResult.error!,
+      { error: "Project visibility could not be checked." },
+    );
+  const previousGroupIds = grantsResult.data.map((grant) => grant.group_id);
+  const nextGroupIds =
+    parsed.data.accessMode === "restricted" ? parsed.data.groupIds : [];
+  if (
+    projectResult.data.access_mode === parsed.data.accessMode &&
+    previousGroupIds.length === nextGroupIds.length &&
+    previousGroupIds.every((id) => nextGroupIds.includes(id))
+  )
+    return NextResponse.json({ ok: true });
   const { error } = await context.supabase.rpc("set_project_visibility", {
     requested_project_id: parsed.data.projectId,
     requested_access_mode: parsed.data.accessMode,
@@ -106,7 +145,10 @@ export async function POST(request: Request) {
       resource_name: project?.name,
       resource_href: "/projects",
       project_id: parsed.data.projectId,
-      detail: `Now ${parsed.data.accessMode}`,
+      detail:
+        projectResult.data.access_mode === parsed.data.accessMode
+          ? "Selected access groups changed"
+          : `${accessModeLabel[projectResult.data.access_mode as keyof typeof accessModeLabel]} → ${accessModeLabel[parsed.data.accessMode as keyof typeof accessModeLabel]}`,
     },
   });
   return NextResponse.json({ ok: true });

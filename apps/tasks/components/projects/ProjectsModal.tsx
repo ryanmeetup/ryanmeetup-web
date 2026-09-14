@@ -486,6 +486,8 @@ export function ProjectsModal({
         });
       if (
         !demoMode &&
+        (savedAccessMode !== editingAccessMode ||
+          !sameIds(savedAccessGroupIds, editingAccessGroupIds)) &&
         (data.currentProfile.app_role === "owner" ||
           currentOwnerIds.includes(data.currentProfile.id))
       )
