@@ -302,11 +302,15 @@ export function ProjectOverviewPageClient({
                   >
                     <FiCalendar aria-hidden className="h-3 w-3" />
                     Due {formatCalendarDate(timeline.due.date)}
-                    {" · "}
-                    {/* "Due today" would read as "Due Sep 10 · Due today". */}
-                    {timeline.due.daysRemaining === 0
-                      ? "today"
-                      : timeline.due.label}
+                    {timeline.due.label && (
+                      <>
+                        {" · "}
+                        {/* "Due today" would read as "Due Sep 10 · Due today". */}
+                        {timeline.due.daysRemaining === 0
+                          ? "today"
+                          : timeline.due.label}
+                      </>
+                    )}
                   </span>
                 )}
               </span>

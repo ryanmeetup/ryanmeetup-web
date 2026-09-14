@@ -6,6 +6,7 @@ import {
   inferredProjectStartDate,
   projectTimeline,
 } from "@/lib/resources/project-timeline";
+import type { ProjectStatus } from "@/lib/resources/resource-types";
 
 const today = new Date(2026, 8, 8, 10, 0, 0); // 2026-09-08, local
 
@@ -15,12 +16,14 @@ const project = (
     start_date: string | null;
     due_date: string | null;
     archived_at: string | null;
+    status: ProjectStatus;
   }> = {},
 ) => ({
   created_at: new Date(2026, 5, 1, 9, 0, 0).toISOString(),
   start_date: null,
   due_date: null,
   archived_at: null,
+  status: "active" as ProjectStatus,
   ...overrides,
 });
 
@@ -134,5 +137,18 @@ describe("projectTimeline", () => {
       label: "2 weeks overdue",
       daysRemaining: -14,
     });
+  });
+
+  it("drops the countdown once the project is complete", () => {
+    const due = (date: string) =>
+      projectTimeline(project({ due_date: date, status: "complete" }), today)
+        .due;
+
+    expect(due("2026-08-25")).toMatchObject({
+      date: "2026-08-25",
+      tone: "neutral",
+      label: null,
+    });
+    expect(due("2026-09-18")).toMatchObject({ tone: "neutral", label: null });
   });
 });

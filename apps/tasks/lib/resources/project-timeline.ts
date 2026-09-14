@@ -55,7 +55,8 @@ export type ProjectDueState = {
   date: string;
   /** Negative once the date has passed. */
   daysRemaining: number;
-  label: string;
+  /** Null once the project is complete: a finished project is not counting down. */
+  label: string | null;
   tone: "danger" | "warning" | "neutral";
 };
 
@@ -73,8 +74,13 @@ export type ProjectTimeline = {
   due: ProjectDueState | null;
 };
 
-function dueState(date: string, todayValue: string): ProjectDueState {
+function dueState(
+  date: string,
+  todayValue: string,
+  complete: boolean,
+): ProjectDueState {
   const daysRemaining = calendarDayGap(todayValue, date);
+  if (complete) return { date, daysRemaining, label: null, tone: "neutral" };
   if (daysRemaining < 0)
     return {
       date,
@@ -99,11 +105,14 @@ function dueState(date: string, todayValue: string): ProjectDueState {
  * that is the only completion moment the workspace actually records, so a
  * finished project reports the span it ran for rather than one that keeps
  * growing after the work stopped.
+ *
+ * A complete project keeps its due date but drops the countdown, so marking it
+ * done clears an "overdue" warning instead of leaving it to grow.
  */
 export function projectTimeline(
   project: Pick<
     Project,
-    "created_at" | "start_date" | "due_date" | "archived_at"
+    "created_at" | "start_date" | "due_date" | "archived_at" | "status"
   >,
   today = new Date(),
 ): ProjectTimeline {
@@ -124,6 +133,8 @@ export function projectTimeline(
       label: formatDaySpan(days),
       ended: Boolean(project.archived_at),
     },
-    due: project.due_date ? dueState(project.due_date, todayValue) : null,
+    due: project.due_date
+      ? dueState(project.due_date, todayValue, project.status === "complete")
+      : null,
   };
 }
