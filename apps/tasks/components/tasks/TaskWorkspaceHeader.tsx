@@ -126,6 +126,41 @@ function WorkspaceHeaderDetails({
   );
 }
 
+function TaskLayoutSwitch({
+  view,
+  onSetView,
+  compact = false,
+}: {
+  view: "board" | "list";
+  onSetView: TaskWorkspaceHeaderControls["onSetView"];
+  compact?: boolean;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label="Task layout"
+      className={`${compact ? "ml-auto flex shrink-0 p-0.5 sm:hidden" : "hidden p-1 sm:flex"} min-w-0 rounded-lg border border-black/10 bg-white dark:border-white/10 dark:bg-white/5`}
+    >
+      <button
+        type="button"
+        aria-pressed={view === "board"}
+        onClick={() => onSetView("board")}
+        className={`view-button ${compact ? "min-h-9 min-w-9 gap-0 px-0" : "gap-2 px-3"} ${view === "board" ? "view-button-active" : ""}`}
+      >
+        <FiGrid aria-hidden /> <span className={compact ? "sr-only" : ""}>Board</span>
+      </button>
+      <button
+        type="button"
+        aria-pressed={view === "list"}
+        onClick={() => onSetView("list")}
+        className={`view-button ${compact ? "min-h-9 min-w-9 gap-0 px-0" : "gap-2 px-3"} ${view === "list" ? "view-button-active" : ""}`}
+      >
+        <FiList aria-hidden /> <span className={compact ? "sr-only" : ""}>List</span>
+      </button>
+    </div>
+  );
+}
+
 export function TaskWorkspaceHeader({
   scope,
   controls,
@@ -209,20 +244,25 @@ export function TaskWorkspaceHeader({
                 ? "Personal workspace"
                 : "Team workspace"}
         </p>
-        <Heading size="h1" className="text-2xl sm:text-4xl">
-          {viewTitle}&nbsp;
-          <CountBadge size="lg" label="task">
-            {taskCount}
-          </CountBadge>
-          {showFavorite && (
-            <ProjectFavoriteButton
-              projectName={selectedProject?.name ?? "project"}
-              favorite={projectFavorite}
-              pending={projectFavoritePending}
-              onToggle={onToggleProjectFavorite}
-            />
+        <div className="flex min-w-0 items-center gap-2 sm:block">
+          <Heading size="h1" className="min-w-0 text-2xl sm:text-4xl">
+            {viewTitle}&nbsp;
+            <CountBadge size="lg" label="task">
+              {taskCount}
+            </CountBadge>
+            {showFavorite && (
+              <ProjectFavoriteButton
+                projectName={selectedProject?.name ?? "project"}
+                favorite={projectFavorite}
+                pending={projectFavoritePending}
+                onToggle={onToggleProjectFavorite}
+              />
+            )}
+          </Heading>
+          {visibility === "active" && (
+            <TaskLayoutSwitch view={view} onSetView={onSetView} compact />
           )}
-        </Heading>
+        </div>
         {scopeDescription && (
           <p className="mt-2 text-sm text-black/70 dark:text-white/70 sm:text-base">
             {scopeDescription}
@@ -372,7 +412,12 @@ export function TaskWorkspaceHeader({
           </Button>
         )}
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-          <div className="grid w-full min-w-0 grid-cols-[4.75rem_minmax(0,1fr)] items-center gap-3 sm:block sm:w-auto">
+          {/* Archived work has no board lanes. Keep the status switch at the
+              trailing edge when the board/list switch disappears. */}
+          {visibility === "active" && (
+            <TaskLayoutSwitch view={view} onSetView={onSetView} />
+          )}
+          <div className="flex w-full min-w-0 flex-col gap-1 sm:block sm:w-auto">
             <p
               aria-hidden="true"
               className="text-[9px] font-semibold uppercase tracking-[0.16em] text-black/45 dark:text-white/45 sm:hidden"
@@ -381,13 +426,13 @@ export function TaskWorkspaceHeader({
             </p>
             <div
               role="group"
-              className="grid min-w-0 grid-cols-2 rounded-lg border border-black/10 bg-white p-1 dark:border-white/10 dark:bg-white/5 sm:flex"
+              className="grid w-full min-w-0 grid-cols-2 rounded-lg border border-black/10 bg-white p-0.5 dark:border-white/10 dark:bg-white/5 sm:flex sm:w-auto sm:p-1"
               aria-label="Task assignee"
             >
               <button
                 aria-pressed={assignee === "all"}
                 onClick={() => onSetAssignee("all")}
-                className={`view-button min-h-11 min-w-0 px-2 tracking-[0.08em] sm:min-h-0 sm:px-3 sm:tracking-[0.14em] ${assignee === "all" ? "view-button-active" : ""}`}
+                className={`view-button min-h-9 min-w-0 w-full px-2 tracking-[0.08em] sm:min-h-0 sm:w-auto sm:px-3 sm:tracking-[0.14em] ${assignee === "all" ? "view-button-active" : ""}`}
               >
                 All
               </button>
@@ -396,7 +441,7 @@ export function TaskWorkspaceHeader({
                   <button
                     type="button"
                     disabled
-                    className="view-button min-h-11 min-w-0 px-2 tracking-[0.08em] opacity-40 sm:min-h-0 sm:px-3 sm:tracking-[0.14em]"
+                    className="view-button min-h-9 min-w-0 w-full px-2 tracking-[0.08em] opacity-40 sm:min-h-0 sm:w-auto sm:px-3 sm:tracking-[0.14em]"
                   >
                     Mine
                   </button>
@@ -405,14 +450,14 @@ export function TaskWorkspaceHeader({
                 <button
                   aria-pressed={isMyTasks}
                   onClick={() => onSetAssignee(myTasksName)}
-                  className={`view-button min-h-11 min-w-0 px-2 tracking-[0.08em] sm:min-h-0 sm:px-3 sm:tracking-[0.14em] ${isMyTasks ? "view-button-active" : ""}`}
+                  className={`view-button min-h-9 min-w-0 w-full px-2 tracking-[0.08em] sm:min-h-0 sm:w-auto sm:px-3 sm:tracking-[0.14em] ${isMyTasks ? "view-button-active" : ""}`}
                 >
                   Mine
                 </button>
               )}
             </div>
           </div>
-          <div className="grid w-full min-w-0 grid-cols-[4.75rem_minmax(0,1fr)] items-center gap-3 sm:block sm:w-auto">
+          <div className="flex w-full min-w-0 flex-col gap-1 sm:block sm:w-auto">
             <p
               aria-hidden="true"
               className="text-[9px] font-semibold uppercase tracking-[0.16em] text-black/45 dark:text-white/45 sm:hidden"
@@ -421,57 +466,25 @@ export function TaskWorkspaceHeader({
             </p>
             <div
               role="group"
-              className="grid min-w-0 grid-cols-2 rounded-lg border border-black/10 bg-white p-1 dark:border-white/10 dark:bg-white/5 sm:flex"
+              className="grid w-full min-w-0 grid-cols-2 rounded-lg border border-black/10 bg-white p-0.5 dark:border-white/10 dark:bg-white/5 sm:flex sm:w-auto sm:p-1"
               aria-label="Task status"
             >
               <button
                 aria-pressed={visibility === "active"}
                 onClick={() => onSetVisibility("active")}
-                className={`view-button min-h-11 min-w-0 px-2 tracking-[0.08em] sm:min-h-0 sm:px-3 sm:tracking-[0.14em] ${visibility === "active" ? "view-button-active" : ""}`}
+                className={`view-button min-h-9 min-w-0 w-full px-2 tracking-[0.08em] sm:min-h-0 sm:w-auto sm:px-3 sm:tracking-[0.14em] ${visibility === "active" ? "view-button-active" : ""}`}
               >
                 Active
               </button>
               <button
                 aria-pressed={visibility === "archived"}
                 onClick={() => onSetVisibility("archived")}
-                className={`view-button min-h-11 min-w-0 gap-1 px-2 tracking-[0.08em] sm:min-h-0 sm:gap-2 sm:px-3 sm:tracking-[0.14em] ${visibility === "archived" ? "view-button-active" : ""}`}
+                className={`view-button min-h-9 min-w-0 w-full gap-1 px-2 tracking-[0.08em] sm:min-h-0 sm:w-auto sm:gap-2 sm:px-3 sm:tracking-[0.14em] ${visibility === "archived" ? "view-button-active" : ""}`}
               >
                 <FiArchive aria-hidden className="hidden sm:block" /> Archive
               </button>
             </div>
           </div>
-          {/* Archived work has no board: only a status that closes work can
-              hold an archived task, so the lanes would be empty. */}
-          {visibility === "active" && (
-            <div className="grid w-full min-w-0 grid-cols-[4.75rem_minmax(0,1fr)] items-center gap-3 sm:block sm:w-auto">
-              <p
-                aria-hidden="true"
-                className="text-[9px] font-semibold uppercase tracking-[0.16em] text-black/45 dark:text-white/45 sm:hidden"
-              >
-                Layout
-              </p>
-              <div
-                role="group"
-                className="grid min-w-0 grid-cols-2 rounded-lg border border-black/10 bg-white p-1 dark:border-white/10 dark:bg-white/5 sm:flex"
-                aria-label="Task layout"
-              >
-                <button
-                  aria-pressed={view === "board"}
-                  onClick={() => onSetView("board")}
-                  className={`view-button min-h-11 min-w-0 gap-1 px-2 tracking-[0.08em] sm:min-h-0 sm:gap-2 sm:px-3 sm:tracking-[0.14em] ${view === "board" ? "view-button-active" : ""}`}
-                >
-                  <FiGrid aria-hidden /> Board
-                </button>
-                <button
-                  aria-pressed={view === "list"}
-                  onClick={() => onSetView("list")}
-                  className={`view-button min-h-11 min-w-0 gap-1 px-2 tracking-[0.08em] sm:min-h-0 sm:gap-2 sm:px-3 sm:tracking-[0.14em] ${view === "list" ? "view-button-active" : ""}`}
-                >
-                  <FiList aria-hidden /> List
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

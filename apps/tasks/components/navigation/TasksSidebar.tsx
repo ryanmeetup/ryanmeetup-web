@@ -28,6 +28,7 @@ import {
   FiX,
 } from "react-icons/fi";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
 import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import type { ProjectStatus } from "@/lib/resources/resource-types";
 import { useSidebarSections } from "@/hooks/useSidebarSections";
@@ -172,6 +173,53 @@ export function TasksSidebar({
       project.id === selectedProject || project.name === selectedProject,
   );
   const closeSidebar = () => setOpen(false);
+  const swipeStart = useRef<{
+    pointerId: number;
+    x: number;
+    y: number;
+    dx: number;
+    dragging: boolean;
+  } | null>(null);
+  const lastSwipeAt = useRef(-Infinity);
+  const [swipeOffset, setSwipeOffset] = useState<number | null>(null);
+  const [isSwiping, setIsSwiping] = useState(false);
+  const onSwipeStart = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.pointerType !== "touch") return;
+    swipeStart.current = {
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      dx: 0,
+      dragging: false,
+    };
+  };
+  const onSwipeMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const start = swipeStart.current;
+    if (!start || start.pointerId !== event.pointerId) return;
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    if (!start.dragging) {
+      if (Math.abs(dy) > Math.abs(dx) || dx >= -10) return;
+      start.dragging = true;
+      setIsSwiping(true);
+    }
+    start.dx = dx;
+    setSwipeOffset(Math.max(-event.currentTarget.offsetWidth, Math.min(0, dx)));
+  };
+  const onSwipeEnd = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const start = swipeStart.current;
+    if (!start || start.pointerId !== event.pointerId) return;
+    swipeStart.current = null;
+    if (start.dragging) lastSwipeAt.current = performance.now();
+    if (start.dragging && start.dx < -80) closeSidebar();
+    setSwipeOffset(null);
+    setIsSwiping(false);
+  };
+  const onSwipeCancel = () => {
+    swipeStart.current = null;
+    setSwipeOffset(null);
+    setIsSwiping(false);
+  };
   const isCategorySelected = (id: string, name: string) =>
     isBoard && (selectedCategory === id || selectedCategory === name);
   const isProjectSelected = (id: string, name: string) =>
@@ -596,8 +644,23 @@ export function TasksSidebar({
         <DialogBackdrop className="fixed inset-0 bg-black/40 transition-opacity data-closed:opacity-0" />
         <div className="fixed inset-0 overflow-hidden">
           <DialogPanel
+            data-mobile-sidebar-panel
             transition
-            className="flex h-full w-[17.5rem] flex-col border-r border-black/10 bg-white px-4 pt-4 shadow-xl transition duration-200 ease-out data-closed:-translate-x-full dark:border-white/10 dark:bg-black"
+            onPointerDown={onSwipeStart}
+            onPointerMove={onSwipeMove}
+            onPointerUp={onSwipeEnd}
+            onPointerCancel={onSwipeCancel}
+            onClickCapture={(event) => {
+              if (performance.now() - lastSwipeAt.current > 500) return;
+              event.preventDefault();
+              event.stopPropagation();
+            }}
+            style={
+              swipeOffset === null
+                ? undefined
+                : { transform: `translateX(${swipeOffset}px)` }
+            }
+            className={`flex h-full w-[17.5rem] touch-pan-y flex-col border-r border-black/10 bg-white px-4 pt-4 shadow-xl duration-200 ease-out data-closed:-translate-x-full dark:border-white/10 dark:bg-black ${isSwiping ? "" : "transition-transform"}`}
           >
             {sidebarContent(true)}
           </DialogPanel>

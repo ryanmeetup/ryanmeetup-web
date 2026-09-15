@@ -1,4 +1,5 @@
 import { profileDisplayName } from "@/lib/presentation";
+import { projectStatusOptions } from "@/lib/resources/project-status";
 import { TASK_MOVE_ACTION } from "./activity-events";
 import { taskActivityLabel, taskStatusChange } from "./task-activity";
 import {
@@ -13,6 +14,12 @@ import type { TaskActivity } from "./activity-types";
 export type ActivityDescription =
   | { kind: "text"; label: string; detail?: string }
   | { kind: "status"; from?: Status; to?: Status }
+  | {
+      kind: "project-status";
+      from: { name: string; color: string };
+      to: { name: string; color: string };
+      detail?: string;
+    }
   | { kind: "changes"; label: string; changes: TaskChangeDetail[] };
 
 export type ActivityPresentationRow = {
@@ -50,6 +57,31 @@ export function activityDetail(item: TaskActivity) {
       : undefined;
 }
 
+function projectStatusChange(detail: string) {
+  const parts = detail.split("; ");
+  const statusIndex = parts.findIndex((part) => part.startsWith("Status: "));
+  if (statusIndex < 0) return;
+
+  const match = /^Status: (.+?)\s*→\s*(.+)$/.exec(parts[statusIndex]);
+  if (!match) return;
+  const statusFor = (name: string) =>
+    projectStatusOptions.find(
+      (option) => option.label.toLowerCase() === name.trim().toLowerCase(),
+    );
+  const from = statusFor(match[1]);
+  const to = statusFor(match[2]);
+  if (!from || !to) return;
+
+  return {
+    kind: "project-status" as const,
+    from: { name: from.label, color: from.color },
+    to: { name: to.label, color: to.color },
+    detail:
+      parts.filter((_, index) => index !== statusIndex).join("; ") ||
+      undefined,
+  };
+}
+
 export function describeActivity(
   item: TaskActivity,
   statuses: Status[],
@@ -57,9 +89,14 @@ export function describeActivity(
 ): ActivityDescription {
   if (item.action !== TASK_MOVE_ACTION) {
     const label = taskActivityLabel(item.action);
+    const detail = activityDetail(item);
+    if (item.action === "project.update" && detail) {
+      const statusChange = projectStatusChange(detail);
+      if (statusChange) return statusChange;
+    }
     return changes.length
       ? { kind: "changes", label, changes }
-      : { kind: "text", label, detail: activityDetail(item) };
+      : { kind: "text", label, detail };
   }
   const { from, to } = taskStatusChange(item, statuses);
   if (!from && !to) return { kind: "text", label: "Task moved" };

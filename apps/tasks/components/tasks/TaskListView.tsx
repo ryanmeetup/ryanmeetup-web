@@ -1,3 +1,4 @@
+import { useId, useState } from "react";
 import { Card, DropdownSelect, Pagination } from "@ryanmeetup/ui";
 import { FiChevronDown } from "react-icons/fi";
 import type { Category, Project } from "@/lib/resources/resource-types";
@@ -8,6 +9,7 @@ import {
   TaskListCards,
   TaskListRows,
 } from "./TaskListItems";
+import { TaskListCardSkeletons, TaskListRowSkeletons } from "./TaskListSkeleton";
 
 export type TaskListData = {
   assigneesByTask: Map<string, Set<string>>;
@@ -57,11 +59,28 @@ export function TaskListView({
     onToggle: onToggleSort,
   } = sorting;
   const items = resolveTaskListItems(data);
+  const disclosureId = useId();
+  const [collapsedMonths, setCollapsedMonths] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const monthDisclosure = {
+    collapsedMonths,
+    idPrefix: disclosureId,
+    onToggleMonth: (key: string) =>
+      setCollapsedMonths((current) => {
+        const next = new Set(current);
+        if (next.has(key)) next.delete(key);
+        else next.add(key);
+        return next;
+      }),
+  };
   return (
-    <Card
-      size="none"
-      className={`overflow-hidden transition-opacity ${loading ? "opacity-60" : ""}`}
-    >
+    <Card size="none" className="overflow-hidden">
+      {loading && (
+        <span className="sr-only" role="status">
+          Loading tasks
+        </span>
+      )}
       <div className="md:hidden" aria-busy={loading}>
         <div className="flex items-center justify-between gap-3 border-b border-black/10 bg-black/[0.025] px-4 py-3 dark:border-white/10 dark:bg-white/[0.025]">
           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-black/50 dark:text-white/50">
@@ -72,7 +91,12 @@ export function TaskListView({
             value={sort}
             onChange={onSortChange}
             options={[
-              ...(archived ? [{ label: "Closed", value: "closed" }] : []),
+              ...(archived
+                ? [
+                    { label: "Closed (newest first)", value: "closed" },
+                    { label: "Closed (oldest first)", value: "closed-asc" },
+                  ]
+                : []),
               { label: "Updated", value: "updated" },
               { label: "Due", value: "due" },
               { label: "Priority", value: "priority" },
@@ -81,11 +105,16 @@ export function TaskListView({
           />
         </div>
         <div className="divide-y divide-black/5 dark:divide-white/5">
-          <TaskListCards
-            items={items}
-            archived={archived}
-            onOpenTask={onOpenTask}
-          />
+          {loading ? (
+            <TaskListCardSkeletons />
+          ) : (
+            <TaskListCards
+              items={items}
+              archived={archived}
+              monthDisclosure={monthDisclosure}
+              onOpenTask={onOpenTask}
+            />
+          )}
         </div>
       </div>
       <div className="hidden overflow-x-auto md:block" aria-busy={loading}>
@@ -107,22 +136,54 @@ export function TaskListView({
               <th className="px-3 py-3">Project</th>
               <th className="px-3 py-3">Assignee</th>
               <th className="px-3 py-3">Priority</th>
-              <th className="px-3 py-3">
+              <th
+                className="px-3 py-3"
+                aria-sort={
+                  archived
+                    ? sort === "closed"
+                      ? "descending"
+                      : sort === "closed-asc"
+                        ? "ascending"
+                        : "none"
+                    : sort === "due"
+                      ? "ascending"
+                      : "none"
+                }
+              >
                 <button
-                  className="flex items-center gap-1 whitespace-nowrap"
+                  type="button"
+                  className="flex items-center gap-1 whitespace-nowrap uppercase focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
                   onClick={onToggleSort}
+                  title={
+                    archived
+                      ? sort === "closed"
+                        ? "Sort by closed date, oldest first"
+                        : "Sort by closed date, newest first"
+                      : sort === "due"
+                        ? "Sort by last updated"
+                        : "Sort by due date, earliest first"
+                  }
                 >
-                  {archived ? "Closed" : "Due"} <FiChevronDown />
+                  {archived ? "Closed" : "Due"}
+                  <FiChevronDown
+                    aria-hidden="true"
+                    className={archived && sort === "closed-asc" ? "rotate-180" : ""}
+                  />
                 </button>
               </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-black/5 dark:divide-white/5">
-            <TaskListRows
-              items={items}
-              archived={archived}
-              onOpenTask={onOpenTask}
-            />
+            {loading ? (
+              <TaskListRowSkeletons />
+            ) : (
+              <TaskListRows
+                items={items}
+                archived={archived}
+                monthDisclosure={monthDisclosure}
+                onOpenTask={onOpenTask}
+              />
+            )}
           </tbody>
         </table>
       </div>

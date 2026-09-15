@@ -226,8 +226,9 @@ export function TaskSearch({
     >
       <FiSearch
         aria-hidden
-        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40"
+        className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-black/40 sm:left-3 sm:text-base dark:text-white/40"
       />
+      {/* Override the mobile 16px minimum at rest, then restore it on focus to prevent iOS zoom. */}
       <input
         ref={inputRef}
         type="search"
@@ -258,7 +259,7 @@ export function TaskSearch({
             ? "Search tasks by title, ID, or project..."
             : "Search tasks…"
         }
-        className="h-10 w-full rounded-lg border border-black/10 bg-white pl-10 pr-20 text-sm outline-none focus:border-black/30 focus:ring-2 focus:ring-black/10 [&::-webkit-search-cancel-button]:appearance-none dark:border-white/10 dark:bg-white/5 dark:focus:border-white/30"
+        className="h-8 w-full rounded-lg border border-black/10 bg-white pl-8 pr-16 text-sm outline-none focus:border-black/30 focus:ring-2 focus:ring-black/10 max-sm:!text-sm max-sm:focus:!text-base sm:h-10 sm:pl-10 sm:pr-20 [&::-webkit-search-cancel-button]:appearance-none dark:border-white/10 dark:bg-white/5 dark:focus:border-white/30"
       />
       {query && (
         <button

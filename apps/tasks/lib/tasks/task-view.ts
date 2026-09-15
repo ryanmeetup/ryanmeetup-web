@@ -78,6 +78,7 @@ export const taskSorts: readonly string[] = [
   "due",
   "priority",
   "closed",
+  "closed-asc",
 ];
 
 export function deriveVisibleTasks({
@@ -162,6 +163,8 @@ export function deriveVisibleTasks({
               taskPriorities.indexOf(a.priority)
             : sort === "closed"
               ? (b.completed_at ?? "").localeCompare(a.completed_at ?? "")
+              : sort === "closed-asc"
+                ? (a.completed_at ?? "9999").localeCompare(b.completed_at ?? "9999")
               : b.updated_at.localeCompare(a.updated_at),
     );
 }

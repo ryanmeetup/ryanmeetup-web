@@ -301,6 +301,23 @@ test("aligns board column searches across description lengths", async ({
   expect(Math.max(...topPositions) - Math.min(...topPositions)).toBeLessThan(1);
 });
 
+test("keeps board search text compact on mobile without zooming on focus", async ({
+  page,
+  baseURL,
+}) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await enterDemoWorkspace(page, baseURL);
+  await page.goto("/board");
+
+  const search = page.getByRole("searchbox", { name: "Search Backlog tasks" });
+  await expect(search).toHaveCSS("font-size", "12px");
+  await search.focus();
+  await expect(search).toHaveCSS("font-size", "16px");
+
+  await page.setViewportSize({ width: 768, height: 812 });
+  await expect(search).toHaveCSS("font-size", "14px");
+});
+
 test("stops page scrolling with equal space above and below the board", async ({
   page,
   baseURL,
@@ -366,6 +383,13 @@ test("stops page scrolling with equal space above and below the board", async ({
     await page.evaluate(() =>
       window.scrollTo(0, document.documentElement.scrollHeight),
     );
+    console.log("board spacing", viewport, await boardScroller.evaluate((board) => ({
+      board: board.getBoundingClientRect().toJSON(),
+      header: document.querySelector(".tasks-app-header")!.getBoundingClientRect().toJSON(),
+      notices: document.querySelector("[data-workspace-banners]")!.getBoundingClientRect().toJSON(),
+      scrollY: window.scrollY,
+      scrollHeight: document.documentElement.scrollHeight,
+    })));
     await expect
       .poll(async () =>
         boardScroller.evaluate((board) => {
@@ -706,7 +730,45 @@ test("expands a collapsed board column when its search begins", async ({
 });
 
 test.describe("mobile workspace navigation", () => {
-  test.use({ viewport: { width: 390, height: 844 } });
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+
+  test("slides the drawer closed after a left swipe", async ({
+    page,
+    baseURL,
+  }) => {
+    await enterDemoWorkspace(page, baseURL);
+    await page.getByRole("button", { name: "Open navigation" }).click();
+    const drawer = page.getByRole("dialog");
+    const panel = drawer.locator("[data-mobile-sidebar-panel]");
+    await expect.poll(async () => (await panel.boundingBox())?.x).toBe(0);
+    const bounds = (await panel.boundingBox())!;
+    const client = await page.context().newCDPSession(page);
+    const swipe = async (distance: number) => {
+      const y = bounds.y + 170;
+      const startX = bounds.x + 220;
+      await client.send("Input.dispatchTouchEvent", {
+        type: "touchStart",
+        touchPoints: [{ x: startX, y }],
+      });
+      for (let step = 1; step <= 6; step++) {
+        await client.send("Input.dispatchTouchEvent", {
+          type: "touchMove",
+          touchPoints: [{ x: startX - (distance * step) / 6, y }],
+        });
+      }
+      await client.send("Input.dispatchTouchEvent", {
+        type: "touchEnd",
+        touchPoints: [],
+      });
+    };
+
+    await swipe(45);
+    await expect.poll(async () => (await panel.boundingBox())?.x).toBe(0);
+
+    await swipe(125);
+    await expect(drawer).toHaveCount(0);
+    await expect(page).toHaveURL(/\/$/);
+  });
 
   test("keeps the workspace shell mounted after using the drawer", async ({
     page,
@@ -796,17 +858,23 @@ test("reads the archive as a record rather than a board", async ({
   await page.goto("/board");
 
   const layout = page.getByRole("group", { name: "Task layout" });
+  const assignee = page.getByRole("group", { name: "Task assignee" });
+  const status = page.getByRole("group", { name: "Task status" });
   await expect(layout).toBeVisible();
-  await page
-    .getByRole("group", { name: "Task status" })
-    .getByRole("button", { name: "Archive" })
-    .click();
+  const activeStatusBox = (await status.boundingBox())!;
+  const assigneeBox = (await assignee.boundingBox())!;
+  expect((await layout.boundingBox())!.x).toBeLessThan(assigneeBox.x);
+  expect(assigneeBox.x).toBeLessThan(activeStatusBox.x);
+  await status.getByRole("button", { name: "Archive" }).click();
 
   // No board, and no board switch to get back to one.
   await expect(page.locator("[data-board-scroller]")).toHaveCount(0);
   await expect(layout).toHaveCount(0);
+  const archiveStatusBox = (await status.boundingBox())!;
+  expect(Math.abs(archiveStatusBox.x - activeStatusBox.x)).toBeLessThan(4);
+  expect(Math.abs(archiveStatusBox.y - activeStatusBox.y)).toBeLessThan(4);
 
-  const rows = page.getByRole("row");
+  const rows = page.locator("table table tbody > tr");
   await expect(
     rows.filter({ hasText: "Send customer interview thank-yous" }),
   ).toBeVisible();
@@ -814,14 +882,78 @@ test("reads the archive as a record rather than a board", async ({
     rows.filter({ hasText: "Print branded lanyards for every attendee" }),
   ).toBeVisible();
   // The last column dates the ending instead of the deadline.
+  const header = page.locator("table").first().locator(":scope > thead");
+  await expect(header.getByRole("columnheader", { name: "Closed" })).toBeVisible();
   await expect(
-    page.getByRole("columnheader", { name: "Closed" }),
-  ).toBeVisible();
-  await expect(page.getByRole("columnheader", { name: "Due" })).toHaveCount(0);
+    header.getByRole("columnheader", { name: "Due" }),
+  ).toHaveCount(0);
+  const closedHeader = header.getByRole("columnheader", { name: "Closed" });
+  await expect(closedHeader).toHaveAttribute("aria-sort", "descending");
+  await expect(closedHeader.getByRole("button")).toHaveCSS(
+    "text-transform",
+    "uppercase",
+  );
+  const months = page.locator("table").first().locator(":scope > tbody > tr > th[scope='colgroup']");
+  const newestFirst = await months.allTextContents();
+  await closedHeader.getByRole("button").click();
+  await expect(closedHeader).toHaveAttribute("aria-sort", "ascending");
+  await expect(page).toHaveURL(/sort=closed-asc/);
+  await expect(months).toHaveText([...newestFirst].reverse());
+  await closedHeader.getByRole("button").click();
+  await expect(closedHeader).toHaveAttribute("aria-sort", "descending");
+  await expect(months).toHaveText(newestFirst);
 
-  await page
-    .getByRole("group", { name: "Task status" })
-    .getByRole("button", { name: "Active" })
-    .click();
+  await status.getByRole("button", { name: "Active" }).click();
   await expect(page.locator("[data-board-scroller]")).toBeVisible();
+});
+
+test("makes mobile task filters full width with layout beside the title", async ({
+  page,
+  baseURL,
+}) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await enterDemoWorkspace(page, baseURL);
+  await page.goto("/board");
+
+  const assignee = page.getByRole("group", { name: "Task assignee" });
+  const status = page.getByRole("group", { name: "Task status" });
+  const layout = page.getByRole("group", { name: "Task layout" });
+  await expect(layout).toBeVisible();
+
+  const assigneeBox = (await assignee.boundingBox())!;
+  const statusBox = (await status.boundingBox())!;
+  const layoutBox = (await layout.boundingBox())!;
+  const titleBox = (await page.getByRole("heading", { level: 1 }).boundingBox())!;
+  expect(assigneeBox.width).toBeGreaterThan(320);
+  expect(Math.abs(assigneeBox.width - statusBox.width)).toBeLessThan(2);
+  expect(Math.abs(assigneeBox.x - statusBox.x)).toBeLessThan(2);
+  expect(statusBox.y).toBeGreaterThan(assigneeBox.y);
+  const allBox = (await assignee.getByRole("button", { name: "All" }).boundingBox())!;
+  const mineBox = (await assignee.getByRole("button", { name: "Mine" }).boundingBox())!;
+  expect(Math.abs(allBox.width - mineBox.width)).toBeLessThan(2);
+  expect(layoutBox.y).toBeLessThan(statusBox.y);
+  expect(layoutBox.x).toBeGreaterThanOrEqual(titleBox.x + titleBox.width);
+  expect(layoutBox.x + layoutBox.width).toBeGreaterThan(375 - 24);
+
+  await page.setViewportSize({ width: 320, height: 700 });
+  const narrowAssignee = (await assignee.boundingBox())!;
+  const narrowStatus = (await status.boundingBox())!;
+  const narrowLayout = (await layout.boundingBox())!;
+  expect(Math.abs(narrowAssignee.width - narrowStatus.width)).toBeLessThan(2);
+  expect(narrowStatus.y).toBeGreaterThan(narrowAssignee.y);
+  expect(narrowLayout.x + narrowLayout.width).toBeGreaterThan(320 - 24);
+  expect(narrowLayout.x + narrowLayout.width).toBeLessThanOrEqual(320);
+
+  await layout.getByRole("button", { name: "List" }).click();
+  await expect(layout.getByRole("button", { name: "List" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const desktopAssignee = (await assignee.boundingBox())!;
+  const desktopStatus = (await status.boundingBox())!;
+  const desktopLayout = (await layout.boundingBox())!;
+  expect(Math.abs(desktopAssignee.y - desktopStatus.y)).toBeLessThan(2);
+  expect(Math.abs(desktopStatus.y - desktopLayout.y)).toBeLessThan(2);
 });

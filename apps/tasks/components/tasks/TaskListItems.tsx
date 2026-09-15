@@ -1,5 +1,6 @@
 import { Fragment } from "react";
-import { Avatar, EmptyState } from "@ryanmeetup/ui";
+import { AnimatedCollapse, Avatar, EmptyState } from "@ryanmeetup/ui";
+import { FiChevronDown } from "react-icons/fi";
 import type { Category, Project } from "@/lib/resources/resource-types";
 import type { Profile } from "@/lib/workspace/workspace-types";
 import type { Status, Task } from "@/lib/tasks/task-types";
@@ -20,21 +21,60 @@ type TaskListItem = {
   people: Profile[];
 };
 
+type MonthDisclosure = {
+  collapsedMonths: ReadonlySet<string>;
+  idPrefix: string;
+  onToggleMonth: (key: string) => void;
+};
+
+function MonthDisclosureButton({
+  collapsed,
+  label,
+  onClick,
+  panelId,
+}: {
+  collapsed: boolean;
+  label: string;
+  onClick: () => void;
+  panelId: string;
+}) {
+  return (
+    <button
+      type="button"
+      aria-controls={panelId}
+      aria-expanded={!collapsed}
+      onClick={onClick}
+      className="flex w-full items-center gap-2 px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.16em] text-black/60 transition-colors hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/30 dark:text-white/60 dark:hover:bg-white/[0.04] dark:focus-visible:ring-white/30"
+    >
+      {label}
+      <FiChevronDown
+        aria-hidden
+        className={`shrink-0 text-sm transition-transform duration-200 motion-reduce:transition-none ${collapsed ? "-rotate-90" : ""}`}
+      />
+    </button>
+  );
+}
+
 /**
  * Archived rows read as a record of what happened, so they are grouped by the
  * month work closed rather than running as one undifferentiated list. Anything
- * without a closing date sits in its own group at the end; a task can only get
+ * without a closing date sits in its own group; a task can only get
  * there by having its status reopened after it was archived.
  */
 export function groupTasksByClosedMonth(items: TaskListItem[]) {
   const groups: { key: string; label: string; items: TaskListItem[] }[] = [];
+  const byMonth = new Map<string, (typeof groups)[number]>();
   for (const item of items) {
     const closedAt = item.task.completed_at;
     const key = closedAt ? closedAt.slice(0, 7) : "unknown";
     const label = closedAt ? formatMonth(closedAt) : "No closing date";
-    const current = groups.at(-1);
-    if (current?.key === key) current.items.push(item);
-    else groups.push({ key, label, items: [item] });
+    const group = byMonth.get(key);
+    if (group) group.items.push(item);
+    else {
+      const next = { key, label, items: [item] };
+      byMonth.set(key, next);
+      groups.push(next);
+    }
   }
   return groups;
 }
@@ -84,11 +124,13 @@ export function TaskListCards({
   items,
   archived = false,
   grouped = archived,
+  monthDisclosure,
   onOpenTask,
 }: {
   items: TaskListItem[];
   archived?: boolean;
   grouped?: boolean;
+  monthDisclosure: MonthDisclosure;
   onOpenTask: (task: Task) => void;
 }) {
   if (items.length === 0)
@@ -103,19 +145,33 @@ export function TaskListCards({
       />
     );
   if (grouped)
-    return groupTasksByClosedMonth(items).map((group) => (
-      <Fragment key={group.key}>
-        <p className="bg-black/[0.025] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-black/50 dark:bg-white/[0.025] dark:text-white/50">
-          {group.label}
-        </p>
-        <TaskListCards
-          items={group.items}
-          archived={archived}
-          grouped={false}
-          onOpenTask={onOpenTask}
-        />
-      </Fragment>
-    ));
+    return groupTasksByClosedMonth(items).map((group) => {
+      const collapsed = monthDisclosure.collapsedMonths.has(group.key);
+      const panelId = `${monthDisclosure.idPrefix}-mobile-${group.key}`;
+      return (
+        <div key={group.key}>
+          <div className="bg-black/[0.025] dark:bg-white/[0.025]">
+            <MonthDisclosureButton
+              collapsed={collapsed}
+              label={group.label}
+              panelId={panelId}
+              onClick={() => monthDisclosure.onToggleMonth(group.key)}
+            />
+          </div>
+          <AnimatedCollapse id={panelId} open={!collapsed}>
+            <div className="divide-y divide-black/5 dark:divide-white/5">
+              <TaskListCards
+                items={group.items}
+                archived={archived}
+                grouped={false}
+                monthDisclosure={monthDisclosure}
+                onOpenTask={onOpenTask}
+              />
+            </div>
+          </AnimatedCollapse>
+        </div>
+      );
+    });
   return items.map(({ task, status, categories, project, people }) => (
     <button
       type="button"
@@ -173,6 +229,7 @@ export function TaskListRows({
   items,
   archived = false,
   grouped = archived,
+  monthDisclosure,
   onOpenTask,
 }: {
   items: TaskListItem[];
@@ -180,6 +237,7 @@ export function TaskListRows({
   archived?: boolean;
   /** Split the rows into month headings. Off for the rows inside one. */
   grouped?: boolean;
+  monthDisclosure: MonthDisclosure;
   onOpenTask: (task: Task) => void;
 }) {
   if (items.length === 0)
@@ -198,25 +256,65 @@ export function TaskListRows({
       </tr>
     );
   if (grouped)
-    return groupTasksByClosedMonth(items).map((group) => (
-      <Fragment key={group.key}>
-        <tr>
-          <th
-            scope="colgroup"
-            colSpan={7}
-            className="bg-black/[0.025] px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.16em] text-black/50 dark:bg-white/[0.025] dark:text-white/50"
-          >
-            {group.label}
-          </th>
-        </tr>
-        <TaskListRows
-          items={group.items}
-          archived={archived}
-          grouped={false}
-          onOpenTask={onOpenTask}
-        />
-      </Fragment>
-    ));
+    return groupTasksByClosedMonth(items).map((group) => {
+      const collapsed = monthDisclosure.collapsedMonths.has(group.key);
+      const panelId = `${monthDisclosure.idPrefix}-desktop-${group.key}`;
+      return (
+        <Fragment key={group.key}>
+          <tr>
+            <th
+              scope="colgroup"
+              colSpan={7}
+              className="bg-black/[0.025] p-0 text-left dark:bg-white/[0.025]"
+            >
+              <MonthDisclosureButton
+                collapsed={collapsed}
+                label={group.label}
+                panelId={panelId}
+                onClick={() => monthDisclosure.onToggleMonth(group.key)}
+              />
+            </th>
+          </tr>
+          <tr>
+            <td colSpan={7} className="p-0">
+              <AnimatedCollapse id={panelId} open={!collapsed}>
+                <table className="w-full table-fixed text-left">
+                  <colgroup>
+                    <col className="w-[34%]" />
+                    <col className="w-[9%]" />
+                    <col className="w-[19%]" />
+                    <col className="w-[14%]" />
+                    <col className="w-[9%]" />
+                    <col className="w-[7%]" />
+                    <col className="w-[8%]" />
+                  </colgroup>
+                  <thead className="sr-only">
+                    <tr>
+                      <th scope="col">Task</th>
+                      <th scope="col">Status</th>
+                      <th scope="col">Categories</th>
+                      <th scope="col">Project</th>
+                      <th scope="col">Assignee</th>
+                      <th scope="col">Priority</th>
+                      <th scope="col">Closed</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-black/5 dark:divide-white/5">
+                    <TaskListRows
+                      items={group.items}
+                      archived={archived}
+                      grouped={false}
+                      monthDisclosure={monthDisclosure}
+                      onOpenTask={onOpenTask}
+                    />
+                  </tbody>
+                </table>
+              </AnimatedCollapse>
+            </td>
+          </tr>
+        </Fragment>
+      );
+    });
   return items.map(({ task, status, categories, project, people }) => (
     <tr
       key={task.id}

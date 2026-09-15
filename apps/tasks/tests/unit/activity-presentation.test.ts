@@ -70,6 +70,41 @@ describe("activity presentation", () => {
     });
   });
 
+  it("uses project status colors for recorded status changes", () => {
+    const item = activity("project-status", "2026-08-13T12:00:00Z", {
+      detail: "Status: Active → Complete",
+    });
+    item.action = "project.update";
+
+    expect(describeActivity(item, [])).toEqual({
+      kind: "project-status",
+      from: { name: "Active", color: "#d97706" },
+      to: { name: "Complete", color: "#059669" },
+      detail: undefined,
+    });
+
+    item.details.detail = "Name: Old → New; Status: Complete → Active";
+    expect(describeActivity(item, [])).toMatchObject({
+      kind: "project-status",
+      from: { name: "Complete", color: "#059669" },
+      to: { name: "Active", color: "#d97706" },
+      detail: "Name: Old → New",
+    });
+  });
+
+  it("preserves unfamiliar project status details as text", () => {
+    const item = activity("project-status", "2026-08-13T12:00:00Z", {
+      detail: "Status: Custom → Complete",
+    });
+    item.action = "project.update";
+
+    expect(describeActivity(item, [])).toEqual({
+      kind: "text",
+      label: "Project updated",
+      detail: "Status: Custom → Complete",
+    });
+  });
+
   it("retains the category color for category activity", () => {
     const item = activity("category", "2026-08-13T12:00:00Z", {
       resource_id: "operations",

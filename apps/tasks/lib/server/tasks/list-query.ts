@@ -37,9 +37,10 @@ export function resolveAssigneeTaskFilters(
 }
 
 /** The orders `GET /api/tasks` can ask Postgres for. */
-function taskListSort(value: string | null): "due" | "closed" | "updated" {
+function taskListSort(value: string | null): "due" | "closed" | "closed-asc" | "updated" {
   if (value === "due") return "due";
   if (value === "closed") return "closed";
+  if (value === "closed-asc") return "closed-asc";
   return "updated";
 }
 

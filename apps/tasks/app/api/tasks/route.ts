@@ -297,6 +297,10 @@ export async function GET(request: Request): Promise<NextResponse> {
         ? query
             .order("completed_at", { ascending: false, nullsFirst: false })
             .order("id", { ascending: false })
+        : sort === "closed-asc"
+          ? query
+              .order("completed_at", { ascending: true, nullsFirst: false })
+              .order("id", { ascending: true })
         : query
             .order("updated_at", { ascending: false })
             .order("id", { ascending: false });
@@ -434,6 +438,10 @@ export async function GET(request: Request): Promise<NextResponse> {
           ? corrected
               .order("completed_at", { ascending: false, nullsFirst: false })
               .order("id", { ascending: false })
+          : sort === "closed-asc"
+            ? corrected
+                .order("completed_at", { ascending: true, nullsFirst: false })
+                .order("id", { ascending: true })
           : corrected
               .order("updated_at", { ascending: false })
               .order("id", { ascending: false });

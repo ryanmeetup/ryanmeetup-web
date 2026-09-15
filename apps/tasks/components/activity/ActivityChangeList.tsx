@@ -36,7 +36,7 @@ export function StatusLabel({
   );
 }
 
-/** A task's previous and next board columns, shared by every activity surface. */
+/** A colored status transition, shared by task moves and project updates. */
 export function ActivityStatusChange({
   from: fromStatus,
   to: toStatus,

@@ -56,6 +56,19 @@ export function useTaskPageLoader({
   visibility: "active" | "archived";
 }) {
   const [loading, setLoading] = useState(false);
+  const taskQuerySignature = buildTaskQuerySignature({
+    filters,
+    pageSize,
+    search,
+    sort,
+    view,
+    visibility,
+  });
+  const queryKey = `${taskQuerySignature}|${page}`;
+  // The server-rendered page already matches its initial query. A changed
+  // query must hide those rows on the very first render, before the effect
+  // starts the replacement request.
+  const [settledQueryKey, setSettledQueryKey] = useState(queryKey);
   const loadedTaskQuery = useRef("");
   const requests = useRef(new LatestRequestTracker());
 
@@ -114,26 +127,20 @@ export function useTaskPageLoader({
           taskPage: view === "list" ? result.page : undefined,
         };
       });
+      setSettledQueryKey(queryKey);
       if (view === "list") {
         syncPage(result.page.page);
         syncPageSize(result.page.pageSize);
       }
     } catch (error) {
       if (!requests.current.isLatest(request)) return;
+      setSettledQueryKey(queryKey);
       toast.error(errorMessage(error, "Tasks could not be loaded."));
     } finally {
       if (requests.current.finish(request)) setLoading(false);
     }
   }
 
-  const taskQuerySignature = buildTaskQuerySignature({
-    filters,
-    pageSize,
-    search,
-    sort,
-    view,
-    visibility,
-  });
   useEffect(() => {
     if (demoMode) return;
     if (
@@ -158,5 +165,8 @@ export function useTaskPageLoader({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [demoMode, page, taskQuerySignature, view]);
 
-  return { loading, loadTaskPage };
+  return {
+    loading: loading || (!demoMode && settledQueryKey !== queryKey),
+    loadTaskPage,
+  };
 }

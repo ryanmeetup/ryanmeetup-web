@@ -41,3 +41,12 @@ describe("task list assignee filters", () => {
     expect(resolved.assignedWithoutIncludedAssignee).toEqual(["ryan-only"]);
   });
 });
+
+describe("task list sorting", () => {
+  it("accepts oldest-first closing dates for the archived list", () => {
+    const parsed = parseTaskListQuery(
+      new URLSearchParams({ visibility: "archived", sort: "closed-asc" }),
+    );
+    expect(parsed.sort).toBe("closed-asc");
+  });
+});

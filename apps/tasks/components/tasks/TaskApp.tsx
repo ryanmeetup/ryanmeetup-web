@@ -344,7 +344,7 @@ export function TaskApp({
           />
 
           <PendingResults
-            pending={searchPending}
+            pending={view === "board" && searchPending}
             label="Loading tasks"
             surface="page"
             size="lg"
@@ -375,7 +375,7 @@ export function TaskApp({
                   statuses,
                   tasks: listTasks,
                 }}
-                loading={taskPageLoading}
+                loading={taskPageLoading || searchPending}
                 archived={visibility === "archived"}
                 onOpenTask={editor.openEdit}
                 pagination={{
@@ -397,11 +397,10 @@ export function TaskApp({
                     setView("list");
                     filters.setSort(nextSort);
                   },
-                  // The header cell toggles between the column it names and
-                  // the view's own default order.
+                  // The archive header reverses closing-date order.
                   onToggle: () =>
                     visibility === "archived"
-                      ? filters.setSort(sort === "closed" ? "updated" : "closed")
+                      ? filters.setSort(sort === "closed" ? "closed-asc" : "closed")
                       : filters.setSort(sort === "due" ? "updated" : "due"),
                 }}
               />

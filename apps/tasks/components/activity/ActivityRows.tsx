@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { EmptyState, Spinner } from "@ryanmeetup/ui";
+import { FiFolder } from "react-icons/fi";
 import { CategoryLabel } from "@/components/categories";
 import { TaskKeyBadge } from "@/components/tasks";
 import { withAccessPreview } from "@/lib/access/access-preview";
@@ -31,6 +32,18 @@ function activityDescription(
       </div>
     );
   }
+  if (description.kind === "project-status") {
+    return (
+      <div className={compact ? "space-y-0.5" : "space-y-1"}>
+        <ActivityStatusChange from={description.from} to={description.to} />
+        {description.detail && (
+          <p className="text-xs text-black/55 dark:text-white/55">
+            {description.detail}
+          </p>
+        )}
+      </div>
+    );
+  }
   if (description.kind === "status") {
     return (
       <ActivityStatusChange from={description.from} to={description.to} />
@@ -57,6 +70,14 @@ function activityHref(row: ActivityPresentationRow, preview?: AccessPreview) {
 
 function activityItemName(row: ActivityPresentationRow) {
   return row.task?.title ?? row.resourceName ?? "item";
+}
+
+function projectNameRepeatsItem(row: ActivityPresentationRow) {
+  return (
+    row.item.action.startsWith("project.") &&
+    Boolean(row.resourceName) &&
+    row.resourceName === row.project?.name
+  );
 }
 
 export function ActivityRows({
@@ -91,7 +112,7 @@ export function ActivityRows({
             const content = (
               <article className="space-y-3 p-4">
                 <div className="flex items-start justify-between gap-3">
-                  <span className="flex min-w-0 items-center gap-2 font-semibold">
+                  <span className="flex min-w-0 items-center gap-2 text-sm font-semibold">
                     <ActivityActorAvatar profile={actor} />
                     <span className="truncate">{row.actorName}</span>
                   </span>
@@ -118,8 +139,13 @@ export function ActivityRows({
                         className="font-semibold"
                       />
                     ) : (
-                      <span className="min-w-0 font-semibold">
-                        {resourceName}
+                      <span className="inline-flex min-w-0 items-center gap-1.5 font-semibold">
+                        {item.action.startsWith("project.") && (
+                          <FiFolder aria-hidden className="shrink-0" />
+                        )}
+                        <span className="min-w-0 break-words">
+                          {resourceName}
+                        </span>
                       </span>
                     )
                   ) : (
@@ -127,11 +153,16 @@ export function ActivityRows({
                       Item unavailable
                     </span>
                   )}
-                  {showProject && project && (
-                    <span className="text-black/60 dark:text-white/60">
-                      {project.name}
-                    </span>
-                  )}
+                  {showProject &&
+                    project &&
+                    !projectNameRepeatsItem(row) && (
+                      <span className="inline-flex min-w-0 items-center gap-1.5 text-black/60 dark:text-white/60">
+                        <FiFolder aria-hidden className="shrink-0" />
+                        <span className="min-w-0 break-words">
+                          {project.name}
+                        </span>
+                      </span>
+                    )}
                 </div>
               </article>
             );
@@ -226,7 +257,14 @@ export function ActivityRows({
                       category ? (
                         <CategoryLabel category={category} />
                       ) : (
-                        <span className="min-w-0">{resourceName}</span>
+                        <span className="inline-flex min-w-0 items-center gap-1.5">
+                          {item.action.startsWith("project.") && (
+                            <FiFolder aria-hidden className="shrink-0" />
+                          )}
+                          <span className="min-w-0 break-words">
+                            {resourceName}
+                          </span>
+                        </span>
                       )
                     ) : (
                       <span className="text-black/45 dark:text-white/45">
@@ -236,7 +274,16 @@ export function ActivityRows({
                   </td>
                   {showProject && (
                     <td className="px-4 py-3 text-black/65 dark:text-white/65">
-                      {project?.name ?? "—"}
+                      {project && !projectNameRepeatsItem(row) ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          <FiFolder aria-hidden className="shrink-0" />
+                          <span className="min-w-0 break-words">
+                            {project.name}
+                          </span>
+                        </span>
+                      ) : (
+                        "—"
+                      )}
                     </td>
                   )}
                 </tr>
