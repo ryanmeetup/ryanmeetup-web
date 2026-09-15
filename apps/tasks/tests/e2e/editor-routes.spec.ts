@@ -82,6 +82,36 @@ for (const route of editorRoutes) {
   });
 }
 
+test("reorders category tags and accepts more than 20", async ({
+  page,
+  baseURL,
+}) => {
+  await enterDemoWorkspace(page, baseURL);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/categories/operations/edit");
+  await page.waitForLoadState("networkidle");
+
+  const tags = page.locator("[data-tag-value]");
+  await expect(tags).toHaveText(["Chicago", "New York", "Los Angeles"]);
+
+  const chicagoHandle = page.getByRole("button", {
+    name: "Drag to reorder “Chicago”",
+  });
+  await chicagoHandle.press("Space");
+  await chicagoHandle.press("ArrowRight");
+  await chicagoHandle.press("Space");
+  await expect(tags).toHaveText(["New York", "Chicago", "Los Angeles"]);
+
+  const tagInput = page.getByLabel("Tags");
+  for (let index = 1; index <= 18; index += 1) {
+    await tagInput.fill(`Extra ${index}`);
+    await tagInput.press("Enter");
+  }
+  await expect(tags).toHaveCount(21);
+  await expect(tagInput).toBeEnabled();
+  await expect(page.getByText("21/20", { exact: false })).toHaveCount(0);
+});
+
 test("returns from new task through browser history without a from parameter", async ({
   page,
   baseURL,

@@ -178,6 +178,20 @@ describe("ensureHttpUrlScheme", () => {
     expect(categorySchema({ ...category, ownerIds: [] })).toBeNull();
   });
 
+  it("accepts categories with more than 20 tags", () => {
+    const tags = Array.from({ length: 25 }, (_, index) => `Tag ${index + 1}`);
+    expect(
+      categorySchema({
+        name: "Meetups",
+        description: "Local meetup work.",
+        color: "#0f766e",
+        links: [],
+        tags,
+        ownerIds: ["7b27db83-577d-4de1-b4ca-9f088832f25b"],
+      }),
+    ).toMatchObject({ tags });
+  });
+
   it("requires a description and owner when editing project details", () => {
     const id = "7b27db83-577d-4de1-b4ca-9f088832f25b";
     expect(

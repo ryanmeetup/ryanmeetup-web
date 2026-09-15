@@ -56,7 +56,6 @@ export function categorySchema(value: unknown, requireId = false) {
     !validColor ||
     !links ||
     !tags ||
-    tags.length > 20 ||
     ownerIds === null ||
     accessMode === null ||
     accessGroupIds === null ||

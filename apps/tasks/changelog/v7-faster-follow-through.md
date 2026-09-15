@@ -170,6 +170,8 @@ Task lists now run flush to each column's rounded bottom edge, without a separat
 
 Form labels now use the same clear sentence-case heading treatment throughout task, note, resource, calendar, profile, and admin editors.
 
+Category tags can now grow beyond 20 and be dragged into the order that makes sense for the work.
+
 Buttons that sit beside fields now match the input height with tighter typography and padding, while standalone quick actions use the same compact sizing as save and cancel controls.
 
 On phones, the task board's assignee, status, and layout switches now have clear labels, full-width controls, and roomier tap targets instead of competing for two cramped columns.
