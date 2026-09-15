@@ -25,6 +25,33 @@ async function enterDemoWorkspace(page: Page, baseURL: string | undefined) {
   ]);
 }
 
+test("keeps a quick note title separate from its details", async ({
+  page,
+  baseURL,
+}) => {
+  await enterDemoWorkspace(page, baseURL);
+  await page.goto("/notes");
+  await page.waitForLoadState("networkidle");
+
+  await page
+    .getByPlaceholder("Give this note a clear title")
+    .fill("Launch-day follow-up");
+  await page
+    .getByPlaceholder("Add the context, idea, or decision…")
+    .fill("Observe Dry January by giving your drinks to your friend, Ryan.");
+  await page.getByRole("button", { name: "Save note" }).click();
+
+  await expect(
+    page.getByRole("heading", { level: 3, name: "Launch-day follow-up" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      level: 3,
+      name: "Observe Dry January by giving your drinks to your friend, Ryan.",
+    }),
+  ).toHaveCount(0);
+});
+
 test("adds and removes contact methods in the person editor", async ({
   page,
   baseURL,

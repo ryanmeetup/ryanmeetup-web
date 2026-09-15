@@ -12,6 +12,7 @@ import {
   RichTextarea,
 } from "@ryanmeetup/ui";
 import { FiClock, FiEdit2 } from "react-icons/fi";
+import { formatTimestamp } from "@/lib/date-format";
 import { noteTitle } from "@/lib/resources/notes";
 import type {
   Category,
@@ -70,7 +71,7 @@ export function NoteModal({
   }
 
   async function save() {
-    if (!body.trim() || saving) return;
+    if (!title.trim() || !body.trim() || saving) return;
     setSaving(true);
     const saved = await onSave(title, body);
     setSaving(false);
@@ -95,7 +96,7 @@ export function NoteModal({
         editing ? (
           <ModalActions
             cancelLabel="Cancel"
-            confirmDisabled={!body.trim() || !changed}
+            confirmDisabled={!title.trim() || !body.trim() || !changed}
             confirmForm={formId}
             confirmLabel="Save note"
             onCancel={() => setEditing(false)}
@@ -129,10 +130,11 @@ export function NoteModal({
           <Input
             label="Note title"
             name={`note-title-${note.id}`}
-            placeholder="Optional title"
+            placeholder="Give this note a clear title"
             value={title}
             maxLength={200}
             disabled={saving}
+            required
             autoFocus
             onChange={(event) => setTitle(event.target.value)}
           />
@@ -164,8 +166,8 @@ export function NoteModal({
           </div>
         </form>
       ) : (
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-black/50 dark:text-white/50">
+        <div className="space-y-6">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-xl border border-black/10 bg-black/[0.025] px-4 py-3 text-xs text-black/50 dark:border-white/10 dark:bg-white/[0.035] dark:text-white/50">
             <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-black/10 bg-white/70 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-black/65 dark:border-white/10 dark:bg-white/5 dark:text-white/65">
               <i
                 className="h-2 w-2 shrink-0 rounded-full ring-1 ring-black/10 dark:ring-white/15"
@@ -188,13 +190,15 @@ export function NoteModal({
               className="inline-flex items-center gap-1.5"
             >
               <FiClock className="shrink-0" aria-hidden />
-              Updated {new Date(note.updated_at).toLocaleString()}
+              Updated {formatTimestamp(note.updated_at)}
             </time>
           </div>
-          <FormattedText
-            text={note.body}
-            className="min-w-0 break-words text-sm leading-7 text-black/75 dark:text-white/75"
-          />
+          <div className="min-h-20 rounded-xl border border-black/10 bg-white/55 p-4 shadow-sm shadow-black/[0.025] dark:border-white/10 dark:bg-black/10 dark:shadow-none sm:p-5">
+            <FormattedText
+              text={note.body}
+              className="min-w-0 break-words text-[15px] leading-7 text-black/80 dark:text-white/80"
+            />
+          </div>
           <NoteLinks
             note={note}
             convertedTask={convertedTask}

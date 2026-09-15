@@ -24,21 +24,21 @@ export async function POST(request: Request) {
   if ("response" in authorization) return authorization.response;
   const input = parsed.data;
   const body = requiredTrimmedText(input.body, 10000);
-  const title =
-    input.title == null || input.title === ""
-      ? null
-      : requiredTrimmedText(input.title, 200);
+  const title = requiredTrimmedText(input.title, 200);
   const categoryId =
     input.categoryId == null || input.categoryId === ""
       ? null
       : input.categoryId;
   if (
+    !title ||
     !body ||
-    (input.title && !title) ||
     (categoryId !== null && !isUuid(categoryId))
   )
     return NextResponse.json(
-      { error: "Add a note of 10,000 characters or fewer." },
+      {
+        error:
+          "Add a title of 200 characters or fewer and a note of 10,000 characters or fewer.",
+      },
       { status: 400 },
     );
   const result = await authorization.supabase
@@ -88,13 +88,13 @@ export async function PATCH(request: Request) {
     values.body = body;
   }
   if (input.title !== undefined) {
-    const title =
-      input.title === null || input.title === ""
-        ? null
-        : requiredTrimmedText(input.title, 200);
-    if (input.title && !title)
+    const title = requiredTrimmedText(input.title, 200);
+    if (!title)
       return NextResponse.json(
-        { error: "Note titles must be 200 characters or fewer." },
+        {
+          error:
+            "Add a note title of 200 characters or fewer before saving.",
+        },
         { status: 400 },
       );
     values.title = title;

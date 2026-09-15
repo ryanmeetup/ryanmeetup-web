@@ -125,6 +125,8 @@ Activity now covers access groups, visibility grants, teammates, statuses, diges
 
 Contact image uploads save together with their contact, and replacing, removing, or deleting an uploaded image also cleans up the old file in storage. Rich-text fields preserve intentional spacing and show Markdown headings while editing. Modals require a deliberate close action, protecting longer edits from an accidental backdrop click. Saved drafts keep their checklist, linked attachments, and opening comment.
 
+Quick notes now ask for a title separately from their details, so the first line of the note no longer has to do both jobs. Note cards and their detail dialog also group authorship, update time, comments, and body content more clearly, with a roomier comment composer when the conversation opens.
+
 ### One identity across the workspace
 
 A workspace uses one instance name for page titles, digest emails, link previews, the sidebar wordmark, and the footer. Owners write the workspace notice under **Banner** in Settings, including an optional link and label. Updating the message brings the banner back for teammates who dismissed an older notice, while an untouched setting continues to use the deployment default.

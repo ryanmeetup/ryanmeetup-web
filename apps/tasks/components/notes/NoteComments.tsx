@@ -13,6 +13,7 @@ import {
   FiChevronDown,
   FiEdit2,
   FiMessageSquare,
+  FiSend,
   FiTrash2,
 } from "react-icons/fi";
 import { CountBadge } from "@/components/global";
@@ -131,11 +132,11 @@ export function NoteComments({
   }
 
   return (
-    <section className="mt-4 border-t border-black/10 pt-4 dark:border-white/10">
+    <section className="overflow-hidden rounded-xl border border-black/10 bg-black/[0.02] dark:border-white/10 dark:bg-white/[0.025]">
       <h3>
         <button
           type="button"
-          className="flex w-full cursor-pointer items-center gap-2 rounded-md text-left text-xs font-semibold uppercase tracking-[0.2em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/30"
+          className="flex w-full cursor-pointer items-center gap-2 px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-[0.2em] transition hover:bg-black/[0.035] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/30 dark:hover:bg-white/[0.04] dark:focus-visible:ring-white/30"
           aria-controls={contentId}
           aria-expanded={!collapsed}
           onClick={() => setCollapsed((current) => !current)}
@@ -149,7 +150,7 @@ export function NoteComments({
         </button>
       </h3>
       <AnimatedCollapse id={contentId} open={!collapsed}>
-        <div className="space-y-3 pt-3">
+        <div className="border-t border-black/10 p-4 dark:border-white/10">
           {comments.length > 0 && (
             <div className="max-h-72 space-y-3 overflow-y-auto overscroll-contain pr-2">
               {comments.map((comment) => {
@@ -160,7 +161,7 @@ export function NoteComments({
                 return (
                   <article
                     key={comment.id}
-                    className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 text-sm"
+                    className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 rounded-lg border border-black/[0.08] bg-white/60 p-3 text-sm dark:border-white/[0.08] dark:bg-black/10"
                   >
                     <Avatar name={author} src={profile?.avatar_url} size="sm" />
                     <div className="min-w-0">
@@ -244,8 +245,26 @@ export function NoteComments({
               })}
             </div>
           )}
+          {comments.length === 0 && (
+            <div className="rounded-lg border border-dashed border-black/15 px-4 py-5 text-center dark:border-white/15">
+              <p className="text-sm font-semibold text-black/75 dark:text-white/75">
+                No comments yet
+              </p>
+              {!previewing && (
+                <p className="mt-1 text-xs text-black/50 dark:text-white/50">
+                  Start the conversation with an update or question.
+                </p>
+              )}
+            </div>
+          )}
           {!previewing && (
-            <>
+            <form
+              className="mt-4 space-y-3 border-t border-black/10 pt-4 dark:border-white/10"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void addComment();
+              }}
+            >
               <Textarea
                 id={`note-comment-${noteId}`}
                 label="Comment"
@@ -253,21 +272,39 @@ export function NoteComments({
                 name={`note-comment-${noteId}`}
                 value={body}
                 maxLength={5000}
-                rows={2}
-                placeholder="Add a comment…"
+                rows={3}
+                placeholder="Share an update or ask a question…"
+                disabled={saving}
                 onChange={(event) => setBody(event.target.value)}
+                onKeyDown={(event) => {
+                  if (
+                    event.key === "Enter" &&
+                    (event.metaKey || event.ctrlKey) &&
+                    body.trim() &&
+                    !saving
+                  ) {
+                    event.preventDefault();
+                    void addComment();
+                  }
+                }}
               />
-              <Button
-                type="button"
-                variant="action"
-                className="w-full sm:w-auto"
-                loading={saving && !editing}
-                disabled={saving || !body.trim()}
-                onClick={() => void addComment()}
-              >
-                Comment
-              </Button>
-            </>
+              <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs text-black/45 dark:text-white/45">
+                  Press Ctrl/⌘ + Enter to post
+                </p>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  className="w-full sm:w-auto"
+                  leftIcon={<FiSend aria-hidden />}
+                  loading={saving && !editing}
+                  loadingText="Posting…"
+                  disabled={saving || !body.trim()}
+                >
+                  Post comment
+                </Button>
+              </div>
+            </form>
           )}
         </div>
       </AnimatedCollapse>

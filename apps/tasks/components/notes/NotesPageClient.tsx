@@ -8,6 +8,7 @@ import {
   ConfirmationDialog,
   DropdownSelect,
   FilterChip,
+  Input,
   ManagementSurface,
   Textarea,
   toast,
@@ -53,6 +54,7 @@ export function NotesPageClient({
   const [notes, setNotes] = useState(initialNotes);
   const [comments, setComments] = useState(initialComments);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [creating, setCreating] = useState(false);
@@ -77,13 +79,13 @@ export function NotesPageClient({
     !previewing && (demoMode || data.currentProfile.app_role === "owner");
 
   async function createNote() {
-    if (!body.trim()) return;
+    if (!title.trim() || !body.trim()) return;
     setCreating(true);
     try {
       const note: Note = demoMode
         ? {
             id: crypto.randomUUID(),
-            title: null,
+            title: title.trim(),
             body: body.trim(),
             created_by: data.currentProfile.id,
             category_id: categoryId || null,
@@ -96,10 +98,11 @@ export function NotesPageClient({
         : (
             await mutate<{ note: Note }>("/api/notes", {
               method: "POST",
-              body: JSON.stringify({ body, categoryId }),
+              body: JSON.stringify({ title, body, categoryId }),
             })
           ).note;
       setNotes((current) => [note, ...current]);
+      setTitle("");
       setBody("");
       setCategoryId("");
       toast.success("Note saved.");
@@ -298,46 +301,74 @@ export function NotesPageClient({
         >
           {!previewing && (
             <section className="rounded-xl border border-black/15 bg-black/[0.035] p-4 shadow-sm shadow-black/5 dark:border-white/10 dark:bg-white/[0.025] dark:shadow-none sm:p-5">
-              <Textarea
-                id="quick-note"
-                label="Quick note"
-                required
-                name="quick-note"
-                value={body}
-                rows={4}
-                maxLength={10000}
-                placeholder="Drop the thought here…"
-                onChange={(event) => setBody(event.target.value)}
-              />
-              <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <DropdownSelect
-                  label="Category"
-                  value={categoryId}
-                  onChange={setCategoryId}
-                  options={[
-                    { label: "Uncategorized", value: "" },
-                    ...data.categories
-                      .filter((category) => !category.archived_at)
-                      .map((category) => ({
-                        label: category.name,
-                        value: category.id,
-                        color: category.color,
-                      })),
-                  ]}
-                />
-                <Button
-                  type="button"
-                  size="field"
-                  className="w-full sm:w-auto"
-                  leftIcon={<FiPlus />}
-                  loading={creating}
-                  loadingText="Saving…"
-                  disabled={!body.trim()}
-                  onClick={() => void createNote()}
-                >
-                  Save note
-                </Button>
-              </div>
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void createNote();
+                }}
+              >
+                <div className="mb-4">
+                  <h2 className="text-sm font-semibold">Quick note</h2>
+                  <p className="mt-1 text-xs text-black/55 dark:text-white/55">
+                    Name the thought, then capture the useful detail.
+                  </p>
+                </div>
+                <div className="space-y-4">
+                  <Input
+                    id="quick-note-title"
+                    label="Note title"
+                    required
+                    name="quick-note-title"
+                    value={title}
+                    maxLength={200}
+                    placeholder="Give this note a clear title"
+                    disabled={creating}
+                    onChange={(event) => setTitle(event.target.value)}
+                  />
+                  <Textarea
+                    id="quick-note"
+                    label="Details"
+                    required
+                    name="quick-note"
+                    value={body}
+                    rows={4}
+                    maxLength={10000}
+                    placeholder="Add the context, idea, or decision…"
+                    disabled={creating}
+                    onChange={(event) => setBody(event.target.value)}
+                  />
+                </div>
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                  <DropdownSelect
+                    variant="field"
+                    label="Category"
+                    value={categoryId}
+                    onChange={setCategoryId}
+                    options={[
+                      { label: "Uncategorized", value: "" },
+                      ...data.categories
+                        .filter((category) => !category.archived_at)
+                        .map((category) => ({
+                          label: category.name,
+                          value: category.id,
+                          color: category.color,
+                        })),
+                    ]}
+                    disabled={creating}
+                  />
+                  <Button
+                    type="submit"
+                    size="field"
+                    className="w-full sm:w-auto"
+                    leftIcon={<FiPlus />}
+                    loading={creating}
+                    loadingText="Saving…"
+                    disabled={!title.trim() || !body.trim()}
+                  >
+                    Save note
+                  </Button>
+                </div>
+              </form>
             </section>
           )}
 

@@ -22,7 +22,7 @@ import {
   FiRotateCcw,
   FiTrash2,
 } from "react-icons/fi";
-import { CountBadge } from "@/components/global";
+import { formatShortTimestamp } from "@/lib/date-format";
 import { noteTitle } from "@/lib/resources/notes";
 import type { Category, Note, Project } from "@/lib/resources/resource-types";
 import type { Task } from "@/lib/tasks/task-types";
@@ -99,29 +99,35 @@ export function NoteCard({
         className="mt-3"
       />
 
-      <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-black/50 dark:text-white/50">
-        <span className="inline-flex items-center gap-2 font-medium text-black/65 dark:text-white/65">
-          <Avatar
-            name={author?.full_name ?? "Unknown teammate"}
-            src={author?.avatar_url}
-            size="sm"
-          />
-          {author?.full_name ?? "Unknown teammate"}
-        </span>
-        <time
-          dateTime={note.updated_at}
-          className="inline-flex items-center gap-1.5"
+      <div className="mt-4 flex items-center gap-3 rounded-xl border border-black/[0.08] bg-white/55 p-3 dark:border-white/[0.08] dark:bg-black/10">
+        <Avatar
+          name={author?.full_name ?? "Unknown teammate"}
+          src={author?.avatar_url}
+          size="md"
+        />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-black/75 dark:text-white/75">
+            {author?.full_name ?? "Unknown teammate"}
+          </p>
+          <time
+            dateTime={note.updated_at}
+            className="mt-0.5 flex items-center gap-1.5 text-xs text-black/50 dark:text-white/50"
+          >
+            <FiClock className="shrink-0" aria-hidden />
+            Updated {formatShortTimestamp(note.updated_at)}
+          </time>
+        </div>
+        <span
+          aria-label={`${commentCount} ${commentCount === 1 ? "comment" : "comments"}`}
+          title={`${commentCount} ${commentCount === 1 ? "comment" : "comments"}`}
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-black/10 bg-black/[0.04] px-2.5 py-1.5 text-xs font-semibold text-black/60 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/60"
         >
-          <FiClock className="shrink-0" aria-hidden />
-          Updated {new Date(note.updated_at).toLocaleString()}
-        </time>
-        <span className="inline-flex items-center gap-1.5">
           <FiMessageSquare className="shrink-0" aria-hidden />
-          <CountBadge label="comment">{commentCount}</CountBadge>
+          {commentCount}
         </span>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-black/10 pt-3 dark:border-white/10">
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-black/10 pt-3 dark:border-white/10">
         <div className="relative flex items-center gap-2">
           {!previewing && (
             <>

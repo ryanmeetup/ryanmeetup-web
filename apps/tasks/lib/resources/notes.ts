@@ -16,7 +16,7 @@ export function applyNoteDraft(
 ): Note {
   return {
     ...note,
-    title: title.trim() || null,
+    title: title.trim(),
     body: body.trim(),
     updated_at: updatedAt,
   };
