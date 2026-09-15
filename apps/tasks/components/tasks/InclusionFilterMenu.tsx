@@ -41,11 +41,8 @@ export function InclusionFilterMenu({
   proximityValue?: string;
   stackLabelOnMobile?: boolean;
 }) {
-  const { orderedOptions, setAnchorElement } = useProximityOptions(
-    options,
-    proximityValue,
-    proximityGroup,
-  );
+  const { orderedOptions, setAnchorElement, setScrollElement } =
+    useProximityOptions(options, proximityValue, proximityGroup);
   const included = new Set(includedValues);
   const excluded = new Set(excludedValues);
   const active = included.size > 0 || excluded.size > 0;
@@ -104,7 +101,7 @@ export function InclusionFilterMenu({
           <span className="w-16 text-center">Include</span>
           <span className="w-16 text-center">Exclude</span>
         </div>
-        <div className="max-h-64 overflow-y-auto">
+        <div ref={setScrollElement} className="max-h-64 overflow-y-auto">
           {orderedOptions.map((option, index) => {
             const showGroup =
               option.group &&

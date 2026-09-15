@@ -10,10 +10,7 @@ import {
 import { Fragment, useId, type ReactNode } from "react";
 import { FiCheck, FiChevronDown, FiSearch } from "react-icons/fi";
 import { Avatar, type AvatarProps } from "./Avatar";
-import {
-  fieldSelectButtonClasses,
-  getFieldLabelClasses,
-} from "./fieldStyles";
+import { fieldSelectButtonClasses, getFieldLabelClasses } from "./fieldStyles";
 import { getFilterControlClasses } from "./filterStyles";
 import { useDropdownSearch } from "./useDropdownSearch";
 import { useProximityOptions } from "./useProximityOptions";
@@ -62,14 +59,17 @@ const DropdownSelect = ({
 }: DropdownSelectProps) => {
   const buttonId = useId();
   const searchId = useId();
-  const { handleInputKeyDown, handleOptionsKeyDown, inputRef, query, setQuery } =
-    useDropdownSearch();
+  const {
+    handleInputKeyDown,
+    handleOptionsKeyDown,
+    inputRef,
+    query,
+    setQuery,
+  } = useDropdownSearch();
   const selected = options.find((option) => option.value === value);
   const field = variant === "field";
-  const { opensUpward, orderedOptions, setAnchorElement } = useProximityOptions(
-    options,
-    proximityValue,
-  );
+  const { opensUpward, orderedOptions, setAnchorElement, setScrollElement } =
+    useProximityOptions(options, proximityValue, proximityGroup);
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const visibleOptions = normalizedQuery
     ? orderedOptions.filter((option) =>
@@ -229,7 +229,10 @@ const DropdownSelect = ({
               />
             </div>
           </div>
-          <div className="min-h-0 space-y-1 overflow-y-auto">
+          <div
+            ref={setScrollElement}
+            className="min-h-0 space-y-1 overflow-y-auto"
+          >
             {renderOptions(displayedOptions)}
           </div>
           {visibleOptions.length === 0 && (

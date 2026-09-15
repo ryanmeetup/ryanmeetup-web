@@ -7,14 +7,12 @@ import {
   ListboxOptions,
   Transition,
 } from "@headlessui/react";
-import { Fragment, useId } from "react";
+import { Fragment, useCallback, useId } from "react";
 import { FiCheck, FiChevronDown, FiSearch } from "react-icons/fi";
 import { Avatar, type AvatarProps } from "./Avatar";
-import {
-  fieldSelectButtonClasses,
-  getFieldLabelClasses,
-} from "./fieldStyles";
+import { fieldSelectButtonClasses, getFieldLabelClasses } from "./fieldStyles";
 import { useDropdownSearch } from "./useDropdownSearch";
+import { useProximityOptions } from "./useProximityOptions";
 
 export type MultiSelectOption = {
   avatar?: AvatarProps;
@@ -34,6 +32,7 @@ export type MultiSelectProps = {
   className?: string;
   disabled?: boolean;
   placeholder?: string;
+  proximityValue?: string;
   required?: boolean;
   searchable?: boolean;
   searchPlaceholder?: string;
@@ -48,6 +47,7 @@ const MultiSelect = ({
   className,
   disabled = false,
   placeholder = "Select options",
+  proximityValue,
   required = false,
   searchable = true,
   searchPlaceholder = "Search options",
@@ -55,19 +55,33 @@ const MultiSelect = ({
 }: MultiSelectProps) => {
   const buttonId = useId();
   const searchId = useId();
-  const { handleInputKeyDown, handleOptionsKeyDown, inputRef, query, setQuery } =
-    useDropdownSearch();
+  const {
+    handleInputKeyDown,
+    handleOptionsKeyDown,
+    inputRef,
+    query,
+    setQuery,
+  } = useDropdownSearch();
+  const { orderedOptions, setAnchorElement, setScrollElement } =
+    useProximityOptions(options, proximityValue);
+  const setScrollableAnchorElement = useCallback(
+    (element: HTMLElement | null) => {
+      setAnchorElement(element);
+      setScrollElement(element);
+    },
+    [setAnchorElement, setScrollElement],
+  );
   const selectedOptions = options.filter((option) =>
     value.includes(option.value),
   );
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const visibleOptions = normalizedQuery
-    ? options.filter((option) =>
+    ? orderedOptions.filter((option) =>
         [option.label, option.group?.label].some((text) =>
           text?.toLocaleLowerCase().includes(normalizedQuery),
         ),
       )
-    : options;
+    : orderedOptions;
   const selectedLabels = selectedOptions.map((option) => option.label);
   const summary =
     selectedLabels.length === 0
@@ -131,6 +145,7 @@ const MultiSelect = ({
         leaveTo="translate-y-1 scale-95 opacity-0"
       >
         <ListboxOptions
+          ref={setScrollableAnchorElement}
           anchor="bottom start"
           onKeyDown={searchable ? handleOptionsKeyDown : undefined}
           className="z-[60] mt-2 flex max-h-80 w-[var(--button-width)] origin-top flex-col gap-1 overflow-y-auto rounded-xl border border-black/10 bg-white/95 p-1.5 text-black shadow-xl backdrop-blur focus:outline-none dark:border-white/10 dark:bg-[#181818]/95 dark:text-white"
@@ -188,7 +203,9 @@ const MultiSelect = ({
                       className={`-my-1 ${option.avatar.className ?? ""}`}
                     />
                   )}
-                  <span className="min-w-0 flex-1 truncate">{option.label}</span>
+                  <span className="min-w-0 flex-1 truncate">
+                    {option.label}
+                  </span>
                   <FiCheck
                     aria-hidden
                     className="shrink-0 opacity-0 group-data-selected:opacity-100"

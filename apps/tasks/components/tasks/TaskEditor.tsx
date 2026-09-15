@@ -433,6 +433,7 @@ export function TaskEditor(props: TaskEditorProps) {
                 <MultiSelect
                   label="Assignees"
                   placeholder="Unassigned"
+                  proximityValue={currentProfileId}
                   value={draft.assignee_ids}
                   onChange={(assignee_ids) =>
                     setDraft({ ...draft, assignee_ids })

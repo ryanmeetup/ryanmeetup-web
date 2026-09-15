@@ -235,6 +235,7 @@ export function TaskFields({
         <MultiSelect
           label="Assignees"
           placeholder="Unassigned"
+          proximityValue={options.currentProfileId}
           value={draft.assignee_ids}
           onChange={(assignee_ids) => patch({ assignee_ids })}
           options={options.profiles.map((item) => ({
