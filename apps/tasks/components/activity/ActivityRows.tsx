@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { EmptyState, Spinner } from "@ryanmeetup/ui";
+import { EmptyState } from "@ryanmeetup/ui";
 import { FiFolder } from "react-icons/fi";
 import { CategoryLabel } from "@/components/categories";
 import { TaskKeyBadge } from "@/components/tasks";
@@ -17,6 +17,7 @@ import {
   ActivityStatusChange,
   activityChangeSummary,
 } from "./ActivityChangeList";
+import { ActivityCardSkeletons, ActivityRowSkeletons } from "./ActivitySkeleton";
 
 function activityDescription(
   description: ActivityDescription,
@@ -95,8 +96,15 @@ export function ActivityRows({
   showMobileHeader?: boolean;
   showProject?: boolean;
 }) {
+  // Rows from the previous query give way to placeholders rather than dimming.
+  const settledRows = loading ? [] : rows;
   return (
     <div className="@container">
+      {loading && (
+        <span className="sr-only" role="status">
+          Loading activity
+        </span>
+      )}
       <div className="@min-[64rem]:hidden" aria-busy={loading}>
         {showMobileHeader && (
           <div className="border-b border-black/10 bg-black/[0.025] px-4 py-3 dark:border-white/10 dark:bg-white/[0.025]">
@@ -106,7 +114,7 @@ export function ActivityRows({
           </div>
         )}
         <div className="divide-y divide-black/10 dark:divide-white/10">
-          {rows.map((row) => {
+          {settledRows.map((row) => {
             const { item, task, actor, project, category, resourceName } = row;
             const href = activityHref(row, preview);
             const content = (
@@ -179,12 +187,7 @@ export function ActivityRows({
               <div key={item.id}>{content}</div>
             );
           })}
-          {loading && rows.length === 0 && (
-            <div className="flex items-center justify-center gap-2 px-4 py-12 text-sm text-black/60 dark:text-white/60">
-              <Spinner size={18} label="Loading activity" />
-              <span>Loading activity…</span>
-            </div>
-          )}
+          {loading && <ActivityCardSkeletons />}
           {!loading && rows.length === 0 && (
             <EmptyState variant="plain" message={emptyMessage} />
           )}
@@ -215,7 +218,7 @@ export function ActivityRows({
             </tr>
           </thead>
           <tbody className="divide-y divide-black/10 dark:divide-white/10">
-            {rows.map((row) => {
+            {settledRows.map((row) => {
               const { item, task, actor, project, category, resourceName } =
                 row;
               const href = activityHref(row, preview);
@@ -289,16 +292,7 @@ export function ActivityRows({
                 </tr>
               );
             })}
-            {loading && rows.length === 0 && (
-              <tr>
-                <td colSpan={showProject ? 5 : 4}>
-                  <div className="flex items-center justify-center gap-2 px-4 py-12 text-sm text-black/60 dark:text-white/60">
-                    <Spinner size={18} label="Loading activity" />
-                    <span>Loading activity…</span>
-                  </div>
-                </td>
-              </tr>
-            )}
+            {loading && <ActivityRowSkeletons showProject={showProject} />}
             {!loading && rows.length === 0 && (
               <tr>
                 <td colSpan={showProject ? 5 : 4}>

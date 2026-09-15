@@ -57,6 +57,7 @@ export function ActivityPageClient({
   const [projectCreateOpen, setProjectCreateOpen] = useState(false);
   const [categoryCreateOpen, setCategoryCreateOpen] = useState(false);
   const [loading, setLoading] = useState(!demoMode);
+  const [settledQueryKey, setSettledQueryKey] = useState<string | null>(null);
   const [projectFilter, setProjectFilter] = useQueryParamState("projects", "");
   const [excludedProjects, setExcludedProjects] = useQueryParamState(
     "excludeProjects",
@@ -161,6 +162,18 @@ export function ActivityPageClient({
     ],
   );
   const filterCount = activityFilterCount(filters);
+  // The request starts in an effect, a render after the query changes. Rows
+  // from the previous query must already be hidden on that first render.
+  const queryKey = JSON.stringify([
+    filters,
+    page,
+    pageSize,
+    previewKind,
+    previewSubjectId,
+    previewSubjectName,
+  ]);
+  const activityLoading =
+    loading || (!demoMode && settledQueryKey !== queryKey);
   const favoriteProjectIds = data.currentProfile.favorite_project_ids ?? [];
 
   function setFilter(setter: (value: string) => void, value: string) {
@@ -264,12 +277,14 @@ export function ActivityPageClient({
           ],
           activityPage: result.page,
         }));
+        setSettledQueryKey(queryKey);
         syncPage(result.page.page);
         syncPageSize(result.page.pageSize);
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === "AbortError")
           return;
+        setSettledQueryKey(queryKey);
         toast.error(errorMessage(error, "Activity could not be loaded."));
       })
       .finally(() => {
@@ -295,6 +310,7 @@ export function ActivityPageClient({
     previewSubjectId,
     previewSubjectName,
     projectFilter,
+    queryKey,
     syncPage,
     syncPageSize,
     timeFilter,
@@ -429,13 +445,10 @@ export function ActivityPageClient({
             />
           </FilterPanel>
 
-          <Card
-            size="none"
-            className={`overflow-hidden transition-opacity ${loading ? "opacity-60" : ""}`}
-          >
+          <Card size="none" className="overflow-hidden">
             <ActivityRows
               rows={activityRows}
-              loading={loading}
+              loading={activityLoading}
               preview={data.accessPreview}
               emptyMessage={
                 filterCount === 0
@@ -448,7 +461,7 @@ export function ActivityPageClient({
               pageSize={data.activityPage?.pageSize ?? pageSize}
               totalCount={data.activityPage?.totalCount ?? data.activity.length}
               itemLabel="events"
-              disabled={loading}
+              disabled={activityLoading}
               onPageChange={setPage}
               onPageSizeChange={setPageSize}
             />

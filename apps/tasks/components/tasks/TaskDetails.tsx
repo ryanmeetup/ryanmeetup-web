@@ -184,6 +184,7 @@ export function TaskDetails({ task, workspace, display }: TaskDetailsProps) {
             conversationHeight={conversationHeight}
             hasMore={details.hasMore}
             loading={details.loading}
+            loadingFirstPage={details.loadingFirstPage}
             lookups={data}
             onLoadMore={details.loadMore}
             pageLayout={pageLayout}

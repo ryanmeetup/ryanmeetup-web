@@ -6,6 +6,7 @@ import {
   ActivityStatusChange,
 } from "@/components/activity";
 import { CountBadge } from "@/components/global";
+import { SkeletonBar } from "@/components/global/SkeletonBar";
 import { profileDisplayName } from "@/lib/presentation";
 import {
   taskActivityChanges,
@@ -16,11 +17,32 @@ import { taskStatusChange } from "@/lib/activity/task-activity";
 import type { TaskActivity } from "@/lib/activity/activity-types";
 import { formatTimestamp } from "@/lib/date-format";
 
+/** Mirrors an entry's rail, avatar, action line and timestamp. */
+function TaskActivitySkeletons() {
+  return [0, 1, 2].map((index) => (
+    <div
+      key={index}
+      aria-hidden="true"
+      data-task-activity-skeleton=""
+      className="flex items-start gap-2 border-l-2 border-black/10 pl-3 dark:border-white/10"
+    >
+      <span className="flex h-5 shrink-0 items-center">
+        <SkeletonBar round className="h-6 w-6" />
+      </span>
+      <div className="min-w-0 flex-1 space-y-2 py-0.5">
+        <SkeletonBar className="h-4 w-2/3" />
+        <SkeletonBar className="h-3 w-1/3" />
+      </div>
+    </div>
+  ));
+}
+
 export function TaskActivityPanel({
   activity,
   conversationHeight,
   hasMore,
   loading,
+  loadingFirstPage,
   lookups,
   onLoadMore,
   pageLayout,
@@ -29,10 +51,13 @@ export function TaskActivityPanel({
   conversationHeight?: number;
   hasMore: boolean;
   loading: boolean;
+  /** The history is being replaced, not extended by "Load older activity". */
+  loadingFirstPage: boolean;
   lookups: TaskChangeLookups;
   onLoadMore: () => void;
   pageLayout: boolean;
 }) {
+  const settledActivity = loadingFirstPage ? [] : activity;
   return (
     <DisclosureCard
       defaultOpen={pageLayout}
@@ -46,12 +71,13 @@ export function TaskActivityPanel({
         </span>
       }
     >
-      {loading && (
-        <p role="status" className="text-sm text-black/60 dark:text-white/60">
-          Loading task history…
-        </p>
+      {loadingFirstPage && (
+        <span className="sr-only" role="status">
+          Loading task history
+        </span>
       )}
       <div
+        aria-busy={loading}
         className={`${pageLayout ? "min-h-48" : "max-h-32"} space-y-3 overflow-y-auto overscroll-contain pr-2`}
         style={
           pageLayout && conversationHeight
@@ -64,7 +90,8 @@ export function TaskActivityPanel({
             : undefined
         }
       >
-        {activity.map((item) => {
+        {loadingFirstPage && <TaskActivitySkeletons />}
+        {settledActivity.map((item) => {
           const profile = lookups.profiles.find(
             (entry) => entry.id === item.actor_id,
           );

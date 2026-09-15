@@ -24,6 +24,7 @@ export type { ManagementCardAction } from "./ManagementCard";
 export { MetricLinkCard } from "./MetricLinkCard";
 export { PageHeader } from "./PageHeader";
 export { ResourceOwnerSelect } from "./ResourceOwnerSelect";
+export { SkeletonBar } from "./SkeletonBar";
 export { TaskBanners } from "./TaskBanners";
 export {
   PersistentWorkspaceShell,

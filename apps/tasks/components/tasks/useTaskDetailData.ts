@@ -29,7 +29,11 @@ export function useTaskDetailData({
   setData,
   section,
 }: Omit<TaskDetailContext, "recordActivity"> & { section: Section }) {
-  const [loading, setLoading] = useState(!demoMode && loadsDetails(section));
+  // Which page is in flight: page 0 replaces the task's history, later pages
+  // append to it, and the panel shows placeholders only for the former.
+  const [loadingPage, setLoadingPage] = useState<number | null>(
+    !demoMode && loadsDetails(section) ? 0 : null,
+  );
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(false);
 
@@ -43,7 +47,7 @@ export function useTaskDetailData({
 
   async function load(nextPage = 0) {
     if (demoMode) return;
-    setLoading(true);
+    setLoadingPage(nextPage);
     try {
       const result = await fetchTaskDetails(task.id, nextPage);
       if (nextPage === 0) setData(replaceTaskRows(task.id, result));
@@ -54,7 +58,7 @@ export function useTaskDetailData({
     } catch (error) {
       toast.error(errorMessage(error, "Task details could not be loaded."));
     } finally {
-      setLoading(false);
+      setLoadingPage(null);
     }
   }
 
@@ -93,7 +97,8 @@ export function useTaskDetailData({
 
   return {
     activity,
-    loading,
+    loading: loadingPage !== null,
+    loadingFirstPage: loadingPage === 0,
     page,
     hasMore,
     loadMore: () => void load(page + 1),
