@@ -383,13 +383,6 @@ test("stops page scrolling with equal space above and below the board", async ({
     await page.evaluate(() =>
       window.scrollTo(0, document.documentElement.scrollHeight),
     );
-    console.log("board spacing", viewport, await boardScroller.evaluate((board) => ({
-      board: board.getBoundingClientRect().toJSON(),
-      header: document.querySelector(".tasks-app-header")!.getBoundingClientRect().toJSON(),
-      notices: document.querySelector("[data-workspace-banners]")!.getBoundingClientRect().toJSON(),
-      scrollY: window.scrollY,
-      scrollHeight: document.documentElement.scrollHeight,
-    })));
     await expect
       .poll(async () =>
         boardScroller.evaluate((board) => {
