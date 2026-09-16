@@ -3,10 +3,12 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type Dispatch,
   type ReactNode,
   type SetStateAction,
@@ -44,6 +46,38 @@ type PersistentShellContextValue = {
 const PersistentShellContext =
   createContext<PersistentShellContextValue | null>(null);
 
+const desktopSidebarStorageKey = "ryanmeetup.tasks.desktop-sidebar-open";
+
+function useDesktopSidebarOpen() {
+  const [open, setOpen] = useState(true);
+  const loaded = useRef(false);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      try {
+        const saved = localStorage.getItem(desktopSidebarStorageKey);
+        if (saved !== null) setOpen(saved === "true");
+      } catch {
+        // Storage can be unavailable in privacy-restricted browsers. The
+        // sidebar still works for the current visit in that case.
+      } finally {
+        loaded.current = true;
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!loaded.current) return;
+    try {
+      localStorage.setItem(desktopSidebarStorageKey, String(open));
+    } catch {
+      // Keep the in-memory preference when storage is unavailable.
+    }
+  }, [open]);
+
+  return [open, setOpen] as const;
+}
+
 type WorkspacePageShellProps = {
   children: ReactNode;
   contentClassName?: string;
@@ -70,29 +104,51 @@ function WorkspaceChrome({
   sidebarOpen,
 }: WorkspacePageShellProps) {
   const [newTaskOpen, setNewTaskOpen] = useState(false);
+  const [desktopSidebarOpen, setDesktopSidebarOpen] = useDesktopSidebarOpen();
   const previewing = Boolean(data.accessPreview);
   return (
     <div
       data-workspace-shell
       className="tasks-workspace-background min-h-dvh text-black dark:text-white"
+      style={
+        {
+          "--workspace-sidebar-width": desktopSidebarOpen ? "17.5rem" : "0rem",
+        } as CSSProperties
+      }
     >
       <TasksSidebar
         data={data}
         demoMode={demoMode}
+        desktopOpen={desktopSidebarOpen}
+        setDesktopOpen={setDesktopSidebarOpen}
         open={sidebarOpen}
         setOpen={setSidebarOpen}
         onCreateCategory={onCreateCategory ?? (() => undefined)}
         onCreateProject={onCreateProject ?? (() => undefined)}
       />
-      <main className="flex min-h-dvh min-w-0 flex-col overflow-x-clip lg:pl-[17.5rem]">
+      <main className="flex min-h-dvh min-w-0 flex-col overflow-x-clip transition-[padding] duration-200 ease-out motion-reduce:transition-none lg:pl-[var(--workspace-sidebar-width)]">
         <header className="tasks-app-header">
           <IconButton
             label="Open navigation"
             tooltipTriggerClassName="lg:hidden"
+            aria-controls="mobile-workspace-navigation"
+            aria-expanded={sidebarOpen}
             onClick={() => setSidebarOpen(true)}
           >
             <FiSidebar />
           </IconButton>
+          {!desktopSidebarOpen && (
+            <IconButton
+              label="Show navigation"
+              tooltipPlacement="right"
+              tooltipTriggerClassName="hidden lg:inline-flex"
+              aria-controls="desktop-workspace-navigation"
+              aria-expanded={false}
+              onClick={() => setDesktopSidebarOpen(true)}
+            >
+              <FiSidebar />
+            </IconButton>
+          )}
           <TaskHeaderBrand />
           <TaskSearch
             tasks={data.tasks}

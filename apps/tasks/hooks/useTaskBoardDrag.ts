@@ -31,7 +31,10 @@ export function useTaskBoardDrag(
   return {
     state: { draggedTaskId, dragOverStatusId, dropTarget },
     start: setDraggedTaskId,
-    enterColumn: setDragOverStatusId,
+    enterColumn(statusId: string | null) {
+      setDragOverStatusId(statusId);
+      setDropTarget(null);
+    },
     leaveColumn(statusId: string) {
       setDragOverStatusId((current) => (current === statusId ? null : current));
     },

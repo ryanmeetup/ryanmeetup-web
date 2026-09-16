@@ -339,7 +339,12 @@ export function createTaskMutationService(context: MutationContext) {
       const index = targetId
         ? destination.findIndex((task) => task.id === targetId)
         : -1;
-      let position = (destination.at(-1)?.board_position ?? 0) + 1024;
+      // A column-wide drop is intentionally imprecise, so put the task first.
+      // Dropping on a card supplies a target and keeps the explicit blue-bar
+      // placement below.
+      let position = destination[0]
+        ? destination[0].board_position - 1024
+        : 1024;
       if (index >= 0 && edge === "before") {
         position = destination[index - 1]
           ? (destination[index - 1].board_position +

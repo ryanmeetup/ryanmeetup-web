@@ -84,7 +84,13 @@ body:has([data-workspace-error]) .tasks-footer {
   }
   @media (min-width: 64rem) {
     .tasks-app-header {
-      left: 17.5rem;
+      left: var(--workspace-sidebar-width, 17.5rem);
+      transition: left 200ms ease-out;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .tasks-app-header {
+        transition: none;
+      }
     }
   }
   .sidebar-link {

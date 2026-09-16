@@ -91,6 +91,42 @@ test("workspace chrome persists across page navigation", async ({
   await expect(page.locator("[data-workspace-content-loading]")).toHaveCount(0);
 });
 
+test("hides, restores, and remembers the desktop navigation", async ({
+  page,
+  baseURL,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await enterDemoWorkspace(page, baseURL);
+
+  const sidebar = page.locator("[data-workspace-sidebar]");
+  const main = page.locator("[data-workspace-shell] > main");
+  await expect(sidebar).toBeVisible();
+  const hideNavigation = sidebar.getByRole("button", {
+    name: "Hide navigation",
+  });
+  await expect(hideNavigation).toBeVisible();
+  const sidebarBounds = (await sidebar.boundingBox())!;
+  const hideBounds = (await hideNavigation.boundingBox())!;
+  expect(hideBounds.x).toBeGreaterThan(sidebarBounds.width - 64);
+  await hideNavigation.click();
+
+  await expect(sidebar).toHaveAttribute("aria-hidden", "true");
+  await expect(main).toHaveCSS("padding-left", "0px");
+  const showNavigation = page.getByRole("button", {
+    name: "Show navigation",
+  });
+  await expect(showNavigation).toBeVisible();
+
+  await page.reload();
+  await expect(sidebar).toHaveAttribute("aria-hidden", "true");
+  await expect(showNavigation).toBeVisible();
+
+  await showNavigation.click();
+  await expect(sidebar).toHaveAttribute("aria-hidden", "false");
+  await expect(sidebar).toBeVisible();
+  await expect(main).toHaveCSS("padding-left", "280px");
+});
+
 /**
  * The upcoming list used to be built from every project in the workspace, so a
  * project page listed other projects' start and due dates as if they were its
@@ -694,6 +730,72 @@ test("turns a collapsed board column into a drag landing lane", async ({
   await expect(
     doneColumn.getByRole("button", { name: /^Open / }).first(),
   ).toBeVisible();
+});
+
+test("puts a column-wide task drop at the top", async ({ page, baseURL }) => {
+  await enterDemoWorkspace(page, baseURL);
+  await page.goto("/board");
+
+  const todoColumn = page.locator("section").filter({
+    has: page.getByRole("heading", { level: 2, name: "Todo" }),
+  });
+  await expect(
+    todoColumn.getByRole("button", {
+      name: "Open Publish onboarding checklist",
+    }),
+  ).toBeVisible();
+
+  await page.evaluate(() => {
+    const source = document
+      .querySelector('[aria-label="Open Confirm launch venue"]')
+      ?.closest<HTMLElement>('[draggable="true"]');
+    if (!source) throw new Error("Board drag source missing");
+    const dataTransfer = new DataTransfer();
+    source.dispatchEvent(
+      new DragEvent("dragstart", { bubbles: true, dataTransfer }),
+    );
+    dataTransfer.setData("text/task-id", "1");
+    Reflect.set(window, "boardDragTransfer", dataTransfer);
+  });
+
+  const firstTodoCard = todoColumn.locator('[draggable="true"]').first();
+  await firstTodoCard.evaluate((card) => {
+    const bounds = card.getBoundingClientRect();
+    card.dispatchEvent(
+      new DragEvent("dragover", {
+        bubbles: true,
+        clientY: bounds.bottom - 1,
+        dataTransfer: Reflect.get(window, "boardDragTransfer") as DataTransfer,
+      }),
+    );
+  });
+  await expect(firstTodoCard).toHaveClass(/after:bg-blue-500/);
+
+  await todoColumn.evaluate((destination) => {
+    destination.dispatchEvent(
+      new DragEvent("dragover", {
+        bubbles: true,
+        dataTransfer: Reflect.get(window, "boardDragTransfer") as DataTransfer,
+      }),
+    );
+  });
+  await expect(firstTodoCard).not.toHaveClass(/after:bg-blue-500/);
+
+  await todoColumn.evaluate((destination) => {
+    destination.dispatchEvent(
+      new DragEvent("drop", {
+        bubbles: true,
+        dataTransfer: Reflect.get(window, "boardDragTransfer") as DataTransfer,
+      }),
+    );
+  });
+
+  await expect(
+    todoColumn.getByRole("button", { name: "Open Confirm launch venue" }),
+  ).toBeVisible();
+  await expect(
+    todoColumn.locator('[draggable="true"]').first().getByRole("button"),
+  ).toHaveAccessibleName("Open Confirm launch venue");
 });
 
 test("expands a collapsed board column when its search begins", async ({

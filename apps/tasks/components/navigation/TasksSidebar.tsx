@@ -10,6 +10,7 @@ import {
   DropdownMenuButton,
   DropdownMenuItem,
   DropdownMenuItems,
+  IconButton,
   Tooltip,
 } from "@ryanmeetup/ui";
 import {
@@ -22,6 +23,7 @@ import {
   FiFileText,
   FiLock,
   FiPlus,
+  FiSidebar,
   FiUsers,
   FiStar,
   FiTag,
@@ -112,6 +114,8 @@ function SidebarItemLabel({ children }: { children: string }) {
 export function TasksSidebar({
   data,
   demoMode,
+  desktopOpen,
+  setDesktopOpen,
   open,
   setOpen,
   onCreateCategory,
@@ -119,6 +123,8 @@ export function TasksSidebar({
 }: {
   data: WorkspaceData;
   demoMode: boolean;
+  desktopOpen: boolean;
+  setDesktopOpen: (open: boolean) => void;
   open: boolean;
   setOpen: (open: boolean) => void;
   onCreateCategory: () => void;
@@ -322,7 +328,7 @@ export function TasksSidebar({
             <InstanceWordmark />
           </p>
         </Link>
-        {mobile && (
+        {mobile ? (
           <button
             type="button"
             aria-label="Close navigation"
@@ -331,6 +337,18 @@ export function TasksSidebar({
           >
             <FiX aria-hidden />
           </button>
+        ) : (
+          <IconButton
+            label="Hide navigation"
+            tooltipPlacement="right"
+            tooltipTriggerClassName="ml-auto"
+            aria-controls="desktop-workspace-navigation"
+            aria-expanded={desktopOpen}
+            onClick={() => setDesktopOpen(false)}
+            className="text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white"
+          >
+            <FiSidebar aria-hidden />
+          </IconButton>
         )}
       </div>
       <nav className="mt-4 space-y-1" aria-label="Main navigation">
@@ -635,8 +653,11 @@ export function TasksSidebar({
   return (
     <>
       <aside
+        id="desktop-workspace-navigation"
         data-workspace-sidebar
-        className="fixed inset-y-0 left-0 z-40 hidden w-[17.5rem] flex-col border-r border-black/10 bg-white px-4 pt-4 dark:border-white/10 dark:bg-black lg:flex"
+        aria-hidden={!desktopOpen}
+        inert={!desktopOpen}
+        className={`fixed inset-y-0 left-0 z-40 hidden w-[17.5rem] flex-col border-r border-black/10 bg-white px-4 pt-4 transition-transform duration-200 ease-out motion-reduce:transition-none dark:border-white/10 dark:bg-black lg:flex ${desktopOpen ? "translate-x-0" : "pointer-events-none -translate-x-full"}`}
       >
         {sidebarContent()}
       </aside>
@@ -644,6 +665,7 @@ export function TasksSidebar({
         <DialogBackdrop className="fixed inset-0 bg-black/40 transition-opacity data-closed:opacity-0" />
         <div className="fixed inset-0 overflow-hidden">
           <DialogPanel
+            id="mobile-workspace-navigation"
             data-mobile-sidebar-panel
             transition
             onPointerDown={onSwipeStart}

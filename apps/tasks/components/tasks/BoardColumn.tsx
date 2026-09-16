@@ -59,6 +59,7 @@ export function BoardColumn({
       onDragOver={(event) => {
         event.preventDefault();
         event.dataTransfer.dropEffect = "move";
+        onDragEnterColumn();
       }}
       onDragLeave={(event) => {
         const next = event.relatedTarget;

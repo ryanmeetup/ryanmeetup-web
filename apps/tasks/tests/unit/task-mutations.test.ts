@@ -252,6 +252,88 @@ describe("task mutations", () => {
     ).toMatchObject({ statusReason: null });
   });
 
+  it("moves an imprecise column drop to the top of its destination", async () => {
+    const moving = {
+      id: "moving",
+      status_id: "todo",
+      board_position: 1024,
+    } as unknown as Task;
+    const first = {
+      id: "first",
+      status_id: "doing",
+      board_position: 2048,
+    } as unknown as Task;
+    const second = {
+      id: "second",
+      status_id: "doing",
+      board_position: 4096,
+    } as unknown as Task;
+    let data = {
+      currentProfile: { id: "profile-1" },
+      statuses: [
+        { id: "todo", outcome: "open", requires_reason: false },
+        { id: "doing", outcome: "open", requires_reason: false },
+      ],
+      tasks: [moving, first, second],
+      comments: [],
+    } as unknown as WorkspaceData;
+    const service = createTaskMutationService({
+      demoMode: true,
+      getData: () => data,
+      setData: (update) => {
+        data = typeof update === "function" ? update(data) : update;
+      },
+    });
+
+    await service.move(moving.id, "doing");
+
+    expect(data.tasks.find((task) => task.id === moving.id)).toMatchObject({
+      status_id: "doing",
+      board_position: 1024,
+    });
+  });
+
+  it("preserves an explicit blue-bar drop position", async () => {
+    const moving = {
+      id: "moving",
+      status_id: "todo",
+      board_position: 1024,
+    } as unknown as Task;
+    const first = {
+      id: "first",
+      status_id: "doing",
+      board_position: 2048,
+    } as unknown as Task;
+    const second = {
+      id: "second",
+      status_id: "doing",
+      board_position: 4096,
+    } as unknown as Task;
+    let data = {
+      currentProfile: { id: "profile-1" },
+      statuses: [
+        { id: "todo", outcome: "open", requires_reason: false },
+        { id: "doing", outcome: "open", requires_reason: false },
+      ],
+      tasks: [moving, first, second],
+      comments: [],
+    } as unknown as WorkspaceData;
+    const service = createTaskMutationService({
+      demoMode: true,
+      getData: () => data,
+      setData: (update) => {
+        data = typeof update === "function" ? update(data) : update;
+      },
+    });
+
+    await service.move(moving.id, "doing", first.id, "after");
+
+    expect(data.tasks.find((task) => task.id === moving.id)).toMatchObject({
+      status_id: "doing",
+      board_position: 3072,
+    });
+  });
+
   it("keeps the submitted assignee when the save response omits it", async () => {
     const assigneeId = "profile-1";
     const task = {
