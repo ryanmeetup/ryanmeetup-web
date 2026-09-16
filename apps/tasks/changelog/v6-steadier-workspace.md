@@ -1,5 +1,5 @@
 ---
-version: "0.6"
+version: "0.6.0"
 slug: v6-steadier-workspace
 author: Ryan Le
 date: "2026-08-27"

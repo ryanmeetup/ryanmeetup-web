@@ -79,7 +79,7 @@ bulk editing proves useful.
 ### 6. A real project overview
 
 Give each project a destination that explains its purpose, current state, and
-what needs attention. Stage 1 shipped in v0.7; possible planning and portfolio
+what needs attention. Stage 1 shipped in v0.8.0; possible planning and portfolio
 extensions remain explored below.
 
 ### 7. Task templates
@@ -281,7 +281,7 @@ counts.
 
 #### Stage 1: Derived overview
 
-Status: implemented in v0.7.
+Status: implemented in v0.8.0.
 
 - Readable project detail route.
 - Header, owners, status, description, and actions.

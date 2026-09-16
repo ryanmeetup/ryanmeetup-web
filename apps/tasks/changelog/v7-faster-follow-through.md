@@ -1,5 +1,5 @@
 ---
-version: "0.7"
+version: "0.7.0"
 slug: v7-faster-follow-through
 author: Ryan Le
 date: "2026-09-04"
@@ -8,7 +8,6 @@ title: Transactional writes, multiple assignees, and read-only MCP access
 summary: Resource changes and their history now succeed or fail together in one Postgres transaction, tasks can hold a crew instead of one name, whole pages can be locked to access groups, and a trusted assistant can read the workspace without touching it.
 overview:
   - Every resource change and its activity row in one transaction
-  - Project homes for progress, attention, dates, context, and recent work
   - Multiple assignees per task, backed by the join table rather than a column
   - Statuses that require a written reason before work enters them
   - Notes, Contacts, and Calendar lockable to selected access groups
@@ -20,24 +19,6 @@ overview:
 ---
 
 ## New
-
-### Projects get a home of their own
-
-Every project now opens to a readable overview instead of dropping straight
-into a filtered board. The page brings together open, overdue, upcoming, and
-completed work; calls out the tasks that need attention; shows progress across
-the workspace's own statuses; and keeps owners, dates, links, notes, files, and
-recent task activity close. The board remains one click away, and new tasks
-started from the overview already know which project they belong to. Each
-summary measure opens the board with its matching project, status, and due-date
-filters already applied. A board shortcut beside each sidebar project keeps the
-old straight-to-work path just as quick. On wider screens, the project team,
-upcoming dates, and context stay in view while the main overview scrolls; the
-team includes project owners plus everyone assigned work in that project.
-Project context now opens in its own focused editor, where saved links collapse
-into compact rows and use each page's social preview image when one is available.
-New project timelines begin on the day they are created by default, while still
-allowing an earlier start date when the work was already underway.
 
 ### Duplicate the work, not the setup
 
@@ -57,17 +38,9 @@ Deployments configured for it can offer a read-only MCP connection for Claude De
 
 ### Lock a whole page to the people who need it
 
-Notes, Contacts, and the Calendar can each be restricted to selected access groups from **Admin → Access → Page access**. A restricted page disappears from the sidebar for everyone who cannot open it, and its content — notes and their comments, the contact directory, calendar events and the synced Google feed — is refused at the database, not merely hidden. Pages stay open to everyone until an owner restricts them. App owners keep every page; workspace-wide tiers can be selected explicitly like any other group.
+Notes, Contacts, and the Calendar can each be restricted to selected access groups from **Admin → Access → Page access**. A restricted page disappears from the sidebar for everyone who cannot open it, and its content — notes and their comments, the contact directory, calendar events and the synced Google feed — is refused at the database, not merely hidden. Pages stay open to everyone until an owner restricts them, and app owners and tiers with workspace-wide content access always keep every page.
 
 ## Improved
-
-### Completed projects leave the current list
-
-Projects marked Complete move out of the Current view and the sidebar, including Favorites. They remain easy to find under Completed without being archived or crowding the projects that still need attention.
-
-### Project history says what changed
-
-Project activity now names status, date, name, description, and link changes. Saving a project no longer claims its access became restricted when that setting was already selected.
 
 ### Access with a reason, not a riddle
 
@@ -79,19 +52,7 @@ Creating or editing a task, project, category, contact, or calendar event uses a
 
 ### Choose where forms open
 
-**Profile → Preferences** now has **Create and edit forms**. Leave it on
-_Automatic_ for a dialog on desktop and a full page on phone. Choose _Always a
-dialog_ to keep the board or list behind every form at any size, or _Always a
-full page_ to give every form the whole screen. The setting follows your account
-rather than the browser you happen to be using.
-
-### Open the calendar on what matters
-
-**Profile → Preferences** now lets each person choose any combination of what
-the Calendar shows first: task deadlines, time away, important dates, and
-Google Calendar. The choice belongs to the profile in that deployment, so RMT
-and PRD can open differently — including everything except Google — while the
-multi-select Show menu remains available for quick changes.
+**Profile → Preferences** now has **Create and edit forms**. Leave it on _Automatic_ for a dialog on desktop and a full page on phone. Choose _Always a dialog_ to keep the board or list behind every form at any size, or _Always a full page_ to give every form the whole screen. The setting follows your account rather than the browser you happen to be using.
 
 ### Contact links you can read
 
@@ -115,8 +76,6 @@ Comments, checklist updates, attachments, and activity written by the server app
 
 Changing task filters, searches, sorting, pages, or views while results load keeps the newest request, so a slower earlier response cannot replace the choice you just made.
 
-Signing in opens the workspace on the first try. It used to flicker between the sign-in screen and a page holding nothing but the footer, and only a full page reload settled it.
-
 ### Activity tells the fuller story
 
 Activity now covers access groups, visibility grants, teammates, statuses, digest settings and runs, workspace identity and banner changes, Google Calendar connections, and email administration. Task updates show field-level changes, and status explanations appear alongside the change that prompted them.
@@ -125,64 +84,19 @@ Activity now covers access groups, visibility grants, teammates, statuses, diges
 
 Contact image uploads save together with their contact, and replacing, removing, or deleting an uploaded image also cleans up the old file in storage. Rich-text fields preserve intentional spacing and show Markdown headings while editing. Modals require a deliberate close action, protecting longer edits from an accidental backdrop click. Saved drafts keep their checklist, linked attachments, and opening comment.
 
-Quick notes now ask for a title separately from their details, so the first line of the note no longer has to do both jobs. Note cards and their detail dialog also group authorship, update time, comments, and body content more clearly, with a roomier comment composer when the conversation opens.
-
 ### One identity across the workspace
 
 A workspace uses one instance name for page titles, digest emails, link previews, the sidebar wordmark, and the footer. Owners write the workspace notice under **Banner** in Settings, including an optional link and label. Updating the message brings the banner back for teammates who dismissed an older notice, while an untouched setting continues to use the deployment default.
 
-### Work you decided against is finished too
-
-A status now says how work ends: open, delivered, or declined. **Will Not Do**
-is a declined ending, so a task you turn down closes the same way finished work
-does. It leaves your open counts, stops arriving in the weekday digest, comes
-off the calendar, stops showing up as overdue on a project, and archives after
-two weeks. It is never counted as something the team completed, and a project's
-progress bar no longer treats an abandoned task as delivered. Owners set the
-ending for any status under **Statuses** in the admin section.
-
-### The archive reads like a record
-
-Active and Archived are now a switch beside the board and list controls, rather
-than a setting inside the filters panel. Archived work opens as a list grouped
-by the month it closed, showing when each task ended instead of when it had been
-due, newest first. The board is no longer offered there: only a status that
-closes work can hold an archived task, so the old archived board was a row of
-permanently empty columns.
-
-### Search reaches into the archive
-
-Searching now finds archived work as well, listed at the very bottom under an
-**Archived tasks** heading so it never competes with what is still live. Each
-archived result shows when it closed rather than when it had been due. Typing
-the key of an archived task finds it, which it previously did not, even though
-opening that task's link had always worked.
-
 ### A calmer canvas
 
-The workspace sits on a subtle paper texture with solid task columns that stay readable over it. The board keeps its horizontal scroller against the bottom edge, and the latest-release card starts collapsed on smaller screens.
+The workspace sits on a subtle paper texture with solid task columns that stay readable over it. The board fills the space above the footer, keeping its horizontal scroller against the bottom edge, and the latest-release card starts collapsed on smaller screens.
 
-Collapsed board columns now keep their description and search controls while hiding the task stack instead of leaving an empty full-height lane. Expand one and its tasks slide back into view; pick up a task and collapsed columns temporarily open into large, clearly labeled drop targets, keeping moves easy without the dead space.
-Starting a search from a collapsed column slides it open automatically so the matching tasks appear without an extra click.
-Column headers stay in place above their own taller scrolling task lists, while the page canvas supplies the breathing room outside the rounded columns.
-The board fills the available screen height with equal outside spacing above and below, adapts when the window resizes, and omits the footer. Page scrolling stops at that padded position while each task list continues scrolling; scrolling back up reveals the heading and filters.
-Task lists now run flush to each column's rounded bottom edge, without a separate divider or fixed bottom strip.
+Form labels now use the same sentence-case heading treatment throughout task, note, resource, calendar, profile, and admin editors. Buttons beside fields match the input height, while standalone actions use the same compact sizing as save and cancel controls.
 
-Form labels now use the same clear sentence-case heading treatment throughout task, note, resource, calendar, profile, and admin editors.
+On phones, calendar navigation keeps the month centered, places filters and Today on one tidy row, and leaves the agenda to carry the detail instead of squeezing in the desktop rail. The navigation drawer closes as soon as a destination opens.
 
-Category tags can now grow beyond 20 and be dragged into the order that makes sense for the work.
-
-Buttons that sit beside fields now match the input height with tighter typography and padding, while standalone quick actions use the same compact sizing as save and cancel controls.
-
-On phones, the task board's assignee, status, and layout switches now have clear labels, full-width controls, and roomier tap targets instead of competing for two cramped columns.
-
-On phones, calendar navigation keeps the month centered, places filters and Today on one tidy row, and leaves the agenda to carry the detail instead of squeezing in the desktop rail. The navigation drawer also closes as soon as a destination opens.
-
-Sidebar resource dividers now meet the shared Categories, Favorites, and Projects scroller cleanly at both ends.
-
-Phone-sized form fields now stay aligned and use a Safari-safe text size, so focusing an input no longer zooms the page and leaves the workspace magnified afterward. The page also stops at the footer instead of scrolling into Safari's empty post-keyboard space.
-
-New contacts now finish with Create and Cancel after the People section, encouraging a complete contact record before it is saved. Existing-contact actions stay beside the contact details for quicker edits.
+New contacts finish with Create and Cancel after the People section, encouraging a complete contact record before it is saved. Existing-contact actions stay beside the contact details for quicker edits.
 
 Projects lead with active work, follow their lifecycle order, and default to Discovery. Project and category visibility controls stay with their own editors instead of appearing as a second set of controls on the Access page.
 
@@ -190,7 +104,7 @@ Projects lead with active work, follow their lifecycle order, and default to Dis
 
 ### Writes that cannot half-finish
 
-Categories, projects, contacts, calendar dates, notes, comments, and resource attachments now write their change and their activity history inside one Postgres function. If either fails, neither is left behind. Where the shape allowed it, the history moved onto database triggers so it is recorded by the database rather than by whichever code path remembered to — the gap that had been open since v0.4.
+Categories, projects, contacts, calendar dates, notes, comments, and resource attachments now write their change and their activity history inside one Postgres function. If either fails, neither is left behind. Where the shape allowed it, the history moved onto database triggers so it is recorded by the database rather than by whichever code path remembered to — the gap that had been open since v0.4.0.
 
 ### Named validation errors
 

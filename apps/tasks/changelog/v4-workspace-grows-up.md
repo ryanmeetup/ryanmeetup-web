@@ -1,5 +1,5 @@
 ---
-version: "0.4"
+version: "0.4.0"
 slug: v4-workspace-grows-up
 author: Ryan Le
 date: "2026-08-14"
@@ -32,7 +32,7 @@ Star the projects you visit constantly and reach them from the dashboard and the
 
 ### Safer task edits
 
-Changing one field on a task stopped resetting the fields you had not touched, a bug that had been true since v0.1.
+Changing one field on a task stopped resetting the fields you had not touched, a bug that had been true since v0.1.0.
 
 ### A more useful dashboard
 
@@ -62,4 +62,4 @@ These notes are Markdown files with frontmatter, parsed at build time, so a rele
 
 ## Still in beta
 
-Activity was written by the API next to each change, not by the database, so a change that succeeded while its history failed left the two disagreeing. It stayed that way until v0.7 put both in one transaction. Notes and contacts shipped with no access controls of their own — everyone in the workspace could read both, and locking them down took until v0.7.
+Activity was written by the API next to each change, not by the database, so a change that succeeded while its history failed left the two disagreeing. It stayed that way until v0.7.0 put both in one transaction. Notes and contacts shipped with no access controls of their own — everyone in the workspace could read both, and locking them down took until v0.7.0.

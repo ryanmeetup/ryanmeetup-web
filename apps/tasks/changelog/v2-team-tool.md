@@ -1,5 +1,5 @@
 ---
-version: "0.2"
+version: "0.2.0"
 slug: v2-team-tool
 author: Ryan Le
 date: "2026-08-05"
@@ -58,4 +58,4 @@ A permissions and core-workflow suite landed alongside upgraded test tooling, so
 
 ## Still in beta
 
-Task pagination was pulled back out at the end of this stretch, so the board loaded every task in the workspace on every visit until v0.3 restored it. Access groups arrived before there was any way to see their effect on a specific person beyond the preview, so a wrong grant was easier to make than to notice.
+Task pagination was pulled back out at the end of this stretch, so the board loaded every task in the workspace on every visit until v0.3.0 restored it. Access groups arrived before there was any way to see their effect on a specific person beyond the preview, so a wrong grant was easier to make than to notice.

@@ -80,11 +80,12 @@ export function ChangelogPageClient({
             Changelog
           </Heading>
           <p className="mt-3 text-sm leading-6 text-black/65 dark:text-white/65 sm:text-base">
-            A build log, not a release history. Every version here is a 0.x
-            milestone: this app is in beta, and v1.0 is reserved for the first
-            release that leaves it. Until then anything can change, break, or be
-            replaced. Each entry records what shipped, the engineering
-            underneath it, and what is still rough.
+            A build log, not a claim of stability. Feature milestones advance
+            the 0.x.0 series, while contained fixes and polish advance 0.x.y.
+            This app is in beta, and v1.0.0 is reserved for the deliberate
+            production-readiness release. Until then anything can change,
+            break, or be replaced. Each entry records what shipped, the
+            engineering underneath it, and what is still rough.
           </p>
         </header>
 

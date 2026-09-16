@@ -1,5 +1,5 @@
 export type ChangelogRelease = {
-  /** Display version, e.g. "RMT v0.5". Built from the instance prefix. */
+  /** Display version, e.g. "RMT v0.8.1". Built from the instance prefix. */
   version: `${string} v${string}`;
   /** Version as written in the markdown frontmatter, e.g. "0.5". */
   releaseVersion: string;

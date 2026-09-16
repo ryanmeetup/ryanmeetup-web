@@ -325,7 +325,7 @@ The table below is the durable reference.
 | Page titles                               | `pageTitle()` from `lib/server/instance-settings.ts`; `useInstancePageTitle()` on the client |
 | Root metadata and Open Graph card         | `app/layout.tsx`, `app/opengraph-image.tsx`                                                  |
 | Task key prefix (`TASK-142`)              | `NEXT_PUBLIC_TASK_KEY_PREFIX`, consumed by `lib/tasks/task-key.ts`                           |
-| Changelog version format (`TASK v5`)      | `NEXT_PUBLIC_CHANGELOG_VERSION_PREFIX`, defaults to the task key prefix                      |
+| Changelog version format (`TASK v0.9.0`)  | `NEXT_PUBLIC_CHANGELOG_VERSION_PREFIX`, defaults to the task key prefix                      |
 | Digest email branding                     | `lib/server/task-digest-email.ts`                                                            |
 | Fixed footer content, socials, credit     | `components/navigation/TasksFooter.tsx`, `packages/ui/src/SiteFooter.tsx`                    |
 | Social platform icons and labels          | `lib/instance-socials.tsx`                                                                   |
@@ -376,8 +376,9 @@ Notes on the design:
 - The prefix, accent color, and logo path are validated at module load and throw
   on malformed input, because they are interpolated into regular expressions,
   inline email styles, and an image URL respectively.
-- Changelog markdown frontmatter now carries a bare number (`version: 5`) and
-  the display string is composed at read time. The changelog is the _app's_
+- Changelog markdown frontmatter carries a quoted semantic version
+  (`version: "0.9.0"`) and the display string is composed at read time. The
+  changelog is the _app's_
   release history, so every instance shows the same entries under its own
   prefix. If an instance should have its own entries, scope
   `changelogDirectory` in `lib/server/changelog.ts` per instance.

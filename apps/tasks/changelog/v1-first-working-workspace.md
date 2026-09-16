@@ -1,5 +1,5 @@
 ---
-version: "0.1"
+version: "0.1.0"
 slug: v1-first-working-workspace
 author: Ryan Le
 date: "2026-08-02"

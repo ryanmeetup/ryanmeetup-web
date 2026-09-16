@@ -2,6 +2,7 @@ import "server-only";
 
 import { getAdminClient } from "@/lib/server/admin-client";
 import { readBeginnerFlowHealth } from "@/lib/server/beginner-flow-health";
+import { latestChangelogRelease } from "@/lib/server/changelog";
 import { instanceBuild } from "@/lib/instance";
 
 export type IntegrationState =
@@ -688,7 +689,7 @@ export function buildTimeIdentity() {
     },
     {
       label: "Changelog version",
-      value: `${instanceBuild.changelogVersionPrefix} v5`,
+      value: latestChangelogRelease.version,
       variable: "NEXT_PUBLIC_CHANGELOG_VERSION_PREFIX",
       note: "Defaults to the task key prefix.",
     },

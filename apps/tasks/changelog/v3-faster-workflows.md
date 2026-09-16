@@ -1,11 +1,11 @@
 ---
-version: "0.3"
+version: "0.3.0"
 slug: v3-faster-workflows
 author: Ryan Le
 date: "2026-08-09"
 dateLabel: August 9, 2026
 title: Dashboard, global search, and stable task keys
-summary: A real dashboard and activity page, durable RMT-numbered task URLs, global search, saved drafts, and the pagination that had been missing since v0.2.
+summary: A real dashboard and activity page, durable RMT-numbered task URLs, global search, saved drafts, and the pagination that had been missing since v0.2.0.
 overview:
   - Dashboard and a full workspace activity page
   - Durable RMT task numbers and stable task URLs
@@ -36,7 +36,7 @@ Stop partway through creating a task and pick the draft back up from the dashboa
 
 ### Filtering and pagination
 
-Filters can include or exclude, multiselect controls replaced single-choice dropdowns, and pagination came back after being pulled in v0.2. The filter panel is a shared primitive, so the board, the activity page, and search behave the same way rather than each implementing filtering separately.
+Filters can include or exclude, multiselect controls replaced single-choice dropdowns, and pagination came back after being pulled in v0.2.0. The filter panel is a shared primitive, so the board, the activity page, and search behave the same way rather than each implementing filtering separately.
 
 ### Richer task and project editing
 

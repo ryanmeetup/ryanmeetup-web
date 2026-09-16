@@ -1,5 +1,5 @@
 ---
-version: "0.5"
+version: "0.5.0"
 slug: v5-collaboration-in-context
 author: Ryan Le
 date: "2026-08-22"
@@ -94,4 +94,4 @@ The compiled identity was parameterized so the app is no longer hardcoded to one
 
 ## Still in beta
 
-Google Calendar was connected per person here; v0.6 replaced that with one workspace calendar granted through access groups, so anyone who set up the first version had to set it up again. Digest email had no preview or cancel path yet — it sent on a schedule and you found out what it said when it arrived.
+Google Calendar was connected per person here; v0.6.0 replaced that with one workspace calendar granted through access groups, so anyone who set up the first version had to set it up again. Digest email had no preview or cancel path yet — it sent on a schedule and you found out what it said when it arrived.
