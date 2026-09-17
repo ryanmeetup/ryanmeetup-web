@@ -194,7 +194,7 @@ export function CalendarGridAgenda({
                 itself would race the `inline-flex` in its own base classes. */}
             <span className="hidden md:inline-flex">
               <Button
-                size="sm"
+                size="field"
                 variant="secondary"
                 leftIcon={<FiSidebar />}
                 aria-expanded={calendarSidebarOpen}

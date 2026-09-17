@@ -1,5 +1,10 @@
 import { Fragment } from "react";
-import { AnimatedCollapse, Avatar, EmptyState } from "@ryanmeetup/ui";
+import {
+  AnimatedCollapse,
+  Avatar,
+  EmptyState,
+  Tooltip,
+} from "@ryanmeetup/ui";
 import { FiChevronDown } from "react-icons/fi";
 import type { Category, Project } from "@/lib/resources/resource-types";
 import type { Profile } from "@/lib/workspace/workspace-types";
@@ -105,12 +110,17 @@ function Assignees({
     <span className="inline-flex min-w-0 items-center gap-1.5">
       <span className="flex shrink-0 -space-x-1.5">
         {people.slice(0, 3).map((person) => (
-          <Avatar
+          <Tooltip
             key={person.id}
-            name={profileDisplayName(person)}
-            size="sm"
-            src={person.avatar_url}
-          />
+            content={profileDisplayName(person)}
+            placement="top"
+          >
+            <Avatar
+              name={profileDisplayName(person)}
+              size="sm"
+              src={person.avatar_url}
+            />
+          </Tooltip>
         ))}
       </span>
       <span className="truncate">

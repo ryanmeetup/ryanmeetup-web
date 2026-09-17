@@ -282,27 +282,25 @@ export function TaskWorkspaceHeader({
               </p>
               <div className="flex min-h-8 min-w-0 items-center gap-3">
                 {projectOwners.length > 0 ? (
-                  <Tooltip
-                    content={projectOwners
-                      .map((owner) => owner.full_name)
-                      .join(", ")}
-                    placement="bottom"
+                  <div
+                    className="flex shrink-0 -space-x-2"
+                    aria-label={`${projectOwners.length} ${projectOwners.length === 1 ? "project owner" : "project owners"}`}
                   >
-                    <div
-                      className="flex shrink-0 -space-x-2"
-                      aria-label={`${projectOwners.length} ${projectOwners.length === 1 ? "project owner" : "project owners"}`}
-                    >
-                      {projectOwners.slice(0, 3).map((owner) => (
+                    {projectOwners.slice(0, 3).map((owner) => (
+                      <Tooltip
+                        key={owner.id}
+                        content={owner.full_name}
+                        placement="bottom"
+                      >
                         <Avatar
-                          key={owner.id}
                           name={owner.full_name}
                           src={owner.avatar_url}
                           size="md"
                           className="ring-2 ring-[#f1f2ef] dark:ring-[#101010]"
                         />
-                      ))}
-                    </div>
-                  </Tooltip>
+                      </Tooltip>
+                    ))}
+                  </div>
                 ) : (
                   <>
                     <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-dashed border-black/25 text-black/45 dark:border-white/25 dark:text-white/45">

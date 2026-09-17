@@ -179,7 +179,11 @@ export function TaskFilters({
       <InclusionFilterMenu
         label="Status"
         anyLabel="All statuses"
-        options={statuses.map((item) => ({ label: item.name, value: item.id }))}
+        options={statuses.map((item) => ({
+          label: item.name,
+          markerColor: item.color,
+          value: item.id,
+        }))}
         includedValues={selections.status.included}
         excludedValues={selections.status.excluded}
         onIncludedChange={(values) =>

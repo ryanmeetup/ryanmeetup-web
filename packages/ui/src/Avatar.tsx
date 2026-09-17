@@ -33,7 +33,7 @@ const Avatar = ({ className, icon, name, size = "md", src }: AvatarProps) => (
     aria-label={name || "Teammate"}
     role="img"
     style={src ? { backgroundImage: `url(${JSON.stringify(src)})` } : undefined}
-    className={`inline-grid shrink-0 place-items-center rounded-full border border-black/10 bg-black bg-cover bg-center font-bold text-white dark:border-white/20 dark:bg-white dark:text-black ${sizeClasses[size]} ${className ?? ""}`}
+    className={`inline-grid shrink-0 place-items-center rounded-full border border-white/30 bg-black bg-cover bg-center font-bold text-white dark:border-black/25 dark:bg-white dark:text-black ${sizeClasses[size]} ${className ?? ""}`}
   >
     {!src && <span aria-hidden>{icon ?? initials(name)}</span>}
   </span>

@@ -1,4 +1,4 @@
-import { Avatar, Button, Card, IconButton } from "@ryanmeetup/ui";
+import { Avatar, Button, Card, IconButton, Tooltip } from "@ryanmeetup/ui";
 import {
   FiCalendar,
   FiEdit2,
@@ -151,13 +151,18 @@ export function AccessGroupGrid({
                       {groupMembers.slice(0, 3).map((member) => {
                         const profile = profilesById.get(member.profile_id);
                         return profile ? (
-                          <Avatar
+                          <Tooltip
                             key={profile.id}
-                            name={profile.full_name}
-                            src={profile.avatar_url}
-                            size="sm"
-                            className="ring-2 ring-white dark:ring-[#181818]"
-                          />
+                            content={profile.full_name}
+                            placement="top"
+                          >
+                            <Avatar
+                              name={profile.full_name}
+                              src={profile.avatar_url}
+                              size="sm"
+                              className="ring-2 ring-white dark:ring-[#181818]"
+                            />
+                          </Tooltip>
                         ) : null;
                       })}
                     </div>

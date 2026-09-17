@@ -1,4 +1,4 @@
-import { Avatar, FormattedText } from "@ryanmeetup/ui";
+import { Avatar, FormattedText, Tooltip } from "@ryanmeetup/ui";
 import Link from "next/link";
 import type { DragEvent } from "react";
 import { FiExternalLink, FiFolder, FiUsers } from "react-icons/fi";
@@ -194,12 +194,17 @@ export function TaskBoardCard({
         {people.length > 0 ? (
           <span className="flex shrink-0 -space-x-1.5">
             {people.slice(0, 3).map((person) => (
-              <Avatar
+              <Tooltip
                 key={person.id}
-                name={profileDisplayName(person)}
-                size="sm"
-                src={person.avatar_url}
-              />
+                content={profileDisplayName(person)}
+                placement="top"
+              >
+                <Avatar
+                  name={profileDisplayName(person)}
+                  size="sm"
+                  src={person.avatar_url}
+                />
+              </Tooltip>
             ))}
           </span>
         ) : (
