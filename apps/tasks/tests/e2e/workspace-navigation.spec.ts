@@ -1046,9 +1046,22 @@ test("makes mobile task filters full width with layout beside the title", async 
   );
 
   await page.setViewportSize({ width: 1280, height: 900 });
-  const desktopAssignee = (await assignee.boundingBox())!;
-  const desktopStatus = (await status.boundingBox())!;
-  const desktopLayout = (await layout.boundingBox())!;
-  expect(Math.abs(desktopAssignee.y - desktopStatus.y)).toBeLessThan(2);
-  expect(Math.abs(desktopStatus.y - desktopLayout.y)).toBeLessThan(2);
+  const [desktopAssigneeY, desktopStatusY, desktopLayoutY] =
+    await page.evaluate(() => {
+      const groupY = (label: string) => {
+        const group = Array.from(
+          document.querySelectorAll(`[role="group"][aria-label="${label}"]`),
+        ).find((candidate) => candidate.getClientRects().length > 0);
+        if (!group) throw new Error(`${label} group not found`);
+        return group.getBoundingClientRect().y;
+      };
+
+      return [
+        groupY("Task assignee"),
+        groupY("Task status"),
+        groupY("Task layout"),
+      ];
+    });
+  expect(Math.abs(desktopAssigneeY - desktopStatusY)).toBeLessThan(2);
+  expect(Math.abs(desktopStatusY - desktopLayoutY)).toBeLessThan(2);
 });
