@@ -1,9 +1,13 @@
+"use client";
+
 import { Banner as SharedBanner, Button } from "@ryanmeetup/ui";
+import { useCampaignActive } from "@/components/global/useCampaignActive";
 
 export type BannerProps = {
   message: string;
   href: string;
   actionLabel: string;
+  expiresAt?: string;
   className?: string;
 };
 
@@ -12,12 +16,17 @@ export type BannerProps = {
  * upcoming event should be promoted.
  */
 
-export function Banner({ 
-  message, 
-  href, 
-  actionLabel, 
-  className = '',
+export function Banner({
+  message,
+  href,
+  actionLabel,
+  expiresAt,
+  className = "",
 }: BannerProps) {
+  const isActive = useCampaignActive(expiresAt);
+
+  if (!isActive) return null;
+
   return (
     <SharedBanner
       variant="neutral"

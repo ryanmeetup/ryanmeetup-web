@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 // Componenets
 import NextLink from "next/link";
 import { Heading, Text } from "@ryanmeetup/ui";
+import { useCampaignActive } from "@/components/global/useCampaignActive";
 
 // Utilities
 import { usePathname } from "next/navigation";
@@ -47,6 +48,7 @@ type FloatingCtaProps = {
   positionClassName?: string;
   theme?: FloatingCtaTheme;
   className?: string;
+  expiresAt?: string;
 };
 
 const defaultTheme: Required<FloatingCtaTheme> = {
@@ -79,9 +81,11 @@ const FloatingCta = (props: FloatingCtaProps) => {
     positionClassName = "bottom-[max(1.5rem,env(safe-area-inset-bottom))]",
     theme,
     className,
+    expiresAt,
   } = props;
 
   const resolvedTheme = { ...defaultTheme, ...theme };
+  const isCampaignActive = useCampaignActive(expiresAt);
   const pathname = usePathname();
   const dismissKey = useMemo(() => `floatingCtaDismissedAt:${id}`, [id]);
   const [isVisible, setIsVisible] = useState(false);
@@ -105,7 +109,7 @@ const FloatingCta = (props: FloatingCtaProps) => {
     }
   }, [dismissDurationMs, dismissKey]);
 
-  if (!isVisible || hiddenRoutes.includes(pathname)) {
+  if (!isCampaignActive || !isVisible || hiddenRoutes.includes(pathname)) {
     return null;
   }
 

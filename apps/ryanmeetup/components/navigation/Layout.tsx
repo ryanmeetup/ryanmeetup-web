@@ -23,6 +23,8 @@ type LayoutProps = {
   fullscreen?: boolean;
 };
 
+const californiaCampaignExpiresAt = "2026-09-13T00:00:00-07:00";
+
 const Layout = (props: LayoutProps) => {
   const { className, children, fullscreen = false } = props;
 
@@ -39,6 +41,7 @@ const Layout = (props: LayoutProps) => {
         message="Ryan Meetup returns to California September 11–12: Ready Player Ryan + Sun Soaked!"
         href="/rsvp"
         actionLabel="RSVP"
+        expiresAt={californiaCampaignExpiresAt}
         className={layoutPaddingX}
       />
       <Header />
@@ -55,6 +58,7 @@ const Layout = (props: LayoutProps) => {
         id="ryan-meetup-california-2026"
         href="/rsvp"
         label="RSVP"
+        expiresAt={californiaCampaignExpiresAt}
         details={[
           {
             title: "Ready Player Ryan",
