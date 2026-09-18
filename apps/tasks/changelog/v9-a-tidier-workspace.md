@@ -49,6 +49,10 @@ Activity feeds show skeleton rows while a request is pending, preserving the sha
 
 Dropping a task into the open space of a column now puts it at the top by default. The blue insertion bars still place it exactly where chosen, and mobile spacing keeps the board controls and columns from crowding each other.
 
+### Clickable links in task descriptions
+
+Web addresses pasted into a task description now appear as clickable links on the board and task detail page, opening the destination in a new tab.
+
 ## Under the hood
 
 The latest organization work reuses the project lifecycle, archive, dropdown, and sortable-list foundations already in the app. Proximity-based dropdown options remain visible while navigating long menus, and the board's drag behavior is covered at the mutation and workspace-navigation boundaries.

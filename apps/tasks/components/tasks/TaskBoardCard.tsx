@@ -152,6 +152,7 @@ export function TaskBoardCard({
       {task.description && (
         <FormattedText
           text={task.description}
+          linkify
           className="mt-1.5 line-clamp-2 text-[11px] leading-relaxed text-black/60 sm:mt-2 sm:text-xs dark:text-white/60"
         />
       )}

@@ -319,6 +319,36 @@ test("returns to the task after saving from the mobile editor", async ({
   ).toBeVisible();
 });
 
+test("surfaces task description URLs as clickable links", async ({
+  page,
+  baseURL,
+}) => {
+  await enterDemoWorkspace(page, baseURL);
+  const descriptionUrl = "https://www.tiktok.com/t/ZTUWQePVt/";
+  await page.goto(`${editedTask}/edit?from=${encodeURIComponent(editedTask)}`);
+  await page.waitForLoadState("networkidle");
+
+  await page
+    .locator('[contenteditable="true"][aria-label="Description"]')
+    .fill(`Recipe reference: ${descriptionUrl}`);
+  await page.getByRole("button", { name: "Save changes" }).click();
+
+  await expect(page).toHaveURL(new RegExp(`${editedTask}$`));
+  const detailLink = page.getByRole("link", { name: descriptionUrl });
+  await expect(detailLink).toBeVisible();
+  await expect(detailLink).toHaveAttribute("href", descriptionUrl);
+  await expect(detailLink).toHaveAttribute("target", "_blank");
+  await expect(detailLink).toHaveAttribute("rel", "noopener noreferrer");
+
+  await page.goto("/board");
+  const taskCard = page
+    .getByRole("button", { name: "Open Confirm launch venue", exact: true })
+    .locator("..");
+  await expect(
+    taskCard.getByRole("link", { name: descriptionUrl }),
+  ).toBeVisible();
+});
+
 test("names both statuses in task move activity", async ({ page, baseURL }) => {
   await enterDemoWorkspace(page, baseURL);
   await page.setViewportSize({ width: 390, height: 844 });

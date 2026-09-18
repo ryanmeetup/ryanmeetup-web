@@ -10,6 +10,7 @@ export type FormattedTextProps = {
   text: string;
   className?: string;
   onChange?: (value: string) => void;
+  linkify?: boolean;
 };
 
 const bullets = ["•", "◦", "▪", "▫"];
@@ -22,7 +23,12 @@ const headingClasses = [
   "text-xs font-semibold uppercase tracking-wider",
 ];
 
-const FormattedText = ({ text, className, onChange }: FormattedTextProps) => {
+const FormattedText = ({
+  text,
+  className,
+  onChange,
+  linkify = false,
+}: FormattedTextProps) => {
   const normalized = normalizeRichTextValue(text);
   const lines = normalized.split("\n");
 
@@ -34,7 +40,7 @@ const FormattedText = ({ text, className, onChange }: FormattedTextProps) => {
           const content = (
             <span
               dangerouslySetInnerHTML={{
-                __html: inlineMarkdownToHtml(heading.text),
+                __html: inlineMarkdownToHtml(heading.text, { linkify }),
               }}
             />
           );
@@ -138,7 +144,7 @@ const FormattedText = ({ text, className, onChange }: FormattedTextProps) => {
                   checked ? "text-black/50 line-through dark:text-white/50" : ""
                 }
                 dangerouslySetInnerHTML={{
-                  __html: inlineMarkdownToHtml(listItem.text),
+                  __html: inlineMarkdownToHtml(listItem.text, { linkify }),
                 }}
               />
             </div>
@@ -148,7 +154,9 @@ const FormattedText = ({ text, className, onChange }: FormattedTextProps) => {
           <Fragment key={index}>
             <span
               className="whitespace-pre-wrap"
-              dangerouslySetInnerHTML={{ __html: inlineMarkdownToHtml(line) }}
+              dangerouslySetInnerHTML={{
+                __html: inlineMarkdownToHtml(line, { linkify }),
+              }}
             />
             {index < lines.length - 1 && <br />}
           </Fragment>

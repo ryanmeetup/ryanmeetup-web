@@ -13,14 +13,61 @@ const escapeHtml = (value: string) =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 
-const inlineMarkdownToHtml = (value: string) =>
-  escapeHtml(value)
+type InlineMarkdownOptions = {
+  linkify?: boolean;
+};
+
+const trailingLinkPunctuation = /[.,;:!?]$/;
+
+function linkifiedValue(value: string) {
+  const links: string[] = [];
+  const tokenized = value.replace(/https?:\/\/[^\s<>"']+/gi, (match) => {
+    let candidate = match;
+    while (
+      trailingLinkPunctuation.test(candidate) ||
+      (candidate.endsWith(")") &&
+        candidate.split(")").length > candidate.split("(").length)
+    )
+      candidate = candidate.slice(0, -1);
+
+    try {
+      const url = new URL(candidate);
+      if (url.protocol !== "http:" && url.protocol !== "https:") return match;
+    } catch {
+      return match;
+    }
+
+    const trailing = match.slice(candidate.length);
+    const token = `\uE000${links.length}\uE001`;
+    links.push(
+      `<a href="${escapeHtml(candidate)}" target="_blank" rel="noopener noreferrer" class="relative z-10 font-medium text-blue-700 underline underline-offset-2 hover:text-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 dark:text-blue-300 dark:hover:text-blue-200">${escapeHtml(candidate)}</a>`,
+    );
+    return `${token}${trailing}`;
+  });
+
+  return { links, tokenized };
+}
+
+const inlineMarkdownToHtml = (
+  value: string,
+  { linkify = false }: InlineMarkdownOptions = {},
+) => {
+  const { links, tokenized } = linkify
+    ? linkifiedValue(value)
+    : { links: [], tokenized: value };
+  const html = escapeHtml(tokenized)
     .replace(/\*\*\*([^*\n]+)\*\*\*/g, "<em><strong>$1</strong></em>")
     .replace(/___([^_\n]+)___/g, "<em><strong>$1</strong></em>")
     .replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>")
     .replace(/__([^_\n]+)__/g, "<strong>$1</strong>")
     .replace(/\*([^*\n]+)\*/g, "<em>$1</em>")
     .replace(/_([^_\n]+)_/g, "<em>$1</em>");
+
+  return links.reduce(
+    (rendered, link, index) => rendered.replace(`\uE000${index}\uE001`, link),
+    html,
+  );
+};
 
 type ListKind = "bullet" | "ordered" | "task";
 type ParsedListLine = {

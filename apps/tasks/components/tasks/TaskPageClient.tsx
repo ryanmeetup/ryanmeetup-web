@@ -287,6 +287,7 @@ export function TaskPageClient({
                 {task.description ? (
                   <FormattedText
                     text={task.description}
+                    linkify
                     className="mt-3 min-w-0 break-words text-sm leading-7 text-black/75 dark:text-white/75"
                   />
                 ) : (
