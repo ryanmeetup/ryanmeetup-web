@@ -35,6 +35,8 @@ Categories are no longer limited to 20 tags. Owners can drag tags into the order
 
 The desktop sidebar can now be hidden from its header and restored from the workspace header. Tasks remembers that choice between visits, so focused work keeps the extra room until the navigation is needed again.
 
+Project rows in the sidebar now open their task boards directly, while a dedicated details button keeps each project's overview one click away.
+
 ### A more compact archive
 
 Archived tasks lead with their task keys, group supporting details more tightly, and stay readable on narrow screens. Completed project dates, archive metadata, and workspace spacing now read consistently across desktop and mobile.
@@ -54,4 +56,3 @@ The latest organization work reuses the project lifecycle, archive, dropdown, an
 ## Still in beta
 
 Separating completed projects and keeping navigation preferences makes the workspace calmer, but it does not define production readiness on its own. The path to v1.0.0 still depends on an explicit readiness review rather than the next available version number.
-

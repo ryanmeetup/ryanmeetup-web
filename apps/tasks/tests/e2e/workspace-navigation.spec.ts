@@ -203,11 +203,21 @@ test("caps a long link list so the sticky column keeps its height", async ({
   ).toBeVisible();
 });
 
-test("opens a project overview from the sidebar", async ({ page, baseURL }) => {
+test("opens project details from the sidebar detail button", async ({
+  page,
+  baseURL,
+}) => {
   await enterDemoWorkspace(page, baseURL);
 
   const sidebar = page.locator("[data-workspace-sidebar]");
-  await sidebar.locator('a[href="/projects/website-refresh"]').click();
+  const detailsLink = sidebar.getByRole("link", {
+    name: "Open Website Refresh details",
+  });
+  await expect(detailsLink).toHaveAttribute(
+    "href",
+    "/projects/website-refresh",
+  );
+  await detailsLink.click();
 
   await expect(page).toHaveURL(/\/projects\/website-refresh$/);
   await expect(
@@ -259,16 +269,16 @@ test("opens a project overview from the sidebar", async ({ page, baseURL }) => {
   ).toHaveAttribute("href", "/board?project=Website+Refresh&status=Done");
 });
 
-test("opens a project's board directly from the sidebar", async ({
+test("opens a project's board from the sidebar row", async ({
   page,
   baseURL,
 }) => {
   await enterDemoWorkspace(page, baseURL);
 
   const sidebar = page.locator("[data-workspace-sidebar]");
-  const boardLink = sidebar.getByRole("link", {
-    name: "Open Website Refresh board",
-  });
+  const boardLink = sidebar.locator(
+    'a[href="/board?project=Website+Refresh"]',
+  );
   await expect(boardLink).toHaveAttribute(
     "href",
     "/board?project=Website+Refresh",

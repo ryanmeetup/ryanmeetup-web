@@ -21,6 +21,7 @@ import {
   FiGrid,
   FiHome,
   FiFileText,
+  FiInfo,
   FiLock,
   FiPlus,
   FiSidebar,
@@ -251,10 +252,7 @@ export function TasksSidebar({
     return (
       <div key={project.id} className="relative">
         <Link
-          href={withAccessPreview(
-            projectPath(project, data.projects),
-            data.accessPreview,
-          )}
+          href={boardHref({ project: project.name })}
           onClick={closeSidebar}
           className={`${linkClass(selected)} pr-11`}
         >
@@ -266,10 +264,13 @@ export function TasksSidebar({
           <SidebarItemLabel>{project.name}</SidebarItemLabel>
         </Link>
         <span className="absolute right-1 top-1/2 -translate-y-1/2">
-          <Tooltip content={`Open ${project.name} board`} placement="right">
+          <Tooltip content={`Open ${project.name} details`} placement="right">
             <Link
-              href={boardHref({ project: project.name })}
-              aria-label={`Open ${project.name} board`}
+              href={withAccessPreview(
+                projectPath(project, data.projects),
+                data.accessPreview,
+              )}
+              aria-label={`Open ${project.name} details`}
               onClick={closeSidebar}
               className={`inline-flex h-8 w-8 items-center justify-center rounded-md transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset ${
                 selected
@@ -277,7 +278,7 @@ export function TasksSidebar({
                   : "text-black/45 hover:bg-black/10 hover:text-black focus-visible:ring-black/30 dark:text-white/45 dark:hover:bg-white/10 dark:hover:text-white dark:focus-visible:ring-white/40"
               }`}
             >
-              <FiGrid aria-hidden />
+              <FiInfo aria-hidden />
             </Link>
           </Tooltip>
         </span>
