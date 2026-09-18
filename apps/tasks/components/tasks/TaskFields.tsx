@@ -20,7 +20,10 @@ import {
   statusNeedingReason,
   statusReasonPrompt,
 } from "@/lib/tasks/task-status-reason";
-import { sortFavoriteProjectsFirst } from "@/lib/resources/project-sort";
+import {
+  currentFavoriteProjectIds,
+  sortFavoriteProjectsFirst,
+} from "@/lib/resources/project-sort";
 import {
   favoriteProjectsGroupLabel,
   projectOptionGroup,
@@ -56,7 +59,11 @@ export function TaskFields({
     draft.status_id,
     options.currentStatusId ?? null,
   );
-  const favoriteProjectIds = new Set(options.favoriteProjectIds);
+  const currentFavoriteIds = currentFavoriteProjectIds(
+    options.projects,
+    options.favoriteProjectIds,
+  );
+  const favoriteProjectIds = new Set(currentFavoriteIds);
   const accessibleCategoryIds = options.accessibleCategoryIds
     ? new Set(options.accessibleCategoryIds)
     : null;
@@ -223,7 +230,7 @@ export function TaskFields({
                 options.projects.filter(
                   (item) => !item.archived_at || item.id === draft.project_id,
                 ),
-                options.favoriteProjectIds,
+                currentFavoriteIds,
               ).map((item) => ({
                 group: projectOptionGroup(favoriteProjectIds.has(item.id)),
                 label: `${item.name}${item.archived_at ? " (archived)" : ""}`,

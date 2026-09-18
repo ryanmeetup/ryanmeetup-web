@@ -19,12 +19,19 @@ export async function PATCH(request: Request) {
 
   const { data: project, error: projectError } = await context.supabase
     .from("projects")
-    .select("id")
+    .select("id,status")
     .eq("id", body.projectId)
     .is("archived_at", null)
     .maybeSingle();
   if (projectError || !project) {
     return apiError(404, "NOT_FOUND", "That project is not available.");
+  }
+  if (body.favorite && project.status === "complete") {
+    return apiError(
+      409,
+      "CONFLICT",
+      "Completed projects cannot be added to favorites.",
+    );
   }
 
   const { data: profile, error: profileError } = await context.admin

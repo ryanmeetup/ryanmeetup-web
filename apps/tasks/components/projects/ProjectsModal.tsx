@@ -517,6 +517,15 @@ export function ProjectsModal({
               })),
             ]
           : current.projectOwners,
+        currentProfile: {
+          ...current.currentProfile,
+          favorite_project_ids:
+            editingStatus === "complete"
+              ? (current.currentProfile.favorite_project_ids ?? []).filter(
+                  (id) => id !== project.id,
+                )
+              : current.currentProfile.favorite_project_ids,
+        },
       }));
       toast.success(
         project.status !== "complete" && editingStatus === "complete"
@@ -628,7 +637,10 @@ export function ProjectsModal({
     const taskCount =
       data.projectTaskCounts?.[project.id] ??
       data.tasks.filter((task) => task.project_id === project.id).length;
-    const isFavorite = favorites.isFavorite(project.id);
+    const isFavorite =
+      !project.archived_at &&
+      project.status !== "complete" &&
+      favorites.isFavorite(project.id);
     const owners = data.projectOwners
       .filter((item) => item.project_id === project.id)
       .flatMap((item) => {
@@ -641,7 +653,11 @@ export function ProjectsModal({
       ? "!border-amber-500/35 !bg-amber-400/15 !text-amber-700 hover:!bg-amber-400/25 dark:!border-amber-300/30 dark:!bg-amber-300/10 dark:!text-amber-200 dark:hover:!bg-amber-300/20"
       : undefined;
     const actions: ManagementCardAction[] = [];
-    if (!data.accessPreview && !project.archived_at)
+    if (
+      !data.accessPreview &&
+      !project.archived_at &&
+      project.status !== "complete"
+    )
       actions.push({
         key: "favorite",
         label: isFavorite ? "Favorited" : "Favorite",

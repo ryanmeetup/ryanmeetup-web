@@ -6,7 +6,10 @@ import { filterPanelsExpandedPreferenceKey } from "@/lib/user-preferences";
 import { CategoryFilterMenu } from "./CategoryFilterMenu";
 import { InclusionFilterMenu } from "./InclusionFilterMenu";
 import { profileDisplayName } from "@/lib/presentation";
-import { sortFavoriteProjectsFirst } from "@/lib/resources/project-sort";
+import {
+  currentFavoriteProjectIds,
+  sortFavoriteProjectsFirst,
+} from "@/lib/resources/project-sort";
 import {
   favoriteProjectsGroupLabel,
   projectOptionGroup,
@@ -57,7 +60,11 @@ export function TaskFilters({
 }) {
   const { categories, currentProfileId, profiles, projects, statuses } =
     options;
-  const favoriteProjectIds = new Set(options.favoriteProjectIds);
+  const currentFavoriteIds = currentFavoriteProjectIds(
+    projects,
+    options.favoriteProjectIds,
+  );
+  const favoriteProjectIds = new Set(currentFavoriteIds);
   const {
     count,
     categories: categorySelection,
@@ -157,14 +164,13 @@ export function TaskFilters({
             label: "No project",
             value: "none",
           },
-          ...sortFavoriteProjectsFirst(
-            projects,
-            options.favoriteProjectIds,
-          ).map((item) => ({
-            group: projectOptionGroup(favoriteProjectIds.has(item.id)),
-            label: `${item.name}${item.archived_at ? " (archived)" : ""}`,
-            value: item.id,
-          })),
+          ...sortFavoriteProjectsFirst(projects, currentFavoriteIds).map(
+            (item) => ({
+              group: projectOptionGroup(favoriteProjectIds.has(item.id)),
+              label: `${item.name}${item.archived_at ? " (archived)" : ""}`,
+              value: item.id,
+            }),
+          ),
         ]}
         includedValues={selections.project.included}
         excludedValues={selections.project.excluded}

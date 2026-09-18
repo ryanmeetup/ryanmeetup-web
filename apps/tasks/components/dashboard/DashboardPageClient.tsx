@@ -168,6 +168,7 @@ export function DashboardPageClient({
   const favoriteProjects = data.projects.filter(
     (project) =>
       !project.archived_at &&
+      project.status !== "complete" &&
       (data.currentProfile.favorite_project_ids ?? []).includes(project.id),
   );
   const visibleAssignedPage = boundedWidgetPage(

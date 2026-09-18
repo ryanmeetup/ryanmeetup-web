@@ -22,7 +22,10 @@ import {
   projectOptionGroup,
   ProjectsModal,
 } from "@/components/projects";
-import { sortFavoriteProjectsFirst } from "@/lib/resources/project-sort";
+import {
+  currentFavoriteProjectIds,
+  sortFavoriteProjectsFirst,
+} from "@/lib/resources/project-sort";
 import { useQueryParamState } from "@ryanmeetup/hooks";
 import { usePagination } from "@/hooks/usePagination";
 import type { WorkspaceData } from "@/lib/workspace/workspace-types";
@@ -174,7 +177,10 @@ export function ActivityPageClient({
   ]);
   const activityLoading =
     loading || (!demoMode && settledQueryKey !== queryKey);
-  const favoriteProjectIds = data.currentProfile.favorite_project_ids ?? [];
+  const favoriteProjectIds = currentFavoriteProjectIds(
+    data.projects,
+    data.currentProfile.favorite_project_ids ?? [],
+  );
 
   function setFilter(setter: (value: string) => void, value: string) {
     setter(value);

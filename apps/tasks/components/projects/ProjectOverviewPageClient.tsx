@@ -227,7 +227,10 @@ export function ProjectOverviewPageClient({
   }).slice(0, 6);
   const status = projectStatusDetails(project.status);
   const timeline = projectTimeline(project);
-  const isFavorite = favorites.isFavorite(project.id);
+  const isFavorite =
+    !project.archived_at &&
+    project.status !== "complete" &&
+    favorites.isFavorite(project.id);
   const canOpenCalendar = canViewWorkspaceArea(
     data.accessibleAreas,
     "calendar",
@@ -316,7 +319,9 @@ export function ProjectOverviewPageClient({
               </span>
             }
             titleActions={
-              !data.accessPreview ? (
+              !data.accessPreview &&
+              !project.archived_at &&
+              project.status !== "complete" ? (
                 <ProjectFavoriteButton
                   projectName={project.name}
                   favorite={isFavorite}
