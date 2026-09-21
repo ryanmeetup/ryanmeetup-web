@@ -23,19 +23,24 @@ test("completed projects leave Current and remain available to archive", async (
 
   await page.getByRole("button", { name: "New project" }).click();
   const editor = page.getByRole("dialog", { name: "New project" });
-  await editor.getByRole("textbox", { name: "Project name" }).fill("Finished launch");
-  await editor.getByRole("textbox", { name: "Description" }).fill("Launch work is done.");
+  await editor
+    .getByRole("textbox", { name: "Project name" })
+    .fill("Finished launch");
+  await editor
+    .getByRole("textbox", { name: "Description" })
+    .fill("Launch work is done.");
   await editor.getByRole("button", { name: "Project status" }).click();
   await page.getByRole("option", { name: "Complete" }).click();
   await editor.getByRole("button", { name: "Create project" }).click();
 
   const filters = page.getByLabel("Filter projects");
   const results = page.locator("main");
-  await expect(filters.getByRole("button", { name: "Current" })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
-  await expect(results.getByText("Finished launch", { exact: true })).toHaveCount(0);
+  await expect(
+    filters.getByRole("button", { name: "Current" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(
+    results.getByText("Finished launch", { exact: true }),
+  ).toHaveCount(0);
   await expect(
     page.locator("[data-workspace-sidebar]").getByRole("link", {
       name: "Complete project Finished launch",
@@ -43,12 +48,20 @@ test("completed projects leave Current and remain available to archive", async (
   ).toHaveCount(0);
 
   await filters.getByRole("button", { name: "Completed" }).click();
-  await expect(results.getByText("Finished launch", { exact: true })).toBeVisible();
+  await expect(
+    results.getByText("Finished launch", { exact: true }),
+  ).toBeVisible();
 
-  await results.getByRole("button", { name: 'Archive “Finished launch”' }).click();
-  await expect(results.getByText("Finished launch", { exact: true })).toHaveCount(0);
+  await results
+    .getByRole("button", { name: "Archive “Finished launch”" })
+    .click();
+  await expect(
+    results.getByText("Finished launch", { exact: true }),
+  ).toHaveCount(0);
   await filters.getByRole("button", { name: "Archived" }).click();
-  await expect(results.getByText("Finished launch", { exact: true })).toBeVisible();
+  await expect(
+    results.getByText("Finished launch", { exact: true }),
+  ).toBeVisible();
 });
 
 test("completing a favorite removes it from the sidebar", async ({
@@ -75,9 +88,16 @@ test("completing a favorite removes it from the sidebar", async ({
   await expect(
     sidebar.getByRole("link", { name: "Complete project Website Refresh" }),
   ).toHaveCount(0);
-  await expect(sidebar.getByRole("button", { name: "Favorites" })).toHaveCount(0);
-  await page.getByLabel("Filter projects").getByRole("button", { name: "Completed" }).click();
-  await expect(page.locator("main").getByText("Website Refresh", { exact: true })).toBeVisible();
+  await expect(sidebar.getByRole("button", { name: "Favorites" })).toHaveCount(
+    0,
+  );
+  await page
+    .getByLabel("Filter projects")
+    .getByRole("button", { name: "Completed" })
+    .click();
+  await expect(
+    page.locator("main").getByText("Website Refresh", { exact: true }),
+  ).toBeVisible();
 });
 
 test("all project filters fit at mobile and desktop widths", async ({
@@ -93,10 +113,16 @@ test("all project filters fit at mobile and desktop widths", async ({
     for (const label of ["Current", "Completed", "Archived", "All"]) {
       await expect(filters.getByRole("button", { name: label })).toBeVisible();
     }
-    expect(
-      await filters.evaluate(
-        (element) => element.scrollWidth <= element.clientWidth,
-      ),
-    ).toBe(true);
+    // Poll rather than measure once: a resize reflows the row over the next
+    // few frames, and mid-reflow it is briefly narrower than it settles at.
+    await expect
+      .poll(
+        async () =>
+          filters.evaluate(
+            (element) => element.scrollWidth <= element.clientWidth,
+          ),
+        { message: `filters fit at ${width}px` },
+      )
+      .toBe(true);
   }
 });
