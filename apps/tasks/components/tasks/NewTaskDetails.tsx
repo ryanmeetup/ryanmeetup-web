@@ -14,7 +14,14 @@ import {
   Input,
   toast,
 } from "@ryanmeetup/ui";
-import { FiFile, FiLink, FiPaperclip, FiPlus, FiTrash2 } from "react-icons/fi";
+import {
+  FiCheck,
+  FiFile,
+  FiLink,
+  FiPaperclip,
+  FiPlus,
+  FiTrash2,
+} from "react-icons/fi";
 import { MAX_ATTACHMENT_SIZE } from "@/lib/tasks/task-attachments";
 import { attachmentUrlName } from "@/lib/tasks/task-attachment-urls";
 import { CountBadge } from "@/components/global";
@@ -41,7 +48,10 @@ export function NewTaskDetails({
     if (!title) return;
     onChange((current) => ({
       ...current,
-      checklist: [...current.checklist, { id: crypto.randomUUID(), title }],
+      checklist: [
+        ...current.checklist,
+        { id: crypto.randomUUID(), title, completed: false },
+      ],
     }));
     setChecklistTitle("");
   }
@@ -115,8 +125,35 @@ export function NewTaskDetails({
       >
         {value.checklist.map((item) => (
           <div key={item.id} className="flex items-center gap-2">
-            <span className="h-5 w-5 shrink-0 rounded border border-black/20 dark:border-white/25" />
-            <span className="min-w-0 flex-1 text-sm">{item.title}</span>
+            <button
+              type="button"
+              role="checkbox"
+              aria-checked={item.completed}
+              disabled={disabled}
+              onClick={() =>
+                onChange((current) => ({
+                  ...current,
+                  checklist: current.checklist.map((candidate) =>
+                    candidate.id === item.id
+                      ? { ...candidate, completed: !candidate.completed }
+                      : candidate,
+                  ),
+                }))
+              }
+              className="group flex min-w-0 flex-1 items-center gap-2 rounded text-left focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed"
+            >
+              <span
+                aria-hidden
+                className={`grid h-5 w-5 shrink-0 place-items-center rounded border transition ${item.completed ? "border-emerald-500 bg-emerald-500 text-white" : "border-black/20 group-hover:border-black/40 dark:border-white/25 dark:group-hover:border-white/50"}`}
+              >
+                {item.completed && <FiCheck aria-hidden />}
+              </span>
+              <span
+                className={`min-w-0 flex-1 text-sm ${item.completed ? "text-black/45 line-through dark:text-white/45" : ""}`}
+              >
+                {item.title}
+              </span>
+            </button>
             <IconButton
               type="button"
               label={`Remove “${item.title}”`}

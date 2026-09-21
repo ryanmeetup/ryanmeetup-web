@@ -84,7 +84,7 @@ export type TaskLabel = { task_id: string; label_id: string };
 export type TaskCategory = { task_id: string; category_id: string };
 
 export type NewTaskDetailsDraft = {
-  checklist: { id: string; title: string }[];
+  checklist: { id: string; title: string; completed: boolean }[];
   files: File[];
   urls: { id: string; url: string }[];
 };

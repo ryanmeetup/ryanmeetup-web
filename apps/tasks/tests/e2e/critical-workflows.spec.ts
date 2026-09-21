@@ -398,6 +398,16 @@ test("keeps comments and activity out of task creation", async ({
   await expect(
     createForm.getByText("Checklist", { exact: true }),
   ).toBeVisible();
+  await createForm
+    .getByRole("textbox", { name: "Checklist item" })
+    .fill("Confirm the paperwork");
+  await createForm.getByRole("button", { name: "Add", exact: true }).click();
+  const checklistItem = createForm.getByRole("checkbox", {
+    name: "Confirm the paperwork",
+  });
+  await expect(checklistItem).toBeEnabled();
+  await checklistItem.click();
+  await expect(checklistItem).toBeChecked();
   await expect(
     createForm.getByText("Attachments", { exact: true }),
   ).toBeVisible();

@@ -46,7 +46,7 @@ describe("hasDraftAutosaveContent", () => {
   it("recognizes checklist content in task details", () => {
     expect(
       hasDraftAutosaveContent(contextualDraft, {
-        checklist: [{ id: "person-1", title: "Jamie" }],
+        checklist: [{ id: "person-1", title: "Jamie", completed: false }],
         files: [],
         urls: [],
       }),
@@ -76,8 +76,8 @@ describe("saved task details", () => {
       "draft-1099",
       {
         checklist: [
-          { id: "person-1", title: "Jamie" },
-          { id: "person-2", title: "Morgan" },
+          { id: "person-1", title: "Jamie", completed: true },
+          { id: "person-2", title: "Morgan", completed: false },
         ],
         files: [],
         urls: [{ id: "tax-guide", url: "https://www.irs.gov/1099" }],
@@ -89,8 +89,8 @@ describe("saved task details", () => {
         id: "draft-1099",
         details: {
           checklist: [
-            { id: "person-1", title: "Jamie" },
-            { id: "person-2", title: "Morgan" },
+            { id: "person-1", title: "Jamie", completed: true },
+            { id: "person-2", title: "Morgan", completed: false },
           ],
           files: [],
           urls: [{ id: "tax-guide", url: "https://www.irs.gov/1099" }],
@@ -117,6 +117,29 @@ describe("saved task details", () => {
       files: [],
       urls: [],
     });
+  });
+
+  it("opens older checklist drafts with their items unchecked", () => {
+    vi.stubGlobal("localStorage", {
+      getItem: () =>
+        JSON.stringify([
+          {
+            id: "legacy-checklist",
+            draft: contextualDraft,
+            details: {
+              checklist: [{ id: "person-1", title: "Jamie" }],
+              files: [],
+              urls: [],
+            },
+            updatedAt: "2026-09-03T12:00:00.000Z",
+          },
+        ]),
+    });
+    vi.stubGlobal("window", {});
+
+    expect(readTaskDrafts("ryan")[0]?.details?.checklist).toEqual([
+      { id: "person-1", title: "Jamie", completed: false },
+    ]);
   });
 
   it("drops comments stored by the former create-task UI", () => {

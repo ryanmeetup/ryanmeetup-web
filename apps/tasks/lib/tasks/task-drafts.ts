@@ -32,12 +32,19 @@ function storedTaskDetails(value: unknown): NewTaskDetailsDraft {
   const details = value as Partial<NewTaskDetailsDraft>;
   return {
     checklist: Array.isArray(details.checklist)
-      ? details.checklist.filter(
-          (item): item is { id: string; title: string } =>
-            Boolean(item) &&
-            typeof item.id === "string" &&
-            typeof item.title === "string",
-        )
+      ? details.checklist
+          .filter(
+            (item): item is { id: string; title: string; completed: boolean } =>
+              Boolean(item) &&
+              typeof item.id === "string" &&
+              typeof item.title === "string",
+          )
+          .map((item) => ({
+            ...item,
+            // Drafts saved before checklist completion was available reopen
+            // their items instead of becoming unreadable.
+            completed: typeof item.completed === "boolean" && item.completed,
+          }))
       : [],
     // Browser File objects cannot be represented safely in local storage.
     files: [],

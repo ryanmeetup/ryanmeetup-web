@@ -27,7 +27,7 @@ export async function persistNewTaskDetails({
           id: item.id,
           task_id: taskId,
           title: item.title,
-          is_completed: false,
+          is_completed: item.completed,
           sort_order: index,
           created_by: current.currentProfile.id,
           created_at: createdAt,
@@ -66,27 +66,28 @@ export async function persistNewTaskDetails({
   const subtasks: Subtask[] = [];
   const attachments: TaskAttachment[] = [];
   const activity: TaskActivity[] = [];
-  for (const [index, item] of draft.checklist.entries()) {
+  for (let offset = 0; offset < draft.checklist.length; offset += 100) {
+    const items = draft.checklist.slice(offset, offset + 100);
     try {
       const result = await mutate<{
-        subtask?: Subtask;
+        subtasks?: Subtask[];
         activity?: TaskActivity;
       }>("/api/task-details", {
         method: "POST",
         body: JSON.stringify({
-          kind: "subtask",
+          kind: "subtasks",
           taskId,
-          value: item.title,
-          sortOrder: index,
+          items,
+          sortOrder: offset,
         }),
       });
-      if (!result.subtask) failures += 1;
+      if (!result.subtasks) failures += items.length;
       else {
-        subtasks.push(result.subtask);
+        subtasks.push(...result.subtasks);
         if (result.activity) activity.push(result.activity);
       }
     } catch {
-      failures += 1;
+      failures += items.length;
     }
   }
   for (const file of draft.files) {
