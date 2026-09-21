@@ -35,7 +35,11 @@ Categories are no longer limited to 20 tags. Owners can drag tags into the order
 
 The desktop sidebar can now be hidden from its header and restored from the workspace header. Tasks remembers that choice between visits, so focused work keeps the extra room until the navigation is needed again.
 
-Project rows in the sidebar now open their task boards directly, while a dedicated details button keeps each project's overview one click away.
+Project rows in the sidebar now open their task boards directly, while a dedicated action beside the board title opens the project's overview.
+Links, notes, and files share one project-context group with a compact management action in its label, keeping content actions beside the content they change.
+Inline Links, Notes, and Files labels keep each kind of project context distinguishable without splitting the header back into separate sections.
+Project and category editing now sit beside the workspace title, leaving the right side of the header to the task-view controls.
+On desktop, those view controls share one aligned toolbar beside the title while descriptions wrap to a readable measure beneath it.
 
 ### A more compact archive
 
@@ -44,6 +48,8 @@ Archived tasks lead with their task keys, group supporting details more tightly,
 ### Loading without a layout jump
 
 Activity feeds show skeleton rows while a request is pending, preserving the shape of the page rather than replacing it with a lone loading message. The stale content remains clearly unavailable until the newest response arrives.
+Project attachment lists now use the same card-shaped loading treatment instead of adding status copy beneath their descriptions.
+The project-context dialog reserves its final responsive height while those skeletons load, keeping its scroll area and footer stationary.
 
 ### Predictable board drops
 
@@ -52,6 +58,10 @@ Dropping a task into the open space of a column now puts it at the top by defaul
 ### Clickable links in task descriptions
 
 Web addresses pasted into a task description now appear as clickable links on the board and task detail page, opening the destination in a new tab.
+
+### Check off work while creating a task
+
+Checklist items can now be marked complete before a new task is created. Their checked state also stays intact in saved drafts and on the finished task.
 
 ## Under the hood
 
