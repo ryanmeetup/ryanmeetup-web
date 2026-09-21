@@ -73,8 +73,8 @@ export function TaskSearch({
     () => new Map(projects.map((item) => [item.id, item.name])),
     [projects],
   );
-  const statusNames = useMemo(
-    () => new Map(statuses.map((item) => [item.id, item.name])),
+  const statusesById = useMemo(
+    () => new Map(statuses.map((item) => [item.id, item])),
     [statuses],
   );
   const profilesById = useMemo(
@@ -228,7 +228,7 @@ export function TaskSearch({
         aria-hidden
         className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-black/40 sm:left-3 sm:text-base dark:text-white/40"
       />
-      {/* Override the mobile 16px minimum at rest, then restore it on focus to prevent iOS zoom. */}
+      {/* Typed text keeps the mobile 16px minimum (prevents iOS zoom); only the placeholder is denser, so focusing never resizes it. */}
       <input
         ref={inputRef}
         type="search"
@@ -259,7 +259,7 @@ export function TaskSearch({
             ? "Search tasks by title, ID, or project..."
             : "Search tasks…"
         }
-        className="h-8 w-full rounded-lg border border-black/10 bg-white pl-8 pr-16 text-sm outline-none focus:border-black/30 focus:ring-2 focus:ring-black/10 max-sm:!text-sm max-sm:focus:!text-base sm:h-10 sm:pl-10 sm:pr-20 [&::-webkit-search-cancel-button]:appearance-none dark:border-white/10 dark:bg-white/5 dark:focus:border-white/30"
+        className="h-8 w-full rounded-lg border border-black/10 bg-white pl-8 pr-16 text-sm outline-none focus:border-black/30 focus:ring-2 focus:ring-black/10 max-sm:placeholder:text-sm sm:h-10 sm:pl-10 sm:pr-20 [&::-webkit-search-cancel-button]:appearance-none dark:border-white/10 dark:bg-white/5 dark:focus:border-white/30"
       />
       {query && (
         <button
@@ -296,7 +296,7 @@ export function TaskSearch({
           setActiveIndex={setActiveIndex}
           selectTask={(task) => navigate(taskSearchResultHref(task, preview))}
           projectNames={projectNames}
-          statusNames={statusNames}
+          statusesById={statusesById}
           profilesById={profilesById}
           taskAssignees={remoteTaskAssignees ?? taskAssignees}
           remoteTotalCount={remoteTotalCount}

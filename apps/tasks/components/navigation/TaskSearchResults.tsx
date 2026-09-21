@@ -8,11 +8,10 @@ import {
   FiFlag,
   FiFolder,
   FiLayers,
-  FiLoader,
   FiTag,
   FiUsers,
 } from "react-icons/fi";
-import type { Task, TaskAssignee } from "@/lib/tasks/task-types";
+import type { Status, Task, TaskAssignee } from "@/lib/tasks/task-types";
 import type { Profile } from "@/lib/workspace/workspace-types";
 import {
   ARCHIVED_SEARCH_GROUP_ORDER,
@@ -20,8 +19,10 @@ import {
   type TaskSearchRelatedResults,
 } from "@/lib/tasks/task-search";
 import { profileDisplayName } from "@/lib/presentation";
+import { projectStatusDetails } from "@/lib/resources/project-status";
 import { TaskKeyBadge, TaskPriorityBadge } from "@/components/tasks";
 import { formatCalendarDay } from "@/lib/date-format";
+import { SkeletonBar } from "@/components/global/SkeletonBar";
 
 type Props = {
   listboxId: string;
@@ -36,7 +37,7 @@ type Props = {
   setActiveIndex: (index: number) => void;
   selectTask: (task: Task) => void;
   projectNames: ReadonlyMap<string, string>;
-  statusNames: ReadonlyMap<string, string>;
+  statusesById: ReadonlyMap<string, Status>;
   profilesById: ReadonlyMap<string, Profile>;
   taskAssignees: TaskAssignee[];
   remoteTotalCount: number | null;
@@ -71,6 +72,37 @@ function GroupHeading({
   );
 }
 
+const skeletonRows = Array.from({ length: 5 }, (_, index) => index);
+
+/** Fixed-height placeholder so the dropdown never shows stale matches. */
+function TaskSearchSkeleton() {
+  return (
+    <div
+      role="status"
+      aria-label="Searching across your tasks"
+      className="h-80 max-h-[calc(50dvh-2px)] overflow-hidden"
+    >
+      <p aria-hidden className={headingClass}>
+        <SkeletonBar className="h-3 w-16" />
+      </p>
+      {skeletonRows.map((index) => (
+        <div
+          key={index}
+          aria-hidden
+          className="space-y-2 border-b border-black/5 px-4 py-3 dark:border-white/5"
+        >
+          <SkeletonBar className="h-4 w-3/4" />
+          <div className="flex gap-3">
+            <SkeletonBar className="h-3 w-20" />
+            <SkeletonBar className="h-3 w-16" />
+            <SkeletonBar className="h-3 w-24" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function TaskResultItem({
   task,
   id,
@@ -78,7 +110,7 @@ function TaskResultItem({
   onActivate,
   onSelect,
   projectName,
-  statusName,
+  status,
   assignees,
   archived = false,
 }: {
@@ -88,7 +120,7 @@ function TaskResultItem({
   onActivate: () => void;
   onSelect: () => void;
   projectName?: string;
-  statusName?: string;
+  status?: Status;
   assignees: Profile[];
   archived?: boolean;
 }) {
@@ -114,10 +146,14 @@ function TaskResultItem({
               <span className="truncate">{projectName}</span>
             </span>
           )}
-          {statusName && (
-            <span className="inline-flex items-center gap-1">
-              <FiTag aria-hidden />
-              {statusName}
+          {status && (
+            <span className="inline-flex items-center gap-1.5">
+              <i
+                aria-hidden
+                className="h-2 w-2 shrink-0 rounded-full"
+                style={{ backgroundColor: status.color }}
+              />
+              {status.name}
             </span>
           )}
           <span className="inline-flex items-center gap-1">
@@ -175,7 +211,7 @@ export function TaskSearchResults(props: Props) {
     setActiveIndex,
     selectTask,
     projectNames,
-    statusNames,
+    statusesById,
     profilesById,
     taskAssignees,
     remoteTotalCount,
@@ -210,25 +246,12 @@ export function TaskSearchResults(props: Props) {
         <p className="px-4 py-5 text-center text-sm text-black/60 dark:text-white/60">
           Type at least 3 characters to search.
         </p>
+      ) : isPending ? (
+        <TaskSearchSkeleton />
       ) : (
         <div className="relative">
-          {isPending && (
-            <div
-              role="status"
-              className="sticky top-0 z-10 flex items-center justify-center gap-2 border-b border-black/5 bg-white/95 px-4 py-2 text-sm text-black/60 backdrop-blur dark:border-white/5 dark:bg-[#202020]/95 dark:text-white/60"
-            >
-              <FiLoader
-                aria-hidden
-                className="animate-spin motion-reduce:animate-none"
-              />
-              Searching across your tasks…
-            </div>
-          )}
-          <div
-            aria-disabled={isPending || undefined}
-            className={`flex flex-col transition-opacity ${isPending ? "pointer-events-none opacity-55" : ""}`}
-          >
-            {!hasResults && !isPending && (
+          <div className="flex flex-col">
+            {!hasResults && (
               <p className="px-4 py-5 text-center text-sm text-black/60 dark:text-white/60">
                 No matching objects found.
               </p>
@@ -257,7 +280,7 @@ export function TaskSearchResults(props: Props) {
                         ? projectNames.get(task.project_id)
                         : undefined
                     }
-                    statusName={statusNames.get(task.status_id)}
+                    status={statusesById.get(task.status_id)}
                     assignees={assigneesFor(task)}
                   />
                 ))}
@@ -274,22 +297,35 @@ export function TaskSearchResults(props: Props) {
                 >
                   Projects
                 </GroupHeading>
-                {related.projects.map((item) => (
-                  <Link
-                    key={item.id}
-                    href={projectHref(item)}
-                    className={linkClass}
-                  >
-                    <span className="block truncate font-semibold">
-                      {item.name}
-                    </span>
-                    {item.description && (
-                      <span className="mt-0.5 block truncate text-xs text-black/55 dark:text-white/55">
-                        {item.description}
+                {related.projects.map((item) => {
+                  const status = projectStatusDetails(item.status);
+                  return (
+                    <Link
+                      key={item.id}
+                      href={projectHref(item)}
+                      className={linkClass}
+                    >
+                      <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                        <span className="min-w-0 truncate font-semibold">
+                          {item.name}
+                        </span>
+                        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-black/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-black/60 dark:border-white/10 dark:text-white/65">
+                          <span
+                            aria-hidden
+                            className="h-1.5 w-1.5 rounded-full"
+                            style={{ backgroundColor: status.color }}
+                          />
+                          {status.label}
+                        </span>
                       </span>
-                    )}
-                  </Link>
-                ))}
+                      {item.description && (
+                        <span className="mt-0.5 block truncate text-xs text-black/55 dark:text-white/55">
+                          {item.description}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
               </section>
             )}
             {related.categories.length > 0 && (
@@ -400,7 +436,7 @@ export function TaskSearchResults(props: Props) {
                         ? projectNames.get(task.project_id)
                         : undefined
                     }
-                    statusName={statusNames.get(task.status_id)}
+                    status={statusesById.get(task.status_id)}
                     assignees={assigneesFor(task)}
                   />
                 ))}
