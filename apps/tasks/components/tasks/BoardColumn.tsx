@@ -72,7 +72,7 @@ export function BoardColumn({
       }}
       data-collapsed={collapsed ? "" : undefined}
       data-drag-active={dragActive ? "" : undefined}
-      className={`w-[min(240px,70vw)] sm:w-[min(320px,calc(100vw-3rem))] ${collapsed && !dragActive ? "self-start" : "self-stretch"} group/column relative flex shrink-0 flex-col overflow-hidden rounded-2xl transition-[background-color,box-shadow] ${isDropTarget ? "bg-[#d9dcd7] ring-2 ring-inset ring-black/30 dark:bg-[#242424] dark:ring-white/40" : "bg-[#e7e8e5] dark:bg-[#1b1b1b]"}`}
+      className={`w-[min(240px,70vw)] sm:w-[min(320px,calc(100vw-3rem))] ${collapsed && !dragActive ? "self-start" : "self-stretch"} group/column relative flex shrink-0 flex-col overflow-hidden rounded-2xl border border-black/10 transition-[background-color,box-shadow] ${isDropTarget ? "bg-[#d9dcd7] ring-2 ring-inset ring-black/30 dark:bg-[#242424] dark:ring-white/40" : "bg-[#e7e8e5] dark:bg-[#1b1b1b]"} dark:border-white/10`}
     >
       {/* The whole of a column's chrome stays above the list, not just its
           name: a task is hard to place from a heading alone, and the search
