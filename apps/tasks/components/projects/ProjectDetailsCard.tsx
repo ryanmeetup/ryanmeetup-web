@@ -344,7 +344,7 @@ export function ProjectDetailsCard({
  * commit — hence a confirm that speaks only for them. Kept out of the project
  * settings form, which is what made that form long enough to scroll.
  */
-function ProjectContextDialog({
+export function ProjectContextDialog({
   project,
   attachments,
   demoMode,
@@ -401,6 +401,8 @@ function ProjectContextDialog({
       title="Project context"
       description="Link changes save when you confirm. Notes and files save immediately."
       size="lg"
+      maxHeight="min(48rem, calc(100dvh - max(1rem, env(safe-area-inset-top)) - max(1rem, env(safe-area-inset-bottom))))"
+      panelClassName="h-[calc(100dvh-2rem)]"
       actions={
         <ModalActions
           cancelLabel="Close"

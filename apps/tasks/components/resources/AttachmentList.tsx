@@ -33,6 +33,33 @@ import type { ResourceAttachmentDraft } from "@/lib/resources/resource-managemen
 
 type DropEdge = "before" | "after";
 
+function AttachmentListSkeleton({ type }: { type: "note" | "file" }) {
+  const label = `Loading ${type === "note" ? "notes" : "attachments"}`;
+
+  return (
+    <div
+      role="status"
+      className="rounded-lg border border-black/10 bg-white/60 p-3 dark:border-white/10 dark:bg-black/10"
+    >
+      <span className="sr-only">{label}</span>
+      <div
+        aria-hidden="true"
+        className="flex animate-pulse items-start gap-3 motion-reduce:animate-none"
+      >
+        <span className="h-10 w-10 shrink-0 rounded-lg bg-black/[0.08] dark:bg-white/10" />
+        <span className="min-w-0 flex-1 space-y-2 py-1">
+          <span className="block h-3 w-2/5 rounded-full bg-black/[0.08] dark:bg-white/10" />
+          <span className="block h-2.5 w-3/5 rounded-full bg-black/[0.06] dark:bg-white/[0.08]" />
+        </span>
+        <span className="h-9 w-9 shrink-0 rounded-lg bg-black/[0.06] dark:bg-white/[0.08]" />
+        {type === "note" && (
+          <span className="h-9 w-9 shrink-0 rounded-lg bg-black/[0.06] dark:bg-white/[0.08]" />
+        )}
+      </div>
+    </div>
+  );
+}
+
 function SortableAttachment({
   item,
   reorderable,
@@ -140,10 +167,8 @@ export function AttachmentList({
           }
           aria-busy={loading}
         >
-          {loading && (
-            <p className="text-xs text-black/55 dark:text-white/55">
-              Loading {type === "note" ? "notes" : "attachments"}...
-            </p>
+          {loading && items.length === 0 && (
+            <AttachmentListSkeleton type={type} />
           )}
           {items.map((item) => (
             <SortableAttachment
