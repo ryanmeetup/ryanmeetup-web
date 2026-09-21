@@ -102,7 +102,7 @@ const DropdownMenuItem = ({
     <button
       type={type}
       disabled={disabled}
-      className={`group flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition focus:outline-none data-focus:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50 dark:data-focus:bg-white/10 ${destructive ? "text-red-700 dark:text-red-400" : "text-black dark:text-white"} ${className ?? ""}`}
+      className={`group flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition focus:outline-none data-focus:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50 dark:data-focus:bg-white/10 [&_svg]:shrink-0 ${destructive ? "text-red-700 dark:text-red-400" : "text-black dark:text-white"} ${className ?? ""}`}
       {...props}
     >
       {children}
@@ -125,7 +125,7 @@ const DropdownMenuItemLink = ({
   <MenuItem>
     <NextLink
       href={href}
-      className={`group flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition focus:outline-none data-focus:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50 dark:data-focus:bg-white/10 ${destructive ? "text-red-700 dark:text-red-400" : "text-black dark:text-white"} ${className ?? ""}`}
+      className={`group flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition focus:outline-none data-focus:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50 dark:data-focus:bg-white/10 [&_svg]:shrink-0 ${destructive ? "text-red-700 dark:text-red-400" : "text-black dark:text-white"} ${className ?? ""}`}
       {...props}
     >
       {children}

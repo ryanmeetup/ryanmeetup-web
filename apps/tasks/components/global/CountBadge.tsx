@@ -15,6 +15,19 @@ const sizeStyles = {
   },
 } as const;
 
+const ghostSizeStyles = {
+  sm: {
+    base: "text-xs sm:text-sm",
+    bare: "",
+    labelled: "gap-1",
+  },
+  lg: {
+    base: "align-middle text-[0.44em]",
+    bare: "",
+    labelled: "gap-[0.35em]",
+  },
+} as const;
+
 export function CountBadge({
   children,
   label,
@@ -22,6 +35,7 @@ export function CountBadge({
   hideLabel = false,
   className,
   size = "sm",
+  variant = "solid",
 }: {
   children: ReactNode;
   /** Singular noun for whatever is being counted, e.g. "task". */
@@ -36,8 +50,10 @@ export function CountBadge({
   hideLabel?: boolean;
   className?: string;
   size?: keyof typeof sizeStyles;
+  /** Remove the pill surface when the count is supporting metadata. */
+  variant?: "solid" | "ghost";
 }) {
-  const styles = sizeStyles[size];
+  const styles = variant === "ghost" ? ghostSizeStyles[size] : sizeStyles[size];
   const noun = label
     ? children === 1
       ? label
@@ -47,7 +63,11 @@ export function CountBadge({
 
   return (
     <span
-      className={`relative inline-flex items-center justify-center whitespace-nowrap rounded-full bg-black/10 font-sans font-semibold normal-case leading-none tabular-nums tracking-normal text-black/60 dark:bg-white/10 dark:text-white/60 ${styles.base} ${showNoun ? styles.labelled : styles.bare} ${className ?? ""}`}
+      className={`relative inline-flex items-center justify-center whitespace-nowrap font-sans normal-case tabular-nums tracking-normal ${
+        variant === "ghost"
+          ? "font-medium leading-normal text-black/45 dark:text-white/45"
+          : "rounded-full bg-black/10 font-semibold leading-none text-black/60 dark:bg-white/10 dark:text-white/60"
+      } ${styles.base} ${showNoun ? styles.labelled : styles.bare} ${className ?? ""}`}
     >
       {children}
       {noun !== null && (

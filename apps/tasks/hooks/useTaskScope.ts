@@ -44,17 +44,19 @@ export function useTaskScope({
       ? "My Tasks"
       : "All Tasks";
   const pageTitle = useInstancePageTitle();
-  const viewTitle =
+  // The tab title has only text to work with, so it keeps the archived suffix.
+  // The on-page heading shows a badge beside the plain name instead.
+  const documentTitle =
     visibility === "archived" ? `${taskScopeTitle} · Archived` : taskScopeTitle;
   useEffect(() => {
-    document.title = pageTitle(viewTitle);
-  }, [pageTitle, viewTitle]);
+    document.title = pageTitle(documentTitle);
+  }, [pageTitle, documentTitle]);
 
   return {
     isMyTasks,
     myTasksName,
     scopeDescription,
-    viewTitle,
+    viewTitle: taskScopeTitle,
     viewingAsGroup,
   };
 }

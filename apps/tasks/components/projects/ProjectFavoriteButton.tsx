@@ -5,17 +5,20 @@ export function ProjectFavoriteButton({
   favorite,
   pending,
   projectName,
+  size = "sm",
   onToggle,
 }: {
   favorite: boolean;
   pending: boolean;
   projectName: string;
+  size?: "sm" | "md";
   onToggle: () => void;
 }) {
   return (
     <IconButton
       label={`${favorite ? "Remove" : "Add"} “${projectName}” ${favorite ? "from" : "to"} favorites`}
       variant="plain"
+      size={size}
       disabled={pending}
       onClick={onToggle}
       className={`align-middle ${

@@ -1,20 +1,38 @@
 "use client";
 
-import { useEffect, useId, useState, type ReactNode } from "react";
-import { Avatar, Button, Heading, Tooltip } from "@ryanmeetup/ui";
+import { Fragment, useEffect, useId, useState, type ReactNode } from "react";
+import {
+  Avatar,
+  DropdownMenu,
+  DropdownMenuButton,
+  DropdownMenuItem,
+  DropdownMenuItems,
+  DropdownMenuSeparator,
+  Heading,
+  IconButton,
+  Pill,
+  Tooltip,
+} from "@ryanmeetup/ui";
 import {
   FiArchive,
   FiChevronDown,
   FiEdit2,
+  FiExternalLink,
   FiFolder,
   FiGrid,
   FiList,
+  FiStar,
   FiTag,
   FiUsers,
 } from "react-icons/fi";
 import { CountBadge } from "@/components/global";
 import { ProjectFavoriteButton } from "@/components/projects/ProjectFavoriteButton";
-import type { Category, Project } from "@/lib/resources/resource-types";
+import { ProjectContextDialog } from "@/components/projects/ProjectDetailsCard";
+import type {
+  Category,
+  Project,
+  ResourceLink,
+} from "@/lib/resources/resource-types";
 import type { Profile } from "@/lib/workspace/workspace-types";
 import {
   ResourceAttachmentsPreview,
@@ -25,12 +43,14 @@ import {
 
 export type TaskWorkspaceHeaderScope = {
   assignee: string;
+  currentUserId: string;
   demoMode: boolean;
   isMyTasks: boolean;
   myTasksName: string;
   previewing: boolean;
   projectFavorite: boolean;
   projectFavoritePending: boolean;
+  projectDetailsHref: string | null;
   projectOwners: Profile[];
   /**
    * How many attachments the selected project and category are known to have,
@@ -52,6 +72,7 @@ export type TaskWorkspaceHeaderScope = {
 
 export type TaskWorkspaceHeaderControls = {
   onEditProject: () => void;
+  onProjectLinksSaved: (links: ResourceLink[]) => void;
   onToggleProjectFavorite: () => void;
   onEditCategory: () => void;
   onSetAssignee: (value: string) => void;
@@ -126,37 +147,87 @@ function WorkspaceHeaderDetails({
   );
 }
 
-function TaskLayoutSwitch({
-  view,
-  onSetView,
-  compact = false,
+type WorkspaceSwitchOption = {
+  value: string;
+  label: string;
+  icon?: ReactNode;
+  /** Set when the option cannot be chosen; the text says why, in a tooltip. */
+  unavailable?: string;
+};
+
+/**
+ * The workspace's segmented switches - view, assignee, status - in the two
+ * surfaces they appear on. `toolbar` sits inside the desktop filter bar, which
+ * supplies its own border and background. `grid` is the captioned, full-width
+ * form the mobile actions menu stacks, where each switch has to carry its own
+ * track and say what it controls.
+ */
+function WorkspaceSwitch({
+  ariaLabel,
+  caption,
+  onChange,
+  options,
+  value,
+  variant = "toolbar",
 }: {
-  view: "board" | "list";
-  onSetView: TaskWorkspaceHeaderControls["onSetView"];
-  compact?: boolean;
+  ariaLabel: string;
+  caption: string;
+  onChange: (value: string) => void;
+  options: WorkspaceSwitchOption[];
+  value: string;
+  variant?: "toolbar" | "grid";
 }) {
-  return (
+  const grid = variant === "grid";
+  const track = (
     <div
       role="group"
-      aria-label="Task layout"
-      className={`${compact ? "ml-auto flex shrink-0 p-0.5 sm:hidden" : "hidden p-1 sm:flex"} min-w-0 rounded-lg border border-black/10 bg-white dark:border-white/10 dark:bg-white/5`}
+      aria-label={ariaLabel}
+      className={
+        grid
+          ? "grid w-full min-w-0 auto-cols-fr grid-flow-col rounded-lg border border-black/10 bg-white p-0.5 dark:border-white/10 dark:bg-white/5"
+          : "flex min-w-0 p-1"
+      }
     >
-      <button
-        type="button"
-        aria-pressed={view === "board"}
-        onClick={() => onSetView("board")}
-        className={`view-button ${compact ? "min-h-9 min-w-9 gap-0 px-0" : "gap-2 px-3"} ${view === "board" ? "view-button-active" : ""}`}
+      {options.map((option) => {
+        const button = (
+          <button
+            type="button"
+            aria-pressed={
+              option.unavailable ? undefined : option.value === value
+            }
+            disabled={Boolean(option.unavailable)}
+            onClick={() => onChange(option.value)}
+            className={`view-button [&_svg]:size-4 [&_svg]:shrink-0 ${
+              grid
+                ? "min-h-9 w-full min-w-0 px-2 tracking-[0.08em]"
+                : "px-3 tracking-[0.14em]"
+            } ${option.unavailable ? "opacity-40" : ""} ${
+              option.value === value ? "view-button-active" : ""
+            }`}
+          >
+            {option.icon} {option.label}
+          </button>
+        );
+        return option.unavailable ? (
+          <Tooltip key={option.value} content={option.unavailable}>
+            {button}
+          </Tooltip>
+        ) : (
+          <Fragment key={option.value}>{button}</Fragment>
+        );
+      })}
+    </div>
+  );
+  if (!grid) return track;
+  return (
+    <div>
+      <p
+        aria-hidden="true"
+        className="mb-1 text-[9px] font-semibold uppercase tracking-[0.16em] text-black/45 dark:text-white/45"
       >
-        <FiGrid aria-hidden /> <span className={compact ? "sr-only" : ""}>Board</span>
-      </button>
-      <button
-        type="button"
-        aria-pressed={view === "list"}
-        onClick={() => onSetView("list")}
-        className={`view-button ${compact ? "min-h-9 min-w-9 gap-0 px-0" : "gap-2 px-3"} ${view === "list" ? "view-button-active" : ""}`}
-      >
-        <FiList aria-hidden /> <span className={compact ? "sr-only" : ""}>List</span>
-      </button>
+        {caption}
+      </p>
+      {track}
     </div>
   );
 }
@@ -170,6 +241,7 @@ export function TaskWorkspaceHeader({
 }) {
   const [desktopDetails, setDesktopDetails] = useState(false);
   const [projectDetailsOpen, setProjectDetailsOpen] = useState(false);
+  const [projectContextOpen, setProjectContextOpen] = useState(false);
   const [categoryDetailsOpen, setCategoryDetailsOpen] = useState(false);
 
   useEffect(() => {
@@ -182,12 +254,14 @@ export function TaskWorkspaceHeader({
 
   const {
     assignee,
+    currentUserId,
     demoMode,
     isMyTasks,
     myTasksName,
     previewing,
     projectFavorite,
     projectFavoritePending,
+    projectDetailsHref,
     projectOwners,
     projectAttachmentCount,
     categoryAttachmentCount,
@@ -202,6 +276,7 @@ export function TaskWorkspaceHeader({
   } = scope;
   const {
     onEditProject,
+    onProjectLinksSaved,
     onEditCategory,
     onSetAssignee,
     onSetView,
@@ -213,17 +288,87 @@ export function TaskWorkspaceHeader({
   const showFavorite = Boolean(
     selectedProject && !previewing && !selectedProject.archived_at,
   );
+  // Actions belonging to the selected project or category, as opposed to the
+  // board/list switch, which changes how any scope renders. Below `sm` these
+  // collapse into one menu beside the title; archived views of a personal or
+  // team workspace have none of them.
+  const canEditScope = Boolean(
+    (selectedProject || selectedCategory) && !previewing,
+  );
+  const hasScopeActions = Boolean(
+    showFavorite || (selectedProject && projectDetailsHref) || canEditScope,
+  );
+  // The menu carries the filters as well as the scope's own actions, so it is
+  // never empty and the trigger always has something to open.
+  const scopeActionsLabel = selectedProject
+    ? "Project options"
+    : selectedCategory
+      ? "Category options"
+      : "Workspace options";
+  const viewOptions: WorkspaceSwitchOption[] = [
+    { value: "board", label: "Board", icon: <FiGrid aria-hidden /> },
+    { value: "list", label: "List", icon: <FiList aria-hidden /> },
+  ];
+  const assigneeOptions: WorkspaceSwitchOption[] = [
+    { value: "all", label: "All" },
+    {
+      value: myTasksName,
+      label: "Mine",
+      unavailable: viewingAsGroup
+        ? "Mine is unavailable when viewing as an access group because a group is not a task assignee."
+        : undefined,
+    },
+  ];
+  const statusOptions: WorkspaceSwitchOption[] = [
+    { value: "active", label: "Active" },
+    { value: "archived", label: "Archive", icon: <FiArchive aria-hidden /> },
+  ];
+  // A third person's name matches neither option, which is what the old markup
+  // did too: All and Mine both read as unpressed.
+  const assigneeValue = isMyTasks ? myTasksName : assignee;
+  // View goes last: archived work has no board, so the switch drops out, and
+  // at the bottom of the stack nothing above it moves when it does.
+  const filterSwitches = (
+    <>
+      <WorkspaceSwitch
+        variant="grid"
+        caption="Assignee"
+        ariaLabel="Task assignee"
+        options={assigneeOptions}
+        value={assigneeValue}
+        onChange={onSetAssignee}
+      />
+      <WorkspaceSwitch
+        variant="grid"
+        caption="Status"
+        ariaLabel="Task status"
+        options={statusOptions}
+        value={visibility}
+        onChange={(next) => onSetVisibility(next as "active" | "archived")}
+      />
+      {visibility === "active" && (
+        <WorkspaceSwitch
+          variant="grid"
+          caption="View"
+          ariaLabel="Task layout"
+          options={viewOptions}
+          value={view}
+          onChange={(next) => onSetView(next as "board" | "list")}
+        />
+      )}
+    </>
+  );
   const projectAttachments = useResourceAttachments({
     kind: "project",
     resourceId: selectedProject?.id,
     demoMode,
-    currentUserId: "",
+    currentUserId,
   });
   const categoryAttachments = useResourceAttachments({
     kind: "category",
     resourceId: selectedCategory?.id,
     demoMode,
-    currentUserId: "",
+    currentUserId,
   });
   // Only reserve space for attachments that are actually coming. A resource
   // counted at zero skips the placeholder, so an empty project no longer
@@ -232,10 +377,18 @@ export function TaskWorkspaceHeader({
     projectAttachments.loading && projectAttachmentCount !== 0;
   const categoryAttachmentsPending =
     categoryAttachments.loading && categoryAttachmentCount !== 0;
+  // One badge, two slots. Below `xl` the count rides the eyebrow line, where
+  // there is room to spare; from `xl` up it closes the toolbar's right edge
+  // alongside the description instead.
+  const taskCountBadge = (
+    <CountBadge label="task" variant="ghost" className="task-workspace-count">
+      {taskCount}
+    </CountBadge>
+  );
   return (
-    <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-      <div>
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-black/50 dark:text-white/50">
+    <div className="mb-6">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <p className="min-w-0 text-[10px] font-semibold uppercase tracking-[0.24em] text-black/50 dark:text-white/50">
           {selectedProject
             ? "Project workspace"
             : selectedCategory
@@ -244,244 +397,358 @@ export function TaskWorkspaceHeader({
                 ? "Personal workspace"
                 : "Team workspace"}
         </p>
-        <div className="flex min-w-0 items-center gap-2 sm:block">
-          <Heading size="h1" className="min-w-0 text-2xl sm:text-4xl">
-            {viewTitle}&nbsp;
-            <CountBadge size="lg" label="task">
-              {taskCount}
-            </CountBadge>
-            {showFavorite && (
-              <ProjectFavoriteButton
-                projectName={selectedProject?.name ?? "project"}
-                favorite={projectFavorite}
-                pending={projectFavoritePending}
-                onToggle={onToggleProjectFavorite}
+        <span className="shrink-0 xl:hidden">{taskCountBadge}</span>
+      </div>
+      <div className="flex flex-col gap-4 xl:grid xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start xl:gap-x-8 xl:gap-y-0">
+        <div className="min-w-0 flex-1 xl:contents">
+          <div className="flex min-w-0 items-center gap-2 max-sm:flex-wrap xl:col-start-1 xl:row-start-1">
+            <div className="flex min-w-0 max-w-full items-center gap-2">
+              <Heading size="h1" className="min-w-0 text-2xl sm:text-4xl">
+                {viewTitle}
+              </Heading>
+              <DropdownMenu>
+                <DropdownMenuButton
+                  unstyled
+                  aria-label={scopeActionsLabel}
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-black/50 transition hover:bg-black/5 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 data-open:bg-black/5 data-open:text-black dark:text-white/50 dark:hover:bg-white/10 dark:hover:text-white dark:focus-visible:ring-white/30 dark:data-open:bg-white/10 dark:data-open:text-white sm:hidden"
+                >
+                  <FiChevronDown aria-hidden size={18} />
+                </DropdownMenuButton>
+                <DropdownMenuItems
+                  align="start"
+                  className="w-64 [--anchor-padding:16px]"
+                >
+                  {showFavorite && (
+                    <DropdownMenuItem
+                      disabled={projectFavoritePending}
+                      onClick={onToggleProjectFavorite}
+                    >
+                      <FiStar
+                        aria-hidden
+                        className={projectFavorite ? "text-amber-500" : ""}
+                        fill={projectFavorite ? "currentColor" : "none"}
+                      />
+                      {projectFavorite
+                        ? "Remove from favorites"
+                        : "Add to favorites"}
+                    </DropdownMenuItem>
+                  )}
+                  {selectedProject && projectDetailsHref && (
+                    <DropdownMenuItem.Link href={projectDetailsHref}>
+                      <FiExternalLink aria-hidden /> Project details
+                    </DropdownMenuItem.Link>
+                  )}
+                  {selectedProject && !previewing && (
+                    <DropdownMenuItem onClick={onEditProject}>
+                      <FiEdit2 aria-hidden /> Edit project
+                    </DropdownMenuItem>
+                  )}
+                  {selectedCategory && !previewing && (
+                    <DropdownMenuItem onClick={onEditCategory}>
+                      <FiEdit2 aria-hidden /> Edit category
+                    </DropdownMenuItem>
+                  )}
+                  {hasScopeActions && <DropdownMenuSeparator />}
+                  <div className="space-y-2 px-3 pb-1 pt-2">
+                    {filterSwitches}
+                  </div>
+                </DropdownMenuItems>
+              </DropdownMenu>
+            </div>
+            {/* The title and its menu trigger travel together; below `sm` the
+              badge wraps onto its own line rather than squeezing the title,
+              so archiving never moves the trigger or the menu anchored to it. */}
+            {visibility === "archived" && (
+              <Pill
+                variant="neutral"
+                size="sm"
+                className="shrink-0 gap-1 !px-2 !py-0.5 !text-[10px] font-medium !tracking-[0.12em]"
+              >
+                <FiArchive aria-hidden /> Archived
+              </Pill>
+            )}
+            {hasScopeActions && (
+              <div
+                data-workspace-title-actions=""
+                className="hidden w-auto items-center gap-2 sm:flex"
+              >
+                {showFavorite && (
+                  <ProjectFavoriteButton
+                    projectName={selectedProject?.name ?? "project"}
+                    favorite={projectFavorite}
+                    pending={projectFavoritePending}
+                    size="md"
+                    onToggle={onToggleProjectFavorite}
+                  />
+                )}
+                {selectedProject && projectDetailsHref && (
+                  <IconButton.Link
+                    href={projectDetailsHref}
+                    label={`Open ${selectedProject.name} project details`}
+                    size="md"
+                    tooltipPlacement="bottom"
+                  >
+                    <FiExternalLink aria-hidden />
+                  </IconButton.Link>
+                )}
+                {selectedProject && !previewing && (
+                  <IconButton
+                    label="Edit project"
+                    size="md"
+                    tooltipPlacement="bottom"
+                    onClick={onEditProject}
+                  >
+                    <FiEdit2 aria-hidden />
+                  </IconButton>
+                )}
+                {selectedCategory && !previewing && (
+                  <IconButton
+                    label="Edit category"
+                    size="md"
+                    tooltipPlacement="bottom"
+                    onClick={onEditCategory}
+                  >
+                    <FiEdit2 aria-hidden />
+                  </IconButton>
+                )}
+              </div>
+            )}
+          </div>
+          {scopeDescription && (
+            <p className="mt-2 max-w-[85ch] text-sm text-black/70 dark:text-white/70 sm:text-base xl:col-start-1 xl:row-start-2 xl:self-baseline">
+              {scopeDescription}
+            </p>
+          )}
+          <div className="xl:col-start-1 xl:row-start-3">
+            {selectedProject && (
+              <WorkspaceHeaderDetails
+                label="Project details"
+                icon={<FiFolder aria-hidden />}
+                open={projectDetailsOpen}
+                setOpen={setProjectDetailsOpen}
+                desktop={desktopDetails}
+              >
+                <div className="min-w-0">
+                  <div className="mb-1 flex min-h-8 items-center">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-black/45 dark:text-white/45">
+                      Owners
+                    </p>
+                  </div>
+                  <div className="flex min-h-8 min-w-0 items-center gap-3">
+                    {projectOwners.length > 0 ? (
+                      <div
+                        className="flex shrink-0 -space-x-2"
+                        aria-label={`${projectOwners.length} ${projectOwners.length === 1 ? "project owner" : "project owners"}`}
+                      >
+                        {projectOwners.slice(0, 3).map((owner) => (
+                          <Tooltip
+                            key={owner.id}
+                            content={owner.full_name}
+                            placement="bottom"
+                          >
+                            <Avatar
+                              name={owner.full_name}
+                              src={owner.avatar_url}
+                              size="md"
+                              className="ring-2 ring-[#f1f2ef] dark:ring-[#101010]"
+                            />
+                          </Tooltip>
+                        ))}
+                      </div>
+                    ) : (
+                      <>
+                        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-dashed border-black/25 text-black/45 dark:border-white/25 dark:text-white/45">
+                          <FiUsers aria-hidden size={14} />
+                        </span>
+                        <p className="text-xs font-medium text-black/70 dark:text-white/70">
+                          Unassigned
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
+                {(!previewing ||
+                  selectedProject.links.length > 0 ||
+                  projectAttachmentsPending ||
+                  projectAttachments.notes.length > 0 ||
+                  projectAttachments.files.length > 0) && (
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-1 flex min-h-8 items-center gap-1">
+                      <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-black/45 dark:text-white/45">
+                        Project context
+                      </p>
+                      {!previewing && (
+                        <IconButton
+                          label="Manage project context"
+                          size="sm"
+                          variant="plain"
+                          tooltipPlacement="bottom"
+                          onClick={() => setProjectContextOpen(true)}
+                        >
+                          <FiEdit2 aria-hidden />
+                        </IconButton>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-start gap-x-5 gap-y-3">
+                      {selectedProject.links.length > 0 && (
+                        <div className="flex min-w-0 flex-col gap-1.5">
+                          <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-black/40 dark:text-white/40">
+                            Links
+                          </p>
+                          <ResourceLinks links={selectedProject.links} />
+                        </div>
+                      )}
+                      {projectAttachmentsPending ? (
+                        <div className="flex min-w-0 flex-col gap-1.5">
+                          <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-black/40 dark:text-white/40">
+                            Notes &amp; files
+                          </p>
+                          <ResourceChipsSkeleton
+                            count={projectAttachmentCount}
+                            label="Loading project attachments"
+                          />
+                        </div>
+                      ) : (
+                        <>
+                          {projectAttachments.notes.length > 0 && (
+                            <div className="flex min-w-0 flex-col gap-1.5">
+                              <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-black/40 dark:text-white/40">
+                                Notes
+                              </p>
+                              <ResourceAttachmentsPreview
+                                notes={projectAttachments.notes}
+                                files={[]}
+                              />
+                            </div>
+                          )}
+                          {projectAttachments.files.length > 0 && (
+                            <div className="flex min-w-0 flex-col gap-1.5">
+                              <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-black/40 dark:text-white/40">
+                                Files
+                              </p>
+                              <ResourceAttachmentsPreview
+                                notes={[]}
+                                files={projectAttachments.files}
+                              />
+                            </div>
+                          )}
+                        </>
+                      )}
+                      {!projectAttachmentsPending &&
+                        selectedProject.links.length === 0 &&
+                        projectAttachments.notes.length === 0 &&
+                        projectAttachments.files.length === 0 && (
+                          <p className="text-xs text-black/45 dark:text-white/45">
+                            No links, notes, or files yet.
+                          </p>
+                        )}
+                    </div>
+                  </div>
+                )}
+              </WorkspaceHeaderDetails>
+            )}
+            {selectedProject && !previewing && projectContextOpen && (
+              <ProjectContextDialog
+                project={selectedProject}
+                attachments={[
+                  ...projectAttachments.notes,
+                  ...projectAttachments.files,
+                ]}
+                demoMode={demoMode}
+                currentUserId={currentUserId}
+                onClose={() => setProjectContextOpen(false)}
+                onLinksSaved={onProjectLinksSaved}
               />
             )}
-          </Heading>
-          {visibility === "active" && (
-            <TaskLayoutSwitch view={view} onSetView={onSetView} compact />
-          )}
-        </div>
-        {scopeDescription && (
-          <p className="mt-2 text-sm text-black/70 dark:text-white/70 sm:text-base">
-            {scopeDescription}
-          </p>
-        )}
-        {selectedProject && (
-          <WorkspaceHeaderDetails
-            label="Project details"
-            icon={<FiFolder aria-hidden />}
-            open={projectDetailsOpen}
-            setOpen={setProjectDetailsOpen}
-            desktop={desktopDetails}
-          >
-            <div className="min-w-0">
-              <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-black/45 dark:text-white/45">
-                Owners
-              </p>
-              <div className="flex min-h-8 min-w-0 items-center gap-3">
-                {projectOwners.length > 0 ? (
-                  <div
-                    className="flex shrink-0 -space-x-2"
-                    aria-label={`${projectOwners.length} ${projectOwners.length === 1 ? "project owner" : "project owners"}`}
-                  >
-                    {projectOwners.slice(0, 3).map((owner) => (
-                      <Tooltip
-                        key={owner.id}
-                        content={owner.full_name}
-                        placement="bottom"
-                      >
-                        <Avatar
-                          name={owner.full_name}
-                          src={owner.avatar_url}
-                          size="md"
-                          className="ring-2 ring-[#f1f2ef] dark:ring-[#101010]"
-                        />
-                      </Tooltip>
-                    ))}
-                  </div>
-                ) : (
-                  <>
-                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-dashed border-black/25 text-black/45 dark:border-white/25 dark:text-white/45">
-                      <FiUsers aria-hidden size={14} />
-                    </span>
-                    <p className="text-xs font-medium text-black/70 dark:text-white/70">
-                      Unassigned
-                    </p>
-                  </>
-                )}
-              </div>
-            </div>
-            {selectedProject.links.length > 0 && (
-              <div className="min-w-0">
-                <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-black/45 dark:text-white/45">
-                  Useful links
-                </p>
-                <ResourceLinks links={selectedProject.links} />
-              </div>
-            )}
-            {(projectAttachmentsPending ||
-              projectAttachments.notes.length > 0 ||
-              projectAttachments.files.length > 0) && (
-              <div className="min-w-0">
-                <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-black/45 dark:text-white/45">
-                  Attachments
-                </p>
-                {projectAttachmentsPending ? (
-                  <ResourceChipsSkeleton
-                    count={projectAttachmentCount}
-                    label="Loading project attachments"
-                  />
-                ) : (
-                  <ResourceAttachmentsPreview
-                    notes={projectAttachments.notes}
-                    files={projectAttachments.files}
-                  />
-                )}
-              </div>
-            )}
-          </WorkspaceHeaderDetails>
-        )}
-        {selectedCategory &&
-          ((selectedCategory.links ?? []).length > 0 ||
-            categoryAttachmentsPending ||
-            categoryAttachments.notes.length > 0 ||
-            categoryAttachments.files.length > 0) && (
-            <WorkspaceHeaderDetails
-              label="Category details"
-              icon={<FiTag aria-hidden />}
-              open={categoryDetailsOpen}
-              setOpen={setCategoryDetailsOpen}
-              desktop={desktopDetails}
-            >
-              {(selectedCategory.links ?? []).length > 0 && (
-                <div className="min-w-0">
-                  <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-black/45 dark:text-white/45">
-                    Useful links
-                  </p>
-                  <ResourceLinks links={selectedCategory.links ?? []} />
-                </div>
-              )}
-              {(categoryAttachmentsPending ||
+            {selectedCategory &&
+              ((selectedCategory.links ?? []).length > 0 ||
+                categoryAttachmentsPending ||
                 categoryAttachments.notes.length > 0 ||
                 categoryAttachments.files.length > 0) && (
-                <div className="min-w-0">
-                  <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-black/45 dark:text-white/45">
-                    Attachments
-                  </p>
-                  {categoryAttachmentsPending ? (
-                    <ResourceChipsSkeleton
-                      count={categoryAttachmentCount}
-                      label="Loading category attachments"
-                    />
-                  ) : (
-                    <ResourceAttachmentsPreview
-                      notes={categoryAttachments.notes}
-                      files={categoryAttachments.files}
-                    />
-                  )}
-                </div>
-              )}
-            </WorkspaceHeaderDetails>
-          )}
-      </div>
-      <div className="flex w-full flex-col gap-2 xl:w-auto xl:items-end">
-        {selectedProject && !previewing && (
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            leftIcon={<FiEdit2 aria-hidden />}
-            onClick={onEditProject}
-          >
-            Edit project
-          </Button>
-        )}
-        {selectedCategory && !previewing && (
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            leftIcon={<FiEdit2 aria-hidden />}
-            onClick={onEditCategory}
-          >
-            Edit category
-          </Button>
-        )}
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-          {/* Archived work has no board lanes. Keep the status switch at the
-              trailing edge when the board/list switch disappears. */}
-          {visibility === "active" && (
-            <TaskLayoutSwitch view={view} onSetView={onSetView} />
-          )}
-          <div className="flex w-full min-w-0 flex-col gap-1 sm:block sm:w-auto">
-            <p
-              aria-hidden="true"
-              className="text-[9px] font-semibold uppercase tracking-[0.16em] text-black/45 dark:text-white/45 sm:hidden"
-            >
-              Assignee
-            </p>
-            <div
-              role="group"
-              className="grid w-full min-w-0 grid-cols-2 rounded-lg border border-black/10 bg-white p-0.5 dark:border-white/10 dark:bg-white/5 sm:flex sm:w-auto sm:p-1"
-              aria-label="Task assignee"
-            >
-              <button
-                aria-pressed={assignee === "all"}
-                onClick={() => onSetAssignee("all")}
-                className={`view-button min-h-9 min-w-0 w-full px-2 tracking-[0.08em] sm:min-h-0 sm:w-auto sm:px-3 sm:tracking-[0.14em] ${assignee === "all" ? "view-button-active" : ""}`}
-              >
-                All
-              </button>
-              {viewingAsGroup ? (
-                <Tooltip content="Mine is unavailable when viewing as an access group because a group is not a task assignee.">
-                  <button
-                    type="button"
-                    disabled
-                    className="view-button min-h-9 min-w-0 w-full px-2 tracking-[0.08em] opacity-40 sm:min-h-0 sm:w-auto sm:px-3 sm:tracking-[0.14em]"
-                  >
-                    Mine
-                  </button>
-                </Tooltip>
-              ) : (
-                <button
-                  aria-pressed={isMyTasks}
-                  onClick={() => onSetAssignee(myTasksName)}
-                  className={`view-button min-h-9 min-w-0 w-full px-2 tracking-[0.08em] sm:min-h-0 sm:w-auto sm:px-3 sm:tracking-[0.14em] ${isMyTasks ? "view-button-active" : ""}`}
+                <WorkspaceHeaderDetails
+                  label="Category details"
+                  icon={<FiTag aria-hidden />}
+                  open={categoryDetailsOpen}
+                  setOpen={setCategoryDetailsOpen}
+                  desktop={desktopDetails}
                 >
-                  Mine
-                </button>
+                  {(selectedCategory.links ?? []).length > 0 && (
+                    <div className="min-w-0">
+                      <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-black/45 dark:text-white/45">
+                        Useful links
+                      </p>
+                      <ResourceLinks links={selectedCategory.links ?? []} />
+                    </div>
+                  )}
+                  {(categoryAttachmentsPending ||
+                    categoryAttachments.notes.length > 0 ||
+                    categoryAttachments.files.length > 0) && (
+                    <div className="min-w-0">
+                      <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-black/45 dark:text-white/45">
+                        Attachments
+                      </p>
+                      {categoryAttachmentsPending ? (
+                        <ResourceChipsSkeleton
+                          count={categoryAttachmentCount}
+                          label="Loading category attachments"
+                        />
+                      ) : (
+                        <ResourceAttachmentsPreview
+                          notes={categoryAttachments.notes}
+                          files={categoryAttachments.files}
+                        />
+                      )}
+                    </div>
+                  )}
+                </WorkspaceHeaderDetails>
               )}
+          </div>
+        </div>
+        <div className="hidden w-full flex-col gap-2 sm:flex xl:contents">
+          <div
+            data-task-toolbar=""
+            className="flex flex-nowrap items-center justify-end self-end rounded-xl border border-black/10 bg-white p-0.5 dark:border-white/10 dark:bg-white/5 xl:col-start-2 xl:row-start-1 xl:justify-self-end xl:self-start"
+          >
+            {/* Archived work has no board lanes. Keep the status switch at the
+              trailing edge when the board/list switch disappears. */}
+            {visibility === "active" && (
+              <WorkspaceSwitch
+                caption="View"
+                ariaLabel="Task layout"
+                options={viewOptions}
+                value={view}
+                onChange={(next) => onSetView(next as "board" | "list")}
+              />
+            )}
+            <div
+              className={
+                visibility === "active"
+                  ? "border-l border-black/10 dark:border-white/10"
+                  : ""
+              }
+            >
+              <WorkspaceSwitch
+                caption="Assignee"
+                ariaLabel="Task assignee"
+                options={assigneeOptions}
+                value={assigneeValue}
+                onChange={onSetAssignee}
+              />
+            </div>
+            <div className="border-l border-black/10 dark:border-white/10">
+              <WorkspaceSwitch
+                caption="Status"
+                ariaLabel="Task status"
+                options={statusOptions}
+                value={visibility}
+                onChange={(next) =>
+                  onSetVisibility(next as "active" | "archived")
+                }
+              />
             </div>
           </div>
-          <div className="flex w-full min-w-0 flex-col gap-1 sm:block sm:w-auto">
-            <p
-              aria-hidden="true"
-              className="text-[9px] font-semibold uppercase tracking-[0.16em] text-black/45 dark:text-white/45 sm:hidden"
-            >
-              Status
-            </p>
-            <div
-              role="group"
-              className="grid w-full min-w-0 grid-cols-2 rounded-lg border border-black/10 bg-white p-0.5 dark:border-white/10 dark:bg-white/5 sm:flex sm:w-auto sm:p-1"
-              aria-label="Task status"
-            >
-              <button
-                aria-pressed={visibility === "active"}
-                onClick={() => onSetVisibility("active")}
-                className={`view-button min-h-9 min-w-0 w-full px-2 tracking-[0.08em] sm:min-h-0 sm:w-auto sm:px-3 sm:tracking-[0.14em] ${visibility === "active" ? "view-button-active" : ""}`}
-              >
-                Active
-              </button>
-              <button
-                aria-pressed={visibility === "archived"}
-                onClick={() => onSetVisibility("archived")}
-                className={`view-button min-h-9 min-w-0 w-full gap-1 px-2 tracking-[0.08em] sm:min-h-0 sm:w-auto sm:gap-2 sm:px-3 sm:tracking-[0.14em] ${visibility === "archived" ? "view-button-active" : ""}`}
-              >
-                <FiArchive aria-hidden className="hidden sm:block" /> Archive
-              </button>
-            </div>
+          <div className="hidden xl:col-start-2 xl:row-start-2 xl:mr-2 xl:block xl:justify-self-end xl:self-baseline">
+            {taskCountBadge}
           </div>
         </div>
       </div>

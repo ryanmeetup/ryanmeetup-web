@@ -37,6 +37,8 @@ import { useTaskBoardDrag } from "@/hooks/useTaskBoardDrag";
 import { TaskBoardView } from "./TaskBoardView";
 import { StatusReasonDialog } from "./StatusReasonDialog";
 import { statusNeedingReason } from "@/lib/tasks/task-status-reason";
+import { projectPath } from "@/lib/resources/project-route";
+import { withAccessPreview } from "@/lib/access/access-preview";
 
 type View = "board" | "list";
 
@@ -100,7 +102,11 @@ export function TaskApp({
   // empty lanes, because only a status that closes work can hold an archived
   // task, so the archive always reads as a list.
   const view: View =
-    visibility === "archived" ? "list" : viewParam === "list" ? "list" : "board";
+    visibility === "archived"
+      ? "list"
+      : viewParam === "list"
+        ? "list"
+        : "board";
   const resolved = useResolvedTaskFilters(data, filters);
   useReadableFilterParams({ data, filters, resolved });
   const { collapsedStatusIds, expandStatusSection, toggleStatusSection } =
@@ -288,6 +294,7 @@ export function TaskApp({
           <TaskWorkspaceHeader
             scope={{
               assignee: filters.assignee,
+              currentUserId: data.currentProfile.id,
               demoMode,
               isMyTasks: scope.isMyTasks,
               myTasksName: scope.myTasksName,
@@ -298,6 +305,12 @@ export function TaskApp({
               projectFavoritePending: selectedProject
                 ? favorites.isPending(selectedProject.id)
                 : false,
+              projectDetailsHref: selectedProject
+                ? withAccessPreview(
+                    projectPath(selectedProject, data.projects),
+                    data.accessPreview,
+                  )
+                : null,
               scopeDescription: scope.scopeDescription,
               selectedCategory: resolved.selectedCategory,
               selectedProject,
@@ -321,6 +334,17 @@ export function TaskApp({
                 if (!selectedProject) return;
                 setProjectEditId(selectedProject.id);
                 setProjectsOpen(true);
+              },
+              onProjectLinksSaved: (links) => {
+                if (!selectedProject) return;
+                setData((current) => ({
+                  ...current,
+                  projects: current.projects.map((project) =>
+                    project.id === selectedProject.id
+                      ? { ...project, links }
+                      : project,
+                  ),
+                }));
               },
               onToggleProjectFavorite: () => {
                 if (!selectedProject) return;
@@ -400,7 +424,9 @@ export function TaskApp({
                   // The archive header reverses closing-date order.
                   onToggle: () =>
                     visibility === "archived"
-                      ? filters.setSort(sort === "closed" ? "closed-asc" : "closed")
+                      ? filters.setSort(
+                          sort === "closed" ? "closed-asc" : "closed",
+                        )
                       : filters.setSort(sort === "due" ? "updated" : "due"),
                 }}
               />

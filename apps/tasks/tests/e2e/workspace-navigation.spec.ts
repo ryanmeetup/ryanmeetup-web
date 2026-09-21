@@ -276,9 +276,7 @@ test("opens a project's board from the sidebar row", async ({
   await enterDemoWorkspace(page, baseURL);
 
   const sidebar = page.locator("[data-workspace-sidebar]");
-  const boardLink = sidebar.locator(
-    'a[href="/board?project=Website+Refresh"]',
-  );
+  const boardLink = sidebar.locator('a[href="/board?project=Website+Refresh"]');
   await expect(boardLink).toHaveAttribute(
     "href",
     "/board?project=Website+Refresh",
@@ -288,6 +286,99 @@ test("opens a project's board from the sidebar row", async ({
   await expect(page).toHaveURL(/\/board\?project=Website\+Refresh$/);
   await expect(
     page.getByRole("heading", { level: 1, name: /Website Refresh/ }),
+  ).toBeVisible();
+
+  const projectDescription = page.getByText(
+    "Content, design, and launch work for the new website.",
+    { exact: true },
+  );
+  const taskCount = page.locator(".task-workspace-count:visible");
+  const archiveButton = page.getByRole("button", {
+    name: "Archive",
+    exact: true,
+  });
+  await expect(taskCount).toContainText("6");
+  await expect(taskCount.getByText("tasks", { exact: true })).toBeVisible();
+  const [descriptionBox, taskCountBox, archiveButtonBox] = await Promise.all([
+    projectDescription.boundingBox(),
+    taskCount.boundingBox(),
+    archiveButton.boundingBox(),
+  ]);
+  // Supporting metadata shares the description row and quietly closes the
+  // toolbar's right edge rather than interrupting the project title.
+  expect(Math.abs(descriptionBox!.y - taskCountBox!.y)).toBeLessThan(8);
+  expect(
+    Math.abs(
+      taskCountBox!.x +
+        taskCountBox!.width -
+        (archiveButtonBox!.x + archiveButtonBox!.width),
+    ),
+  ).toBeLessThan(2);
+
+  const ownersLabel = page.getByText("Owners", { exact: true });
+  const contextLabel = page.getByText("Project context", { exact: true });
+  const owners = page.getByLabel("1 project owner");
+  const resourceLinks = page.getByRole("navigation", {
+    name: "Resource links",
+  });
+  const linksCaption = page.getByText("Links", { exact: true });
+  const [
+    ownersLabelBox,
+    contextLabelBox,
+    ownersBox,
+    linksCaptionBox,
+    resourceLinksBox,
+  ] = await Promise.all([
+    ownersLabel.boundingBox(),
+    contextLabel.boundingBox(),
+    owners.boundingBox(),
+    linksCaption.boundingBox(),
+    resourceLinks.boundingBox(),
+  ]);
+  expect(Math.abs(ownersLabelBox!.y - contextLabelBox!.y)).toBeLessThan(2);
+  // Each context group stacks its caption over its chips, so the owners'
+  // avatars share the line the Links group starts on, and the chips sit
+  // directly beneath their caption.
+  expect(Math.abs(ownersBox!.y - linksCaptionBox!.y)).toBeLessThan(2);
+  expect(resourceLinksBox!.y).toBeGreaterThan(
+    linksCaptionBox!.y + linksCaptionBox!.height,
+  );
+  expect(Math.abs(resourceLinksBox!.x - linksCaptionBox!.x)).toBeLessThan(2);
+
+  await page.getByRole("button", { name: "Manage project context" }).click();
+  const contextDialog = page.getByRole("dialog", {
+    name: "Project context",
+  });
+  const contextDialogHeight = (await contextDialog.boundingBox())!.height;
+  await expect(
+    contextDialog.getByRole("button", { name: "Add link" }),
+  ).toBeVisible();
+  await contextDialog.getByRole("button", { name: "Add link" }).click();
+  await expect(contextDialog.getByLabel("Label")).toBeVisible();
+  await expect(contextDialog.getByLabel("URL")).toBeVisible();
+  expect((await contextDialog.boundingBox())!.height).toBe(contextDialogHeight);
+  await contextDialog.getByRole("button", { name: "Cancel" }).click();
+  await expect(
+    contextDialog.getByRole("button", { name: "Add note" }),
+  ).toBeVisible();
+  await expect(
+    contextDialog.getByLabel("Upload project attachments"),
+  ).toBeVisible();
+  await contextDialog.getByRole("button", { name: "Close dialog" }).click();
+
+  const projectDetails = page.getByRole("link", {
+    name: "Open Website Refresh project details",
+    exact: true,
+  });
+  await expect(projectDetails).toHaveAttribute(
+    "href",
+    "/projects/website-refresh",
+  );
+  await projectDetails.click();
+
+  await expect(page).toHaveURL(/\/projects\/website-refresh$/);
+  await expect(
+    page.getByRole("heading", { level: 2, name: "Attention & dates" }),
   ).toBeVisible();
 });
 
@@ -347,7 +438,7 @@ test("aligns board column searches across description lengths", async ({
   expect(Math.max(...topPositions) - Math.min(...topPositions)).toBeLessThan(1);
 });
 
-test("keeps board search text compact on mobile without zooming on focus", async ({
+test("keeps the board search placeholder steady on mobile without zooming on focus", async ({
   page,
   baseURL,
 }) => {
@@ -356,9 +447,15 @@ test("keeps board search text compact on mobile without zooming on focus", async
   await page.goto("/board");
 
   const search = page.getByRole("searchbox", { name: "Search Backlog tasks" });
-  await expect(search).toHaveCSS("font-size", "12px");
+  const placeholderFontSize = () =>
+    search.evaluate(
+      (input) => getComputedStyle(input, "::placeholder").fontSize,
+    );
+  await expect(search).toHaveCSS("font-size", "16px");
+  expect(await placeholderFontSize()).toBe("12px");
   await search.focus();
   await expect(search).toHaveCSS("font-size", "16px");
+  expect(await placeholderFontSize()).toBe("12px");
 
   await page.setViewportSize({ width: 768, height: 812 });
   await expect(search).toHaveCSS("font-size", "14px");
@@ -407,6 +504,34 @@ test("stops page scrolling with equal space above and below the board", async ({
     { width: 1536, height: 1100 },
   ]) {
     await page.setViewportSize(viewport);
+    // Crossing the mobile boundary reflows the app header and notices for a
+    // moment. Wait until the chrome and document hold the same size across
+    // several frames, so every check below measures the settled layout rather
+    // than one that happens to pass mid-reflow.
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          const snapshot = () =>
+            [
+              document.querySelector(".tasks-app-header"),
+              document.querySelector("[data-workspace-banners]"),
+              document.documentElement,
+            ]
+              .map((node) => node?.getBoundingClientRect().height ?? 0)
+              .concat(document.documentElement.scrollHeight)
+              .join();
+          let last = snapshot();
+          let steady = 0;
+          const tick = () => {
+            const next = snapshot();
+            steady = next === last ? steady + 1 : 0;
+            last = next;
+            if (steady >= 10) resolve();
+            else requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+        }),
+    );
     await expect
       .poll(async () =>
         boardScroller.evaluate((board) => {
@@ -426,12 +551,13 @@ test("stops page scrolling with equal space above and below the board", async ({
         }),
       )
       .toBeLessThan(1);
-    await page.evaluate(() =>
-      window.scrollTo(0, document.documentElement.scrollHeight),
-    );
+    // The app header and notices keep reflowing for a moment after a resize,
+    // so re-scroll to the end on each attempt rather than trusting one scroll
+    // taken while the document was still changing height.
     await expect
       .poll(async () =>
         boardScroller.evaluate((board) => {
+          window.scrollTo(0, document.documentElement.scrollHeight);
           const header = document.querySelector(".tasks-app-header")!;
           const notices = document.querySelector("[data-workspace-banners]")!;
           const top = Math.max(
@@ -451,9 +577,20 @@ test("stops page scrolling with equal space above and below the board", async ({
     const boardBounds = (await boardScroller.boundingBox())!;
     expect(
       viewport.height - boardBounds.y - boardBounds.height,
+      `bottom gap at ${viewport.width}px`,
     ).toBeGreaterThanOrEqual(16);
+    // The list runs to the column's inner edge, just inside its border.
+    const columnBorderBottom = await visibleColumn.evaluate((column) =>
+      parseFloat(getComputedStyle(column).borderBottomWidth),
+    );
     expect(
-      Math.abs(listBox.y + listBox.height - boardBounds.y - boardBounds.height),
+      Math.abs(
+        listBox.y +
+          listBox.height +
+          columnBorderBottom -
+          boardBounds.y -
+          boardBounds.height,
+      ),
     ).toBeLessThan(1);
     const pageScroll = await page.evaluate(() => window.scrollY);
     await list.evaluate((element) => {
@@ -525,6 +662,12 @@ test("holds a column's chrome still while its own tasks scroll", async ({
         .querySelector("[data-board-column-header]")!
         .firstElementChild!.getBoundingClientRect();
       const card = section.querySelector('[draggable="true"]')!;
+      // Measure from inside the column's border: the list and cards meet its
+      // inner edge, and the border itself is the column's outline.
+      const inner = section.getBoundingClientRect();
+      const borderBottom = parseFloat(
+        getComputedStyle(section).borderBottomWidth,
+      );
       return {
         scrollTop: list.scrollTop,
         scrollable: list.scrollHeight > list.clientHeight,
@@ -532,16 +675,14 @@ test("holds a column's chrome still while its own tasks scroll", async ({
         // position: nothing sits between the two for a task to stop short at.
         gutter: round(list.getBoundingClientRect().top - rule.bottom),
         bottomGutter: round(
-          section.getBoundingClientRect().bottom -
-            list.getBoundingClientRect().bottom,
+          inner.bottom - borderBottom - list.getBoundingClientRect().bottom,
         ),
         rule: round(rule.bottom),
         // The room the first task rests in belongs to the scroller, so it
         // travels with the task rather than holding it off the rule.
         cardOffset: round(card.getBoundingClientRect().top - rule.bottom),
         sideInset: round(
-          card.getBoundingClientRect().left -
-            section.getBoundingClientRect().left,
+          card.getBoundingClientRect().left - inner.left - section.clientLeft,
         ),
       };
     });
@@ -988,17 +1129,22 @@ test("reads the archive as a record rather than a board", async ({
   ).toBeVisible();
   // The last column dates the ending instead of the deadline.
   const header = page.locator("table").first().locator(":scope > thead");
-  await expect(header.getByRole("columnheader", { name: "Closed" })).toBeVisible();
   await expect(
-    header.getByRole("columnheader", { name: "Due" }),
-  ).toHaveCount(0);
+    header.getByRole("columnheader", { name: "Closed" }),
+  ).toBeVisible();
+  await expect(header.getByRole("columnheader", { name: "Due" })).toHaveCount(
+    0,
+  );
   const closedHeader = header.getByRole("columnheader", { name: "Closed" });
   await expect(closedHeader).toHaveAttribute("aria-sort", "descending");
   await expect(closedHeader.getByRole("button")).toHaveCSS(
     "text-transform",
     "uppercase",
   );
-  const months = page.locator("table").first().locator(":scope > tbody > tr > th[scope='colgroup']");
+  const months = page
+    .locator("table")
+    .first()
+    .locator(":scope > tbody > tr > th[scope='colgroup']");
   const newestFirst = await months.allTextContents();
   await closedHeader.getByRole("button").click();
   await expect(closedHeader).toHaveAttribute("aria-sort", "ascending");
@@ -1012,48 +1158,165 @@ test("reads the archive as a record rather than a board", async ({
   await expect(page.locator("[data-board-scroller]")).toBeVisible();
 });
 
-test("makes mobile task filters full width with layout beside the title", async ({
+test("collapses every mobile workspace control into one menu beside the title", async ({
   page,
   baseURL,
 }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await enterDemoWorkspace(page, baseURL);
-  await page.goto("/board");
+  await page.goto("/board?project=Website%20Refresh");
 
-  const assignee = page.getByRole("group", { name: "Task assignee" });
-  const status = page.getByRole("group", { name: "Task status" });
-  const layout = page.getByRole("group", { name: "Task layout" });
-  await expect(layout).toBeVisible();
+  const scopeActions = page.getByRole("button", { name: "Project options" });
+  // The scope's actions and all three filters are one menu here: no icon row
+  // and no filter toolbar are rendered at this width at all.
+  await expect(scopeActions).toBeVisible();
+  await expect(page.locator("[data-task-toolbar]")).toBeHidden();
+  for (const group of ["Task layout", "Task assignee", "Task status"]) {
+    await expect(page.getByRole("group", { name: group })).toBeHidden();
+  }
+  await expect(
+    page.getByRole("link", { name: "Open Website Refresh project details" }),
+  ).toBeHidden();
+  await expect(page.getByRole("button", { name: "Edit project" })).toBeHidden();
 
-  const assigneeBox = (await assignee.boundingBox())!;
-  const statusBox = (await status.boundingBox())!;
-  const layoutBox = (await layout.boundingBox())!;
-  const titleBox = (await page.getByRole("heading", { level: 1 }).boundingBox())!;
-  expect(assigneeBox.width).toBeGreaterThan(320);
-  expect(Math.abs(assigneeBox.width - statusBox.width)).toBeLessThan(2);
-  expect(Math.abs(assigneeBox.x - statusBox.x)).toBeLessThan(2);
-  expect(statusBox.y).toBeGreaterThan(assigneeBox.y);
-  const allBox = (await assignee.getByRole("button", { name: "All" }).boundingBox())!;
-  const mineBox = (await assignee.getByRole("button", { name: "Mine" }).boundingBox())!;
-  expect(Math.abs(allBox.width - mineBox.width)).toBeLessThan(2);
-  expect(layoutBox.y).toBeLessThan(statusBox.y);
-  expect(layoutBox.x).toBeGreaterThanOrEqual(titleBox.x + titleBox.width);
-  expect(layoutBox.x + layoutBox.width).toBeGreaterThan(375 - 24);
+  const taskCountBox = (await page
+    .locator(".task-workspace-count:visible")
+    .boundingBox())!;
+  const titleBox = (await page
+    .getByRole("heading", { level: 1 })
+    .boundingBox())!;
+  const scopeActionsBox = (await scopeActions.boundingBox())!;
+  // The menu trigger sits on the title's own line, right after it.
+  expect(scopeActionsBox.x).toBeGreaterThanOrEqual(titleBox.x);
+  expect(
+    Math.abs(
+      scopeActionsBox.y +
+        scopeActionsBox.height / 2 -
+        (titleBox.y + titleBox.height / 2),
+    ),
+  ).toBeLessThan(titleBox.height / 2);
+  // The count supports the workspace label rather than floating beneath the
+  // filters, and it shares that label's line rather than drifting off it.
+  expect(taskCountBox.y).toBeLessThan(titleBox.y);
+  const eyebrowBox = (await page
+    .getByText("Project workspace", { exact: true })
+    .boundingBox())!;
+  expect(
+    Math.abs(
+      taskCountBox.y +
+        taskCountBox.height / 2 -
+        (eyebrowBox.y + eyebrowBox.height / 2),
+    ),
+  ).toBeLessThan(4);
+  expect(taskCountBox.x).toBeGreaterThan(eyebrowBox.x + eyebrowBox.width);
 
   await page.setViewportSize({ width: 320, height: 700 });
-  const narrowAssignee = (await assignee.boundingBox())!;
-  const narrowStatus = (await status.boundingBox())!;
-  const narrowLayout = (await layout.boundingBox())!;
-  expect(Math.abs(narrowAssignee.width - narrowStatus.width)).toBeLessThan(2);
-  expect(narrowStatus.y).toBeGreaterThan(narrowAssignee.y);
-  expect(narrowLayout.x + narrowLayout.width).toBeGreaterThan(320 - 24);
-  expect(narrowLayout.x + narrowLayout.width).toBeLessThanOrEqual(320);
+  const narrowActions = (await scopeActions.boundingBox())!;
+  expect(narrowActions.x + narrowActions.width).toBeLessThanOrEqual(320);
 
-  await layout.getByRole("button", { name: "List" }).click();
-  await expect(layout.getByRole("button", { name: "List" })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
+  await page.setViewportSize({ width: 375, height: 812 });
+  await scopeActions.click();
+  const scopeMenu = page.getByRole("menu");
+  const menuBox = (await scopeMenu.boundingBox())!;
+  expect(menuBox.x).toBeGreaterThanOrEqual(16);
+  expect(menuBox.x + menuBox.width).toBeLessThanOrEqual(375 - 16);
+  const archiveIcon = scopeMenu
+    .getByRole("group", { name: "Task status" })
+    .getByRole("button", { name: "Archive" })
+    .locator("svg");
+  await expect(archiveIcon).toHaveCSS("width", "16px");
+  await expect(
+    scopeMenu.getByRole("menuitem", { name: /favorites/ }),
+  ).toBeVisible();
+  await expect(
+    scopeMenu.getByRole("menuitem", { name: "Project details" }),
+  ).toHaveAttribute("href", /\/projects\//);
+  // All three filters are in the menu as the same captioned two-up switch,
+  // each splitting one full-width track down the middle.
+  const menuSwitches = [
+    { group: "Task assignee", on: "All", off: "Mine" },
+    { group: "Task status", on: "Active", off: "Archive" },
+    { group: "Task layout", on: "Board", off: "List" },
+  ];
+  let previousBottom = 0;
+  for (const { group, on, off } of menuSwitches) {
+    const track = scopeMenu.getByRole("group", { name: group });
+    await expect(track.getByRole("button", { name: on })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    const trackBox = (await track.boundingBox())!;
+    const [onBox, offBox] = await Promise.all([
+      track.getByRole("button", { name: on }).boundingBox(),
+      track.getByRole("button", { name: off }).boundingBox(),
+    ]);
+    expect(Math.abs(onBox!.width - offBox!.width)).toBeLessThan(2);
+    expect(Math.abs(onBox!.y - offBox!.y)).toBeLessThan(2);
+    expect(trackBox.width).toBeGreaterThan(onBox!.width + offBox!.width);
+    // Stacked in order, each below the last.
+    expect(trackBox.y).toBeGreaterThan(previousBottom);
+    previousBottom = trackBox.y + trackBox.height;
+  }
+  // Archiving drops the view switch, which sits last, and adds the Archived
+  // badge, which trails the trigger - so neither the menu nor anything in it
+  // moves under the viewer's thumb.
+  const menuStatus = scopeMenu.getByRole("group", { name: "Task status" });
+  const menuAssigneeTrack = scopeMenu.getByRole("group", {
+    name: "Task assignee",
+  });
+  // Let the open transition settle so its scale doesn't read as movement.
+  await expect(scopeMenu).toHaveCSS("opacity", "1");
+  const settledBoxes = () =>
+    Promise.all([
+      scopeActions.boundingBox(),
+      menuAssigneeTrack.boundingBox(),
+      menuStatus.boundingBox(),
+    ]);
+  const before = await settledBoxes();
+  await menuStatus.getByRole("button", { name: "Archive" }).click();
+  await expect(
+    scopeMenu.getByRole("group", { name: "Task layout" }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByText("Archived", { exact: true }).first(),
+  ).toBeVisible();
+  const after = await settledBoxes();
+  for (const [index, box] of after.entries()) {
+    expect(Math.abs(box!.x - before[index]!.x)).toBeLessThan(1);
+    expect(Math.abs(box!.y - before[index]!.y)).toBeLessThan(1);
+  }
+  await menuStatus.getByRole("button", { name: "Active" }).click();
+  await expect(
+    scopeMenu.getByRole("group", { name: "Task layout" }),
+  ).toBeVisible();
+  // Flipping a switch leaves the menu open, so the new state is visible.
+  const menuLayout = scopeMenu.getByRole("group", { name: "Task layout" });
+  await menuLayout.getByRole("button", { name: "List" }).click();
+  await expect(page.locator("[data-board-scroller]")).toBeHidden();
+  await expect(
+    menuLayout.getByRole("button", { name: "List" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  // Assignee drives the same handler it did from the toolbar.
+  const menuAssignee = scopeMenu.getByRole("group", { name: "Task assignee" });
+  await menuAssignee.getByRole("button", { name: "Mine" }).click();
+  await expect(page).toHaveURL(/assignee=/);
+  await expect(
+    menuAssignee.getByRole("button", { name: "Mine" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await page.keyboard.press("Escape");
+
+  await scopeActions.click();
+  await page
+    .getByRole("menu")
+    .getByRole("menuitem", { name: "Edit project" })
+    .click();
+  // The dialog's outer node is a zero-size positioning wrapper, so assert on
+  // the panel heading that actually renders.
+  await expect(
+    page.getByRole("dialog").getByRole("heading").first(),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
 
   await page.setViewportSize({ width: 1280, height: 900 });
   const [desktopAssigneeY, desktopStatusY, desktopLayoutY] =
@@ -1074,4 +1337,11 @@ test("makes mobile task filters full width with layout beside the title", async 
     });
   expect(Math.abs(desktopAssigneeY - desktopStatusY)).toBeLessThan(2);
   expect(Math.abs(desktopStatusY - desktopLayoutY)).toBeLessThan(2);
+  const desktopToolbar = page.locator("[data-task-toolbar]");
+  const [desktopToolbarBox, desktopTitleBox] = await Promise.all([
+    desktopToolbar.boundingBox(),
+    page.getByRole("heading", { level: 1 }).boundingBox(),
+  ]);
+  expect(Math.abs(desktopToolbarBox!.y - desktopTitleBox!.y)).toBeLessThan(8);
+  await expect(desktopToolbar).toHaveCSS("border-top-width", "1px");
 });
