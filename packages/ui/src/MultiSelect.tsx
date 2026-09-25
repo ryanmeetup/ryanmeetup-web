@@ -7,7 +7,7 @@ import {
   ListboxOptions,
   Transition,
 } from "@headlessui/react";
-import { Fragment, useCallback, useId } from "react";
+import { Fragment, useCallback, useId, useState } from "react";
 import { FiCheck, FiChevronDown, FiSearch } from "react-icons/fi";
 import { Avatar, type AvatarProps } from "./Avatar";
 import { fieldSelectButtonClasses, getFieldLabelClasses } from "./fieldStyles";
@@ -71,10 +71,22 @@ const MultiSelect = ({
     },
     [setAnchorElement, setScrollElement],
   );
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const toggleGroup = (group: string) =>
+    setCollapsedGroups((current) => {
+      const next = new Set(current);
+      if (!next.delete(group)) next.add(group);
+      return next;
+    });
   const selectedOptions = options.filter((option) =>
     value.includes(option.value),
   );
   const normalizedQuery = query.trim().toLocaleLowerCase();
+  // A search looks through every group, collapsed or not.
+  const isCollapsed = (group?: string) =>
+    !normalizedQuery && !!group && collapsedGroups.has(group);
   const visibleOptions = normalizedQuery
     ? orderedOptions.filter((option) =>
         [option.label, option.group?.label].some((text) =>
@@ -174,14 +186,32 @@ const MultiSelect = ({
             </div>
           )}
           {visibleOptions.map((option, index) => {
+            const group = option.group?.label;
             const showGroup =
-              option.group &&
-              option.group.label !== visibleOptions[index - 1]?.group?.label;
+              group && group !== visibleOptions[index - 1]?.group?.label;
+            const collapsed = isCollapsed(group);
+            const selectedInGroup = collapsed
+              ? selectedOptions.filter(
+                  (selectedOption) => selectedOption.group?.label === group,
+                ).length
+              : 0;
 
             return (
               <Fragment key={option.value}>
                 {showGroup && (
-                  <div className="mb-1 flex items-center gap-2 border-b border-black/10 px-3 pb-2 pt-2 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-black/55 first:pt-1 dark:border-white/10 dark:text-white/55">
+                  <button
+                    type="button"
+                    aria-expanded={!collapsed}
+                    disabled={!!normalizedQuery}
+                    onClick={() => toggleGroup(group)}
+                    onKeyDown={(event) => {
+                      // Keep Enter and Space on the header instead of letting
+                      // the listbox select its active option.
+                      if (event.key === "Enter" || event.key === " ")
+                        event.stopPropagation();
+                    }}
+                    className="mb-1 flex w-full shrink-0 cursor-pointer items-center gap-2 rounded-t-lg border-b border-black/10 px-3 pb-2 pt-2 text-left text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-black/55 transition first:pt-1 hover:text-black/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 disabled:cursor-default disabled:hover:text-black/55 dark:border-white/10 dark:text-white/55 dark:hover:text-white/80 dark:focus-visible:ring-white/20 dark:disabled:hover:text-white/55"
+                  >
                     {option.group?.color && (
                       <i
                         aria-hidden
@@ -189,28 +219,41 @@ const MultiSelect = ({
                         style={{ backgroundColor: option.group.color }}
                       />
                     )}
-                    <span className="truncate">{option.group?.label}</span>
-                  </div>
+                    <span className="min-w-0 flex-1 truncate">{group}</span>
+                    {selectedInGroup > 0 && (
+                      <span className="shrink-0 tracking-normal normal-case">
+                        {selectedInGroup} selected
+                      </span>
+                    )}
+                    {!normalizedQuery && (
+                      <FiChevronDown
+                        aria-hidden
+                        className={`shrink-0 transition-transform motion-reduce:transition-none ${collapsed ? "-rotate-90" : ""}`}
+                      />
+                    )}
+                  </button>
                 )}
-                <ListboxOption
-                  value={option.value}
-                  className="group flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm transition focus:outline-none data-focus:bg-black/5 data-selected:bg-black/5 data-selected:font-semibold dark:data-focus:bg-white/10 dark:data-selected:bg-white/10"
-                >
-                  {option.avatar && (
-                    <Avatar
-                      {...option.avatar}
-                      size="md"
-                      className={`-my-1 ${option.avatar.className ?? ""}`}
+                {!collapsed && (
+                  <ListboxOption
+                    value={option.value}
+                    className="group flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm transition focus:outline-none data-focus:bg-black/5 data-selected:bg-black/5 data-selected:font-semibold dark:data-focus:bg-white/10 dark:data-selected:bg-white/10"
+                  >
+                    {option.avatar && (
+                      <Avatar
+                        {...option.avatar}
+                        size="md"
+                        className={`-my-1 ${option.avatar.className ?? ""}`}
+                      />
+                    )}
+                    <span className="min-w-0 flex-1 truncate">
+                      {option.label}
+                    </span>
+                    <FiCheck
+                      aria-hidden
+                      className="shrink-0 opacity-0 group-data-selected:opacity-100"
                     />
-                  )}
-                  <span className="min-w-0 flex-1 truncate">
-                    {option.label}
-                  </span>
-                  <FiCheck
-                    aria-hidden
-                    className="shrink-0 opacity-0 group-data-selected:opacity-100"
-                  />
-                </ListboxOption>
+                  </ListboxOption>
+                )}
               </Fragment>
             );
           })}
