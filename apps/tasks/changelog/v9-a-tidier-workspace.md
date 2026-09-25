@@ -28,6 +28,7 @@ Quick notes now ask for a title separately from their details, so the first line
 ### Category tags can follow the work
 
 Categories are no longer limited to 20 tags. Owners can drag tags into the order that makes sense for the category instead of accepting creation order forever.
+In the task tag picker, each category heading now collapses its tags, so a long list like Chapters can fold away while you pick from the others. A collapsed heading still counts its selected tags, and searching looks through every category.
 
 ## Improved
 
