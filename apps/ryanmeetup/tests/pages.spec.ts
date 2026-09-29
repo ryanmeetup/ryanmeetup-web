@@ -23,6 +23,11 @@ const contentRoutes = [
 
 const redirectRoutes = [
   { path: "/partnerships", location: "/sponsors/partnerships" },
+  {
+    path: "/chapters/pilot",
+    location:
+      "https://docs.google.com/document/d/1iJb9DYWPmT8mWeUMw3Da9qCpyPRtDPkfP5w6F4HapqA/edit?tab=t.0",
+  },
   { path: "/discord", location: "https://discord.gg/8rPPQMtZCp" },
   {
     path: "/guidelines",
