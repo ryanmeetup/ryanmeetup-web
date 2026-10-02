@@ -23,6 +23,7 @@ const contentRoutes = [
 ];
 
 const redirectRoutes = [
+  { path: "/cards/verify", location: "https://forms.gle/Zyv93AV4okJ6jsUo6" },
   { path: "/partnerships", location: "/sponsors/partnerships" },
   {
     path: "/chapters/pilot",
