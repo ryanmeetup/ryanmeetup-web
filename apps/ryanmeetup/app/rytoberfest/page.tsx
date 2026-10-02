@@ -52,7 +52,7 @@ const RytoberfestPage = async ({
   const chapterCount = new Set(
     upcomingEvents.flatMap((event) => event.chapter ?? []),
   ).size;
-  const lineupMeta = `${chapterCount} ${chapterCount === 1 ? "chapter" : "chapters"} · ${upcomingEvents.length} ${upcomingEvents.length === 1 ? "celebration" : "celebrations"}`;
+  const lineupMeta = `${chapterCount} ${chapterCount === 1 ? "chapter" : "chapters"}`;
 
   const structuredData = {
     "@context": "https://schema.org",
