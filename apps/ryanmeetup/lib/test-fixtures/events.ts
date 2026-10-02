@@ -62,6 +62,30 @@ const fixtures: Record<string, RyanEvent[]> = {
       chapter: ["Chicago"],
     }),
   ],
+  rytoberfest: [
+    createEvent({
+      title: "Twin Cities Rytoberfest",
+      date: addDays(8),
+      dateTime: formatDateTime(addDays(8)),
+      city: "St. Paul, MN",
+      venue: "BlackStack Brewing",
+      chapter: ["Minneapolis"],
+    }),
+    createEvent({
+      title: "Denver Rytoberfest 2026",
+      date: addDays(15),
+      dateTime: formatDateTime(addDays(15)),
+      city: "Denver, CO",
+      venue: "The Nob Hill Inn",
+      chapter: ["Denver"],
+    }),
+    createEvent({
+      title: "A Regular Ryan Meetup",
+      date: addDays(4),
+      dateTime: formatDateTime(addDays(4)),
+      chapter: ["Chicago"],
+    }),
+  ],
 };
 
 const getTestEvents = (fixture?: string) => {

@@ -1,5 +1,9 @@
 import type { RyanEvent } from "@/lib/types";
-import { sortEventsByDate, splitEventsByTime } from "@/utils/date";
+import {
+  isEventUpcoming,
+  sortEventsByDate,
+  splitEventsByTime,
+} from "@/utils/date";
 
 const buildEventSearchText = (event: RyanEvent) =>
   [
@@ -50,8 +54,22 @@ const isMainEvent = (event: RyanEvent) =>
   hasEventTag(event.eventType, "Main") || hasEventTag(event.chapter, "Main");
 
 const isRyanEmbassyEvent = (event: RyanEvent) =>
-  [event.title, event.venue].some(
-    (value) => value?.toLowerCase().includes("ryan embassy"),
+  [event.title, event.venue].some((value) =>
+    value?.toLowerCase().includes("ryan embassy"),
+  );
+
+const isRytoberfestEvent = (event: RyanEvent) =>
+  [
+    event.title,
+    ...(Array.isArray(event.eventType) ? event.eventType : [event.eventType]),
+  ].some((value) => value?.toLowerCase().includes("rytoberfest"));
+
+const getUpcomingRytoberfestEvents = (events: RyanEvent[], now = Date.now()) =>
+  sortEventsByDate(
+    events.filter(
+      (event) => isRytoberfestEvent(event) && isEventUpcoming(event.date, now),
+    ),
+    "asc",
   );
 
 const getEventCtaLabel = (event: RyanEvent, fallbackLabel: string) => {
@@ -69,5 +87,7 @@ export {
   getSortedEventsByView,
   getEventEmptyMessage,
   getEventCtaLabel,
+  getUpcomingRytoberfestEvents,
   isMainEvent,
+  isRytoberfestEvent,
 };

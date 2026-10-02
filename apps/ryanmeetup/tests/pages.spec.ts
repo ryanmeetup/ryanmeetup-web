@@ -17,6 +17,7 @@ const contentRoutes = [
   { path: "/map" },
   { path: "/press" },
   { path: "/rsvp", expectText: "Ryan Meetup returns to California" },
+  { path: "/rytoberfest" },
   { path: "/sponsors" },
   { path: "/sponsors/partnerships" },
 ];

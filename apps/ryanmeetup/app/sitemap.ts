@@ -12,6 +12,7 @@ const staticRoutes = [
   "/about",
   "/events",
   "/events/upcoming",
+  "/rytoberfest",
   "/press",
   "/chapters",
   "/gallery",

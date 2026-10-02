@@ -45,6 +45,7 @@ const Event = (props: EventProps) => {
             src={imageUrl ?? "/trophy.png"}
             fill={true}
             alt={title}
+            sizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 33vw"
             style={{ objectFit: "cover" }}
           />
         </div>
