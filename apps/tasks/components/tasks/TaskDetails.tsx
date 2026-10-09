@@ -12,7 +12,10 @@ import { TaskAttachmentsPanel } from "./TaskAttachmentsPanel";
 import { useTaskAttachments } from "./useTaskAttachments";
 import { useTaskChecklist } from "./useTaskChecklist";
 import { useTaskComments } from "./useTaskComments";
-import { useTaskDetailData } from "./useTaskDetailData";
+import {
+  useTaskDetailData,
+  type TaskDetailData,
+} from "./useTaskDetailData";
 
 type TaskDetailsProps = {
   task: Task;
@@ -28,6 +31,11 @@ type TaskDetailsProps = {
     section?: "all" | "work" | "comment" | "activity";
     conversationHeight?: number;
   };
+  /**
+   * The page's own detail loader, shared by its separate section panels so
+   * each knows when the task's rows are still on their way.
+   */
+  details?: TaskDetailData;
 };
 
 /** On a task page each group is its own card; in the modal they run together. */
@@ -52,7 +60,12 @@ function DetailGroup({
   );
 }
 
-export function TaskDetails({ task, workspace, display }: TaskDetailsProps) {
+export function TaskDetails({
+  task,
+  workspace,
+  display,
+  details: sharedDetails,
+}: TaskDetailsProps) {
   const { data, demoMode, setData } = workspace;
   const {
     active,
@@ -82,7 +95,11 @@ export function TaskDetails({ task, workspace, display }: TaskDetailsProps) {
   }
 
   const context = { task, data, demoMode, setData, recordActivity };
-  const details = useTaskDetailData({ ...context, section });
+  const ownDetails = useTaskDetailData({
+    ...context,
+    enabled: !sharedDetails && (section === "all" || section === "activity"),
+  });
+  const details = sharedDetails ?? ownDetails;
   const checklist = useTaskChecklist(context);
   const comments = useTaskComments(context);
   const attachments = useTaskAttachments({
@@ -105,6 +122,7 @@ export function TaskDetails({ task, workspace, display }: TaskDetailsProps) {
         >
           <TaskChecklistPanel
             items={checklist.items}
+            loading={details.loadingFirstPage}
             newItemTitle={checklist.newItemTitle}
             onAdd={() => void checklist.add()}
             onAddPasted={(pasted) => void checklist.addPasted(pasted)}
@@ -119,6 +137,7 @@ export function TaskDetails({ task, workspace, display }: TaskDetailsProps) {
             addingUrl={attachments.addingUrl}
             attachmentUrl={attachments.url}
             attachments={attachments.attachments}
+            loading={details.loadingFirstPage}
             onAddUrl={() => void attachments.addUrl()}
             onAttachmentUrlChange={attachments.setUrl}
             onRemove={(item) => void attachments.remove(item)}

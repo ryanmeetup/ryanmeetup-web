@@ -9,30 +9,27 @@ import type { TaskActivity } from "@/lib/activity/activity-types";
 import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import type { TaskDetailContext } from "./task-detail-context";
 
-type Section = "all" | "work" | "comment" | "activity";
-
-/** Only these sections read anything the detail request returns. */
-const loadsDetails = (section: Section) =>
-  section === "all" || section === "activity";
-
 /**
  * Loads a task's checklist, comments, attachments, and activity, and pages
  * through its activity history.
  *
  * The first page replaces this task's rows outright; later pages only append
  * activity, so paging back through history never discards the rest.
+ *
+ * `enabled` is false for a panel whose page already loads the details once
+ * for all of its sections.
  */
 export function useTaskDetailData({
   task,
   data,
   demoMode,
   setData,
-  section,
-}: Omit<TaskDetailContext, "recordActivity"> & { section: Section }) {
+  enabled,
+}: Omit<TaskDetailContext, "recordActivity"> & { enabled: boolean }) {
   // Which page is in flight: page 0 replaces the task's history, later pages
   // append to it, and the panel shows placeholders only for the former.
   const [loadingPage, setLoadingPage] = useState<number | null>(
-    !demoMode && loadsDetails(section) ? 0 : null,
+    !demoMode && enabled ? 0 : null,
   );
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(false);
@@ -87,13 +84,13 @@ export function useTaskDetailData({
   }
 
   useEffect(() => {
-    if (!loadsDetails(section)) return;
+    if (!enabled) return;
     // Deferred a tick so opening a task paints before its details are fetched.
     const timer = window.setTimeout(() => void load(0), 0);
     return () => window.clearTimeout(timer);
     // Detail data is scoped to the selected task and loaded only when opened.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [task.id, demoMode, section]);
+  }, [task.id, demoMode, enabled]);
 
   return {
     activity,
@@ -104,6 +101,8 @@ export function useTaskDetailData({
     loadMore: () => void load(page + 1),
   };
 }
+
+export type TaskDetailData = ReturnType<typeof useTaskDetailData>;
 
 const replaceTaskRows =
   (

@@ -18,6 +18,7 @@ import {
   FiX,
 } from "react-icons/fi";
 import { CountBadge } from "@/components/global";
+import { SkeletonBar } from "@/components/global/SkeletonBar";
 import {
   isChecklistPaste,
   parseChecklistPaste,
@@ -27,8 +28,27 @@ import type { Subtask } from "@/lib/tasks/task-types";
 
 const expandedStorageKey = "ryanmeetup.tasks.checklist-expanded";
 
+/** Mirrors an item's checkbox and title while the checklist loads. */
+function TaskChecklistSkeletons() {
+  return (
+    <div
+      aria-hidden="true"
+      data-task-checklist-skeleton=""
+      className="space-y-3 border-y border-black/10 py-3 pr-2 dark:border-white/10"
+    >
+      {["w-3/5", "w-2/5", "w-1/2"].map((width) => (
+        <div key={width} className="flex h-9 items-center gap-2">
+          <SkeletonBar className="h-5 w-5 shrink-0" />
+          <SkeletonBar className={`h-4 ${width}`} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function TaskChecklistPanel({
-  items,
+  items: loadedItems,
+  loading,
   newItemTitle,
   onAdd,
   onAddPasted,
@@ -39,6 +59,8 @@ export function TaskChecklistPanel({
   saving,
 }: {
   items: Subtask[];
+  /** The task's items are being fetched, so any held here may be stale. */
+  loading: boolean;
   newItemTitle: string;
   onAdd: () => void;
   onAddPasted: (pasted: ChecklistPasteItem[]) => void;
@@ -49,6 +71,7 @@ export function TaskChecklistPanel({
   onToggle: (item: Subtask) => void;
   saving: boolean;
 }) {
+  const items = loading ? [] : loadedItems;
   const completed = items.filter((item) => item.is_completed).length;
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
@@ -131,10 +154,18 @@ export function TaskChecklistPanel({
           <span className="text-xs font-semibold uppercase tracking-[0.2em]">
             Checklist
           </span>
-          <CountBadge>{items.length}</CountBadge>
+          {!loading && <CountBadge>{items.length}</CountBadge>}
         </span>
       }
     >
+      {loading && (
+        <>
+          <span className="sr-only" role="status">
+            Loading checklist
+          </span>
+          <TaskChecklistSkeletons />
+        </>
+      )}
       {items.length > 0 && (
         <div className="h-1.5 overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
           <div

@@ -54,6 +54,7 @@ import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import { taskEditorView } from "@/lib/tasks/task-editor-view";
 import { projectPath } from "@/lib/resources/project-route";
 import { TaskDetails } from "./TaskDetails";
+import { useTaskDetailData } from "./useTaskDetailData";
 import { TaskDueDate } from "./TaskDueDate";
 import { TaskEditor } from "./TaskEditor";
 import { NewTaskModal } from "./NewTaskModal";
@@ -92,6 +93,16 @@ export function TaskPageClient({
   const task =
     data.tasks.find((item) => item.id === taskId) ??
     initialData.tasks.find((item) => item.id === taskId)!;
+
+  // Loaded once here, since the page splits the task's details across three
+  // panels that each need to know the rows are still on their way.
+  const details = useTaskDetailData({
+    task,
+    data,
+    demoMode,
+    setData,
+    enabled: true,
+  });
 
   useEffect(() => {
     document.title = pageTitle(`${taskKey(task)}: ${task.title}`);
@@ -355,6 +366,7 @@ export function TaskPageClient({
 
             <TaskDetails
               task={task}
+              details={details}
               workspace={{ data, demoMode, setData }}
               display={{
                 active: true,
@@ -365,6 +377,7 @@ export function TaskPageClient({
             />
             <TaskDetails
               task={task}
+              details={details}
               workspace={{ data, demoMode, setData }}
               display={{
                 active: true,
@@ -499,6 +512,7 @@ export function TaskPageClient({
             >
               <TaskDetails
                 task={task}
+                details={details}
                 workspace={{ data, demoMode, setData }}
                 display={{
                   active: true,

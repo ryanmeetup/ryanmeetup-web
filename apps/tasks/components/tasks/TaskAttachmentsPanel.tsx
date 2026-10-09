@@ -18,13 +18,33 @@ import {
   FiX,
 } from "react-icons/fi";
 import { CountBadge } from "@/components/global";
+import { SkeletonBar } from "@/components/global/SkeletonBar";
 import { formatFileSize, formatMimeSubtype } from "@/lib/presentation";
 import type { TaskAttachment } from "@/lib/tasks/task-types";
+
+/** Mirrors an attachment's thumbnail, name, and details while they load. */
+function TaskAttachmentSkeletons() {
+  return ["w-1/2", "w-2/5"].map((width) => (
+    <div
+      key={width}
+      aria-hidden="true"
+      data-task-attachment-skeleton=""
+      className="flex items-center gap-3 rounded-xl border border-black/10 p-2 dark:border-white/10"
+    >
+      <SkeletonBar className="h-12 w-12 shrink-0" />
+      <div className="min-w-0 flex-1 space-y-2">
+        <SkeletonBar className={`h-4 ${width}`} />
+        <SkeletonBar className="h-3 w-20" />
+      </div>
+    </div>
+  ));
+}
 
 export function TaskAttachmentsPanel({
   addingUrl,
   attachmentUrl,
-  attachments,
+  attachments: loadedAttachments,
+  loading,
   onAddUrl,
   onAttachmentUrlChange,
   onRemove,
@@ -37,6 +57,8 @@ export function TaskAttachmentsPanel({
   addingUrl: boolean;
   attachmentUrl: string;
   attachments: TaskAttachment[];
+  /** The task's attachments are being fetched, so any held here may be stale. */
+  loading: boolean;
   onAddUrl: () => void;
   onAttachmentUrlChange: (value: string) => void;
   onRemove: (item: TaskAttachment) => void;
@@ -49,6 +71,7 @@ export function TaskAttachmentsPanel({
   const [draggingFiles, setDraggingFiles] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const setAttachmentUrl = onAttachmentUrlChange;
+  const attachments = loading ? [] : loadedAttachments;
   return (
     <DisclosureCard
       defaultOpen
@@ -59,7 +82,7 @@ export function TaskAttachmentsPanel({
       summary={
         <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em]">
           <FiPaperclip aria-hidden /> Attachments
-          <CountBadge>{attachments.length}</CountBadge>
+          {!loading && <CountBadge>{attachments.length}</CountBadge>}
         </span>
       }
     >
@@ -100,6 +123,14 @@ export function TaskAttachmentsPanel({
             </div>
           </div>
         </div>
+      )}
+      {loading && (
+        <>
+          <span className="sr-only" role="status">
+            Loading attachments
+          </span>
+          <TaskAttachmentSkeletons />
+        </>
       )}
       {attachments.map((item) => (
         <div
