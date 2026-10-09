@@ -123,55 +123,61 @@ export function NewTaskDetails({
           </span>
         }
       >
-        {value.checklist.map((item) => (
-          <div key={item.id} className="flex items-center gap-2">
-            <button
-              type="button"
-              role="checkbox"
-              aria-checked={item.completed}
-              disabled={disabled}
-              onClick={() =>
-                onChange((current) => ({
-                  ...current,
-                  checklist: current.checklist.map((candidate) =>
-                    candidate.id === item.id
-                      ? { ...candidate, completed: !candidate.completed }
-                      : candidate,
-                  ),
-                }))
-              }
-              className="group flex min-w-0 flex-1 items-center gap-2 rounded text-left focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed"
-            >
-              <span
-                aria-hidden
-                className={`grid h-5 w-5 shrink-0 place-items-center rounded border transition ${item.completed ? "border-emerald-500 bg-emerald-500 text-white" : "border-black/20 group-hover:border-black/40 dark:border-white/25 dark:group-hover:border-white/50"}`}
-              >
-                {item.completed && <FiCheck aria-hidden />}
-              </span>
-              <span
-                className={`min-w-0 flex-1 text-sm ${item.completed ? "text-black/45 line-through dark:text-white/45" : ""}`}
-              >
-                {item.title}
-              </span>
-            </button>
-            <IconButton
-              type="button"
-              label={`Remove “${item.title}”`}
-              variant="danger"
-              disabled={disabled}
-              onClick={() =>
-                onChange((current) => ({
-                  ...current,
-                  checklist: current.checklist.filter(
-                    (candidate) => candidate.id !== item.id,
-                  ),
-                }))
-              }
-            >
-              <FiTrash2 />
-            </IconButton>
+        {value.checklist.length > 0 && (
+          // Capped so a long list scrolls in place instead of pushing the
+          // add field and attachments out of the details column.
+          <div className="max-h-[min(13.2rem,calc(22.75svh+1.5rem))] space-y-3 overflow-y-auto overscroll-contain border-y border-black/10 py-3 pr-2 dark:border-white/10">
+            {value.checklist.map((item) => (
+              <div key={item.id} className="flex items-center gap-2">
+                <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={item.completed}
+                  disabled={disabled}
+                  onClick={() =>
+                    onChange((current) => ({
+                      ...current,
+                      checklist: current.checklist.map((candidate) =>
+                        candidate.id === item.id
+                          ? { ...candidate, completed: !candidate.completed }
+                          : candidate,
+                      ),
+                    }))
+                  }
+                  className="group flex min-w-0 flex-1 items-center gap-2 rounded text-left focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed"
+                >
+                  <span
+                    aria-hidden
+                    className={`grid h-5 w-5 shrink-0 place-items-center rounded border transition ${item.completed ? "border-emerald-500 bg-emerald-500 text-white" : "border-black/20 group-hover:border-black/40 dark:border-white/25 dark:group-hover:border-white/50"}`}
+                  >
+                    {item.completed && <FiCheck aria-hidden />}
+                  </span>
+                  <span
+                    className={`min-w-0 flex-1 text-sm ${item.completed ? "text-black/45 line-through dark:text-white/45" : ""}`}
+                  >
+                    {item.title}
+                  </span>
+                </button>
+                <IconButton
+                  type="button"
+                  label={`Remove “${item.title}”`}
+                  variant="danger"
+                  disabled={disabled}
+                  onClick={() =>
+                    onChange((current) => ({
+                      ...current,
+                      checklist: current.checklist.filter(
+                        (candidate) => candidate.id !== item.id,
+                      ),
+                    }))
+                  }
+                >
+                  <FiTrash2 />
+                </IconButton>
+              </div>
+            ))}
           </div>
-        ))}
+        )}
         <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
           <Input
             label="Checklist item"
