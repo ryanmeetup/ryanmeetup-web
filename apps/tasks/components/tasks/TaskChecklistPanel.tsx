@@ -34,7 +34,7 @@ function TaskChecklistSkeletons() {
     <div
       aria-hidden="true"
       data-task-checklist-skeleton=""
-      className="space-y-3 border-y border-black/10 py-3 pr-2 dark:border-white/10"
+      className="space-y-3 border-y border-black/10 py-3 pr-2 pl-1 dark:border-white/10"
     >
       {["w-3/5", "w-2/5", "w-1/2"].map((width) => (
         <div key={width} className="flex h-9 items-center gap-2">
@@ -186,7 +186,7 @@ export function TaskChecklistPanel({
             id="task-checklist-items"
             // Desktop has the room to show the whole list, so only smaller
             // screens cap it behind the toggle.
-            className={`${expanded ? "" : "max-h-[min(13.2rem,calc(22.75svh+1.5rem))] overflow-y-auto overscroll-contain lg:max-h-none lg:overflow-visible"} border-y border-black/10 py-3 pr-2 dark:border-white/10`}
+            className={`${expanded ? "" : "max-h-[min(13.2rem,calc(22.75svh+1.5rem))] overflow-y-auto overscroll-contain lg:max-h-none lg:overflow-visible"} border-y border-black/10 py-3 pr-2 pl-1 dark:border-white/10`}
           >
             <div ref={contentRef} className="space-y-3">
               {items.map((item) =>

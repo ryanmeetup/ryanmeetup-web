@@ -126,7 +126,7 @@ export function NewTaskDetails({
         {value.checklist.length > 0 && (
           // Capped so a long list scrolls in place instead of pushing the
           // add field and attachments out of the details column.
-          <div className="max-h-[min(13.2rem,calc(22.75svh+1.5rem))] space-y-3 overflow-y-auto overscroll-contain border-y border-black/10 py-3 pr-2 dark:border-white/10">
+          <div className="max-h-[min(13.2rem,calc(22.75svh+1.5rem))] space-y-3 overflow-y-auto overscroll-contain border-y border-black/10 py-3 pr-2 pl-1 dark:border-white/10">
             {value.checklist.map((item) => (
               <div key={item.id} className="flex items-center gap-2">
                 <button
