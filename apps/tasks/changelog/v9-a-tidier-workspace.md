@@ -48,7 +48,7 @@ Archived tasks lead with their task keys, group supporting details more tightly,
 
 ### Loading without a layout jump
 
-Activity feeds show skeleton rows while a request is pending, preserving the shape of the page rather than replacing it with a lone loading message. The stale content remains clearly unavailable until the newest response arrives. A task's checklist and attachments do the same while the task loads, instead of sitting empty and then filling in all at once.
+Activity feeds show skeleton rows while a request is pending, preserving the shape of the page rather than replacing it with a lone loading message. The stale content remains clearly unavailable until the newest response arrives. A task's checklist, attachments, and comments do the same while the task loads, instead of sitting empty and then filling in all at once.
 Project attachment lists now use the same card-shaped loading treatment instead of adding status copy beneath their descriptions.
 The project-context dialog reserves its final responsive height while those skeletons load, keeping its scroll area and footer stationary.
 
