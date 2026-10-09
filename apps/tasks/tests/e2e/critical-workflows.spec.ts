@@ -662,3 +662,61 @@ test("finds archived tasks beneath the live search results", async ({
   await archived.click();
   await expect(page).toHaveURL(/\/task\/RMT-15/);
 });
+
+test("edits, copies, and expands checklist items on a task", async ({
+  page,
+  baseURL,
+  context,
+}) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await enterDemoWorkspace(page, baseURL);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(editedTask);
+  await page.waitForLoadState("networkidle");
+
+  const newItem = page.getByRole("textbox", { name: "New checklist item" });
+  for (let index = 1; index <= 10; index += 1) {
+    await newItem.fill(`Item ${index}`);
+    await newItem.press("Enter");
+  }
+
+  const list = page.locator("#task-checklist-items");
+  const scrolls = () =>
+    list.evaluate((element) => element.scrollHeight > element.clientHeight);
+  await expect(list).toHaveCSS("border-bottom-style", "solid");
+  expect(await scrolls()).toBe(true);
+
+  const showAll = page.getByRole("button", { name: "Show all 10 items" });
+  await expect(showAll).toHaveAttribute("aria-expanded", "false");
+  await showAll.click();
+  const showFewer = page.getByRole("button", { name: "Show fewer" });
+  await expect(showFewer).toHaveAttribute("aria-expanded", "true");
+  expect(await scrolls()).toBe(false);
+  await showFewer.click();
+  expect(await scrolls()).toBe(true);
+
+  // Copying must not toggle the item, which is what clicking its title does.
+  await page.getByRole("button", { name: "Copy “Item 1”" }).click();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+    "Item 1",
+  );
+  await expect(
+    page.getByRole("checkbox", { name: "Item 1", exact: true }),
+  ).not.toBeChecked();
+
+  await page.getByRole("button", { name: "Edit “Item 1”" }).click();
+  const rename = page.getByRole("textbox", { name: "Rename “Item 1”" });
+  await expect(rename).toBeFocused();
+  await rename.press("Escape");
+  await expect(rename).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Edit “Item 1”" }).click();
+  await rename.fill("Book the venue");
+  await rename.press("Enter");
+  await expect(
+    page.getByRole("checkbox", { name: "Book the venue" }),
+  ).not.toBeChecked();
+  await expect(
+    page.getByRole("checkbox", { name: "Item 1", exact: true }),
+  ).toHaveCount(0);
+});

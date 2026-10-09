@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Button,
   DisclosureCard,
@@ -24,6 +24,8 @@ import {
   type ChecklistPasteItem,
 } from "@/lib/tasks/checklist-paste";
 import type { Subtask } from "@/lib/tasks/task-types";
+
+const expandedStorageKey = "ryanmeetup.tasks.checklist-expanded";
 
 export function TaskChecklistPanel({
   items,
@@ -51,6 +53,48 @@ export function TaskChecklistPanel({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
   const [renaming, setRenaming] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [overflowing, setOverflowing] = useState(false);
+  const capRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const hasItems = items.length > 0;
+
+  // Whether the list is shown in full is a per-viewer habit, not task state.
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(expandedStorageKey) === "true";
+      queueMicrotask(() => setExpanded(saved));
+    } catch {
+      // Storage can be blocked; the capped list is a fine default.
+    }
+  }, []);
+
+  function toggleExpanded() {
+    const next = !expanded;
+    setExpanded(next);
+    try {
+      localStorage.setItem(expandedStorageKey, String(next));
+    } catch {
+      // Storage can be blocked; the toggle still works for this visit.
+    }
+  }
+
+  // The cap is partly viewport-relative, so whether the list outgrows it is
+  // measured against a probe at the cap's height. Measuring the list itself
+  // would stop working once it is expanded and no longer capped.
+  useEffect(() => {
+    const cap = capRef.current;
+    const content = contentRef.current;
+    if (!cap || !content) return;
+    const measure = () =>
+      // The probe includes the list's border and padding; the content does not.
+      setOverflowing(content.offsetHeight + 26 > cap.offsetHeight + 1);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(cap);
+    observer.observe(content);
+    return () => observer.disconnect();
+  }, [hasItems]);
 
   function beginEdit(item: Subtask) {
     setEditingId(item.id);
@@ -100,103 +144,129 @@ export function TaskChecklistPanel({
         </div>
       )}
       {items.length > 0 && (
-        <div className="max-h-[min(11.7rem,22.75svh)] space-y-3 overflow-y-auto overscroll-contain pr-2">
-          {items.map((item) =>
-            editingId === item.id ? (
-              <form
-                key={item.id}
-                className="flex items-center gap-2"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void saveEdit(item);
-                }}
-              >
-                <div className="min-w-0 flex-1">
-                  <Input
-                    label={`Rename “${item.title}”`}
-                    hideLabel
-                    name={`subtask-title-${item.id}`}
-                    value={editingTitle}
-                    onChange={(event) => setEditingTitle(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Escape") {
-                        event.preventDefault();
-                        setEditingId(null);
-                      }
+        // Clipped so the probe can never add scroll height of its own.
+        <div className="relative overflow-hidden">
+          <div
+            ref={capRef}
+            aria-hidden
+            className="pointer-events-none invisible absolute top-0 left-0 h-[min(13.2rem,calc(22.75svh+1.5rem))] w-px"
+          />
+          <div
+            id="task-checklist-items"
+            className={`${expanded ? "" : "max-h-[min(13.2rem,calc(22.75svh+1.5rem))] overflow-y-auto overscroll-contain"} border-y border-black/10 py-3 pr-2 dark:border-white/10`}
+          >
+            <div ref={contentRef} className="space-y-3">
+              {items.map((item) =>
+                editingId === item.id ? (
+                  <form
+                    key={item.id}
+                    className="flex items-center gap-2"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      void saveEdit(item);
                     }}
-                    disabled={renaming}
-                    autoFocus
-                    required
-                    maxLength={1000}
-                  />
-                </div>
-                <IconButton
-                  type="submit"
-                  label="Save checklist item"
-                  variant="archive"
-                  disabled={renaming || !editingTitle.trim()}
-                >
-                  <FiCheck />
-                </IconButton>
-                <IconButton
-                  label="Cancel editing"
-                  disabled={renaming}
-                  onClick={() => setEditingId(null)}
-                >
-                  <FiX />
-                </IconButton>
-              </form>
-            ) : (
-              <div key={item.id} className="flex items-center gap-2">
-                {/* The title toggles too, so the whole row is a hit target. */}
-                <Tooltip
-                  content={`${item.is_completed ? "Reopen" : "Complete"} ${item.title}`}
-                  triggerClassName="min-w-0 flex-1"
-                >
-                  <button
-                    type="button"
-                    role="checkbox"
-                    aria-checked={item.is_completed}
-                    onClick={() => onToggle(item)}
-                    className="group flex min-w-0 flex-1 items-center gap-2 text-left"
                   >
-                    <span
-                      aria-hidden
-                      className={`grid h-5 w-5 shrink-0 place-items-center rounded border transition ${item.is_completed ? "border-emerald-500 bg-emerald-500 text-white" : "border-black/20 group-hover:border-black/40 dark:border-white/25 dark:group-hover:border-white/50"}`}
+                    <div className="min-w-0 flex-1">
+                      <Input
+                        label={`Rename “${item.title}”`}
+                        hideLabel
+                        name={`subtask-title-${item.id}`}
+                        value={editingTitle}
+                        onChange={(event) =>
+                          setEditingTitle(event.target.value)
+                        }
+                        onKeyDown={(event) => {
+                          if (event.key === "Escape") {
+                            event.preventDefault();
+                            setEditingId(null);
+                          }
+                        }}
+                        disabled={renaming}
+                        autoFocus
+                        required
+                        maxLength={1000}
+                      />
+                    </div>
+                    <IconButton
+                      type="submit"
+                      label="Save checklist item"
+                      variant="archive"
+                      disabled={renaming || !editingTitle.trim()}
                     >
-                      {item.is_completed && <FiCheck aria-hidden />}
-                    </span>
-                    <span
-                      className={`min-w-0 flex-1 text-sm ${item.is_completed ? "text-black/45 line-through dark:text-white/45" : ""}`}
+                      <FiCheck />
+                    </IconButton>
+                    <IconButton
+                      label="Cancel editing"
+                      disabled={renaming}
+                      onClick={() => setEditingId(null)}
                     >
-                      {item.title}
-                    </span>
-                  </button>
-                </Tooltip>
-                <IconButton
-                  label={`Copy “${item.title}”`}
-                  onClick={() => void copy(item)}
-                >
-                  <FiCopy />
-                </IconButton>
-                <IconButton
-                  label={`Edit “${item.title}”`}
-                  variant="edit"
-                  onClick={() => beginEdit(item)}
-                >
-                  <FiEdit2 />
-                </IconButton>
-                <IconButton
-                  label={`Delete “${item.title}”`}
-                  variant="danger"
-                  onClick={() => onDelete(item)}
-                >
-                  <FiTrash2 />
-                </IconButton>
-              </div>
-            ),
-          )}
+                      <FiX />
+                    </IconButton>
+                  </form>
+                ) : (
+                  <div key={item.id} className="flex items-center gap-2">
+                    {/* The title toggles too, so the whole row is a hit target. */}
+                    <Tooltip
+                      content={`${item.is_completed ? "Reopen" : "Complete"} ${item.title}`}
+                      triggerClassName="min-w-0 flex-1"
+                    >
+                      <button
+                        type="button"
+                        role="checkbox"
+                        aria-checked={item.is_completed}
+                        onClick={() => onToggle(item)}
+                        className="group flex min-w-0 flex-1 items-center gap-2 text-left"
+                      >
+                        <span
+                          aria-hidden
+                          className={`grid h-5 w-5 shrink-0 place-items-center rounded border transition ${item.is_completed ? "border-emerald-500 bg-emerald-500 text-white" : "border-black/20 group-hover:border-black/40 dark:border-white/25 dark:group-hover:border-white/50"}`}
+                        >
+                          {item.is_completed && <FiCheck aria-hidden />}
+                        </span>
+                        <span
+                          className={`min-w-0 flex-1 text-sm ${item.is_completed ? "text-black/45 line-through dark:text-white/45" : ""}`}
+                        >
+                          {item.title}
+                        </span>
+                      </button>
+                    </Tooltip>
+                    <IconButton
+                      label={`Copy “${item.title}”`}
+                      onClick={() => void copy(item)}
+                    >
+                      <FiCopy />
+                    </IconButton>
+                    <IconButton
+                      label={`Edit “${item.title}”`}
+                      variant="edit"
+                      onClick={() => beginEdit(item)}
+                    >
+                      <FiEdit2 />
+                    </IconButton>
+                    <IconButton
+                      label={`Delete “${item.title}”`}
+                      variant="danger"
+                      onClick={() => onDelete(item)}
+                    >
+                      <FiTrash2 />
+                    </IconButton>
+                  </div>
+                ),
+              )}
+            </div>
+          </div>
         </div>
+      )}
+      {(overflowing || expanded) && items.length > 0 && (
+        <button
+          type="button"
+          onClick={toggleExpanded}
+          aria-expanded={expanded}
+          aria-controls="task-checklist-items"
+          className="cursor-pointer text-xs font-semibold text-black/55 underline decoration-black/25 underline-offset-2 transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:text-white/55 dark:decoration-white/25 dark:hover:text-white dark:focus-visible:ring-white/40"
+        >
+          {expanded ? "Show fewer" : `Show all ${items.length} items`}
+        </button>
       )}
       <div className="grid w-full gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
         <div className="min-w-0 flex-1">
