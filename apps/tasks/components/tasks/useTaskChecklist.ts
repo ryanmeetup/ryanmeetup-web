@@ -6,6 +6,7 @@ import {
   createSubtask,
   createSubtasks,
   deleteSubtask,
+  renameSubtask,
   setSubtaskCompleted,
 } from "@/lib/tasks/task-detail-mutations";
 import {
@@ -193,6 +194,43 @@ export function useTaskChecklist({
       );
   }
 
+  /** Resolves true once the new title is saved, so the row can close its editor. */
+  async function rename(item: Subtask, value: string) {
+    const title = value.trim();
+    if (!title) return false;
+    if (title === item.title) return true;
+    const saved = await write({
+      apply: (current) => ({
+        ...current,
+        subtasks: current.subtasks.map((entry) =>
+          entry.id === item.id ? { ...entry, title } : entry,
+        ),
+      }),
+      revert: (current) => ({
+        ...current,
+        subtasks: current.subtasks.map((entry) =>
+          entry.id === item.id ? item : entry,
+        ),
+      }),
+      persist: demoMode ? undefined : () => renameSubtask(item.id, title),
+      reconcile:
+        ({ subtask, activity }) =>
+        (current) =>
+          withRecordedRows(
+            { activity },
+            {
+              ...current,
+              subtasks: current.subtasks.map((entry) =>
+                entry.id === item.id ? subtask : entry,
+              ),
+            },
+          ),
+      whenFailed: "The checklist item could not be renamed.",
+    });
+    if (demoMode) await recordActivity("renamed a checklist item");
+    return saved;
+  }
+
   async function remove(item: Subtask) {
     await write({
       apply: (current) => ({
@@ -221,6 +259,7 @@ export function useTaskChecklist({
     add,
     addPasted,
     toggle,
+    rename,
     remove,
   };
 }

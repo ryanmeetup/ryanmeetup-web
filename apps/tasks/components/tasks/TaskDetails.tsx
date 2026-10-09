@@ -110,6 +110,7 @@ export function TaskDetails({ task, workspace, display }: TaskDetailsProps) {
             onAddPasted={(pasted) => void checklist.addPasted(pasted)}
             onDelete={(item) => void checklist.remove(item)}
             onNewItemTitleChange={checklist.setNewItemTitle}
+            onRename={checklist.rename}
             onToggle={(item) => void checklist.toggle(item)}
             saving={checklist.saving}
           />
