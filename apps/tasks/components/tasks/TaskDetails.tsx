@@ -155,6 +155,7 @@ export function TaskDetails({
           <TaskCommentsPanel
             comment={comments.draft}
             comments={comments.comments}
+            loading={details.loadingFirstPage}
             currentProfileId={data.currentProfile.id}
             editingBody={comments.editingBody}
             editingComment={comments.editing}

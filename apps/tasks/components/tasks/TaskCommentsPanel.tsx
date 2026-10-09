@@ -8,6 +8,7 @@ import {
   FiTrash2,
 } from "react-icons/fi";
 import { CountBadge } from "@/components/global";
+import { SkeletonBar } from "@/components/global/SkeletonBar";
 import { withAccessPreview } from "@/lib/access/access-preview";
 import { profileDisplayName } from "@/lib/presentation";
 import { taskCommentSegments } from "@/lib/tasks/task-comment-references";
@@ -20,9 +21,28 @@ import type { TaskComment, TaskReference } from "@/lib/tasks/task-types";
 import type { AccessPreview, Profile } from "@/lib/workspace/workspace-types";
 import { formatTimestamp } from "@/lib/date-format";
 
+/** Mirrors a comment's avatar, author line, and body while they load. */
+function TaskCommentSkeletons() {
+  return ["w-3/4", "w-1/2"].map((width) => (
+    <div
+      key={width}
+      aria-hidden="true"
+      data-task-comment-skeleton=""
+      className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 py-1"
+    >
+      <SkeletonBar round className="mt-0.5 h-8 w-8" />
+      <div className="min-w-0 space-y-2 py-0.5">
+        <SkeletonBar className="h-3.5 w-32" />
+        <SkeletonBar className={`h-4 ${width}`} />
+      </div>
+    </div>
+  ));
+}
+
 export function TaskCommentsPanel({
   comment,
-  comments,
+  comments: loadedComments,
+  loading,
   currentProfileId,
   editingBody,
   editingComment,
@@ -48,6 +68,8 @@ export function TaskCommentsPanel({
 }: {
   comment: string;
   comments: TaskComment[];
+  /** The task's comments are being fetched, so any held here may be stale. */
+  loading: boolean;
   currentProfileId: string;
   editingBody: string;
   editingComment: TaskComment | null;
@@ -71,6 +93,7 @@ export function TaskCommentsPanel({
   tasks: TaskReference[];
   accessPreview?: AccessPreview;
 }) {
+  const comments = loading ? [] : loadedComments;
   const threads = buildTaskCommentThreads(comments);
 
   function renderThread(thread: TaskCommentThread, depth = 0): ReactNode {
@@ -247,8 +270,17 @@ export function TaskCommentsPanel({
   return (
     <section className="space-y-3">
       <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em]">
-        <FiMessageSquare /> Comments <CountBadge>{comments.length}</CountBadge>
+        <FiMessageSquare /> Comments{" "}
+        {!loading && <CountBadge>{comments.length}</CountBadge>}
       </h3>
+      {loading && (
+        <div className="space-y-3">
+          <span className="sr-only" role="status">
+            Loading comments
+          </span>
+          <TaskCommentSkeletons />
+        </div>
+      )}
       {comments.length > 0 && (
         <div className="max-h-72 space-y-3 overflow-y-auto overscroll-contain pr-2">
           {threads.map((thread) => renderThread(thread))}

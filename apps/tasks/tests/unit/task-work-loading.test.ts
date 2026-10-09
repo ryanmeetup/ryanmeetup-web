@@ -3,7 +3,12 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { TaskAttachmentsPanel } from "@/components/tasks/TaskAttachmentsPanel";
 import { TaskChecklistPanel } from "@/components/tasks/TaskChecklistPanel";
-import type { Subtask, TaskAttachment } from "@/lib/tasks/task-types";
+import { TaskCommentsPanel } from "@/components/tasks/TaskCommentsPanel";
+import type {
+  Subtask,
+  TaskAttachment,
+  TaskComment,
+} from "@/lib/tasks/task-types";
 
 const staleItem = {
   id: "stale-item",
@@ -26,6 +31,16 @@ const staleAttachment = {
   created_by: null,
   created_at: "2026-09-01T12:00:00.000Z",
 } as unknown as TaskAttachment;
+
+const staleComment = {
+  id: "stale-comment",
+  task_id: "task",
+  parent_id: null,
+  body: "A stale comment",
+  created_by: "someone",
+  created_at: "2026-09-01T12:00:00.000Z",
+  edited_at: null,
+} as unknown as TaskComment;
 
 describe("checklist loading", () => {
   function renderPanel(loading: boolean) {
@@ -94,5 +109,53 @@ describe("attachment loading", () => {
 
     expect(markup).toContain(staleAttachment.name);
     expect(markup).not.toContain("data-task-attachment-skeleton");
+  });
+});
+
+describe("comment loading", () => {
+  function renderPanel(loading: boolean) {
+    return renderToStaticMarkup(
+      createElement(TaskCommentsPanel, {
+        comment: "",
+        comments: [staleComment],
+        loading,
+        currentProfileId: "me",
+        editingBody: "",
+        editingComment: null,
+        onCancelEdit: () => {},
+        onClear: () => {},
+        onCommentChange: () => {},
+        onDelete: () => {},
+        onEdit: () => {},
+        onEditingBodyChange: () => {},
+        onSave: () => {},
+        onSubmit: () => {},
+        onCancelReply: () => {},
+        onReplyChange: () => {},
+        onReplySubmit: () => {},
+        onStartReply: () => {},
+        previewing: false,
+        profiles: [],
+        reply: "",
+        replyingTo: null,
+        saving: false,
+        tasks: [],
+      }),
+    );
+  }
+
+  it("replaces cached comments with placeholders while the task loads", () => {
+    const markup = renderPanel(true);
+
+    expect(markup).not.toContain(staleComment.body);
+    expect(markup.match(/data-task-comment-skeleton=""/g)).toHaveLength(2);
+    expect(markup).toContain('role="status">Loading comments</span>');
+  });
+
+  it("shows the comments once loaded", () => {
+    const markup = renderPanel(false);
+
+    expect(markup).toContain(staleComment.body);
+    expect(markup).not.toContain("data-task-comment-skeleton");
   });
 });
