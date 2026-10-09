@@ -49,7 +49,7 @@ const PartnershipPerks = ({
 }: PartnershipPerksProps) => (
   <>
     <div className="sm:hidden">
-      <details className="group">
+      <details className="details-reveal group">
         <summary className="mx-auto inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-black/20 bg-white/90 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-black/80 shadow-sm transition hover:border-black/40 hover:bg-black/5 dark:border-white/20 dark:bg-white/10 dark:text-white/80 dark:hover:border-white/40 dark:hover:bg-white/10">
           View partnership perks
           <span className="text-xs leading-none transition-transform duration-200 group-open:rotate-180">
