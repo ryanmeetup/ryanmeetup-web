@@ -63,6 +63,7 @@ Web addresses pasted into a task description now appear as clickable links on th
 ### Check off work while creating a task
 
 Checklist items can now be marked complete before a new task is created. Their checked state also stays intact in saved drafts and on the finished task.
+On a saved task, each checklist item can now be renamed in place or copied to the clipboard, so fixing a typo no longer means deleting the item, and copying one no longer checks it off.
 
 ## Under the hood
 
