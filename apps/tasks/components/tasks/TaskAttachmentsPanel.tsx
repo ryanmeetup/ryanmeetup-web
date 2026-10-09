@@ -75,7 +75,7 @@ export function TaskAttachmentsPanel({
   return (
     <DisclosureCard
       defaultOpen
-      className=""
+      className="border-t border-black/10 pt-5 dark:border-white/10"
       buttonClassName="flex w-full items-center justify-between gap-3 rounded-lg py-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/25 dark:focus-visible:ring-white/30"
       panelClassName="space-y-3 pt-3"
       iconClassName="h-3.5 w-3.5"
