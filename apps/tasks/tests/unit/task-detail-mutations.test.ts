@@ -6,6 +6,7 @@ import {
   deleteComment,
   deleteSubtask,
   fetchTaskDetails,
+  renameSubtask,
   setSubtaskCompleted,
   updateComment,
   uploadAttachment,
@@ -89,6 +90,20 @@ describe("task detail requests", () => {
       url: "/api/task-details",
       method: "PATCH",
       body: { id: "subtask-1", completed: true },
+    });
+  });
+
+  it("sends only the new title when renaming a checklist item", async () => {
+    const fetch = stubFetch({
+      subtask: { id: "subtask-1" },
+      activity: { id: "activity-1" },
+    });
+    await renameSubtask("subtask-1", "Book the venue");
+
+    expect(requestOf(fetch)).toEqual({
+      url: "/api/task-details",
+      method: "PATCH",
+      body: { id: "subtask-1", title: "Book the venue" },
     });
   });
 

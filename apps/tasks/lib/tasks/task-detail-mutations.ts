@@ -116,6 +116,17 @@ export function setSubtaskCompleted(id: string, completed: boolean) {
   );
 }
 
+export function renameSubtask(id: string, title: string) {
+  return expectRow(
+    mutate<{ subtask?: Subtask; activity?: TaskActivity }>(
+      DETAILS,
+      json("PATCH", { id, title }),
+    ),
+    ["subtask", "activity"],
+    "The checklist item could not be renamed.",
+  );
+}
+
 export function deleteSubtask(id: string) {
   return mutate<{ id: string; activity?: TaskActivity }>(
     `${DETAILS}?id=${encodeURIComponent(id)}`,

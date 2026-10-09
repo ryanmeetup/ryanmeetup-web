@@ -224,6 +224,7 @@ export async function PATCH(request: Request) {
     kind?: string;
     id?: string;
     completed?: boolean;
+    title?: unknown;
     value?: string;
   };
   if (body.kind === "comment") {
@@ -256,11 +257,20 @@ export async function PATCH(request: Request) {
       activity: activity.data as TaskActivity,
     });
   }
-  if (!body.id || typeof body.completed !== "boolean")
+  // A checklist edit either renames the item or flips it, never both.
+  const title =
+    body.title === undefined
+      ? undefined
+      : requiredTrimmedText(body.title, MAX_CHECKLIST_ITEM_LENGTH);
+  if (
+    !body.id ||
+    title === null ||
+    (title === undefined) === (typeof body.completed !== "boolean")
+  )
     return failure("Invalid checklist update.");
   const { data, error } = await supabase
     .from("subtasks")
-    .update({ is_completed: body.completed })
+    .update(title ? { title } : { is_completed: body.completed })
     .eq("id", body.id)
     .select(WORKSPACE_COLUMNS.subtasks)
     .single();
@@ -272,7 +282,11 @@ export async function PATCH(request: Request) {
     supabase,
     data.task_id,
     user.id,
-    body.completed ? "completed a checklist item" : "reopened a checklist item",
+    title
+      ? "renamed a checklist item"
+      : body.completed
+        ? "completed a checklist item"
+        : "reopened a checklist item",
   );
   if (activity.error)
     return databaseFailure(request, "subtask.activity", activity.error, {
