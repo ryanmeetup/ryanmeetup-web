@@ -58,11 +58,15 @@ export function TaskActivityPanel({
   pageLayout: boolean;
 }) {
   const settledActivity = loadingFirstPage ? [] : activity;
+  // On the page the history bleeds to the card's edges: a rule below the
+  // header, and with nothing to load it scrolls straight into the card's own
+  // bottom border.
+  const bleedToBorder = pageLayout && !hasMore;
   return (
     <DisclosureCard
       defaultOpen={pageLayout}
-      className=""
-      buttonClassName="flex w-full items-center justify-between gap-3 rounded-lg py-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/25 dark:focus-visible:ring-white/30"
+      className={pageLayout ? `-mx-5 ${hasMore ? "" : "-mb-5"}` : ""}
+      buttonClassName={`flex w-full items-center justify-between gap-3 rounded-lg py-1 text-left ${pageLayout ? "px-5" : ""} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/25 dark:focus-visible:ring-white/30`}
       panelClassName="space-y-3 pt-3"
       iconClassName="h-3.5 w-3.5"
       summary={
@@ -78,13 +82,13 @@ export function TaskActivityPanel({
       )}
       <div
         aria-busy={loading}
-        className={`${pageLayout ? "min-h-48" : "max-h-32"} space-y-3 overflow-y-auto overscroll-contain pr-2`}
+        className={`${pageLayout ? "min-h-48 px-5" : "max-h-32 pr-2"} ${bleedToBorder ? "border-t" : "border-y"} space-y-3 overflow-y-auto overscroll-contain border-black/10 py-3 dark:border-white/10`}
         style={
           pageLayout && conversationHeight
             ? {
                 maxHeight: Math.max(
                   192,
-                  conversationHeight - (hasMore ? 170 : 112),
+                  conversationHeight - (hasMore ? 170 : 92),
                 ),
               }
             : undefined
@@ -142,14 +146,16 @@ export function TaskActivityPanel({
         })}
       </div>
       {hasMore && (
-        <Button
-          type="button"
-          variant="secondary"
-          loading={loading}
-          onClick={onLoadMore}
-        >
-          Load older activity
-        </Button>
+        <div className={pageLayout ? "px-5 pb-5" : ""}>
+          <Button
+            type="button"
+            variant="secondary"
+            loading={loading}
+            onClick={onLoadMore}
+          >
+            Load older activity
+          </Button>
+        </div>
       )}
     </DisclosureCard>
   );
