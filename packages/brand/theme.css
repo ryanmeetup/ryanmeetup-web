@@ -29,6 +29,35 @@
 @utility brightness-30 { filter: brightness(0.3); }
 @utility scale-102 { scale: 1.02; }
 
+/* The native <details> counterpart to the UI package's AnimatedCollapse: the
+   same 200ms height-and-fade reveal instead of a snap. interpolate-size lets
+   the height travel to the auto keyword, and content-visibility is carried
+   discretely so the content stays painted for the whole closing pass.
+   Browsers without ::details-content ignore all of this and open instantly. */
+@utility details-reveal {
+  interpolate-size: allow-keywords;
+
+  &::details-content {
+    height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition:
+      height 200ms ease-out,
+      opacity 200ms ease-out,
+      content-visibility 200ms allow-discrete;
+  }
+  &[open]::details-content {
+    height: auto;
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &::details-content {
+      transition: none;
+    }
+  }
+}
+
 /* Tailwind v4 preflight no longer sets cursor: pointer on buttons. */
 @layer base {
   button:not(:disabled):not([aria-disabled="true"]),

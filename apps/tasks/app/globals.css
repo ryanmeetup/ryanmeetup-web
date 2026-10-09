@@ -141,25 +141,6 @@ body:has([data-workspace-error]) .tasks-footer {
     border: 0;
     border-radius: calc(0.5rem - 1px);
   }
-
-  /* A native <details> snaps open, so the collapsible project status sections
-     animate through ::details-content: interpolate-size lets the height travel
-     to the auto keyword, and content-visibility is carried discretely so the
-     cards stay painted for the whole closing pass. Browsers without
-     ::details-content ignore all of this and open instantly, as before. */
-  .details-reveal {
-    interpolate-size: allow-keywords;
-  }
-  .details-reveal::details-content {
-    height: 0;
-    overflow: hidden;
-    transition:
-      height 220ms ease,
-      content-visibility 220ms allow-discrete;
-  }
-  .details-reveal[open]::details-content {
-    height: auto;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
