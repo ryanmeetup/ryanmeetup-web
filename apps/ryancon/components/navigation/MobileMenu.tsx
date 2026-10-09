@@ -3,12 +3,12 @@ import {
   Transition,
   Disclosure,
   DisclosureButton,
-  DisclosurePanel,
   Popover,
   PopoverButton,
   PopoverPanel,
 } from "@headlessui/react";
 import NextLink from "next/link";
+import { AnimatedDisclosurePanel } from "@ryanmeetup/ui";
 import { GiHamburgerMenu as Hamburger } from "react-icons/gi";
 import { FaChevronDown as ChevronDown } from "react-icons/fa6";
 
@@ -69,7 +69,7 @@ const MobileMenu = (props: MobileMenuProps) => {
                             className={`h-3 w-3 fill-gray-600 timing ${open && "-rotate-180"}`}
                           />
                         </DisclosureButton>
-                        <DisclosurePanel className="pl-6">
+                        <AnimatedDisclosurePanel open={open} className="pl-6">
                           {row.subroutes &&
                             row.subroutes.map((route) => (
                               <NextLink
@@ -80,7 +80,7 @@ const MobileMenu = (props: MobileMenuProps) => {
                                 {route.icon} {route.text}
                               </NextLink>
                             ))}
-                        </DisclosurePanel>
+                        </AnimatedDisclosurePanel>
                       </>
                     )}
                   </Disclosure>

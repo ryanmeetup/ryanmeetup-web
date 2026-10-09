@@ -5,7 +5,6 @@ import {
   Transition,
   Disclosure,
   DisclosureButton,
-  DisclosurePanel,
   Dialog,
   DialogPanel,
 } from "@headlessui/react";
@@ -14,7 +13,7 @@ import { GiHamburgerMenu as Hamburger } from "react-icons/gi";
 import { FaChevronDown as ChevronDown } from "react-icons/fa6";
 import { FaDollarSign as Dollar } from "react-icons/fa";
 import { MdClose as Close } from "react-icons/md";
-import { IconButton } from "@ryanmeetup/ui";
+import { AnimatedDisclosurePanel, IconButton } from "@ryanmeetup/ui";
 
 // Types
 import { Fragment, useState } from "react";
@@ -146,7 +145,10 @@ const MobileMenu = (props: MobileMenuProps) => {
                                     className={`h-3 w-3 fill-gray-700 timing dark:fill-gray-200 ${disclosureOpen && "-rotate-180"}`}
                                   />
                                 </DisclosureButton>
-                                <DisclosurePanel className="mt-3 flex flex-wrap gap-2 border-t border-black/10 pt-3 dark:border-white/10">
+                                <AnimatedDisclosurePanel
+                                  open={disclosureOpen}
+                                  className="mt-3 flex flex-wrap gap-2 border-t border-black/10 pt-3 dark:border-white/10"
+                                >
                                   {row.subroutes &&
                                     row.subroutes.map((route) => (
                                       <NextLink
@@ -169,7 +171,7 @@ const MobileMenu = (props: MobileMenuProps) => {
                                         </span>
                                       </NextLink>
                                     ))}
-                                </DisclosurePanel>
+                                </AnimatedDisclosurePanel>
                               </div>
                             )}
                           </Disclosure>
