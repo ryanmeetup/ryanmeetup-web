@@ -4,10 +4,10 @@ import {
   Disclosure,
   DisclosureButton,
   DisclosurePanel,
-  Transition,
 } from "@headlessui/react";
 import { FaChevronDown as ChevronDown } from "react-icons/fa";
 import { useRef, type ReactNode } from "react";
+import { AnimatedCollapse } from "./AnimatedCollapse";
 
 export type DisclosureCardProps = {
   summary: ReactNode;
@@ -88,22 +88,11 @@ const DisclosureCard = ({
               <div className={actionsClassName}>{actions}</div>
             )}
           </div>
-          <div className="overflow-hidden">
-            <Transition
-              enter="duration-200 ease-in-out"
-              enterFrom="opacity-0 -translate-y-4"
-              enterTo="opacity-100 translate-y-0"
-              leave="duration-200 ease-in-out"
-              leaveFrom="opacity-100 translate-y-0"
-              leaveTo="opacity-0 -translate-y-4"
-            >
-              <DisclosurePanel
-                className={`origin-top transition ${panelClassName}`}
-              >
-                {children}
-              </DisclosurePanel>
-            </Transition>
-          </div>
+          <AnimatedCollapse open={open}>
+            <DisclosurePanel static className={panelClassName}>
+              {children}
+            </DisclosurePanel>
+          </AnimatedCollapse>
         </>
       )}
     </Disclosure>
