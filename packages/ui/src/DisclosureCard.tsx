@@ -1,13 +1,9 @@
 "use client";
 
-import {
-  Disclosure,
-  DisclosureButton,
-  DisclosurePanel,
-} from "@headlessui/react";
+import { Disclosure, DisclosureButton } from "@headlessui/react";
 import { FaChevronDown as ChevronDown } from "react-icons/fa";
 import { useRef, type ReactNode } from "react";
-import { AnimatedCollapse } from "./AnimatedCollapse";
+import { AnimatedDisclosurePanel } from "./AnimatedDisclosurePanel";
 
 export type DisclosureCardProps = {
   summary: ReactNode;
@@ -85,14 +81,12 @@ const DisclosureCard = ({
             </DisclosureButton>
             {description && <div className="-mt-1">{description}</div>}
             {actions && (
-              <div className={actionsClassName}>{actions}</div>
-            )}
+            <div className={actionsClassName}>{actions}</div>
+          )}
           </div>
-          <AnimatedCollapse open={open}>
-            <DisclosurePanel static className={panelClassName}>
-              {children}
-            </DisclosurePanel>
-          </AnimatedCollapse>
+          <AnimatedDisclosurePanel open={open} className={panelClassName}>
+            {children}
+          </AnimatedDisclosurePanel>
         </>
       )}
     </Disclosure>

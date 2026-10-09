@@ -62,3 +62,4 @@ export * from "./Tooltip";
 export * from "./Avatar";
 export * from "./Banner";
 export * from "./AnimatedCollapse";
+export * from "./AnimatedDisclosurePanel";
