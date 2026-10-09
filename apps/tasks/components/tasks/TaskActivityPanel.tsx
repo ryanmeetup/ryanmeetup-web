@@ -60,12 +60,13 @@ export function TaskActivityPanel({
   const settledActivity = loadingFirstPage ? [] : activity;
   // On the page the history bleeds to the card's edges: a rule below the
   // header, and with nothing to load it scrolls straight into the card's own
-  // bottom border.
+  // bottom border. Collapsed, there is no history to bleed, so the card keeps
+  // its padding and the header stays centred.
   const bleedToBorder = pageLayout && !hasMore;
   return (
     <DisclosureCard
       defaultOpen={pageLayout}
-      className={pageLayout ? `-mx-5 ${hasMore ? "" : "-mb-5"}` : ""}
+      className={pageLayout ? `-mx-5 ${hasMore ? "" : "data-open:-mb-5"}` : ""}
       buttonClassName={`flex w-full items-center justify-between gap-3 rounded-lg py-1 text-left ${pageLayout ? "px-5" : ""} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/25 dark:focus-visible:ring-white/30`}
       panelClassName="space-y-3 pt-3"
       iconClassName="h-3.5 w-3.5"
