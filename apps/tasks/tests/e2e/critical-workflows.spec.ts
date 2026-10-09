@@ -684,7 +684,13 @@ test("edits, copies, and expands checklist items on a task", async ({
   const scrolls = () =>
     list.evaluate((element) => element.scrollHeight > element.clientHeight);
   await expect(list).toHaveCSS("border-bottom-style", "solid");
-  expect(await scrolls()).toBe(true);
+
+  // Desktop shows the whole list; only smaller screens cap it.
+  expect(await scrolls()).toBe(false);
+  await expect(page.getByRole("button", { name: /^Show all/ })).toBeHidden();
+
+  await page.setViewportSize({ width: 768, height: 900 });
+  await expect.poll(scrolls).toBe(true);
 
   const showAll = page.getByRole("button", { name: "Show all 10 items" });
   await expect(showAll).toHaveAttribute("aria-expanded", "false");

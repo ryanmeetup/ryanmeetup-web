@@ -153,7 +153,9 @@ export function TaskChecklistPanel({
           />
           <div
             id="task-checklist-items"
-            className={`${expanded ? "" : "max-h-[min(13.2rem,calc(22.75svh+1.5rem))] overflow-y-auto overscroll-contain"} border-y border-black/10 py-3 pr-2 dark:border-white/10`}
+            // Desktop has the room to show the whole list, so only smaller
+            // screens cap it behind the toggle.
+            className={`${expanded ? "" : "max-h-[min(13.2rem,calc(22.75svh+1.5rem))] overflow-y-auto overscroll-contain lg:max-h-none lg:overflow-visible"} border-y border-black/10 py-3 pr-2 dark:border-white/10`}
           >
             <div ref={contentRef} className="space-y-3">
               {items.map((item) =>
@@ -263,7 +265,7 @@ export function TaskChecklistPanel({
           onClick={toggleExpanded}
           aria-expanded={expanded}
           aria-controls="task-checklist-items"
-          className="cursor-pointer text-xs font-semibold text-black/55 underline decoration-black/25 underline-offset-2 transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:text-white/55 dark:decoration-white/25 dark:hover:text-white dark:focus-visible:ring-white/40"
+          className="cursor-pointer text-xs font-semibold text-black/55 lg:hidden underline decoration-black/25 underline-offset-2 transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:text-white/55 dark:decoration-white/25 dark:hover:text-white dark:focus-visible:ring-white/40"
         >
           {expanded ? "Show fewer" : `Show all ${items.length} items`}
         </button>
