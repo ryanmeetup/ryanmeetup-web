@@ -1,4 +1,10 @@
-import { Avatar, Button, IconButton, Textarea } from "@ryanmeetup/ui";
+import {
+  Avatar,
+  Button,
+  FormattedText,
+  IconButton,
+  Textarea,
+} from "@ryanmeetup/ui";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import {
@@ -169,9 +175,13 @@ export function TaskCommentsPanel({
                     )}
                   </span>
                 </div>
-                <p className="mt-1 whitespace-pre-wrap leading-relaxed text-black/80 dark:text-white/80">
-                  {taskCommentSegments(item.body, tasks).map(
-                    (segment, index) =>
+                <FormattedText
+                  compact
+                  linkify
+                  text={item.body}
+                  className="mt-1 break-words leading-relaxed text-black/80 dark:text-white/80"
+                  renderText={(text) =>
+                    taskCommentSegments(text, tasks).map((segment, index) =>
                       segment.kind === "task" ? (
                         <Link
                           key={`${segment.task.id}-${index}`}
@@ -186,8 +196,9 @@ export function TaskCommentsPanel({
                       ) : (
                         segment.value
                       ),
-                  )}
-                </p>
+                    )
+                  }
+                />
                 {!previewing && (
                   <Button
                     type="button"

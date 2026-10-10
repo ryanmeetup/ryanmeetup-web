@@ -5,6 +5,7 @@ import {
   AnimatedCollapse,
   Avatar,
   Button,
+  FormattedText,
   IconButton,
   Textarea,
   toast,
@@ -211,9 +212,12 @@ export function NoteComments({
                           </div>
                         </div>
                       ) : (
-                        <p className="mt-1 whitespace-pre-wrap text-black/80 dark:text-white/80">
-                          {comment.body}
-                        </p>
+                        <FormattedText
+                          compact
+                          linkify
+                          text={comment.body}
+                          className="mt-1 break-words text-black/80 dark:text-white/80"
+                        />
                       )}
                     </div>
                     {!previewing &&
