@@ -60,6 +60,10 @@ Dropping a task into the open space of a column now puts it at the top by defaul
 
 Web addresses pasted into a task description now appear as clickable links on the board and task detail page, opening the destination in a new tab.
 
+### Lists keep their shape in previews
+
+Bulleted, numbered, and checklist lines in a task description or note now stay as list rows on board and note cards. Long text is shortened by whole lines and ends with an ellipsis, rather than spilling past the preview or stopping mid-list without one. Comments on tasks and notes pick up the same formatting, including lists, bold and italic text, and clickable links, and task keys in a comment still link to their tasks.
+
 ### Check off work while creating a task
 
 Checklist items can now be marked complete before a new task is created. Their checked state also stays intact in saved drafts and on the finished task.
