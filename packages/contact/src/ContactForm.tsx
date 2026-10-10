@@ -32,6 +32,7 @@ export type ContactFormFields = {
   email: string;
   topic: string;
   detail: string;
+  detailNote: string;
   subject: string;
   message: string;
 };
@@ -84,6 +85,7 @@ const ContactForm = ({
       email: "",
       topic: topic?.value ?? "",
       detail: detail?.value ?? "",
+      detailNote: "",
       subject: initialSubject || buildContactSubject(topic, detail),
       message: initialMessage || detail?.message || topic?.message || "",
     };
@@ -119,6 +121,7 @@ const ContactForm = ({
   const selectedTopic = findContactTopic(topics, watch("topic"));
   const detailGroup = selectedTopic?.detail;
   const selectedDetail = findContactTopicDetail(selectedTopic, watch("detail"));
+  const followUp = selectedDetail?.followUp;
 
   const seedFromTopic = (
     topic?: ContactTopic,
@@ -138,6 +141,13 @@ const ContactForm = ({
       if (nextMessage) clearErrors("message");
     }
     seeded.current = { subject: nextSubject, message: nextMessage };
+  };
+
+  // Switching topic or detail drops the follow-up answer along with its error,
+  // so a question the visitor can no longer see never blocks the send button.
+  const resetDetailNote = () => {
+    setValue("detailNote", "");
+    clearErrors("detailNote");
   };
 
   const required = (name: keyof ContactFormFields) => ({
@@ -163,6 +173,7 @@ const ContactForm = ({
     setLoading(true);
     const topic = findContactTopic(topics, form.topic);
     const detail = findContactTopicDetail(topic, form.detail);
+    const detailNote = detail?.followUp ? form.detailNote.trim() : "";
     try {
       await sendContactMessage({
         firstName: form.firstName,
@@ -172,10 +183,16 @@ const ContactForm = ({
         topicValue: topic?.value ?? "",
         detail: detail?.label ?? "",
         detailValue: detail?.value ?? "",
-        routeTo: topic?.routeTo || defaultRouteTo,
+        detailNote,
+        routeTo: detail?.routeTo || topic?.routeTo || defaultRouteTo,
         source,
         subject: form.subject,
-        message: form.message,
+        // Lead with the answer so it reaches the inbox whether or not the
+        // EmailJS template knows about `detailNote`.
+        message:
+          detail?.followUp && detailNote
+            ? `${detail.followUp.label} ${detailNote}\n\n${form.message}`
+            : form.message,
       });
       notifySuccess();
       reset(defaultValues);
@@ -240,6 +257,7 @@ const ContactForm = ({
                   field.onChange(value);
                   setValue("detail", "");
                   clearErrors("detail");
+                  resetDetailNote();
                   seedFromTopic(topic);
                 }}
               />
@@ -278,6 +296,7 @@ const ContactForm = ({
                   ]}
                   onChange={(value) => {
                     field.onChange(value);
+                    resetDetailNote();
                     seedFromTopic(
                       selectedTopic,
                       findContactTopicDetail(selectedTopic, value),
@@ -287,6 +306,31 @@ const ContactForm = ({
               )}
             />
             <FieldError>{errors.detail?.message}</FieldError>
+          </div>
+        )}
+        {followUp && (
+          <div className={fullClass}>
+            <Input
+              label={followUp.label}
+              placeholder={followUp.placeholder}
+              required
+              {...register("detailNote", {
+                validate: (value, form) =>
+                  !findContactTopicDetail(
+                    findContactTopic(topics, form.topic),
+                    form.detail,
+                  )?.followUp ||
+                  value.trim() !== "" ||
+                  "Error: must fill this in",
+                onBlur: (event) =>
+                  event.target.value.trim() === ""
+                    ? setError("detailNote", {
+                        message: "Error: must fill this in",
+                      })
+                    : clearErrors("detailNote"),
+              })}
+            />
+            <FieldError>{errors.detailNote?.message}</FieldError>
           </div>
         )}
         <div className={fieldClass}>

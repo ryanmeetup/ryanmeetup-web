@@ -1,3 +1,9 @@
+export type ContactTopicFollowUp = {
+  /** Label of the required text field shown once the option is picked. */
+  label: string;
+  placeholder?: string;
+};
+
 export type ContactTopicDetailOption = {
   label: string;
   value: string;
@@ -7,6 +13,10 @@ export type ContactTopicDetailOption = {
   message?: string;
   /** Detail-specific guidance for an otherwise empty message. */
   messagePlaceholder?: string;
+  /** Inbox for this option, overriding the topic's. */
+  routeTo?: string;
+  /** Free-text question asked only when this option is picked. */
+  followUp?: ContactTopicFollowUp;
 };
 
 export type ContactTopic = {

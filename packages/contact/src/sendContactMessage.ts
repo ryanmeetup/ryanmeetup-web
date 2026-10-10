@@ -11,6 +11,8 @@ export type ContactMessage = {
   /** Human label of the follow-up dropdown, empty when the topic has none. */
   detail: string;
   detailValue: string;
+  /** Answer to the detail's follow-up question, empty when it asks none. */
+  detailNote?: string;
   /** Inbox this topic should land in. Never empty. */
   routeTo: string;
   /** Page the visitor clicked through from, empty when they came in cold. */
