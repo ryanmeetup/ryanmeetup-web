@@ -19,7 +19,18 @@ type InlineMarkdownOptions = {
 
 const trailingLinkPunctuation = /[.,;:!?]$/;
 
-function linkifiedValue(value: string) {
+const linkClassName =
+  "relative z-10 font-medium text-blue-700 underline underline-offset-2 hover:text-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 dark:text-blue-300 dark:hover:text-blue-200";
+
+/** Matches the placeholders `tokenizeLinks` leaves where each URL was. */
+const linkTokenPattern = /\uE000(\d+)\uE001/;
+
+/**
+ * Swaps each plain HTTP URL for a placeholder so emphasis parsing cannot reach
+ * inside it (underscores in a path are not italics). `links[n]` is the URL
+ * behind placeholder `n`.
+ */
+function tokenizeLinks(value: string) {
   const links: string[] = [];
   const tokenized = value.replace(/https?:\/\/[^\s<>"']+/gi, (match) => {
     let candidate = match;
@@ -39,9 +50,7 @@ function linkifiedValue(value: string) {
 
     const trailing = match.slice(candidate.length);
     const token = `\uE000${links.length}\uE001`;
-    links.push(
-      `<a href="${escapeHtml(candidate)}" target="_blank" rel="noopener noreferrer" class="relative z-10 font-medium text-blue-700 underline underline-offset-2 hover:text-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 dark:text-blue-300 dark:hover:text-blue-200">${escapeHtml(candidate)}</a>`,
-    );
+    links.push(candidate);
     return `${token}${trailing}`;
   });
 
@@ -53,7 +62,7 @@ const inlineMarkdownToHtml = (
   { linkify = false }: InlineMarkdownOptions = {},
 ) => {
   const { links, tokenized } = linkify
-    ? linkifiedValue(value)
+    ? tokenizeLinks(value)
     : { links: [], tokenized: value };
   const html = escapeHtml(tokenized)
     .replace(/\*\*\*([^*\n]+)\*\*\*/g, "<em><strong>$1</strong></em>")
@@ -64,7 +73,11 @@ const inlineMarkdownToHtml = (
     .replace(/_([^_\n]+)_/g, "<em>$1</em>");
 
   return links.reduce(
-    (rendered, link, index) => rendered.replace(`\uE000${index}\uE001`, link),
+    (rendered, link, index) =>
+      rendered.replace(
+        `\uE000${index}\uE001`,
+        `<a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" class="${linkClassName}">${escapeHtml(link)}</a>`,
+      ),
     html,
   );
 };
@@ -264,11 +277,136 @@ const tiptapJsonToMarkdown = (json: JSONContent) =>
     .join("\n")
     .trimEnd();
 
+const isThematicBreak = (line: string) =>
+  /^\s*(?:-{3,}|_{3,}|\*{3,})\s*$/.test(line);
+
+// Drops a trailing unmatched emphasis marker so a cut line never renders a
+// stray `**` or `*`.
+function balanceInlineMarkers(line: string) {
+  let balanced = line;
+
+  for (const marker of ["**", "__"]) {
+    if (balanced.split(marker).length % 2 === 0) {
+      const index = balanced.lastIndexOf(marker);
+      balanced =
+        balanced.slice(0, index) + balanced.slice(index + marker.length);
+    }
+  }
+
+  if ((balanced.replace(/\*\*/g, "").match(/\*/g)?.length ?? 0) % 2 === 1) {
+    const index = balanced.lastIndexOf("*");
+    balanced = balanced.slice(0, index) + balanced.slice(index + 1);
+  }
+
+  return balanced;
+}
+
+function truncateLine(line: string, maxLength: number) {
+  const cut = line.slice(0, maxLength);
+  const wordBoundary = cut.lastIndexOf(" ");
+  const trimmed = (
+    wordBoundary > maxLength / 2 ? cut.slice(0, wordBoundary) : cut
+  ).trimEnd();
+
+  return `${balanceInlineMarkers(trimmed).replace(/[\s,;:.-]+$/, "")}…`;
+}
+
+type MarkdownPreviewOptions = {
+  /** Characters of visible text the preview may spend across its lines. */
+  maxLength?: number;
+  maxLines?: number;
+};
+
+/**
+ * Shortens stored Markdown for a card without breaking its structure: whole
+ * lines are kept so list markers and dividers still parse, blank lines
+ * collapse, and only the final line is cut. Flattening the text and slicing it
+ * by characters instead turns a list into one run-on string.
+ */
+const getMarkdownPreview = (
+  value: string,
+  { maxLength = 160, maxLines = 3 }: MarkdownPreviewOptions = {},
+) => {
+  // Blank lines collapse to a single paragraph gap, which costs nothing
+  // against the line budget.
+  const lines: { text: string; gapBefore: boolean }[] = [];
+  let sawBlank = false;
+  for (const raw of normalizeRichTextValue(value).split("\n")) {
+    const text = raw.trimEnd();
+    if (text.trim() === "") {
+      sawBlank = true;
+      continue;
+    }
+    const previous = lines[lines.length - 1]?.text ?? "";
+    if (!(isThematicBreak(text) && isThematicBreak(previous))) {
+      lines.push({ text, gapBefore: sawBlank });
+    }
+    sawBlank = false;
+  }
+
+  while (lines.length && isThematicBreak(lines[0].text)) lines.shift();
+  while (lines.length && isThematicBreak(lines[lines.length - 1].text))
+    lines.pop();
+
+  const kept: { text: string; gapBefore: boolean }[] = [];
+  let budget = maxLength;
+  let wasLineCut = false;
+
+  for (const line of lines) {
+    if (kept.length === maxLines) break;
+
+    const length = line.text.trim().length;
+    if (length <= budget) {
+      kept.push(line);
+      budget -= length;
+      continue;
+    }
+
+    // A sliver of a line reads worse than ending on the previous one.
+    if (budget >= 24 || kept.length === 0) {
+      kept.push({
+        ...line,
+        text: truncateLine(line.text, Math.max(budget, 24)),
+      });
+      wasLineCut = true;
+    }
+    break;
+  }
+
+  while (kept.length && isThematicBreak(kept[kept.length - 1].text)) kept.pop();
+
+  const isTruncated = wasLineCut || kept.length < lines.length;
+  const last = kept[kept.length - 1];
+  if (isTruncated && last && !wasLineCut) {
+    last.text = `${balanceInlineMarkers(last.text)}…`;
+  }
+
+  // A divider already separates what is around it, so it needs no gap.
+  const text = kept
+    .map(({ text, gapBefore }, index) =>
+      index > 0 &&
+      gapBefore &&
+      !isThematicBreak(text) &&
+      !isThematicBreak(kept[index - 1].text)
+        ? `\n${text}`
+        : text,
+    )
+    .join("\n");
+
+  return { text, isTruncated };
+};
+
+export type { MarkdownPreviewOptions };
 export {
+  getMarkdownPreview,
   inlineMarkdownToHtml,
+  isThematicBreak,
+  linkClassName,
+  linkTokenPattern,
   markdownToHtml,
   normalizeRichTextValue,
   parseHeadingLine,
   parseListLine,
   tiptapJsonToMarkdown,
+  tokenizeLinks,
 };

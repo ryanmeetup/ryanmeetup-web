@@ -1,9 +1,14 @@
-import { Fragment } from "react";
+import { Fragment, type ReactNode } from "react";
 import {
-  inlineMarkdownToHtml,
+  getMarkdownPreview,
+  isThematicBreak,
+  linkClassName,
+  linkTokenPattern,
   normalizeRichTextValue,
   parseHeadingLine,
   parseListLine,
+  tokenizeLinks,
+  type MarkdownPreviewOptions,
 } from "./richTextMarkdown";
 
 export type FormattedTextProps = {
@@ -11,6 +16,16 @@ export type FormattedTextProps = {
   className?: string;
   onChange?: (value: string) => void;
   linkify?: boolean;
+  /**
+   * Tightens block spacing and renders headings as emphasized lines, for
+   * previews, comments, and other dense surfaces.
+   */
+  compact?: boolean;
+  /**
+   * Renders each run of plain text, after emphasis and links are parsed. Use it
+   * to turn references inside the text into links without losing formatting.
+   */
+  renderText?: (text: string) => ReactNode;
 };
 
 const bullets = ["•", "◦", "▪", "▫"];
@@ -22,73 +37,125 @@ const headingClasses = [
   "text-sm font-semibold",
   "text-xs font-semibold uppercase tracking-wider",
 ];
+const headingTags = ["h1", "h2", "h3", "h4", "h5", "h6"] as const;
+
+const emphasisPattern =
+  /(\*\*\*[^*\n]+\*\*\*|___[^_\n]+___|\*\*[^*\n]+\*\*|__[^_\n]+__|\*[^*\n]+\*|_[^_\n]+_)/g;
+
+const plainText = (text: string) => text;
+
+function renderInlineMarkdown(
+  value: string,
+  {
+    linkify,
+    renderText,
+  }: { linkify: boolean; renderText: (text: string) => ReactNode },
+) {
+  const { links, tokenized } = linkify
+    ? tokenizeLinks(value)
+    : { links: [] as string[], tokenized: value };
+
+  // Splitting on the placeholder's captured index leaves text at even
+  // positions and link indexes at odd ones.
+  const renderLeaf = (text: string, key: string): ReactNode[] =>
+    text.split(linkTokenPattern).map((part, index) => {
+      if (index % 2 === 1) {
+        const href = links[Number(part)];
+        return (
+          <a
+            key={`${key}-${index}`}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={linkClassName}
+          >
+            {href}
+          </a>
+        );
+      }
+      if (part === "") return null;
+      return <Fragment key={`${key}-${index}`}>{renderText(part)}</Fragment>;
+    });
+
+  const renderEmphasis = (text: string, key: string): ReactNode[] => {
+    const nodes: ReactNode[] = [];
+    let lastIndex = 0;
+
+    for (const match of text.matchAll(emphasisPattern)) {
+      const token = match[0];
+      const tokenKey = `${key}-${match.index}`;
+      if (match.index > lastIndex) {
+        nodes.push(
+          ...renderLeaf(text.slice(lastIndex, match.index), `${tokenKey}t`),
+        );
+      }
+      const width = /^(\*\*\*|___)/.test(token)
+        ? 3
+        : /^(\*\*|__)/.test(token)
+          ? 2
+          : 1;
+      const inner = renderEmphasis(token.slice(width, -width), tokenKey);
+      nodes.push(
+        width === 3 ? (
+          <em key={tokenKey}>
+            <strong>{inner}</strong>
+          </em>
+        ) : width === 2 ? (
+          <strong key={tokenKey}>{inner}</strong>
+        ) : (
+          <em key={tokenKey}>{inner}</em>
+        ),
+      );
+      lastIndex = match.index + token.length;
+    }
+
+    if (lastIndex < text.length) {
+      nodes.push(...renderLeaf(text.slice(lastIndex), `${key}-end`));
+    }
+    return nodes;
+  };
+
+  return renderEmphasis(tokenized, "i");
+}
 
 const FormattedText = ({
   text,
   className,
   onChange,
   linkify = false,
+  compact = false,
+  renderText = plainText,
 }: FormattedTextProps) => {
   const normalized = normalizeRichTextValue(text);
   const lines = normalized.split("\n");
+  const inline = (value: string) =>
+    renderInlineMarkdown(value, { linkify, renderText });
 
   return (
     <div className={className}>
       {lines.map((line, index) => {
         const heading = parseHeadingLine(line);
         if (heading) {
-          const content = (
-            <span
-              dangerouslySetInnerHTML={{
-                __html: inlineMarkdownToHtml(heading.text, { linkify }),
-              }}
-            />
-          );
-          const headingClassName = headingClasses[heading.level - 1];
-          switch (heading.level) {
-            case 1:
-              return (
-                <h1 key={index} className={headingClassName}>
-                  {content}
-                </h1>
-              );
-            case 2:
-              return (
-                <h2 key={index} className={headingClassName}>
-                  {content}
-                </h2>
-              );
-            case 3:
-              return (
-                <h3 key={index} className={headingClassName}>
-                  {content}
-                </h3>
-              );
-            case 4:
-              return (
-                <h4 key={index} className={headingClassName}>
-                  {content}
-                </h4>
-              );
-            case 5:
-              return (
-                <h5 key={index} className={headingClassName}>
-                  {content}
-                </h5>
-              );
-            default:
-              return (
-                <h6 key={index} className={headingClassName}>
-                  {content}
-                </h6>
-              );
+          const content = <span>{inline(heading.text)}</span>;
+          if (compact) {
+            return (
+              <p key={index} className="font-semibold">
+                {content}
+              </p>
+            );
           }
+          const Heading = headingTags[heading.level - 1];
+          return (
+            <Heading key={index} className={headingClasses[heading.level - 1]}>
+              {content}
+            </Heading>
+          );
         }
-        if (/^\s*(?:-{3,}|_{3,}|\*{3,})\s*$/.test(line))
+        if (isThematicBreak(line))
           return (
             <hr
               key={index}
-              className="my-3 border-0 border-t border-zinc-600"
+              className={`${compact ? "my-1.5" : "my-3"} border-0 border-t border-zinc-600`}
             />
           );
         const listItem = parseListLine(line);
@@ -140,24 +207,18 @@ const FormattedText = ({
                 </span>
               )}
               <span
-                className={
+                className={`min-w-0 break-words ${
                   checked ? "text-black/50 line-through dark:text-white/50" : ""
-                }
-                dangerouslySetInnerHTML={{
-                  __html: inlineMarkdownToHtml(listItem.text, { linkify }),
-                }}
-              />
+                }`}
+              >
+                {inline(listItem.text)}
+              </span>
             </div>
           );
         }
         return (
           <Fragment key={index}>
-            <span
-              className="whitespace-pre-wrap"
-              dangerouslySetInnerHTML={{
-                __html: inlineMarkdownToHtml(line, { linkify }),
-              }}
-            />
+            <span className="whitespace-pre-wrap">{inline(line)}</span>
             {index < lines.length - 1 && <br />}
           </Fragment>
         );
@@ -166,4 +227,30 @@ const FormattedText = ({
   );
 };
 
-export { FormattedText };
+export type FormattedTextPreviewProps = Omit<
+  FormattedTextProps,
+  "compact" | "onChange"
+> &
+  MarkdownPreviewOptions;
+
+/**
+ * Read-only snippet of stored Markdown for cards and lists. It shortens by
+ * whole lines, so bullets, checklists, and dividers keep rendering as
+ * structure. Clamping a formatted block with `line-clamp` cannot do that: list
+ * rows are flex containers, which the clamp does not count, so a list either
+ * shows in full or is cut off with no ellipsis.
+ */
+const FormattedTextPreview = ({
+  text,
+  maxLength,
+  maxLines,
+  ...props
+}: FormattedTextPreviewProps) => (
+  <FormattedText
+    {...props}
+    compact
+    text={getMarkdownPreview(text, { maxLength, maxLines }).text}
+  />
+);
+
+export { FormattedText, FormattedTextPreview };

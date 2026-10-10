@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  getMarkdownPreview,
   markdownToHtml,
   parseHeadingLine,
   tiptapJsonToMarkdown,
@@ -65,5 +66,43 @@ describe("rich text Markdown", () => {
     expect(markdownToHtml("- First item\n\n- Second item")).toBe(
       "<ul><li><p>First item</p></li></ul><p><br></p><ul><li><p>Second item</p></li></ul>",
     );
+  });
+});
+
+describe("getMarkdownPreview", () => {
+  it("keeps whole lines so list markers survive", () => {
+    expect(
+      getMarkdownPreview("- One\n- Two\n- Three\n- Four", { maxLines: 2 }),
+    ).toEqual({ text: "- One\n- Two…", isTruncated: true });
+  });
+
+  it("collapses blank lines and drops leading or trailing dividers", () => {
+    expect(getMarkdownPreview("---\n\nIntro\n\n---\n\n---")).toEqual({
+      text: "Intro",
+      isTruncated: false,
+    });
+  });
+
+  it("cuts only the last line, at a word, without a stray marker", () => {
+    const { text, isTruncated } = getMarkdownPreview(
+      "**A long bold sentence that keeps on going well past the budget**",
+      { maxLength: 30 },
+    );
+
+    expect(isTruncated).toBe(true);
+    expect(text).toBe("A long bold sentence that…");
+  });
+
+  it("keeps one paragraph gap without spending a line on it", () => {
+    expect(
+      getMarkdownPreview("Intro\n\n\n- One\n- Two\n- Three", { maxLines: 3 }),
+    ).toEqual({ text: "Intro\n\n- One\n- Two…", isTruncated: true });
+  });
+
+  it("leaves short text untouched", () => {
+    expect(getMarkdownPreview("Short note")).toEqual({
+      text: "Short note",
+      isTruncated: false,
+    });
   });
 });

@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { FormattedText } from "../src/FormattedText";
+import { FormattedText, FormattedTextPreview } from "../src/FormattedText";
 
 describe("FormattedText", () => {
   it("renders Markdown headings as semantic heading elements", () => {
@@ -35,5 +35,46 @@ describe("FormattedText", () => {
     );
 
     expect(markup).not.toContain("<a ");
+  });
+
+  it("keeps emphasis, links, and list structure when text is custom-rendered", () => {
+    const markup = renderToStaticMarkup(
+      <FormattedText
+        text={"- **Ship RMT-5** first\n- see https://example.com/a_b_c"}
+        linkify
+        renderText={(text) => text.replace("RMT-5", "[RMT-5]")}
+      />,
+    );
+
+    expect(markup).toContain("<strong>Ship [RMT-5]</strong>");
+    expect(markup).toContain('href="https://example.com/a_b_c"');
+    expect(markup).not.toContain("<em>");
+    expect(markup.match(/•/g)).toHaveLength(2);
+  });
+
+  it("renders compact headings as emphasized lines", () => {
+    const markup = renderToStaticMarkup(
+      <FormattedText compact text={"# Plan\nBody"} />,
+    );
+
+    expect(markup).not.toContain("<h1");
+    expect(markup).toContain('<p class="font-semibold"><span>Plan</span></p>');
+  });
+});
+
+describe("FormattedTextPreview", () => {
+  it("renders a shortened list as list rows rather than a run-on string", () => {
+    const markup = renderToStaticMarkup(
+      <FormattedTextPreview
+        text={"See below.\n\n---\n- First thing\n- Second thing\n- Third"}
+        maxLines={4}
+      />,
+    );
+
+    expect(markup).toContain("See below.");
+    expect(markup).toContain("<hr");
+    expect(markup.match(/•/g)).toHaveLength(2);
+    expect(markup).toContain("Second thing…");
+    expect(markup).not.toContain("Third");
   });
 });
