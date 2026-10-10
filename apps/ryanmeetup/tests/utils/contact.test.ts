@@ -73,6 +73,19 @@ test.describe("contact topics", () => {
     );
   });
 
+  test("join-the-team roles route chapter leads and ask about specific roles", () => {
+    const options = findTopic("join-team")?.detail?.options ?? [];
+    const option = (value: string) =>
+      options.find((candidate) => candidate.value === value);
+
+    expect(option("chapter-lead")?.routeTo).toBe("chapters@ryanmeetup.com");
+    expect(option("core-team")).toBeTruthy();
+    expect(option("other-help")?.followUp?.label).toBe(
+      "What role do you have in mind?",
+    );
+    expect(options.filter((candidate) => candidate.followUp)).toHaveLength(1);
+  });
+
   test("Monthly Backer inquiries seed tier-specific form content", () => {
     const sponsorship = findTopic("sponsorship");
     const monthlyBacker = sponsorship?.detail?.options.find(

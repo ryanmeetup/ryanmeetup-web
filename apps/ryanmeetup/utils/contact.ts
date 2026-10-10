@@ -131,17 +131,34 @@ const contactTopics: ContactTopic[] = [
     value: "join-team",
     label: "Volunteering & Joining the Team",
     subject: "Join the Team Inquiry",
-    description: "Tell us what you'd like to help with.",
+    description: "Tell us which role you'd like to take on.",
     message: `${greeting}I'm interested in helping out and would love to learn more about joining the team.\n`,
     routeTo: DEFAULT_INBOX,
     detail: {
-      label: "How would you like to help?",
+      label: "Which role interests you?",
       options: [
         { value: "volunteer-event", label: "Volunteer at events" },
         { value: "photography", label: "Photography or video" },
         { value: "design", label: "Design or social media" },
         { value: "engineering", label: "Website or engineering" },
-        { value: "other-help", label: "Something else" },
+        {
+          value: "chapter-lead",
+          label: "Lead a local chapter",
+          routeTo: CHAPTERS_INBOX,
+          messagePlaceholder:
+            "Which city, and have you hosted a Ryan Meetup before?",
+        },
+        { value: "core-team", label: "Join the core Ryan team" },
+        {
+          value: "other-help",
+          label: "A specific role",
+          subject: "Specific role",
+          followUp: {
+            label: "What role do you have in mind?",
+            placeholder: "DJ, MC, official Ryan hype man...",
+          },
+          messagePlaceholder: "What would you bring to the role?",
+        },
       ],
     },
   },
