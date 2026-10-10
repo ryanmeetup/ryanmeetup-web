@@ -7,7 +7,7 @@ import {
   DropdownMenuButton,
   DropdownMenuItem,
   DropdownMenuItems,
-  FormattedText,
+  FormattedTextPreview,
   IconButton,
 } from "@ryanmeetup/ui";
 import {
@@ -87,9 +87,11 @@ export function NoteCard({
         </span>
       </div>
 
-      <FormattedText
+      <FormattedTextPreview
         text={note.body}
-        className="mt-3 line-clamp-6 min-w-0 break-words text-sm leading-6 text-black/75 dark:text-white/75"
+        maxLines={6}
+        maxLength={320}
+        className="mt-3 min-w-0 break-words text-sm leading-6 text-black/75 dark:text-white/75"
       />
 
       <NoteLinks

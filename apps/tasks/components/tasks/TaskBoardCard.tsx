@@ -1,4 +1,4 @@
-import { Avatar, FormattedText, Tooltip } from "@ryanmeetup/ui";
+import { Avatar, FormattedTextPreview, Tooltip } from "@ryanmeetup/ui";
 import Link from "next/link";
 import type { DragEvent } from "react";
 import { FiExternalLink, FiFolder, FiUsers } from "react-icons/fi";
@@ -150,10 +150,12 @@ export function TaskBoardCard({
         {task.title}
       </h3>
       {task.description && (
-        <FormattedText
+        <FormattedTextPreview
           text={task.description}
           linkify
-          className="mt-1.5 line-clamp-2 text-[11px] leading-relaxed text-black/60 sm:mt-2 sm:text-xs dark:text-white/60"
+          maxLines={3}
+          maxLength={120}
+          className="mt-1.5 break-words text-[11px] leading-relaxed text-black/60 sm:mt-2 sm:text-xs dark:text-white/60"
         />
       )}
       {subtasks.length > 0 && (

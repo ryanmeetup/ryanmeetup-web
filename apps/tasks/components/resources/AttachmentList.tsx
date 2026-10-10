@@ -19,7 +19,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { FormattedText, IconButton } from "@ryanmeetup/ui";
+import { FormattedTextPreview, IconButton } from "@ryanmeetup/ui";
 import {
   FiEdit2,
   FiExternalLink,
@@ -201,9 +201,12 @@ export function AttachmentList({
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold">{item.name}</p>
                 {type === "note" ? (
-                  <div className="mt-1 line-clamp-2 text-sm text-black/65 dark:text-white/65">
-                    <FormattedText text={item.body ?? ""} />
-                  </div>
+                  <FormattedTextPreview
+                    text={item.body ?? ""}
+                    maxLines={2}
+                    maxLength={120}
+                    className="mt-1 break-words text-sm text-black/65 dark:text-white/65"
+                  />
                 ) : (
                   <p className="mt-0.5 text-xs text-black/50 dark:text-white/50">
                     {formatFileSize(item.size_bytes) || "File"}
