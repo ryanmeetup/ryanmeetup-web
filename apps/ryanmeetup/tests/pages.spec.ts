@@ -54,6 +54,7 @@ const redirectRoutes = [
     path: "/ryanday",
     location: "https://partiful.com/e/52AEebHoL4MkLoQbPKaE?c=oV8JR0Ko",
   },
+  { path: "/ryanday/join", location: "https://meet.google.com/smt-ubsk-aeo" },
   {
     path: "/whatsapp",
     location: "https://chat.whatsapp.com/LeI37a2AlMk0OmMfhXPNvq",
