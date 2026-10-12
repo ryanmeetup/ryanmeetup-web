@@ -51,6 +51,10 @@ const redirectRoutes = [
   },
   { path: "/rcf", location: "https://us.givergy.com/rytoberfest" },
   {
+    path: "/ryanday",
+    location: "https://partiful.com/e/52AEebHoL4MkLoQbPKaE?c=oV8JR0Ko",
+  },
+  {
     path: "/whatsapp",
     location: "https://chat.whatsapp.com/LeI37a2AlMk0OmMfhXPNvq",
   },
