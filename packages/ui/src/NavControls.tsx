@@ -88,7 +88,7 @@ const NavMenu = ({
               <div
                 className={
                   hasDescriptions
-                    ? "grid grid-cols-3 grid-rows-2 gap-3"
+                    ? "grid grid-cols-3 auto-rows-fr gap-3"
                     : "space-y-1"
                 }
               >
