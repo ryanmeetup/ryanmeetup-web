@@ -1,10 +1,12 @@
-import Image from "next/image";
 import Link from "next/link";
+import { ThemedImage } from "./ThemedImage";
 
 export type LogoCardVariant = "card" | "plain";
 
 export type LogoCardProps = {
   src: string;
+  /** Shown in dark mode instead of `src`. */
+  darkSrc?: string;
   alt: string;
   href: string;
   className?: string;
@@ -22,6 +24,7 @@ const variantStyles: Record<LogoCardVariant, string> = {
 
 const LogoCard = ({
   src,
+  darkSrc,
   alt,
   href,
   className,
@@ -35,8 +38,9 @@ const LogoCard = ({
     href={href}
     className={`group flex items-center justify-center transition ${variantStyles[variant]} ${className ?? ""}`}
   >
-    <Image
+    <ThemedImage
       src={src}
+      darkSrc={darkSrc}
       alt={alt}
       width={width}
       height={height}

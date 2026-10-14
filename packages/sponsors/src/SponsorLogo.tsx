@@ -1,7 +1,13 @@
 import { LogoCard, LogoMarquee } from "@ryanmeetup/ui";
 import type { LogoCardProps, LogoMarqueeProps } from "@ryanmeetup/ui";
 
-export type SponsorLogo = { name: string; src: string; href: string };
+export type SponsorLogo = {
+  name: string;
+  src: string;
+  /** Shown in dark mode instead of `src`. */
+  darkSrc?: string;
+  href: string;
+};
 export type SponsorLogoCardProps = SponsorLogo &
   Omit<LogoCardProps, "alt" | "src" | "href">;
 const SponsorLogoCard = ({ name, ...props }: SponsorLogoCardProps) => (
