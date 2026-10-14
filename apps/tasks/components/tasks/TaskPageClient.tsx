@@ -20,6 +20,7 @@ import {
 import {
   FiActivity,
   FiCalendar,
+  FiCheck,
   FiCheckSquare,
   FiClock,
   FiColumns,
@@ -59,7 +60,9 @@ import { TaskDueDate } from "./TaskDueDate";
 import { TaskEditor } from "./TaskEditor";
 import { NewTaskModal } from "./NewTaskModal";
 import { TaskPriorityBadge } from "./TaskPriorityBadge";
-import { closesWork } from "@/lib/tasks/status-outcome";
+import { closesWork, deliversWork } from "@/lib/tasks/status-outcome";
+import { statusNeedingReason } from "@/lib/tasks/task-status-reason";
+import { StatusReasonDialog } from "./StatusReasonDialog";
 
 export function TaskPageClient({
   initialData,
@@ -87,6 +90,9 @@ export function TaskPageClient({
     draft: TaskDraft;
   } | null>(null);
   const [taskDeleting, setTaskDeleting] = useState(false);
+  const [completing, setCompleting] = useState(false);
+  const [completionReasonOpen, setCompletionReasonOpen] = useState(false);
+  const [completionReason, setCompletionReason] = useState("");
   const conversationTopRef = useRef<HTMLDivElement>(null);
   const [conversationHeight, setConversationHeight] = useState<number>();
   const pageTitle = useInstancePageTitle();
@@ -110,6 +116,12 @@ export function TaskPageClient({
 
   const triggers = editorTriggers(data.currentProfile.editor_surface);
   const status = data.statuses.find((item) => item.id === task.status_id);
+  // Where "Mark complete" sends the task: the first status, in board order,
+  // that counts as delivered. None means the workspace has nowhere to put it.
+  const completeStatus = data.statuses
+    .filter(deliversWork)
+    .sort((a, b) => a.sort_order - b.sort_order)[0];
+  const canComplete = Boolean(completeStatus && status && !closesWork(status));
   const project = data.projects.find((item) => item.id === task.project_id);
   const assigneeIds = new Set(
     data.taskAssignees
@@ -189,6 +201,46 @@ export function TaskPageClient({
     }
   }
 
+  /** Reports whether the move landed, so a rejected one keeps its reason. */
+  async function completeTask(reason: string) {
+    if (!completeStatus) return false;
+    setCompleting(true);
+    try {
+      await mutations.move(
+        task.id,
+        completeStatus.id,
+        undefined,
+        "after",
+        reason,
+      );
+      toast.successWithLink(`Task moved to ${completeStatus.name}:`, {
+        href: taskPath(task),
+        linkLabel: taskKey(task),
+      });
+      return true;
+    } catch (error) {
+      toast.error(errorMessage(error, "The task could not be completed."));
+      return false;
+    } finally {
+      setCompleting(false);
+    }
+  }
+
+  function requestCompletion() {
+    if (!completeStatus) return;
+    // Same rule as a board drop: a status that demands a reason gets one first.
+    if (statusNeedingReason(data.statuses, completeStatus.id, task.status_id)) {
+      setCompletionReasonOpen(true);
+      return;
+    }
+    void completeTask("");
+  }
+
+  function closeCompletionReason() {
+    setCompletionReasonOpen(false);
+    setCompletionReason("");
+  }
+
   async function copyLink() {
     try {
       await navigator.clipboard.writeText(
@@ -231,9 +283,26 @@ export function TaskPageClient({
             <h1 className="min-w-0 break-words text-2xl font-bold leading-tight sm:text-4xl">
               {task.title}
             </h1>
-            <div className="flex w-full shrink-0 items-center justify-end gap-2 sm:w-auto sm:justify-self-end xl:w-full xl:self-end">
+            <div className="flex w-full shrink-0 flex-wrap items-center justify-end gap-2 sm:w-auto sm:justify-self-end xl:w-full xl:self-end">
               {!data.accessPreview && (
                 <>
+                  {canComplete && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      fullWidth
+                      leftIcon={<FiCheck aria-hidden />}
+                      loading={completing}
+                      loadingText="Completing..."
+                      aria-label="Mark complete"
+                      onClick={requestCompletion}
+                      className="flex-1 whitespace-nowrap sm:w-auto sm:flex-none"
+                    >
+                      {/* Two lines at phone width otherwise; the name stays whole. */}
+                      <span className="sm:hidden">Complete</span>
+                      <span className="hidden sm:inline">Mark complete</span>
+                    </Button>
+                  )}
                   {/* Route or dialog, per the profile — see editor-routes.ts. */}
                   {triggers.route && (
                     <Button.Link
@@ -241,7 +310,7 @@ export function TaskPageClient({
                       size="sm"
                       fullWidth
                       leftIcon={<FiEdit3 />}
-                      className={`${triggers.routeClassName} sm:w-auto`}
+                      className={`${triggers.routeClassName} flex-1 whitespace-nowrap sm:w-auto sm:flex-none`}
                     >
                       Edit task
                     </Button.Link>
@@ -252,7 +321,7 @@ export function TaskPageClient({
                       fullWidth
                       leftIcon={<FiEdit3 />}
                       onClick={openEditor}
-                      className={`${triggers.dialogClassName} sm:w-auto`}
+                      className={`${triggers.dialogClassName} flex-1 whitespace-nowrap sm:w-auto sm:flex-none`}
                     >
                       Edit task
                     </Button>
@@ -572,6 +641,18 @@ export function TaskPageClient({
           duplicateOf={duplicateSource}
         />
       )}
+      <StatusReasonDialog
+        status={completionReasonOpen ? (completeStatus ?? null) : null}
+        reason={completionReason}
+        onReasonChange={setCompletionReason}
+        pending={completing}
+        onCancel={closeCompletionReason}
+        onConfirm={() =>
+          void completeTask(completionReason).then((done) => {
+            if (done) closeCompletionReason();
+          })
+        }
+      />
       <ConfirmationDialog
         open={Boolean(taskPendingDelete)}
         setOpen={(open) => {

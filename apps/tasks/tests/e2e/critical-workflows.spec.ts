@@ -364,6 +364,25 @@ test("names both statuses in task move activity", async ({ page, baseURL }) => {
   await expect(activity).toContainText("Done");
 });
 
+test("marks a task complete from its page", async ({ page, baseURL }) => {
+  await enterDemoWorkspace(page, baseURL);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(editedTask);
+  await page.waitForLoadState("networkidle");
+
+  const details = page
+    .getByRole("heading", { name: "Task details" })
+    .locator("..");
+  await expect(details).toContainText("In Progress");
+
+  await page.getByRole("button", { name: "Mark complete" }).click();
+
+  await expect(details).toContainText("Done");
+  await expect(page.getByRole("button", { name: "Mark complete" })).toHaveCount(
+    0,
+  );
+});
+
 test("keeps the mobile duplicate editor open for create another", async ({
   page,
   baseURL,
