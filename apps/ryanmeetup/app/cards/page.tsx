@@ -8,7 +8,7 @@ import { layoutPaddingX } from "@/lib/constants";
 
 // Types
 import { buildPageMetadata } from "@/utils/metadata";
-import { contactHrefs } from "@/utils/contact";
+import { CARDS_SUPPORT_INBOX, contactHrefs } from "@/utils/contact";
 
 export const metadata = buildPageMetadata({
   title: "Buy Membership Card",
@@ -77,7 +77,9 @@ const BuyCardsPage = () => {
             Need help with your order?
           </Heading>
           <Text className="mt-3 text-lg text-black/70 dark:text-white/70">
-            We can help with orders, shipping questions, and card details.
+            Ryan at P&amp;M Apparel handles orders, shipping questions, and card
+            details. Reach out at {CARDS_SUPPORT_INBOX}, and include your order
+            number if you have one.
           </Text>
           <div className="mt-6 flex justify-center">
             <Button.Link
@@ -85,8 +87,9 @@ const BuyCardsPage = () => {
               newTab={false}
               variant="secondary"
               size="md"
+              className="w-full sm:w-auto"
             >
-              Get in touch
+              Email Ryan at P&amp;M
             </Button.Link>
           </div>
         </Card>
