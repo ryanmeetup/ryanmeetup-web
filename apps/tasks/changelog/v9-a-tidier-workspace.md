@@ -60,6 +60,10 @@ Dropping a task into the open space of a column now puts it at the top by defaul
 
 Web addresses pasted into a task description now appear as clickable links on the board and task detail page, opening the destination in a new tab.
 
+### Finish a task from its page
+
+A task's page now has a Mark complete button beside Edit task. It moves the task straight to your workspace's first finished status, without opening the editor, and asks for a reason first if that status requires one.
+
 ### Lists keep their shape in previews
 
 Bulleted, numbered, and checklist lines in a task description or note now stay as list rows on board and note cards. Long text is shortened by whole lines and ends with an ellipsis, rather than spilling past the preview or stopping mid-list without one. Comments on tasks and notes pick up the same formatting, including lists, bold and italic text, and clickable links, and task keys in a comment still link to their tasks.
