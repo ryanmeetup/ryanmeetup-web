@@ -1,3 +1,6 @@
+import { FaAddressCard as MembershipCard } from "react-icons/fa";
+
+import type { ReactNode } from "react";
 import type { CampaignWindow } from "@/utils/campaign";
 
 export type BannerPalette = "sunset" | "ink";
@@ -8,6 +11,8 @@ export type SiteBanner = CampaignWindow & {
   message: string;
   href: string;
   actionLabel: string;
+  /** Shown before the action label. */
+  actionIcon?: ReactNode;
   /** Accessible name for the announcement region. */
   ariaLabel: string;
   palette: BannerPalette;
@@ -30,6 +35,7 @@ export const siteBanners: SiteBanner[] = [
       "RY-Ds are back! Order your own anodized membership card, Ryan Pre-Check included.",
     href: "/cards",
     actionLabel: "Order",
+    actionIcon: <MembershipCard aria-hidden />,
     ariaLabel: "RY-D membership cards are on sale again",
     palette: "ink",
     expiresAt: "2026-11-09T00:00:00-05:00",

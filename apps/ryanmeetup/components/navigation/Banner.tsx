@@ -14,14 +14,15 @@ export type BannerProps = {
 };
 
 // The shared Banner's variant classes win the cascade over app overrides, so
-// each palette sets its fixed surface colours inline as well.
+// palette colours are marked important. A palette that never changes with the
+// theme may also pin them inline.
 const palettes: Record<
   BannerPalette,
   {
     banner: string;
-    bannerStyle: CSSProperties;
+    bannerStyle?: CSSProperties;
     action: string;
-    actionStyle: CSSProperties;
+    actionStyle?: CSSProperties;
   }
 > = {
   sunset: {
@@ -39,19 +40,12 @@ const palettes: Record<
       color: "#4b210f",
     },
   },
+  // Inverts with the theme so it always stands apart from the header.
   ink: {
-    banner: "border-white/10 bg-black text-white",
-    bannerStyle: {
-      backgroundColor: "#000000",
-      borderColor: "rgba(255, 255, 255, 0.1)",
-      color: "#ffffff",
-    },
-    action: "border-white bg-white text-black hover:border-white/80 hover:bg-white/80",
-    actionStyle: {
-      backgroundColor: "#ffffff",
-      borderColor: "#ffffff",
-      color: "#000000",
-    },
+    banner:
+      "border-white/10! bg-black! text-white! dark:border-black/10! dark:bg-white! dark:text-black!",
+    action:
+      "border-white! bg-white! text-black! hover:bg-white/85! dark:border-black! dark:bg-black! dark:text-white! dark:hover:bg-black/85!",
   },
 };
 
@@ -72,13 +66,14 @@ export function Banner({ banners, className = "" }: BannerProps) {
       key={banner.id}
       variant="neutral"
       aria-label={banner.ariaLabel}
-      className={`${className} ${palette.banner} font-cooper !text-xl`}
+      className={`${className} ${palette.banner}`}
       style={palette.bannerStyle}
       action={
         <Button.Link
           href={banner.href}
           size="sm"
           variant="secondary"
+          leftIcon={banner.actionIcon}
           className={`whitespace-nowrap ${palette.action}`}
           style={palette.actionStyle}
         >
@@ -86,7 +81,7 @@ export function Banner({ banners, className = "" }: BannerProps) {
         </Button.Link>
       }
     >
-      <p>{banner.message}</p>
+      <p className="font-cooper text-xl">{banner.message}</p>
     </SharedBanner>
   );
 }
