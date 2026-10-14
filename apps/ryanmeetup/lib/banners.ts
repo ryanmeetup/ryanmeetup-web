@@ -23,4 +23,15 @@ export type SiteBanner = CampaignWindow & {
  * `startsAt`/`expiresAt` window contains the current time is shown, so order
  * by priority. Expired entries hide themselves and can be pruned at leisure.
  */
-export const siteBanners: SiteBanner[] = [];
+export const siteBanners: SiteBanner[] = [
+  {
+    id: "ryd-sales-2026",
+    message:
+      "RY-Ds are back! Order your own anodized membership card, Ryan Pre-Check included.",
+    href: "/cards",
+    actionLabel: "Order",
+    ariaLabel: "RY-D membership cards are on sale again",
+    palette: "ink",
+    expiresAt: "2026-11-09T00:00:00-05:00",
+  },
+];
