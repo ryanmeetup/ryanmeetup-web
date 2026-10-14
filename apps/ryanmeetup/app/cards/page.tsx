@@ -4,6 +4,7 @@ import NextImage from "next/image";
 import { Backdrop } from "@/components/global";
 import { Button, Card, Heading, IconBadge, Pill, Text } from "@ryanmeetup/ui";
 import { HiOutlineMail as Envelope } from "react-icons/hi";
+import { FiCheck as Check } from "react-icons/fi";
 import { CardInfo } from "@/components/cards";
 import { layoutPaddingX } from "@/lib/constants";
 
@@ -28,6 +29,13 @@ export const metadata = buildPageMetadata({
     "ryan meetup membership",
   ],
 });
+
+const orderHelpTopics = [
+  "Order status and tracking",
+  "Shipping or address changes",
+  "Damaged cards, refunds, or exchanges",
+  "Bulk or group orders",
+];
 
 const BuyCardsPage = () => {
   return (
@@ -77,32 +85,46 @@ const BuyCardsPage = () => {
         <Card
           variant="soft"
           size="lg"
-          className="mx-auto flex max-w-4xl flex-col gap-6 md:flex-row md:items-center md:justify-between"
+          className="mx-auto flex max-w-3xl items-start gap-4 sm:gap-6"
         >
-          <div className="flex items-start gap-4">
-            <IconBadge size="lg">
-              <Envelope className="h-5 w-5" aria-hidden />
-            </IconBadge>
+          <IconBadge size="lg">
+            <Envelope className="h-5 w-5" aria-hidden />
+          </IconBadge>
+          <div className="min-w-0 flex-1 space-y-4">
             <div className="space-y-1">
               <Heading className="text-2xl title" size="h2">
                 Questions about your RY-D?
               </Heading>
               <Text className="text-black/70 dark:text-white/70">
-                Ryan at P&amp;M Apparel ships every card. Have your order
-                number handy.
+                Ryan at P&amp;M Apparel makes and ships every card. Reach out
+                about:
               </Text>
             </div>
+            <ul className="grid gap-2 text-sm text-black/80 dark:text-white/80 sm:grid-cols-2">
+              {orderHelpTopics.map((topic) => (
+                <li key={topic} className="flex items-start gap-2">
+                  <Check
+                    className="mt-0.5 h-4 w-4 shrink-0 text-black/50 dark:text-white/50"
+                    aria-hidden
+                  />
+                  {topic}
+                </li>
+              ))}
+            </ul>
+            <Text className="text-sm text-black/70 dark:text-white/70">
+              Have your order number handy if you&apos;ve already ordered.
+            </Text>
+            <Button.Link
+              href={contactHrefs.cardsSupport}
+              newTab={false}
+              leftIcon={<Envelope aria-hidden />}
+              variant="primary"
+              size="md"
+              fullWidth
+            >
+              Email P&amp;M
+            </Button.Link>
           </div>
-          <Button.Link
-            href={contactHrefs.cardsSupport}
-            newTab={false}
-            leftIcon={<Envelope aria-hidden />}
-            variant="primary"
-            size="md"
-            className="w-full shrink-0 md:w-auto"
-          >
-            Email P&amp;M
-          </Button.Link>
         </Card>
       </section>
     </Layout>
