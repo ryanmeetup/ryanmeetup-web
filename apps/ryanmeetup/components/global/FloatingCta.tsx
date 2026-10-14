@@ -85,7 +85,7 @@ const FloatingCta = (props: FloatingCtaProps) => {
   } = props;
 
   const resolvedTheme = { ...defaultTheme, ...theme };
-  const isCampaignActive = useCampaignActive(expiresAt);
+  const isCampaignActive = useCampaignActive({ expiresAt });
   const pathname = usePathname();
   const dismissKey = useMemo(() => `floatingCtaDismissedAt:${id}`, [id]);
   const [isVisible, setIsVisible] = useState(false);

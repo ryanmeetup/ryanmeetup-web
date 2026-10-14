@@ -13,6 +13,7 @@ import {
 } from "react-icons/fa";
 import { useTheme } from "next-themes";
 import { layoutPaddingX } from "@/lib/constants";
+import { siteBanners } from "@/lib/banners";
 
 // Types
 import type { ReactNode } from "react";
@@ -37,13 +38,7 @@ const Layout = (props: LayoutProps) => {
 
   return (
     <main>
-      <Banner
-        message="Ryan Meetup returns to California September 11–12: Ready Player Ryan + Sun Soaked!"
-        href="/rsvp"
-        actionLabel="RSVP"
-        expiresAt={californiaCampaignExpiresAt}
-        className={layoutPaddingX}
-      />
+      <Banner banners={siteBanners} className={layoutPaddingX} />
       <Header />
       <section
         className={`${className}f 

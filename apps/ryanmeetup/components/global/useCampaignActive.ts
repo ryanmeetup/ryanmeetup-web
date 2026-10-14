@@ -1,41 +1,60 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import { isCampaignActive, MAX_TIMEOUT_MS } from "@/utils/campaign";
+import {
+  getActiveCampaign,
+  getNextCampaignChange,
+  MAX_TIMEOUT_MS,
+} from "@/utils/campaign";
 
-const useCampaignActive = (expiresAt?: string) => {
-  const [isActive, setIsActive] = useState(!expiresAt);
+import type { CampaignWindow } from "@/utils/campaign";
+
+/**
+ * The first campaign that is live right now, re-checked whenever any of them
+ * starts or expires. Undated campaigns render on the server; dated ones wait
+ * for the client clock.
+ */
+const useActiveCampaign = <T extends CampaignWindow>(
+  campaigns: readonly T[],
+) => {
+  const [activeCampaign, setActiveCampaign] = useState<T | undefined>(() =>
+    campaigns.find((campaign) => !campaign.startsAt && !campaign.expiresAt),
+  );
 
   useEffect(() => {
-    if (!expiresAt) {
-      setIsActive(true);
-      return;
-    }
-
-    const expirationTime = Date.parse(expiresAt);
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
-    const updateVisibility = () => {
-      const remainingTime = expirationTime - Date.now();
-      setIsActive(isCampaignActive(expiresAt));
+    const update = () => {
+      const now = Date.now();
+      setActiveCampaign(getActiveCampaign(campaigns, now));
 
-      if (remainingTime > 0) {
+      const nextChange = getNextCampaignChange(campaigns, now);
+      if (nextChange !== undefined) {
         timeoutId = setTimeout(
-          updateVisibility,
-          Math.min(remainingTime, MAX_TIMEOUT_MS),
+          update,
+          Math.min(nextChange - now, MAX_TIMEOUT_MS),
         );
       }
     };
 
-    updateVisibility();
+    update();
 
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [expiresAt]);
+  }, [campaigns]);
 
-  return isActive;
+  return activeCampaign;
 };
 
-export { useCampaignActive };
+const useCampaignActive = ({ startsAt, expiresAt }: CampaignWindow = {}) => {
+  const campaigns = useMemo(
+    () => [{ startsAt, expiresAt }],
+    [startsAt, expiresAt],
+  );
+
+  return useActiveCampaign(campaigns) !== undefined;
+};
+
+export { useActiveCampaign, useCampaignActive };
