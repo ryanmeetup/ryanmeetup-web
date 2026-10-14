@@ -12,7 +12,7 @@ import {
   FaScroll as Scroll,
   FaTiktok as TikTok,
   FaHome as Home,
-  // FaAddressCard as Card,
+  FaAddressCard as MembershipCard,
 } from "react-icons/fa";
 import {
   FaPeopleGroup as Community,
@@ -179,6 +179,12 @@ export const routes = [
         description: "Support the Ryan Meetup as we continue to grow our community.",
       },
       {
+        icon: <MembershipCard />,
+        text: "Membership Cards",
+        href: "/cards",
+        description: "Order your own RY-D, complete with Ryan Pre-Check.",
+      },
+      {
         icon: <Sponsor />,
         text: "Sponsors",
         href: "/sponsors",
@@ -195,12 +201,7 @@ export const routes = [
         text: "Rycommendations",
         href: "https://forms.gle/FH4vSc3ngFgqziTg9",
         description: "Have a suggestion or idea? We'd love to hear it.",
-      }
-      // {
-      //   icon: <Card />,
-      //   text: "Buy Card",
-      //   href: "/cards",
-      // },
+      },
     ],
   },
   {
