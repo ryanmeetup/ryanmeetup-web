@@ -289,7 +289,10 @@ const Landing = (props: LandingProps) => {
         </div>
 
         <div className="order-1 flex flex-col space-y-6 lg:order-2">
-          <RotatingGallery items={slides} />
+          <RotatingGallery
+            items={slides}
+            sizes="(max-width: 1023px) 100vw, 50vw"
+          />
 
           <Highlights highlights={highlights} />
         </div>

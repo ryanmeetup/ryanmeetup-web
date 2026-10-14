@@ -20,10 +20,12 @@ type GalleryItem = {
 type RotatingGalleryProps = {
   items: GalleryItem[];
   intervalMs?: number;
+  /** Rendered width of the gallery, for picking a source from the srcset. */
+  sizes?: string;
 };
 
 const RotatingGallery = (props: RotatingGalleryProps) => {
-  const { items, intervalMs = 6000 } = props;
+  const { items, intervalMs = 6000, sizes = "100vw" } = props;
   const [activeSlide, setActiveSlide] = useState(0);
 
   const animationVariants = {
@@ -85,6 +87,8 @@ const RotatingGallery = (props: RotatingGalleryProps) => {
           className="h-full w-full object-cover"
           src={items[prevIndex].src}
           fill
+          sizes="80px"
+          loading="eager"
           alt={items[prevIndex].alt}
         />
       </div>
@@ -93,6 +97,8 @@ const RotatingGallery = (props: RotatingGalleryProps) => {
           className="h-full w-full object-cover"
           src={items[nextIndex].src}
           fill
+          sizes="80px"
+          loading="eager"
           alt={items[nextIndex].alt}
         />
       </div>
@@ -113,6 +119,8 @@ const RotatingGallery = (props: RotatingGalleryProps) => {
               className="rounded-3xl"
               src={slide.src}
               fill
+              sizes={sizes}
+              loading={index === 0 ? "eager" : undefined}
               alt={slide.alt}
               style={{ objectFit: "cover" }}
             />

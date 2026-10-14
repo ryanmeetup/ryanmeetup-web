@@ -2,13 +2,14 @@
 import { Layout } from "@/components/navigation";
 import NextImage from "next/image";
 import { Backdrop } from "@/components/global";
-import { Button, Card, Heading, Pill, Text } from "@ryanmeetup/ui";
+import { Button, Card, Heading, IconBadge, Pill, Text } from "@ryanmeetup/ui";
+import { HiOutlineMail as Envelope } from "react-icons/hi";
 import { CardInfo } from "@/components/cards";
 import { layoutPaddingX } from "@/lib/constants";
 
 // Types
 import { buildPageMetadata } from "@/utils/metadata";
-import { CARDS_SUPPORT_INBOX, contactHrefs } from "@/utils/contact";
+import { contactHrefs } from "@/utils/contact";
 
 export const metadata = buildPageMetadata({
   title: "Buy Membership Card",
@@ -53,6 +54,7 @@ const BuyCardsPage = () => {
                 alt="Ryan Meetup Membership Card"
                 className="object-contain"
                 fill
+                sizes="(max-width: 1023px) 100vw, 50vw"
               />
             </div>
 
@@ -71,27 +73,36 @@ const BuyCardsPage = () => {
         </section>
       </Backdrop>
 
-      <section className={`py-10 ${layoutPaddingX}`}>
-        <Card variant="soft" size="lg" className="text-center">
-          <Heading className="text-3xl title sm:text-4xl">
-            Need help with your order?
-          </Heading>
-          <Text className="mt-3 text-lg text-black/70 dark:text-white/70">
-            Ryan at P&amp;M Apparel handles orders, shipping questions, and card
-            details. Reach out at {CARDS_SUPPORT_INBOX}, and include your order
-            number if you have one.
-          </Text>
-          <div className="mt-6 flex justify-center">
-            <Button.Link
-              href={contactHrefs.cardsSupport}
-              newTab={false}
-              variant="secondary"
-              size="md"
-              className="w-full sm:w-auto"
-            >
-              Email Ryan at P&amp;M
-            </Button.Link>
+      <section className={`py-12 ${layoutPaddingX}`}>
+        <Card
+          variant="soft"
+          size="lg"
+          className="mx-auto flex max-w-4xl flex-col gap-6 md:flex-row md:items-center md:justify-between"
+        >
+          <div className="flex items-start gap-4">
+            <IconBadge size="lg">
+              <Envelope className="h-5 w-5" aria-hidden />
+            </IconBadge>
+            <div className="space-y-1">
+              <Heading className="text-2xl title" size="h2">
+                Questions about your RY-D?
+              </Heading>
+              <Text className="text-black/70 dark:text-white/70">
+                Ryan at P&amp;M Apparel ships every card. Have your order
+                number handy.
+              </Text>
+            </div>
           </div>
+          <Button.Link
+            href={contactHrefs.cardsSupport}
+            newTab={false}
+            leftIcon={<Envelope aria-hidden />}
+            variant="primary"
+            size="md"
+            className="w-full shrink-0 md:w-auto"
+          >
+            Email P&amp;M
+          </Button.Link>
         </Card>
       </section>
     </Layout>
