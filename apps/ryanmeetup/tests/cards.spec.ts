@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("sends card order help straight to P&M Apparel", async ({ page }) => {
   await page.goto("/cards");
 
-  const support = page.getByRole("link", { name: "Email Ryan at P&M" });
+  const support = page.getByRole("link", { name: "Email P&M" });
   await expect(support).toHaveAttribute(
     "href",
     /^mailto:Ryan@pmapparel\.com\?subject=RY-D%20Order%20Support&body=/,

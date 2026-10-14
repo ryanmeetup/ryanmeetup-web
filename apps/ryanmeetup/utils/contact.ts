@@ -271,7 +271,6 @@ const buildMonthlyBackerTierHref = (slug: MonthlyBackerTierSlug) => {
 export {
   buildContactHref,
   buildMonthlyBackerTierHref,
-  CARDS_SUPPORT_INBOX,
   contactHrefs,
   contactTopics,
   DEFAULT_INBOX,
