@@ -3,9 +3,15 @@
 import { useMemo } from "react";
 
 // Components
-import NextImage from "next/image";
 import NextLink from "next/link";
-import { Button, Card, Heading, Kicker, Text } from "@ryanmeetup/ui";
+import {
+  Button,
+  Card,
+  Heading,
+  Kicker,
+  Text,
+  ThemedImage,
+} from "@ryanmeetup/ui";
 import { SponsorLogoMarquee } from "@ryanmeetup/sponsors";
 import { SponsorLink } from "@/components/sponsors/SponsorLink";
 import { buildSponsorTrackingHref } from "@/components/sponsors/SponsorLink";
@@ -15,7 +21,6 @@ import type { Sponsor } from "@/lib/types";
 import { getMonthlyBackerTier } from "@/lib/sponsorship-program";
 
 // Utilities
-import { useTheme } from "next-themes";
 import { usePathname } from "next/navigation";
 import { layoutPaddingX } from "@/lib/constants";
 import { convertImageUrl } from "@ryanmeetup/utils";
@@ -26,7 +31,6 @@ type SponsorCarousel = {
 };
 
 const SponsorCarousel = (props: SponsorCarousel) => {
-  const { resolvedTheme } = useTheme();
   const pathname = usePathname();
 
   const { sponsors } = props;
@@ -39,12 +43,10 @@ const SponsorCarousel = (props: SponsorCarousel) => {
         active: sponsor.active,
         partnershipType: sponsor.partnershipType,
         backerTier: sponsor.backerTier,
-        src:
-          (resolvedTheme ?? "dark") === "light"
-            ? (convertImageUrl(sponsor.lightModeImage) as string)
-            : (convertImageUrl(sponsor.darkModeImage) as string),
+        src: convertImageUrl(sponsor.lightModeImage) as string,
+        darkSrc: convertImageUrl(sponsor.darkModeImage) as string,
       })),
-    [sponsors, resolvedTheme],
+    [sponsors],
   );
 
   const { topRow, bottomRow, featuredRecurringSponsor } = useMemo(() => {
@@ -87,9 +89,9 @@ const SponsorCarousel = (props: SponsorCarousel) => {
                   {featuredRecurringSponsor.name} keeps Ryan Meetup moving
                 </h3>
                 <p className="mx-auto max-w-xl text-sm leading-6 text-black/65 dark:text-white/65 lg:mx-0">
-                  Their ongoing support helps keep Ryan Meetup weird,
-                  welcoming, and possible wherever Ryans gather. Want to put
-                  your brand beside theirs?
+                  Their ongoing support helps keep Ryan Meetup weird, welcoming,
+                  and possible wherever Ryans gather. Want to put your brand
+                  beside theirs?
                 </p>
                 <Button.Link
                   href={contactHrefs.monthlyBacker}
@@ -113,8 +115,9 @@ const SponsorCarousel = (props: SponsorCarousel) => {
                     {getMonthlyBackerTier(featuredRecurringSponsor.backerTier)
                       ?.name ?? "Monthly Backer"}
                   </span>
-                  <NextImage
+                  <ThemedImage
                     src={featuredRecurringSponsor.src}
+                    darkSrc={featuredRecurringSponsor.darkSrc}
                     alt={featuredRecurringSponsor.name}
                     width={1100}
                     height={550}
@@ -159,6 +162,7 @@ const SponsorCarousel = (props: SponsorCarousel) => {
         sponsors={topRow.map((sponsor) => ({
           name: sponsor.name,
           src: sponsor.src,
+          darkSrc: sponsor.darkSrc,
           href: buildSponsorTrackingHref({
             href: sponsor.href,
             sponsorName: sponsor.name,
@@ -174,6 +178,7 @@ const SponsorCarousel = (props: SponsorCarousel) => {
         sponsors={bottomRow.map((sponsor) => ({
           name: sponsor.name,
           src: sponsor.src,
+          darkSrc: sponsor.darkSrc,
           href: buildSponsorTrackingHref({
             href: sponsor.href,
             sponsorName: sponsor.name,

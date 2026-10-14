@@ -1,8 +1,7 @@
 "use client";
 
 // Components
-import NextImage from "next/image";
-import { Card, Text } from "@ryanmeetup/ui";
+import { Card, Text, ThemedImage } from "@ryanmeetup/ui";
 import { SponsorLink } from "@/components/sponsors/SponsorLink";
 
 // Types
@@ -10,7 +9,6 @@ import type { Sponsor } from "@/lib/types";
 
 // Utilities
 import { convertImageUrl } from "@ryanmeetup/utils";
-import { useTheme } from "next-themes";
 
 type SponsorProps = {
   sponsor: Sponsor;
@@ -38,9 +36,6 @@ const Sponsor = (props: SponsorProps) => {
     placement = "sponsor_grid",
   } = props;
 
-  const { resolvedTheme } = useTheme();
-  const isLight = (resolvedTheme ?? "dark") === "light";
-
   return (
     <SponsorLink
       href={href}
@@ -64,12 +59,9 @@ const Sponsor = (props: SponsorProps) => {
                 : "h-24 sm:h-28"
           } ${imageWrapperClassName ?? ""}`}
         >
-          <NextImage
-            src={
-              isLight
-                ? (convertImageUrl(lightModeImage) as string)
-                : (convertImageUrl(darkModeImage) as string)
-            }
+          <ThemedImage
+            src={convertImageUrl(lightModeImage) as string}
+            darkSrc={convertImageUrl(darkModeImage) as string}
             fill
             alt={name}
             className={`object-contain ${imageClassName ?? ""}`}

@@ -7,7 +7,6 @@ import { LogoMarquee } from "@ryanmeetup/ui";
 import type { Outlet } from "@/lib/types";
 
 // Utilities
-import { useTheme } from "next-themes";
 import { convertImageUrl } from "@ryanmeetup/utils";
 
 type FeaturedInProps = {
@@ -15,17 +14,14 @@ type FeaturedInProps = {
 };
 
 const FeaturedIn = (props: FeaturedInProps) => {
-  const { theme } = useTheme();
-
   const { outlets } = props;
 
   return (
     <div className="mt-4">
       <LogoMarquee
         items={outlets.map((outlet) => ({
-          src: (theme === "light"
-            ? convertImageUrl(outlet.lightModeImage)
-            : convertImageUrl(outlet.darkModeImage)) as string,
+          src: convertImageUrl(outlet.lightModeImage) as string,
+          darkSrc: convertImageUrl(outlet.darkModeImage) as string,
           alt: outlet.title,
           href: outlet.href,
           key: outlet.title,
