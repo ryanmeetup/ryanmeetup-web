@@ -64,16 +64,16 @@ const CardInfo = () => {
         </Text>
       </section>
 
-      <Button
-        // href="https://buy.stripe.com/3cIcN4fTP7BS0kzbXJ2kw0a"
+      <Button.Link
+        href="https://pmapparel.chipply.com/ryds/"
+        newTab
         leftIcon={<Dollar className="w-4 h-4" />}
         className="mt-8 w-full"
         variant="primary"
         size="md"
-        disabled
       >
-        ORDERS PAUSED UNTIL FURTHER NOTICE
-      </Button>
+        BUY NOW
+      </Button.Link>
     </Card>
   );
 };
