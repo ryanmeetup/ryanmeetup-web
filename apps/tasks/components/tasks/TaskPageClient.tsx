@@ -29,6 +29,7 @@ import {
   FiFolder,
   FiLink,
   FiMoreHorizontal,
+  FiSlash,
   FiTag,
   FiTrash2,
   FiUser,
@@ -50,7 +51,7 @@ import { errorMessage } from "@/lib/presentation";
 import { formatTimestampDate } from "@/lib/date-format";
 import { taskDraftFromTask } from "@/lib/tasks/task-draft-factory";
 import { taskDraftValidationMessage } from "@/lib/tasks/task-draft-validation";
-import type { Task } from "@/lib/tasks/task-types";
+import type { Status, Task } from "@/lib/tasks/task-types";
 import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import { taskEditorView } from "@/lib/tasks/task-editor-view";
 import { projectPath } from "@/lib/resources/project-route";
@@ -90,9 +91,9 @@ export function TaskPageClient({
     draft: TaskDraft;
   } | null>(null);
   const [taskDeleting, setTaskDeleting] = useState(false);
-  const [completing, setCompleting] = useState(false);
-  const [completionReasonOpen, setCompletionReasonOpen] = useState(false);
-  const [completionReason, setCompletionReason] = useState("");
+  const [closingStatusId, setClosingStatusId] = useState<string | null>(null);
+  const [reasonStatus, setReasonStatus] = useState<Status | null>(null);
+  const [closeReason, setCloseReason] = useState("");
   const conversationTopRef = useRef<HTMLDivElement>(null);
   const [conversationHeight, setConversationHeight] = useState<number>();
   const pageTitle = useInstancePageTitle();
@@ -116,12 +117,17 @@ export function TaskPageClient({
 
   const triggers = editorTriggers(data.currentProfile.editor_surface);
   const status = data.statuses.find((item) => item.id === task.status_id);
-  // Where "Mark complete" sends the task: the first status, in board order,
-  // that counts as delivered. None means the workspace has nowhere to put it.
-  const completeStatus = data.statuses
-    .filter(deliversWork)
-    .sort((a, b) => a.sort_order - b.sort_order)[0];
-  const canComplete = Boolean(completeStatus && status && !closesWork(status));
+  // Where the quick close actions send the task: the first status, in board
+  // order, with that outcome. None means the workspace has nowhere to put it.
+  const firstStatus = (matches: (item: Status) => boolean) =>
+    data.statuses
+      .filter(matches)
+      .sort((a, b) => a.sort_order - b.sort_order)[0];
+  const completeStatus = firstStatus(deliversWork);
+  const declineStatus = firstStatus((item) => item.outcome === "declined");
+  const taskOpenNow = Boolean(status && !closesWork(status));
+  const canComplete = taskOpenNow && Boolean(completeStatus);
+  const canDecline = taskOpenNow && Boolean(declineStatus);
   const project = data.projects.find((item) => item.id === task.project_id);
   const assigneeIds = new Set(
     data.taskAssignees
@@ -202,43 +208,36 @@ export function TaskPageClient({
   }
 
   /** Reports whether the move landed, so a rejected one keeps its reason. */
-  async function completeTask(reason: string) {
-    if (!completeStatus) return false;
-    setCompleting(true);
+  async function closeTask(target: Status, reason: string) {
+    setClosingStatusId(target.id);
     try {
-      await mutations.move(
-        task.id,
-        completeStatus.id,
-        undefined,
-        "after",
-        reason,
-      );
-      toast.successWithLink(`Task moved to ${completeStatus.name}:`, {
+      await mutations.move(task.id, target.id, undefined, "after", reason);
+      toast.successWithLink(`Task moved to ${target.name}:`, {
         href: taskPath(task),
         linkLabel: taskKey(task),
       });
       return true;
     } catch (error) {
-      toast.error(errorMessage(error, "The task could not be completed."));
+      toast.error(errorMessage(error, "The task could not be moved."));
       return false;
     } finally {
-      setCompleting(false);
+      setClosingStatusId(null);
     }
   }
 
-  function requestCompletion() {
-    if (!completeStatus) return;
+  function requestClose(target: Status | undefined) {
+    if (!target) return;
     // Same rule as a board drop: a status that demands a reason gets one first.
-    if (statusNeedingReason(data.statuses, completeStatus.id, task.status_id)) {
-      setCompletionReasonOpen(true);
+    if (statusNeedingReason(data.statuses, target.id, task.status_id)) {
+      setReasonStatus(target);
       return;
     }
-    void completeTask("");
+    void closeTask(target, "");
   }
 
-  function closeCompletionReason() {
-    setCompletionReasonOpen(false);
-    setCompletionReason("");
+  function closeReasonDialog() {
+    setReasonStatus(null);
+    setCloseReason("");
   }
 
   async function copyLink() {
@@ -292,10 +291,13 @@ export function TaskPageClient({
                       variant="success"
                       fullWidth
                       leftIcon={<FiCheck aria-hidden />}
-                      loading={completing}
+                      loading={
+                        Boolean(completeStatus) &&
+                        closingStatusId === completeStatus?.id
+                      }
                       loadingText="Completing..."
                       aria-label="Mark complete"
-                      onClick={requestCompletion}
+                      onClick={() => requestClose(completeStatus)}
                       className="flex-1 whitespace-nowrap sm:w-auto sm:flex-none"
                     >
                       {/* Two lines at phone width otherwise; the name stays whole. */}
@@ -342,6 +344,13 @@ export function TaskPageClient({
                   </DropdownMenuItem>
                   {!data.accessPreview && (
                     <>
+                      {canDecline && declineStatus && (
+                        <DropdownMenuItem
+                          onClick={() => requestClose(declineStatus)}
+                        >
+                          <FiSlash aria-hidden /> Mark as {declineStatus.name}
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         destructive
@@ -642,16 +651,17 @@ export function TaskPageClient({
         />
       )}
       <StatusReasonDialog
-        status={completionReasonOpen ? (completeStatus ?? null) : null}
-        reason={completionReason}
-        onReasonChange={setCompletionReason}
-        pending={completing}
-        onCancel={closeCompletionReason}
-        onConfirm={() =>
-          void completeTask(completionReason).then((done) => {
-            if (done) closeCompletionReason();
-          })
-        }
+        status={reasonStatus}
+        reason={closeReason}
+        onReasonChange={setCloseReason}
+        pending={closingStatusId !== null}
+        onCancel={closeReasonDialog}
+        onConfirm={() => {
+          if (!reasonStatus) return;
+          void closeTask(reasonStatus, closeReason).then((done) => {
+            if (done) closeReasonDialog();
+          });
+        }}
       />
       <ConfirmationDialog
         open={Boolean(taskPendingDelete)}

@@ -383,6 +383,39 @@ test("marks a task complete from its page", async ({ page, baseURL }) => {
   );
 });
 
+test("declines a task from its page with a reason", async ({
+  page,
+  baseURL,
+}) => {
+  await enterDemoWorkspace(page, baseURL);
+  await page.goto(editedTask);
+  await page.waitForLoadState("networkidle");
+
+  await page.getByRole("button", { name: "More task actions" }).click();
+  await page.getByRole("menuitem", { name: "Mark as Will Not Do" }).click();
+
+  const dialog = page.getByRole("dialog", { name: "Move to Will Not Do" });
+  await expect(
+    dialog.getByRole("button", { name: "Move task" }),
+  ).toBeDisabled();
+  await dialog.getByLabel("Reason").fill("The venue doubled its rate.");
+  await dialog.getByRole("button", { name: "Move task" }).click();
+  await expect(dialog).toHaveCount(0);
+
+  const details = page
+    .getByRole("heading", { name: "Task details" })
+    .locator("..");
+  await expect(details).toContainText("Will Not Do");
+  await expect(page.getByText("The venue doubled its rate.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Mark complete" })).toHaveCount(
+    0,
+  );
+  await page.getByRole("button", { name: "More task actions" }).click();
+  await expect(
+    page.getByRole("menuitem", { name: "Mark as Will Not Do" }),
+  ).toHaveCount(0);
+});
+
 test("keeps the mobile duplicate editor open for create another", async ({
   page,
   baseURL,
