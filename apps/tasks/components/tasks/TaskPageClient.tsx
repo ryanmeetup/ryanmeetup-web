@@ -289,7 +289,7 @@ export function TaskPageClient({
                   {canComplete && (
                     <Button
                       size="sm"
-                      variant="outline"
+                      variant="success"
                       fullWidth
                       leftIcon={<FiCheck aria-hidden />}
                       loading={completing}
