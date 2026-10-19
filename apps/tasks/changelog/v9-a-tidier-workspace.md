@@ -62,7 +62,7 @@ Web addresses pasted into a task description now appear as clickable links on th
 
 ### Finish a task from its page
 
-A task's page now has a Mark complete button beside Edit task. It moves the task straight to your workspace's first finished status, without opening the editor, and asks for a reason first if that status requires one.
+A task's page now has a Mark complete button beside Edit task. It moves the task straight to your workspace's first finished status, without opening the editor. The task's menu offers the same shortcut for declining work as Will Not Do. Either one asks for a reason first when its status requires one.
 
 ### Lists keep their shape in previews
 
