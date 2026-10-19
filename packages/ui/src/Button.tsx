@@ -35,6 +35,7 @@ export type ButtonVariant =
   | "secondary"
   | "action"
   | "danger"
+  | "success"
   | "outline"
   | "ghost";
 export type ButtonSize = "xs" | "sm" | "field" | "md" | "lg";
@@ -66,6 +67,10 @@ const getBaseClasses = (
       "border border-zinc-700 bg-zinc-700 text-white shadow-md hover:-translate-y-0.5 hover:border-zinc-900 hover:bg-zinc-800 hover:shadow-lg focus:ring-zinc-500/30 dark:border-zinc-300 dark:bg-zinc-300 dark:text-black dark:hover:border-white dark:hover:bg-zinc-100 dark:hover:text-black dark:focus:ring-white/30",
     danger:
       "border border-red-700 bg-red-700 text-white shadow-md hover:-translate-y-0.5 hover:border-red-800 hover:bg-red-800 hover:shadow-lg focus:ring-red-500/30 dark:border-red-500 dark:bg-red-600 dark:text-white dark:hover:border-red-400 dark:hover:bg-red-500",
+    // Green outline for an action that finishes something, such as completing
+    // a task. Reserved for that meaning, like `danger` is for destruction.
+    success:
+      "border border-emerald-600 bg-emerald-50 text-emerald-800 shadow-md hover:-translate-y-0.5 hover:border-emerald-700 hover:bg-emerald-100 hover:shadow-lg focus:ring-emerald-500/30 motion-reduce:transform-none dark:border-emerald-400 dark:bg-emerald-400/10 dark:text-emerald-200 dark:hover:border-emerald-300 dark:hover:bg-emerald-400/20 dark:focus:ring-emerald-400/30",
     outline:
       "border border-black/60 bg-black/80 text-white hover:border-black/80 hover:bg-black/70 dark:border-white/20 dark:text-white dark:hover:border-white/40 dark:hover:bg-white/10",
     ghost:
