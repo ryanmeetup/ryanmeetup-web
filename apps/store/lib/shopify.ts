@@ -1,8 +1,11 @@
 import { demoCollections, demoProducts } from "./demo-data";
+import { createProductGroup, getListingHandles, getProductGroup, getProductGroupForMember, groupProductListings, productGroups, resolveProductHandle } from "./product-groups";
+import type { ProductGroup } from "./product-groups";
 import type {
   Cart,
   CollectionSummary,
   Product,
+  ProductListing,
   ProductPage,
   ProductVariant,
   StoreImage,
@@ -12,15 +15,28 @@ const apiVersion = "2026-04";
 
 type Edge<T> = { node: T };
 type Connection<T> = { edges: Edge<T>[] };
+type PaginatedConnection<T> = Connection<T> & {
+  pageInfo: { endCursor: string | null; hasNextPage: boolean };
+};
+type ProductSummary = Pick<Product, "handle" | "title" | "tags">;
+type ProductSummariesPayload = { products: PaginatedConnection<ProductSummary> };
 type ProductNode = Omit<Product, "images" | "variants"> & {
-  images: Connection<StoreImage>;
-  variants: Connection<ProductVariant>;
+  images: PaginatedConnection<StoreImage>;
+  variants: PaginatedConnection<ProductVariant>;
 };
 type CollectionNode = CollectionSummary & {
   products?: Connection<ProductNode> & {
     pageInfo: ProductPage["pageInfo"];
   };
 };
+
+const imageFields = "url altText width height";
+const variantFields = `
+  id title availableForSale
+  price { amount currencyCode }
+  image { ${imageFields} }
+  selectedOptions { name value }
+`;
 
 const productFragment = `
   fragment ProductFields on Product {
@@ -33,20 +49,12 @@ const productFragment = `
     productType
     tags
     featuredImage { url altText width height }
-    images(first: 12) { edges { node { url altText width height } } }
+    images(first: 12) { edges { node { ${imageFields} } } pageInfo { endCursor hasNextPage } }
     priceRange { minVariantPrice { amount currencyCode } }
-    options { id name values }
+    options { id name values optionValues { name swatch { color } } }
     variants(first: 100) {
-      edges {
-        node {
-          id
-          title
-          availableForSale
-          price { amount currencyCode }
-          image { url altText width height }
-          selectedOptions { name value }
-        }
-      }
+      edges { node { ${variantFields} } }
+      pageInfo { endCursor hasNextPage }
     }
   }
 `;
@@ -73,7 +81,7 @@ const cartFragment = `
               price { amount currencyCode }
               image { url altText width height }
               selectedOptions { name value }
-              product { handle title }
+              product { handle title tags }
             }
           }
         }
@@ -142,6 +150,32 @@ function reshapeProduct(product: ProductNode): Product {
   };
 }
 
+async function completeProductConnection<T>(handle: string, field: "images" | "variants", connection: PaginatedConnection<T>, fields: string): Promise<PaginatedConnection<T>> {
+  const edges = [...connection.edges];
+  const cursors = new Set<string>();
+  let pageInfo = connection.pageInfo;
+  while (pageInfo.hasNextPage) {
+    if (!pageInfo.endCursor || cursors.has(pageInfo.endCursor)) throw new Error(`Could not load all product ${field}.`);
+    cursors.add(pageInfo.endCursor);
+    const data = await storefrontRequest<{ product: { items: PaginatedConnection<T> } | null }>(
+      `query ProductConnection($handle: String!, $after: String!) {
+        product(handle: $handle) {
+          items: ${field}(first: 250, after: $after) {
+            edges { node { ${fields} } }
+            pageInfo { endCursor hasNextPage }
+          }
+        }
+      }`,
+      { handle, after: pageInfo.endCursor },
+      { revalidate: 300 },
+    );
+    if (!data.product) throw new Error(`Could not load all product ${field}.`);
+    edges.push(...data.product.items.edges);
+    pageInfo = data.product.items.pageInfo;
+  }
+  return { edges, pageInfo };
+}
+
 export async function getCollections(): Promise<CollectionSummary[]> {
   if (!isShopifyConfigured()) return demoCollections;
 
@@ -155,8 +189,46 @@ export async function getCollections(): Promise<CollectionSummary[]> {
   return data.collections.edges.map(({ node }) => node);
 }
 
-export async function getFeaturedProducts(): Promise<Product[]> {
-  if (!isShopifyConfigured()) return demoProducts;
+async function getProductSummaries(query?: string): Promise<ProductSummary[]> {
+  const products: ProductSummary[] = [];
+  const cursors = new Set<string>();
+  let after: string | null = null;
+  while (true) {
+    const data: ProductSummariesPayload = await storefrontRequest<ProductSummariesPayload>(
+      `query CatalogProductSummaries($after: String, $query: String) {
+        products(first: 250, after: $after, query: $query, sortKey: TITLE) {
+          edges { node { handle title tags } }
+          pageInfo { endCursor hasNextPage }
+        }
+      }`,
+      { after, query: query ?? null },
+      { revalidate: 300 },
+    );
+    products.push(...data.products.edges.map(({ node }) => node));
+    const { endCursor, hasNextPage } = data.products.pageInfo;
+    if (!hasNextPage) return products;
+    if (!endCursor || cursors.has(endCursor)) throw new Error("Could not load the complete Shopify product catalog.");
+    cursors.add(endCursor);
+    after = endCursor;
+  }
+}
+
+async function getProductGroupProducts(group: ProductGroup): Promise<Product[]> {
+  if (!isShopifyConfigured()) return demoProducts.filter((product) => getProductGroupForMember(product)?.handle === group.handle);
+  const summaries = await getProductSummaries(`tag:${JSON.stringify(group.tag)}`);
+  const members = summaries.filter((product) => getProductGroupForMember(product)?.handle === group.handle);
+  const products = await Promise.all(members.map((product) => getShopifyProduct(product.handle)));
+  return products.filter((product) => product !== null);
+}
+
+async function getGroupedListings(products: Product[]): Promise<ProductListing[]> {
+  const groups = productGroups.filter((group) => products.some((product) => getProductGroupForMember(product)?.handle === group.handle));
+  const relatedProducts = (await Promise.all(groups.map(getProductGroupProducts))).flat();
+  return groupProductListings(products, relatedProducts);
+}
+
+export async function getFeaturedProducts(): Promise<ProductListing[]> {
+  if (!isShopifyConfigured()) return groupProductListings(demoProducts);
 
   const data = await storefrontRequest<{ products: Connection<ProductNode> }>(
     `${productFragment}
@@ -168,20 +240,11 @@ export async function getFeaturedProducts(): Promise<Product[]> {
     {},
     { revalidate: 300 },
   );
-  return data.products.edges.map(({ node }) => reshapeProduct(node));
+  return getGroupedListings(data.products.edges.map(({ node }) => reshapeProduct(node)));
 }
 
 export async function getProductHandles(): Promise<string[]> {
-  if (!isShopifyConfigured()) return demoProducts.map((product) => product.handle);
-
-  const data = await storefrontRequest<{
-    products: Connection<{ handle: string }>;
-  }>(
-    `query ProductHandles { products(first: 250, sortKey: TITLE) { edges { node { handle } } } }`,
-    {},
-    { revalidate: 300 },
-  );
-  return data.products.edges.map(({ node }) => node.handle);
+  return getListingHandles(isShopifyConfigured() ? await getProductSummaries() : demoProducts);
 }
 
 export async function getCollection(
@@ -201,7 +264,7 @@ export async function getCollection(
           );
     return {
       collection,
-      products,
+      products: groupProductListings(products),
       pageInfo: {
         endCursor: null,
         hasNextPage: false,
@@ -232,12 +295,18 @@ export async function getCollection(
   const { products, ...collection } = data.collection;
   return {
     collection,
-    products: products.edges.map(({ node }) => reshapeProduct(node)),
+    products: await getGroupedListings(products.edges.map(({ node }) => reshapeProduct(node))),
     pageInfo: products.pageInfo,
   };
 }
 
-export async function getProduct(handle: string): Promise<Product | null> {
+export async function getProduct(handle: string): Promise<ProductListing | null> {
+  const group = getProductGroup(handle);
+  if (group) return createProductGroup(group, await getProductGroupProducts(group));
+  return getShopifyProduct(resolveProductHandle(handle));
+}
+
+async function getShopifyProduct(handle: string): Promise<Product | null> {
   if (!isShopifyConfigured()) {
     return demoProducts.find((product) => product.handle === handle) ?? null;
   }
@@ -250,7 +319,12 @@ export async function getProduct(handle: string): Promise<Product | null> {
     { handle },
     { revalidate: 300 },
   );
-  return data.product ? reshapeProduct(data.product) : null;
+  if (!data.product) return null;
+  const [images, variants] = await Promise.all([
+    completeProductConnection(handle, "images", data.product.images, imageFields),
+    completeProductConnection(handle, "variants", data.product.variants, variantFields),
+  ]);
+  return reshapeProduct({ ...data.product, images, variants });
 }
 
 function reshapeCart(raw: Omit<Cart, "lines"> & { lines: Connection<Cart["lines"][number]> }): Cart {

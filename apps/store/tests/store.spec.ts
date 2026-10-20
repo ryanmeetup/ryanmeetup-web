@@ -1,4 +1,107 @@
 import { expect, test } from "@playwright/test";
+import { dad } from "./fixtures/products";
+
+test("cart links discover a new design through its Shopify tags", async ({ page }) => {
+  await page.route("**/_next/image?**", (route) => route.fulfill({
+    contentType: "image/png",
+    body: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64"),
+  }));
+  const price = dad.variants[0].price;
+  await page.addInitScript((cart) => localStorage.setItem("ryan-store-cart", JSON.stringify(cart)), {
+    id: "demo-cart",
+    checkoutUrl: "",
+    totalQuantity: 1,
+    cost: { subtotalAmount: price, totalAmount: price },
+    lines: [{ id: "demo-dad-line", quantity: 1, merchandise: { ...dad.variants[0], product: { handle: dad.handle, title: dad.title, tags: dad.tags } } }],
+  });
+  await page.goto("/cart");
+  await expect(page.getByText(dad.title, { exact: true })).toHaveAttribute("href", "/products/nametag-shirt?design=ryans-dad-name-tag-shirt");
+});
+
+test("nametag gallery shows every design and thumbnails choose the matching cart item", async ({ page }) => {
+  await page.goto("/products/nametag-shirt");
+  const gallery = page.getByRole("group", { name: "Product photos" });
+  await expect(gallery.getByRole("button")).toHaveCount(2);
+  const ryanPhoto = gallery.getByRole("button", { name: "View Ryan image 1", exact: true });
+  const momPhoto = gallery.getByRole("button", { name: "View Ryan’s Dad image 1", exact: true });
+  await expect(ryanPhoto).toHaveAttribute("aria-pressed", "true");
+  await momPhoto.click();
+  await expect(page.getByLabel("Nametag design")).toContainText("Ryan’s Dad");
+  await expect(page.getByLabel("Color")).toContainText("Natural");
+  await expect(momPhoto).toHaveAttribute("aria-pressed", "true");
+  await expect(ryanPhoto).toHaveAttribute("aria-pressed", "false");
+  await expect(gallery.getByRole("button")).toHaveCount(2);
+  await page.getByRole("button", { name: "Add to cart", exact: true }).click();
+  await expect(page.getByText("Added to cart", { exact: true })).toBeVisible();
+  const cart = await page.evaluate(() => JSON.parse(localStorage.getItem("ryan-store-cart")!));
+  expect(cart.lines[0].merchandise.id).toBe("gid://shopify/ProductVariant/demo-ryans-dad-name-tag-shirt-0");
+  await ryanPhoto.click();
+  await expect(page.getByLabel("Nametag design")).toContainText("Ryan");
+  await expect(page.getByLabel("Color")).toContainText("White");
+  await expect(ryanPhoto).toHaveAttribute("aria-pressed", "true");
+});
+
+test("nametag designs share one listing and add their own merchandise to the cart", async ({ page }) => {
+  const renderingErrors: string[] = [];
+  page.on("pageerror", (error) => renderingErrors.push(error.message));
+  page.on("console", (message) => {
+    if (message.type() === "error" && message.text().includes("same key")) renderingErrors.push(message.text());
+  });
+  await page.goto("/collections/all");
+  const listing = page.locator('main a[href="/products/nametag-shirt"]');
+  await expect(listing).toHaveCount(1);
+  await expect(listing).toContainText("Nametag Shirt");
+  await expect(listing).toContainText("From $12.00");
+  await expect(page.locator('main a[href="/products/ryan-name-tag-shirt"], main a[href="/products/ryans-mom-name-tag-shirt"]')).toHaveCount(0);
+  await listing.click();
+  await expect(page.getByRole("heading", { name: "Nametag Shirt", exact: true })).toBeVisible();
+  await expect(page.getByLabel("Nametag design")).toHaveAttribute("aria-required", "true");
+  await expect(page.getByLabel("Color")).toContainText("White");
+  await expect(page.getByText("$12.00", { exact: true })).toBeVisible();
+  const firstImage = await page.locator('main img').first().getAttribute("src");
+
+  await page.getByRole("button", { name: "Add to cart" }).click();
+  await expect(page.getByText("Added to cart", { exact: true })).toBeVisible();
+  await page.getByLabel("Nametag design").click();
+  await page.getByRole("option", { name: "Ryan’s Dad", exact: true }).click();
+  await expect(page).toHaveURL(/\/products\/nametag-shirt\?design=ryans-dad-name-tag-shirt$/);
+  await expect(page.getByRole("heading", { name: "Nametag Shirt", exact: true })).toHaveCount(1);
+  await expect(page.getByLabel("Color")).toContainText("Natural");
+  await expect(page.getByText("$30.00", { exact: true })).toBeVisible();
+  await expect(page.locator('main img').first()).not.toHaveAttribute("src", firstImage!);
+  await expect(page.getByRole("button", { name: "Add to cart" })).toBeVisible();
+  await page.getByRole("button", { name: "Add to cart" }).click();
+  await expect(page.getByText("Added to cart", { exact: true })).toBeVisible();
+
+  await page.goto("/cart");
+  const cart = await page.evaluate(() => JSON.parse(localStorage.getItem("ryan-store-cart")!));
+  expect(cart.lines.map((line: { merchandise: { id: string } }) => line.merchandise.id)).toEqual([
+    "gid://shopify/ProductVariant/demo-ryan-name-tag-shirt-0",
+    "gid://shopify/ProductVariant/demo-ryans-dad-name-tag-shirt-0",
+  ]);
+  await expect(page.getByText("Ryan Name Tag shirt", { exact: true })).toHaveAttribute("href", "/products/nametag-shirt?design=ryan");
+  await expect(page.getByText("Ryan's Dad Name Tag shirt", { exact: true })).toHaveAttribute("href", "/products/nametag-shirt?design=ryans-dad-name-tag-shirt");
+  await expect(page.getByText("$42.00", { exact: true })).toBeVisible();
+  expect(renderingErrors).toEqual([]);
+});
+
+test("nametag design URLs survive redirects, reloads, and browser history", async ({ page }) => {
+  await page.goto("/products/ryans-mom-name-tag-shirt");
+  await expect(page).toHaveURL(/\/products\/nametag-shirt\?design=ryans-dad-name-tag-shirt$/);
+  await expect(page.getByLabel("Nametag design")).toContainText("Ryan’s Dad");
+  await expect(page.getByLabel("Color")).toContainText("Natural");
+  await page.getByLabel("Nametag design").click();
+  await page.getByRole("option", { name: "Ryan", exact: true }).click();
+  await expect(page.getByLabel("Color")).toContainText("White");
+  await page.reload();
+  await expect(page.getByLabel("Nametag design")).toContainText("Ryan");
+  await expect(page.getByLabel("Color")).toContainText("White");
+  await page.goBack();
+  await expect(page.getByLabel("Nametag design")).toContainText("Ryan’s Dad");
+  await expect(page.getByLabel("Color")).toContainText("Natural");
+  await page.goto("/products/ryan-name-tag-shirt");
+  await expect(page).toHaveURL(/\/products\/nametag-shirt\?design=ryan$/);
+});
 
 test("customer can browse a product and manage the preview cart", async ({
   page,

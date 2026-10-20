@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button, Card, EmptyState, ErrorCallout, Heading, Kicker, Text } from "@ryanmeetup/ui";
 import { FiArrowRight, FiMinus, FiPlus, FiTrash2 } from "react-icons/fi";
 import { formatMoney } from "@/lib/money";
+import { getProductHref } from "@/lib/product-groups";
 import { useCart } from "./cart-provider";
 
 export function CartPage() {
@@ -27,13 +28,13 @@ export function CartPage() {
         <div className="space-y-4" aria-busy={loading}>
           {cart.lines.map((line) => (
             <Card key={line.id} className="flex gap-4 sm:gap-6" size="sm">
-              <Link href={`/products/${line.merchandise.product.handle}`} className="relative h-28 w-24 shrink-0 overflow-hidden rounded-xl bg-black/5 sm:h-36 sm:w-30 dark:bg-white/5">
-                {line.merchandise.image ? <Image src={line.merchandise.image.url} alt={line.merchandise.image.altText || line.merchandise.product.title} fill sizes="120px" className="object-cover" /> : null}
+              <Link href={getProductHref(line.merchandise.product)} className="relative h-28 w-24 shrink-0 overflow-hidden rounded-xl bg-black/5 sm:h-36 sm:w-30 dark:bg-white/5">
+                {line.merchandise.image ? <Image src={line.merchandise.image.url} alt={line.merchandise.image.altText || line.merchandise.product.title} fill sizes="120px" className="object-contain" /> : null}
               </Link>
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <Link href={`/products/${line.merchandise.product.handle}`} className="font-cooper text-lg tracking-wide hover:underline sm:text-xl">{line.merchandise.product.title}</Link>
+                    <Link href={getProductHref(line.merchandise.product)} className="font-cooper text-lg tracking-wide hover:underline sm:text-xl">{line.merchandise.product.title}</Link>
                     <p className="mt-1 text-xs text-black/55 dark:text-white/55">{line.merchandise.selectedOptions.map((option) => option.value).join(" / ")}</p>
                   </div>
                   <span className="shrink-0 text-sm font-semibold">{formatMoney({ ...line.merchandise.price, amount: (Number(line.merchandise.price.amount) * line.quantity).toFixed(2) })}</span>

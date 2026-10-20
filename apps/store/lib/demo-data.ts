@@ -15,6 +15,7 @@ const makeProduct = (input: {
   imageUrl: string;
   color: string;
   type: string;
+  tags?: string[];
 }): Product => {
   const productImage = image(input.imageUrl, input.title);
   const sizes = input.type === "Accessories" ? ["One size"] : ["S", "M", "L", "XL", "2XL"];
@@ -33,7 +34,7 @@ const makeProduct = (input: {
     ],
     priceRange: { minVariantPrice: { amount: input.price, currencyCode: "USD" } },
     productType: input.type,
-    tags: [input.type.toLowerCase(), input.color.toLowerCase()],
+    tags: [input.type.toLowerCase(), input.color.toLowerCase(), ...(input.tags ?? [])],
     variants: sizes.map((size, index) => ({
       id: `gid://shopify/ProductVariant/demo-${input.handle}-${index}`,
       title: `${size} / ${input.color}`,
@@ -84,6 +85,26 @@ export const demoProducts: Product[] = [
     imageUrl: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=1200&q=85",
     color: "Natural",
     type: "Accessories",
+  }),
+  makeProduct({
+    handle: "ryan-name-tag-shirt",
+    title: "Ryan Name Tag shirt",
+    description: "The classic Ryan introduction, printed on a shirt.",
+    price: "12.00",
+    imageUrl: "https://cdn.shopify.com/s/files/1/0718/7005/4511/files/unisex-classic-tee-white-front-6acd5a66edb8c.jpg?v=1791842937",
+    color: "White",
+    type: "Shirts",
+    tags: ["name tag"],
+  }),
+  makeProduct({
+    handle: "ryans-dad-name-tag-shirt",
+    title: "Ryan's Dad Name Tag shirt",
+    description: "A nametag shirt for Ryan’s dad.",
+    price: "30.00",
+    imageUrl: "https://cdn.shopify.com/s/files/1/0718/7005/4511/files/unisex-classic-tee-white-front-6acd5bf343e98.jpg?v=1791843327",
+    color: "Natural",
+    type: "Shirts",
+    tags: ["name tag"],
   }),
 ];
 

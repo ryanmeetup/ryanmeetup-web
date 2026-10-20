@@ -24,10 +24,16 @@ export type ProductVariant = {
   title: string;
 };
 
+export type ProductOptionValue = {
+  name: string;
+  swatch: { color: string | null } | null;
+};
+
 export type ProductOption = {
   id: string;
   name: string;
   values: string[];
+  optionValues?: ProductOptionValue[];
 };
 
 export type Product = {
@@ -44,6 +50,17 @@ export type Product = {
   tags: string[];
   title: string;
   variants: ProductVariant[];
+};
+
+export type ProductDesign = {
+  label: string;
+  value: string;
+  product: Product;
+};
+
+export type ProductListing = Product & {
+  designs?: ProductDesign[];
+  priceVaries?: boolean;
 };
 
 export type CollectionSummary = {
@@ -64,13 +81,13 @@ export type PageInfo = {
 export type ProductPage = {
   collection: CollectionSummary;
   pageInfo: PageInfo;
-  products: Product[];
+  products: ProductListing[];
 };
 
 export type CartLine = {
   id: string;
   merchandise: ProductVariant & {
-    product: Pick<Product, "handle" | "title">;
+    product: Pick<Product, "handle" | "title"> & { tags?: string[] };
   };
   quantity: number;
 };

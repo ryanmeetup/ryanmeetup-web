@@ -2,10 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { DropdownSelect, EmptyState } from "@ryanmeetup/ui";
-import type { Product } from "@/lib/types";
+import type { ProductListing } from "@/lib/types";
 import { ProductCard } from "./product-card";
 
-export function CollectionGrid({ products }: { products: Product[] }) {
+export function CollectionGrid({ products }: { products: ProductListing[] }) {
   const [type, setType] = useState("all");
   const [size, setSize] = useState("all");
   const types = [...new Set(products.map((product) => product.productType).filter(Boolean))];

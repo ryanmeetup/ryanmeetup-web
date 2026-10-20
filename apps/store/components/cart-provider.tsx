@@ -97,7 +97,7 @@ export function CartProvider({
                 quantity,
                 merchandise: {
                   ...variant,
-                  product: { handle: product.handle, title: product.title },
+                  product: { handle: product.handle, title: product.title, tags: product.tags },
                 },
               },
             ];
