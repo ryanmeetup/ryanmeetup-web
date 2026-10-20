@@ -12,24 +12,38 @@ import {
   SearchInput,
   toast,
 } from "@ryanmeetup/ui";
+import type { IconType } from "react-icons";
 import {
+  FiAlertCircle,
   FiAlertTriangle,
+  FiCalendar,
+  FiHash,
+  FiInbox,
   FiLink,
+  FiList,
   FiMail,
+  FiPhone,
+  FiPhoneOutgoing,
   FiSend,
   FiSettings,
   FiUpload,
+  FiZap,
 } from "react-icons/fi";
-import { CountBadge, WorkspacePageShell } from "@/components/global";
+import {
+  CountBadge,
+  MetricLinkCard,
+  WorkspacePageShell,
+} from "@/components/global";
 import { mutate, parseMutationResponse } from "@/lib/mutation-client";
 import { errorMessage } from "@/lib/presentation";
-import { RYD_STATUS_LABELS } from "@/lib/ryd/orders";
+import { RYD_STATUS_LABELS, type RydOrderStatus } from "@/lib/ryd/orders";
 import type { RydQueue, RydQueueOrder } from "@/lib/ryd/queue-types";
 import {
   followUpOrders,
   orderSearchText,
   RYD_STATUS_PARAMS,
   rydCounts,
+  type RydStatusParam,
   rydStatusParam,
   rydView,
   unmatchedSubmitters,
@@ -42,7 +56,13 @@ import {
   RydUploadDialog,
 } from "./RydDialogs";
 import { RydOrderDialog } from "./RydOrderDialog";
-import { RydConfidenceChip, RydStatusChip } from "./RydStatusChip";
+import {
+  RYD_STATUS_ICONS,
+  RYD_STATUS_RAILS,
+  RYD_STATUS_TONES,
+  RydConfidenceChip,
+  RydStatusChip,
+} from "./RydStatusChip";
 import { RydSubmissionCard } from "./RydSubmissionCard";
 
 const GOOGLE_MESSAGES: Record<string, [ok: boolean, message: string]> = {
@@ -67,6 +87,45 @@ const VIEW_LABELS: Record<RydView, string> = {
   unmatched: "Unmatched submissions",
 };
 
+const VIEW_ICONS: Record<RydView, IconType> = {
+  queue: FiList,
+  "follow-up": FiPhoneOutgoing,
+  unmatched: FiInbox,
+};
+
+/** The stat cards double as the status filter, in this order. */
+const STAT_CARDS: {
+  status: RydOrderStatus;
+  param: RydStatusParam;
+  label: string;
+  mobileLabel: string;
+}[] = [
+  {
+    status: "pending",
+    param: "pending",
+    label: RYD_STATUS_LABELS.pending,
+    mobileLabel: "Pending",
+  },
+  {
+    status: "needs_info",
+    param: "needs-info",
+    label: RYD_STATUS_LABELS.needs_info,
+    mobileLabel: "Needs info",
+  },
+  {
+    status: "verified",
+    param: "verified",
+    label: "Verified, not sent",
+    mobileLabel: "Verified",
+  },
+  {
+    status: "rejected",
+    param: "rejected",
+    label: RYD_STATUS_LABELS.rejected,
+    mobileLabel: "Rejected",
+  },
+];
+
 const STATUS_OPTIONS = Object.keys(RYD_STATUS_PARAMS).map((value) => {
   const status = RYD_STATUS_PARAMS[value as keyof typeof RYD_STATUS_PARAMS];
   return {
@@ -77,9 +136,26 @@ const STATUS_OPTIONS = Object.keys(RYD_STATUS_PARAMS).map((value) => {
 
 function matchSummary(order: RydQueueOrder) {
   if (order.linkedKeys.length)
-    return `Linked to ${order.linkedKeys.length} form submission${order.linkedKeys.length === 1 ? "" : "s"}`;
-  if (order.suggestion) return order.suggestion.reasons.join(" · ");
-  return "No form submission found";
+    return {
+      icon: FiLink,
+      className: "text-emerald-700 dark:text-emerald-300",
+      text: `Linked to ${order.linkedKeys.length} form submission${order.linkedKeys.length === 1 ? "" : "s"}`,
+    };
+  if (order.suggestion)
+    return {
+      icon: FiZap,
+      className: "text-black/70 dark:text-white/70",
+      text: order.suggestion.reasons.join(" · "),
+    };
+  return {
+    icon: FiAlertCircle,
+    className: "text-amber-800 dark:text-amber-200",
+    text: "No form submission found",
+  };
+}
+
+function prefersPhone(order: RydQueueOrder) {
+  return /phone|text|call|sms/i.test(order.contactMethod);
 }
 
 type Dialog = "upload" | "send" | "settings" | null;
@@ -109,6 +185,13 @@ export function RydPageClient({
   const [linking, setLinking] = useState<string | null>(null);
   const view = rydView(viewParam);
   const status = rydStatusParam(statusParam);
+
+  // Clicking a card shows that status; clicking it again shows every order.
+  function filterByStatus(param: RydStatusParam) {
+    const next = view === "queue" && status === param ? "all" : param;
+    setViewParam("");
+    setStatusParam(next === "pending" ? "" : next);
+  }
 
   const refresh = useCallback(async () => {
     const response = await fetch("/api/ryd", { cache: "no-store" });
@@ -295,23 +378,27 @@ export function RydPageClient({
               </div>
             )}
 
-            <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              {(["pending", "needs_info", "verified", "rejected"] as const).map(
-                (key) => (
-                  <div
-                    key={key}
-                    className="rounded-2xl border border-black/10 p-4 dark:border-white/10"
-                  >
-                    <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-black/70 dark:text-white/70">
-                      {key === "verified"
-                        ? "Verified, not sent"
-                        : RYD_STATUS_LABELS[key]}
-                    </dt>
-                    <dd className="mt-1 font-cooper text-3xl">{counts[key]}</dd>
-                  </div>
-                ),
-              )}
-            </dl>
+            <div
+              className="grid grid-cols-2 gap-3 lg:grid-cols-4"
+              role="group"
+              aria-label="Filter by status"
+            >
+              {STAT_CARDS.map((card) => {
+                const Icon = RYD_STATUS_ICONS[card.status];
+                return (
+                  <MetricLinkCard
+                    key={card.status}
+                    icon={<Icon aria-hidden />}
+                    label={card.label}
+                    mobileLabel={card.mobileLabel}
+                    tone={RYD_STATUS_TONES[card.status]}
+                    value={counts[card.status]}
+                    active={view === "queue" && status === card.param}
+                    onClick={() => filterByStatus(card.param)}
+                  />
+                );
+              })}
+            </div>
             {queue.lastBatch && (
               <p className="text-sm text-black/70 dark:text-white/70">
                 Last sent {new Date(queue.lastBatch.sentAt).toLocaleString()}
@@ -329,20 +416,25 @@ export function RydPageClient({
               role="group"
               aria-label="View"
             >
-              {(Object.keys(VIEW_LABELS) as RydView[]).map((key) => (
-                <FilterChip
-                  key={key}
-                  active={view === key}
-                  onClick={() => setViewParam(key === "queue" ? "" : key)}
-                >
-                  {VIEW_LABELS[key]}{" "}
-                  {key === "follow-up"
-                    ? followUp.length
-                    : key === "unmatched"
-                      ? unmatched.length
-                      : ""}
-                </FilterChip>
-              ))}
+              {(Object.keys(VIEW_LABELS) as RydView[]).map((key) => {
+                const Icon = VIEW_ICONS[key];
+                return (
+                  <FilterChip
+                    key={key}
+                    active={view === key}
+                    onClick={() => setViewParam(key === "queue" ? "" : key)}
+                    className="inline-flex items-center gap-1.5"
+                  >
+                    <Icon aria-hidden className="h-3 w-3" />
+                    {VIEW_LABELS[key]}{" "}
+                    {key === "follow-up"
+                      ? followUp.length
+                      : key === "unmatched"
+                        ? unmatched.length
+                        : ""}
+                  </FilterChip>
+                );
+              })}
             </div>
 
             {view === "unmatched" ? (
@@ -428,81 +520,107 @@ export function RydPageClient({
                     />
                   ) : (
                     <ul className="space-y-3">
-                      {filtered.map((order) => (
-                        <li
-                          key={order.orderId}
-                          className="flex flex-col gap-3 rounded-2xl border border-black/10 bg-black/[0.02] p-4 sm:flex-row sm:items-center sm:justify-between dark:border-white/10 dark:bg-white/[0.03]"
-                        >
-                          <div className="min-w-0 space-y-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="font-semibold">
-                                {order.firstName} {order.lastName}
-                              </span>
-                              <RydStatusChip status={order.status} />
-                              {!order.linkedKeys.length && order.suggestion && (
-                                <RydConfidenceChip
-                                  confidence={order.suggestion.confidence}
-                                />
+                      {filtered.map((order) => {
+                        const match = matchSummary(order);
+                        const MatchIcon = match.icon;
+                        const ContactIcon = prefersPhone(order)
+                          ? FiPhone
+                          : FiMail;
+                        return (
+                          <li
+                            key={order.orderId}
+                            className={`flex flex-col gap-3 rounded-2xl border border-l-4 border-black/10 bg-black/[0.02] p-4 sm:flex-row sm:items-center sm:justify-between dark:border-white/10 dark:bg-white/[0.03] ${RYD_STATUS_RAILS[order.status]}`}
+                          >
+                            <div className="min-w-0 space-y-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="font-semibold">
+                                  {order.firstName} {order.lastName}
+                                </span>
+                                <RydStatusChip status={order.status} />
+                                {!order.linkedKeys.length &&
+                                  order.suggestion && (
+                                    <RydConfidenceChip
+                                      confidence={order.suggestion.confidence}
+                                    />
+                                  )}
+                              </div>
+                              <p className="break-all text-sm text-black/70 dark:text-white/70">
+                                {order.displayEmail}
+                              </p>
+                              <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-semibold uppercase tracking-[0.14em] text-black/60 dark:text-white/60">
+                                <span className="inline-flex items-center gap-1">
+                                  <FiHash aria-hidden className="shrink-0" />
+                                  {order.orderId}
+                                </span>
+                                <span className="inline-flex items-center gap-1">
+                                  <FiCalendar
+                                    aria-hidden
+                                    className="shrink-0"
+                                  />
+                                  {order.orderedAt || "No date"}
+                                </span>
+                                <span className="inline-flex items-center gap-1">
+                                  <ContactIcon
+                                    aria-hidden
+                                    className="shrink-0"
+                                  />
+                                  Prefers{" "}
+                                  {order.contactMethod.toLowerCase() || "email"}
+                                </span>
+                              </p>
+                              <p
+                                className={`flex items-center gap-1.5 text-sm font-medium ${match.className}`}
+                              >
+                                <MatchIcon aria-hidden className="shrink-0" />
+                                {match.text}
+                              </p>
+                              {order.note && (
+                                <p className="text-sm italic text-black/70 dark:text-white/70">
+                                  {order.note}
+                                </p>
+                              )}
+                              {view === "follow-up" && order.lastEmailedAt && (
+                                <p className="text-xs text-black/60 dark:text-white/60">
+                                  Emailed{" "}
+                                  {new Date(
+                                    order.lastEmailedAt,
+                                  ).toLocaleString()}
+                                </p>
                               )}
                             </div>
-                            <p className="break-all text-sm text-black/70 dark:text-white/70">
-                              {order.displayEmail}
-                            </p>
-                            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-black/55 dark:text-white/55">
-                              #{order.orderId} · {order.orderedAt || "No date"}{" "}
-                              · prefers{" "}
-                              {order.contactMethod.toLowerCase() || "email"}
-                            </p>
-                            <p className="flex items-center gap-1.5 text-sm text-black/70 dark:text-white/70">
-                              {order.linkedKeys.length > 0 && (
-                                <FiLink aria-hidden className="shrink-0" />
-                              )}
-                              {matchSummary(order)}
-                            </p>
-                            {order.note && (
-                              <p className="text-sm italic text-black/70 dark:text-white/70">
-                                {order.note}
-                              </p>
-                            )}
-                            {view === "follow-up" && order.lastEmailedAt && (
-                              <p className="text-xs text-black/60 dark:text-white/60">
-                                Emailed{" "}
-                                {new Date(order.lastEmailedAt).toLocaleString()}
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
-                            {view === "follow-up" &&
-                              order.status !== "rejected" && (
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="ghost"
-                                  className="w-full sm:w-auto"
-                                  leftIcon={<FiMail aria-hidden />}
-                                  disabled={
-                                    !emailConfigured || emailing !== null
-                                  }
-                                  loading={emailing === order.orderId}
-                                  onClick={() => emailBuyer(order)}
-                                >
-                                  {order.lastEmailedAt
-                                    ? "Email again"
-                                    : "Email"}
-                                </Button>
-                              )}
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="secondary"
-                              className="w-full sm:w-auto"
-                              onClick={() => setOpenOrderId(order.orderId)}
-                            >
-                              Review
-                            </Button>
-                          </div>
-                        </li>
-                      ))}
+                            <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+                              {view === "follow-up" &&
+                                order.status !== "rejected" && (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="ghost"
+                                    className="w-full sm:w-auto"
+                                    leftIcon={<FiMail aria-hidden />}
+                                    disabled={
+                                      !emailConfigured || emailing !== null
+                                    }
+                                    loading={emailing === order.orderId}
+                                    onClick={() => emailBuyer(order)}
+                                  >
+                                    {order.lastEmailedAt
+                                      ? "Email again"
+                                      : "Email"}
+                                  </Button>
+                                )}
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                className="w-full sm:w-auto"
+                                onClick={() => setOpenOrderId(order.orderId)}
+                              >
+                                Review
+                              </Button>
+                            </div>
+                          </li>
+                        );
+                      })}
                     </ul>
                   )}
                 </PendingResults>
