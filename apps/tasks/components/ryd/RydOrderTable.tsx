@@ -23,7 +23,6 @@ import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 import type { RydSort, RydSortKey } from "@/lib/ryd/queue-view";
 import {
   prefersPhone,
-  RYD_STATUS_RAILS,
   rydMatchEvidence,
   RydMatchChip,
   RydRyanPositionChip,
@@ -153,7 +152,7 @@ function SortHeader({
 
 /**
  * The queue as one dense table, for working down a long list. It carries the
- * same status rail, chips, and actions as the cards, one row per order.
+ * same chips and actions as the cards, one row per order.
  */
 export function RydOrderTable({
   orders,
@@ -235,9 +234,7 @@ export function RydOrderTable({
                   key={order.orderId}
                   className="transition hover:bg-black/[0.025] dark:hover:bg-white/[0.025]"
                 >
-                  <td
-                    className={`border-l-4 px-4 py-2.5 ${RYD_STATUS_RAILS[order.status]}`}
-                  >
+                  <td className="px-4 py-2.5">
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                       <button
                         type="button"

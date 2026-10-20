@@ -50,14 +50,6 @@ export const RYD_STATUS_TEXT: Record<RydOrderStatus, string> = {
   rejected: "text-red-700 dark:text-red-300",
 };
 
-/** The left rail on an order row, so a long list sorts itself by eye. */
-export const RYD_STATUS_RAILS: Record<RydOrderStatus, string> = {
-  pending: "border-l-blue-500 dark:border-l-blue-400",
-  needs_info: "border-l-amber-500 dark:border-l-amber-400",
-  verified: "border-l-emerald-500 dark:border-l-emerald-400",
-  rejected: "border-l-red-500 dark:border-l-red-400",
-};
-
 const CHIP =
   "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-sans text-[11px] font-semibold normal-case tracking-normal";
 
