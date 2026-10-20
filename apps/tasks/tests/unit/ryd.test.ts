@@ -12,7 +12,12 @@ import {
   parseSocialLinks,
 } from "@/lib/ryd/normalize";
 import { parseRydOrderCsv, rydOrderExportCsv } from "@/lib/ryd/orders";
-import { parseRydSubmissions } from "@/lib/ryd/submissions";
+import {
+  formIdFrom,
+  parseRydFormResponses,
+  sheetSerial,
+} from "@/lib/ryd/form-responses";
+import { rydSheetColumns } from "@/lib/ryd/sheet-columns";
 
 // Synthetic rows shaped like the fulfillment export. No real customer appears.
 const ORDER_CSV = [
@@ -26,14 +31,14 @@ const ORDER_CSV = [
 function submission(overrides: Partial<RydSubmission>): RydSubmission {
   return {
     key: `${overrides.email}|t`,
-    row: 2,
-    submittedAt: "10/14/2026 13:00:00",
+    submittedAt: "10/14/2026, 1:00 PM",
+    submittedAtIso: "2026-10-14T17:00:00Z",
     legalName: "Ryan Example",
     email: "ryan.example@test.dev",
     fileIds: [],
     socialText: "",
     socialLinks: [],
-    verified: false,
+    otherAnswers: [],
     ...overrides,
   };
 }
@@ -257,36 +262,122 @@ describe("matching", () => {
   });
 });
 
-describe("parseRydSubmissions", () => {
-  it("finds the form's columns by question text", () => {
-    const parsed = parseRydSubmissions([
-      [
+describe("parseRydFormResponses", () => {
+  const form = {
+    linkedSheetId: "sheet-id",
+    items: [
+      {
+        title: "What is your legal name?",
+        questionItem: { question: { questionId: "q-name" } },
+      },
+      {
+        title: "What is your email address?",
+        questionItem: { question: { questionId: "q-email" } },
+      },
+      {
+        title: "Upload any files that may aid in your ry-dentification here",
+        questionItem: {
+          question: { questionId: "q-files", fileUploadQuestion: {} },
+        },
+      },
+      {
+        title: "Or paste links to social media here",
+        questionItem: { question: { questionId: "q-social" } },
+      },
+      // A question added to the form later: shown, never dropped.
+      {
+        title: "Which chapter do you go to?",
+        questionItem: { question: { questionId: "q-new" } },
+      },
+      { title: "A section header with no question" },
+    ],
+  };
+  const response = {
+    responseId: "resp-1",
+    lastSubmittedTime: "2026-10-15T04:03:30.123Z",
+    answers: {
+      "q-name": { textAnswers: { answers: [{ value: "Ryan  Example" }] } },
+      "q-email": {
+        textAnswers: { answers: [{ value: "Ryan.Example@Test.dev " }] },
+      },
+      "q-files": {
+        fileUploadAnswers: {
+          answers: [{ fileId: "1abcdefghijk" }, { fileId: "2abcdefghijk" }],
+        },
+      },
+      "q-social": { textAnswers: { answers: [{ value: "IG @ryanex" }] } },
+      "q-new": {
+        textAnswers: { answers: [{ value: "Detroit, find me at @ryandet" }] },
+      },
+    },
+  };
+
+  it("reads each answer by what its question asks", () => {
+    const [submission] = parseRydFormResponses(form, [
+      response,
+      { answers: {} },
+    ]);
+    expect(submission).toMatchObject({
+      key: "resp-1",
+      legalName: "Ryan Example",
+      email: "ryan.example@test.dev",
+      fileIds: ["1abcdefghijk", "2abcdefghijk"],
+      submittedAtIso: "2026-10-15T04:03:30.123Z",
+      submittedAt: "10/15/2026, 12:03 AM",
+      otherAnswers: [
+        {
+          question: "Which chapter do you go to?",
+          answer: "Detroit, find me at @ryandet",
+        },
+      ],
+    });
+    expect(submission.socialLinks.map((link) => link.handle)).toEqual(
+      expect.arrayContaining(["ryanex", "ryandet"]),
+    );
+  });
+
+  it("falls back to the address the form collected itself", () => {
+    const [submission] = parseRydFormResponses(
+      { items: form.items.filter((item) => !item.title?.includes("email")) },
+      [{ ...response, respondentEmail: "Signed.In@test.dev" }],
+    );
+    expect(submission.email).toBe("signed.in@test.dev");
+  });
+});
+
+describe("response sheet lookup", () => {
+  it("counts days as the sheet does, in the sheet's own zone", () => {
+    // 10/15/2026 0:03:30 in New York, as the sheet's Timestamp column holds it.
+    const expected = Date.UTC(2026, 9, 15, 0, 3, 30) / 86_400_000 + 25_569;
+    expect(sheetSerial("2026-10-15T04:03:30Z", "America/New_York")).toBeCloseTo(
+      expected,
+      8,
+    );
+  });
+
+  it("finds the columns it writes by header", () => {
+    expect(
+      rydSheetColumns([
         "Timestamp",
         "What is your legal name?",
         "What is your email address?",
-        "Upload any files that may aid in your ry-dentification here",
-        "Or paste links to social media here",
+        5,
         "Verified?",
-      ],
-      [
-        "10/14/2026 13:05:54",
-        "Ryan  Example",
-        "Ryan.Example@test.dev",
-        "https://drive.google.com/open?id=1abcdefghijk",
-        "IG @ryanex",
-        "✅",
-      ],
-      ["", "", "", "", "", ""],
-    ]);
-    expect(parsed?.submissions).toHaveLength(1);
-    expect(parsed?.submissions[0]).toMatchObject({
-      row: 2,
-      legalName: "Ryan Example",
-      email: "ryan.example@test.dev",
-      fileIds: ["1abcdefghijk"],
-      verified: true,
-      key: "ryan.example@test.dev|10/14/2026 13:05:54",
-    });
-    expect(parsed?.columns.verified).toBe(5);
+      ]),
+    ).toEqual({ timestamp: 0, email: 2, verified: 4 });
+  });
+});
+
+describe("formIdFrom", () => {
+  it("takes the editor link or the bare ID, never the public link", () => {
+    const id = "11fyQNBGVKDKGNeD4e1D-Ltaze1epokTuDhg2tqvbW0U";
+    expect(
+      formIdFrom(`https://docs.google.com/forms/d/${id}/edit#responses`),
+    ).toBe(id);
+    expect(formIdFrom(id)).toBe(id);
+    expect(
+      formIdFrom("https://docs.google.com/forms/d/e/1FAIpQLSexample/viewform"),
+    ).toBeNull();
+    expect(formIdFrom("not a form")).toBeNull();
   });
 });

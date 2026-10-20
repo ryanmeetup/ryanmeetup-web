@@ -4,7 +4,7 @@ import { databaseFailure } from "@/lib/server/api-response";
 import { readJson } from "@/lib/server/request";
 import { loadRydSettings, rydContext } from "@/lib/server/ryd";
 
-/** Which sheet holds the form responses, and who receives the finished file. */
+/** Which form buyers verify through, and who receives the finished file. */
 export async function PATCH(request: Request) {
   const parsed = await readJson(request, rydSettingsSchema);
   if ("response" in parsed) return parsed.response;
@@ -16,8 +16,7 @@ export async function PATCH(request: Request) {
     updated_at: new Date().toISOString(),
     updated_by: context.user.id,
   };
-  if (parsed.data.formSheetId !== undefined)
-    row.form_sheet_id = parsed.data.formSheetId;
+  if (parsed.data.formId !== undefined) row.form_id = parsed.data.formId;
   if (parsed.data.fulfillmentEmail !== undefined)
     row.fulfillment_email = parsed.data.fulfillmentEmail;
   const result = await context.admin.from("ryd_settings").upsert(row);

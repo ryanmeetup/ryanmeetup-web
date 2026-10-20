@@ -88,11 +88,11 @@ export async function loadRydSettings(
 ): Promise<RydSettings> {
   const result = await admin
     .from("ryd_settings")
-    .select("form_sheet_id, fulfillment_email")
+    .select("form_id, fulfillment_email")
     .maybeSingle();
   if (result.error) throw result.error;
   return {
-    formSheetId: result.data?.form_sheet_id ?? null,
+    formId: result.data?.form_id ?? null,
     fulfillmentEmail: result.data?.fulfillment_email ?? null,
   };
 }
@@ -103,21 +103,21 @@ async function loadSheet(
 ): Promise<{ sheet: RydSheetState; submissions: RydSubmission[] }> {
   if (!integration)
     return { sheet: { status: "disconnected" }, submissions: [] };
-  if (!settings.formSheetId)
+  if (!settings.formId)
     return { sheet: { status: "unconfigured" }, submissions: [] };
   try {
     const { submissions } = await readRydSubmissions(
       integration,
-      settings.formSheetId,
+      settings.formId,
     );
     return {
       sheet: { status: "ok", accountEmail: integration.account_email },
       submissions,
     };
   } catch (error) {
-    // The queue still works without the sheet: decisions, notes, and the
+    // The queue still works without the form: decisions, notes, and the
     // export only need the orders. The page says why the evidence is missing.
-    console.error("RY-D form sheet could not be read", error);
+    console.error("RY-D form could not be read", error);
     return {
       sheet: {
         status: "error",
@@ -125,7 +125,7 @@ async function loadSheet(
         message:
           error instanceof Error && error.message.startsWith("The ")
             ? error.message
-            : `Google wouldn't share the sheet with ${integration.account_email}. Check the sheet link and that this account can open it.`,
+            : `Google wouldn't share the form's responses with ${integration.account_email}. Check the form link, and that this account owns or can edit the form.`,
       },
       submissions: [],
     };
@@ -136,7 +136,7 @@ const emptyQueue = (installed: boolean): RydQueue => ({
   orders: [],
   submissions: [],
   sheet: { status: "disconnected" },
-  settings: { formSheetId: null, fulfillmentEmail: null },
+  settings: { formId: null, fulfillmentEmail: null },
   clearedCount: 0,
   lastBatch: null,
   installed,
@@ -548,20 +548,22 @@ export async function sendRydBatch(admin: SupabaseClient, user: User) {
 
   let sheetTicks: number | null = null;
   const integration = await loadRydGoogleIntegration().catch(() => null);
-  if (integration && settings.formSheetId && exported.verifiedIds.length) {
+  if (integration && settings.formId && exported.verifiedIds.length) {
     const links = await admin
       .from("ryd_order_submissions")
       .select("submission_key")
       .in("order_id", exported.verifiedIds);
     if (!links.error) {
       try {
+        const keys = new Set(links.data.map((link) => link.submission_key));
+        const form = await readRydSubmissions(integration, settings.formId);
         sheetTicks = await markRydSubmissionsVerified(
           integration,
-          settings.formSheetId,
-          new Set(links.data.map((link) => link.submission_key)),
+          form.linkedSheetId,
+          form.submissions.filter((submission) => keys.has(submission.key)),
         );
       } catch (error) {
-        console.error("RY-D form sheet could not be ticked", error);
+        console.error("RY-D response sheet could not be ticked", error);
       }
     }
   }

@@ -1,6 +1,14 @@
 import "server-only";
 
-import { parseRydSubmissions } from "@/lib/ryd/submissions";
+import {
+  parseRydFormResponses,
+  sheetSerial,
+  type GoogleForm,
+  type GoogleFormResponse,
+} from "@/lib/ryd/form-responses";
+import type { RydSubmission } from "@/lib/ryd/matching";
+import { normalizeEmail } from "@/lib/ryd/normalize";
+import { rydSheetColumns } from "@/lib/ryd/sheet-columns";
 import { getAdminClient } from "./admin-client";
 import {
   createGoogleOAuthRequest,
@@ -15,8 +23,9 @@ import {
 /**
  * The Google account that owns the RY-dentification form. It is a separate
  * connection from the workspace calendar: the form's owner is often not the
- * calendar's, and this one needs to read the response sheet, tick its
- * `Verified?` column, and open the files people uploaded through the form.
+ * calendar's, and this one needs to read the form and its responses, open the
+ * files people uploaded through it, and tick `Verified?` in the form's linked
+ * response sheet.
  *
  * `drive.readonly` is a restricted scope. Keep the OAuth client in Testing (or
  * Internal) with the form owner listed as a test user; publishing it would
@@ -25,6 +34,8 @@ import {
 const SCOPES = [
   "openid",
   "email",
+  "https://www.googleapis.com/auth/forms.body.readonly",
+  "https://www.googleapis.com/auth/forms.responses.readonly",
   "https://www.googleapis.com/auth/spreadsheets",
   "https://www.googleapis.com/auth/drive.readonly",
 ] as const;
@@ -32,7 +43,8 @@ const SCOPES = [
 export const RYD_GOOGLE_CALLBACK = "/api/integrations/ryd-google/callback";
 export const RYD_GOOGLE_COOKIE = "tasks_ryd_google_oauth";
 export const RYD_GOOGLE_INTEGRATION_ID = "ryd_google";
-const SERVICE = "Google Sheets";
+const SERVICE = "Google Forms";
+const FORMS_URL = "https://forms.googleapis.com/v1/forms";
 const SHEETS_URL = "https://sheets.googleapis.com/v4/spreadsheets";
 const DRIVE_URL = "https://www.googleapis.com/drive/v3/files";
 
@@ -109,43 +121,53 @@ function token(connection: RydGoogleIntegrationRow) {
   return googleAccessToken(connection.encrypted_refresh_token, SERVICE);
 }
 
-type SheetValues = { values?: string[][] };
-type SpreadsheetMeta = { sheets?: { properties?: { title?: string } }[] };
+type ResponsePage = {
+  responses?: GoogleFormResponse[];
+  nextPageToken?: string;
+};
 
-/** The responses tab is the first one: Forms always writes there. */
-async function firstSheetTitle(accessToken: string, spreadsheetId: string) {
-  const meta = await googleJson<SpreadsheetMeta>(
-    `${SHEETS_URL}/${encodeURIComponent(spreadsheetId)}?fields=sheets.properties.title`,
-    { headers: { Authorization: `Bearer ${accessToken}` } },
-    SERVICE,
-  );
-  const title = meta.sheets?.[0]?.properties?.title;
-  if (!title) throw new Error("The RY-dentification sheet has no tabs.");
-  return title;
+async function readForm(accessToken: string, formId: string) {
+  const headers = { Authorization: `Bearer ${accessToken}` };
+  const base = `${FORMS_URL}/${encodeURIComponent(formId)}`;
+  const form = await googleJson<GoogleForm>(base, { headers }, SERVICE);
+  const responses: GoogleFormResponse[] = [];
+  let pageToken: string | undefined;
+  do {
+    const url = new URL(`${base}/responses`);
+    url.searchParams.set("pageSize", "5000");
+    if (pageToken) url.searchParams.set("pageToken", pageToken);
+    const page = await googleJson<ResponsePage>(
+      url.toString(),
+      { headers },
+      SERVICE,
+    );
+    responses.push(...(page.responses ?? []));
+    pageToken = page.nextPageToken;
+  } while (pageToken);
+  return { form, responses };
 }
+
+/** Every response to the form, live. Nothing from Google is stored. */
+export async function readRydSubmissions(
+  connection: RydGoogleIntegrationRow,
+  formId: string,
+) {
+  const { form, responses } = await readForm(await token(connection), formId);
+  return {
+    submissions: parseRydFormResponses(form, responses),
+    title:
+      form.info?.title || form.info?.documentTitle || "RY-dentification form",
+    linkedSheetId: form.linkedSheetId ?? null,
+  };
+}
+
+type SpreadsheetMeta = {
+  properties?: { timeZone?: string };
+  sheets?: { properties?: { title?: string } }[];
+};
 
 function a1Sheet(title: string) {
   return `'${title.replace(/'/g, "''")}'`;
-}
-
-/** Read every form response, live. Nothing from the sheet is stored. */
-export async function readRydSubmissions(
-  connection: RydGoogleIntegrationRow,
-  spreadsheetId: string,
-) {
-  const accessToken = await token(connection);
-  const title = await firstSheetTitle(accessToken, spreadsheetId);
-  const sheet = await googleJson<SheetValues>(
-    `${SHEETS_URL}/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(a1Sheet(title))}?valueRenderOption=FORMATTED_VALUE`,
-    { headers: { Authorization: `Bearer ${accessToken}` } },
-    SERVICE,
-  );
-  const parsed = parseRydSubmissions(sheet.values ?? []);
-  if (!parsed)
-    throw new Error(
-      "The first tab of that sheet doesn't look like the RY-dentification form responses.",
-    );
-  return { ...parsed, sheetTitle: title };
 }
 
 function columnLetter(index: number) {
@@ -156,46 +178,79 @@ function columnLetter(index: number) {
 }
 
 /**
- * Tick `Verified?` on the given sheet rows. Rows are re-read immediately
- * before writing, by submission key, so a sheet sorted since the page loaded
- * still gets the tick on the right person.
+ * Tick `Verified?` in the form's linked response sheet for these
+ * submissions. The sheet carries no response IDs, so each response is found
+ * by its submission time (to the second, in the sheet's zone) and, where the
+ * sheet has one, its email. Returns how many cells were written, or null when
+ * the form has no linked sheet or the sheet has no `Verified?` column.
  */
 export async function markRydSubmissionsVerified(
   connection: RydGoogleIntegrationRow,
-  spreadsheetId: string,
-  submissionKeys: ReadonlySet<string>,
+  linkedSheetId: string | null,
+  submissions: RydSubmission[],
 ) {
-  if (!submissionKeys.size) return 0;
-  const { columns, submissions, sheetTitle } = await readRydSubmissions(
-    connection,
-    spreadsheetId,
-  );
-  if (columns.verified < 0) return 0;
-  const rows = submissions.filter(
-    (submission) => submissionKeys.has(submission.key) && !submission.verified,
-  );
-  if (!rows.length) return 0;
+  if (!linkedSheetId) return null;
+  if (!submissions.length) return 0;
   const accessToken = await token(connection);
-  const column = columnLetter(columns.verified);
+  const headers = { Authorization: `Bearer ${accessToken}` };
+  const sheetUrl = `${SHEETS_URL}/${encodeURIComponent(linkedSheetId)}`;
+  const meta = await googleJson<SpreadsheetMeta>(
+    `${sheetUrl}?fields=properties.timeZone,sheets.properties.title`,
+    { headers },
+    "Google Sheets",
+  );
+  // Forms writes its responses to the first tab.
+  const title = meta.sheets?.[0]?.properties?.title;
+  const timeZone = meta.properties?.timeZone ?? "America/New_York";
+  if (!title) return null;
+  const values = await googleJson<{ values?: unknown[][] }>(
+    `${sheetUrl}/values/${encodeURIComponent(a1Sheet(title))}?valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=SERIAL_NUMBER`,
+    { headers },
+    "Google Sheets",
+  );
+  const [headerRow = [], ...rows] = values.values ?? [];
+  const columns = rydSheetColumns(headerRow);
+  if (columns.verified < 0 || columns.timestamp < 0) return null;
+
+  const oneSecond = 1 / 86_400;
+  const cells: string[] = [];
+  for (const submission of submissions) {
+    if (!submission.submittedAtIso) continue;
+    const serial = sheetSerial(submission.submittedAtIso, timeZone);
+    const index = rows.findIndex((row) => {
+      const stamp = row[columns.timestamp];
+      if (
+        typeof stamp !== "number" ||
+        Math.abs(stamp - serial) > oneSecond * 1.5
+      )
+        return false;
+      const email = columns.email < 0 ? "" : row[columns.email];
+      return (
+        typeof email !== "string" ||
+        !email ||
+        normalizeEmail(email) === submission.email
+      );
+    });
+    if (index < 0) continue;
+    if (String(rows[index][columns.verified] ?? "").includes("✅")) continue;
+    cells.push(
+      `${a1Sheet(title)}!${columnLetter(columns.verified)}${index + 2}`,
+    );
+  }
+  if (!cells.length) return 0;
   await googleJson(
-    `${SHEETS_URL}/${encodeURIComponent(spreadsheetId)}/values:batchUpdate`,
+    `${sheetUrl}/values:batchUpdate`,
     {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
+      headers: { ...headers, "Content-Type": "application/json" },
       body: JSON.stringify({
         valueInputOption: "RAW",
-        data: rows.map((row) => ({
-          range: `${a1Sheet(sheetTitle)}!${column}${row.row}`,
-          values: [["✅"]],
-        })),
+        data: cells.map((range) => ({ range, values: [["✅"]] })),
       }),
     },
-    SERVICE,
+    "Google Sheets",
   );
-  return rows.length;
+  return cells.length;
 }
 
 const INLINE_TYPES =

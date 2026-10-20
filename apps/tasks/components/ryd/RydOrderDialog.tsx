@@ -101,7 +101,7 @@ export function RydOrderDialog({
       status,
       async () => {
         // Verifying from a suggestion accepts it: the pairing is what lets
-        // the send step tick the right rows in the form sheet.
+        // the send step tick the right rows in the response sheet.
         if (status === "verified" && !shown.linked)
           for (const submission of shown.submissions)
             await link(submission.key, "suggested");
@@ -252,8 +252,8 @@ export function RydOrderDialog({
             <p className="flex items-center gap-2 text-sm text-black/70 dark:text-white/70">
               <FiAlertTriangle aria-hidden className="shrink-0" />
               {shown.missing === 1
-                ? "A linked submission is no longer in the sheet."
-                : `${shown.missing} linked submissions are no longer in the sheet.`}
+                ? "A linked submission is no longer in the form."
+                : `${shown.missing} linked submissions are no longer in the form.`}
             </p>
           )}
 

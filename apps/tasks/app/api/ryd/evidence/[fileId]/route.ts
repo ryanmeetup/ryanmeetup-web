@@ -24,11 +24,11 @@ export async function GET(
     loadRydSettings(context.admin),
     loadRydGoogleIntegration(),
   ]);
-  if (!integration || !settings.formSheetId) return notFound();
+  if (!integration || !settings.formId) return notFound();
   try {
     const { submissions } = await readRydSubmissions(
       integration,
-      settings.formSheetId,
+      settings.formId,
     );
     if (!submissions.some((submission) => submission.fileIds.includes(fileId)))
       return notFound();

@@ -4,7 +4,8 @@ import type { RydOrderStatus } from "./orders";
 /** What the RY-D page receives from the server, and re-reads after each change. */
 
 export type RydSettings = {
-  formSheetId: string | null;
+  /** The RY-dentification form's ID, from its editor link. */
+  formId: string | null;
   fulfillmentEmail: string | null;
 };
 

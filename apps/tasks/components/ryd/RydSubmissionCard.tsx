@@ -2,7 +2,6 @@
 
 import { useState, type ReactNode } from "react";
 import {
-  FiCheckCircle,
   FiExternalLink,
   FiFacebook,
   FiFile,
@@ -93,12 +92,6 @@ export function RydSubmissionCard({
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          {submission.verified && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-black/10 px-2.5 py-0.5 text-[11px] font-semibold text-black/70 dark:border-white/10 dark:text-white/70">
-              <FiCheckCircle aria-hidden />
-              Ticked in the sheet
-            </span>
-          )}
           {action}
         </div>
       </div>
@@ -136,11 +129,27 @@ export function RydSubmissionCard({
         </blockquote>
       )}
 
+      {submission.otherAnswers.length > 0 && (
+        <dl className="mt-4 space-y-3 border-t border-black/10 pt-4 dark:border-white/10">
+          {submission.otherAnswers.map((entry) => (
+            <div key={entry.question}>
+              <dt className="text-xs font-semibold uppercase tracking-[0.16em] text-black/60 dark:text-white/60">
+                {entry.question}
+              </dt>
+              <dd className="mt-1 whitespace-pre-line break-words text-sm">
+                {entry.answer}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      )}
+
       {!submission.fileIds.length &&
         !submission.socialLinks.length &&
-        !note && (
+        !note &&
+        !submission.otherAnswers.length && (
           <p className="mt-3 text-sm text-black/70 dark:text-white/70">
-            No files or links in this submission.
+            No files, links, or other answers in this submission.
           </p>
         )}
     </article>

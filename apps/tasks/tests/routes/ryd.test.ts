@@ -148,7 +148,7 @@ describe("RY-D routes", () => {
     getAdminClient.mockReturnValue(
       admin({
         ryd_settings: table({
-          data: { form_sheet_id: "s".repeat(30), fulfillment_email: null },
+          data: { form_id: "f".repeat(30), fulfillment_email: null },
           error: null,
         }),
       }),

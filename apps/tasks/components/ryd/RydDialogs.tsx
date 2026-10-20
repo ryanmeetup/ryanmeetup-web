@@ -151,7 +151,7 @@ export function RydSendDialog({
       toast.success(
         `Sent ${result.orderCount} orders to ${recipient}, ${result.verifiedCount} cleared to start.` +
           (result.sheetTicks === null && result.verifiedCount
-            ? " The form sheet couldn't be ticked; tick it by hand."
+            ? " The response sheet couldn't be ticked; tick it by hand if you keep it."
             : ""),
       );
       onClose();
@@ -214,7 +214,7 @@ export function RydSendDialog({
         {recipient ? (
           <>
             Goes to <span className="font-semibold">{recipient}</span>, then the
-            verified buyers are ticked in the form sheet.
+            verified buyers are ticked in the form&apos;s response sheet.
           </>
         ) : (
           "No fulfillment address yet."
@@ -236,9 +236,9 @@ export function RydSettingsDialog({
   onClose: () => void;
   onChanged: () => Promise<void>;
 }) {
-  const [formSheet, setFormSheet] = useState(
-    queue.settings.formSheetId
-      ? `https://docs.google.com/spreadsheets/d/${queue.settings.formSheetId}/edit`
+  const [form, setForm] = useState(
+    queue.settings.formId
+      ? `https://docs.google.com/forms/d/${queue.settings.formId}/edit`
       : "",
   );
   const [fulfillmentEmail, setFulfillmentEmail] = useState(
@@ -256,7 +256,7 @@ export function RydSettingsDialog({
       setIsOpen={(open) => !open && !saving && onClose()}
       size="lg"
       title="RY-D settings"
-      description="Where the form's answers live, and who gets the finished file."
+      description="The form buyers verify through, and who gets the finished file."
       closable={!saving}
       formId={SETTINGS_FORM}
       onSubmit={async (event) => {
@@ -265,7 +265,7 @@ export function RydSettingsDialog({
         try {
           await mutate("/api/ryd/settings", {
             method: "PATCH",
-            body: JSON.stringify({ formSheet, fulfillmentEmail }),
+            body: JSON.stringify({ form, fulfillmentEmail }),
           });
           await onChanged();
           toast.success("RY-D settings saved.");
@@ -274,7 +274,7 @@ export function RydSettingsDialog({
           toast.error(
             errorMessage(
               error,
-              "Check the sheet link and the email address, then try again.",
+              "Use the form's editor link (it has /forms/d/ and no /e/) and a full email address.",
             ),
           );
         } finally {
@@ -297,7 +297,7 @@ export function RydSettingsDialog({
           <p className="mt-1 text-sm text-black/70 dark:text-white/70">
             {connected
               ? `Connected as ${accountEmail}. Sign in again as a different account to switch.`
-              : "Sign in as the account that owns the RY-dentification form, so the app can read its answers, open uploads, and tick Verified?."}
+              : "Sign in as the account that owns the RY-dentification form, so the app can read its responses, open uploads, and tick Verified? in its response sheet."}
           </p>
           <div className="mt-3 flex flex-col gap-2 sm:flex-row">
             {googleConfigured ? (
@@ -346,12 +346,12 @@ export function RydSettingsDialog({
         </section>
 
         <Input
-          name="formSheet"
-          label="Form responses sheet"
+          name="form"
+          label="RY-dentification form"
           required
-          value={formSheet}
-          onChange={(event) => setFormSheet(event.target.value)}
-          placeholder="https://docs.google.com/spreadsheets/d/…"
+          value={form}
+          onChange={(event) => setForm(event.target.value)}
+          placeholder="https://docs.google.com/forms/d/…/edit"
           disabled={saving}
         />
         <Input

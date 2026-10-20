@@ -205,7 +205,7 @@ export function RydPageClient({
       : queue.sheet.status === "error"
         ? queue.sheet.message
         : queue.sheet.status === "unconfigured"
-          ? "Add the form responses sheet in RY-D settings to see what buyers sent."
+          ? "Add the RY-dentification form in RY-D settings to see what buyers sent."
           : isOwner
             ? "Connect the Google account that owns the RY-dentification form to see what buyers sent."
             : "An owner needs to connect the RY-dentification form before submissions show up here.";

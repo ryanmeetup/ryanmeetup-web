@@ -6,28 +6,21 @@ import {
   type SocialLink,
 } from "./normalize";
 
-/** One row of the RY-dentification form, as read from the sheet. */
+/** One response to the RY-dentification form, as read from Google Forms. */
 export type RydSubmission = {
-  /**
-   * Stable identity: normalized email plus the form timestamp. Sheet row
-   * numbers move when someone sorts the sheet; these two never do.
-   */
+  /** The form's response ID: stable across edits to the response. */
   key: string;
-  /** 1-based sheet row, for writing `Verified?` back. Not an identity. */
-  row: number;
+  /** For display, in the workspace's zone. */
   submittedAt: string;
+  submittedAtIso: string;
   legalName: string;
   email: string;
   fileIds: string[];
   socialText: string;
   socialLinks: SocialLink[];
-  /** Already ticked in the sheet. */
-  verified: boolean;
+  /** Answers to questions matching doesn't use, so none of them are hidden. */
+  otherAnswers: { question: string; answer: string }[];
 };
-
-export function rydSubmissionKey(email: string, timestamp: string) {
-  return `${normalizeEmail(email)}|${timestamp.trim()}`;
-}
 
 /**
  * Duplicate submissions from one address are one person answering twice, not

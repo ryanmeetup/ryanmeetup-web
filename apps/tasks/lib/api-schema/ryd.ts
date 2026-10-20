@@ -1,4 +1,5 @@
 import { RYD_ORDER_STATUSES, type RydOrderStatus } from "@/lib/ryd/orders";
+import { formIdFrom } from "@/lib/ryd/form-responses";
 import { isJsonObject } from "./shared";
 
 /** A decision, a note, or both. An empty note clears it. */
@@ -30,28 +31,20 @@ export function rydLinkSchema(value: unknown) {
     : null;
 }
 
-/** The sheet's ID, from either the ID itself or any link to the sheet. */
-export function spreadsheetIdFrom(raw: string) {
-  const value = raw.trim();
-  const fromUrl = value.match(/\/spreadsheets\/d\/([A-Za-z0-9_-]{20,})/)?.[1];
-  const id = fromUrl ?? value;
-  return /^[A-Za-z0-9_-]{20,}$/.test(id) ? id : null;
-}
-
 export function rydSettingsSchema(value: unknown) {
   if (!isJsonObject(value)) return null;
   const keys = Object.keys(value);
   if (
     !keys.length ||
-    keys.some((key) => key !== "formSheet" && key !== "fulfillmentEmail")
+    keys.some((key) => key !== "form" && key !== "fulfillmentEmail")
   )
     return null;
-  const parsed: { formSheetId?: string; fulfillmentEmail?: string } = {};
-  if ("formSheet" in value) {
-    if (typeof value.formSheet !== "string") return null;
-    const id = spreadsheetIdFrom(value.formSheet);
+  const parsed: { formId?: string; fulfillmentEmail?: string } = {};
+  if ("form" in value) {
+    if (typeof value.form !== "string") return null;
+    const id = formIdFrom(value.form);
     if (!id) return null;
-    parsed.formSheetId = id;
+    parsed.formId = id;
   }
   if ("fulfillmentEmail" in value) {
     const email =
