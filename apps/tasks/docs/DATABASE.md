@@ -228,6 +228,28 @@ The fix is the explicit revoke block at the end of the baseline. The lesson is
 that this class of difference is invisible in the SQL and only appears in a
 round-trip diff, so **verification is not optional for schema files**.
 
+### New tables grant nothing
+
+Supabase stopped granting `anon`, `authenticated`, and `service_role` on new
+`public` tables for existing projects on 2026-10-30.
+`20261020000000_explicit_table_grants.sql` drops the same defaults everywhere,
+including a database built from the baseline, which still carries the old ones,
+so a forgotten grant fails on `supabase db reset` exactly as it would in
+production. `supabase/tests/access_control.sql` fails on any public table that
+`service_role` cannot read.
+
+Grant in the migration that creates the table, scoped to who reaches it:
+
+```sql
+grant select, insert, update, delete on table public.example to authenticated;
+grant select, insert, update, delete on table public.example to service_role;
+```
+
+`authenticated` covers the user client under RLS, `service_role` the admin
+client. Grant `anon` only when an unauthenticated visitor genuinely reads the
+table, and narrow `authenticated` to `select` when every write goes through the
+admin client, as `digest_settings` and `digest_runs` do.
+
 ### A comparison trap worth avoiding
 
 PostgREST only advertises what the calling role may execute. Introspecting
@@ -247,7 +269,9 @@ like.
 ## Working on the schema
 
 1. Write a new migration in `supabase/migrations` with a timestamp after the
-   latest one.
+   latest one. A migration that creates a table in `public` also grants it:
+   nothing is granted by default (see "New tables grant nothing" below), so a
+   table without grants answers the Data API with `permission denied`.
 2. `supabase db reset` to apply it from empty, then `supabase db diff --linked`
    to see exactly what it changes relative to production.
 3. Run `npm test`. (`npm run test:e2e` is hermetic and will not exercise it.)

@@ -375,7 +375,9 @@ migration file.
 For a database change:
 
 1. Write a new file in `apps/tasks/supabase/migrations` with a timestamp after
-   the latest one.
+   the latest one. A new `public` table needs explicit `grant` statements in
+   that same file; Supabase no longer grants new tables to the Data API roles.
+   See "New tables grant nothing" in `apps/tasks/docs/DATABASE.md`.
 2. `supabase db reset` to apply it from empty, then
    `supabase db diff --linked --schema public` to see exactly what it changes
    relative to the linked project.
