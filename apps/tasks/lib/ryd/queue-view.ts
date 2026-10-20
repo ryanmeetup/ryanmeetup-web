@@ -111,3 +111,75 @@ export function orderSearchText(order: RydQueueOrder) {
     .join(" ")
     .toLowerCase();
 }
+
+export const RYD_SORT_KEYS = ["name", "status", "form", "ordered"] as const;
+export type RydSortKey = (typeof RYD_SORT_KEYS)[number];
+export type RydSort = { key: RydSortKey; descending: boolean } | null;
+
+/** `?sort=name` or `?sort=name-desc`; anything else keeps the queue's order. */
+export function rydSortParam(value: string): RydSort {
+  const descending = value.endsWith("-desc");
+  const key = descending ? value.slice(0, -"-desc".length) : value;
+  return (RYD_SORT_KEYS as readonly string[]).includes(key)
+    ? { key: key as RydSortKey, descending }
+    : null;
+}
+
+export function rydSortValue(sort: RydSort) {
+  return sort ? `${sort.key}${sort.descending ? "-desc" : ""}` : "";
+}
+
+/** A column's next sort on click: ascending, then descending, then off. */
+export function nextRydSort(sort: RydSort, key: RydSortKey): RydSort {
+  if (sort?.key !== key) return { key, descending: false };
+  return sort.descending ? null : { key, descending: true };
+}
+
+/** The workflow's order, not the alphabet's. */
+const STATUS_RANK: Record<RydOrderStatus, number> = {
+  pending: 0,
+  needs_info: 1,
+  verified: 2,
+  rejected: 3,
+};
+
+/** Surest pairing first: linked, then by confidence, then nothing found. */
+function formRank(order: RydQueueOrder) {
+  if (order.linkedKeys.length) return 0;
+  if (!order.suggestion) return 4;
+  return { strong: 1, possible: 2, weak: 3 }[order.suggestion.confidence];
+}
+
+function orderedTime(order: RydQueueOrder) {
+  const time = Date.parse(order.orderedAt);
+  return Number.isNaN(time) ? Number.POSITIVE_INFINITY : time;
+}
+
+const byName = (a: RydQueueOrder, b: RydQueueOrder) =>
+  a.lastName.localeCompare(b.lastName, undefined, { sensitivity: "base" }) ||
+  a.firstName.localeCompare(b.firstName, undefined, { sensitivity: "base" }) ||
+  a.orderId.localeCompare(b.orderId, undefined, { numeric: true });
+
+const COMPARE: Record<
+  RydSortKey,
+  (a: RydQueueOrder, b: RydQueueOrder) => number
+> = {
+  name: byName,
+  status: (a, b) => STATUS_RANK[a.status] - STATUS_RANK[b.status],
+  form: (a, b) => formRank(a) - formRank(b),
+  ordered: (a, b) =>
+    orderedTime(a) - orderedTime(b) ||
+    a.orderId.localeCompare(b.orderId, undefined, { numeric: true }),
+};
+
+/**
+ * Orders sorted by one column. Ties fall back to name, ascending whichever
+ * way the column runs, so a group of Pending orders still reads A to Z.
+ */
+export function sortRydOrders(orders: RydQueueOrder[], sort: RydSort) {
+  if (!sort) return orders;
+  const direction = sort.descending ? -1 : 1;
+  return [...orders].sort(
+    (a, b) => direction * COMPARE[sort.key](a, b) || byName(a, b),
+  );
+}

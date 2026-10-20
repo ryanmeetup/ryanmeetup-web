@@ -37,7 +37,11 @@ import {
   followUpOrders,
   orderSearchText,
   RYD_STATUS_PARAMS,
+  nextRydSort,
   rydCounts,
+  rydSortParam,
+  rydSortValue,
+  sortRydOrders,
   type RydStatusParam,
   rydStatusParam,
   rydView,
@@ -152,6 +156,7 @@ export function RydPageClient({
   const [viewParam, setViewParam] = useQueryParamState("view");
   const [statusParam, setStatusParam] = useQueryParamState("status");
   const [layoutParam, setLayoutParam] = useQueryParamState("layout");
+  const [sortParam, setSortParam] = useQueryParamState("sort");
   const [openOrderId, setOpenOrderId] = useQueryParamState("order");
   const [googleParam, setGoogleParam] = useQueryParamState("google");
   const [emailing, setEmailing] = useState<string | null>(null);
@@ -159,6 +164,7 @@ export function RydPageClient({
   const view = rydView(viewParam);
   const status = rydStatusParam(statusParam);
   const layout = layoutParam === "cards" ? "cards" : "table";
+  const sort = rydSortParam(sortParam);
 
   // Clicking a card shows that status; clicking it again shows every order.
   function filterByStatus(param: RydStatusParam) {
@@ -204,6 +210,7 @@ export function RydPageClient({
     buildHaystack: orderSearchText,
     queryParam: "search",
   });
+  const sorted = useMemo(() => sortRydOrders(filtered, sort), [filtered, sort]);
   const openOrder = queue.orders.find((order) => order.orderId === openOrderId);
   const orderOptions = useMemo(
     () =>
@@ -513,8 +520,12 @@ export function RydPageClient({
                     />
                   ) : layout === "table" ? (
                     <RydOrderTable
-                      orders={filtered}
+                      orders={sorted}
                       label={VIEW_LABELS[view]}
+                      sort={sort}
+                      onSort={(column) =>
+                        setSortParam(rydSortValue(nextRydSort(sort, column)))
+                      }
                       followUp={view === "follow-up"}
                       emailConfigured={emailConfigured}
                       emailing={emailing}
@@ -523,7 +534,7 @@ export function RydPageClient({
                     />
                   ) : (
                     <ul className="grid gap-3 xl:grid-cols-2">
-                      {filtered.map((order) => (
+                      {sorted.map((order) => (
                         <RydOrderCard
                           key={order.orderId}
                           order={order}

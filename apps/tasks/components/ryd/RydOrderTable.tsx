@@ -1,6 +1,7 @@
-import { FiMail, FiPhone } from "react-icons/fi";
+import { FiArrowDown, FiArrowUp, FiMail, FiPhone } from "react-icons/fi";
 import { Button } from "@ryanmeetup/ui";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
+import type { RydSort, RydSortKey } from "@/lib/ryd/queue-view";
 import {
   prefersPhone,
   RYD_STATUS_RAILS,
@@ -9,6 +10,61 @@ import {
   RydStatusChip,
 } from "./RydStatusChip";
 
+const SORT_LABELS: Record<RydSortKey, [ascending: string, descending: string]> =
+  {
+    name: ["A to Z by surname", "Z to A by surname"],
+    status: ["pending first", "rejected first"],
+    form: ["surest match first", "no submission first"],
+    ordered: ["oldest first", "newest first"],
+  };
+
+/**
+ * A header that sorts its column. Clicking cycles ascending, descending, then
+ * back to the queue's own order; `aria-sort` and the arrow say which is on.
+ */
+function SortHeader({
+  column,
+  label,
+  sort,
+  onSort,
+  className,
+}: {
+  column: RydSortKey;
+  label: string;
+  sort: RydSort;
+  onSort: (column: RydSortKey) => void;
+  className: string;
+}) {
+  const active = sort?.key === column;
+  const Arrow = active && sort.descending ? FiArrowDown : FiArrowUp;
+  const next = !active
+    ? `Sort ${SORT_LABELS[column][0]}`
+    : sort.descending
+      ? "Clear sort"
+      : `Sort ${SORT_LABELS[column][1]}`;
+  return (
+    <th
+      className={className}
+      aria-sort={
+        active ? (sort.descending ? "descending" : "ascending") : "none"
+      }
+    >
+      <button
+        type="button"
+        title={next}
+        onClick={() => onSort(column)}
+        className={`group inline-flex items-center gap-1 whitespace-nowrap rounded font-semibold uppercase tracking-[0.16em] transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40 dark:hover:text-white dark:focus-visible:ring-white/50 ${active ? "text-black dark:text-white" : ""}`}
+      >
+        {label}
+        <Arrow
+          aria-hidden
+          className={`h-3 w-3 shrink-0 ${active ? "" : "opacity-0 group-hover:opacity-50 group-focus-visible:opacity-50"}`}
+        />
+      </button>
+    </th>
+  );
+}
+
 /**
  * The queue as one dense table, for working down a long list. It carries the
  * same status rail, chips, and actions as the cards, one row per order.
@@ -16,6 +72,8 @@ import {
 export function RydOrderTable({
   orders,
   label,
+  sort,
+  onSort,
   followUp,
   emailConfigured,
   emailing,
@@ -24,6 +82,8 @@ export function RydOrderTable({
 }: {
   orders: RydQueueOrder[];
   label: string;
+  sort: RydSort;
+  onSort: (column: RydSortKey) => void;
   followUp: boolean;
   emailConfigured: boolean;
   emailing: string | null;
@@ -43,10 +103,34 @@ export function RydOrderTable({
         </colgroup>
         <thead className="border-b border-black/10 bg-black/[0.025] text-[10px] uppercase tracking-[0.16em] text-black/60 dark:border-white/10 dark:bg-white/[0.025] dark:text-white/60">
           <tr>
-            <th className="px-4 py-3 font-semibold">Ryan</th>
-            <th className="px-3 py-3 font-semibold">Status</th>
-            <th className="px-3 py-3 font-semibold">Form</th>
-            <th className="px-3 py-3 font-semibold">Order</th>
+            <SortHeader
+              column="name"
+              label="Ryan"
+              sort={sort}
+              onSort={onSort}
+              className="px-4 py-3"
+            />
+            <SortHeader
+              column="status"
+              label="Status"
+              sort={sort}
+              onSort={onSort}
+              className="px-3 py-3"
+            />
+            <SortHeader
+              column="form"
+              label="Form"
+              sort={sort}
+              onSort={onSort}
+              className="px-3 py-3"
+            />
+            <SortHeader
+              column="ordered"
+              label="Order"
+              sort={sort}
+              onSort={onSort}
+              className="px-3 py-3"
+            />
             <th className="px-4 py-3 text-right font-semibold">
               <span className="sr-only">Actions</span>
             </th>
