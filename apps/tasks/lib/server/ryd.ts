@@ -69,7 +69,6 @@ export type RydOrderRow = {
   first_name: string;
   last_name: string;
   email: string;
-  contact_method: string;
   raw: Record<string, string>;
   status: RydOrderStatus;
   note: string | null;
@@ -283,7 +282,6 @@ export async function loadRydQueue(admin: SupabaseClient): Promise<RydQueue> {
       lastName: row.last_name,
       displayEmail: row.raw.BillEmail?.trim() || row.email,
       email: row.email,
-      contactMethod: row.contact_method,
       total: row.raw.OrderTotal ?? "",
       status: row.status,
       note: row.note,
@@ -393,7 +391,6 @@ export async function importRydOrders(
         first_name: order.firstName,
         last_name: order.lastName,
         email: order.email,
-        contact_method: order.contactMethod,
         raw: order.raw,
         first_import_id: batch.data.id,
         status: order.verified ? "verified" : "pending",

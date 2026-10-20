@@ -22,7 +22,6 @@ export type RydInsightOrder = {
   first_name: string;
   last_name: string;
   email: string;
-  contact_method: string;
   raw: Record<string, string>;
   status: RydOrderStatus;
   note: string | null;
@@ -44,7 +43,6 @@ export type RydOrderProfile = {
   buyerLastName: string;
   emailDomain: string | null;
   emailKind: EmailKind;
-  contactMethod: string;
   total: number | null;
   items: string;
   delivery: string;
@@ -134,7 +132,6 @@ export function profileRydOrder(
     buyerLastName: order.last_name.trim(),
     emailDomain: domain,
     emailKind: emailKind(domain),
-    contactMethod: order.contact_method.trim(),
     total: orderTotal(order.raw.OrderTotal),
     items: (order.raw.OrderItems ?? "").trim(),
     delivery: (order.raw.Delivery ?? "").trim(),
@@ -197,7 +194,6 @@ export function summarizeRydSales(profiles: RydOrderProfile[]) {
     byLastName: {} as Record<string, Bucket>,
     byEmailKind: {} as Record<string, Bucket>,
     byEmailDomain: {} as Record<string, Bucket>,
-    byContactMethod: {} as Record<string, Bucket>,
     byDelivery: {} as Record<string, Bucket>,
     byItems: {} as Record<string, Bucket>,
     byStore: {} as Record<string, Bucket>,
@@ -219,7 +215,6 @@ export function summarizeRydSales(profiles: RydOrderProfile[]) {
     add(groups.byLastName, profile.buyerLastName, total);
     add(groups.byEmailKind, profile.emailKind, total);
     add(groups.byEmailDomain, profile.emailDomain, total);
-    add(groups.byContactMethod, profile.contactMethod, total);
     add(groups.byDelivery, profile.delivery, total);
     add(groups.byItems, profile.items, total);
     add(groups.byStore, profile.storeName, total);

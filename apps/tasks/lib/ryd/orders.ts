@@ -39,7 +39,6 @@ export type ParsedRydOrder = {
   total: string;
   items: string;
   delivery: string;
-  contactMethod: string;
   /** Already ticked by whoever sent the file. */
   verified: boolean;
   /** Every cell, keyed by its header, so the export can rebuild the row. */
@@ -93,7 +92,6 @@ export function parseRydOrderCsv(text: string): RydOrderImport {
       total: cell(row, "OrderTotal"),
       items: cell(row, "OrderItems"),
       delivery: cell(row, "Delivery"),
-      contactMethod: cell(row, "Preferred Method of Contact"),
       verified: cell(row, "Verified?").includes(VERIFIED_MARK),
       raw: Object.fromEntries(
         headers.map((header, column) => [header, row[column] ?? ""]),

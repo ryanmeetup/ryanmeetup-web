@@ -28,7 +28,7 @@ import {
 
 const MAX_ORDERS = 5000;
 const ORDER_COLUMNS =
-  "order_id,ordered_at,first_name,last_name,email,contact_method,raw,status,note,decided_at,cleared_batch_id,created_at";
+  "order_id,ordered_at,first_name,last_name,email,raw,status,note,decided_at,cleared_batch_id,created_at";
 
 export type RydProfiles =
   | { available: false; reason: string; warnings: string[] }

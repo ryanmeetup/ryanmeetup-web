@@ -18,7 +18,6 @@ export type RydQueueOrder = {
   /** As fulfillment typed it, for display; matching uses the normalized one. */
   displayEmail: string;
   email: string;
-  contactMethod: string;
   total: string;
   status: RydOrderStatus;
   note: string | null;

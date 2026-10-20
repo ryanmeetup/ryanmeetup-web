@@ -82,7 +82,6 @@ describe("parseRydOrderCsv", () => {
       firstName: "Ryan",
       lastName: "Sample",
       email: "ryan.sample@test.dev",
-      contactMethod: "Phone",
     });
     expect(parsed.orders[2].raw.OrderTotal).toBe("1,036.75");
   });

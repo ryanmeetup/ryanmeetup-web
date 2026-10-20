@@ -72,8 +72,7 @@ presses Send. The page then records what was sent.
    one draft with every listed buyer in Bcc — two drafts when some have
    already sent something and are asked for more instead — leaving out
    rejected orders and anyone emailed in the last 20 hours. After sending,
-   **Mark as emailed** records them. The CSV has no phone numbers, so
-   phone-preferred buyers get the email and are called outside the app.
+   **Mark as emailed** records them. Every follow-up goes by email.
 
    An order still pending with a suggested response isn't in Follow-up, since
    it is waiting on a reviewer rather than the buyer. Mark it **Needs more

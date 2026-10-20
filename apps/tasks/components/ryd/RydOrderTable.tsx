@@ -5,7 +5,6 @@ import {
   FiCheck,
   FiChevronDown,
   FiMail,
-  FiPhone,
   FiX,
 } from "react-icons/fi";
 import {
@@ -22,7 +21,6 @@ import type { RyanPosition } from "@/lib/ryd/normalize";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 import type { RydSort, RydSortKey } from "@/lib/ryd/queue-view";
 import {
-  prefersPhone,
   rydMatchEvidence,
   RydMatchChip,
   RydRyanPositionChip,
@@ -228,7 +226,6 @@ export function RydOrderTable({
             {orders.map((order) => {
               const name = `${order.firstName} ${order.lastName}`.trim();
               const { reasons } = rydMatchEvidence(order);
-              const ContactIcon = prefersPhone(order) ? FiPhone : FiMail;
               return (
                 <tr
                   key={order.orderId}
@@ -277,14 +274,8 @@ export function RydOrderTable({
                     >
                       #{order.orderId}
                     </CopyText>
-                    <span className="flex items-center gap-1.5">
-                      <span className="truncate">
-                        {order.orderedAt || "No date"}
-                      </span>
-                      <ContactIcon aria-hidden className="shrink-0" />
-                      <span className="sr-only">
-                        Prefers {order.contactMethod.toLowerCase() || "email"}
-                      </span>
+                    <span className="block truncate">
+                      {order.orderedAt || "No date"}
                     </span>
                   </td>
                   <td className="px-4 py-2.5">

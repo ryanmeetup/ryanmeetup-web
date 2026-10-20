@@ -216,10 +216,6 @@ export function rydMatchEvidence(order: RydQueueOrder): {
   };
 }
 
-export function prefersPhone(order: RydQueueOrder) {
-  return /phone|text|call|sms/i.test(order.contactMethod);
-}
-
 /** The form's verdict on an order as one chip; the reasons go in its title. */
 export function RydMatchChip({ order }: { order: RydQueueOrder }) {
   const {

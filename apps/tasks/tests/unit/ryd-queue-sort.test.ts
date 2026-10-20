@@ -19,7 +19,6 @@ function order(overrides: Partial<RydQueueOrder>): RydQueueOrder {
     lastName: "",
     displayEmail: "",
     email: "",
-    contactMethod: "",
     total: "",
     status: "pending",
     note: null,

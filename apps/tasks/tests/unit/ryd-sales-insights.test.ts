@@ -27,7 +27,6 @@ function order(overrides: Partial<RydInsightOrder> = {}): RydInsightOrder {
     first_name: "Ryan ",
     last_name: "Example",
     email: "ryan.example@gmail.com",
-    contact_method: "Email",
     raw: {
       "Store Name": "RY-Ds",
       Organization: "Ryan Meet Up",

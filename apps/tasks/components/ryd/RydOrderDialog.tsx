@@ -23,7 +23,6 @@ import {
   FiLink,
   FiMail,
   FiPaperclip,
-  FiPhone,
   FiPlus,
   FiSave,
   FiSend,
@@ -39,7 +38,6 @@ import { orderSubmissions } from "@/lib/ryd/queue-view";
 import {
   RydConfidenceChip,
   RydStatusChip,
-  prefersPhone,
 } from "./RydStatusChip";
 import { RydSubmissionCard } from "./RydSubmissionCard";
 
@@ -308,14 +306,6 @@ export function RydOrderDialog({
                 ${order.total}
               </Detail>
             )}
-            <Detail
-              icon={prefersPhone(order) ? FiPhone : FiMail}
-              label="Prefers"
-            >
-              {order.contactMethod
-                ? `Prefers ${order.contactMethod.toLowerCase()}`
-                : "No contact preference"}
-            </Detail>
             {order.lastEmailedAt && (
               <Detail icon={FiSend} label="Last emailed">
                 Emailed {new Date(order.lastEmailedAt).toLocaleString()}
