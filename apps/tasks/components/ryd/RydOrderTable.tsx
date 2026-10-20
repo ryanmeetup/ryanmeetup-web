@@ -1,5 +1,5 @@
 import { FiArrowDown, FiArrowUp, FiMail, FiPhone } from "react-icons/fi";
-import { Button } from "@ryanmeetup/ui";
+import { Button, CopyText } from "@ryanmeetup/ui";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 import type { RydSort, RydSortKey } from "@/lib/ryd/queue-view";
 import {
@@ -179,9 +179,13 @@ export function RydOrderTable({
                   )}
                 </td>
                 <td className="px-3 py-2.5 text-xs text-black/70 dark:text-white/70">
-                  <span className="block font-semibold tabular-nums text-black dark:text-white">
+                  <CopyText
+                    value={order.orderId}
+                    label="order number"
+                    className="font-semibold tabular-nums text-black dark:text-white"
+                  >
                     #{order.orderId}
-                  </span>
+                  </CopyText>
                   <span className="flex items-center gap-1.5">
                     <span className="truncate">
                       {order.orderedAt || "No date"}

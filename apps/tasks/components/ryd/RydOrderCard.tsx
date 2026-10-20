@@ -7,7 +7,7 @@ import {
   FiPhone,
   FiSend,
 } from "react-icons/fi";
-import { Button } from "@ryanmeetup/ui";
+import { Button, CopyText } from "@ryanmeetup/ui";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 import {
   prefersPhone,
@@ -99,7 +99,9 @@ export function RydOrderCard({
               <FiHash aria-hidden className="shrink-0" />
               <span className="sr-only">Order</span>
             </dt>
-            <dd className="font-semibold tabular-nums">{order.orderId}</dd>
+            <dd className="font-semibold tabular-nums">
+              <CopyText value={order.orderId} label="order number" />
+            </dd>
           </div>
           <div className="flex items-center gap-1">
             <dt>

@@ -1,7 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Button, DropdownSelect, Modal, Textarea, toast } from "@ryanmeetup/ui";
+import {
+  Button,
+  CopyText,
+  DropdownSelect,
+  Modal,
+  Textarea,
+  toast,
+} from "@ryanmeetup/ui";
 import type { IconType } from "react-icons";
 import {
   FiAlertTriangle,
@@ -266,11 +273,15 @@ export function RydOrderDialog({
           </h3>
           <dl className="space-y-3">
             <Detail icon={FiHash} label="Order number">
-              Order {order.orderId}
+              <CopyText value={order.orderId} label="order number">
+                Order {order.orderId}
+              </CopyText>
             </Detail>
             {order.salesOrder && (
               <Detail icon={FiFileText} label="Sales order number">
-                Sales order {order.salesOrder}
+                <CopyText value={order.salesOrder} label="sales order number">
+                  Sales order {order.salesOrder}
+                </CopyText>
               </Detail>
             )}
             <Detail icon={FiMail} label="Email">
