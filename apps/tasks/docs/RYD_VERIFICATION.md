@@ -40,7 +40,8 @@ page still works and the file can be downloaded and sent by hand.
    Re-uploading the same file changes nothing; an order already in the queue
    keeps its decision. A ✅ fulfillment already put in the file imports as
    verified, but with nothing linked; it is still offered a suggestion, and
-   clicking **Verify** on it again links that submission.
+   **Link** on that submission pairs it. A decided order only offers the
+   other decisions, plus **Save note** when its note changes.
 2. **Review.** The RY-dentification form is the source of truth. Its
    responses are read live through the Google Forms API — not from the
    response spreadsheet — and paired with orders. The form's link never
