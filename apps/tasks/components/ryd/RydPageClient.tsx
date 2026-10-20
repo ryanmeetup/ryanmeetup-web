@@ -16,10 +16,12 @@ import type { IconType } from "react-icons";
 import {
   FiAlertTriangle,
   FiInbox,
+  FiGrid,
   FiList,
   FiPhoneOutgoing,
   FiSend,
   FiSettings,
+  FiShoppingBag,
   FiUpload,
 } from "react-icons/fi";
 import {
@@ -50,6 +52,7 @@ import {
 } from "./RydDialogs";
 import { RydOrderDialog } from "./RydOrderDialog";
 import { RydOrderCard } from "./RydOrderCard";
+import { RydOrderTable } from "./RydOrderTable";
 import { RYD_STATUS_ICONS, RYD_STATUS_TONES } from "./RydStatusChip";
 import { RydSubmissionCard } from "./RydSubmissionCard";
 
@@ -76,10 +79,15 @@ const VIEW_LABELS: Record<RydView, string> = {
 };
 
 const VIEW_ICONS: Record<RydView, IconType> = {
-  queue: FiList,
+  queue: FiShoppingBag,
   "follow-up": FiPhoneOutgoing,
   unmatched: FiInbox,
 };
+
+const LAYOUTS = [
+  { value: "cards", label: "Cards", icon: FiGrid },
+  { value: "table", label: "Table", icon: FiList },
+] as const;
 
 /** The stat cards double as the status filter, in this order. */
 const STAT_CARDS: {
@@ -143,12 +151,14 @@ export function RydPageClient({
   const [dialog, setDialog] = useState<Dialog>(null);
   const [viewParam, setViewParam] = useQueryParamState("view");
   const [statusParam, setStatusParam] = useQueryParamState("status");
+  const [layoutParam, setLayoutParam] = useQueryParamState("layout");
   const [openOrderId, setOpenOrderId] = useQueryParamState("order");
   const [googleParam, setGoogleParam] = useQueryParamState("google");
   const [emailing, setEmailing] = useState<string | null>(null);
   const [linking, setLinking] = useState<string | null>(null);
   const view = rydView(viewParam);
   const status = rydStatusParam(statusParam);
+  const layout = layoutParam === "table" ? "table" : "cards";
 
   // Clicking a card shows that status; clicking it again shows every order.
   function filterByStatus(param: RydStatusParam) {
@@ -456,6 +466,25 @@ export function RydPageClient({
                       pendingLabel="Loading order results"
                     />
                   </div>
+                  <div
+                    role="group"
+                    aria-label="Layout"
+                    className="flex shrink-0 self-start rounded-lg border border-black/10 p-0.5 sm:self-auto dark:border-white/10"
+                  >
+                    {LAYOUTS.map(({ value, label, icon: Icon }) => (
+                      <button
+                        key={value}
+                        type="button"
+                        aria-pressed={layout === value}
+                        onClick={() =>
+                          setLayoutParam(value === "cards" ? "" : value)
+                        }
+                        className={`view-button py-1.5 [&_svg]:size-4 ${layout === value ? "view-button-active" : ""}`}
+                      >
+                        <Icon aria-hidden /> {label}
+                      </button>
+                    ))}
+                  </div>
                   {view === "queue" && (
                     <DropdownSelect
                       variant="compact"
@@ -481,6 +510,16 @@ export function RydPageClient({
                               ? "Nobody to chase right now."
                               : "No orders with that status."
                       }
+                    />
+                  ) : layout === "table" ? (
+                    <RydOrderTable
+                      orders={filtered}
+                      label={VIEW_LABELS[view]}
+                      followUp={view === "follow-up"}
+                      emailConfigured={emailConfigured}
+                      emailing={emailing}
+                      onEmail={emailBuyer}
+                      onReview={(order) => setOpenOrderId(order.orderId)}
                     />
                   ) : (
                     <ul className="grid gap-3 xl:grid-cols-2">

@@ -2,6 +2,7 @@ import type { IconType } from "react-icons";
 import {
   FiAlertCircle,
   FiCheckCircle,
+  FiLink,
   FiClock,
   FiHelpCircle,
   FiXCircle,
@@ -9,6 +10,7 @@ import {
 } from "react-icons/fi";
 import { RYD_STATUS_LABELS, type RydOrderStatus } from "@/lib/ryd/orders";
 import type { MatchConfidence } from "@/lib/ryd/matching";
+import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 
 /** One colour per status, shared by the chips, the stat cards, and the rows. */
 export const RYD_STATUS_TONES = {
@@ -96,6 +98,71 @@ export function RydConfidenceChip({
     <span className={`${CHIP} ${className}`}>
       <Icon aria-hidden className="h-3 w-3" />
       {label}
+    </span>
+  );
+}
+
+const LINKED_TINT =
+  "border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:border-emerald-400/30 dark:bg-emerald-500/15 dark:text-emerald-200";
+const MISSING_TINT =
+  "border-amber-500/35 bg-amber-500/15 text-amber-900 dark:border-amber-400/35 dark:bg-amber-500/15 dark:text-amber-100";
+
+/** What the form says about this order: its headline, tint, and the evidence. */
+export function rydMatchEvidence(order: RydQueueOrder): {
+  icon: IconType;
+  title: string;
+  /** For a table cell, where the full title doesn't fit. */
+  shortTitle: string;
+  className: string;
+  reasons: string[];
+} {
+  if (order.linkedKeys.length)
+    return {
+      icon: FiLink,
+      title: `Linked to ${order.linkedKeys.length} form submission${order.linkedKeys.length === 1 ? "" : "s"}`,
+      shortTitle: "Linked",
+      className: LINKED_TINT,
+      reasons: [],
+    };
+  if (order.suggestion) {
+    const confidence = RYD_CONFIDENCE[order.suggestion.confidence];
+    return {
+      icon: confidence.icon,
+      title: confidence.label,
+      shortTitle: confidence.label,
+      className: confidence.className,
+      reasons: order.suggestion.reasons,
+    };
+  }
+  return {
+    icon: FiAlertCircle,
+    title: "No form submission found",
+    shortTitle: "No submission",
+    className: MISSING_TINT,
+    reasons: [],
+  };
+}
+
+export function prefersPhone(order: RydQueueOrder) {
+  return /phone|text|call|sms/i.test(order.contactMethod);
+}
+
+/** The form's verdict on an order as one chip; the reasons go in its title. */
+export function RydMatchChip({ order }: { order: RydQueueOrder }) {
+  const {
+    icon: Icon,
+    shortTitle,
+    title,
+    className,
+    reasons,
+  } = rydMatchEvidence(order);
+  return (
+    <span
+      className={`${CHIP} ${className}`}
+      title={reasons.length ? `${title}: ${reasons.join(", ")}` : title}
+    >
+      <Icon aria-hidden className="h-3 w-3" />
+      {shortTitle}
     </span>
   );
 }

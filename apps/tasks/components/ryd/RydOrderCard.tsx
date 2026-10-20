@@ -1,10 +1,7 @@
-import type { IconType } from "react-icons";
 import {
-  FiAlertCircle,
   FiArrowRight,
   FiCalendar,
   FiHash,
-  FiLink,
   FiMail,
   FiMessageSquare,
   FiPhone,
@@ -13,52 +10,13 @@ import {
 import { Button } from "@ryanmeetup/ui";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 import {
-  RYD_CONFIDENCE,
+  prefersPhone,
+  rydMatchEvidence,
   RYD_STATUS_ICONS,
   RYD_STATUS_RAILS,
   RYD_STATUS_TINTS,
   RydStatusChip,
 } from "./RydStatusChip";
-
-const LINKED_TINT =
-  "border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:border-emerald-400/30 dark:bg-emerald-500/15 dark:text-emerald-200";
-const MISSING_TINT =
-  "border-amber-500/35 bg-amber-500/15 text-amber-900 dark:border-amber-400/35 dark:bg-amber-500/15 dark:text-amber-100";
-
-/** What the form says about this order: its headline, tint, and the evidence. */
-function matchEvidence(order: RydQueueOrder): {
-  icon: IconType;
-  title: string;
-  className: string;
-  reasons: string[];
-} {
-  if (order.linkedKeys.length)
-    return {
-      icon: FiLink,
-      title: `Linked to ${order.linkedKeys.length} form submission${order.linkedKeys.length === 1 ? "" : "s"}`,
-      className: LINKED_TINT,
-      reasons: [],
-    };
-  if (order.suggestion) {
-    const confidence = RYD_CONFIDENCE[order.suggestion.confidence];
-    return {
-      icon: confidence.icon,
-      title: confidence.label,
-      className: confidence.className,
-      reasons: order.suggestion.reasons,
-    };
-  }
-  return {
-    icon: FiAlertCircle,
-    title: "No form submission found",
-    className: MISSING_TINT,
-    reasons: [],
-  };
-}
-
-function prefersPhone(order: RydQueueOrder) {
-  return /phone|text|call|sms/i.test(order.contactMethod);
-}
 
 /**
  * One order in the queue: who, where it stands, what the form says, then the
@@ -82,7 +40,7 @@ export function RydOrderCard({
   onReview: () => void;
 }) {
   const StatusIcon = RYD_STATUS_ICONS[order.status];
-  const match = matchEvidence(order);
+  const match = rydMatchEvidence(order);
   const MatchIcon = match.icon;
   const ContactIcon = prefersPhone(order) ? FiPhone : FiMail;
   const name = `${order.firstName} ${order.lastName}`.trim();
