@@ -1,5 +1,10 @@
 import type { RydSubmission } from "./matching";
-import { nameTokens, type SocialLink } from "./normalize";
+import {
+  nameTokens,
+  ryanPosition,
+  type RyanPosition,
+  type SocialLink,
+} from "./normalize";
 import type { RydOrderStatus } from "./orders";
 
 /**
@@ -25,8 +30,6 @@ export type RydInsightOrder = {
   cleared_batch_id: string | null;
   created_at: string;
 };
-
-export type RyanPosition = "first" | "middle" | "last" | "absent";
 
 export type EmailKind = "personal" | "school" | "work_or_other" | "none";
 
@@ -110,17 +113,6 @@ export function orderDate(orderedAt: string) {
 function displayName(value: string) {
   const [first] = nameTokens(value);
   return first ? first[0].toUpperCase() + first.slice(1) : "";
-}
-
-const RYAN_SPELLINGS = new Set(["ryan", "ryann", "ryanne", "rian", "ryen", "ryne"]);
-
-export function ryanPosition(legalName: string): RyanPosition | null {
-  const tokens = nameTokens(legalName);
-  if (!tokens.length) return null;
-  const index = tokens.findIndex((token) => RYAN_SPELLINGS.has(token));
-  if (index < 0) return "absent";
-  if (index === 0) return "first";
-  return index === tokens.length - 1 ? "last" : "middle";
 }
 
 export function profileRydOrder(

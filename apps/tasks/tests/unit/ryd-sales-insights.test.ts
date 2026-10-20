@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RydSubmission } from "@/lib/ryd/matching";
+import { ryanPosition } from "@/lib/ryd/normalize";
 import {
   emailKind,
   orderDate,
   orderTotal,
   profileRydOrder,
-  ryanPosition,
   summarizeRydSales,
   type RydInsightOrder,
 } from "@/lib/ryd/sales-insights";

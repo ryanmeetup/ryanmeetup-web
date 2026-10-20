@@ -19,6 +19,23 @@ export function nameTokens(value: string) {
     .filter(Boolean);
 }
 
+export type RyanPosition = "first" | "middle" | "last" | "absent";
+
+const RYAN_SPELLINGS = new Set(["ryan", "ryann", "ryanne", "rian", "ryen", "ryne"]);
+
+/**
+ * Where Ryan falls in a name: "Steven Ryan Fox" is a middle-name Ryan, "Paul
+ * Ryan" a surname one. Null when there is no name to read.
+ */
+export function ryanPosition(name: string): RyanPosition | null {
+  const tokens = nameTokens(name);
+  if (!tokens.length) return null;
+  const index = tokens.findIndex((token) => RYAN_SPELLINGS.has(token));
+  if (index < 0) return "absent";
+  if (index === 0) return "first";
+  return index === tokens.length - 1 ? "last" : "middle";
+}
+
 /** True when every word of `part` appears among the words of `name`. */
 export function nameIncludes(name: string, part: string) {
   const haystack = new Set(nameTokens(name));
