@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { Modal, ModalActions, toast } from "@ryanmeetup/ui";
-import { FiCheck, FiCopy, FiExternalLink } from "react-icons/fi";
+import { Modal, ModalActions } from "@ryanmeetup/ui";
+import { FiExternalLink } from "react-icons/fi";
+import { CopyButton } from "@/components/global";
 import type {
   IntegrationCheck,
   SetupStep,
@@ -18,39 +18,6 @@ const whereVariablesLive =
 
 const codeBlock =
   "overflow-x-auto rounded-lg border border-black/10 bg-black/[0.04] px-3 py-2 font-mono text-[12px] leading-relaxed whitespace-pre text-black/80 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/80";
-
-/** Copies one line of setup material: a command, a variable name, a path. */
-function CopyButton({ value, label }: { value: string; label: string }) {
-  const [copied, setCopied] = useState(false);
-
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      toast.error(`${label} could not be copied.`);
-    }
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={copy}
-      aria-label={copied ? `${label} copied` : `Copy ${label}`}
-      className="shrink-0 rounded-md border border-black/10 bg-white/70 p-1.5 text-black/50 transition hover:border-black/30 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:border-white/15 dark:bg-white/[0.06] dark:text-white/50 dark:hover:border-white/40 dark:hover:text-white dark:focus-visible:ring-white/30"
-    >
-      {copied ? (
-        <FiCheck
-          aria-hidden
-          className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400"
-        />
-      ) : (
-        <FiCopy aria-hidden className="h-3.5 w-3.5" />
-      )}
-    </button>
-  );
-}
 
 function Step({ step, index }: { step: SetupStep; index: number }) {
   return (

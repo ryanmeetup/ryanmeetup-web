@@ -28,9 +28,6 @@ import {
 } from "./ryd-google";
 import { isMissingRelation } from "./supabase-errors";
 
-/** Where buyers send their evidence. The page on ryanmeetup.com redirects to the form. */
-export const RYD_FORM_URL = "https://ryanmeetup.com/cards/verify";
-
 export type RydContext = {
   user: User;
   supabase: SupabaseClient;
@@ -439,140 +436,42 @@ export function rydExportFilename(date = new Date()) {
   return `ry-d-verified-${date.toISOString().slice(0, 10)}.csv`;
 }
 
-function resendConfiguration() {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RYD_FROM_EMAIL ?? process.env.RESEND_FROM_EMAIL;
-  return apiKey && from ? { apiKey, from } : null;
-}
-
-export const isRydEmailConfigured = () => Boolean(resendConfiguration());
-
-async function sendEmail(
-  body: Record<string, unknown>,
-  idempotencyKey: string,
-) {
-  const config = resendConfiguration();
-  if (!config) throw new Error("Email is not configured.");
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      authorization: `Bearer ${config.apiKey}`,
-      "content-type": "application/json",
-      "idempotency-key": idempotencyKey,
-    },
-    body: JSON.stringify({ from: config.from, ...body }),
-  });
-  if (!response.ok) {
-    const detail = (await response.text()).slice(0, 500);
-    throw new Error(
-      `Resend rejected the email (${response.status})${detail ? `: ${detail}` : "."}`,
-    );
-  }
-}
-
-export function rydCustomerEmail(order: {
-  firstName: string;
-  hasSubmission: boolean;
-}) {
-  const greeting = `Hi ${order.firstName.trim() || "there"},`;
-  const ask = order.hasSubmission
-    ? "Thanks for sending your ry-dentification. We couldn't quite confirm it from what came through, so could you add a little more? A social profile with your name and photo, a work or school page, or anything else that shows you're a Ryan works. No government ID needed, ever."
-    : "Thanks for ordering a RY-D! Before we can start making it, we need to confirm you're a Ryan. It takes a minute: share a social profile, a work or school page, or anything else that shows your name. No government ID needed, ever.";
-  const text = `${greeting}\n\n${ask}\n\nSend it here: ${RYD_FORM_URL}\n\nUse the same email you ordered with so we can match it to your order.\n\nThanks, Ryan\nRyan Meetup`;
-  const html = `<p>${greeting}</p><p>${ask}</p><p><a href="${RYD_FORM_URL}">Send your ry-dentification</a></p><p>Use the same email you ordered with so we can match it to your order.</p><p>Thanks, Ryan<br>Ryan Meetup</p>`;
-  return {
-    subject: order.hasSubmission
-      ? "Your RY-D needs a little more ry-dentification"
-      : "One quick step before we make your RY-D",
-    text,
-    html,
-  };
-}
-
-export async function emailRydCustomer(
-  order: Pick<RydOrderRow, "order_id" | "first_name" | "email">,
-  hasSubmission: boolean,
-) {
-  const message = rydCustomerEmail({
-    firstName: order.first_name,
-    hasSubmission,
-  });
-  // One reminder per order per day, however many times the button is pressed.
-  const day = new Date().toISOString().slice(0, 10);
-  await sendEmail(
-    { to: [order.email], ...message },
-    `ryd-customer/${order.order_id}/${day}`,
-  );
-}
-
-export async function emailRydFulfillment(
-  recipient: string,
-  csv: string,
-  filename: string,
-  counts: { orderCount: number; verifiedCount: number },
-  batchKey: string,
-) {
-  const summary = `${counts.verifiedCount} of ${counts.orderCount} RY-D order${counts.orderCount === 1 ? "" : "s"} ${counts.verifiedCount === 1 ? "is" : "are"} verified and ready to start. They're marked ✅ in the Verified? column of the attached file; the rest are still being checked and will come round again.`;
-  await sendEmail(
-    {
-      to: [recipient],
-      subject: `RY-D orders cleared to start: ${counts.verifiedCount}`,
-      text: `Hi,\n\n${summary}\n\nThanks,\nRyan Meetup`,
-      html: `<p>Hi,</p><p>${summary}</p><p>Thanks,<br>Ryan Meetup</p>`,
-      attachments: [
-        { filename, content: Buffer.from(csv, "utf8").toString("base64") },
-      ],
-    },
-    `ryd-batch/${batchKey}`,
-  );
-}
-
 /**
- * Send the export to fulfillment, then mark what it cleared. The email goes
- * first: if it fails nothing has changed and the button can simply be pressed
- * again. Ticking the form sheet comes last and is best effort, because the
- * order is already cleared whether or not Google answers.
+ * Record that fulfillment was sent the file, and clear the orders it told them
+ * could start. The reviewer sends the email themselves, so only the orders
+ * they saw as verified are cleared: one verified since stays in the queue for
+ * the next file. Ticking the form sheet comes last and is best effort, because
+ * the order is already cleared whether or not Google answers.
  */
-export async function sendRydBatch(admin: SupabaseClient, user: User) {
+export async function markRydBatchSent(
+  admin: SupabaseClient,
+  user: User,
+  readyIds: string[],
+) {
   const settings = await loadRydSettings(admin);
-  if (!settings.fulfillmentEmail)
-    return {
-      ok: false as const,
-      error: "Add fulfillment's email address in RY-D settings first.",
-    };
   const exported = await buildRydExport(admin);
   if (!exported.orderIds.length)
     return { ok: false as const, error: "There are no orders to send." };
+  const ready = new Set(readyIds);
+  const verifiedIds = exported.verifiedIds.filter((id) => ready.has(id));
 
   const batchId = crypto.randomUUID();
-  const filename = rydExportFilename();
-  await emailRydFulfillment(
-    settings.fulfillmentEmail,
-    exported.csv,
-    filename,
-    {
-      orderCount: exported.orderIds.length,
-      verifiedCount: exported.verifiedIds.length,
-    },
-    batchId,
-  );
-
   const batch = await admin.from("ryd_fulfillment_batches").insert({
     id: batchId,
     recipient: settings.fulfillmentEmail,
     order_count: exported.orderIds.length,
-    verified_count: exported.verifiedIds.length,
+    verified_count: verifiedIds.length,
     sent_by: user.id,
   });
   if (batch.error) throw batch.error;
-  if (exported.verifiedIds.length) {
+  if (verifiedIds.length) {
     const cleared = await admin
       .from("ryd_orders")
       .update({
         cleared_batch_id: batchId,
         updated_at: new Date().toISOString(),
       })
-      .in("order_id", exported.verifiedIds)
+      .in("order_id", verifiedIds)
       .eq("status", "verified");
     if (cleared.error) throw cleared.error;
   }
@@ -583,11 +482,11 @@ export async function sendRydBatch(admin: SupabaseClient, user: User) {
 
   let sheetTicks: number | null = null;
   const integration = await loadRydGoogleIntegration().catch(() => null);
-  if (integration && settings.formId && exported.verifiedIds.length) {
+  if (integration && settings.formId && verifiedIds.length) {
     const links = await admin
       .from("ryd_order_submissions")
       .select("submission_key")
-      .in("order_id", exported.verifiedIds);
+      .in("order_id", verifiedIds);
     if (!links.error) {
       try {
         const keys = new Set(links.data.map((link) => link.submission_key));
@@ -605,8 +504,7 @@ export async function sendRydBatch(admin: SupabaseClient, user: User) {
   return {
     ok: true as const,
     orderCount: exported.orderIds.length,
-    verifiedCount: exported.verifiedIds.length,
-    recipient: settings.fulfillmentEmail,
+    verifiedCount: verifiedIds.length,
     sheetTicks,
   };
 }

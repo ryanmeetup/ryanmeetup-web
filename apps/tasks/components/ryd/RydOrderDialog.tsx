@@ -31,6 +31,7 @@ import {
 } from "react-icons/fi";
 import { mutate } from "@/lib/mutation-client";
 import { errorMessage } from "@/lib/presentation";
+import { rydBuyerMailtoHref } from "@/lib/ryd/emails";
 import type { RydSubmission } from "@/lib/ryd/matching";
 import type { RydOrderStatus } from "@/lib/ryd/orders";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
@@ -98,7 +99,6 @@ export function RydOrderDialog({
   order,
   submissions,
   claimedKeys,
-  emailConfigured,
   onClose,
   onChanged,
 }: {
@@ -106,7 +106,6 @@ export function RydOrderDialog({
   submissions: RydSubmission[];
   /** Linked to another order; one submission vouches for one Ryan. */
   claimedKeys: ReadonlySet<string>;
-  emailConfigured: boolean;
   onClose: () => void;
   onChanged: () => Promise<void>;
 }) {
@@ -217,23 +216,27 @@ export function RydOrderDialog({
       }
       supportingActions={
         order.status !== "verified" && (
-          <Button
-            type="button"
+          <Button.Link
+            href={rydBuyerMailtoHref(order, shown.submissions.length > 0)}
             size="sm"
             variant="ghost"
             leftIcon={<FiMail aria-hidden />}
-            disabled={busy || !emailConfigured || !order.email}
-            loading={pending === "email"}
+            prefetch={false}
+            disabled={busy || !order.displayEmail}
             onClick={() =>
               run(
                 "email",
-                () => mutate(`${base}/email`, { method: "POST", body: "{}" }),
-                `Emailed ${order.displayEmail}.`,
+                () =>
+                  mutate("/api/ryd/reminders", {
+                    method: "POST",
+                    body: JSON.stringify({ orderIds: [order.orderId] }),
+                  }),
+                `Draft opened for ${order.displayEmail}.`,
               )
             }
           >
             {shown.submissions.length ? "Ask for more" : "Ask to verify"}
-          </Button>
+          </Button.Link>
         )
       }
       actions={

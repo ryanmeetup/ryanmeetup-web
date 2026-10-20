@@ -53,11 +53,13 @@ import {
   type RydStatusParam,
   rydStatusParam,
   rydView,
+  remindableOrders,
   unmatchedSubmitters,
   type RydView,
 } from "@/lib/ryd/queue-view";
 import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import {
+  RydRemindDialog,
   RydSendDialog,
   RydSettingsDialog,
   RydUploadDialog,
@@ -140,20 +142,18 @@ const STATUS_OPTIONS = Object.keys(RYD_STATUS_PARAMS).map((value) => {
   };
 });
 
-type Dialog = "upload" | "send" | "settings" | null;
+type Dialog = "upload" | "send" | "remind" | "settings" | null;
 
 export function RydPageClient({
   initialData,
   initialQueue,
   isOwner,
   googleConfigured,
-  emailConfigured,
 }: {
   initialData: WorkspaceData;
   initialQueue: RydQueue;
   isOwner: boolean;
   googleConfigured: boolean;
-  emailConfigured: boolean;
 }) {
   const [data, setData] = useState(initialData);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -165,7 +165,6 @@ export function RydPageClient({
   const [layoutParam, setLayoutParam] = useQueryParamState("layout");
   const [openOrderId, setOpenOrderId] = useQueryParamState("order");
   const [googleParam, setGoogleParam] = useQueryParamState("google");
-  const [emailing, setEmailing] = useState<string | null>(null);
   const [linking, setLinking] = useState<string | null>(null);
   const [removing, setRemoving] = useState<RydSubmission | null>(null);
   const [dismissing, setDismissing] = useState<string | null>(null);
@@ -200,6 +199,7 @@ export function RydPageClient({
   const counts = useMemo(() => rydCounts(queue.orders), [queue.orders]);
   const followUp = useMemo(() => followUpOrders(queue), [queue]);
   const unmatched = useMemo(() => unmatchedSubmitters(queue), [queue]);
+  const remindable = useMemo(() => remindableOrders(followUp), [followUp]);
   const statusFilter = RYD_STATUS_PARAMS[status];
   const listed = useMemo(
     () =>
@@ -276,22 +276,18 @@ export function RydPageClient({
     [queue.orders],
   );
 
-  async function emailBuyer(order: RydQueueOrder) {
-    setEmailing(order.orderId);
+  /** The row's Email opens a draft in the reviewer's mail app; this records it. */
+  async function markEmailed(order: RydQueueOrder) {
     try {
-      await mutate(
-        `/api/ryd/orders/${encodeURIComponent(order.orderId)}/email`,
-        {
-          method: "POST",
-          body: "{}",
-        },
-      );
+      await mutate("/api/ryd/reminders", {
+        method: "POST",
+        body: JSON.stringify({ orderIds: [order.orderId] }),
+      });
       await refresh();
-      toast.success(`Emailed ${order.displayEmail}.`);
     } catch (error) {
-      toast.error(errorMessage(error, "The email couldn't be sent."));
-    } finally {
-      setEmailing(null);
+      toast.error(
+        errorMessage(error, "The draft opened, but it couldn't be recorded."),
+      );
     }
   }
 
@@ -477,7 +473,7 @@ export function RydPageClient({
             )}
 
             <div
-              className="flex flex-wrap gap-2"
+              className="flex flex-wrap gap-2 border-b border-black/10 pb-4 dark:border-white/10"
               role="group"
               aria-label="View"
             >
@@ -545,6 +541,31 @@ export function RydPageClient({
               </section>
             ) : (
               <section aria-label={VIEW_LABELS[view]} className="space-y-4">
+                {view === "follow-up" && followUp.length > 0 && (
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-sm text-black/70 dark:text-white/70">
+                      Orders asked for more, rejected, or with nothing on the
+                      form. Email opens a draft asking the buyer for their
+                      ry-dentification; rejected orders are never emailed.
+                    </p>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      className="w-full shrink-0 sm:w-auto"
+                      leftIcon={<FiMail aria-hidden />}
+                      onClick={() => setDialog("remind")}
+                      disabled={!remindable.length}
+                      title={
+                        remindable.length
+                          ? undefined
+                          : "Everyone here was emailed in the last day."
+                      }
+                    >
+                      Email everyone ({remindable.length})
+                    </Button>
+                  </div>
+                )}
                 <div className="sticky top-0 z-20 -mx-1 flex flex-col gap-3 bg-white px-1 pb-3 sm:flex-row sm:items-stretch dark:bg-[#181818]">
                   <div className="min-w-0 flex-1">
                     <SearchInput
@@ -611,9 +632,7 @@ export function RydPageClient({
                         setPage(1);
                       }}
                       followUp={view === "follow-up"}
-                      emailConfigured={emailConfigured}
-                      emailing={emailing}
-                      onEmail={emailBuyer}
+                      onEmailed={markEmailed}
                       onReview={(order) => setOpenOrderId(order.orderId)}
                       footer={pagination}
                     />
@@ -631,7 +650,6 @@ export function RydPageClient({
           order={openOrder}
           submissions={queue.submissions}
           claimedKeys={claimedElsewhere(queue.orders, openOrder.orderId)}
-          emailConfigured={emailConfigured}
           onClose={() => setOpenOrderId("")}
           onChanged={refresh}
         />
@@ -659,7 +677,13 @@ export function RydPageClient({
       {dialog === "send" && (
         <RydSendDialog
           queue={queue}
-          emailConfigured={emailConfigured}
+          onClose={() => setDialog(null)}
+          onChanged={refresh}
+        />
+      )}
+      {dialog === "remind" && (
+        <RydRemindDialog
+          orders={remindable}
           onClose={() => setDialog(null)}
           onChanged={refresh}
         />

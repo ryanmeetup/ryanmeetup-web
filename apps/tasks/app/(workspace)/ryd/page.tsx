@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { RydPageClient } from "@/components/ryd";
 import { getAdminClient } from "@/lib/server/admin-client";
 import { getInstanceSettings, pageTitle } from "@/lib/server/instance-settings";
-import { isRydEmailConfigured, loadRydQueue } from "@/lib/server/ryd";
+import { loadRydQueue } from "@/lib/server/ryd";
 import { isRydGoogleConfigured } from "@/lib/server/ryd-google";
 import { requireQueryData } from "@/lib/server/workspace-loader";
 import {
@@ -37,7 +37,6 @@ export default async function RydPage() {
       initialQueue={await loadRydQueue(admin)}
       isOwner={isOwner === true}
       googleConfigured={isRydGoogleConfigured()}
-      emailConfigured={isRydEmailConfigured()}
     />
   );
 }

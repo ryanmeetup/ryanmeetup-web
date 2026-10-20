@@ -60,3 +60,13 @@ export function rydSettingsSchema(value: unknown) {
 
 export const emptyObjectSchema = (value: unknown) =>
   isJsonObject(value) && Object.keys(value).length === 0 ? {} : null;
+
+/** Up to 500 distinct order IDs, more than the queue ever holds at once. */
+export function rydOrderIdsSchema(value: unknown) {
+  if (!isJsonObject(value) || Object.keys(value).length !== 1) return null;
+  const ids = value.orderIds;
+  if (!Array.isArray(ids) || !ids.length || ids.length > 500) return null;
+  if (!ids.every((id) => typeof id === "string" && id && id.length <= 200))
+    return null;
+  return { orderIds: [...new Set(ids as string[])] };
+}

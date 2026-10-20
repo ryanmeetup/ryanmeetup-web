@@ -26,13 +26,15 @@ Access setting, and every `/api/ryd` route answer as if they don't exist.
 3. Turn on **RY-D Verification** in /admin/settings → Features.
 4. On /ryd → Settings, connect Google **as the account that owns the form**,
    paste the form's **editor** link (`docs.google.com/forms/d/<id>/edit`, not
-   the public `/forms/d/e/…` one), and enter fulfillment's email.
+   the public `/forms/d/e/…` one), and enter fulfillment's email so their
+   draft is addressed.
 5. The page starts restricted to owners. Open it to the people who verify
    from /admin/access.
 
-Sending email (to buyers and to fulfillment) uses Resend: `RESEND_API_KEY`
-with `RYD_FROM_EMAIL`, falling back to `RESEND_FROM_EMAIL`. Without them the
-page still works and the file can be downloaded and sent by hand.
+RY-D never sends email itself. Every email — to buyers and to fulfillment —
+opens as a prefilled draft in the reviewer's own mail app (a `mailto:` link,
+with copy buttons beside it for when a draft won't open), and the reviewer
+presses Send. The page then records what was sent.
 
 ## The weekly flow
 
@@ -65,17 +67,28 @@ page still works and the file can be downloaded and sent by hand.
    submission by hand — from the order, or from **Unmatched submissions**.
    Every order needs a person to press Verify, Needs more info, or Reject.
 3. **Follow up.** The Follow-up view lists orders asked for more, rejected,
-   or with nothing on the form. Email sends one templated reminder per order
-   per day; the CSV has no phone numbers, so phone-preferred buyers are
-   called outside the app.
-4. **Send to fulfillment.** Emails fulfillment every order they haven't been
-   told is cleared, in their own columns and order, with `Verified?` filled.
-   Verified orders then leave the queue; everything else comes round again
-   in the next send. Afterwards the matching rows of the form's linked
+   or with nothing on the form. **Email** on a row opens a reminder to that
+   buyer, by name, and records that they were asked. **Email everyone** opens
+   one draft with every listed buyer in Bcc — two drafts when some have
+   already sent something and are asked for more instead — leaving out
+   rejected orders and anyone emailed in the last 20 hours. After sending,
+   **Mark as emailed** records them. The CSV has no phone numbers, so
+   phone-preferred buyers get the email and are called outside the app.
+
+   An order still pending with a suggested response isn't in Follow-up, since
+   it is waiting on a reviewer rather than the buyer. Mark it **Needs more
+   info** to chase it.
+4. **Send to fulfillment.** **Download CSV** builds every order fulfillment
+   hasn't been told is cleared, in their own columns and order, with
+   `Verified?` filled. **Open draft** starts an email to fulfillment listing
+   the ready orders; attach the file and send it. **Mark as sent** then
+   clears the verified orders the dialog listed, so one verified while the
+   email was being written waits for the next send; everything else comes
+   round again too. Afterwards the matching rows of the form's linked
    response sheet, if it has one with a `Verified?` column, get their ✅
    (best effort — the toast says if Google refused). Rows are found by
-   submission time and email, since the sheet has no response IDs. **Download CSV**
-   builds the same file without sending or clearing anything.
+   submission time and email, since the sheet has no response IDs.
+   Downloading the file alone clears nothing.
 
 ## Data
 

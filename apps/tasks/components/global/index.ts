@@ -1,5 +1,6 @@
 export { AccessPreviewBanner } from "./AccessPreviewBanner";
 export { DemoBanner } from "./DemoBanner";
+export { CopyButton } from "./CopyButton";
 export { CountBadge } from "./CountBadge";
 export {
   editorPageContentClassName,

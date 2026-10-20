@@ -115,6 +115,25 @@ export function followUpOrders(queue: Pick<RydQueue, "orders">) {
   );
 }
 
+/**
+ * A buyer emailed this recently isn't emailed again by Email everyone. Under
+ * a day, so a reminder sent each morning is never skipped.
+ */
+export const RYD_REMIND_AGAIN_MS = 20 * 60 * 60 * 1000;
+
+/** The follow-up orders Email everyone would send to right now. */
+export function remindableOrders(orders: RydQueueOrder[], now = Date.now()) {
+  return orders.filter(
+    (order) =>
+      order.status !== "rejected" &&
+      order.email &&
+      !(
+        order.lastEmailedAt &&
+        Date.parse(order.lastEmailedAt) > now - RYD_REMIND_AGAIN_MS
+      ),
+  );
+}
+
 /** Form responses no order has claimed or been offered. */
 export function unmatchedSubmitters(
   queue: Pick<RydQueue, "orders" | "submissions">,

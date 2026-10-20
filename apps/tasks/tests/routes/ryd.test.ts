@@ -291,4 +291,103 @@ describe("RY-D routes", () => {
     expect(response.status).toBe(200);
     expect(calls).toEqual([["delete"], ["eq", "submission_key", "response-1"]]);
   });
+  it("records drafted reminders only on orders still waiting on the buyer", async () => {
+    const calls: unknown[] = [];
+    getAdminClient.mockReturnValue(
+      admin({
+        ryd_orders: table(
+          {
+            data: [{ order_id: "1001", email: "ryan@example.com" }],
+            error: null,
+          },
+          calls,
+        ),
+      }),
+    );
+    const { POST } = await import("@/app/api/ryd/reminders/route");
+
+    const response = await POST(
+      new Request(
+        "http://localhost/api/ryd/reminders",
+        json({ orderIds: ["1001", "1002", "1001"] }, "POST"),
+      ),
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ markedCount: 1 });
+    expect(calls).toContainEqual(["in", "order_id", ["1001", "1002"]]);
+    expect(calls).toContainEqual(["in", "status", ["pending", "needs_info"]]);
+    expect(calls).toContainEqual(["is", "cleared_batch_id", null]);
+  });
+
+  it("rejects a reminder request with no orders", async () => {
+    const { POST } = await import("@/app/api/ryd/reminders/route");
+
+    const response = await POST(
+      new Request(
+        "http://localhost/api/ryd/reminders",
+        json({ orderIds: [] }, "POST"),
+      ),
+    );
+
+    expect(response.status).toBe(400);
+  });
+
+  it("marks a batch sent, clearing only the orders the reviewer drafted", async () => {
+    const orderCalls: unknown[] = [];
+    const batchCalls: unknown[] = [];
+    getAdminClient.mockReturnValue(
+      admin({
+        ryd_settings: table({
+          data: { form_id: null, fulfillment_email: "toney@example.com" },
+          error: null,
+        }),
+        ryd_imports: table({ data: { headers: ["OrderId"] }, error: null }),
+        ryd_orders: table(
+          {
+            data: [
+              {
+                order_id: "1001",
+                raw: { OrderId: "1001" },
+                status: "verified",
+              },
+              {
+                order_id: "1002",
+                raw: { OrderId: "1002" },
+                status: "verified",
+              },
+              { order_id: "1003", raw: { OrderId: "1003" }, status: "pending" },
+            ],
+            error: null,
+          },
+          orderCalls,
+        ),
+        ryd_fulfillment_batches: table({ data: null, error: null }, batchCalls),
+      }),
+    );
+    loadRydGoogleIntegration.mockResolvedValue(null);
+    const { POST } = await import("@/app/api/ryd/batches/route");
+
+    const response = await POST(
+      new Request(
+        "http://localhost/api/ryd/batches",
+        json({ orderIds: ["1001"] }, "POST"),
+      ),
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      orderCount: 3,
+      verifiedCount: 1,
+    });
+    expect(batchCalls[0]).toEqual([
+      "insert",
+      expect.objectContaining({
+        recipient: "toney@example.com",
+        order_count: 3,
+        verified_count: 1,
+      }),
+    ]);
+    expect(orderCalls).toContainEqual(["in", "order_id", ["1001"]]);
+  });
 });
