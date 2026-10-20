@@ -140,12 +140,12 @@ export function ProductDetail({ product, title = product.title, designField, gal
         {hasMultipleImages && (
           <div ref={thumbnailsRef} role="group" aria-label="Product photos" className="relative flex gap-4 overflow-x-auto overscroll-x-contain p-1 pb-3 [scrollbar-width:thin]">
             {galleryGroups.map((group) => (
-              <div key={group.productId} role="group" aria-label={`${group.label} photos`} className="w-max max-w-full shrink-0 overflow-hidden rounded-2xl border border-black/10 p-3 dark:border-white/10">
-                <div className="mb-2 flex items-baseline gap-3 whitespace-nowrap">
+              <div key={group.productId} role="group" aria-label={`${group.label} photos`} className="w-max max-w-full shrink-0 overflow-hidden rounded-2xl border border-black/10 py-3 dark:border-white/10">
+                <div className="mb-2 flex items-baseline gap-3 whitespace-nowrap px-3">
                   <Kicker>{group.label}</Kicker>
                   <span className="text-xs text-black/70 dark:text-white/70">{group.images.length} {group.images.length === 1 ? "photo" : "photos"}</span>
                 </div>
-                <div data-photo-scroll className="-m-1 flex gap-3 overflow-x-auto overscroll-x-contain p-1 [scrollbar-width:thin]">
+                <div data-photo-scroll className="-my-1 flex gap-3 overflow-x-auto overscroll-x-contain px-3 py-1 [scrollbar-width:thin]">
                   {group.images.map((entry) => (
                     <button key={entry.key} type="button" onClick={() => selectGalleryImage(entry)} aria-label={`View ${entry.label}`} aria-pressed={entry.productId === product.id && activeImage?.url === entry.image.url} className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 sm:h-20 sm:w-20 dark:focus-visible:ring-white/40 ${entry.productId === product.id && activeImage?.url === entry.image.url ? "border-black dark:border-white" : "border-black/10 dark:border-white/10"}`}>
                       <Image src={entry.image.url} alt="" fill sizes="120px" className="object-contain" />
