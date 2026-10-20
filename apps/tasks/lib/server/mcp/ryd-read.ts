@@ -175,7 +175,7 @@ export function filterRydProfiles(
       profile.orderId,
       profile.buyerFirstName,
       profile.buyerLastName,
-      profile.ryanFirstName,
+      profile.formFirstName,
       profile.emailDomain,
       profile.items,
       profile.note,

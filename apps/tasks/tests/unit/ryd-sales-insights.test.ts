@@ -5,6 +5,7 @@ import {
   orderDate,
   orderTotal,
   profileRydOrder,
+  ryanPosition,
   summarizeRydSales,
   type RydInsightOrder,
 } from "@/lib/ryd/sales-insights";
@@ -93,7 +94,8 @@ describe("RY-D order profiles", () => {
       emailKind: "personal",
       total: 36.75,
       sentToFulfillment: true,
-      ryanFirstName: "Ryan",
+      formFirstName: "Ryan",
+      ryanPosition: "first",
       likelyGift: false,
     });
     const serialized = JSON.stringify(profile);
@@ -101,11 +103,26 @@ describe("RY-D order profiles", () => {
     expect(serialized).not.toContain("secret-upload");
   });
 
+  it("records where Ryan falls in the form's name", () => {
+    const middle = profileRydOrder(order({ first_name: "Ryan", last_name: "Fox" }), [
+      submission({ legalName: "Steven Ryan Fox" }),
+    ]);
+    expect(middle).toMatchObject({
+      formFirstName: "Steven",
+      ryanPosition: "middle",
+      likelyGift: false,
+    });
+    expect(ryanPosition("Fox Ryan")).toBe("last");
+    expect(ryanPosition("Rian Fox")).toBe("first");
+    expect(ryanPosition("Jamie Perez")).toBe("absent");
+    expect(ryanPosition("")).toBeNull();
+  });
+
   it("flags a gift when the form names someone other than the buyer", () => {
     const gift = profileRydOrder(order({ first_name: "Jamie" }), [
       submission({ legalName: "Ryan Pêrez" }),
     ]);
-    expect(gift).toMatchObject({ ryanFirstName: "Ryan", likelyGift: true });
+    expect(gift).toMatchObject({ formFirstName: "Ryan", likelyGift: true });
     expect(profileRydOrder(order(), []).likelyGift).toBeNull();
   });
 });

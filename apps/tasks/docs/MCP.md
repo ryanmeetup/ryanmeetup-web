@@ -38,8 +38,9 @@ The API exposes database-backed workspace content:
 - RY-D sales, when RY-D Verification is on: every fulfillment order (including
   those already sent back as verified), its decision and reviewer note, and the
   RY-dentification form answers and social links of the submission linked to
-  it, plus a summary of buyers by name spelling, email type, gifts, month, and
-  form answer.
+  it, plus a summary of buyers by name spelling, where Ryan falls in the
+  form's name (first, middle, or last), email type, gifts, month, and form
+  answer.
 
 It deliberately excludes encrypted integration tokens, environment secrets,
 MCP token hashes, rate-limit internals, raw Supabase auth records, and binary

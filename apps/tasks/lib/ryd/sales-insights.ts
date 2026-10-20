@@ -26,6 +26,8 @@ export type RydInsightOrder = {
   created_at: string;
 };
 
+export type RyanPosition = "first" | "middle" | "last" | "absent";
+
 export type EmailKind = "personal" | "school" | "work_or_other" | "none";
 
 export type RydOrderProfile = {
@@ -46,8 +48,10 @@ export type RydOrderProfile = {
   storeName: string;
   organization: string;
   note: string | null;
-  /** The Ryan the form names, which is not the buyer on a gift order. */
-  ryanFirstName: string | null;
+  /** The first name on the form, which is not the buyer's on a gift order. */
+  formFirstName: string | null;
+  /** Where Ryan falls in the form's name: "Steven Ryan Fox" is "middle". */
+  ryanPosition: RyanPosition | null;
   /** True when the form names someone the buyer's first name isn't. */
   likelyGift: boolean | null;
   submissions: {
@@ -108,6 +112,17 @@ function displayName(value: string) {
   return first ? first[0].toUpperCase() + first.slice(1) : "";
 }
 
+const RYAN_SPELLINGS = new Set(["ryan", "ryann", "ryanne", "rian", "ryen", "ryne"]);
+
+export function ryanPosition(legalName: string): RyanPosition | null {
+  const tokens = nameTokens(legalName);
+  if (!tokens.length) return null;
+  const index = tokens.findIndex((token) => RYAN_SPELLINGS.has(token));
+  if (index < 0) return "absent";
+  if (index === 0) return "first";
+  return index === tokens.length - 1 ? "last" : "middle";
+}
+
 export function profileRydOrder(
   order: RydInsightOrder,
   submissions: RydSubmission[],
@@ -115,7 +130,7 @@ export function profileRydOrder(
   const at = order.email.lastIndexOf("@");
   const domain = at < 0 ? null : order.email.slice(at + 1) || null;
   const legalName = submissions.find((s) => s.legalName)?.legalName ?? "";
-  const ryanFirstName = legalName ? displayName(legalName) : null;
+  const formFirstName = legalName ? displayName(legalName) : null;
   const buyerFirstName = displayName(order.first_name);
   return {
     orderId: order.order_id,
@@ -134,7 +149,8 @@ export function profileRydOrder(
     storeName: (order.raw["Store Name"] ?? "").trim(),
     organization: (order.raw.Organization ?? "").trim(),
     note: order.note,
-    ryanFirstName,
+    formFirstName,
+    ryanPosition: ryanPosition(legalName),
     likelyGift:
       legalName && buyerFirstName
         ? !nameTokens(legalName).includes(buyerFirstName.toLowerCase())
@@ -184,7 +200,8 @@ export function summarizeRydSales(profiles: RydOrderProfile[]) {
     byStatus: {} as Record<string, Bucket>,
     byMonth: {} as Record<string, Bucket>,
     byBuyerFirstName: {} as Record<string, Bucket>,
-    byRyanFirstName: {} as Record<string, Bucket>,
+    byFormFirstName: {} as Record<string, Bucket>,
+    byRyanPosition: {} as Record<string, Bucket>,
     byLastName: {} as Record<string, Bucket>,
     byEmailKind: {} as Record<string, Bucket>,
     byEmailDomain: {} as Record<string, Bucket>,
@@ -217,7 +234,8 @@ export function summarizeRydSales(profiles: RydOrderProfile[]) {
     add(groups.byOrganization, profile.organization, total);
     if (profile.submissions.length) {
       linked += 1;
-      add(groups.byRyanFirstName, profile.ryanFirstName, total);
+      add(groups.byFormFirstName, profile.formFirstName, total);
+      add(groups.byRyanPosition, profile.ryanPosition, total);
     }
     if (profile.likelyGift === true) gifts += 1;
     if (profile.likelyGift === false) selfPurchases += 1;
