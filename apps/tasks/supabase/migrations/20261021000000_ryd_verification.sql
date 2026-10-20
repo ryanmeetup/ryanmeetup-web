@@ -72,6 +72,8 @@ create table if not exists public.ryd_orders (
   -- goes back is their file with one column changed.
   raw jsonb not null check (jsonb_typeof(raw) = 'object'),
   first_import_id uuid not null references public.ryd_imports (id) on delete restrict,
+  -- Where the row sat in that file, so the export comes back in their order.
+  import_position integer not null default 0 check (import_position >= 0),
   status text not null default 'pending'
     check (status in ('pending', 'verified', 'needs_info', 'rejected')),
   note text check (char_length(note) <= 2000),
