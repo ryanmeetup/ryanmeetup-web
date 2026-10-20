@@ -48,7 +48,7 @@ export const RYD_STATUS_RAILS: Record<RydOrderStatus, string> = {
 };
 
 const CHIP =
-  "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold";
+  "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-sans text-[11px] font-semibold normal-case tracking-normal";
 
 /**
  * Where an order stands. A chip, not a button: the label and icon carry the
