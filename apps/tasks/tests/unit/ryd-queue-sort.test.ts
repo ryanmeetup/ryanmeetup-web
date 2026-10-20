@@ -140,22 +140,7 @@ describe("RY-D queue sorting", () => {
     });
   });
 
-  it("falls back to the buyer's name when the form gives none", () => {
-    const orders = [
-      order({ orderId: "form-middle", firstName: "Ryan", lastName: "A" }),
-      order({ orderId: "no-form-ryan", firstName: "Ryan", lastName: "B" }),
-      order({ orderId: "no-form-other", firstName: "Brooke", lastName: "C" }),
-    ];
-    const positions = new Map([
-      ["form-middle", "middle" as const],
-      ["no-form-ryan", null],
-    ]);
-    expect(
-      ids(sortRydOrders(orders, { key: "ryan", descending: false }, positions)),
-    ).toEqual(["no-form-ryan", "form-middle", "no-form-other"]);
-  });
-
-  it("reads Ryan's position from the linked or suggested submission", () => {
+  it("reads Ryan's position from the submission, else the buyer's name", () => {
     const submission = (key: string, email: string, legalName: string) => ({
       key,
       submittedAt: "",
@@ -176,16 +161,28 @@ describe("RY-D queue sorting", () => {
         order({ orderId: "linked", linkedKeys: ["k1"] }),
         order({
           orderId: "suggested",
-          suggestion: { email: "gee@test.dev", confidence: "strong", reasons: [] },
+          suggestion: {
+            email: "gee@test.dev",
+            confidence: "strong",
+            reasons: [],
+          },
         }),
-        order({ orderId: "nothing" }),
+        order({ orderId: "buyer-ryan", firstName: "Ryan", lastName: "Burch" }),
+        order({
+          orderId: "buyer-other",
+          firstName: "Brooke",
+          lastName: "Ericson",
+        }),
+        order({ orderId: "nameless", firstName: "", lastName: "" }),
       ],
       submissions,
     );
     expect([...positions]).toEqual([
       ["linked", "middle"],
       ["suggested", "first"],
-      ["nothing", null],
+      ["buyer-ryan", "first"],
+      ["buyer-other", "absent"],
+      ["nameless", null],
     ]);
   });
 

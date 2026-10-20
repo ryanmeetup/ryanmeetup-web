@@ -34,7 +34,7 @@ export function RydOrderCard({
   onReview,
 }: {
   order: RydQueueOrder;
-  /** Where Ryan falls in the form's name, from `orderRyanPositions`. */
+  /** Where Ryan falls in the buyer's name, from `orderRyanPositions`. */
   ryanPosition: RyanPosition | null | undefined;
   /** Shows when the buyer was last emailed and the button to email them. */
   followUp: boolean;

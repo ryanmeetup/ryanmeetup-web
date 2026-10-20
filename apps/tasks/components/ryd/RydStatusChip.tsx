@@ -106,8 +106,9 @@ export function RydConfidenceChip({
 }
 
 /**
- * Said beside the buyer when the form's Ryan isn't a first name, so a
- * reviewer sees it before verifying. A first-name Ryan gets nothing.
+ * Said beside the buyer when their Ryan isn't a first name, read from the form
+ * or else the order, so a reviewer sees it before verifying. A first-name Ryan
+ * gets nothing.
  */
 const RYAN_POSITION_CHIPS: Partial<
   Record<RyanPosition, { label: string; icon: IconType; className: string }>
@@ -125,7 +126,7 @@ const RYAN_POSITION_CHIPS: Partial<
       "border-orange-500/35 bg-orange-500/10 text-orange-800 dark:border-orange-400/35 dark:bg-orange-500/15 dark:text-orange-200",
   },
   absent: {
-    label: "No Ryan on the form",
+    label: "Not a Ryan",
     icon: FiAlertTriangle,
     className:
       "border-rose-500/35 bg-rose-500/10 text-rose-800 dark:border-rose-400/35 dark:bg-rose-500/15 dark:text-rose-200",

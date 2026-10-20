@@ -60,17 +60,19 @@ export function orderSubmissions(
 
 /**
  * Where Ryan falls in the name the order's form submission gives, linked or
- * suggested. Null when there's no submission, or it gives no name.
+ * suggested, or in the buyer's own name when the form gives none. Null only
+ * when there's no name either way.
  */
 export function orderRyanPosition(
   order: RydQueueOrder,
   submissions: RydSubmission[],
   byKey = submissionsByKey(submissions),
 ): RyanPosition | null {
-  const name = orderSubmissions(order, submissions, byKey).submissions.find(
-    (submission) => submission.legalName,
-  )?.legalName;
-  return name ? ryanPosition(name) : null;
+  const name =
+    orderSubmissions(order, submissions, byKey).submissions.find(
+      (submission) => submission.legalName,
+    )?.legalName ?? `${order.firstName} ${order.lastName}`;
+  return ryanPosition(name);
 }
 
 export function orderRyanPositions(
@@ -199,7 +201,7 @@ function orderedTime(order: RydQueueOrder) {
 
 /**
  * The Ryan sorts group by where Ryan falls in the form's name, or the buyer's
- * name when the form gives none. `ryan` runs
+ * name when the form gives none (see `orderRyanPosition`). `ryan` runs
  * first-name Ryans to non-Ryans; `middle-name` pulls middle-name Ryans to the
  * top for checking.
  */
@@ -231,9 +233,8 @@ const COMPARE: Record<
 /**
  * Orders sorted by one column. Ties fall back to name, ascending whichever
  * way the column runs, so a group of Pending orders still reads A to Z.
- * The Ryan sorts read `positions`, falling back to the buyer's name when the
- * form gives none; an order with neither can't be placed, so it goes last in
- * either direction.
+ * The Ryan sorts read `positions`; an order with no name to read can't be
+ * placed, so it goes last in either direction.
  */
 export function sortRydOrders(
   orders: RydQueueOrder[],
@@ -245,17 +246,13 @@ export function sortRydOrders(
   const { key } = sort;
   if (key === "ryan" || key === "middle-name") {
     const rank = (order: RydQueueOrder) => {
-      const position =
-        positions.get(order.orderId) ??
-        ryanPosition(`${order.firstName} ${order.lastName}`);
+      const position = positions.get(order.orderId);
       return position ? RYAN_RANK[key][position] : null;
     };
     return [...orders].sort((a, b) => {
       const [left, right] = [rank(a), rank(b)];
       if (left === null || right === null)
-        return (
-          Number(left === null) - Number(right === null) || byName(a, b)
-        );
+        return Number(left === null) - Number(right === null) || byName(a, b);
       return direction * (left - right) || byName(a, b);
     });
   }
