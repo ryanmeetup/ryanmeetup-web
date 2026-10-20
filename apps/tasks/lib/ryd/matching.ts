@@ -83,10 +83,21 @@ export function scoreSubmitter(
   const firstMatches = names.some((name) =>
     nameIncludes(name, order.firstName),
   );
-  // The rule for gifts: when the buyer isn't the Ryan on the form, nothing
-  // here suggests the pair, even when a parent shares the Ryan's surname. A
-  // reviewer links Jamie Perez to Ryan Pêrez by hand.
-  if (!firstMatches) return null;
+  // The rule for gifts: when the buyer isn't the Ryan on the form, a shared
+  // surname suggests nothing, since Jamie Perez may be any Ryan Pêrez's
+  // parent. The same email is different: the buyer filled in the form
+  // themselves, for the Ryan they bought it for. It's still only possible,
+  // so a reviewer reads the evidence before verifying.
+  if (!firstMatches) {
+    const ryan = names.find((name) => nameTokens(name).length > 0);
+    return orderEmail && orderEmail === theirs && ryan
+      ? {
+          email: theirs,
+          confidence: "possible",
+          reasons: ["Email matches", `A gift: the form names ${ryan.trim()}`],
+        }
+      : null;
+  }
 
   const surnameMatches =
     nameTokens(order.lastName).length > 0 &&

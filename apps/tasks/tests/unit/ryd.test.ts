@@ -200,20 +200,30 @@ describe("matching", () => {
     expect(result?.confidence).toBe("possible");
   });
 
-  it("never suggests a gift order whose buyer has another surname", () => {
+  it("offers a gift as possible when the buyer used their own email", () => {
     expect(
       scoreSubmitter(
-        order("Giftgiver", "pat@test.dev", "1", "Pat"),
+        order("Giftgiver", "Pat@test.dev", "1", "Pat"),
         one({ legalName: "Ryan Kidname", email: "pat@test.dev" }),
       ),
-    ).toBeNull();
+    ).toEqual({
+      email: "pat@test.dev",
+      confidence: "possible",
+      reasons: ["Email matches", "A gift: the form names Ryan Kidname"],
+    });
   });
 
-  it("never suggests a parent who shares the Ryan's surname", () => {
+  it("never suggests a gift on a name or near-miss email alone", () => {
     expect(
       scoreSubmitter(
         order("Perez", "jamie@test.dev", "1", "Jamie"),
-        one({ legalName: "Ryan Pêrez", email: "jamie@test.dev" }),
+        one({ legalName: "Ryan Pêrez", email: "ryan.perez@test.dev" }),
+      ),
+    ).toBeNull();
+    expect(
+      scoreSubmitter(
+        order("Giftgiver", "pat@test.dev", "1", "Pat"),
+        one({ legalName: "Ryan Kidname", email: "pat1@test.dev" }),
       ),
     ).toBeNull();
   });
