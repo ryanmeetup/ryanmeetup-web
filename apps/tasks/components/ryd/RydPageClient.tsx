@@ -8,6 +8,7 @@ import {
   EmptyState,
   FilterChip,
   ManagementSurface,
+  Pagination,
   PendingResults,
   SearchInput,
   toast,
@@ -29,6 +30,7 @@ import {
   MetricLinkCard,
   WorkspacePageShell,
 } from "@/components/global";
+import { usePagination } from "@/hooks/usePagination";
 import { mutate, parseMutationResponse } from "@/lib/mutation-client";
 import { errorMessage } from "@/lib/presentation";
 import { RYD_STATUS_LABELS, type RydOrderStatus } from "@/lib/ryd/orders";
@@ -165,12 +167,14 @@ export function RydPageClient({
   const status = rydStatusParam(statusParam);
   const layout = layoutParam === "cards" ? "cards" : "table";
   const sort = rydSortParam(sortParam);
+  const { page, pageSize, setPage, setPageSize, syncPage } = usePagination();
 
   // Clicking a card shows that status; clicking it again shows every order.
   function filterByStatus(param: RydStatusParam) {
     const next = view === "queue" && status === param ? "all" : param;
     setViewParam("");
     setStatusParam(next === "pending" ? "" : next);
+    setPage(1);
   }
 
   const refresh = useCallback(async () => {
@@ -211,6 +215,28 @@ export function RydPageClient({
     queryParam: "search",
   });
   const sorted = useMemo(() => sortRydOrders(filtered, sort), [filtered, sort]);
+  const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pageOrders = sorted.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize,
+  );
+
+  // Deciding orders can empty the last page; land on the one that's left.
+  useEffect(() => {
+    if (page !== currentPage) syncPage(currentPage);
+  }, [currentPage, page, syncPage]);
+  const pagination = (
+    <Pagination
+      page={currentPage}
+      pageSize={pageSize}
+      totalCount={sorted.length}
+      itemLabel="orders"
+      disabled={searchPending}
+      onPageChange={setPage}
+      onPageSizeChange={setPageSize}
+    />
+  );
   const openOrder = queue.orders.find((order) => order.orderId === openOrderId);
   const orderOptions = useMemo(
     () =>
@@ -403,7 +429,10 @@ export function RydPageClient({
                   <FilterChip
                     key={key}
                     active={view === key}
-                    onClick={() => setViewParam(key === "queue" ? "" : key)}
+                    onClick={() => {
+                      setViewParam(key === "queue" ? "" : key);
+                      setPage(1);
+                    }}
                     className="inline-flex items-center gap-1.5"
                   >
                     <Icon aria-hidden className="h-3 w-3" />
@@ -467,7 +496,10 @@ export function RydPageClient({
                       label="Search orders"
                       name="search"
                       value={query}
-                      onChange={(event) => setQuery(event.target.value)}
+                      onChange={(event) => {
+                        setQuery(event.target.value);
+                        setPage(1);
+                      }}
                       placeholder="Search by Ryan, email, or order number..."
                       pending={searchPending}
                       pendingLabel="Loading order results"
@@ -498,9 +530,10 @@ export function RydPageClient({
                       label="Status"
                       options={STATUS_OPTIONS}
                       value={status}
-                      onChange={(value) =>
-                        setStatusParam(value === "pending" ? "" : value)
-                      }
+                      onChange={(value) => {
+                        setStatusParam(value === "pending" ? "" : value);
+                        setPage(1);
+                      }}
                     />
                   )}
                 </div>
@@ -520,30 +553,39 @@ export function RydPageClient({
                     />
                   ) : layout === "table" ? (
                     <RydOrderTable
-                      orders={sorted}
+                      orders={pageOrders}
                       label={VIEW_LABELS[view]}
                       sort={sort}
-                      onSort={(next) => setSortParam(rydSortValue(next))}
+                      onSort={(next) => {
+                        setSortParam(rydSortValue(next));
+                        setPage(1);
+                      }}
                       followUp={view === "follow-up"}
                       emailConfigured={emailConfigured}
                       emailing={emailing}
                       onEmail={emailBuyer}
                       onReview={(order) => setOpenOrderId(order.orderId)}
+                      footer={pagination}
                     />
                   ) : (
-                    <ul className="grid gap-3 xl:grid-cols-2">
-                      {sorted.map((order) => (
-                        <RydOrderCard
-                          key={order.orderId}
-                          order={order}
-                          followUp={view === "follow-up"}
-                          emailConfigured={emailConfigured}
-                          emailing={emailing}
-                          onEmail={() => emailBuyer(order)}
-                          onReview={() => setOpenOrderId(order.orderId)}
-                        />
-                      ))}
-                    </ul>
+                    <div className="space-y-3">
+                      <ul className="grid gap-3 xl:grid-cols-2">
+                        {pageOrders.map((order) => (
+                          <RydOrderCard
+                            key={order.orderId}
+                            order={order}
+                            followUp={view === "follow-up"}
+                            emailConfigured={emailConfigured}
+                            emailing={emailing}
+                            onEmail={() => emailBuyer(order)}
+                            onReview={() => setOpenOrderId(order.orderId)}
+                          />
+                        ))}
+                      </ul>
+                      <div className="overflow-hidden rounded-2xl border border-black/10 dark:border-white/10 [&>nav]:border-t-0">
+                        {pagination}
+                      </div>
+                    </div>
                   )}
                 </PendingResults>
               </section>
