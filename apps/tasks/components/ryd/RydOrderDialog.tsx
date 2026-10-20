@@ -398,6 +398,7 @@ export function RydOrderDialog({
                           pending === `link:${submission.key}` ||
                           pending === "verified"
                         }
+                        loadingText="Linking..."
                         onClick={() =>
                           run(
                             `link:${submission.key}`,
