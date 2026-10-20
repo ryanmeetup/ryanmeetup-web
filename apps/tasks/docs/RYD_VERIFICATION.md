@@ -12,15 +12,21 @@ Access setting, and every `/api/ryd` route answer as if they don't exist.
 
 ## Setting it up on an instance
 
-1. Apply `supabase/migrations/20261021000000_ryd_verification.sql`.
-2. In Google Cloud, on the same OAuth client the Calendar uses, add the
-   redirect URI `https://<instance>/api/integrations/ryd-google/callback`, and
-   add the `spreadsheets` and `drive.readonly` scopes to the consent screen.
+1. Apply `supabase/migrations/20261021000000_ryd_verification.sql` and
+   `20261022000000_ryd_form_source.sql`.
+2. In Google Cloud, on the same OAuth client the Calendar uses:
+   - enable the **Google Forms**, **Google Sheets**, and **Google Drive** APIs;
+   - add the redirect URI
+     `https://<instance>/api/integrations/ryd-google/callback`;
+   - add the `forms.body.readonly`, `forms.responses.readonly`,
+     `spreadsheets`, and `drive.readonly` scopes to the consent screen.
+
    `drive.readonly` is a restricted scope: keep the client in Testing (or
    Internal) with the form owner as a test user.
 3. Turn on **RY-D verification** in /admin/settings → Features.
 4. On /ryd → Settings, connect Google **as the account that owns the form**,
-   paste the form responses sheet link, and enter fulfillment's email.
+   paste the form's **editor** link (`docs.google.com/forms/d/<id>/edit`, not
+   the public `/forms/d/e/…` one), and enter fulfillment's email.
 5. The page starts restricted to owners. Open it to the people who verify
    from /admin/access.
 
@@ -34,8 +40,14 @@ page still works and the file can be downloaded and sent by hand.
    Re-uploading the same file changes nothing; an order already in the queue
    keeps its decision. A ✅ fulfillment already put in the file imports as
    verified.
-2. **Review.** Form responses are read live from the sheet and paired with
-   orders. Suggestions, strongest first:
+2. **Review.** The RY-dentification form is the source of truth. Its
+   responses are read live through the Google Forms API — not from the
+   response spreadsheet — and paired with orders. The form's link never
+   changes but its questions may: the name, email, and social questions are
+   recognised by what they ask, every upload question contributes files, and
+   any other question is shown on the submission as an extra answer, so a
+   new question never hides what people wrote. Suggestions, strongest
+   first:
    - same email (any case) and full name → strong;
    - an email one or two characters off, or a mistyped domain → possible;
    - a social handle equal to the order email's name (`pineapplemage`) →
@@ -54,8 +66,10 @@ page still works and the file can be downloaded and sent by hand.
 4. **Send to fulfillment.** Emails fulfillment every order they haven't been
    told is cleared, in their own columns and order, with `Verified?` filled.
    Verified orders then leave the queue; everything else comes round again
-   in the next send. Afterwards the linked rows in the form sheet get their
-   ✅ (best effort — the toast says if Google refused). **Download CSV**
+   in the next send. Afterwards the matching rows of the form's linked
+   response sheet, if it has one with a `Verified?` column, get their ✅
+   (best effort — the toast says if Google refused). Rows are found by
+   submission time and email, since the sheet has no response IDs. **Download CSV**
    builds the same file without sending or clearing anything.
 
 ## Data
@@ -66,8 +80,8 @@ Google and are read per request. Uploads are streamed through
 form's responses and never caches them.
 
 The database keeps the orders (`ryd_orders`, with fulfillment's raw row), the
-pairings (`ryd_order_submissions`, keyed by email plus form timestamp so a
-re-sorted sheet doesn't break them), an audit trail (`ryd_order_events`), the
+pairings (`ryd_order_submissions`, keyed by the form's response ID, which
+survives a respondent editing their answers), an audit trail (`ryd_order_events`), the
 imports and batches, the settings, and the Google connection. Every table is
 service-role only; routes check the instance switch and
 `can_view_workspace_area('ryd')` first.
