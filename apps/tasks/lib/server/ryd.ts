@@ -201,13 +201,12 @@ export async function loadRydQueue(admin: SupabaseClient): Promise<RydQueue> {
   );
 
   const rows = (ordersResult.data ?? []) as RydOrderRow[];
-  // Only undecided, unpaired orders are offered a suggestion; a decided order
-  // has had a human look at it already.
+  // Every unpaired order is offered a suggestion, decided or not. An order
+  // ticked in the fulfillment file arrives verified with nothing linked, and
+  // without one it would read as having no form submission at all.
   const suggestions = suggestMatches(
     rows
-      .filter(
-        (row) => !linkedByOrder.has(row.order_id) && row.status !== "verified",
-      )
+      .filter((row) => !linkedByOrder.has(row.order_id))
       .map((row) => ({
         orderId: row.order_id,
         firstName: row.first_name,
