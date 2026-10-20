@@ -3,6 +3,7 @@ import {
   type RydSubmission,
   type RydSubmitter,
 } from "./matching";
+import { ryanPosition, type RyanPosition } from "./normalize";
 import type { RydOrderStatus } from "./orders";
 import type { RydQueue, RydQueueOrder } from "./queue-types";
 
@@ -55,6 +56,34 @@ export function orderSubmissions(
       : [],
     missing: 0,
   };
+}
+
+/**
+ * Where Ryan falls in the name the order's form submission gives, linked or
+ * suggested. Null when there's no submission, or it gives no name.
+ */
+export function orderRyanPosition(
+  order: RydQueueOrder,
+  submissions: RydSubmission[],
+  byKey = submissionsByKey(submissions),
+): RyanPosition | null {
+  const name = orderSubmissions(order, submissions, byKey).submissions.find(
+    (submission) => submission.legalName,
+  )?.legalName;
+  return name ? ryanPosition(name) : null;
+}
+
+export function orderRyanPositions(
+  orders: RydQueueOrder[],
+  submissions: RydSubmission[],
+) {
+  const byKey = submissionsByKey(submissions);
+  return new Map(
+    orders.map((order) => [
+      order.orderId,
+      orderRyanPosition(order, submissions, byKey),
+    ]),
+  );
 }
 
 /** Submissions already linked to some other order, so not offered here. */
@@ -124,7 +153,14 @@ export function orderSearchText(order: RydQueueOrder) {
     .toLowerCase();
 }
 
-export const RYD_SORT_KEYS = ["name", "status", "form", "ordered"] as const;
+export const RYD_SORT_KEYS = [
+  "name",
+  "ryan",
+  "middle-name",
+  "status",
+  "form",
+  "ordered",
+] as const;
 export type RydSortKey = (typeof RYD_SORT_KEYS)[number];
 export type RydSort = { key: RydSortKey; descending: boolean } | null;
 
@@ -161,13 +197,26 @@ function orderedTime(order: RydQueueOrder) {
   return Number.isNaN(time) ? Number.POSITIVE_INFINITY : time;
 }
 
+/**
+ * The Ryan sorts group by where Ryan falls in the form's name. `ryan` runs
+ * first-name Ryans to non-Ryans; `middle-name` pulls middle-name Ryans to the
+ * top for checking.
+ */
+const RYAN_RANK: Record<
+  "ryan" | "middle-name",
+  Record<RyanPosition, number>
+> = {
+  ryan: { first: 0, middle: 1, last: 2, absent: 3 },
+  "middle-name": { middle: 0, first: 1, last: 2, absent: 3 },
+};
+
 const byName = (a: RydQueueOrder, b: RydQueueOrder) =>
   a.lastName.localeCompare(b.lastName, undefined, { sensitivity: "base" }) ||
   a.firstName.localeCompare(b.firstName, undefined, { sensitivity: "base" }) ||
   a.orderId.localeCompare(b.orderId, undefined, { numeric: true });
 
 const COMPARE: Record<
-  RydSortKey,
+  Exclude<RydSortKey, keyof typeof RYAN_RANK>,
   (a: RydQueueOrder, b: RydQueueOrder) => number
 > = {
   name: byName,
@@ -181,11 +230,32 @@ const COMPARE: Record<
 /**
  * Orders sorted by one column. Ties fall back to name, ascending whichever
  * way the column runs, so a group of Pending orders still reads A to Z.
+ * The Ryan sorts read `positions`; an order with no name on the form can't be
+ * placed, so it goes last in either direction.
  */
-export function sortRydOrders(orders: RydQueueOrder[], sort: RydSort) {
+export function sortRydOrders(
+  orders: RydQueueOrder[],
+  sort: RydSort,
+  positions: ReadonlyMap<string, RyanPosition | null> = new Map(),
+) {
   if (!sort) return orders;
   const direction = sort.descending ? -1 : 1;
+  const { key } = sort;
+  if (key === "ryan" || key === "middle-name") {
+    const rank = (order: RydQueueOrder) => {
+      const position = positions.get(order.orderId);
+      return position ? RYAN_RANK[key][position] : null;
+    };
+    return [...orders].sort((a, b) => {
+      const [left, right] = [rank(a), rank(b)];
+      if (left === null || right === null)
+        return (
+          Number(left === null) - Number(right === null) || byName(a, b)
+        );
+      return direction * (left - right) || byName(a, b);
+    });
+  }
   return [...orders].sort(
-    (a, b) => direction * COMPARE[sort.key](a, b) || byName(a, b),
+    (a, b) => direction * COMPARE[key](a, b) || byName(a, b),
   );
 }

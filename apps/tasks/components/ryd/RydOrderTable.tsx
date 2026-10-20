@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import {
   FiArrowDown,
   FiArrowUp,
@@ -16,6 +16,7 @@ import {
   DropdownMenuItems,
   DropdownMenuSeparator,
 } from "@ryanmeetup/ui";
+import type { RyanPosition } from "@/lib/ryd/normalize";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 import type { RydSort, RydSortKey } from "@/lib/ryd/queue-view";
 import {
@@ -26,18 +27,45 @@ import {
   RydStatusChip,
 } from "./RydStatusChip";
 
-const SORT_LABELS: Record<RydSortKey, [ascending: string, descending: string]> =
-  {
-    name: ["A to Z by surname", "Z to A by surname"],
-    status: ["Pending first", "Rejected first"],
-    form: ["Surest match first", "No submission first"],
-    ordered: ["Oldest first", "Newest first"],
-  };
+type SortChoice = { key: RydSortKey; descending: boolean; label: string };
+
+const both = (
+  key: RydSortKey,
+  ascending: string,
+  descending: string,
+): SortChoice[] => [
+  { key, descending: false, label: ascending },
+  { key, descending: true, label: descending },
+];
+
+/** Each column's choices, in groups the menu separates. */
+const SORT_CHOICES: Record<
+  "name" | "status" | "form" | "ordered",
+  SortChoice[][]
+> = {
+  name: [
+    both("name", "A to Z by surname", "Z to A by surname"),
+    [
+      { key: "ryan", descending: false, label: "First-name Ryans first" },
+      { key: "middle-name", descending: false, label: "Middle-name Ryans first" },
+      { key: "ryan", descending: true, label: "Non-Ryans first" },
+    ],
+  ],
+  status: [both("status", "Pending first", "Rejected first")],
+  form: [both("form", "Surest match first", "No submission first")],
+  ordered: [both("ordered", "Oldest first", "Newest first")],
+};
+
+/** Said under the buyer when the form's Ryan isn't a first name. */
+const RYAN_POSITION_LABELS: Partial<Record<RyanPosition, string>> = {
+  middle: "Middle-name Ryan",
+  last: "Surname Ryan",
+  absent: "No Ryan on the form",
+};
 
 /**
- * A header that opens its column's sort choices: either direction, picked
- * outright, or back to the queue's own order. `aria-sort` and the arrow say
- * which is on.
+ * A header that opens its column's sort choices: each one picked outright,
+ * or back to the queue's own order. `aria-sort` and the arrow say which is on.
  */
 function SortHeader({
   column,
@@ -46,25 +74,27 @@ function SortHeader({
   onSort,
   className,
 }: {
-  column: RydSortKey;
+  column: keyof typeof SORT_CHOICES;
   label: string;
   sort: RydSort;
   onSort: (sort: RydSort) => void;
   className: string;
 }) {
-  const active = sort?.key === column;
-  const Arrow = active && sort.descending ? FiArrowDown : FiArrowUp;
-  const choices = [false, true].map((descending) => ({
-    descending,
-    label: SORT_LABELS[column][Number(descending)],
-    icon: descending ? FiArrowDown : FiArrowUp,
-    current: active && sort.descending === descending,
-  }));
+  const groups = SORT_CHOICES[column].map((group) =>
+    group.map((choice) => ({
+      ...choice,
+      icon: choice.descending ? FiArrowDown : FiArrowUp,
+      current:
+        sort?.key === choice.key && sort.descending === choice.descending,
+    })),
+  );
+  const active = groups.flat().some((choice) => choice.key === sort?.key);
+  const Arrow = active && sort?.descending ? FiArrowDown : FiArrowUp;
   return (
     <th
       className={className}
       aria-sort={
-        active ? (sort.descending ? "descending" : "ascending") : "none"
+        active ? (sort?.descending ? "descending" : "ascending") : "none"
       }
     >
       <DropdownMenu>
@@ -80,20 +110,25 @@ function SortHeader({
           />
         </DropdownMenuButton>
         <DropdownMenuItems align="start">
-          {choices.map(({ descending, label, icon: Icon, current }) => (
-            <DropdownMenuItem
-              key={label}
-              onClick={() => onSort({ key: column, descending })}
-            >
-              <Icon aria-hidden className="h-4 w-4 opacity-60" />
-              <span className="flex-1">{label}</span>
-              {current && (
-                <>
-                  <FiCheck aria-hidden className="h-4 w-4" />
-                  <span className="sr-only">(current)</span>
-                </>
-              )}
-            </DropdownMenuItem>
+          {groups.map((group, index) => (
+            <Fragment key={group[0].label}>
+              {index > 0 && <DropdownMenuSeparator />}
+              {group.map(({ key, descending, label, icon: Icon, current }) => (
+                <DropdownMenuItem
+                  key={label}
+                  onClick={() => onSort({ key, descending })}
+                >
+                  <Icon aria-hidden className="h-4 w-4 opacity-60" />
+                  <span className="flex-1">{label}</span>
+                  {current && (
+                    <>
+                      <FiCheck aria-hidden className="h-4 w-4" />
+                      <span className="sr-only">(current)</span>
+                    </>
+                  )}
+                </DropdownMenuItem>
+              ))}
+            </Fragment>
           ))}
           {active && (
             <>
@@ -116,6 +151,7 @@ function SortHeader({
  */
 export function RydOrderTable({
   orders,
+  ryanPositions,
   label,
   sort,
   onSort,
@@ -127,6 +163,7 @@ export function RydOrderTable({
   footer,
 }: {
   orders: RydQueueOrder[];
+  ryanPositions: ReadonlyMap<string, RyanPosition | null>;
   label: string;
   sort: RydSort;
   onSort: (sort: RydSort) => void;
@@ -190,6 +227,8 @@ export function RydOrderTable({
               const name = `${order.firstName} ${order.lastName}`.trim();
               const { reasons } = rydMatchEvidence(order);
               const ContactIcon = prefersPhone(order) ? FiPhone : FiMail;
+              const position = ryanPositions.get(order.orderId);
+              const positionLabel = position && RYAN_POSITION_LABELS[position];
               return (
                 <tr
                   key={order.orderId}
@@ -212,6 +251,11 @@ export function RydOrderTable({
                     >
                       {order.displayEmail}
                     </span>
+                    {positionLabel && (
+                      <span className="mt-0.5 block text-[10px] font-semibold uppercase tracking-[0.14em] text-black/70 dark:text-white/70">
+                        {positionLabel}
+                      </span>
+                    )}
                   </td>
                   <td className="px-3 py-2.5">
                     <RydStatusChip status={order.status} />

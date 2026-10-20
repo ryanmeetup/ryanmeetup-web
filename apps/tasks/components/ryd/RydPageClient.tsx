@@ -41,6 +41,7 @@ import {
   orderSearchText,
   RYD_STATUS_PARAMS,
   rydCounts,
+  orderRyanPositions,
   rydSortParam,
   rydSortValue,
   sortRydOrders,
@@ -214,7 +215,14 @@ export function RydPageClient({
     buildHaystack: orderSearchText,
     queryParam: "search",
   });
-  const sorted = useMemo(() => sortRydOrders(filtered, sort), [filtered, sort]);
+  const ryanPositions = useMemo(
+    () => orderRyanPositions(queue.orders, queue.submissions),
+    [queue.orders, queue.submissions],
+  );
+  const sorted = useMemo(
+    () => sortRydOrders(filtered, sort, ryanPositions),
+    [filtered, sort, ryanPositions],
+  );
   const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
   const currentPage = Math.min(page, totalPages);
   const pageOrders = sorted.slice(
@@ -554,6 +562,7 @@ export function RydPageClient({
                   ) : layout === "table" ? (
                     <RydOrderTable
                       orders={pageOrders}
+                      ryanPositions={ryanPositions}
                       label={VIEW_LABELS[view]}
                       sort={sort}
                       onSort={(next) => {

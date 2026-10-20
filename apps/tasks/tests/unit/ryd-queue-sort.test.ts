@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 import {
   claimedElsewhere,
+  orderRyanPositions,
   rydSortParam,
   rydSortValue,
   sortRydOrders,
@@ -99,6 +100,78 @@ describe("RY-D queue sorting", () => {
     expect(
       ids(sortRydOrders(orders, { key: "ordered", descending: false })),
     ).toEqual(["early", "late", "undated"]);
+  });
+
+  it("groups by where Ryan falls in the form's name, unknown last", () => {
+    const orders = [
+      order({ orderId: "none", lastName: "A" }),
+      order({ orderId: "absent", lastName: "B" }),
+      order({ orderId: "middle", lastName: "C" }),
+      order({ orderId: "first", lastName: "D" }),
+      order({ orderId: "last", lastName: "E" }),
+    ];
+    const positions = new Map([
+      ["none", null],
+      ["absent", "absent" as const],
+      ["middle", "middle" as const],
+      ["first", "first" as const],
+      ["last", "last" as const],
+    ]);
+    const sorted = (key: "ryan" | "middle-name", descending: boolean) =>
+      ids(sortRydOrders(orders, { key, descending }, positions));
+    expect(sorted("ryan", false)).toEqual([
+      "first",
+      "middle",
+      "last",
+      "absent",
+      "none",
+    ]);
+    expect(sorted("ryan", true)).toEqual([
+      "absent",
+      "last",
+      "middle",
+      "first",
+      "none",
+    ]);
+    expect(sorted("middle-name", false)[0]).toBe("middle");
+    expect(rydSortParam("middle-name")).toEqual({
+      key: "middle-name",
+      descending: false,
+    });
+  });
+
+  it("reads Ryan's position from the linked or suggested submission", () => {
+    const submission = (key: string, email: string, legalName: string) => ({
+      key,
+      submittedAt: "",
+      submittedAtIso: "",
+      legalName,
+      email,
+      fileIds: [],
+      socialText: "",
+      socialLinks: [],
+      otherAnswers: [],
+    });
+    const submissions = [
+      submission("k1", "fox@test.dev", "Steven Ryan Fox"),
+      submission("k2", "gee@test.dev", "Ryan Gee"),
+    ];
+    const positions = orderRyanPositions(
+      [
+        order({ orderId: "linked", linkedKeys: ["k1"] }),
+        order({
+          orderId: "suggested",
+          suggestion: { email: "gee@test.dev", confidence: "strong", reasons: [] },
+        }),
+        order({ orderId: "nothing" }),
+      ],
+      submissions,
+    );
+    expect([...positions]).toEqual([
+      ["linked", "middle"],
+      ["suggested", "first"],
+      ["nothing", null],
+    ]);
   });
 
   it("leaves the queue's own order alone without a sort", () => {
