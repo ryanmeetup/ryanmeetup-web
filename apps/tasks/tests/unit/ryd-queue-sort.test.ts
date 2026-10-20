@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 import {
   claimedElsewhere,
+  linkableOrders,
   orderRyanPositions,
   rydSortParam,
   rydSortValue,
@@ -201,5 +202,18 @@ describe("claimedElsewhere", () => {
     ];
     expect([...claimedElsewhere(orders, "a")]).toEqual(["k2", "k3"]);
     expect([...claimedElsewhere(orders, "c")]).toEqual(["k1", "k2", "k3"]);
+  });
+});
+
+describe("linkableOrders", () => {
+  it("drops linked orders and groups the rest by status, then name", () => {
+    const orders = [
+      order({ orderId: "a", lastName: "Zed", status: "needs_info" }),
+      order({ orderId: "b", lastName: "Bell", linkedKeys: ["k1"] }),
+      order({ orderId: "c", lastName: "Young" }),
+      order({ orderId: "d", lastName: "Abel", status: "needs_info" }),
+      order({ orderId: "e", lastName: "Finn" }),
+    ];
+    expect(ids(linkableOrders(orders))).toEqual(["e", "c", "d", "a"]);
   });
 });

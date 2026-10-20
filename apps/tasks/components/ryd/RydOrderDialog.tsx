@@ -14,6 +14,7 @@ import {
   FiAlertTriangle,
   FiCalendar,
   FiCheck,
+  FiClock,
   FiCreditCard,
   FiFileText,
   FiHash,
@@ -21,6 +22,7 @@ import {
   FiInfo,
   FiLink,
   FiMail,
+  FiPaperclip,
   FiPhone,
   FiPlus,
   FiSave,
@@ -124,7 +126,15 @@ export function RydOrderDialog({
         )
         .map((submission) => ({
           value: submission.key,
-          label: `${submission.legalName || "No name"} · ${submission.email} · ${submission.submittedAt}`,
+          label: submission.legalName || "No name given",
+          details: [
+            { icon: <FiMail aria-hidden />, text: submission.email },
+            { icon: <FiClock aria-hidden />, text: submission.submittedAt },
+            {
+              icon: <FiPaperclip aria-hidden />,
+              text: `${submission.fileIds.length} file${submission.fileIds.length === 1 ? "" : "s"}`,
+            },
+          ].filter((detail) => detail.text),
         })),
     [submissions, order.linkedKeys, claimedKeys],
   );

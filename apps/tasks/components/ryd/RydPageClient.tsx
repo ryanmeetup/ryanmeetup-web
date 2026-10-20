@@ -5,6 +5,7 @@ import { useQueryParamState, useSearchFilter } from "@ryanmeetup/hooks";
 import {
   Button,
   ClearFiltersButton,
+  ConfirmationDialog,
   DropdownSelect,
   EmptyState,
   FilterChip,
@@ -17,7 +18,10 @@ import {
 import type { IconType } from "react-icons";
 import {
   FiAlertTriangle,
+  FiCalendar,
+  FiHash,
   FiInbox,
+  FiMail,
   FiPhoneOutgoing,
   FiSend,
   FiSettings,
@@ -33,10 +37,12 @@ import { usePagination } from "@/hooks/usePagination";
 import { mutate, parseMutationResponse } from "@/lib/mutation-client";
 import { errorMessage } from "@/lib/presentation";
 import { RYD_STATUS_LABELS, type RydOrderStatus } from "@/lib/ryd/orders";
+import type { RydSubmission } from "@/lib/ryd/matching";
 import type { RydQueue, RydQueueOrder } from "@/lib/ryd/queue-types";
 import {
   followUpOrders,
   claimedElsewhere,
+  linkableOrders,
   orderSearchText,
   RYD_STATUS_PARAMS,
   rydCounts,
@@ -58,8 +64,12 @@ import {
 } from "./RydDialogs";
 import { RydOrderDialog } from "./RydOrderDialog";
 import { RydOrderTable } from "./RydOrderTable";
-import { RYD_STATUS_ICONS, RYD_STATUS_TONES } from "./RydStatusChip";
-import { RydSubmissionCard } from "./RydSubmissionCard";
+import {
+  RYD_STATUS_ICONS,
+  RYD_STATUS_TEXT,
+  RYD_STATUS_TONES,
+} from "./RydStatusChip";
+import { RydUnmatchedLayoutToggle, RydUnmatchedView } from "./RydUnmatchedView";
 
 const GOOGLE_MESSAGES: Record<string, [ok: boolean, message: string]> = {
   connected: [true, "Google connected. The form's answers are in."],
@@ -152,13 +162,17 @@ export function RydPageClient({
   const [viewParam, setViewParam] = useQueryParamState("view");
   const [statusParam, setStatusParam] = useQueryParamState("status");
   const [sortParam, setSortParam] = useQueryParamState("sort");
+  const [layoutParam, setLayoutParam] = useQueryParamState("layout");
   const [openOrderId, setOpenOrderId] = useQueryParamState("order");
   const [googleParam, setGoogleParam] = useQueryParamState("google");
   const [emailing, setEmailing] = useState<string | null>(null);
   const [linking, setLinking] = useState<string | null>(null);
+  const [removing, setRemoving] = useState<RydSubmission | null>(null);
+  const [dismissing, setDismissing] = useState<string | null>(null);
   const view = rydView(viewParam);
   const status = rydStatusParam(statusParam);
   const sort = rydSortParam(sortParam);
+  const unmatchedLayout = layoutParam === "table" ? "table" : "cards";
   const { page, pageSize, setPage, setPageSize, syncPage } = usePagination();
 
   // Clicking a card shows that status; clicking it again shows every order.
@@ -239,10 +253,26 @@ export function RydPageClient({
   const openOrder = queue.orders.find((order) => order.orderId === openOrderId);
   const orderOptions = useMemo(
     () =>
-      queue.orders.map((order) => ({
-        value: order.orderId,
-        label: `${order.firstName} ${order.lastName} · ${order.displayEmail} · ${order.orderId}`,
-      })),
+      linkableOrders(queue.orders).map((order) => {
+        const StatusIcon = RYD_STATUS_ICONS[order.status];
+        return {
+          value: order.orderId,
+          label:
+            `${order.firstName} ${order.lastName}`.trim() || order.displayEmail,
+          group: {
+            icon: <StatusIcon aria-hidden className="h-3 w-3" />,
+            label: RYD_STATUS_LABELS[order.status],
+            textClassName: RYD_STATUS_TEXT[order.status],
+          },
+          details: [
+            { icon: <FiMail aria-hidden />, text: order.displayEmail },
+            { icon: <FiHash aria-hidden />, text: order.orderId },
+            ...(order.orderedAt
+              ? [{ icon: <FiCalendar aria-hidden />, text: order.orderedAt }]
+              : []),
+          ].filter((detail) => detail.text),
+        };
+      }),
     [queue.orders],
   );
 
@@ -285,6 +315,35 @@ export function RydPageClient({
       toast.error(errorMessage(error, "That submission couldn't be linked."));
     } finally {
       setLinking(null);
+    }
+  }
+
+  /** Remove a response from the queue, or with `restore`, put it back. */
+  async function setDismissed(submission: RydSubmission, restore = false) {
+    setDismissing(submission.key);
+    try {
+      await mutate("/api/ryd/dismissals", {
+        method: restore ? "DELETE" : "POST",
+        body: JSON.stringify({ submissionKey: submission.key }),
+      });
+      await refresh();
+      setRemoving(null);
+      toast.success(
+        restore
+          ? "Response restored."
+          : "Response removed. It stays in the Google Form.",
+      );
+    } catch (error) {
+      toast.error(
+        errorMessage(
+          error,
+          restore
+            ? "That response couldn't be restored."
+            : "That response couldn't be removed.",
+        ),
+      );
+    } finally {
+      setDismissing(null);
     }
   }
 
@@ -448,11 +507,21 @@ export function RydPageClient({
 
             {view === "unmatched" ? (
               <section aria-label="Unmatched submissions" className="space-y-4">
-                <p className="text-sm text-black/70 dark:text-white/70">
-                  Form answers no order has claimed: often a gift, a different
-                  email, or an order that hasn&apos;t arrived in a file yet.
-                </p>
-                {unmatched.length === 0 ? (
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm text-black/70 dark:text-white/70">
+                    Form answers no order has claimed: often a gift, a different
+                    email, or an order that hasn&apos;t arrived in a file yet.
+                  </p>
+                  {unmatched.length > 0 && (
+                    <RydUnmatchedLayoutToggle
+                      layout={unmatchedLayout}
+                      onChange={(next) =>
+                        setLayoutParam(next === "cards" ? "" : next)
+                      }
+                    />
+                  )}
+                </div>
+                {unmatched.length === 0 && (
                   <EmptyState
                     className="py-12"
                     message={
@@ -461,31 +530,18 @@ export function RydPageClient({
                         : "No form submissions to show."
                     }
                   />
-                ) : (
-                  <div className="grid items-start gap-4 2xl:grid-cols-2">
-                    {unmatched.map((submitter) => (
-                      <div key={submitter.email} className="space-y-3">
-                        {submitter.submissions.map((submission) => (
-                          <RydSubmissionCard
-                            key={submission.key}
-                            submission={submission}
-                          />
-                        ))}
-                        <DropdownSelect
-                          variant="compact"
-                          label="Link to order"
-                          options={orderOptions}
-                          value=""
-                          onChange={(orderId) =>
-                            linkSubmitter(submitter.email, orderId)
-                          }
-                          searchPlaceholder="Search orders"
-                          disabled={linking !== null || !orderOptions.length}
-                        />
-                      </div>
-                    ))}
-                  </div>
                 )}
+                <RydUnmatchedView
+                  submitters={unmatched}
+                  dismissed={queue.dismissed}
+                  layout={unmatchedLayout}
+                  orderOptions={orderOptions}
+                  linking={linking}
+                  busy={dismissing}
+                  onLink={linkSubmitter}
+                  onRemove={setRemoving}
+                  onRestore={(submission) => setDismissed(submission, true)}
+                />
               </section>
             ) : (
               <section aria-label={VIEW_LABELS[view]} className="space-y-4">
@@ -580,6 +636,23 @@ export function RydPageClient({
           onChanged={refresh}
         />
       )}
+      <ConfirmationDialog
+        open={removing !== null}
+        setOpen={(open) => {
+          if (!open && dismissing === null) setRemoving(null);
+        }}
+        title="Remove this response?"
+        description={
+          removing
+            ? `The response from ${removing.legalName || removing.email}${removing.submittedAt ? `, sent ${removing.submittedAt},` : ""} stops showing here and in match suggestions. It stays in the Google Form, and you can restore it from Removed responses.`
+            : undefined
+        }
+        confirmLabel="Remove"
+        pendingLabel="Removing"
+        pending={dismissing !== null}
+        destructive
+        onConfirm={() => removing && setDismissed(removing)}
+      />
       {dialog === "upload" && (
         <RydUploadDialog onClose={() => setDialog(null)} onChanged={refresh} />
       )}

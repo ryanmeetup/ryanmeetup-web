@@ -16,7 +16,7 @@ import { Spinner } from "@ryanmeetup/ui";
 import type { RydSubmission } from "@/lib/ryd/matching";
 import type { SocialLink } from "@/lib/ryd/normalize";
 
-const PLATFORM_ICONS: Record<SocialLink["platform"], ReactNode> = {
+export const PLATFORM_ICONS: Record<SocialLink["platform"], ReactNode> = {
   instagram: <FiInstagram aria-hidden />,
   facebook: <FiFacebook aria-hidden />,
   linkedin: <FiLinkedin aria-hidden />,
@@ -26,7 +26,7 @@ const PLATFORM_ICONS: Record<SocialLink["platform"], ReactNode> = {
 };
 
 /** What's left of the social answer once its links are taken out. */
-function noteText(text: string) {
+export function noteText(text: string) {
   const rest = text
     .replace(/\S*(?:https?:\/\/|www\.|\.com|\.net|\.org)\S*/gi, " ")
     .replace(/\s+/g, " ")
@@ -44,7 +44,13 @@ function noteText(text: string) {
  * Not `next/image`: the file is private, streamed per request with the
  * reviewer's session, and must never land in the shared optimizer cache.
  */
-function EvidenceTile({ fileId, index }: { fileId: string; index: number }) {
+export function EvidenceTile({
+  fileId,
+  index,
+}: {
+  fileId: string;
+  index: number;
+}) {
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const href = `/api/ryd/evidence/${encodeURIComponent(fileId)}`;

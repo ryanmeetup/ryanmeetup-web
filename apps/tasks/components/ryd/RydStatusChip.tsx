@@ -42,6 +42,14 @@ export const RYD_STATUS_TINTS: Record<RydOrderStatus, string> = {
     "border-red-500/30 bg-red-500/10 text-red-800 dark:border-red-400/30 dark:bg-red-500/15 dark:text-red-200",
 };
 
+/** Status-coloured text, for a label that sits on no tint of its own. */
+export const RYD_STATUS_TEXT: Record<RydOrderStatus, string> = {
+  pending: "text-blue-700 dark:text-blue-300",
+  needs_info: "text-amber-700 dark:text-amber-300",
+  verified: "text-emerald-700 dark:text-emerald-300",
+  rejected: "text-red-700 dark:text-red-300",
+};
+
 /** The left rail on an order row, so a long list sorts itself by eye. */
 export const RYD_STATUS_RAILS: Record<RydOrderStatus, string> = {
   pending: "border-l-blue-500 dark:border-l-blue-400",

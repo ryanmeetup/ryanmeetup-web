@@ -260,3 +260,14 @@ export function sortRydOrders(
     (a, b) => direction * COMPARE[key](a, b) || byName(a, b),
   );
 }
+
+/**
+ * Orders a stray submission could still go to: those with nothing linked yet,
+ * in workflow order and then by name, so the menu groups by status.
+ */
+export function linkableOrders(orders: RydQueueOrder[]) {
+  return sortRydOrders(
+    orders.filter((order) => !order.linkedKeys.length),
+    { key: "status", descending: false },
+  );
+}
