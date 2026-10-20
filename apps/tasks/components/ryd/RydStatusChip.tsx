@@ -25,7 +25,8 @@ export const RYD_STATUS_ICONS: Record<RydOrderStatus, IconType> = {
   rejected: FiXCircle,
 };
 
-const STATUS_CHIPS: Record<RydOrderStatus, string> = {
+/** Border, fill, and text for anything tinted by status. */
+export const RYD_STATUS_TINTS: Record<RydOrderStatus, string> = {
   pending:
     "border-blue-500/30 bg-blue-500/10 text-blue-800 dark:border-blue-400/30 dark:bg-blue-500/15 dark:text-blue-200",
   needs_info:
@@ -54,14 +55,14 @@ const CHIP =
 export function RydStatusChip({ status }: { status: RydOrderStatus }) {
   const Icon = RYD_STATUS_ICONS[status];
   return (
-    <span className={`${CHIP} ${STATUS_CHIPS[status]}`}>
+    <span className={`${CHIP} ${RYD_STATUS_TINTS[status]}`}>
       <Icon aria-hidden className="h-3 w-3" />
       {RYD_STATUS_LABELS[status]}
     </span>
   );
 }
 
-const CONFIDENCE: Record<
+export const RYD_CONFIDENCE: Record<
   MatchConfidence,
   { label: string; icon: IconType; className: string }
 > = {
@@ -90,7 +91,7 @@ export function RydConfidenceChip({
 }: {
   confidence: MatchConfidence;
 }) {
-  const { label, icon: Icon, className } = CONFIDENCE[confidence];
+  const { label, icon: Icon, className } = RYD_CONFIDENCE[confidence];
   return (
     <span className={`${CHIP} ${className}`}>
       <Icon aria-hidden className="h-3 w-3" />

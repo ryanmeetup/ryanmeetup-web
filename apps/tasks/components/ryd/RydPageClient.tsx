@@ -14,20 +14,13 @@ import {
 } from "@ryanmeetup/ui";
 import type { IconType } from "react-icons";
 import {
-  FiAlertCircle,
   FiAlertTriangle,
-  FiCalendar,
-  FiHash,
   FiInbox,
-  FiLink,
   FiList,
-  FiMail,
-  FiPhone,
   FiPhoneOutgoing,
   FiSend,
   FiSettings,
   FiUpload,
-  FiZap,
 } from "react-icons/fi";
 import {
   CountBadge,
@@ -56,13 +49,8 @@ import {
   RydUploadDialog,
 } from "./RydDialogs";
 import { RydOrderDialog } from "./RydOrderDialog";
-import {
-  RYD_STATUS_ICONS,
-  RYD_STATUS_RAILS,
-  RYD_STATUS_TONES,
-  RydConfidenceChip,
-  RydStatusChip,
-} from "./RydStatusChip";
+import { RydOrderCard } from "./RydOrderCard";
+import { RYD_STATUS_ICONS, RYD_STATUS_TONES } from "./RydStatusChip";
 import { RydSubmissionCard } from "./RydSubmissionCard";
 
 const GOOGLE_MESSAGES: Record<string, [ok: boolean, message: string]> = {
@@ -133,30 +121,6 @@ const STATUS_OPTIONS = Object.keys(RYD_STATUS_PARAMS).map((value) => {
     label: status ? RYD_STATUS_LABELS[status] : "All open orders",
   };
 });
-
-function matchSummary(order: RydQueueOrder) {
-  if (order.linkedKeys.length)
-    return {
-      icon: FiLink,
-      className: "text-emerald-700 dark:text-emerald-300",
-      text: `Linked to ${order.linkedKeys.length} form submission${order.linkedKeys.length === 1 ? "" : "s"}`,
-    };
-  if (order.suggestion)
-    return {
-      icon: FiZap,
-      className: "text-black/70 dark:text-white/70",
-      text: order.suggestion.reasons.join(" · "),
-    };
-  return {
-    icon: FiAlertCircle,
-    className: "text-amber-800 dark:text-amber-200",
-    text: "No form submission found",
-  };
-}
-
-function prefersPhone(order: RydQueueOrder) {
-  return /phone|text|call|sms/i.test(order.contactMethod);
-}
 
 type Dialog = "upload" | "send" | "settings" | null;
 
@@ -519,108 +483,18 @@ export function RydPageClient({
                       }
                     />
                   ) : (
-                    <ul className="space-y-3">
-                      {filtered.map((order) => {
-                        const match = matchSummary(order);
-                        const MatchIcon = match.icon;
-                        const ContactIcon = prefersPhone(order)
-                          ? FiPhone
-                          : FiMail;
-                        return (
-                          <li
-                            key={order.orderId}
-                            className={`flex flex-col gap-3 rounded-2xl border border-l-4 border-black/10 bg-black/[0.02] p-4 sm:flex-row sm:items-center sm:justify-between dark:border-white/10 dark:bg-white/[0.03] ${RYD_STATUS_RAILS[order.status]}`}
-                          >
-                            <div className="min-w-0 space-y-1">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <span className="font-semibold">
-                                  {order.firstName} {order.lastName}
-                                </span>
-                                <RydStatusChip status={order.status} />
-                                {!order.linkedKeys.length &&
-                                  order.suggestion && (
-                                    <RydConfidenceChip
-                                      confidence={order.suggestion.confidence}
-                                    />
-                                  )}
-                              </div>
-                              <p className="break-all text-sm text-black/70 dark:text-white/70">
-                                {order.displayEmail}
-                              </p>
-                              <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-semibold uppercase tracking-[0.14em] text-black/60 dark:text-white/60">
-                                <span className="inline-flex items-center gap-1">
-                                  <FiHash aria-hidden className="shrink-0" />
-                                  {order.orderId}
-                                </span>
-                                <span className="inline-flex items-center gap-1">
-                                  <FiCalendar
-                                    aria-hidden
-                                    className="shrink-0"
-                                  />
-                                  {order.orderedAt || "No date"}
-                                </span>
-                                <span className="inline-flex items-center gap-1">
-                                  <ContactIcon
-                                    aria-hidden
-                                    className="shrink-0"
-                                  />
-                                  Prefers{" "}
-                                  {order.contactMethod.toLowerCase() || "email"}
-                                </span>
-                              </p>
-                              <p
-                                className={`flex items-center gap-1.5 text-sm font-medium ${match.className}`}
-                              >
-                                <MatchIcon aria-hidden className="shrink-0" />
-                                {match.text}
-                              </p>
-                              {order.note && (
-                                <p className="text-sm italic text-black/70 dark:text-white/70">
-                                  {order.note}
-                                </p>
-                              )}
-                              {view === "follow-up" && order.lastEmailedAt && (
-                                <p className="text-xs text-black/60 dark:text-white/60">
-                                  Emailed{" "}
-                                  {new Date(
-                                    order.lastEmailedAt,
-                                  ).toLocaleString()}
-                                </p>
-                              )}
-                            </div>
-                            <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
-                              {view === "follow-up" &&
-                                order.status !== "rejected" && (
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="ghost"
-                                    className="w-full sm:w-auto"
-                                    leftIcon={<FiMail aria-hidden />}
-                                    disabled={
-                                      !emailConfigured || emailing !== null
-                                    }
-                                    loading={emailing === order.orderId}
-                                    onClick={() => emailBuyer(order)}
-                                  >
-                                    {order.lastEmailedAt
-                                      ? "Email again"
-                                      : "Email"}
-                                  </Button>
-                                )}
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="secondary"
-                                className="w-full sm:w-auto"
-                                onClick={() => setOpenOrderId(order.orderId)}
-                              >
-                                Review
-                              </Button>
-                            </div>
-                          </li>
-                        );
-                      })}
+                    <ul className="grid gap-3 xl:grid-cols-2">
+                      {filtered.map((order) => (
+                        <RydOrderCard
+                          key={order.orderId}
+                          order={order}
+                          followUp={view === "follow-up"}
+                          emailConfigured={emailConfigured}
+                          emailing={emailing}
+                          onEmail={() => emailBuyer(order)}
+                          onReview={() => setOpenOrderId(order.orderId)}
+                        />
+                      ))}
                     </ul>
                   )}
                 </PendingResults>
