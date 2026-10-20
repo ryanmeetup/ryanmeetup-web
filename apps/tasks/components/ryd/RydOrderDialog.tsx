@@ -220,6 +220,7 @@ export function RydOrderDialog({
             variant="ghost"
             leftIcon={<FiMail aria-hidden />}
             prefetch={false}
+            newTab
             disabled={busy || !order.displayEmail}
             onClick={() =>
               run(

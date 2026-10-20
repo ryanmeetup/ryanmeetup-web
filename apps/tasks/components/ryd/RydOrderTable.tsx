@@ -290,6 +290,7 @@ export function RydOrderTable({
                           variant="ghost"
                           leftIcon={<FiMail aria-hidden />}
                           prefetch={false}
+                          newTab
                           aria-label={`${order.lastEmailedAt ? "Email again" : "Email"} ${name || order.displayEmail}`}
                           title={
                             order.lastEmailedAt

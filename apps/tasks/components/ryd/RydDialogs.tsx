@@ -209,6 +209,7 @@ function BulkDraftCard({
           variant="secondary"
           leftIcon={<FiMail aria-hidden />}
           prefetch={false}
+          newTab
         >
           Open draft
         </Button.Link>
@@ -350,6 +351,7 @@ export function RydSendDialog({
             variant="secondary"
             leftIcon={<FiMail aria-hidden />}
             prefetch={false}
+            newTab
           >
             Open draft
           </Button.Link>
