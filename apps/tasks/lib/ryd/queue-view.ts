@@ -198,7 +198,8 @@ function orderedTime(order: RydQueueOrder) {
 }
 
 /**
- * The Ryan sorts group by where Ryan falls in the form's name. `ryan` runs
+ * The Ryan sorts group by where Ryan falls in the form's name, or the buyer's
+ * name when the form gives none. `ryan` runs
  * first-name Ryans to non-Ryans; `middle-name` pulls middle-name Ryans to the
  * top for checking.
  */
@@ -230,8 +231,9 @@ const COMPARE: Record<
 /**
  * Orders sorted by one column. Ties fall back to name, ascending whichever
  * way the column runs, so a group of Pending orders still reads A to Z.
- * The Ryan sorts read `positions`; an order with no name on the form can't be
- * placed, so it goes last in either direction.
+ * The Ryan sorts read `positions`, falling back to the buyer's name when the
+ * form gives none; an order with neither can't be placed, so it goes last in
+ * either direction.
  */
 export function sortRydOrders(
   orders: RydQueueOrder[],
@@ -243,7 +245,9 @@ export function sortRydOrders(
   const { key } = sort;
   if (key === "ryan" || key === "middle-name") {
     const rank = (order: RydQueueOrder) => {
-      const position = positions.get(order.orderId);
+      const position =
+        positions.get(order.orderId) ??
+        ryanPosition(`${order.firstName} ${order.lastName}`);
       return position ? RYAN_RANK[key][position] : null;
     };
     return [...orders].sort((a, b) => {

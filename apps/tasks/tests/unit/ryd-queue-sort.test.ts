@@ -104,7 +104,7 @@ describe("RY-D queue sorting", () => {
 
   it("groups by where Ryan falls in the form's name, unknown last", () => {
     const orders = [
-      order({ orderId: "none", lastName: "A" }),
+      order({ orderId: "none", firstName: "", lastName: "" }),
       order({ orderId: "absent", lastName: "B" }),
       order({ orderId: "middle", lastName: "C" }),
       order({ orderId: "first", lastName: "D" }),
@@ -138,6 +138,21 @@ describe("RY-D queue sorting", () => {
       key: "middle-name",
       descending: false,
     });
+  });
+
+  it("falls back to the buyer's name when the form gives none", () => {
+    const orders = [
+      order({ orderId: "form-middle", firstName: "Ryan", lastName: "A" }),
+      order({ orderId: "no-form-ryan", firstName: "Ryan", lastName: "B" }),
+      order({ orderId: "no-form-other", firstName: "Brooke", lastName: "C" }),
+    ];
+    const positions = new Map([
+      ["form-middle", "middle" as const],
+      ["no-form-ryan", null],
+    ]);
+    expect(
+      ids(sortRydOrders(orders, { key: "ryan", descending: false }, positions)),
+    ).toEqual(["no-form-ryan", "form-middle", "no-form-other"]);
   });
 
   it("reads Ryan's position from the linked or suggested submission", () => {
