@@ -288,7 +288,7 @@ export function RydPageClient({
         <ManagementSurface
           title={
             <>
-              RY-D verification{" "}
+              RY-D Verification{" "}
               <CountBadge size="lg">{queue.orders.length}</CountBadge>
             </>
           }

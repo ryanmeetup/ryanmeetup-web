@@ -214,7 +214,7 @@ export type InstanceSettings = {
   /** Describes the link-preview image for readers who cannot see it. */
   ogAlt: string;
   /**
-   * Whether the RY-D verification page exists. Off unless an instance turns
+   * Whether the RY-D Verification page exists. Off unless an instance turns
    * it on: only Ryan Meetup sells RY-Ds, and the second instance never shows
    * the page, its sidebar entry, or its access setting.
    */

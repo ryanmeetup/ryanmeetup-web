@@ -292,7 +292,7 @@ resolved values synchronously through `useInstance()`.
 **Per-instance features.** `rydEnabled` (`instance_settings.ryd_enabled`,
 under /admin/settings → Features) is the one runtime switch that adds a page
 rather than restyling one. It is on for RMT and stays off on PRD; with it off,
-RY-D verification is absent from the sidebar, Access, and every route. Its
+RY-D Verification is absent from the sidebar, Access, and every route. Its
 tables still exist on both databases so the schemas never drift. See
 `docs/RYD_VERIFICATION.md`.
 

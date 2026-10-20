@@ -421,7 +421,7 @@ export function TasksSidebar({
             className={linkClass(isRyd)}
           >
             <FiCheckSquare />
-            RY-D verification
+            RY-D Verification
           </Link>
         )}
       </nav>

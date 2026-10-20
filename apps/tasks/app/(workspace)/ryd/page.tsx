@@ -12,7 +12,7 @@ import {
 } from "@/lib/server/workspace-page-loader";
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: { absolute: await pageTitle("RY-D verification") } };
+  return { title: { absolute: await pageTitle("RY-D Verification") } };
 }
 
 export default async function RydPage() {

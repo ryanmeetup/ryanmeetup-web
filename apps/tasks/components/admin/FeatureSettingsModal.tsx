@@ -69,7 +69,7 @@ export function FeatureSettingsModal({
     >
       <div className="settings-form space-y-5">
         <SwitchField
-          label="RY-D verification"
+          label="RY-D Verification"
           description="Match fulfillment's weekly order file against the RY-dentification form, record who is verified, and send the result back. The page starts open to owners only; grant it to an access group from Access."
           checked={rydEnabled}
           disabled={saving}

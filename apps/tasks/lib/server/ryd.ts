@@ -59,7 +59,7 @@ export async function rydContext({ owner = false } = {}): Promise<
       response: apiError(
         503,
         "SERVICE_UNAVAILABLE",
-        "RY-D verification is unavailable.",
+        "RY-D Verification is unavailable.",
       ),
     };
   return { ...authorization, admin };

@@ -245,7 +245,7 @@ export function AdminSettingsPageClient({
         >
           <dl className="grid max-w-3xl gap-x-6 gap-y-3 sm:grid-cols-[10rem_minmax(0,1fr)]">
             <dt className="text-xs font-semibold uppercase tracking-[0.2em] text-black/55 dark:text-white/55">
-              RY-D verification
+              RY-D Verification
             </dt>
             <dd className="text-sm text-black/70 dark:text-white/70">
               {settings.rydEnabled ? "On" : "Off"}

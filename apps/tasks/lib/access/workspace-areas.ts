@@ -38,7 +38,7 @@ export const WORKSPACE_AREAS = [
   },
   {
     key: "ryd",
-    label: "RY-D verification",
+    label: "RY-D Verification",
     href: "/ryd",
     icon: FiCheckSquare,
     description:

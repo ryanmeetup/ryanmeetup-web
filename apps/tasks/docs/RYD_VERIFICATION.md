@@ -1,4 +1,4 @@
-# RY-D verification
+# RY-D Verification
 
 Ryan Meetup sells RY-Ds, and buyers prove they are a Ryan through the
 RY-dentification form (social links, uploads — never a government ID). Each
@@ -23,7 +23,7 @@ Access setting, and every `/api/ryd` route answer as if they don't exist.
 
    `drive.readonly` is a restricted scope: keep the client in Testing (or
    Internal) with the form owner as a test user.
-3. Turn on **RY-D verification** in /admin/settings → Features.
+3. Turn on **RY-D Verification** in /admin/settings → Features.
 4. On /ryd → Settings, connect Google **as the account that owns the form**,
    paste the form's **editor** link (`docs.google.com/forms/d/<id>/edit`, not
    the public `/forms/d/e/…` one), and enter fulfillment's email.
