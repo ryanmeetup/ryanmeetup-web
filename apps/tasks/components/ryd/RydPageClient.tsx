@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQueryParamState, useSearchFilter } from "@ryanmeetup/hooks";
 import {
   Button,
+  ClearFiltersButton,
   DropdownSelect,
   EmptyState,
   FilterChip,
@@ -511,6 +512,16 @@ export function RydPageClient({
                       value={status}
                       onChange={(value) => {
                         setStatusParam(value === "pending" ? "" : value);
+                        setPage(1);
+                      }}
+                    />
+                  )}
+                  {(query || (view === "queue" && status !== "pending")) && (
+                    <ClearFiltersButton
+                      className="self-start sm:self-center"
+                      onClick={() => {
+                        setQuery("");
+                        setStatusParam("");
                         setPage(1);
                       }}
                     />
