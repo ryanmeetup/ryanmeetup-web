@@ -102,7 +102,17 @@ export function scoreSubmitter(
         }
       : null;
   }
-  const nameReason = "Full name matches";
+  // "Ryan Fox" on the order and "Steven Ryan Fox" on the form is the same
+  // person, but Ryan is their middle name. The pairing is still right; the
+  // reviewer just needs to see it before verifying.
+  const orderFirst = nameTokens(order.firstName);
+  const leadsWithFirstName = names.some((name) => {
+    const tokens = nameTokens(name);
+    return orderFirst.every((token, index) => tokens[index] === token);
+  });
+  const nameReason = leadsWithFirstName
+    ? "Full name matches"
+    : `Full name matches, with ${order.firstName.trim()} as a middle name`;
 
   if (orderEmail && orderEmail === theirs)
     return {
@@ -151,7 +161,7 @@ export function scoreSubmitter(
   return {
     email: theirs,
     confidence: "weak",
-    reasons: ["Full name matches, email differs"],
+    reasons: [`${nameReason}, email differs`],
   };
 }
 

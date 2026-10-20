@@ -50,7 +50,10 @@ page still works and the file can be downloaded and sent by hand.
    any other question is shown on the submission as an extra answer, so a
    new question never hides what people wrote. Suggestions, strongest
    first:
-   - same email (any case) and full name → strong;
+   - same email (any case) and full name → strong. When the order's first
+     name isn't the first word on the form ("Ryan Fox" ordering, "Steven Ryan
+     Fox" on the form), the reason says Ryan is a middle name. The pairing is
+     still strong; whether that Ryan counts is the reviewer's call;
    - an email one or two characters off, or a mistyped domain → possible;
    - a social handle equal to the order email's name (`pineapplemage`) →
      possible;

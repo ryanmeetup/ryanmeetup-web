@@ -218,6 +218,24 @@ describe("matching", () => {
     ).toBeNull();
   });
 
+  it("says when the order's first name is a middle name on the form", () => {
+    const result = scoreSubmitter(
+      order("Fox", "rf@test.dev"),
+      one({ legalName: "Steven Ryan Fox", email: "rf@test.dev" }),
+    );
+    expect(result?.confidence).toBe("strong");
+    expect(result?.reasons).toEqual([
+      "Email matches",
+      "Full name matches, with Ryan as a middle name",
+    ]);
+    expect(
+      scoreSubmitter(
+        order("Fox", "rf@test.dev"),
+        one({ legalName: "Ryan Steven Fox", email: "rf@test.dev" }),
+      )?.reasons,
+    ).toEqual(["Email matches", "Full name matches"]);
+  });
+
   it("accepts a first-name-only form when the email matches", () => {
     expect(
       scoreSubmitter(
