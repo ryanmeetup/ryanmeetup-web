@@ -50,6 +50,67 @@ body {
   .quantity-button {
     @apply inline-flex h-9 w-9 items-center justify-center rounded-full border border-black/15 bg-white/70 transition hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/15 dark:bg-white/5 dark:hover:bg-white/10 dark:focus-visible:ring-white/40;
   }
+
+  .product-description {
+    @apply min-w-0 leading-relaxed text-black/70 dark:text-white/70;
+    overflow-wrap: anywhere;
+  }
+
+  /* The intro sells the product, so it reads larger and darker than the details. */
+  .product-description-lead {
+    @apply text-lg text-black/85 sm:text-xl dark:text-white/85;
+  }
+
+  .product-description :where(p, ul, ol, blockquote, table, pre) {
+    margin-block: 1rem;
+  }
+
+  .product-description :where(h1, h2, h3, h4, h5, h6) {
+    @apply font-cooper leading-tight text-black dark:text-white;
+    margin-block: 1.5rem 0.75rem;
+  }
+
+  .product-description :where(h1, h2) { @apply text-2xl; }
+  .product-description h3 { @apply text-xl; }
+  .product-description :where(h4, h5, h6) { @apply text-lg; }
+
+  .product-description ul { list-style: disc; padding-left: 1.5rem; }
+  .product-description ol { list-style: decimal; padding-left: 1.5rem; }
+  .product-description li { margin-block: 0.375rem; }
+  .product-description li :where(p, ul, ol) { margin-block: 0.5rem; }
+
+  .product-description :where(strong, b) {
+    @apply font-semibold text-black dark:text-white;
+  }
+
+  .product-description a {
+    @apply rounded-sm text-black underline underline-offset-4 hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:text-white dark:focus-visible:ring-white/40;
+  }
+
+  .product-description blockquote {
+    @apply border-l-2 border-black/15 pl-4 italic dark:border-white/15;
+  }
+
+  .product-description table {
+    @apply block max-w-full overflow-x-auto text-sm;
+    border-collapse: collapse;
+  }
+
+  .product-description :where(th, td) {
+    @apply border border-black/10 px-3 py-2 text-left align-top dark:border-white/10;
+    white-space: nowrap;
+  }
+
+  .product-description th {
+    @apply bg-black/5 font-semibold text-black dark:bg-white/5 dark:text-white;
+  }
+
+  .product-description :where(img, video, iframe) { max-width: 100%; }
+  .product-description :where(img, video) { height: auto; }
+  .product-description pre { @apply max-w-full overflow-x-auto rounded-xl bg-black/5 p-4 text-sm dark:bg-white/5; }
+  .product-description hr { @apply my-6 border-black/10 dark:border-white/10; }
+  .product-description > :first-child { margin-top: 0; }
+  .product-description > :last-child { margin-bottom: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
