@@ -8,6 +8,7 @@ import {
   FiSend,
 } from "react-icons/fi";
 import { Button, CopyText } from "@ryanmeetup/ui";
+import type { RyanPosition } from "@/lib/ryd/normalize";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 import {
   prefersPhone,
@@ -15,6 +16,7 @@ import {
   RYD_STATUS_ICONS,
   RYD_STATUS_RAILS,
   RYD_STATUS_TINTS,
+  RydRyanPositionChip,
   RydStatusChip,
 } from "./RydStatusChip";
 
@@ -24,6 +26,7 @@ import {
  */
 export function RydOrderCard({
   order,
+  ryanPosition,
   followUp,
   emailConfigured,
   emailing,
@@ -31,6 +34,8 @@ export function RydOrderCard({
   onReview,
 }: {
   order: RydQueueOrder;
+  /** Where Ryan falls in the form's name, from `orderRyanPositions`. */
+  ryanPosition: RyanPosition | null | undefined;
   /** Shows when the buyer was last emailed and the button to email them. */
   followUp: boolean;
   emailConfigured: boolean;
@@ -57,7 +62,12 @@ export function RydOrderCard({
           <StatusIcon className="h-5 w-5" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold">{name || order.displayEmail}</p>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <p className="min-w-0 truncate font-semibold">
+              {name || order.displayEmail}
+            </p>
+            <RydRyanPositionChip position={ryanPosition} />
+          </div>
           <p className="truncate text-sm text-black/70 dark:text-white/70">
             {order.displayEmail}
           </p>

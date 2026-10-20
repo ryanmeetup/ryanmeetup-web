@@ -24,6 +24,7 @@ import {
   RYD_STATUS_RAILS,
   rydMatchEvidence,
   RydMatchChip,
+  RydRyanPositionChip,
   RydStatusChip,
 } from "./RydStatusChip";
 
@@ -47,20 +48,17 @@ const SORT_CHOICES: Record<
     both("name", "A to Z by surname", "Z to A by surname"),
     [
       { key: "ryan", descending: false, label: "First-name Ryans first" },
-      { key: "middle-name", descending: false, label: "Middle-name Ryans first" },
+      {
+        key: "middle-name",
+        descending: false,
+        label: "Middle-name Ryans first",
+      },
       { key: "ryan", descending: true, label: "Non-Ryans first" },
     ],
   ],
   status: [both("status", "Pending first", "Rejected first")],
   form: [both("form", "Surest match first", "No submission first")],
   ordered: [both("ordered", "Oldest first", "Newest first")],
-};
-
-/** Said under the buyer when the form's Ryan isn't a first name. */
-const RYAN_POSITION_LABELS: Partial<Record<RyanPosition, string>> = {
-  middle: "Middle-name Ryan",
-  last: "Surname Ryan",
-  absent: "No Ryan on the form",
 };
 
 /**
@@ -227,8 +225,6 @@ export function RydOrderTable({
               const name = `${order.firstName} ${order.lastName}`.trim();
               const { reasons } = rydMatchEvidence(order);
               const ContactIcon = prefersPhone(order) ? FiPhone : FiMail;
-              const position = ryanPositions.get(order.orderId);
-              const positionLabel = position && RYAN_POSITION_LABELS[position];
               return (
                 <tr
                   key={order.orderId}
@@ -237,25 +233,25 @@ export function RydOrderTable({
                   <td
                     className={`border-l-4 px-4 py-2.5 ${RYD_STATUS_RAILS[order.status]}`}
                   >
-                    <button
-                      type="button"
-                      className="block max-w-full truncate text-left font-semibold underline decoration-black/20 underline-offset-4 transition hover:decoration-black focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/70 dark:decoration-white/25 dark:hover:decoration-white dark:focus-visible:ring-white/70"
-                      title={name || order.displayEmail}
-                      onClick={() => onReview(order)}
-                    >
-                      {name || order.displayEmail}
-                    </button>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <button
+                        type="button"
+                        className="block min-w-0 max-w-full truncate text-left font-semibold underline decoration-black/20 underline-offset-4 transition hover:decoration-black focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/70 dark:decoration-white/25 dark:hover:decoration-white dark:focus-visible:ring-white/70"
+                        title={name || order.displayEmail}
+                        onClick={() => onReview(order)}
+                      >
+                        {name || order.displayEmail}
+                      </button>
+                      <RydRyanPositionChip
+                        position={ryanPositions.get(order.orderId)}
+                      />
+                    </div>
                     <span
                       className="block truncate text-xs text-black/70 dark:text-white/70"
                       title={order.displayEmail}
                     >
                       {order.displayEmail}
                     </span>
-                    {positionLabel && (
-                      <span className="mt-0.5 block text-[10px] font-semibold uppercase tracking-[0.14em] text-black/70 dark:text-white/70">
-                        {positionLabel}
-                      </span>
-                    )}
                   </td>
                   <td className="px-3 py-2.5">
                     <RydStatusChip status={order.status} />

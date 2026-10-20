@@ -583,6 +583,7 @@ export function RydPageClient({
                           <RydOrderCard
                             key={order.orderId}
                             order={order}
+                            ryanPosition={ryanPositions.get(order.orderId)}
                             followUp={view === "follow-up"}
                             emailConfigured={emailConfigured}
                             emailing={emailing}

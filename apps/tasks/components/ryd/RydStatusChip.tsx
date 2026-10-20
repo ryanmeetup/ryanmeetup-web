@@ -1,7 +1,9 @@
 import type { IconType } from "react-icons";
 import {
   FiAlertCircle,
+  FiAlertTriangle,
   FiCheckCircle,
+  FiInfo,
   FiLink,
   FiClock,
   FiHelpCircle,
@@ -10,6 +12,7 @@ import {
 } from "react-icons/fi";
 import { RYD_STATUS_LABELS, type RydOrderStatus } from "@/lib/ryd/orders";
 import type { MatchConfidence } from "@/lib/ryd/matching";
+import type { RyanPosition } from "@/lib/ryd/normalize";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 
 /** One colour per status, shared by the chips, the stat cards, and the rows. */
@@ -94,6 +97,49 @@ export function RydConfidenceChip({
   confidence: MatchConfidence;
 }) {
   const { label, icon: Icon, className } = RYD_CONFIDENCE[confidence];
+  return (
+    <span className={`${CHIP} ${className}`}>
+      <Icon aria-hidden className="h-3 w-3" />
+      {label}
+    </span>
+  );
+}
+
+/**
+ * Said beside the buyer when the form's Ryan isn't a first name, so a
+ * reviewer sees it before verifying. A first-name Ryan gets nothing.
+ */
+const RYAN_POSITION_CHIPS: Partial<
+  Record<RyanPosition, { label: string; icon: IconType; className: string }>
+> = {
+  middle: {
+    label: "Middle-name Ryan",
+    icon: FiInfo,
+    className:
+      "border-orange-500/35 bg-orange-500/10 text-orange-800 dark:border-orange-400/35 dark:bg-orange-500/15 dark:text-orange-200",
+  },
+  last: {
+    label: "Surname Ryan",
+    icon: FiInfo,
+    className:
+      "border-orange-500/35 bg-orange-500/10 text-orange-800 dark:border-orange-400/35 dark:bg-orange-500/15 dark:text-orange-200",
+  },
+  absent: {
+    label: "No Ryan on the form",
+    icon: FiAlertTriangle,
+    className:
+      "border-rose-500/35 bg-rose-500/10 text-rose-800 dark:border-rose-400/35 dark:bg-rose-500/15 dark:text-rose-200",
+  },
+};
+
+export function RydRyanPositionChip({
+  position,
+}: {
+  position: RyanPosition | null | undefined;
+}) {
+  const chip = position && RYAN_POSITION_CHIPS[position];
+  if (!chip) return null;
+  const { label, icon: Icon, className } = chip;
   return (
     <span className={`${CHIP} ${className}`}>
       <Icon aria-hidden className="h-3 w-3" />
