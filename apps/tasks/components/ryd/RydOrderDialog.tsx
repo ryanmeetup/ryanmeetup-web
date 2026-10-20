@@ -8,6 +8,8 @@ import {
   FiCalendar,
   FiCheck,
   FiCreditCard,
+  FiFileText,
+  FiHash,
   FiHelpCircle,
   FiInfo,
   FiLink,
@@ -161,7 +163,6 @@ export function RydOrderDialog({
           <RydStatusChip status={order.status} />
         </span>
       }
-      description={`Order ${order.orderId}${order.salesOrder ? ` · sales order ${order.salesOrder}` : ""}`}
       supportingActions={
         <Button
           type="button"
@@ -227,6 +228,14 @@ export function RydOrderDialog({
             Order
           </h3>
           <dl className="space-y-3">
+            <Detail icon={FiHash} label="Order number">
+              Order {order.orderId}
+            </Detail>
+            {order.salesOrder && (
+              <Detail icon={FiFileText} label="Sales order number">
+                Sales order {order.salesOrder}
+              </Detail>
+            )}
             <Detail icon={FiMail} label="Email">
               <span className="break-all">{order.displayEmail}</span>
             </Detail>
