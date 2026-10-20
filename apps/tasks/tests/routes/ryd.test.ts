@@ -195,4 +195,100 @@ describe("RY-D routes", () => {
     expect(response.status).toBe(403);
     expect(authorize).not.toHaveBeenCalled();
   });
+
+  it("won't remove a response that already vouches for an order", async () => {
+    const calls: unknown[] = [];
+    getAdminClient.mockReturnValue(
+      admin({
+        ryd_order_submissions: table({
+          data: { order_id: "1001" },
+          error: null,
+        }),
+        ryd_dismissed_submissions: table({ data: null, error: null }, calls),
+      }),
+    );
+    const { POST } = await import("@/app/api/ryd/dismissals/route");
+
+    const response = await POST(
+      new Request(
+        "http://localhost/api/ryd/dismissals",
+        json({ submissionKey: "response-1" }, "POST"),
+      ),
+    );
+
+    expect(response.status).toBe(409);
+    expect(calls).toEqual([]);
+  });
+
+  it("removes an unlinked response, recording who did it", async () => {
+    const calls: unknown[] = [];
+    getAdminClient.mockReturnValue(
+      admin({
+        ryd_order_submissions: table({ data: null, error: null }),
+        ryd_dismissed_submissions: table({ data: null, error: null }, calls),
+      }),
+    );
+    const { POST } = await import("@/app/api/ryd/dismissals/route");
+
+    const response = await POST(
+      new Request(
+        "http://localhost/api/ryd/dismissals",
+        json({ submissionKey: "response-1" }, "POST"),
+      ),
+    );
+
+    expect(response.status).toBe(200);
+    expect(calls[0]).toEqual([
+      "upsert",
+      { submission_key: "response-1", dismissed_by: "member-1" },
+      { onConflict: "submission_key", ignoreDuplicates: true },
+    ]);
+  });
+
+  it("says a pending migration blocks removing before the table exists", async () => {
+    getAdminClient.mockReturnValue(
+      admin({
+        ryd_order_submissions: table({ data: null, error: null }),
+        ryd_dismissed_submissions: table({
+          data: null,
+          error: { code: "42P01", message: "missing" },
+        }),
+      }),
+    );
+    const { POST, DELETE } = await import("@/app/api/ryd/dismissals/route");
+    const body = json({ submissionKey: "response-1" }, "POST");
+
+    const removed = await POST(
+      new Request("http://localhost/api/ryd/dismissals", body),
+    );
+    const restored = await DELETE(
+      new Request("http://localhost/api/ryd/dismissals", {
+        ...body,
+        method: "DELETE",
+      }),
+    );
+
+    expect(removed.status).toBe(503);
+    expect(restored.status).toBe(503);
+  });
+
+  it("restores a removed response", async () => {
+    const calls: unknown[] = [];
+    getAdminClient.mockReturnValue(
+      admin({
+        ryd_dismissed_submissions: table({ data: null, error: null }, calls),
+      }),
+    );
+    const { DELETE } = await import("@/app/api/ryd/dismissals/route");
+
+    const response = await DELETE(
+      new Request(
+        "http://localhost/api/ryd/dismissals",
+        json({ submissionKey: "response-1" }, "DELETE"),
+      ),
+    );
+
+    expect(response.status).toBe(200);
+    expect(calls).toEqual([["delete"], ["eq", "submission_key", "response-1"]]);
+  });
 });

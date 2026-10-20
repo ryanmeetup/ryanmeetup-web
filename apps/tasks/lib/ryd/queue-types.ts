@@ -38,6 +38,8 @@ export type RydSheetState =
 export type RydQueue = {
   orders: RydQueueOrder[];
   submissions: RydSubmission[];
+  /** Responses set aside, usually duplicates; kept so they can be restored. */
+  dismissed: RydSubmission[];
   sheet: RydSheetState;
   settings: RydSettings;
   clearedCount: number;

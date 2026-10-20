@@ -138,9 +138,25 @@ async function loadSheet(
   }
 }
 
+/**
+ * Keys of the responses someone set aside. Until the migration that adds the
+ * table is applied, nothing is.
+ */
+async function loadDismissedKeys(admin: SupabaseClient) {
+  const result = await admin
+    .from("ryd_dismissed_submissions")
+    .select("submission_key");
+  if (result.error) {
+    if (isMissingRelation(result.error.code)) return new Set<string>();
+    throw result.error;
+  }
+  return new Set((result.data ?? []).map((row) => row.submission_key));
+}
+
 const emptyQueue = (installed: boolean): RydQueue => ({
   orders: [],
   submissions: [],
+  dismissed: [],
   sheet: { status: "disconnected" },
   settings: { formId: null, fulfillmentEmail: null },
   clearedCount: 0,
@@ -185,7 +201,20 @@ export async function loadRydQueue(admin: SupabaseClient): Promise<RydQueue> {
   }
   const settings = await loadRydSettings(admin);
   const integration = await loadRydGoogleIntegration();
-  const { sheet, submissions } = await loadSheet(integration, settings);
+  const dismissedKeys = await loadDismissedKeys(admin);
+  const { sheet, submissions: answered } = await loadSheet(
+    integration,
+    settings,
+  );
+  // A set-aside response drops out of matching and every list. One linked
+  // since keeps its place on the order.
+  const linkedKeys = new Set(
+    (linksResult.data ?? []).map((link) => link.submission_key),
+  );
+  const isDismissed = (key: string) =>
+    dismissedKeys.has(key) && !linkedKeys.has(key);
+  const submissions = answered.filter((s) => !isDismissed(s.key));
+  const dismissed = answered.filter((s) => isDismissed(s.key));
 
   const linkedByOrder = new Map<string, string[]>();
   for (const link of linksResult.data ?? []) {
@@ -237,6 +266,7 @@ export async function loadRydQueue(admin: SupabaseClient): Promise<RydQueue> {
       suggestion: suggestions.get(row.order_id) ?? null,
     })),
     submissions,
+    dismissed,
     sheet,
     settings,
     clearedCount: clearedResult.count ?? 0,
