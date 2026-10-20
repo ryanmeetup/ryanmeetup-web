@@ -85,8 +85,8 @@ const VIEW_ICONS: Record<RydView, IconType> = {
 };
 
 const LAYOUTS = [
-  { value: "cards", label: "Cards", icon: FiGrid },
   { value: "table", label: "Table", icon: FiList },
+  { value: "cards", label: "Cards", icon: FiGrid },
 ] as const;
 
 /** The stat cards double as the status filter, in this order. */
@@ -158,7 +158,7 @@ export function RydPageClient({
   const [linking, setLinking] = useState<string | null>(null);
   const view = rydView(viewParam);
   const status = rydStatusParam(statusParam);
-  const layout = layoutParam === "table" ? "table" : "cards";
+  const layout = layoutParam === "cards" ? "cards" : "table";
 
   // Clicking a card shows that status; clicking it again shows every order.
   function filterByStatus(param: RydStatusParam) {
@@ -454,7 +454,7 @@ export function RydPageClient({
               </section>
             ) : (
               <section aria-label={VIEW_LABELS[view]} className="space-y-4">
-                <div className="sticky top-0 z-20 -mx-1 flex flex-col gap-3 bg-white px-1 pb-3 sm:flex-row sm:items-end dark:bg-[#181818]">
+                <div className="sticky top-0 z-20 -mx-1 flex flex-col gap-3 bg-white px-1 pb-3 sm:flex-row sm:items-stretch dark:bg-[#181818]">
                   <div className="min-w-0 flex-1">
                     <SearchInput
                       label="Search orders"
@@ -469,7 +469,7 @@ export function RydPageClient({
                   <div
                     role="group"
                     aria-label="Layout"
-                    className="flex shrink-0 self-start rounded-lg border border-black/10 p-0.5 sm:self-auto dark:border-white/10"
+                    className="flex shrink-0 self-start rounded-lg border border-black/10 p-0.5 sm:self-stretch dark:border-white/10"
                   >
                     {LAYOUTS.map(({ value, label, icon: Icon }) => (
                       <button
@@ -477,7 +477,7 @@ export function RydPageClient({
                         type="button"
                         aria-pressed={layout === value}
                         onClick={() =>
-                          setLayoutParam(value === "cards" ? "" : value)
+                          setLayoutParam(value === "table" ? "" : value)
                         }
                         className={`view-button py-1.5 [&_svg]:size-4 ${layout === value ? "view-button-active" : ""}`}
                       >
