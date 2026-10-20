@@ -6,6 +6,7 @@ export * from "./Breadcrumbs";
 export * from "./Card";
 export * from "./CardAction";
 export * from "./ClearFiltersButton";
+export * from "./CopyText";
 export * from "./DisclosureCard";
 export * from "./Divider";
 export * from "./DropdownMenu";
