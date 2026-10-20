@@ -3,7 +3,7 @@ begin;
 set local role postgres;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select extensions.plan(27);
+select extensions.plan(30);
 
 select ok(
   not has_function_privilege('anon', 'public.beginner_flow_health()', 'execute'),
@@ -44,6 +44,26 @@ select ok(
     'execute'
   ),
   'anonymous callers cannot probe project access administration'
+);
+select is_empty(
+  $$select c.relname::text
+    from pg_class c
+    where c.relnamespace = 'public'::regnamespace
+      and c.relkind in ('r', 'p', 'v', 'm')
+      and not has_table_privilege('service_role', c.oid, 'select')$$,
+  'every public table and view states its grants'
+);
+create table public.default_privileges_probe (id integer);
+select ok(
+  not has_table_privilege('authenticated', 'public.default_privileges_probe', 'select')
+    and not has_table_privilege('anon', 'public.default_privileges_probe', 'select'),
+  'a new public table grants nothing until its migration says so'
+);
+drop table public.default_privileges_probe;
+select ok(
+  not has_table_privilege('anon', 'public.digest_settings', 'select')
+    and not has_table_privilege('authenticated', 'public.digest_runs', 'insert'),
+  'digest tables are owner-readable and service-written only'
 );
 
 insert into auth.users (id, email, raw_user_meta_data)
