@@ -16,6 +16,7 @@ import {
   FiMail,
   FiPhone,
   FiPlus,
+  FiSave,
   FiSend,
   FiX,
 } from "react-icons/fi";
@@ -31,6 +32,20 @@ import {
   prefersPhone,
 } from "./RydStatusChip";
 import { RydSubmissionCard } from "./RydSubmissionCard";
+
+/**
+ * The ways an order can be decided. The dialog offers every one except where
+ * the order already stands, so a decided order shows only a change of mind.
+ */
+const DECISIONS: {
+  status: Exclude<RydOrderStatus, "pending">;
+  label: string;
+  icon: IconType;
+}[] = [
+  { status: "rejected", label: "Reject", icon: FiX },
+  { status: "needs_info", label: "Needs more info", icon: FiHelpCircle },
+  { status: "verified", label: "Verify", icon: FiCheck },
+];
 
 /** One fact about the order: the icon leads, the label is for screen readers. */
 function Detail({
@@ -154,6 +169,19 @@ export function RydOrderDialog({
     if (saved) onClose();
   }
 
+  const noteChanged = note.trim() !== (order.note ?? "");
+
+  async function saveNote() {
+    if (
+      await run(
+        "note",
+        () => mutate(base, { method: "PATCH", body: JSON.stringify({ note }) }),
+        "Note saved.",
+      )
+    )
+      onClose();
+  }
+
   const busy = pending !== null;
   const name =
     `${order.firstName} ${order.lastName}`.trim() || order.displayEmail;
@@ -171,58 +199,60 @@ export function RydOrderDialog({
         </span>
       }
       supportingActions={
-        <Button
-          type="button"
-          size="sm"
-          variant="ghost"
-          leftIcon={<FiMail aria-hidden />}
-          disabled={busy || !emailConfigured || !order.email}
-          loading={pending === "email"}
-          onClick={() =>
-            run(
-              "email",
-              () => mutate(`${base}/email`, { method: "POST", body: "{}" }),
-              `Emailed ${order.displayEmail}.`,
-            )
-          }
-        >
-          {shown.submissions.length ? "Ask for more" : "Ask to verify"}
-        </Button>
+        order.status !== "verified" && (
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            leftIcon={<FiMail aria-hidden />}
+            disabled={busy || !emailConfigured || !order.email}
+            loading={pending === "email"}
+            onClick={() =>
+              run(
+                "email",
+                () => mutate(`${base}/email`, { method: "POST", body: "{}" }),
+                `Emailed ${order.displayEmail}.`,
+              )
+            }
+          >
+            {shown.submissions.length ? "Ask for more" : "Ask to verify"}
+          </Button>
+        )
       }
       actions={
         <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
-          <Button
-            type="button"
-            size="sm"
-            variant="secondary"
-            leftIcon={<FiX aria-hidden />}
-            disabled={busy}
-            loading={pending === "rejected"}
-            onClick={() => decide("rejected")}
-          >
-            Reject
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="secondary"
-            leftIcon={<FiHelpCircle aria-hidden />}
-            disabled={busy}
-            loading={pending === "needs_info"}
-            onClick={() => decide("needs_info")}
-          >
-            Needs more info
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            leftIcon={<FiCheck aria-hidden />}
-            disabled={busy}
-            loading={pending === "verified"}
-            onClick={() => decide("verified")}
-          >
-            Verify
-          </Button>
+          {DECISIONS.filter(({ status }) => status !== order.status).map(
+            ({ status, label, icon: Icon }) => (
+              <Button
+                key={status}
+                type="button"
+                size="sm"
+                variant={
+                  status === "verified" && order.status === "pending"
+                    ? "primary"
+                    : "secondary"
+                }
+                leftIcon={<Icon aria-hidden />}
+                disabled={busy}
+                loading={pending === status}
+                onClick={() => decide(status)}
+              >
+                {label}
+              </Button>
+            ),
+          )}
+          {order.status !== "pending" && noteChanged && (
+            <Button
+              type="button"
+              size="sm"
+              leftIcon={<FiSave aria-hidden />}
+              disabled={busy}
+              loading={pending === "note"}
+              onClick={saveNote}
+            >
+              Save note
+            </Button>
+          )}
         </div>
       }
     >
