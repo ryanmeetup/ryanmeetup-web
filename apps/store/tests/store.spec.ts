@@ -100,12 +100,28 @@ test("customer can open store support and enter order details", async ({
   });
 });
 
+test("customer can read about the store and get back to shopping", async ({ page }) => {
+  await page.goto("/");
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "About" }).click();
+  await expect(page).toHaveURL(/\/about$/);
+  await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toHaveText("Official provisions for the Ryan people.");
+  await expect(page.getByText("We can’t accept returns.", { exact: false })).toBeVisible();
+  await expect(page.getByRole("link", { name: "shipping guidelines" })).toHaveAttribute("href", "https://www.printful.com/shipping");
+  await page.screenshot({ path: "/private/tmp/store-about-desktop.png", fullPage: true });
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: "/private/tmp/store-about-mobile.png", fullPage: true });
+  await page.getByRole("link", { name: "Shop the collection" }).click();
+  await expect(page).toHaveURL(/\/collections\/all$/);
+});
+
 test("store navigation and breadcrumbs use icons", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/products/ryan-meetup-tee");
   await expect(
     page.getByRole("navigation", { name: "Main navigation" }).locator("a svg"),
-  ).toHaveCount(4);
+  ).toHaveCount(5);
   await expect(
     page.getByRole("navigation", { name: "Breadcrumb" }).locator("li svg"),
   ).toHaveCount(3);
@@ -120,7 +136,7 @@ test("store navigation and breadcrumbs use icons", async ({ page }) => {
     page
       .getByRole("navigation", { name: "Mobile navigation" })
       .locator("a svg"),
-  ).toHaveCount(4);
+  ).toHaveCount(5);
   await page.screenshot({
     path: "/private/tmp/store-mobile-navigation.png",
     fullPage: false,

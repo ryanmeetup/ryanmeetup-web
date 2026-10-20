@@ -1,5 +1,5 @@
 import { createElement } from "react";
-import { FiMail, FiTag } from "react-icons/fi";
+import { FiInfo, FiMail, FiTag } from "react-icons/fi";
 import { FaBoxesStacked, FaShirt, FaStore } from "react-icons/fa6";
 
 export const StoreHomeIcon = FaStore;
@@ -24,6 +24,12 @@ export const storeNavigation = [
     label: "Accessories",
     description: "The finishing touches for a fully equipped Ryan.",
     icon: FiTag,
+  },
+  {
+    href: "/about",
+    label: "About",
+    description: "Who makes the goods and where the money goes.",
+    icon: FiInfo,
   },
   {
     href: "/contact",
