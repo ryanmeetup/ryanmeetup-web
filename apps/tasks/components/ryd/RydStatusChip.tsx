@@ -126,7 +126,7 @@ const RYAN_POSITION_CHIPS: Partial<
       "border-orange-500/35 bg-orange-500/10 text-orange-800 dark:border-orange-400/35 dark:bg-orange-500/15 dark:text-orange-200",
   },
   absent: {
-    label: "Not a Ryan",
+    label: "Non-Ryan",
     icon: FiAlertTriangle,
     className:
       "border-rose-500/35 bg-rose-500/10 text-rose-800 dark:border-rose-400/35 dark:bg-rose-500/15 dark:text-rose-200",
