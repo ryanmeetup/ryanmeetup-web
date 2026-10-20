@@ -5,7 +5,7 @@ import { StoreContactForm } from "@/components/store-contact-form";
 
 export const metadata: Metadata = {
   title: "Store customer service",
-  description: "Contact Ryan General Store customer service about an order, product, return, or delivery.",
+  description: "Contact Ryan General Store customer service about an order, product, or delivery.",
 };
 
 const helpfulDetails = [
@@ -27,7 +27,7 @@ export default function ContactPage() {
                 Let’s sort out your order.
               </Heading>
               <Text className="text-lg text-black/80 dark:text-white/80">
-                Questions about a product, shipment, return, or something that arrived less Ryan-ready than expected? Send the details to the same team behind RyanMeetup.com.
+                Questions about a product, shipment, or something that arrived less Ryan-ready than expected? Send the details to the same team behind RyanMeetup.com.
               </Text>
             </div>
 
