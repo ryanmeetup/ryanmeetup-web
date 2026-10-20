@@ -17,7 +17,8 @@ export async function PATCH(
 
   const current = await context.admin
     .from("ryd_orders")
-    .select("status, note, cleared_batch_id")
+    // Everything, so this still reads before the production columns exist.
+    .select("*")
     .eq("order_id", orderId)
     .maybeSingle();
   if (current.error)
@@ -31,6 +32,19 @@ export async function PATCH(
         code: "CONFLICT",
         error:
           "This order was already sent to fulfillment as verified. Tell them directly if that has changed.",
+      },
+      { status: 409 },
+    );
+  if (
+    current.data.production_sent_at &&
+    parsed.data.status &&
+    parsed.data.status !== current.data.status
+  )
+    return NextResponse.json(
+      {
+        code: "CONFLICT",
+        error:
+          "This order is already in production. Move it back to Not sent before changing its decision.",
       },
       { status: 409 },
     );

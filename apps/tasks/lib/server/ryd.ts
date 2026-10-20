@@ -11,6 +11,7 @@ import {
   suggestMatches,
   type RydSubmission,
 } from "@/lib/ryd/matching";
+import type { RydProductionStage } from "@/lib/ryd/queue-view";
 import {
   parseRydOrderCsv,
   rydOrderExportCsv,
@@ -76,6 +77,9 @@ export type RydOrderRow = {
   decided_by: string | null;
   cleared_batch_id: string | null;
   last_emailed_at: string | null;
+  /** Absent until the production migration is applied. */
+  production_sent_at?: string | null;
+  done_at?: string | null;
   created_at: string;
 };
 
@@ -191,9 +195,9 @@ const emptyQueue = (installed: boolean): RydQueue => ({
 });
 
 /**
- * Everything still open, the live form responses, and a suggested pairing for
- * every order nobody has paired yet. Orders already sent to fulfillment as
- * verified are counted, not listed.
+ * Everything still open, every verified order (sent to fulfillment or not, so
+ * its production can be tracked), the live form responses, and a suggested
+ * pairing for every order nobody has paired yet.
  */
 export async function loadRydQueue(admin: SupabaseClient): Promise<RydQueue> {
   const [ordersResult, linksResult, clearedResult, batchResult] =
@@ -201,7 +205,7 @@ export async function loadRydQueue(admin: SupabaseClient): Promise<RydQueue> {
       admin
         .from("ryd_orders")
         .select("*")
-        .is("cleared_batch_id", null)
+        .or("cleared_batch_id.is.null,status.eq.verified")
         .order("created_at", { ascending: false })
         .order("order_id"),
       admin.from("ryd_order_submissions").select("order_id, submission_key"),
@@ -288,6 +292,9 @@ export async function loadRydQueue(admin: SupabaseClient): Promise<RydQueue> {
       decidedAt: row.decided_at,
       decidedBy: row.decided_by,
       lastEmailedAt: row.last_emailed_at,
+      sentToFulfillment: Boolean(row.cleared_batch_id),
+      productionSentAt: row.production_sent_at ?? null,
+      doneAt: row.done_at ?? null,
       linkedKeys: linkedByOrder.get(row.order_id) ?? [],
       suggestion: suggestions.get(row.order_id) ?? null,
     })),
@@ -314,7 +321,14 @@ export async function recordRydEvent(
   user: User,
   orderIds: string[],
   action:
-    "imported" | "status" | "note" | "linked" | "unlinked" | "emailed" | "sent",
+    | "imported"
+    | "status"
+    | "note"
+    | "linked"
+    | "unlinked"
+    | "emailed"
+    | "sent"
+    | "production",
   detail: Record<string, unknown> = {},
 ) {
   if (!orderIds.length) return;
@@ -536,4 +550,55 @@ export async function markRydBatchSent(
     verifiedCount: verifiedIds.length,
     sheetTicks,
   };
+}
+
+/**
+ * Move verified orders to a production stage. Each step only stamps what is
+ * missing, so re-marking keeps the first date: done fills in a sent date the
+ * order skipped, back to in production clears only done, and not started
+ * clears both. Returns how many orders actually moved.
+ */
+export async function setRydProductionStage(
+  admin: SupabaseClient,
+  user: User,
+  orderIds: string[],
+  stage: RydProductionStage,
+) {
+  const now = new Date().toISOString();
+  const verified = (fields: Record<string, unknown>) =>
+    admin
+      .from("ryd_orders")
+      .update({ ...fields, updated_at: now })
+      .in("order_id", orderIds)
+      .eq("status", "verified");
+  const sent = { production_sent_at: now, production_sent_by: user.id };
+  const notDone = { done_at: null, done_by: null };
+  // In order: the table refuses a done date without a sent one.
+  const steps = {
+    "not-started": [
+      () =>
+        verified({
+          production_sent_at: null,
+          production_sent_by: null,
+          ...notDone,
+        }).not("production_sent_at", "is", null),
+    ],
+    "in-production": [
+      () => verified(sent).is("production_sent_at", null),
+      () => verified(notDone).not("done_at", "is", null),
+    ],
+    done: [
+      () => verified(sent).is("production_sent_at", null),
+      () => verified({ done_at: now, done_by: user.id }).is("done_at", null),
+    ],
+  }[stage];
+
+  const moved = new Set<string>();
+  for (const step of steps) {
+    const result = await step().select("order_id");
+    if (result.error) throw result.error;
+    for (const row of result.data ?? []) moved.add(row.order_id);
+  }
+  await recordRydEvent(admin, user, [...moved], "production", { stage });
+  return { movedCount: moved.size };
 }

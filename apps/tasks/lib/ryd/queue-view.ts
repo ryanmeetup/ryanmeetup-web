@@ -30,6 +30,50 @@ export function rydView(value: string): RydView {
     : "queue";
 }
 
+/** Where a verified order is in being made. Done always implies sent. */
+export const RYD_PRODUCTION_STAGES = [
+  "not-started",
+  "in-production",
+  "done",
+] as const;
+export type RydProductionStage = (typeof RYD_PRODUCTION_STAGES)[number];
+
+export const RYD_PRODUCTION_LABELS: Record<RydProductionStage, string> = {
+  "not-started": "Not sent",
+  "in-production": "In production",
+  done: "Done",
+};
+
+export function rydProductionStage(
+  order: Pick<RydQueueOrder, "productionSentAt" | "doneAt">,
+): RydProductionStage {
+  if (order.doneAt) return "done";
+  return order.productionSentAt ? "in-production" : "not-started";
+}
+
+/** `?production=` narrows the Verified list; anything else shows it all. */
+export function rydProductionParam(value: string): RydProductionStage | null {
+  return (RYD_PRODUCTION_STAGES as readonly string[]).includes(value)
+    ? (value as RydProductionStage)
+    : null;
+}
+
+export function rydProductionCounts(orders: RydQueueOrder[]) {
+  const counts: Record<RydProductionStage, number> = {
+    "not-started": 0,
+    "in-production": 0,
+    done: 0,
+  };
+  for (const order of orders)
+    if (order.status === "verified") counts[rydProductionStage(order)] += 1;
+  return counts;
+}
+
+/** Orders a fulfillment file would still carry: those not yet cleared. */
+export function unsentOrders(orders: RydQueueOrder[]) {
+  return orders.filter((order) => !order.sentToFulfillment);
+}
+
 export function submissionsByKey(submissions: RydSubmission[]) {
   return new Map(submissions.map((submission) => [submission.key, submission]));
 }

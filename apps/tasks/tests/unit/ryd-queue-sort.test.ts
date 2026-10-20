@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
+import { rydProductionSchema } from "@/lib/api-schema/ryd";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 import {
   claimedElsewhere,
   contactableSubmitters,
   linkableOrders,
   orderRyanPositions,
+  rydProductionCounts,
+  rydProductionParam,
+  rydProductionStage,
+  unsentOrders,
   rydSortParam,
   rydSortValue,
   sortRydOrders,
@@ -25,6 +30,9 @@ function order(overrides: Partial<RydQueueOrder>): RydQueueOrder {
     decidedAt: null,
     decidedBy: null,
     lastEmailedAt: null,
+    sentToFulfillment: false,
+    productionSentAt: null,
+    doneAt: null,
     linkedKeys: [],
     suggestion: null,
     ...overrides,
@@ -237,5 +245,66 @@ describe("linkableOrders", () => {
     expect(
       contactableSubmitters(submitters, contacts, now).map((s) => s.email),
     ).toEqual(["stale@example.com", "never@example.com"]);
+  });
+});
+
+describe("RY-D production", () => {
+  const sent = "2026-10-18T15:00:00Z";
+  const done = "2026-10-19T15:00:00Z";
+
+  it("reads the stage from the two dates, done winning", () => {
+    expect(rydProductionStage(order({}))).toBe("not-started");
+    expect(rydProductionStage(order({ productionSentAt: sent }))).toBe(
+      "in-production",
+    );
+    expect(
+      rydProductionStage(order({ productionSentAt: sent, doneAt: done })),
+    ).toBe("done");
+  });
+
+  it("counts only verified orders", () => {
+    expect(
+      rydProductionCounts([
+        order({ orderId: "1", status: "verified" }),
+        order({ orderId: "2", status: "verified", productionSentAt: sent }),
+        order({
+          orderId: "3",
+          status: "verified",
+          productionSentAt: sent,
+          doneAt: done,
+        }),
+        order({ orderId: "4", status: "pending" }),
+      ]),
+    ).toEqual({ "not-started": 1, "in-production": 1, done: 1 });
+  });
+
+  it("keeps cleared orders out of the next fulfillment file", () => {
+    expect(
+      ids(
+        unsentOrders([
+          order({ orderId: "1" }),
+          order({ orderId: "2", sentToFulfillment: true }),
+        ]),
+      ),
+    ).toEqual(["1"]);
+  });
+
+  it("reads readable production params", () => {
+    expect(rydProductionParam("in-production")).toBe("in-production");
+    expect(rydProductionParam("in_production")).toBeNull();
+    expect(rydProductionParam("")).toBeNull();
+  });
+
+  it("accepts order IDs and a known stage only", () => {
+    expect(
+      rydProductionSchema({ orderIds: ["1", "1", "2"], stage: "done" }),
+    ).toEqual({ orderIds: ["1", "2"], stage: "done" });
+    expect(
+      rydProductionSchema({ orderIds: ["1"], stage: "shipped" }),
+    ).toBeNull();
+    expect(rydProductionSchema({ orderIds: [], stage: "done" })).toBeNull();
+    expect(
+      rydProductionSchema({ orderIds: ["1"], stage: "done", extra: 1 }),
+    ).toBeNull();
   });
 });

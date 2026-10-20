@@ -29,6 +29,7 @@ import {
 } from "@/lib/ryd/emails";
 import type { RydSubmitter } from "@/lib/ryd/matching";
 import type { RydQueue, RydQueueOrder } from "@/lib/ryd/queue-types";
+import { unsentOrders } from "@/lib/ryd/queue-view";
 
 const UPLOAD_FORM = "ryd-upload-form";
 const SETTINGS_FORM = "ryd-settings-form";
@@ -241,8 +242,10 @@ export function RydSendDialog({
   onChanged: () => Promise<void>;
 }) {
   const [sending, setSending] = useState(false);
-  const total = queue.orders.length;
-  const ready = queue.orders.filter((order) => order.status === "verified");
+  // Orders already cleared stay listed for production; they're not resent.
+  const unsent = unsentOrders(queue.orders);
+  const total = unsent.length;
+  const ready = unsent.filter((order) => order.status === "verified");
   const recipient = queue.settings.fulfillmentEmail;
   const draft = rydFulfillmentEmail(ready, total);
 
@@ -278,7 +281,7 @@ export function RydSendDialog({
       setIsOpen={(open) => !open && !sending && onClose()}
       size="lg"
       title="Send to fulfillment"
-      description="Fulfillment gets back their own file with Verified? filled in. Send it from your own email, then mark it sent: verified orders leave the queue, and everything else comes round again next time."
+      description="Fulfillment gets back their own file with Verified? filled in. Send it from your own email, then mark it sent: verified orders stay under Verified for production, and everything else comes round again next time."
       closable={!sending}
       actions={
         <ModalActions

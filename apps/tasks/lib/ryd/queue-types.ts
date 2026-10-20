@@ -24,6 +24,11 @@ export type RydQueueOrder = {
   decidedAt: string | null;
   decidedBy: string | null;
   lastEmailedAt: string | null;
+  /** Fulfillment has had a file clearing this order; its decision is final. */
+  sentToFulfillment: boolean;
+  /** When a verified order went off to be made, and when it was finished. */
+  productionSentAt: string | null;
+  doneAt: string | null;
   linkedKeys: string[];
   suggestion: RydMatchSuggestion | null;
 };

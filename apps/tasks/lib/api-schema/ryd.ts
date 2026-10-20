@@ -1,4 +1,8 @@
 import { RYD_ORDER_STATUSES, type RydOrderStatus } from "@/lib/ryd/orders";
+import {
+  RYD_PRODUCTION_STAGES,
+  type RydProductionStage,
+} from "@/lib/ryd/queue-view";
 import { formIdFrom } from "@/lib/ryd/form-responses";
 import { normalizeEmail } from "@/lib/ryd/normalize";
 import { isJsonObject } from "./shared";
@@ -82,12 +86,28 @@ export function rydEmailsSchema(value: unknown) {
   };
 }
 
-/** Up to 500 distinct order IDs, more than the queue ever holds at once. */
-export function rydOrderIdsSchema(value: unknown) {
-  if (!isJsonObject(value) || Object.keys(value).length !== 1) return null;
-  const ids = value.orderIds;
+function orderIds(ids: unknown) {
   if (!Array.isArray(ids) || !ids.length || ids.length > 500) return null;
   if (!ids.every((id) => typeof id === "string" && id && id.length <= 200))
     return null;
-  return { orderIds: [...new Set(ids as string[])] };
+  return [...new Set(ids as string[])];
+}
+
+/** Up to 500 distinct order IDs, more than the queue ever holds at once. */
+export function rydOrderIdsSchema(value: unknown) {
+  if (!isJsonObject(value) || Object.keys(value).length !== 1) return null;
+  const ids = orderIds(value.orderIds);
+  return ids ? { orderIds: ids } : null;
+}
+
+/** Verified orders, and the production stage to move them to. */
+export function rydProductionSchema(value: unknown) {
+  if (!isJsonObject(value) || Object.keys(value).length !== 2) return null;
+  const ids = orderIds(value.orderIds);
+  if (
+    !ids ||
+    !RYD_PRODUCTION_STAGES.includes(value.stage as RydProductionStage)
+  )
+    return null;
+  return { orderIds: ids, stage: value.stage as RydProductionStage };
 }

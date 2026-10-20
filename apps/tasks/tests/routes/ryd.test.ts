@@ -320,6 +320,76 @@ describe("RY-D routes", () => {
     expect(calls).toContainEqual(["is", "cleared_batch_id", null]);
   });
 
+  it("refuses to change the decision on an order in production", async () => {
+    getAdminClient.mockReturnValue(
+      admin({
+        ryd_orders: table({
+          data: {
+            status: "verified",
+            note: null,
+            cleared_batch_id: null,
+            production_sent_at: "2026-10-18T15:00:00Z",
+          },
+          error: null,
+        }),
+      }),
+    );
+    const { PATCH } = await import("@/app/api/ryd/orders/[orderId]/route");
+
+    const response = await PATCH(
+      new Request(
+        "http://localhost/api/ryd/orders/1001",
+        json({ status: "needs_info" }),
+      ),
+      { params: Promise.resolve({ orderId: "1001" }) },
+    );
+
+    expect(response.status).toBe(409);
+  });
+
+  it("marks verified orders done, stamping a missing sent date first", async () => {
+    const calls: unknown[] = [];
+    getAdminClient.mockReturnValue(
+      admin({
+        ryd_orders: table({ data: [{ order_id: "1001" }], error: null }, calls),
+      }),
+    );
+    const { POST } = await import("@/app/api/ryd/production/route");
+
+    const response = await POST(
+      new Request(
+        "http://localhost/api/ryd/production",
+        json({ orderIds: ["1001", "1001"], stage: "done" }, "POST"),
+      ),
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ movedCount: 1 });
+    const updates = calls.filter(
+      (call): call is [string, Record<string, unknown>] =>
+        (call as unknown[])[0] === "update",
+    );
+    expect(Object.keys(updates[0][1])).toContain("production_sent_at");
+    expect(Object.keys(updates[1][1])).toContain("done_at");
+    expect(calls).toContainEqual(["in", "order_id", ["1001"]]);
+    expect(calls).toContainEqual(["eq", "status", "verified"]);
+    expect(calls).toContainEqual(["is", "production_sent_at", null]);
+    expect(calls).toContainEqual(["is", "done_at", null]);
+  });
+
+  it("rejects an unknown production stage", async () => {
+    const { POST } = await import("@/app/api/ryd/production/route");
+
+    const response = await POST(
+      new Request(
+        "http://localhost/api/ryd/production",
+        json({ orderIds: ["1001"], stage: "shipped" }, "POST"),
+      ),
+    );
+
+    expect(response.status).toBe(400);
+  });
+
   it("rejects a reminder request with no orders", async () => {
     const { POST } = await import("@/app/api/ryd/reminders/route");
 
