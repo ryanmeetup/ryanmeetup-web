@@ -516,12 +516,15 @@ export function RydPageClient({
                       }}
                     />
                   )}
-                  {(query || (view === "queue" && status !== "pending")) && (
+                  {(query ||
+                    sort ||
+                    (view === "queue" && status !== "pending")) && (
                     <ClearFiltersButton
                       className="self-start sm:self-center"
                       onClick={() => {
                         setQuery("");
                         setStatusParam("");
+                        setSortParam("");
                         setPage(1);
                       }}
                     />
