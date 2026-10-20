@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 import {
   claimedElsewhere,
-  nextRydSort,
   rydSortParam,
   rydSortValue,
   sortRydOrders,
@@ -45,18 +44,6 @@ describe("RY-D queue sorting", () => {
       "status-desc",
     );
     expect(rydSortValue(null)).toBe("");
-  });
-
-  it("cycles a column ascending, descending, then off", () => {
-    const asc = nextRydSort(null, "name");
-    expect(asc).toEqual({ key: "name", descending: false });
-    const desc = nextRydSort(asc, "name");
-    expect(desc).toEqual({ key: "name", descending: true });
-    expect(nextRydSort(desc, "name")).toBeNull();
-    expect(nextRydSort(desc, "status")).toEqual({
-      key: "status",
-      descending: false,
-    });
   });
 
   it("sorts by surname, ignoring case and accents", () => {

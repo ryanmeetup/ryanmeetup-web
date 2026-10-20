@@ -1,5 +1,20 @@
-import { FiArrowDown, FiArrowUp, FiMail, FiPhone } from "react-icons/fi";
-import { Button, CopyText } from "@ryanmeetup/ui";
+import {
+  FiArrowDown,
+  FiArrowUp,
+  FiCheck,
+  FiMail,
+  FiPhone,
+  FiX,
+} from "react-icons/fi";
+import {
+  Button,
+  CopyText,
+  DropdownMenu,
+  DropdownMenuButton,
+  DropdownMenuItem,
+  DropdownMenuItems,
+  DropdownMenuSeparator,
+} from "@ryanmeetup/ui";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 import type { RydSort, RydSortKey } from "@/lib/ryd/queue-view";
 import {
@@ -13,14 +28,15 @@ import {
 const SORT_LABELS: Record<RydSortKey, [ascending: string, descending: string]> =
   {
     name: ["A to Z by surname", "Z to A by surname"],
-    status: ["pending first", "rejected first"],
-    form: ["surest match first", "no submission first"],
-    ordered: ["oldest first", "newest first"],
+    status: ["Pending first", "Rejected first"],
+    form: ["Surest match first", "No submission first"],
+    ordered: ["Oldest first", "Newest first"],
   };
 
 /**
- * A header that sorts its column. Clicking cycles ascending, descending, then
- * back to the queue's own order; `aria-sort` and the arrow say which is on.
+ * A header that opens its column's sort choices: either direction, picked
+ * outright, or back to the queue's own order. `aria-sort` and the arrow say
+ * which is on.
  */
 function SortHeader({
   column,
@@ -32,16 +48,17 @@ function SortHeader({
   column: RydSortKey;
   label: string;
   sort: RydSort;
-  onSort: (column: RydSortKey) => void;
+  onSort: (sort: RydSort) => void;
   className: string;
 }) {
   const active = sort?.key === column;
   const Arrow = active && sort.descending ? FiArrowDown : FiArrowUp;
-  const next = !active
-    ? `Sort ${SORT_LABELS[column][0]}`
-    : sort.descending
-      ? "Clear sort"
-      : `Sort ${SORT_LABELS[column][1]}`;
+  const choices = [false, true].map((descending) => ({
+    descending,
+    label: SORT_LABELS[column][Number(descending)],
+    icon: descending ? FiArrowDown : FiArrowUp,
+    current: active && sort.descending === descending,
+  }));
   return (
     <th
       className={className}
@@ -49,18 +66,45 @@ function SortHeader({
         active ? (sort.descending ? "descending" : "ascending") : "none"
       }
     >
-      <button
-        type="button"
-        title={next}
-        onClick={() => onSort(column)}
-        className={`group inline-flex items-center gap-1 whitespace-nowrap rounded font-semibold uppercase tracking-[0.16em] transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40 dark:hover:text-white dark:focus-visible:ring-white/50 ${active ? "text-black dark:text-white" : ""}`}
-      >
-        {label}
-        <Arrow
-          aria-hidden
-          className={`h-3 w-3 shrink-0 ${active ? "" : "opacity-0 group-hover:opacity-50 group-focus-visible:opacity-50"}`}
-        />
-      </button>
+      <DropdownMenu>
+        <DropdownMenuButton
+          unstyled
+          aria-label={`Sort by ${label.toLowerCase()}`}
+          className={`group inline-flex items-center gap-1 whitespace-nowrap rounded font-semibold uppercase tracking-[0.16em] transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40 data-open:text-black dark:hover:text-white dark:focus-visible:ring-white/50 dark:data-open:text-white ${active ? "text-black dark:text-white" : ""}`}
+        >
+          {label}
+          <Arrow
+            aria-hidden
+            className={`h-3 w-3 shrink-0 ${active ? "" : "opacity-0 group-hover:opacity-50 group-focus-visible:opacity-50 group-data-open:opacity-50"}`}
+          />
+        </DropdownMenuButton>
+        <DropdownMenuItems align="start">
+          {choices.map(({ descending, label, icon: Icon, current }) => (
+            <DropdownMenuItem
+              key={label}
+              onClick={() => onSort({ key: column, descending })}
+            >
+              <Icon aria-hidden className="h-4 w-4 opacity-60" />
+              <span className="flex-1">{label}</span>
+              {current && (
+                <>
+                  <FiCheck aria-hidden className="h-4 w-4" />
+                  <span className="sr-only">(current)</span>
+                </>
+              )}
+            </DropdownMenuItem>
+          ))}
+          {active && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => onSort(null)}>
+                <FiX aria-hidden className="h-4 w-4 opacity-60" />
+                Clear sort
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuItems>
+      </DropdownMenu>
     </th>
   );
 }
@@ -83,7 +127,7 @@ export function RydOrderTable({
   orders: RydQueueOrder[];
   label: string;
   sort: RydSort;
-  onSort: (column: RydSortKey) => void;
+  onSort: (sort: RydSort) => void;
   followUp: boolean;
   emailConfigured: boolean;
   emailing: string | null;

@@ -38,7 +38,6 @@ import {
   claimedElsewhere,
   orderSearchText,
   RYD_STATUS_PARAMS,
-  nextRydSort,
   rydCounts,
   rydSortParam,
   rydSortValue,
@@ -524,9 +523,7 @@ export function RydPageClient({
                       orders={sorted}
                       label={VIEW_LABELS[view]}
                       sort={sort}
-                      onSort={(column) =>
-                        setSortParam(rydSortValue(nextRydSort(sort, column)))
-                      }
+                      onSort={(next) => setSortParam(rydSortValue(next))}
                       followUp={view === "follow-up"}
                       emailConfigured={emailConfigured}
                       emailing={emailing}

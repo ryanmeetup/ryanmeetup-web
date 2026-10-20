@@ -141,12 +141,6 @@ export function rydSortValue(sort: RydSort) {
   return sort ? `${sort.key}${sort.descending ? "-desc" : ""}` : "";
 }
 
-/** A column's next sort on click: ascending, then descending, then off. */
-export function nextRydSort(sort: RydSort, key: RydSortKey): RydSort {
-  if (sort?.key !== key) return { key, descending: false };
-  return sort.descending ? null : { key, descending: true };
-}
-
 /** The workflow's order, not the alphabet's. */
 const STATUS_RANK: Record<RydOrderStatus, number> = {
   pending: 0,
