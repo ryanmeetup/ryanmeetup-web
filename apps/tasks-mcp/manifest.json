@@ -2,8 +2,8 @@
   "manifest_version": "0.4",
   "name": "rmt-tasks-read",
   "display_name": "Ryan Meetup Tasks (Read Only)",
-  "version": "0.1.0",
-  "description": "Read-only access to Ryan Meetup tasks, notes, comments, projects, contacts, calendar data, and work metrics.",
+  "version": "0.2.0",
+  "description": "Read-only access to Ryan Meetup tasks, notes, comments, projects, contacts, calendar data, work metrics, and RY-D sales.",
   "long_description": "Connects Claude Desktop to the private Ryan Meetup Tasks workspace through a dedicated read-only API. It cannot create, edit, delete, or upload workspace data.",
   "author": {
     "name": "Ryan Meetup"
@@ -36,9 +36,11 @@
     { "name": "get_category", "description": "Read a category with tasks, owners, grants, and attachments." },
     { "name": "list_contacts", "description": "Read the contacts directory and its people." },
     { "name": "get_work_metrics", "description": "Calculate throughput, aging, workload, and cycle-time evidence." },
-    { "name": "list_governance_activity", "description": "Read owner-only audit and access-control records." }
+    { "name": "list_governance_activity", "description": "Read owner-only audit and access-control records." },
+    { "name": "get_ryd_sales_insights", "description": "Profile RY-D buyers and revenue by name, email type, gifts, and form answers." },
+    { "name": "list_ryd_orders", "description": "List RY-D orders with verification status and linked form answers." }
   ],
-  "keywords": ["tasks", "notes", "productivity", "analytics", "read-only"],
+  "keywords": ["tasks", "notes", "productivity", "analytics", "sales", "read-only"],
   "compatibility": {
     "claude_desktop": ">=1.0.0",
     "platforms": ["darwin", "win32", "linux"],

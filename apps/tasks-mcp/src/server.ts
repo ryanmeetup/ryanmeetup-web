@@ -9,6 +9,15 @@ const pagination = {
 const archived = { includeArchived: z.boolean().optional() };
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const uuidList = z.array(z.uuid()).max(50).optional();
+const rydFilters = {
+  from: date.optional(),
+  to: date.optional(),
+  statuses: z
+    .array(z.enum(["pending", "verified", "needs_info", "rejected"]))
+    .max(4)
+    .optional(),
+  query: z.string().trim().max(200).optional(),
+};
 
 function toolResult(value: Record<string, unknown>) {
   return {
@@ -49,7 +58,7 @@ export function createRmtServer() {
     {
       name: "rmt-tasks-read",
       title: "Ryan Meetup Tasks (Read Only)",
-      version: "0.1.0",
+      version: "0.2.0",
     },
     { capabilities: { tools: {}, resources: {} } },
   );
@@ -70,7 +79,9 @@ export function createRmtServer() {
           text: [
             "This connector reads the Ryan Meetup Tasks workspace only.",
             "It includes database-backed tasks, notes, comments, projects, categories, contacts, calendar events, relationships, activity, and metrics.",
+            "It also includes RY-D sales: fulfillment orders, verification decisions, and the RY-dentification form answers linked to each order.",
             "It excludes credentials, encrypted integration tokens, rate-limit internals, raw authentication records, and attachment binary contents.",
+            "RY-D buyers' email addresses are reduced to their domain, and files uploaded through the RY-dentification form are never included.",
             "Every tool is read-only; no create, update, delete, or upload operation is registered.",
           ].join("\n"),
         },
@@ -324,6 +335,30 @@ export function createRmtServer() {
       annotations: readOnly,
     },
     (params) => read("list_governance_activity", params),
+  );
+
+  server.registerTool(
+    "get_ryd_sales_insights",
+    {
+      title: "Get RY-D sales insights",
+      description:
+        "Profile who buys RY-Ds: order and revenue totals, gift versus self-purchase, and distributions by month, status, buyer and Ryan first-name spelling, last name, email type (personal, school, work) and domain, contact method, delivery, items, social platform, plus the most common answers to every RY-dentification form question. Dates filter on the order date. Start here for questions about the types of Ryans buying, then use list_ryd_orders for examples.",
+      inputSchema: z.object(rydFilters),
+      annotations: readOnly,
+    },
+    (params) => read("get_ryd_sales_insights", params),
+  );
+
+  server.registerTool(
+    "list_ryd_orders",
+    {
+      title: "List RY-D orders",
+      description:
+        "List RY-D orders newest first, including ones already sent to fulfillment, each with its verification status, reviewer note, order total and items, buyer name, email domain, and the linked RY-dentification form answers and social links. Query matches names, order IDs, email domains, notes, and form answers.",
+      inputSchema: z.object({ ...rydFilters, ...pagination }),
+      annotations: readOnly,
+    },
+    (params) => read("list_ryd_orders", params),
   );
 
   return server;

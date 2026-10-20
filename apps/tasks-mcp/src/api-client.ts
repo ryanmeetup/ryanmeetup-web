@@ -14,7 +14,9 @@ export type RmtReadAction =
   | "get_category"
   | "list_contacts"
   | "get_work_metrics"
-  | "list_governance_activity";
+  | "list_governance_activity"
+  | "get_ryd_sales_insights"
+  | "list_ryd_orders";
 
 const PRODUCTION_ORIGIN = "https://tasks.ryanmeetup.com";
 const REQUEST_TIMEOUT_MS = 30_000;

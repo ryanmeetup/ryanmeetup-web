@@ -34,11 +34,20 @@ The API exposes database-backed workspace content:
   notes;
 - profiles, workspace catalogs, digest settings, digest run history, access
   groups, and audit events; and
-- deterministic work metrics derived from task records.
+- deterministic work metrics derived from task records; and
+- RY-D sales, when RY-D Verification is on: every fulfillment order (including
+  those already sent back as verified), its decision and reviewer note, and the
+  RY-dentification form answers and social links of the submission linked to
+  it, plus a summary of buyers by name spelling, email type, gifts, month, and
+  form answer.
 
 It deliberately excludes encrypted integration tokens, environment secrets,
 MCP token hashes, rate-limit internals, raw Supabase auth records, and binary
-attachment contents. Imported Google Calendar event payloads are fetched live
+attachment contents. RY-D buyers' email addresses are reduced to their domain,
+and files uploaded through the RY-dentification form are never returned.
+Form answers are read live from Google on each call, as `/ryd` reads them; if
+the form can't be read, the order data still comes back with a warning.
+Imported Google Calendar event payloads are fetched live
 by the application and are not part of the Tasks database, so they are not in
 this integration.
 
@@ -108,6 +117,11 @@ Useful first prompts:
   process.”
 - “Compare created and completed work, then propose a realistic plan for next
   month.”
+- “What types of Ryans are buying RY-Ds? Break it down by spelling, email type,
+  gifts, and how they heard about us.”
+
+After adding a tool, rebuild the bundle and install it again in Claude
+Desktop; the installed extension only knows the tools it was packed with.
 
 ## Local development
 

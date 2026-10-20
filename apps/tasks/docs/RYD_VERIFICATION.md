@@ -87,3 +87,8 @@ survives a respondent editing their answers), an audit trail (`ryd_order_events`
 imports and batches, the settings, and the Google connection. Every table is
 service-role only; routes check the instance switch and
 `can_view_workspace_area('ryd')` first.
+
+The read-only Claude Desktop connector (`docs/MCP.md`) can also read RY-D
+sales through `get_ryd_sales_insights` and `list_ryd_orders`. It bypasses the
+page's access setting, like the rest of that connector, but returns only email
+domains and never the uploaded files.
