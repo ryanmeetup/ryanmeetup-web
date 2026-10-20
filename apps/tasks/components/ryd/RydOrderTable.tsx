@@ -3,6 +3,7 @@ import {
   FiArrowDown,
   FiArrowUp,
   FiCheck,
+  FiChevronDown,
   FiMail,
   FiPhone,
   FiX,
@@ -87,7 +88,13 @@ function SortHeader({
     })),
   );
   const active = groups.flat().some((choice) => choice.key === sort?.key);
-  const Arrow = active && sort?.descending ? FiArrowDown : FiArrowUp;
+  // At rest a chevron says the header opens a menu; once sorted, the arrow
+  // says which way.
+  const Indicator = active
+    ? sort?.descending
+      ? FiArrowDown
+      : FiArrowUp
+    : FiChevronDown;
   return (
     <th
       className={className}
@@ -99,12 +106,12 @@ function SortHeader({
         <DropdownMenuButton
           unstyled
           aria-label={`Sort by ${label.toLowerCase()}`}
-          className={`group inline-flex items-center gap-1 whitespace-nowrap rounded font-semibold uppercase tracking-[0.16em] transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40 data-open:text-black dark:hover:text-white dark:focus-visible:ring-white/50 dark:data-open:text-white ${active ? "text-black dark:text-white" : ""}`}
+          className={`-mx-1.5 -my-1 inline-flex items-center gap-1 whitespace-nowrap rounded px-1.5 py-1 font-semibold uppercase tracking-[0.16em] transition hover:bg-black/5 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40 data-open:bg-black/5 data-open:text-black dark:hover:bg-white/10 dark:hover:text-white dark:focus-visible:ring-white/50 dark:data-open:bg-white/10 dark:data-open:text-white ${active ? "text-black dark:text-white" : ""}`}
         >
           {label}
-          <Arrow
+          <Indicator
             aria-hidden
-            className={`h-3 w-3 shrink-0 ${active ? "" : "opacity-0 group-hover:opacity-50 group-focus-visible:opacity-50 group-data-open:opacity-50"}`}
+            className={`h-3 w-3 shrink-0 ${active ? "" : "opacity-70"}`}
           />
         </DropdownMenuButton>
         <DropdownMenuItems align="start">
