@@ -10,6 +10,7 @@ import {
   FiLinkedin,
   FiTwitter,
 } from "react-icons/fi";
+import { Spinner } from "@ryanmeetup/ui";
 import type { RydSubmission } from "@/lib/ryd/matching";
 import type { SocialLink } from "@/lib/ryd/normalize";
 
@@ -35,12 +36,15 @@ function noteText(text: string) {
  * A thumbnail for an uploaded file. The proxy serves images and PDFs, and only
  * the image ones render in an `<img>`, so a file that fails to load as an
  * image falls back to a plain file tile; both open the file in a new tab.
+ * Files come through Google per request and can take a moment, so the tile
+ * spins until the image arrives rather than sitting there blank.
  *
  * Not `next/image`: the file is private, streamed per request with the
  * reviewer's session, and must never land in the shared optimizer cache.
  */
 function EvidenceTile({ fileId, index }: { fileId: string; index: number }) {
   const [failed, setFailed] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const href = `/api/ryd/evidence/${encodeURIComponent(fileId)}`;
   return (
     <a
@@ -56,14 +60,26 @@ function EvidenceTile({ fileId, index }: { fileId: string; index: number }) {
           File {index + 1}
         </span>
       ) : (
-        // eslint-disable-next-line @next/next/no-img-element -- see above
-        <img
-          src={href}
-          alt={`Uploaded file ${index + 1}`}
-          loading="lazy"
-          onError={() => setFailed(true)}
-          className="h-full w-full object-cover transition group-hover:opacity-90"
-        />
+        <>
+          {!loaded && (
+            <span className="absolute inset-0 flex items-center justify-center text-black/50 dark:text-white/55">
+              <Spinner size={22} label={`Loading uploaded file ${index + 1}`} />
+            </span>
+          )}
+          {/* eslint-disable-next-line @next/next/no-img-element -- see above */}
+          <img
+            // A cached image can finish before React attaches onLoad.
+            ref={(img) => {
+              if (img?.complete && img.naturalWidth) setLoaded(true);
+            }}
+            src={href}
+            alt={`Uploaded file ${index + 1}`}
+            loading="lazy"
+            onLoad={() => setLoaded(true)}
+            onError={() => setFailed(true)}
+            className={`h-full w-full object-cover transition duration-300 group-hover:opacity-90 motion-reduce:transition-none ${loaded ? "opacity-100" : "opacity-0"}`}
+          />
+        </>
       )}
     </a>
   );
