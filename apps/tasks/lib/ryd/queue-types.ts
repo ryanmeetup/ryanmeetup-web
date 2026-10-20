@@ -30,7 +30,7 @@ export type RydQueueOrder = {
 };
 
 export type RydSheetState =
-  | { status: "unconfigured" }
+  | { status: "unconfigured"; accountEmail: string }
   | { status: "disconnected" }
   | { status: "error"; message: string; accountEmail: string }
   | { status: "ok"; accountEmail: string };

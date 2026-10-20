@@ -104,7 +104,13 @@ async function loadSheet(
   if (!integration)
     return { sheet: { status: "disconnected" }, submissions: [] };
   if (!settings.formId)
-    return { sheet: { status: "unconfigured" }, submissions: [] };
+    return {
+      sheet: {
+        status: "unconfigured",
+        accountEmail: integration.account_email,
+      },
+      submissions: [],
+    };
   try {
     const { submissions } = await readRydSubmissions(
       integration,
