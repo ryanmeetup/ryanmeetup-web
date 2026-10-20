@@ -28,11 +28,12 @@ import { AdminPageShell } from "./AdminPageShell";
 import { BannerPreview } from "./BannerPreview";
 import { BannerSettingsModal } from "./BannerSettingsModal";
 import { EmailSettingsModal } from "./EmailSettingsModal";
+import { FeatureSettingsModal } from "./FeatureSettingsModal";
 import { IdentitySettingsModal } from "./IdentitySettingsModal";
 import { InstanceLinkPreview } from "./InstanceLinkPreview";
 import { LinkPreviewSettingsModal } from "./LinkPreviewSettingsModal";
 
-type Dialog = "identity" | "banner" | "preview" | "email";
+type Dialog = "identity" | "banner" | "preview" | "email" | "features";
 
 /** Which text keys each dialog owns, for the "N customized" counts. */
 const dialogKeys: Record<Dialog, InstanceTextKey[]> = {
@@ -42,6 +43,7 @@ const dialogKeys: Record<Dialog, InstanceTextKey[]> = {
   // The banner mixes a switch, a link, and two text overrides, so it is
   // counted from the stored row rather than from a draft.
   banner: [],
+  features: [],
 };
 
 /**
@@ -134,7 +136,8 @@ export function AdminSettingsPageClient({
       ? bannerKeys.filter(
           (key) => stored?.[key] !== null && stored?.[key] !== undefined,
         ).length
-      : 0);
+      : 0) +
+    (name === "features" && typeof stored?.rydEnabled === "boolean" ? 1 : 0);
 
   function saved(next: InstanceSettingsOverrides) {
     setStored(next);
@@ -233,6 +236,23 @@ export function AdminSettingsPageClient({
           </SettingsCard>
         </div>
 
+        <SettingsCard
+          title="Features"
+          description="Pages only some instances have. A page that is off is gone from the sidebar and from Access, not just closed."
+          customized={countFor("features")}
+          onEdit={() => setDialog("features")}
+          editLabel="Edit features"
+        >
+          <dl className="grid max-w-3xl gap-x-6 gap-y-3 sm:grid-cols-[10rem_minmax(0,1fr)]">
+            <dt className="text-xs font-semibold uppercase tracking-[0.2em] text-black/55 dark:text-white/55">
+              RY-D verification
+            </dt>
+            <dd className="text-sm text-black/70 dark:text-white/70">
+              {settings.rydEnabled ? "On" : "Off"}
+            </dd>
+          </dl>
+        </SettingsCard>
+
         <section className="rounded-2xl border border-black/10 p-5 dark:border-white/10">
           <Heading size="h2" className="text-xl">
             Fixed at build time
@@ -303,6 +323,14 @@ export function AdminSettingsPageClient({
       )}
       {dialog === "preview" && (
         <LinkPreviewSettingsModal
+          key={JSON.stringify(stored)}
+          open
+          setOpen={(open) => !open && setDialog(null)}
+          {...dialogProps}
+        />
+      )}
+      {dialog === "features" && (
+        <FeatureSettingsModal
           key={JSON.stringify(stored)}
           open
           setOpen={(open) => !open && setDialog(null)}

@@ -2,10 +2,11 @@ import { notFound } from "next/navigation";
 import { AccessGroupPageClient } from "@/components/access";
 import { accessGroupSlug } from "@/lib/access/access-groups";
 import { buildAccessGroupOverview } from "@/lib/access/access-overview";
+import { enabledWorkspaceAreas } from "@/lib/access/workspace-areas";
 import { requireQueryData } from "@/lib/server/workspace-loader";
 import { loadWorkspacePage } from "@/lib/server/workspace-page-loader";
 import type { Metadata } from "next";
-import { pageTitle } from "@/lib/server/instance-settings";
+import { getInstanceSettings, pageTitle } from "@/lib/server/instance-settings";
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: { absolute: await pageTitle("Access Group") } };
@@ -50,6 +51,7 @@ export default async function AccessGroupPage({
   const overview = buildAccessGroupOverview({
     group,
     groups,
+    areas: enabledWorkspaceAreas(await getInstanceSettings()),
     projects: initialData.projects,
     categories: initialData.categories,
     projectGrants: requireQueryData(

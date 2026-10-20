@@ -4,6 +4,7 @@ import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import {
   APPLY_MIGRATIONS_HINT,
+  isMissingColumn,
   isMissingRelation,
 } from "@/lib/server/supabase-errors";
 import { isWorkspaceDemo } from "@/lib/server/workspace-page-loader";
@@ -35,6 +36,7 @@ export const INSTANCE_SETTINGS_COLUMNS = [
   "credit_url",
   "credit_suffix",
   "og_alt",
+  "ryd_enabled",
 ] as const;
 
 type SettingsColumn = (typeof INSTANCE_SETTINGS_COLUMNS)[number];
@@ -62,6 +64,7 @@ const columnToKey = {
   credit_url: "creditUrl",
   credit_suffix: "creditSuffix",
   og_alt: "ogAlt",
+  ryd_enabled: "rydEnabled",
 } as const satisfies Record<SettingsColumn, keyof InstanceSettings>;
 
 export const instanceSettingsColumn = (key: keyof InstanceSettings) =>
@@ -88,10 +91,23 @@ export function overridesFromRow(row: SettingsRow): InstanceSettingsOverrides {
 async function readOverrides(): Promise<InstanceSettingsOverrides | null> {
   if (await isWorkspaceDemo()) return null;
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("instance_settings")
-    .select(INSTANCE_SETTINGS_COLUMNS.join(", "))
-    .maybeSingle<SettingsRow>();
+  const select = (columns: readonly string[]) =>
+    supabase
+      .from("instance_settings")
+      .select(columns.join(", "))
+      .maybeSingle<SettingsRow>();
+  let { data, error } = await select(INSTANCE_SETTINGS_COLUMNS);
+  // `ryd_enabled` arrived after both instances were running. Until a database
+  // has it, read everything else and leave RY-D at its default (off), so the
+  // deploy and the migration can land in either order.
+  if (error && isMissingColumn(error.code)) {
+    console.warn(
+      `instance_settings.ryd_enabled is missing; RY-D stays off. ${APPLY_MIGRATIONS_HINT}`,
+    );
+    ({ data, error } = await select(
+      INSTANCE_SETTINGS_COLUMNS.filter((column) => column !== "ryd_enabled"),
+    ));
+  }
 
   if (error) {
     if (isMissingRelation(error.code)) {

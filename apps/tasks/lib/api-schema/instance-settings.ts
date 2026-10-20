@@ -26,6 +26,7 @@ export function instanceSettingsSchema(value: unknown) {
         : null,
     bannerLinkLabel: (raw: unknown) => requiredTrimmedText(raw, 60),
     ogAlt: (raw: unknown) => requiredTrimmedText(raw, 200),
+    rydEnabled: (raw: unknown) => (typeof raw === "boolean" ? raw : null),
   } as const;
 
   const body = objectWithKeys(value, Object.keys(fields));

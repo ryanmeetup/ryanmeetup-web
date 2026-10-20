@@ -15,6 +15,7 @@ import {
 } from "@ryanmeetup/ui";
 import {
   FiCalendar,
+  FiCheckSquare,
   FiClock,
   FiChevronDown,
   FiFolder,
@@ -42,7 +43,11 @@ import {
   projectStatusDetails,
 } from "@/lib/resources/project-status";
 import { projectPath } from "@/lib/resources/project-route";
-import { editorTriggers, InstanceWordmark } from "@/components/global";
+import {
+  editorTriggers,
+  InstanceWordmark,
+  useInstance,
+} from "@/components/global";
 
 /**
  * A filled dot in this sidebar already means "category identity", so project
@@ -169,6 +174,8 @@ export function TasksSidebar({
   const isNotes = pathname === "/notes";
   const isContacts = pathname === "/contacts";
   const isCalendar = pathname === "/calendar";
+  const isRyd = pathname === "/ryd";
+  const { rydEnabled } = useInstance();
   const isTasksRoute = isBoard || pathname.startsWith("/task/");
   // A page an owner locked behind access groups leaves the navigation, so the
   // sidebar never offers a link that answers with a 404. The route guard and
@@ -405,6 +412,16 @@ export function TasksSidebar({
           >
             <FiCalendar />
             Calendar
+          </Link>
+        )}
+        {rydEnabled && canView("ryd") && (
+          <Link
+            href={withAccessPreview("/ryd", data.accessPreview)}
+            onClick={closeSidebar}
+            className={linkClass(isRyd)}
+          >
+            <FiCheckSquare />
+            RY-D verification
           </Link>
         )}
       </nav>

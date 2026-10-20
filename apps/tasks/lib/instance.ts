@@ -213,6 +213,12 @@ export type InstanceSettings = {
   creditSuffix: string;
   /** Describes the link-preview image for readers who cannot see it. */
   ogAlt: string;
+  /**
+   * Whether the RY-D verification page exists. Off unless an instance turns
+   * it on: only Ryan Meetup sells RY-Ds, and the second instance never shows
+   * the page, its sidebar entry, or its access setting.
+   */
+  rydEnabled: boolean;
 };
 
 /** Compiled-in defaults, used wherever `instance_settings` has no value. */
@@ -286,6 +292,7 @@ export const instanceDefaults: InstanceSettings = {
     process.env.NEXT_PUBLIC_INSTANCE_OG_ALT,
     `${name} — private team workspace`,
   ),
+  rydEnabled: flag(process.env.NEXT_PUBLIC_INSTANCE_RYD, false),
 };
 
 /**
@@ -319,6 +326,7 @@ export const demoInstanceSettings: InstanceSettings = {
   creditUrl: "https://ryanle.dev/",
   creditSuffix: ". All Rights Reserved.",
   ogAlt: "Workspace — shared team workspace",
+  rydEnabled: false,
 };
 
 /** Which `InstanceSettings` keys may be cleared back to their default. */

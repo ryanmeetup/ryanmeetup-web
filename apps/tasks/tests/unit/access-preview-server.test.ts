@@ -75,12 +75,14 @@ describe("access preview page visibility", () => {
       "notes",
       "contacts",
       "calendar",
+      "ryd",
     ]);
   });
 
   it("closes a restricted page that names no group", () => {
     expect(accessibleAreasForPreview(areaRows, [], ["leads"], false)).toEqual([
       "notes",
+      "ryd",
     ]);
   });
 
@@ -92,12 +94,13 @@ describe("access preview page visibility", () => {
 
     expect(
       accessibleAreasForPreview(areaRows, grants, ["leads"], false),
-    ).toEqual(["notes", "contacts"]);
+    ).toEqual(["notes", "contacts", "ryd"]);
   });
 
   it("does not let workspace-wide work authority bypass page restrictions", () => {
     expect(accessibleAreasForPreview(areaRows, [], [], false)).toEqual([
       "notes",
+      "ryd",
     ]);
   });
 
@@ -106,6 +109,7 @@ describe("access preview page visibility", () => {
       "notes",
       "contacts",
       "calendar",
+      "ryd",
     ]);
   });
 });

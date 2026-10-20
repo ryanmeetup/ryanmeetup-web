@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Button,
   Card,
@@ -10,10 +10,11 @@ import {
 } from "@ryanmeetup/ui";
 import { FiGlobe, FiLock } from "react-icons/fi";
 import {
-  WORKSPACE_AREAS,
+  enabledWorkspaceAreas,
   type WorkspaceAreaKey,
 } from "@/lib/access/workspace-areas";
 import type { AccessGroup } from "@/lib/access/access-types";
+import { useInstance } from "@/components/global";
 import { mutate } from "@/lib/mutation-client";
 import { errorMessage } from "@/lib/presentation";
 
@@ -71,8 +72,10 @@ export function WorkspaceAreaAccessPanel({
    */
   onSaved?: (entry: WorkspaceAreaAccess) => void;
 }) {
+  const instance = useInstance();
+  const areas = useMemo(() => enabledWorkspaceAreas(instance), [instance]);
   const [access, setAccess] = useState<WorkspaceAreaAccess[]>(() =>
-    WORKSPACE_AREAS.map(
+    areas.map(
       (area) =>
         initialAccess.find((entry) => entry.area === area.key) ?? {
           area: area.key,
@@ -98,8 +101,7 @@ export function WorkspaceAreaAccessPanel({
       ...entry,
       groupIds: entry.accessMode === "restricted" ? entry.groupIds : [],
     };
-    const label =
-      WORKSPACE_AREAS.find((area) => area.key === key)?.label ?? key;
+    const label = areas.find((area) => area.key === key)?.label ?? key;
     setSavingArea(key);
     try {
       await mutate("/api/workspace-area-access", {
@@ -121,7 +123,7 @@ export function WorkspaceAreaAccessPanel({
 
   return (
     <div className="grid auto-rows-fr gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {WORKSPACE_AREAS.map((area) => {
+      {areas.map((area) => {
         const entry = entryFor(area.key);
         const restricted = entry.accessMode === "restricted";
         const Icon = area.icon;

@@ -31,7 +31,7 @@ import {
   buildAccessGroupOverviews,
   type ResourceGrant,
 } from "@/lib/access/access-overview";
-import { WORKSPACE_AREAS } from "@/lib/access/workspace-areas";
+import { enabledWorkspaceAreas } from "@/lib/access/workspace-areas";
 import { mutate } from "@/lib/mutation-client";
 import { errorMessage } from "@/lib/presentation";
 import { userAccessPreviewHref } from "@/lib/access/access-preview";
@@ -44,7 +44,7 @@ import { usePagination } from "@/hooks/usePagination";
 import type { Profile, WorkspaceData } from "@/lib/workspace/workspace-types";
 import { CategoriesModal } from "@/components/categories";
 import { categoryController } from "@/components/categories/category-workspace";
-import { CountBadge, PageHeader } from "@/components/global";
+import { CountBadge, PageHeader, useInstance } from "@/components/global";
 import { AdminPageShell } from "@/components/admin";
 import { ProjectsModal } from "@/components/projects";
 import { InviteTeammateModal, RemoveTeammateDialog } from "./TeamDialogs";
@@ -116,8 +116,10 @@ export function AccessPageClient({
   // Page access is edited further down this same screen, so the cards read
   // from state here rather than the server snapshot; the panel reports each
   // save and the summaries restate themselves without a reload.
+  const instance = useInstance();
+  const areas = useMemo(() => enabledWorkspaceAreas(instance), [instance]);
   const [areaAccess, setAreaAccess] = useState<WorkspaceAreaAccess[]>(() =>
-    WORKSPACE_AREAS.map(
+    areas.map(
       (area) =>
         initialAreaAccess.find((entry) => entry.area === area.key) ?? {
           area: area.key,
@@ -129,6 +131,7 @@ export function AccessPageClient({
   const groupOverviews = useMemo(
     () =>
       buildAccessGroupOverviews({
+        areas,
         groups,
         projects: data.projects,
         categories: data.categories,
@@ -149,6 +152,7 @@ export function AccessPageClient({
       projectGrants,
       categoryGrants,
       areaAccess,
+      areas,
     ],
   );
   const [teamMetadata, setTeamMetadata] = useState(userMetadata);

@@ -11,6 +11,14 @@ import "server-only";
 export const isMissingRelation = (code?: string) =>
   code === "42P01" || code === "PGRST205";
 
+/**
+ * Whether a Supabase error means a column does not exist yet. `42703` is
+ * Postgres `undefined_column`; `PGRST204` is PostgREST's schema-cache
+ * equivalent. Same narrow purpose as `isMissingRelation`.
+ */
+export const isMissingColumn = (code?: string) =>
+  code === "42703" || code === "PGRST204";
+
 /** Told to whoever reads the log: how to make the missing table appear. */
 export const APPLY_MIGRATIONS_HINT =
   "Apply the pending migrations in apps/tasks/supabase/migrations with `supabase db push`.";

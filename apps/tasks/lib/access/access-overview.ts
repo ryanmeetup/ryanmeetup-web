@@ -1,5 +1,6 @@
 import {
   WORKSPACE_AREAS,
+  type WorkspaceArea,
   type WorkspaceAreaKey,
 } from "@/lib/access/workspace-areas";
 import type { AccessGroup } from "@/lib/access/access-types";
@@ -146,6 +147,7 @@ export function buildAccessGroupOverview({
   categoryGrants,
   areaAccess,
   areaGrants,
+  areas = WORKSPACE_AREAS,
 }: {
   group: AccessGroup;
   groups: AccessGroup[];
@@ -155,6 +157,8 @@ export function buildAccessGroupOverview({
   categoryGrants: ResourceGrant[];
   areaAccess: AreaAccess[];
   areaGrants: AreaGrant[];
+  /** The pages this instance has; see `enabledWorkspaceAreas`. */
+  areas?: readonly WorkspaceArea[];
 }): AccessGroupOverview {
   const groupIds = inheritedGroupIds(group, groups);
   const effectiveGroupIds = new Set(groupIds);
@@ -181,7 +185,7 @@ export function buildAccessGroupOverview({
   const areaMode = new Map(
     areaAccess.map((area) => [area.area, area.accessMode]),
   );
-  const pages = WORKSPACE_AREAS.flatMap((area) => {
+  const pages = areas.flatMap((area) => {
     if ((areaMode.get(area.key) ?? "open") === "open")
       return [
         { id: area.key, name: area.label, reason: "Open to the workspace" },
@@ -214,7 +218,7 @@ export function buildAccessGroupOverview({
     categories: categoriesWithAccess,
     categoryCount: categories.length,
     pages,
-    pageCount: WORKSPACE_AREAS.length,
+    pageCount: areas.length,
     calendarReason:
       canOpenCalendar && calendarSource
         ? calendarSource.id === group.id
@@ -239,6 +243,7 @@ export function buildAccessGroupOverviews(input: {
   categoryGrants: ResourceGrant[];
   areaAccess: AreaAccess[];
   areaGrants: AreaGrant[];
+  areas?: readonly WorkspaceArea[];
 }): Map<string, AccessGroupOverview> {
   return new Map(
     input.groups.map((group) => [

@@ -1,5 +1,5 @@
 import type { IconType } from "react-icons";
-import { FiCalendar, FiFileText, FiUsers } from "react-icons/fi";
+import { FiCalendar, FiCheckSquare, FiFileText, FiUsers } from "react-icons/fi";
 
 /**
  * The pages an app owner can lock behind access groups.
@@ -36,12 +36,23 @@ export const WORKSPACE_AREAS = [
     description:
       "Important dates, time away, and the Google feed for groups that can see it.",
   },
+  {
+    key: "ryd",
+    label: "RY-D verification",
+    href: "/ryd",
+    icon: FiCheckSquare,
+    description:
+      "RY-D orders, the identity evidence buyers sent, and what goes back to fulfillment.",
+    // Only an instance that sells RY-Ds has this page. See `rydEnabled`.
+    instanceFlag: "rydEnabled",
+  },
 ] as const satisfies readonly {
   key: string;
   label: string;
   href: string;
   icon: IconType;
   description: string;
+  instanceFlag?: "rydEnabled";
 }[];
 
 export type WorkspaceArea = (typeof WORKSPACE_AREAS)[number];
@@ -49,6 +60,16 @@ export type WorkspaceAreaKey = WorkspaceArea["key"];
 
 export const WORKSPACE_AREA_KEYS: readonly WorkspaceAreaKey[] =
   WORKSPACE_AREAS.map((area) => area.key);
+
+/**
+ * The pages this instance has. A page behind an instance flag that is off is
+ * not merely closed: it is absent from the sidebar and the access settings.
+ */
+export function enabledWorkspaceAreas(flags: { rydEnabled: boolean }) {
+  return WORKSPACE_AREAS.filter(
+    (area) => !("instanceFlag" in area) || flags[area.instanceFlag],
+  );
+}
 
 export function isWorkspaceAreaKey(value: unknown): value is WorkspaceAreaKey {
   return (
