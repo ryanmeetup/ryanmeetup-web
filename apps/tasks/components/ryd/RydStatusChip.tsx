@@ -5,15 +5,17 @@ import {
   FiCheckCircle,
   FiInfo,
   FiLink,
+  FiSend,
   FiClock,
   FiHelpCircle,
   FiXCircle,
   FiZap,
 } from "react-icons/fi";
+import { formatRydSubmittedAt } from "@/lib/ryd/form-responses";
 import { RYD_STATUS_LABELS, type RydOrderStatus } from "@/lib/ryd/orders";
 import type { MatchConfidence } from "@/lib/ryd/matching";
 import type { RyanPosition } from "@/lib/ryd/normalize";
-import type { RydQueueOrder } from "@/lib/ryd/queue-types";
+import type { RydQueueOrder, RydSubmitterContact } from "@/lib/ryd/queue-types";
 
 /** One colour per status, shared by the chips, the stat cards, and the rows. */
 export const RYD_STATUS_TONES = {
@@ -63,6 +65,30 @@ export function RydStatusChip({ status }: { status: RydOrderStatus }) {
     <span className={`${CHIP} ${RYD_STATUS_TINTS[status]}`}>
       <Icon aria-hidden className="h-3 w-3" />
       {RYD_STATUS_LABELS[status]}
+    </span>
+  );
+}
+
+/**
+ * How many times someone has been emailed, with the last time on hover. Only
+ * shown once they have been.
+ */
+export function RydContactedChip({
+  contact,
+}: {
+  contact: RydSubmitterContact | undefined;
+}) {
+  if (!contact) return null;
+  // In the workspace's zone, like submission times, so server and browser agree.
+  const last = formatRydSubmittedAt(contact.lastContactedAt);
+  return (
+    <span
+      className={`${CHIP} border-black/15 bg-black/[0.04] text-black/75 dark:border-white/15 dark:bg-white/[0.06] dark:text-white/75`}
+      title={`Last contacted ${last}`}
+    >
+      <FiSend aria-hidden className="h-3 w-3" />
+      Contacted {contact.attempts}×
+      <span className="sr-only">, last {last}</span>
     </span>
   );
 }

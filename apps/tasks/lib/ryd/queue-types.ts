@@ -29,6 +29,12 @@ export type RydQueueOrder = {
   suggestion: RydMatchSuggestion | null;
 };
 
+/** How often someone with no matching order has been emailed, and when last. */
+export type RydSubmitterContact = {
+  attempts: number;
+  lastContactedAt: string;
+};
+
 export type RydSheetState =
   | { status: "unconfigured"; accountEmail: string }
   | { status: "disconnected" }
@@ -40,6 +46,8 @@ export type RydQueue = {
   submissions: RydSubmission[];
   /** Responses set aside, usually duplicates; kept so they can be restored. */
   dismissed: RydSubmission[];
+  /** Contact attempts, keyed by the submitter's normalized email. */
+  contacts: Record<string, RydSubmitterContact>;
   sheet: RydSheetState;
   settings: RydSettings;
   clearedCount: number;

@@ -333,6 +333,70 @@ describe("RY-D routes", () => {
     expect(response.status).toBe(400);
   });
 
+  it("records one contact attempt per unmatched submitter, normalized", async () => {
+    const calls: unknown[] = [];
+    getAdminClient.mockReturnValue(
+      admin({
+        ryd_submitter_contacts: table({ data: null, error: null }, calls),
+      }),
+    );
+    const { POST } = await import("@/app/api/ryd/submitter-contacts/route");
+
+    const response = await POST(
+      new Request(
+        "http://localhost/api/ryd/submitter-contacts",
+        json(
+          { emails: ["Ryan@Example.com ", "ryan@example.com", "b@x.dev"] },
+          "POST",
+        ),
+      ),
+    );
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.markedCount).toBe(2);
+    const [method, rows] = calls[0] as [string, Record<string, unknown>[]];
+    expect(method).toBe("insert");
+    expect(rows.map((row) => [row.email, row.contacted_by])).toEqual([
+      ["ryan@example.com", "member-1"],
+      ["b@x.dev", "member-1"],
+    ]);
+  });
+
+  it("says a pending migration blocks marking contacts before the table exists", async () => {
+    getAdminClient.mockReturnValue(
+      admin({
+        ryd_submitter_contacts: table({
+          data: null,
+          error: { code: "42P01", message: "missing" },
+        }),
+      }),
+    );
+    const { POST } = await import("@/app/api/ryd/submitter-contacts/route");
+
+    const response = await POST(
+      new Request(
+        "http://localhost/api/ryd/submitter-contacts",
+        json({ emails: ["ryan@example.com"] }, "POST"),
+      ),
+    );
+
+    expect(response.status).toBe(503);
+  });
+
+  it("rejects a contact request with no emails", async () => {
+    const { POST } = await import("@/app/api/ryd/submitter-contacts/route");
+
+    const response = await POST(
+      new Request(
+        "http://localhost/api/ryd/submitter-contacts",
+        json({ emails: [] }, "POST"),
+      ),
+    );
+
+    expect(response.status).toBe(400);
+  });
+
   it("marks a batch sent, clearing only the orders the reviewer drafted", async () => {
     const orderCalls: unknown[] = [];
     const batchCalls: unknown[] = [];

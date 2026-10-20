@@ -35,6 +35,23 @@ export function rydBuyerEmail({
   };
 }
 
+/**
+ * To someone who sent ry-dentification under an email no order uses: usually
+ * a gift, a second address, or an order that hasn't come through yet.
+ */
+export function rydUnmatchedEmail(): RydDraft {
+  return {
+    subject: "We got your ry-dentification, but can't find your RY-D order",
+    body: [
+      "Hi there,",
+      "Thanks for sending your ry-dentification! We couldn't find a RY-D order under this email address, so we can't match the two up yet.",
+      "If you ordered with a different email, or someone ordered your RY-D as a gift, reply with the email or order number it was placed under and we'll connect them.",
+      "Haven't ordered yet? Your ry-dentification is saved, and we'll match it once your order comes through.",
+      "Thanks, Ryan\nRyan Meetup",
+    ].join("\n\n"),
+  };
+}
+
 /** Tells fulfillment which orders can start, for the file attached beside it. */
 export function rydFulfillmentEmail(
   ready: { orderId: string; firstName: string; lastName: string }[],

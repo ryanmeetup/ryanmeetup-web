@@ -4,6 +4,7 @@ import {
   rydBuyerEmail,
   rydFulfillmentEmail,
   rydMailtoHref,
+  rydUnmatchedEmail,
 } from "@/lib/ryd/emails";
 
 describe("RY-D email drafts", () => {
@@ -13,6 +14,13 @@ describe("RY-D email drafts", () => {
     expect(draft.subject).toBe("One quick step before we make your RY-D");
     expect(draft.body.startsWith("Hi there,")).toBe(true);
     expect(draft.body).toContain(RYD_FORM_URL);
+  });
+
+  it("asks an unmatched submitter which order is theirs", () => {
+    const draft = rydUnmatchedEmail();
+
+    expect(draft.body.startsWith("Hi there,")).toBe(true);
+    expect(draft.body).toContain("email or order number");
   });
 
   it("lists the ready orders for fulfillment", () => {

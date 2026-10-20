@@ -2,6 +2,7 @@
 
 import { useId, useMemo, useState, type ReactNode } from "react";
 import {
+  FiCheck,
   FiChevronDown,
   FiExternalLink,
   FiGrid,
@@ -17,10 +18,13 @@ import {
   type DropdownSelectOption,
 } from "@ryanmeetup/ui";
 import type { RydSubmission, RydSubmitter } from "@/lib/ryd/matching";
+import type { RydQueue } from "@/lib/ryd/queue-types";
+import { RydContactedChip } from "./RydStatusChip";
 import {
   EvidenceTile,
   noteText,
   PLATFORM_ICONS,
+  RydCardFooter,
   RydSubmissionCard,
 } from "./RydSubmissionCard";
 
@@ -76,24 +80,31 @@ export function RydUnmatchedLayoutToggle({
 export function RydUnmatchedView({
   submitters,
   dismissed,
+  contacts,
   layout,
   orderOptions,
   linking,
   busy,
+  contacting,
   onLink,
   onRemove,
   onRestore,
+  onMarkContacted,
 }: {
   submitters: RydSubmitter[];
   dismissed: RydSubmission[];
+  contacts: RydQueue["contacts"];
   layout: RydUnmatchedLayout;
   orderOptions: DropdownSelectOption[];
   linking: string | null;
   /** A response being removed or restored; every control waits on it. */
   busy: string | null;
+  /** The submitter email being marked contacted. */
+  contacting: string | null;
   onLink: (email: string, orderId: string) => void;
   onRemove: (submission: RydSubmission) => void;
   onRestore: (submission: RydSubmission) => void;
+  onMarkContacted: (email: string) => void;
 }) {
   const newestFirst = useMemo(
     () => [...submitters].sort((a, b) => latestTime(b) - latestTime(a)),
@@ -103,14 +114,18 @@ export function RydUnmatchedView({
     layout === "cards" ? (
       <UnmatchedCards
         submitters={newestFirst}
+        contacts={contacts}
         linkControl={linkControl}
         removeControl={removeControl}
+        contactControl={contactControl}
       />
     ) : (
       <UnmatchedTable
         submitters={newestFirst}
+        contacts={contacts}
         linkControl={linkControl}
         removeControl={removeControl}
+        contactControl={contactControl}
       />
     );
   return (
@@ -132,7 +147,7 @@ export function RydUnmatchedView({
         label={`Remove the response sent ${submission.submittedAt || "without a date"}`}
         variant="danger"
         size="sm"
-        disabled={busy !== null || linking !== null}
+        disabled={busy !== null || linking !== null || contacting !== null}
         onClick={() => onRemove(submission)}
       >
         <FiTrash2 aria-hidden />
@@ -150,16 +165,41 @@ export function RydUnmatchedView({
         onChange={(orderId) => onLink(submitter.email, orderId)}
         searchPlaceholder="Search orders"
         menuWidth="wide"
-        disabled={linking !== null || busy !== null || !orderOptions.length}
+        disabled={
+          linking !== null ||
+          busy !== null ||
+          contacting !== null ||
+          !orderOptions.length
+        }
       />
+    );
+  }
+
+  function contactControl(submitter: RydSubmitter) {
+    return (
+      <Button
+        type="button"
+        size="xs"
+        variant="secondary"
+        leftIcon={<FiCheck aria-hidden />}
+        aria-label={`Mark ${submitter.email} as contacted`}
+        loading={contacting === submitter.email}
+        loadingText="Marking..."
+        disabled={linking !== null || busy !== null || contacting !== null}
+        onClick={() => onMarkContacted(submitter.email)}
+      >
+        Mark contacted
+      </Button>
     );
   }
 }
 
 type Controls = {
   submitters: RydSubmitter[];
+  contacts: RydQueue["contacts"];
   linkControl: (submitter: RydSubmitter) => ReactNode;
   removeControl: (submission: RydSubmission) => ReactNode;
+  contactControl: (submitter: RydSubmitter) => ReactNode;
 };
 
 /**
@@ -167,7 +207,13 @@ type Controls = {
  * answering twice, so they share a frame and a single link control, and each
  * can be removed on its own.
  */
-function UnmatchedCards({ submitters, linkControl, removeControl }: Controls) {
+function UnmatchedCards({
+  submitters,
+  contacts,
+  linkControl,
+  removeControl,
+  contactControl,
+}: Controls) {
   return (
     <div className="columns-1 gap-4 xl:columns-2 2xl:columns-3">
       {submitters.map((submitter) =>
@@ -175,10 +221,14 @@ function UnmatchedCards({ submitters, linkControl, removeControl }: Controls) {
           <div key={submitter.email} className="mb-4 break-inside-avoid">
             <RydSubmissionCard
               submission={submitter.submissions[0]}
-              action={
+              badge={<RydContactedChip contact={contacts[submitter.email]} />}
+              footer={
                 <>
                   {linkControl(submitter)}
-                  {removeControl(submitter.submissions[0])}
+                  {contactControl(submitter)}
+                  <span className="ml-auto">
+                    {removeControl(submitter.submissions[0])}
+                  </span>
                 </>
               }
             />
@@ -190,18 +240,26 @@ function UnmatchedCards({ submitters, linkControl, removeControl }: Controls) {
             className="mb-4 space-y-3 break-inside-avoid rounded-2xl border border-dashed border-black/15 p-3 dark:border-white/15"
           >
             <div className="flex flex-wrap items-center justify-between gap-2 px-1">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/70 dark:text-white/70">
-                {submitter.submissions.length} responses, same email
-              </p>
-              {linkControl(submitter)}
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/70 dark:text-white/70">
+                  {submitter.submissions.length} responses, same email
+                </p>
+                <RydContactedChip contact={contacts[submitter.email]} />
+              </div>
             </div>
             {submitter.submissions.map((submission) => (
               <RydSubmissionCard
                 key={submission.key}
                 submission={submission}
-                action={removeControl(submission)}
+                footer={
+                  <span className="ml-auto">{removeControl(submission)}</span>
+                }
               />
             ))}
+            <RydCardFooter>
+              {linkControl(submitter)}
+              {contactControl(submitter)}
+            </RydCardFooter>
           </section>
         ),
       )}
@@ -209,7 +267,13 @@ function UnmatchedCards({ submitters, linkControl, removeControl }: Controls) {
   );
 }
 
-function UnmatchedTable({ submitters, linkControl, removeControl }: Controls) {
+function UnmatchedTable({
+  submitters,
+  contacts,
+  linkControl,
+  removeControl,
+  contactControl,
+}: Controls) {
   return (
     <div className="overflow-hidden rounded-2xl border border-black/10 dark:border-white/10">
       <div className="overflow-x-auto">
@@ -266,6 +330,11 @@ function UnmatchedTable({ submitters, linkControl, removeControl }: Controls) {
                     >
                       {submitter.email}
                     </span>
+                    {contacts[submitter.email] && (
+                      <span className="mt-1 block">
+                        <RydContactedChip contact={contacts[submitter.email]} />
+                      </span>
+                    )}
                   </td>
                   <td className="px-3 py-1.5 text-xs text-black/70 dark:text-white/70">
                     <ul
@@ -345,8 +414,9 @@ function UnmatchedTable({ submitters, linkControl, removeControl }: Controls) {
                     )}
                   </td>
                   <td className="px-4 py-2.5">
-                    <div className="flex justify-end">
+                    <div className="flex flex-col items-end gap-2">
                       {linkControl(submitter)}
+                      {contactControl(submitter)}
                     </div>
                   </td>
                 </tr>

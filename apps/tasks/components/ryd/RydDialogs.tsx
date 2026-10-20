@@ -24,8 +24,10 @@ import {
   rydBuyerEmail,
   rydFulfillmentEmail,
   rydMailtoHref,
+  rydUnmatchedEmail,
   type RydDraft,
 } from "@/lib/ryd/emails";
+import type { RydSubmitter } from "@/lib/ryd/matching";
 import type { RydQueue, RydQueueOrder } from "@/lib/ryd/queue-types";
 
 const UPLOAD_FORM = "ryd-upload-form";
@@ -446,6 +448,82 @@ export function RydRemindDialog({
             draft={rydBuyerEmail({ hasSubmission: group.hasSubmission })}
           />
         ))}
+      </ul>
+      {BULK_FALLBACK}
+    </Modal>
+  );
+}
+
+/**
+ * Emails everyone whose form answers no order claims, then records the
+ * attempt. A reply brings the order email back, and linking it clears them.
+ */
+export function RydUnmatchedEmailDialog({
+  submitters,
+  onClose,
+  onChanged,
+}: {
+  submitters: RydSubmitter[];
+  onClose: () => void;
+  onChanged: () => Promise<void>;
+}) {
+  const [marking, setMarking] = useState(false);
+
+  async function markContacted() {
+    setMarking(true);
+    try {
+      const result = await mutate<{ markedCount: number }>(
+        "/api/ryd/submitter-contacts",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            emails: submitters.map((submitter) => submitter.email),
+          }),
+        },
+      );
+      await onChanged();
+      toast.success(
+        `Marked ${result.markedCount} ${result.markedCount === 1 ? "person" : "people"} as contacted.`,
+      );
+      onClose();
+    } catch (error) {
+      toast.error(errorMessage(error, "Those contacts couldn't be recorded."));
+    } finally {
+      setMarking(false);
+    }
+  }
+
+  return (
+    <Modal
+      open
+      setIsOpen={(open) => !open && !marking && onClose()}
+      size="lg"
+      title="Email unmatched submitters"
+      description={
+        <>
+          {BCC_INTRO} Once it&apos;s sent, mark them contacted here: each one
+          counts as another attempt, and they won&apos;t be asked again for a
+          day.
+        </>
+      }
+      closable={!marking}
+      actions={
+        <ModalActions
+          confirmLabel={`Mark ${submitters.length} as contacted`}
+          confirmIcon={<FiCheck aria-hidden />}
+          onConfirm={markContacted}
+          onCancel={onClose}
+          pending={marking}
+          pendingLabel="Marking..."
+        />
+      }
+    >
+      <ul className="space-y-4">
+        <BulkDraftCard
+          label="No matching order"
+          addresses={submitters.map((submitter) => submitter.email)}
+          draft={rydUnmatchedEmail()}
+        />
       </ul>
       {BULK_FALLBACK}
     </Modal>

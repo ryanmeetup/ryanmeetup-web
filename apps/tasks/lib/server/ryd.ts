@@ -150,10 +150,40 @@ async function loadDismissedKeys(admin: SupabaseClient) {
   return new Set((result.data ?? []).map((row) => row.submission_key));
 }
 
+/**
+ * Contact attempts per submitter email, folded from one row per attempt.
+ * Until the migration that adds the table is applied, nobody has any.
+ */
+async function loadSubmitterContacts(admin: SupabaseClient) {
+  const result = await admin
+    .from("ryd_submitter_contacts")
+    .select("email, contacted_at");
+  if (result.error) {
+    if (isMissingRelation(result.error.code)) return {};
+    throw result.error;
+  }
+  const contacts: RydQueue["contacts"] = {};
+  for (const row of (result.data ?? []) as {
+    email: string;
+    contacted_at: string;
+  }[]) {
+    const contact = contacts[row.email];
+    contacts[row.email] = {
+      attempts: (contact?.attempts ?? 0) + 1,
+      lastContactedAt:
+        contact && contact.lastContactedAt > row.contacted_at
+          ? contact.lastContactedAt
+          : row.contacted_at,
+    };
+  }
+  return contacts;
+}
+
 const emptyQueue = (installed: boolean): RydQueue => ({
   orders: [],
   submissions: [],
   dismissed: [],
+  contacts: {},
   sheet: { status: "disconnected" },
   settings: { formId: null, fulfillmentEmail: null },
   clearedCount: 0,
@@ -199,6 +229,7 @@ export async function loadRydQueue(admin: SupabaseClient): Promise<RydQueue> {
   const settings = await loadRydSettings(admin);
   const integration = await loadRydGoogleIntegration();
   const dismissedKeys = await loadDismissedKeys(admin);
+  const contacts = await loadSubmitterContacts(admin);
   const { sheet, submissions: answered } = await loadSheet(
     integration,
     settings,
@@ -264,6 +295,7 @@ export async function loadRydQueue(admin: SupabaseClient): Promise<RydQueue> {
     })),
     submissions,
     dismissed,
+    contacts,
     sheet,
     settings,
     clearedCount: clearedResult.count ?? 0,

@@ -1,5 +1,6 @@
 import { RYD_ORDER_STATUSES, type RydOrderStatus } from "@/lib/ryd/orders";
 import { formIdFrom } from "@/lib/ryd/form-responses";
+import { normalizeEmail } from "@/lib/ryd/normalize";
 import { isJsonObject } from "./shared";
 
 /** A decision, a note, or both. An empty note clears it. */
@@ -60,6 +61,26 @@ export function rydSettingsSchema(value: unknown) {
 
 export const emptyObjectSchema = (value: unknown) =>
   isJsonObject(value) && Object.keys(value).length === 0 ? {} : null;
+
+/** Submitter emails, as the form gave them; they're normalized on the way in. */
+export function rydEmailsSchema(value: unknown) {
+  if (!isJsonObject(value) || Object.keys(value).length !== 1) return null;
+  const emails = value.emails;
+  if (!Array.isArray(emails) || !emails.length || emails.length > 500)
+    return null;
+  if (
+    !emails.every(
+      (email) =>
+        typeof email === "string" &&
+        email.trim().length >= 3 &&
+        email.length <= 320,
+    )
+  )
+    return null;
+  return {
+    emails: [...new Set((emails as string[]).map(normalizeEmail))],
+  };
+}
 
 /** Up to 500 distinct order IDs, more than the queue ever holds at once. */
 export function rydOrderIdsSchema(value: unknown) {

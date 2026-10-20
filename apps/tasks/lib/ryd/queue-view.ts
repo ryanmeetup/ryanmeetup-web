@@ -134,6 +134,23 @@ export function remindableOrders(orders: RydQueueOrder[], now = Date.now()) {
   );
 }
 
+/**
+ * The unmatched submitters Email everyone would send to right now, leaving out
+ * anyone contacted inside the same window as a buyer reminder.
+ */
+export function contactableSubmitters(
+  submitters: RydSubmitter[],
+  contacts: RydQueue["contacts"],
+  now = Date.now(),
+) {
+  return submitters.filter((submitter) => {
+    const contact = contacts[submitter.email];
+    return !(
+      contact && Date.parse(contact.lastContactedAt) > now - RYD_REMIND_AGAIN_MS
+    );
+  });
+}
+
 /** Form responses no order has claimed or been offered. */
 export function unmatchedSubmitters(
   queue: Pick<RydQueue, "orders" | "submissions">,

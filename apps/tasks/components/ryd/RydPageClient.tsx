@@ -53,6 +53,7 @@ import {
   type RydStatusParam,
   rydStatusParam,
   rydView,
+  contactableSubmitters,
   remindableOrders,
   unmatchedSubmitters,
   type RydView,
@@ -62,6 +63,7 @@ import {
   RydRemindDialog,
   RydSendDialog,
   RydSettingsDialog,
+  RydUnmatchedEmailDialog,
   RydUploadDialog,
 } from "./RydDialogs";
 import { RydOrderDialog } from "./RydOrderDialog";
@@ -142,7 +144,8 @@ const STATUS_OPTIONS = Object.keys(RYD_STATUS_PARAMS).map((value) => {
   };
 });
 
-type Dialog = "upload" | "send" | "remind" | "settings" | null;
+type Dialog =
+  "upload" | "send" | "remind" | "unmatched-email" | "settings" | null;
 
 export function RydPageClient({
   initialData,
@@ -168,6 +171,7 @@ export function RydPageClient({
   const [linking, setLinking] = useState<string | null>(null);
   const [removing, setRemoving] = useState<RydSubmission | null>(null);
   const [dismissing, setDismissing] = useState<string | null>(null);
+  const [contacting, setContacting] = useState<string | null>(null);
   const view = rydView(viewParam);
   const status = rydStatusParam(statusParam);
   const sort = rydSortParam(sortParam);
@@ -199,6 +203,10 @@ export function RydPageClient({
   const counts = useMemo(() => rydCounts(queue.orders), [queue.orders]);
   const followUp = useMemo(() => followUpOrders(queue), [queue]);
   const unmatched = useMemo(() => unmatchedSubmitters(queue), [queue]);
+  const contactable = useMemo(
+    () => contactableSubmitters(unmatched, queue.contacts),
+    [unmatched, queue.contacts],
+  );
   const remindable = useMemo(() => remindableOrders(followUp), [followUp]);
   const statusFilter = RYD_STATUS_PARAMS[status];
   const listed = useMemo(
@@ -311,6 +319,23 @@ export function RydPageClient({
       toast.error(errorMessage(error, "That submission couldn't be linked."));
     } finally {
       setLinking(null);
+    }
+  }
+
+  /** One more contact attempt to a single unmatched submitter. */
+  async function markContacted(email: string) {
+    setContacting(email);
+    try {
+      await mutate("/api/ryd/submitter-contacts", {
+        method: "POST",
+        body: JSON.stringify({ emails: [email] }),
+      });
+      await refresh();
+      toast.success(`Marked ${email} as contacted.`);
+    } catch (error) {
+      toast.error(errorMessage(error, "That contact couldn't be recorded."));
+    } finally {
+      setContacting(null);
     }
   }
 
@@ -509,12 +534,30 @@ export function RydPageClient({
                     email, or an order that hasn&apos;t arrived in a file yet.
                   </p>
                   {unmatched.length > 0 && (
-                    <RydUnmatchedLayoutToggle
-                      layout={unmatchedLayout}
-                      onChange={(next) =>
-                        setLayoutParam(next === "cards" ? "" : next)
-                      }
-                    />
+                    <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        className="w-full sm:w-auto"
+                        leftIcon={<FiMail aria-hidden />}
+                        onClick={() => setDialog("unmatched-email")}
+                        disabled={!contactable.length}
+                        title={
+                          contactable.length
+                            ? undefined
+                            : "Everyone here was contacted in the last day."
+                        }
+                      >
+                        Email everyone ({contactable.length})
+                      </Button>
+                      <RydUnmatchedLayoutToggle
+                        layout={unmatchedLayout}
+                        onChange={(next) =>
+                          setLayoutParam(next === "cards" ? "" : next)
+                        }
+                      />
+                    </div>
                   )}
                 </div>
                 {unmatched.length === 0 && (
@@ -530,11 +573,14 @@ export function RydPageClient({
                 <RydUnmatchedView
                   submitters={unmatched}
                   dismissed={queue.dismissed}
+                  contacts={queue.contacts}
                   layout={unmatchedLayout}
                   orderOptions={orderOptions}
                   linking={linking}
                   busy={dismissing}
+                  contacting={contacting}
                   onLink={linkSubmitter}
+                  onMarkContacted={markContacted}
                   onRemove={setRemoving}
                   onRestore={(submission) => setDismissed(submission, true)}
                 />
@@ -684,6 +730,13 @@ export function RydPageClient({
       {dialog === "remind" && (
         <RydRemindDialog
           orders={remindable}
+          onClose={() => setDialog(null)}
+          onChanged={refresh}
+        />
+      )}
+      {dialog === "unmatched-email" && (
+        <RydUnmatchedEmailDialog
+          submitters={contactable}
           onClose={() => setDialog(null)}
           onChanged={refresh}
         />

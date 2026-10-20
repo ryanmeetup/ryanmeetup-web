@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 import {
   claimedElsewhere,
+  contactableSubmitters,
   linkableOrders,
   orderRyanPositions,
   rydSortParam,
@@ -215,5 +216,27 @@ describe("linkableOrders", () => {
       order({ orderId: "e", lastName: "Finn" }),
     ];
     expect(ids(linkableOrders(orders))).toEqual(["e", "c", "d", "a"]);
+  });
+
+  it("leaves out submitters contacted within the last day", () => {
+    const now = Date.parse("2026-10-20T12:00:00Z");
+    const submitters = ["fresh", "stale", "never"].map((name) => ({
+      email: `${name}@example.com`,
+      submissions: [],
+    }));
+    const contacts = {
+      "fresh@example.com": {
+        attempts: 1,
+        lastContactedAt: "2026-10-20T08:00:00Z",
+      },
+      "stale@example.com": {
+        attempts: 3,
+        lastContactedAt: "2026-10-19T08:00:00Z",
+      },
+    };
+
+    expect(
+      contactableSubmitters(submitters, contacts, now).map((s) => s.email),
+    ).toEqual(["stale@example.com", "never@example.com"]);
   });
 });

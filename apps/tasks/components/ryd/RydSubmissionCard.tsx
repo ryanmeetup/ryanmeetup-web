@@ -93,21 +93,39 @@ export function EvidenceTile({
   );
 }
 
+/** A card's action row: a rule above, then controls that wrap on narrow cards. */
+export function RydCardFooter({ children }: { children: ReactNode }) {
+  return (
+    <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-black/10 pt-3 dark:border-white/10">
+      {children}
+    </div>
+  );
+}
+
 export function RydSubmissionCard({
   submission,
+  badge,
   action,
+  footer,
 }: {
   submission: RydSubmission;
+  /** Sits beside the name, such as how often they've been contacted. */
+  badge?: ReactNode;
   action?: ReactNode;
+  /** Actions under the evidence, set off by a rule. */
+  footer?: ReactNode;
 }) {
   const note = noteText(submission.socialText);
   return (
     <article className="rounded-2xl border border-black/10 bg-black/[0.02] p-4 dark:border-white/10 dark:bg-white/[0.03]">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="font-semibold">
-            {submission.legalName || "No name given"}
-          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="font-semibold">
+              {submission.legalName || "No name given"}
+            </p>
+            {badge}
+          </div>
           <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-black/70 dark:text-white/70">
             <span className="inline-flex min-w-0 items-center gap-1.5 break-all">
               <FiMail aria-hidden className="shrink-0" />
@@ -121,9 +139,11 @@ export function RydSubmissionCard({
             </span>
           </p>
         </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
-          {action}
-        </div>
+        {action && (
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            {action}
+          </div>
+        )}
       </div>
 
       {submission.fileIds.length > 0 && (
@@ -182,6 +202,8 @@ export function RydSubmissionCard({
             No files, links, or other answers in this submission.
           </p>
         )}
+
+      {footer && <RydCardFooter>{footer}</RydCardFooter>}
     </article>
   );
 }
