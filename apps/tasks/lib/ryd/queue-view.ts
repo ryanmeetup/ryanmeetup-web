@@ -57,6 +57,18 @@ export function orderSubmissions(
   };
 }
 
+/** Submissions already linked to some other order, so not offered here. */
+export function claimedElsewhere(
+  orders: Pick<RydQueueOrder, "orderId" | "linkedKeys">[],
+  orderId: string,
+) {
+  return new Set(
+    orders
+      .filter((order) => order.orderId !== orderId)
+      .flatMap((order) => order.linkedKeys),
+  );
+}
+
 /**
  * Orders someone has to chase: asked for more, turned down, or still waiting
  * with nothing on the form that could be theirs.

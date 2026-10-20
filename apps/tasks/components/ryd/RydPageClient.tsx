@@ -35,6 +35,7 @@ import { RYD_STATUS_LABELS, type RydOrderStatus } from "@/lib/ryd/orders";
 import type { RydQueue, RydQueueOrder } from "@/lib/ryd/queue-types";
 import {
   followUpOrders,
+  claimedElsewhere,
   orderSearchText,
   RYD_STATUS_PARAMS,
   nextRydSort,
@@ -559,6 +560,7 @@ export function RydPageClient({
           key={openOrder.orderId}
           order={openOrder}
           submissions={queue.submissions}
+          claimedKeys={claimedElsewhere(queue.orders, openOrder.orderId)}
           emailConfigured={emailConfigured}
           onClose={() => setOpenOrderId("")}
           onChanged={refresh}

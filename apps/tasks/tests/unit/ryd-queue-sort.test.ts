@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 import {
+  claimedElsewhere,
   nextRydSort,
   rydSortParam,
   rydSortValue,
@@ -116,5 +117,17 @@ describe("RY-D queue sorting", () => {
   it("leaves the queue's own order alone without a sort", () => {
     const orders = [order({ orderId: "b" }), order({ orderId: "a" })];
     expect(sortRydOrders(orders, null)).toBe(orders);
+  });
+});
+
+describe("claimedElsewhere", () => {
+  it("collects submissions linked to every other order", () => {
+    const orders = [
+      order({ orderId: "a", linkedKeys: ["k1"] }),
+      order({ orderId: "b", linkedKeys: ["k2", "k3"] }),
+      order({ orderId: "c" }),
+    ];
+    expect([...claimedElsewhere(orders, "a")]).toEqual(["k2", "k3"]);
+    expect([...claimedElsewhere(orders, "c")]).toEqual(["k1", "k2", "k3"]);
   });
 });

@@ -73,12 +73,15 @@ function Reason({ reason }: { reason: string }) {
 export function RydOrderDialog({
   order,
   submissions,
+  claimedKeys,
   emailConfigured,
   onClose,
   onChanged,
 }: {
   order: RydQueueOrder;
   submissions: RydSubmission[];
+  /** Linked to another order; one submission vouches for one Ryan. */
+  claimedKeys: ReadonlySet<string>;
   emailConfigured: boolean;
   onClose: () => void;
   onChanged: () => Promise<void>;
@@ -92,12 +95,16 @@ export function RydOrderDialog({
   const linkOptions = useMemo(
     () =>
       submissions
-        .filter((submission) => !order.linkedKeys.includes(submission.key))
+        .filter(
+          (submission) =>
+            !order.linkedKeys.includes(submission.key) &&
+            !claimedKeys.has(submission.key),
+        )
         .map((submission) => ({
           value: submission.key,
           label: `${submission.legalName || "No name"} · ${submission.email} · ${submission.submittedAt}`,
         })),
-    [submissions, order.linkedKeys],
+    [submissions, order.linkedKeys, claimedKeys],
   );
 
   async function run(

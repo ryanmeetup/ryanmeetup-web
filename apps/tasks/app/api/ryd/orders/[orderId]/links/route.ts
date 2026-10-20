@@ -25,6 +25,28 @@ export async function POST(request: Request, { params }: Params) {
   if ("response" in context) return context.response;
   const { orderId } = await params;
 
+  // One submission vouches for one Ryan. The dialog hides claimed ones; this
+  // catches a stale tab that still offers it.
+  const claimed = await context.admin
+    .from("ryd_order_submissions")
+    .select("order_id")
+    .eq("submission_key", parsed.data.submissionKey)
+    .neq("order_id", orderId)
+    .limit(1)
+    .maybeSingle();
+  if (claimed.error)
+    return databaseFailure(request, "ryd.link", claimed.error, {
+      error: "The submission could not be linked. Try again.",
+    });
+  if (claimed.data)
+    return NextResponse.json(
+      {
+        code: "CONFLICT",
+        error: `That submission is already linked to order ${claimed.data.order_id}. Unlink it there first.`,
+      },
+      { status: 409 },
+    );
+
   const result = await context.admin.from("ryd_order_submissions").upsert(
     {
       order_id: orderId,
