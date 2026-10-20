@@ -20,10 +20,22 @@ export type DropdownSelectOption = {
   group?: {
     icon?: ReactNode;
     label: string;
+    /** Replaces the header's muted text colour, e.g. to tint by status. */
+    textClassName?: string;
   };
   label: string;
   value: string;
   color?: string;
+  /**
+   * A second line of facts under the label, each with an optional icon, for
+   * options a label alone can't tell apart. They're searched with the label.
+   */
+  details?: DropdownSelectDetail[];
+};
+
+export type DropdownSelectDetail = {
+  icon?: ReactNode;
+  text: string;
 };
 
 export type DropdownSelectProps = {
@@ -40,6 +52,8 @@ export type DropdownSelectProps = {
   proximityGroup?: string;
   searchPlaceholder?: string;
   stackLabelOnMobile?: boolean;
+  /** A compact control's menu is narrow; `wide` leaves room for details. */
+  menuWidth?: "default" | "wide";
 };
 
 const DropdownSelect = ({
@@ -56,6 +70,7 @@ const DropdownSelect = ({
   proximityGroup,
   searchPlaceholder = `Search ${label.toLocaleLowerCase()}`,
   stackLabelOnMobile = false,
+  menuWidth = "default",
 }: DropdownSelectProps) => {
   const buttonId = useId();
   const searchId = useId();
@@ -73,9 +88,11 @@ const DropdownSelect = ({
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const visibleOptions = normalizedQuery
     ? orderedOptions.filter((option) =>
-        [option.label, option.group?.label].some((text) =>
-          text?.toLocaleLowerCase().includes(normalizedQuery),
-        ),
+        [
+          option.label,
+          option.group?.label,
+          ...(option.details ?? []).map((detail) => detail.text),
+        ].some((text) => text?.toLocaleLowerCase().includes(normalizedQuery)),
       )
     : orderedOptions;
   const proximityOption = normalizedQuery
@@ -105,7 +122,7 @@ const DropdownSelect = ({
     <ListboxOption
       key={option.value}
       value={option.value}
-      className="group flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm transition focus:outline-none data-focus:bg-black/5 data-selected:bg-black/5 data-selected:font-semibold dark:data-focus:bg-white/10 dark:data-selected:bg-white/10"
+      className={`group flex cursor-pointer gap-2 rounded-lg px-3 py-2 text-sm ${option.details?.length ? "items-start" : "items-center"} transition focus:outline-none data-focus:bg-black/5 data-selected:bg-black/5 data-selected:font-semibold dark:data-focus:bg-white/10 dark:data-selected:bg-white/10`}
     >
       {option.avatar && (
         <Avatar
@@ -121,10 +138,27 @@ const DropdownSelect = ({
           style={{ backgroundColor: option.color }}
         />
       )}
-      <span className="min-w-0 flex-1 truncate">{option.label}</span>
+      {option.details?.length ? (
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-semibold">{option.label}</span>
+          <span className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-black/70 dark:text-white/70">
+            {option.details.map((detail) => (
+              <span
+                key={detail.text}
+                className="inline-flex min-w-0 max-w-full items-center gap-1 [&_svg]:size-3 [&_svg]:shrink-0"
+              >
+                {detail.icon}
+                <span className="truncate">{detail.text}</span>
+              </span>
+            ))}
+          </span>
+        </span>
+      ) : (
+        <span className="min-w-0 flex-1 truncate">{option.label}</span>
+      )}
       <FiCheck
         aria-hidden
-        className="shrink-0 opacity-0 group-data-selected:opacity-100"
+        className={`shrink-0 opacity-0 group-data-selected:opacity-100 ${option.details?.length ? "mt-0.5" : ""}`}
       />
     </ListboxOption>
   );
@@ -136,7 +170,9 @@ const DropdownSelect = ({
       return (
         <Fragment key={option.value}>
           {showGroup && (
-            <div className="flex items-center gap-2 border-b border-black/10 px-3 pb-2 pt-2 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-black/55 dark:border-white/10 dark:text-white/55">
+            <div
+              className={`flex items-center gap-2 border-b border-black/10 px-3 pb-2 pt-2 text-[0.65rem] font-semibold uppercase tracking-[0.2em] dark:border-white/10 ${option.group?.textClassName ?? "text-black/55 dark:text-white/55"}`}
+            >
               {option.group?.icon}
               <span className="truncate">{option.group?.label}</span>
             </div>
@@ -206,7 +242,7 @@ const DropdownSelect = ({
           ref={setAnchorElement}
           anchor={{ to: "bottom start", padding: 16 }}
           onKeyDown={handleOptionsKeyDown}
-          className={`z-50 mt-2 flex max-h-80 max-w-[calc(100vw-2rem)] origin-top flex-col rounded-xl border border-black/10 bg-white/95 p-1.5 text-black shadow-xl backdrop-blur focus:outline-none dark:border-white/10 dark:bg-[#181818]/95 dark:text-white ${field || stackLabelOnMobile ? "w-[var(--button-width)]" : "w-56"} ${!field && stackLabelOnMobile ? "lg:w-56" : ""}`}
+          className={`z-50 mt-2 flex max-h-80 max-w-[calc(100vw-2rem)] origin-top flex-col rounded-xl border border-black/10 bg-white/95 p-1.5 text-black shadow-xl backdrop-blur focus:outline-none dark:border-white/10 dark:bg-[#181818]/95 dark:text-white ${field || stackLabelOnMobile ? "w-[var(--button-width)]" : menuWidth === "wide" ? "w-80" : "w-56"} ${!field && stackLabelOnMobile ? "lg:w-56" : ""}`}
         >
           <div className="shrink-0 bg-white/95 p-1 backdrop-blur dark:bg-[#181818]/95">
             <label className="sr-only" htmlFor={searchId}>
