@@ -3,7 +3,6 @@ import "server-only";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import type {
   RydQueue,
-  RydQueueOrder,
   RydSettings,
   RydSheetState,
 } from "@/lib/ryd/queue-types";
