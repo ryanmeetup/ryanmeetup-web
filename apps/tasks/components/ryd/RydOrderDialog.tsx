@@ -393,7 +393,11 @@ export function RydOrderDialog({
                         variant="secondary"
                         leftIcon={<FiLink aria-hidden />}
                         disabled={busy}
-                        loading={pending === `link:${submission.key}`}
+                        // Verify links these too, so they load with it.
+                        loading={
+                          pending === `link:${submission.key}` ||
+                          pending === "verified"
+                        }
                         onClick={() =>
                           run(
                             `link:${submission.key}`,
