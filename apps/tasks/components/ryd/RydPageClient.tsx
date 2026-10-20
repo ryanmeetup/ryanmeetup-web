@@ -19,9 +19,12 @@ import type { IconType } from "react-icons";
 import {
   FiAlertTriangle,
   FiCalendar,
+  FiCheckSquare,
+  FiCornerUpLeft,
   FiHash,
   FiInbox,
   FiMail,
+  FiPackage,
   FiPhoneOutgoing,
   FiSend,
   FiSettings,
@@ -53,6 +56,13 @@ import {
   type RydStatusParam,
   rydStatusParam,
   rydView,
+  RYD_PRODUCTION_LABELS,
+  RYD_PRODUCTION_STAGES,
+  rydProductionCounts,
+  rydProductionParam,
+  rydProductionStage,
+  type RydProductionStage,
+  unsentOrders,
   contactableSubmitters,
   remindableOrders,
   unmatchedSubmitters,
@@ -69,6 +79,7 @@ import {
 import { RydOrderDialog } from "./RydOrderDialog";
 import { RydOrderTable } from "./RydOrderTable";
 import {
+  RYD_PRODUCTION_ICONS,
   RYD_STATUS_ICONS,
   RYD_STATUS_TEXT,
   RYD_STATUS_TONES,
@@ -125,7 +136,7 @@ const STAT_CARDS: {
   {
     status: "verified",
     param: "verified",
-    label: "Verified, not sent",
+    label: RYD_STATUS_LABELS.verified,
     mobileLabel: "Verified",
   },
   {
@@ -172,8 +183,15 @@ export function RydPageClient({
   const [removing, setRemoving] = useState<RydSubmission | null>(null);
   const [dismissing, setDismissing] = useState<string | null>(null);
   const [contacting, setContacting] = useState<string | null>(null);
+  const [productionParam, setProductionParam] =
+    useQueryParamState("production");
+  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
+  const [moving, setMoving] = useState<string | null>(null);
   const view = rydView(viewParam);
   const status = rydStatusParam(statusParam);
+  // Verified orders get checkboxes, to move them through production in bulk.
+  const producing = view === "queue" && status === "verified";
+  const production = producing ? rydProductionParam(productionParam) : null;
   const sort = rydSortParam(sortParam);
   const unmatchedLayout = layoutParam === "table" ? "table" : "cards";
   const { page, pageSize, setPage, setPageSize, syncPage } = usePagination();
@@ -183,6 +201,7 @@ export function RydPageClient({
     const next = view === "queue" && status === param ? "all" : param;
     setViewParam("");
     setStatusParam(next === "pending" ? "" : next);
+    setProductionParam("");
     setPage(1);
   }
 
@@ -201,6 +220,15 @@ export function RydPageClient({
   }, [googleParam, setGoogleParam]);
 
   const counts = useMemo(() => rydCounts(queue.orders), [queue.orders]);
+  const productionCounts = useMemo(
+    () => rydProductionCounts(queue.orders),
+    [queue.orders],
+  );
+  const unsent = useMemo(() => unsentOrders(queue.orders), [queue.orders]);
+  // Finished all round: fulfillment has been told and the RY-D is made.
+  const activeCount = queue.orders.filter(
+    (order) => !(order.doneAt && order.sentToFulfillment),
+  ).length;
   const followUp = useMemo(() => followUpOrders(queue), [queue]);
   const unmatched = useMemo(() => unmatchedSubmitters(queue), [queue]);
   const contactable = useMemo(
@@ -214,9 +242,13 @@ export function RydPageClient({
       view === "follow-up"
         ? followUp
         : statusFilter
-          ? queue.orders.filter((order) => order.status === statusFilter)
+          ? queue.orders.filter(
+              (order) =>
+                order.status === statusFilter &&
+                (!production || rydProductionStage(order) === production),
+            )
           : queue.orders,
-    [view, followUp, queue.orders, statusFilter],
+    [view, followUp, queue.orders, statusFilter, production],
   );
   const {
     query,
@@ -236,6 +268,15 @@ export function RydPageClient({
     () => sortRydOrders(filtered, sort, ryanPositions),
     [filtered, sort, ryanPositions],
   );
+  // Only what's listed counts as selected, so a filter change never acts on
+  // rows the reviewer can't see.
+  const selectedOrders = useMemo(
+    () =>
+      producing ? sorted.filter((order) => selected.has(order.orderId)) : [],
+    [producing, sorted, selected],
+  );
+  const allSelected =
+    sorted.length > 0 && selectedOrders.length === sorted.length;
   const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
   const currentPage = Math.min(page, totalPages);
   const pageOrders = sorted.slice(
@@ -283,6 +324,64 @@ export function RydPageClient({
       }),
     [queue.orders],
   );
+
+  function toggleSelected(orderId: string) {
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(orderId)) next.delete(orderId);
+      else next.add(orderId);
+      return next;
+    });
+  }
+
+  /**
+   * Move the selected orders a step. Each target only takes the orders it
+   * would move forward, so marking a mix as sent never un-does a done one;
+   * `back` takes each order one stage back.
+   */
+  async function moveSelected(action: "sent" | "done" | "back") {
+    const at = (stage: RydProductionStage) =>
+      selectedOrders
+        .filter((order) => rydProductionStage(order) === stage)
+        .map((order) => order.orderId);
+    const moves: [RydProductionStage, string[]][] =
+      action === "sent"
+        ? [["in-production", at("not-started")]]
+        : action === "done"
+          ? [["done", [...at("not-started"), ...at("in-production")]]]
+          : [
+              ["in-production", at("done")],
+              ["not-started", at("in-production")],
+            ];
+    setMoving(action);
+    try {
+      let moved = 0;
+      for (const [stage, orderIds] of moves)
+        if (orderIds.length)
+          moved += (
+            await mutate<{ movedCount: number }>("/api/ryd/production", {
+              method: "POST",
+              body: JSON.stringify({ orderIds, stage }),
+            })
+          ).movedCount;
+      await refresh();
+      setSelected(new Set());
+      const orders = `${moved} order${moved === 1 ? "" : "s"}`;
+      toast.success(
+        action === "sent"
+          ? `${orders} sent for production.`
+          : action === "done"
+            ? `${orders} marked done.`
+            : `${orders} moved back a step.`,
+      );
+    } catch (error) {
+      toast.error(errorMessage(error, "Those orders couldn't be moved."));
+    } finally {
+      setMoving(null);
+    }
+  }
+
+  const selectedStages = new Set(selectedOrders.map(rydProductionStage));
 
   /** The row's Email opens a draft in the reviewer's mail app; this records it. */
   async function markEmailed(order: RydQueueOrder) {
@@ -392,8 +491,7 @@ export function RydPageClient({
         <ManagementSurface
           title={
             <>
-              RY-D Verification{" "}
-              <CountBadge size="lg">{queue.orders.length}</CountBadge>
+              RY-D Verification <CountBadge size="lg">{activeCount}</CountBadge>
             </>
           }
           description="Match each RY-D order to what the buyer sent the RY-dentification form, decide, then send fulfillment the orders they can start."
@@ -416,7 +514,7 @@ export function RydPageClient({
                 className="w-full sm:w-auto"
                 leftIcon={<FiSend aria-hidden />}
                 onClick={() => setDialog("send")}
-                disabled={!queue.installed || !queue.orders.length}
+                disabled={!queue.installed || !unsent.length}
               >
                 Send to fulfillment
               </Button>
@@ -635,6 +733,7 @@ export function RydPageClient({
                       value={status}
                       onChange={(value) => {
                         setStatusParam(value === "pending" ? "" : value);
+                        setProductionParam("");
                         setPage(1);
                       }}
                     />
@@ -647,12 +746,128 @@ export function RydPageClient({
                       onClick={() => {
                         setQuery("");
                         setStatusParam("");
+                        setProductionParam("");
                         setSortParam("");
                         setPage(1);
                       }}
                     />
                   )}
                 </div>
+                {producing && (
+                  <div className="space-y-3">
+                    <div
+                      className="flex flex-wrap gap-2"
+                      role="group"
+                      aria-label="Filter by production"
+                    >
+                      <FilterChip
+                        active={!production}
+                        onClick={() => {
+                          setProductionParam("");
+                          setPage(1);
+                        }}
+                      >
+                        All verified {counts.verified}
+                      </FilterChip>
+                      {RYD_PRODUCTION_STAGES.map((stage) => {
+                        const Icon = RYD_PRODUCTION_ICONS[stage];
+                        return (
+                          <FilterChip
+                            key={stage}
+                            active={production === stage}
+                            onClick={() => {
+                              setProductionParam(stage);
+                              setPage(1);
+                            }}
+                            className="inline-flex items-center gap-1.5"
+                          >
+                            <Icon aria-hidden className="h-3 w-3" />
+                            {RYD_PRODUCTION_LABELS[stage]}{" "}
+                            {productionCounts[stage]}
+                          </FilterChip>
+                        );
+                      })}
+                    </div>
+                    {sorted.length > 0 && (
+                      <div className="flex flex-col gap-3 rounded-2xl border border-black/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-white/10">
+                        <label className="flex items-center gap-3 text-sm font-semibold">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4"
+                            checked={allSelected}
+                            ref={(input) => {
+                              if (input)
+                                input.indeterminate =
+                                  selectedOrders.length > 0 && !allSelected;
+                            }}
+                            disabled={searchPending || moving !== null}
+                            onChange={() =>
+                              setSelected(
+                                allSelected
+                                  ? new Set()
+                                  : new Set(sorted.map((o) => o.orderId)),
+                              )
+                            }
+                          />
+                          {selectedOrders.length
+                            ? `${selectedOrders.length} of ${sorted.length} selected`
+                            : `Select all ${sorted.length}`}
+                        </label>
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            className="w-full sm:w-auto"
+                            leftIcon={<FiPackage aria-hidden />}
+                            disabled={
+                              moving !== null ||
+                              !selectedStages.has("not-started")
+                            }
+                            loading={moving === "sent"}
+                            onClick={() => moveSelected("sent")}
+                          >
+                            Sent for production
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="w-full sm:w-auto"
+                            leftIcon={<FiCheckSquare aria-hidden />}
+                            disabled={
+                              moving !== null ||
+                              !selectedOrders.length ||
+                              (selectedStages.size === 1 &&
+                                selectedStages.has("done"))
+                            }
+                            loading={moving === "done"}
+                            onClick={() => moveSelected("done")}
+                          >
+                            Done
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="w-full sm:w-auto"
+                            leftIcon={<FiCornerUpLeft aria-hidden />}
+                            disabled={
+                              moving !== null ||
+                              !(
+                                selectedStages.has("in-production") ||
+                                selectedStages.has("done")
+                              )
+                            }
+                            loading={moving === "back"}
+                            onClick={() => moveSelected("back")}
+                          >
+                            Move back
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
                 <PendingResults pending={searchPending} label="Loading orders">
                   {filtered.length === 0 ? (
                     <EmptyState
@@ -664,7 +879,9 @@ export function RydPageClient({
                             ? "No orders match that search."
                             : view === "follow-up"
                               ? "Nobody to chase right now."
-                              : "No orders with that status."
+                              : production
+                                ? `No verified orders are ${RYD_PRODUCTION_LABELS[production].toLowerCase()}.`
+                                : "No orders with that status."
                       }
                     />
                   ) : (
@@ -680,6 +897,15 @@ export function RydPageClient({
                       followUp={view === "follow-up"}
                       onEmailed={markEmailed}
                       onReview={(order) => setOpenOrderId(order.orderId)}
+                      selection={
+                        producing
+                          ? {
+                              selected,
+                              onToggle: toggleSelected,
+                              disabled: searchPending || moving !== null,
+                            }
+                          : undefined
+                      }
                       footer={pagination}
                     />
                   )}

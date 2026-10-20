@@ -23,6 +23,7 @@ import type { RydSort, RydSortKey } from "@/lib/ryd/queue-view";
 import {
   rydMatchEvidence,
   RydMatchChip,
+  RydProductionChip,
   RydRyanPositionChip,
   RydStatusChip,
 } from "./RydStatusChip";
@@ -148,9 +149,23 @@ function SortHeader({
   );
 }
 
+/** Column widths; the production view trades Form's room for its own column. */
+const COLUMNS = ["w-[24%]", "w-[13%]", "w-[27%]", "w-[18%]", "w-[18%]"];
+const PRODUCTION_COLUMNS = [
+  "w-10",
+  "w-[21%]",
+  "w-[11%]",
+  "w-[21%]",
+  "w-[15%]",
+  "w-[15%]",
+  "w-[13%]",
+];
+
 /**
  * The queue as one dense table, for working down a long list. It carries the
- * same chips and actions as the cards, one row per order.
+ * same chips and actions as the cards, one row per order. With `selection`,
+ * each row gets a checkbox and a Production column, for moving verified
+ * orders along in bulk.
  */
 export function RydOrderTable({
   orders,
@@ -161,6 +176,7 @@ export function RydOrderTable({
   followUp,
   onEmailed,
   onReview,
+  selection,
   footer,
 }: {
   orders: RydQueueOrder[];
@@ -172,23 +188,33 @@ export function RydOrderTable({
   /** The row's Email opened a draft; record that the buyer was asked. */
   onEmailed: (order: RydQueueOrder) => void;
   onReview: (order: RydQueueOrder) => void;
+  selection?: {
+    selected: ReadonlySet<string>;
+    onToggle: (orderId: string) => void;
+    disabled?: boolean;
+  };
   /** Sits under the table, inside its border, without scrolling sideways. */
   footer?: ReactNode;
 }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-black/10 dark:border-white/10">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[880px] table-fixed text-left text-sm">
+        <table
+          className={`w-full table-fixed text-left text-sm ${selection ? "min-w-[1040px]" : "min-w-[880px]"}`}
+        >
           <caption className="sr-only">{label}</caption>
           <colgroup>
-            <col className="w-[24%]" />
-            <col className="w-[13%]" />
-            <col className="w-[27%]" />
-            <col className="w-[18%]" />
-            <col className="w-[18%]" />
+            {(selection ? PRODUCTION_COLUMNS : COLUMNS).map((width, index) => (
+              <col key={index} className={width} />
+            ))}
           </colgroup>
           <thead className="border-b border-black/10 bg-black/[0.025] text-[10px] uppercase tracking-[0.16em] text-black/60 dark:border-white/10 dark:bg-white/[0.025] dark:text-white/60">
             <tr>
+              {selection && (
+                <th className="py-3 pl-4">
+                  <span className="sr-only">Selected</span>
+                </th>
+              )}
               <SortHeader
                 column="name"
                 label="Ryan"
@@ -217,6 +243,9 @@ export function RydOrderTable({
                 onSort={onSort}
                 className="px-3 py-3"
               />
+              {selection && (
+                <th className="px-3 py-3 font-semibold">Production</th>
+              )}
               <th className="px-4 py-3 text-right font-semibold">
                 <span className="sr-only">Actions</span>
               </th>
@@ -229,8 +258,20 @@ export function RydOrderTable({
               return (
                 <tr
                   key={order.orderId}
-                  className="transition hover:bg-black/[0.025] dark:hover:bg-white/[0.025]"
+                  className={`transition hover:bg-black/[0.025] dark:hover:bg-white/[0.025] ${selection?.selected.has(order.orderId) ? "bg-black/[0.035] dark:bg-white/[0.04]" : ""}`}
                 >
+                  {selection && (
+                    <td className="py-2.5 pl-4">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 align-middle"
+                        aria-label={`Select ${name || order.displayEmail}`}
+                        checked={selection.selected.has(order.orderId)}
+                        disabled={selection.disabled}
+                        onChange={() => selection.onToggle(order.orderId)}
+                      />
+                    </td>
+                  )}
                   <td className="px-4 py-2.5">
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                       <button
@@ -278,6 +319,11 @@ export function RydOrderTable({
                       {order.orderedAt || "No date"}
                     </span>
                   </td>
+                  {selection && (
+                    <td className="px-3 py-2.5">
+                      <RydProductionChip order={order} />
+                    </td>
+                  )}
                   <td className="px-4 py-2.5">
                     <div className="flex justify-end gap-2">
                       {followUp && order.status !== "rejected" && (

@@ -109,6 +109,17 @@ export function formatRydSubmittedAt(
   }).format(date);
 }
 
+/** A day alone, "Oct 18", in the same zone as `formatRydSubmittedAt`. */
+export function formatRydDay(iso: string, timeZone = "America/New_York") {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    month: "short",
+    day: "numeric",
+  }).format(date);
+}
+
 export function parseRydFormResponses(
   form: GoogleForm,
   responses: GoogleFormResponse[],

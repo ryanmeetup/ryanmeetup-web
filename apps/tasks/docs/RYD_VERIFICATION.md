@@ -96,6 +96,14 @@ presses Send. The page then records what was sent.
    (best effort — the toast says if Google refused). Rows are found by
    submission time and email, since the sheet has no response IDs.
    Downloading the file alone clears nothing.
+5. **Track production.** Verified orders stay under **Verified**, sent to
+   fulfillment or not, with a Production column and filters for **Not
+   sent**, **In production**, and **Done**. Tick orders, or **Select all**
+   of what's listed, then **Sent for production** or **Done**. Each records
+   its own date (`production_sent_at`, `done_at`); marking an order done
+   that was never sent stamps both, and re-marking keeps the first date.
+   **Move back** takes each ticked order one step back. Once an order is in
+   production, or fulfillment has its file, its decision can't be changed.
 
 ## Data
 

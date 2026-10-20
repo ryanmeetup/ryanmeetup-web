@@ -3,6 +3,9 @@ import {
   FiAlertCircle,
   FiAlertTriangle,
   FiCheckCircle,
+  FiCheckSquare,
+  FiCircle,
+  FiPackage,
   FiInfo,
   FiLink,
   FiSend,
@@ -11,11 +14,16 @@ import {
   FiXCircle,
   FiZap,
 } from "react-icons/fi";
-import { formatRydSubmittedAt } from "@/lib/ryd/form-responses";
+import { formatRydDay, formatRydSubmittedAt } from "@/lib/ryd/form-responses";
 import { RYD_STATUS_LABELS, type RydOrderStatus } from "@/lib/ryd/orders";
 import type { MatchConfidence } from "@/lib/ryd/matching";
 import type { RyanPosition } from "@/lib/ryd/normalize";
 import type { RydQueueOrder, RydSubmitterContact } from "@/lib/ryd/queue-types";
+import {
+  RYD_PRODUCTION_LABELS,
+  rydProductionStage,
+  type RydProductionStage,
+} from "@/lib/ryd/queue-view";
 
 /** One colour per status, shared by the chips, the stat cards, and the rows. */
 export const RYD_STATUS_TONES = {
@@ -65,6 +73,59 @@ export function RydStatusChip({ status }: { status: RydOrderStatus }) {
     <span className={`${CHIP} ${RYD_STATUS_TINTS[status]}`}>
       <Icon aria-hidden className="h-3 w-3" />
       {RYD_STATUS_LABELS[status]}
+    </span>
+  );
+}
+
+export const RYD_PRODUCTION_ICONS: Record<RydProductionStage, IconType> = {
+  "not-started": FiCircle,
+  "in-production": FiPackage,
+  done: FiCheckSquare,
+};
+
+const PRODUCTION_TINTS: Record<RydProductionStage, string> = {
+  "not-started":
+    "border-black/15 bg-black/[0.04] text-black/75 dark:border-white/15 dark:bg-white/[0.06] dark:text-white/75",
+  "in-production":
+    "border-indigo-500/30 bg-indigo-500/10 text-indigo-800 dark:border-indigo-400/30 dark:bg-indigo-500/15 dark:text-indigo-200",
+  done: RYD_STATUS_TINTS.verified,
+};
+
+/** Both production dates as a sentence, for a title or a detail line. */
+export function rydProductionSummary(
+  order: Pick<RydQueueOrder, "productionSentAt" | "doneAt">,
+) {
+  const parts = [
+    order.productionSentAt &&
+      `Sent for production ${formatRydSubmittedAt(order.productionSentAt)}`,
+    order.doneAt && `done ${formatRydSubmittedAt(order.doneAt)}`,
+  ].filter(Boolean);
+  return parts.length ? `${parts.join(", ")}.` : "Not sent for production.";
+}
+
+/** Where a verified order is in being made, with the day it got there. */
+export function RydProductionChip({
+  order,
+}: {
+  order: Pick<RydQueueOrder, "productionSentAt" | "doneAt">;
+}) {
+  const stage = rydProductionStage(order);
+  const Icon = RYD_PRODUCTION_ICONS[stage];
+  const day =
+    stage === "done"
+      ? order.doneAt
+      : stage === "in-production"
+        ? order.productionSentAt
+        : null;
+  return (
+    <span
+      className={`${CHIP} ${PRODUCTION_TINTS[stage]}`}
+      title={rydProductionSummary(order)}
+    >
+      <Icon aria-hidden className="h-3 w-3" />
+      {stage === "in-production" && day
+        ? `Sent ${formatRydDay(day)}`
+        : RYD_PRODUCTION_LABELS[stage] + (day ? ` ${formatRydDay(day)}` : "")}
     </span>
   );
 }

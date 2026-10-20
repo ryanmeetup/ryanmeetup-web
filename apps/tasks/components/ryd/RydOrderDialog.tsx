@@ -22,6 +22,7 @@ import {
   FiInfo,
   FiLink,
   FiMail,
+  FiPackage,
   FiPaperclip,
   FiPlus,
   FiSave,
@@ -37,6 +38,8 @@ import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 import { orderSubmissions } from "@/lib/ryd/queue-view";
 import {
   RydConfidenceChip,
+  RydProductionChip,
+  rydProductionSummary,
   RydStatusChip,
 } from "./RydStatusChip";
 import { RydSubmissionCard } from "./RydSubmissionCard";
@@ -197,6 +200,9 @@ export function RydOrderDialog({
   }
 
   const busy = pending !== null;
+  // Fulfillment was told, or it's being made: the decision is settled. The
+  // routes refuse a change; the buttons just don't offer one.
+  const locked = order.sentToFulfillment || Boolean(order.productionSentAt);
   const name =
     `${order.firstName} ${order.lastName}`.trim() || order.displayEmail;
 
@@ -210,6 +216,7 @@ export function RydOrderDialog({
         <span className="flex flex-wrap items-center gap-3">
           {name}
           <RydStatusChip status={order.status} />
+          {order.status === "verified" && <RydProductionChip order={order} />}
         </span>
       }
       supportingActions={
@@ -240,26 +247,27 @@ export function RydOrderDialog({
       }
       actions={
         <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
-          {DECISIONS.filter(({ status }) => status !== order.status).map(
-            ({ status, label, icon: Icon }) => (
-              <Button
-                key={status}
-                type="button"
-                size="sm"
-                variant={
-                  status === "verified" && order.status === "pending"
-                    ? "primary"
-                    : "secondary"
-                }
-                leftIcon={<Icon aria-hidden />}
-                disabled={busy}
-                loading={pending === status}
-                onClick={() => decide(status)}
-              >
-                {label}
-              </Button>
-            ),
-          )}
+          {!locked &&
+            DECISIONS.filter(({ status }) => status !== order.status).map(
+              ({ status, label, icon: Icon }) => (
+                <Button
+                  key={status}
+                  type="button"
+                  size="sm"
+                  variant={
+                    status === "verified" && order.status === "pending"
+                      ? "primary"
+                      : "secondary"
+                  }
+                  leftIcon={<Icon aria-hidden />}
+                  disabled={busy}
+                  loading={pending === status}
+                  onClick={() => decide(status)}
+                >
+                  {label}
+                </Button>
+              ),
+            )}
           {order.status !== "pending" && noteChanged && (
             <Button
               type="button"
@@ -305,6 +313,12 @@ export function RydOrderDialog({
             {order.total && (
               <Detail icon={FiCreditCard} label="Total">
                 ${order.total}
+              </Detail>
+            )}
+            {order.status === "verified" && (
+              <Detail icon={FiPackage} label="Production">
+                {rydProductionSummary(order)}
+                {order.sentToFulfillment && " Fulfillment has its file."}
               </Detail>
             )}
             {order.lastEmailedAt && (
