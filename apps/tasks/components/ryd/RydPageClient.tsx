@@ -1,0 +1,546 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useQueryParamState, useSearchFilter } from "@ryanmeetup/hooks";
+import {
+  Button,
+  DropdownSelect,
+  EmptyState,
+  FilterChip,
+  ManagementSurface,
+  PendingResults,
+  SearchInput,
+  toast,
+} from "@ryanmeetup/ui";
+import {
+  FiAlertTriangle,
+  FiLink,
+  FiMail,
+  FiSend,
+  FiSettings,
+  FiUpload,
+} from "react-icons/fi";
+import { CountBadge, WorkspacePageShell } from "@/components/global";
+import { mutate, parseMutationResponse } from "@/lib/mutation-client";
+import { errorMessage } from "@/lib/presentation";
+import { RYD_STATUS_LABELS } from "@/lib/ryd/orders";
+import type { RydQueue, RydQueueOrder } from "@/lib/ryd/queue-types";
+import {
+  followUpOrders,
+  orderSearchText,
+  RYD_STATUS_PARAMS,
+  rydCounts,
+  rydStatusParam,
+  rydView,
+  unmatchedSubmitters,
+  type RydView,
+} from "@/lib/ryd/queue-view";
+import type { WorkspaceData } from "@/lib/workspace/workspace-types";
+import {
+  RydSendDialog,
+  RydSettingsDialog,
+  RydUploadDialog,
+} from "./RydDialogs";
+import { RydOrderDialog } from "./RydOrderDialog";
+import { RydConfidenceChip, RydStatusChip } from "./RydStatusChip";
+import { RydSubmissionCard } from "./RydSubmissionCard";
+
+const GOOGLE_MESSAGES: Record<string, [ok: boolean, message: string]> = {
+  connected: [true, "Google connected. The form's answers are in."],
+  scopes: [
+    false,
+    "Google connected without every permission. Reconnect and leave all the boxes ticked.",
+  ],
+  "refresh-token": [
+    false,
+    "Google didn't hand over a lasting sign-in. Remove the app from your Google account's connections and connect again.",
+  ],
+  unavailable: [false, "Google sign-in isn't configured on this instance."],
+  invalid: [false, "That Google sign-in expired. Try connecting again."],
+  auth: [false, "Only an owner can connect Google."],
+  failed: [false, "Google couldn't be connected. Try again."],
+};
+
+const VIEW_LABELS: Record<RydView, string> = {
+  queue: "Orders",
+  "follow-up": "Follow-up",
+  unmatched: "Unmatched submissions",
+};
+
+const STATUS_OPTIONS = Object.keys(RYD_STATUS_PARAMS).map((value) => {
+  const status = RYD_STATUS_PARAMS[value as keyof typeof RYD_STATUS_PARAMS];
+  return {
+    value,
+    label: status ? RYD_STATUS_LABELS[status] : "All open orders",
+  };
+});
+
+function matchSummary(order: RydQueueOrder) {
+  if (order.linkedKeys.length)
+    return `Linked to ${order.linkedKeys.length} form submission${order.linkedKeys.length === 1 ? "" : "s"}`;
+  if (order.suggestion) return order.suggestion.reasons.join(" · ");
+  return "No form submission found";
+}
+
+type Dialog = "upload" | "send" | "settings" | null;
+
+export function RydPageClient({
+  initialData,
+  initialQueue,
+  isOwner,
+  googleConfigured,
+  emailConfigured,
+}: {
+  initialData: WorkspaceData;
+  initialQueue: RydQueue;
+  isOwner: boolean;
+  googleConfigured: boolean;
+  emailConfigured: boolean;
+}) {
+  const [data, setData] = useState(initialData);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [queue, setQueue] = useState(initialQueue);
+  const [dialog, setDialog] = useState<Dialog>(null);
+  const [viewParam, setViewParam] = useQueryParamState("view");
+  const [statusParam, setStatusParam] = useQueryParamState("status");
+  const [openOrderId, setOpenOrderId] = useQueryParamState("order");
+  const [googleParam, setGoogleParam] = useQueryParamState("google");
+  const [emailing, setEmailing] = useState<string | null>(null);
+  const [linking, setLinking] = useState<string | null>(null);
+  const view = rydView(viewParam);
+  const status = rydStatusParam(statusParam);
+
+  const refresh = useCallback(async () => {
+    const response = await fetch("/api/ryd", { cache: "no-store" });
+    setQueue(await parseMutationResponse<RydQueue>(response));
+  }, []);
+
+  // The OAuth callback lands back here with its outcome in the query string.
+  useEffect(() => {
+    const outcome = GOOGLE_MESSAGES[googleParam];
+    if (!outcome) return;
+    if (outcome[0]) toast.success(outcome[1]);
+    else toast.error(outcome[1]);
+    setGoogleParam("");
+  }, [googleParam, setGoogleParam]);
+
+  const counts = useMemo(() => rydCounts(queue.orders), [queue.orders]);
+  const followUp = useMemo(() => followUpOrders(queue), [queue]);
+  const unmatched = useMemo(() => unmatchedSubmitters(queue), [queue]);
+  const statusFilter = RYD_STATUS_PARAMS[status];
+  const listed = useMemo(
+    () =>
+      view === "follow-up"
+        ? followUp
+        : statusFilter
+          ? queue.orders.filter((order) => order.status === statusFilter)
+          : queue.orders,
+    [view, followUp, queue.orders, statusFilter],
+  );
+  const {
+    query,
+    setQuery,
+    filtered,
+    isPending: searchPending,
+  } = useSearchFilter({
+    data: listed,
+    buildHaystack: orderSearchText,
+    queryParam: "search",
+  });
+  const openOrder = queue.orders.find((order) => order.orderId === openOrderId);
+  const orderOptions = useMemo(
+    () =>
+      queue.orders.map((order) => ({
+        value: order.orderId,
+        label: `${order.firstName} ${order.lastName} · ${order.displayEmail} · ${order.orderId}`,
+      })),
+    [queue.orders],
+  );
+
+  async function emailBuyer(order: RydQueueOrder) {
+    setEmailing(order.orderId);
+    try {
+      await mutate(
+        `/api/ryd/orders/${encodeURIComponent(order.orderId)}/email`,
+        {
+          method: "POST",
+          body: "{}",
+        },
+      );
+      await refresh();
+      toast.success(`Emailed ${order.displayEmail}.`);
+    } catch (error) {
+      toast.error(errorMessage(error, "The email couldn't be sent."));
+    } finally {
+      setEmailing(null);
+    }
+  }
+
+  async function linkSubmitter(email: string, orderId: string) {
+    setLinking(email);
+    try {
+      for (const submission of queue.submissions.filter(
+        (s) => s.email === email,
+      ))
+        await mutate(`/api/ryd/orders/${encodeURIComponent(orderId)}/links`, {
+          method: "POST",
+          body: JSON.stringify({
+            submissionKey: submission.key,
+            source: "manual",
+          }),
+        });
+      await refresh();
+      toast.success("Linked. Review the order to decide.");
+      setOpenOrderId(orderId);
+    } catch (error) {
+      toast.error(errorMessage(error, "That submission couldn't be linked."));
+    } finally {
+      setLinking(null);
+    }
+  }
+
+  const sheetNotice =
+    queue.sheet.status === "ok"
+      ? null
+      : queue.sheet.status === "error"
+        ? queue.sheet.message
+        : queue.sheet.status === "unconfigured"
+          ? "Add the form responses sheet in RY-D settings to see what buyers sent."
+          : isOwner
+            ? "Connect the Google account that owns the RY-dentification form to see what buyers sent."
+            : "An owner needs to connect the RY-dentification form before submissions show up here.";
+
+  return (
+    <>
+      <WorkspacePageShell
+        data={data}
+        setData={setData}
+        demoMode={false}
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        contentClassName="p-3 sm:p-6 lg:p-6 xl:p-8"
+      >
+        <ManagementSurface
+          title={
+            <>
+              RY-D verification{" "}
+              <CountBadge size="lg">{queue.orders.length}</CountBadge>
+            </>
+          }
+          description="Match each RY-D order to what the buyer sent the RY-dentification form, decide, then send fulfillment the orders they can start."
+          actions={
+            <>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                className="w-full sm:w-auto"
+                leftIcon={<FiUpload aria-hidden />}
+                onClick={() => setDialog("upload")}
+                disabled={!queue.installed}
+              >
+                Upload orders
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                className="w-full sm:w-auto"
+                leftIcon={<FiSend aria-hidden />}
+                onClick={() => setDialog("send")}
+                disabled={!queue.installed || !queue.orders.length}
+              >
+                Send to fulfillment
+              </Button>
+              {isOwner && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="w-full sm:w-auto"
+                  leftIcon={<FiSettings aria-hidden />}
+                  onClick={() => setDialog("settings")}
+                  disabled={!queue.installed}
+                >
+                  Settings
+                </Button>
+              )}
+            </>
+          }
+        >
+          <div className="space-y-6">
+            {!queue.installed && (
+              <p className="flex items-start gap-2 rounded-2xl border border-black/10 p-4 text-sm dark:border-white/10">
+                <FiAlertTriangle aria-hidden className="mt-0.5 shrink-0" />
+                This database doesn&apos;t have the RY-D tables yet. Apply the
+                pending migration, then reload.
+              </p>
+            )}
+            {queue.installed && sheetNotice && (
+              <div className="flex flex-col gap-3 rounded-2xl border border-black/10 p-4 text-sm sm:flex-row sm:items-center sm:justify-between dark:border-white/10">
+                <p className="flex items-start gap-2">
+                  <FiAlertTriangle aria-hidden className="mt-0.5 shrink-0" />
+                  {sheetNotice}
+                </p>
+                {isOwner && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    className="w-full shrink-0 sm:w-auto"
+                    onClick={() => setDialog("settings")}
+                  >
+                    Open settings
+                  </Button>
+                )}
+              </div>
+            )}
+
+            <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              {(["pending", "needs_info", "verified", "rejected"] as const).map(
+                (key) => (
+                  <div
+                    key={key}
+                    className="rounded-2xl border border-black/10 p-4 dark:border-white/10"
+                  >
+                    <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-black/70 dark:text-white/70">
+                      {key === "verified"
+                        ? "Verified, not sent"
+                        : RYD_STATUS_LABELS[key]}
+                    </dt>
+                    <dd className="mt-1 font-cooper text-3xl">{counts[key]}</dd>
+                  </div>
+                ),
+              )}
+            </dl>
+            {queue.lastBatch && (
+              <p className="text-sm text-black/70 dark:text-white/70">
+                Last sent {new Date(queue.lastBatch.sentAt).toLocaleString()}
+                {queue.lastBatch.recipient
+                  ? ` to ${queue.lastBatch.recipient}`
+                  : ""}
+                : {queue.lastBatch.verifiedCount} of{" "}
+                {queue.lastBatch.orderCount} cleared. {queue.clearedCount} order
+                {queue.clearedCount === 1 ? "" : "s"} cleared so far.
+              </p>
+            )}
+
+            <div
+              className="flex flex-wrap gap-2"
+              role="group"
+              aria-label="View"
+            >
+              {(Object.keys(VIEW_LABELS) as RydView[]).map((key) => (
+                <FilterChip
+                  key={key}
+                  active={view === key}
+                  onClick={() => setViewParam(key === "queue" ? "" : key)}
+                >
+                  {VIEW_LABELS[key]}{" "}
+                  {key === "follow-up"
+                    ? followUp.length
+                    : key === "unmatched"
+                      ? unmatched.length
+                      : ""}
+                </FilterChip>
+              ))}
+            </div>
+
+            {view === "unmatched" ? (
+              <section aria-label="Unmatched submissions" className="space-y-4">
+                <p className="text-sm text-black/70 dark:text-white/70">
+                  Form answers no order has claimed: often a gift, a different
+                  email, or an order that hasn&apos;t arrived in a file yet.
+                </p>
+                {unmatched.length === 0 ? (
+                  <EmptyState
+                    className="py-12"
+                    message={
+                      queue.sheet.status === "ok"
+                        ? "Every form submission is paired with an order."
+                        : "No form submissions to show."
+                    }
+                  />
+                ) : (
+                  <div className="grid items-start gap-4 2xl:grid-cols-2">
+                    {unmatched.map((submitter) => (
+                      <div key={submitter.email} className="space-y-3">
+                        {submitter.submissions.map((submission) => (
+                          <RydSubmissionCard
+                            key={submission.key}
+                            submission={submission}
+                          />
+                        ))}
+                        <DropdownSelect
+                          variant="compact"
+                          label="Link to order"
+                          options={orderOptions}
+                          value=""
+                          onChange={(orderId) =>
+                            linkSubmitter(submitter.email, orderId)
+                          }
+                          searchPlaceholder="Search orders"
+                          disabled={linking !== null || !orderOptions.length}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            ) : (
+              <section aria-label={VIEW_LABELS[view]} className="space-y-4">
+                <div className="sticky top-0 z-20 -mx-1 flex flex-col gap-3 bg-white px-1 pb-3 sm:flex-row sm:items-end dark:bg-[#181818]">
+                  <div className="min-w-0 flex-1">
+                    <SearchInput
+                      label="Search orders"
+                      name="search"
+                      value={query}
+                      onChange={(event) => setQuery(event.target.value)}
+                      placeholder="Search by Ryan, email, or order number..."
+                      pending={searchPending}
+                      pendingLabel="Loading order results"
+                    />
+                  </div>
+                  {view === "queue" && (
+                    <DropdownSelect
+                      variant="compact"
+                      label="Status"
+                      options={STATUS_OPTIONS}
+                      value={status}
+                      onChange={(value) =>
+                        setStatusParam(value === "pending" ? "" : value)
+                      }
+                    />
+                  )}
+                </div>
+                <PendingResults pending={searchPending} label="Loading orders">
+                  {filtered.length === 0 ? (
+                    <EmptyState
+                      className="py-12"
+                      message={
+                        !queue.orders.length
+                          ? "No orders yet. Upload this week's file from fulfillment to start."
+                          : query
+                            ? "No orders match that search."
+                            : view === "follow-up"
+                              ? "Nobody to chase right now."
+                              : "No orders with that status."
+                      }
+                    />
+                  ) : (
+                    <ul className="space-y-3">
+                      {filtered.map((order) => (
+                        <li
+                          key={order.orderId}
+                          className="flex flex-col gap-3 rounded-2xl border border-black/10 bg-black/[0.02] p-4 sm:flex-row sm:items-center sm:justify-between dark:border-white/10 dark:bg-white/[0.03]"
+                        >
+                          <div className="min-w-0 space-y-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-semibold">
+                                {order.firstName} {order.lastName}
+                              </span>
+                              <RydStatusChip status={order.status} />
+                              {!order.linkedKeys.length && order.suggestion && (
+                                <RydConfidenceChip
+                                  confidence={order.suggestion.confidence}
+                                />
+                              )}
+                            </div>
+                            <p className="break-all text-sm text-black/70 dark:text-white/70">
+                              {order.displayEmail}
+                            </p>
+                            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-black/55 dark:text-white/55">
+                              #{order.orderId} · {order.orderedAt || "No date"}{" "}
+                              · prefers{" "}
+                              {order.contactMethod.toLowerCase() || "email"}
+                            </p>
+                            <p className="flex items-center gap-1.5 text-sm text-black/70 dark:text-white/70">
+                              {order.linkedKeys.length > 0 && (
+                                <FiLink aria-hidden className="shrink-0" />
+                              )}
+                              {matchSummary(order)}
+                            </p>
+                            {order.note && (
+                              <p className="text-sm italic text-black/70 dark:text-white/70">
+                                {order.note}
+                              </p>
+                            )}
+                            {view === "follow-up" && order.lastEmailedAt && (
+                              <p className="text-xs text-black/60 dark:text-white/60">
+                                Emailed{" "}
+                                {new Date(order.lastEmailedAt).toLocaleString()}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+                            {view === "follow-up" &&
+                              order.status !== "rejected" && (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  className="w-full sm:w-auto"
+                                  leftIcon={<FiMail aria-hidden />}
+                                  disabled={
+                                    !emailConfigured || emailing !== null
+                                  }
+                                  loading={emailing === order.orderId}
+                                  onClick={() => emailBuyer(order)}
+                                >
+                                  {order.lastEmailedAt
+                                    ? "Email again"
+                                    : "Email"}
+                                </Button>
+                              )}
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="secondary"
+                              className="w-full sm:w-auto"
+                              onClick={() => setOpenOrderId(order.orderId)}
+                            >
+                              Review
+                            </Button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </PendingResults>
+              </section>
+            )}
+          </div>
+        </ManagementSurface>
+      </WorkspacePageShell>
+
+      {openOrder && (
+        <RydOrderDialog
+          key={openOrder.orderId}
+          order={openOrder}
+          submissions={queue.submissions}
+          emailConfigured={emailConfigured}
+          onClose={() => setOpenOrderId("")}
+          onChanged={refresh}
+        />
+      )}
+      {dialog === "upload" && (
+        <RydUploadDialog onClose={() => setDialog(null)} onChanged={refresh} />
+      )}
+      {dialog === "send" && (
+        <RydSendDialog
+          queue={queue}
+          emailConfigured={emailConfigured}
+          onClose={() => setDialog(null)}
+          onChanged={refresh}
+        />
+      )}
+      {dialog === "settings" && (
+        <RydSettingsDialog
+          queue={queue}
+          googleConfigured={googleConfigured}
+          onClose={() => setDialog(null)}
+          onChanged={refresh}
+        />
+      )}
+    </>
+  );
+}

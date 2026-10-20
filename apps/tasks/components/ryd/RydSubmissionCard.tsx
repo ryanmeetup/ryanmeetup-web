@@ -1,0 +1,148 @@
+"use client";
+
+import { useState, type ReactNode } from "react";
+import {
+  FiCheckCircle,
+  FiExternalLink,
+  FiFacebook,
+  FiFile,
+  FiGlobe,
+  FiInstagram,
+  FiLinkedin,
+  FiTwitter,
+} from "react-icons/fi";
+import type { RydSubmission } from "@/lib/ryd/matching";
+import type { SocialLink } from "@/lib/ryd/normalize";
+
+const PLATFORM_ICONS: Record<SocialLink["platform"], ReactNode> = {
+  instagram: <FiInstagram aria-hidden />,
+  facebook: <FiFacebook aria-hidden />,
+  linkedin: <FiLinkedin aria-hidden />,
+  x: <FiTwitter aria-hidden />,
+  tiktok: <FiGlobe aria-hidden />,
+  web: <FiGlobe aria-hidden />,
+};
+
+/** What's left of the social answer once its links are taken out. */
+function noteText(text: string) {
+  const rest = text
+    .replace(/\S*(?:https?:\/\/|www\.|\.com|\.net|\.org)\S*/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return rest.length >= 12 ? text.trim() : null;
+}
+
+/**
+ * A thumbnail for an uploaded file. The proxy serves images and PDFs, and only
+ * the image ones render in an `<img>`, so a file that fails to load as an
+ * image falls back to a plain file tile; both open the file in a new tab.
+ *
+ * Not `next/image`: the file is private, streamed per request with the
+ * reviewer's session, and must never land in the shared optimizer cache.
+ */
+function EvidenceTile({ fileId, index }: { fileId: string; index: number }) {
+  const [failed, setFailed] = useState(false);
+  const href = `/api/ryd/evidence/${encodeURIComponent(fileId)}`;
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`Open uploaded file ${index + 1} in a new tab`}
+      className="group relative block aspect-square overflow-hidden rounded-xl border border-black/10 bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:border-white/10 dark:bg-white/[0.06] dark:focus-visible:ring-white/40"
+    >
+      {failed ? (
+        <span className="flex h-full flex-col items-center justify-center gap-2 text-xs font-semibold text-black/60 dark:text-white/60">
+          <FiFile aria-hidden className="text-xl" />
+          File {index + 1}
+        </span>
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element -- see above
+        <img
+          src={href}
+          alt={`Uploaded file ${index + 1}`}
+          loading="lazy"
+          onError={() => setFailed(true)}
+          className="h-full w-full object-cover transition group-hover:opacity-90"
+        />
+      )}
+    </a>
+  );
+}
+
+export function RydSubmissionCard({
+  submission,
+  action,
+}: {
+  submission: RydSubmission;
+  action?: ReactNode;
+}) {
+  const note = noteText(submission.socialText);
+  return (
+    <article className="rounded-2xl border border-black/10 bg-black/[0.02] p-4 dark:border-white/10 dark:bg-white/[0.03]">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-semibold">
+            {submission.legalName || "No name given"}
+          </p>
+          <p className="break-all text-sm text-black/70 dark:text-white/70">
+            {submission.email}
+          </p>
+          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-black/55 dark:text-white/55">
+            Sent {submission.submittedAt}
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          {submission.verified && (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-black/10 px-2.5 py-0.5 text-[11px] font-semibold text-black/70 dark:border-white/10 dark:text-white/70">
+              <FiCheckCircle aria-hidden />
+              Ticked in the sheet
+            </span>
+          )}
+          {action}
+        </div>
+      </div>
+
+      {submission.fileIds.length > 0 && (
+        <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-4">
+          {submission.fileIds.map((fileId, index) => (
+            <EvidenceTile key={fileId} fileId={fileId} index={index} />
+          ))}
+        </div>
+      )}
+
+      {submission.socialLinks.length > 0 && (
+        <ul className="mt-4 flex flex-wrap gap-2" aria-label="Social links">
+          {submission.socialLinks.map((link) => (
+            <li key={link.url}>
+              <a
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-full border border-black/10 px-3 py-1 text-xs font-semibold text-black/75 transition hover:border-black/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:border-white/10 dark:text-white/75 dark:hover:border-white/30 dark:focus-visible:ring-white/40"
+              >
+                {PLATFORM_ICONS[link.platform]}
+                {link.label}
+                <FiExternalLink aria-hidden className="opacity-60" />
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {note && (
+        <blockquote className="mt-4 whitespace-pre-line border-l-2 border-black/15 pl-3 text-sm text-black/70 dark:border-white/15 dark:text-white/70">
+          {note}
+        </blockquote>
+      )}
+
+      {!submission.fileIds.length &&
+        !submission.socialLinks.length &&
+        !note && (
+          <p className="mt-3 text-sm text-black/70 dark:text-white/70">
+            No files or links in this submission.
+          </p>
+        )}
+    </article>
+  );
+}

@@ -1,10 +1,15 @@
 import "server-only";
 
 import type { SupabaseClient, User } from "@supabase/supabase-js";
+import type {
+  RydQueue,
+  RydQueueOrder,
+  RydSettings,
+  RydSheetState,
+} from "@/lib/ryd/queue-types";
 import {
   groupSubmissions,
   suggestMatches,
-  type RydMatchSuggestion,
   type RydSubmission,
 } from "@/lib/ryd/matching";
 import {
@@ -61,11 +66,6 @@ export async function rydContext({ owner = false } = {}): Promise<
   return { ...authorization, admin };
 }
 
-export type RydSettings = {
-  formSheetId: string | null;
-  fulfillmentEmail: string | null;
-};
-
 export type RydOrderRow = {
   order_id: string;
   sales_order: string;
@@ -82,48 +82,6 @@ export type RydOrderRow = {
   cleared_batch_id: string | null;
   last_emailed_at: string | null;
   created_at: string;
-};
-
-export type RydQueueOrder = {
-  orderId: string;
-  salesOrder: string;
-  orderedAt: string;
-  firstName: string;
-  lastName: string;
-  /** As fulfillment typed it, for display; matching uses the normalized one. */
-  displayEmail: string;
-  email: string;
-  contactMethod: string;
-  total: string;
-  status: RydOrderStatus;
-  note: string | null;
-  decidedAt: string | null;
-  decidedBy: string | null;
-  lastEmailedAt: string | null;
-  linkedKeys: string[];
-  suggestion: RydMatchSuggestion | null;
-};
-
-export type RydSheetState =
-  | { status: "unconfigured" }
-  | { status: "disconnected" }
-  | { status: "error"; message: string; accountEmail: string }
-  | { status: "ok"; accountEmail: string };
-
-export type RydQueue = {
-  orders: RydQueueOrder[];
-  submissions: RydSubmission[];
-  sheet: RydSheetState;
-  settings: RydSettings;
-  clearedCount: number;
-  lastBatch: {
-    sentAt: string;
-    recipient: string | null;
-    orderCount: number;
-    verifiedCount: number;
-  } | null;
-  /** False until the migration that creates the RY-D tables is applied. */
-  installed: boolean;
 };
 
 export async function loadRydSettings(
