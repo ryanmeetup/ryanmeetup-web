@@ -22,6 +22,8 @@ const actions = new Set<McpReadAction>([
   "list_contacts",
   "get_work_metrics",
   "list_governance_activity",
+  "get_ryd_sales_insights",
+  "list_ryd_orders",
 ]);
 
 function isObject(value: unknown): value is Record<string, unknown> {

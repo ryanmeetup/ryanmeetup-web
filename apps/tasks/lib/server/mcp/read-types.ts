@@ -14,7 +14,9 @@ export type McpReadAction =
   | "get_category"
   | "list_contacts"
   | "get_work_metrics"
-  | "list_governance_activity";
+  | "list_governance_activity"
+  | "get_ryd_sales_insights"
+  | "list_ryd_orders";
 
 export type McpReadRequest = {
   action: McpReadAction;

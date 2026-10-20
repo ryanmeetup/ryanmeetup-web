@@ -8,6 +8,12 @@ import { DIGEST_SETTINGS_COLUMNS } from "@/lib/server/digest-settings";
 import { WORKSPACE_COLUMNS } from "@/lib/server/workspace-loader";
 import { parseTaskKey, taskKey } from "@/lib/tasks/task-key";
 import { isUuid } from "@/lib/api-schema/shared";
+import {
+  filterRydProfiles,
+  loadRydProfiles,
+  rydOrderFilters,
+  rydSalesInsights,
+} from "@/lib/server/mcp/ryd-read";
 import type {
   McpReadAction,
   McpReadResult,
@@ -946,6 +952,24 @@ async function governanceActivity(
   };
 }
 
+async function listRydOrders(
+  admin: AdminClient,
+  params: Record<string, unknown>,
+) {
+  const loaded = await loadRydProfiles(admin);
+  if (!loaded.available)
+    return { items: loaded, pagination: undefined, warnings: loaded.warnings };
+  const matching = filterRydProfiles(loaded.profiles, rydOrderFilters(params));
+  const limit = limitParam(params);
+  const offset = decodeOffset(params.cursor);
+  const items = matching.slice(offset, offset + limit);
+  return {
+    items,
+    pagination: pagination(params, matching.length, items.length),
+    warnings: loaded.warnings,
+  };
+}
+
 export async function executeMcpRead(
   admin: AdminClient,
   action: McpReadAction,
@@ -1073,6 +1097,19 @@ export async function executeMcpRead(
         memberships: result.memberships,
       };
       page = result.pagination;
+      break;
+    }
+    case "get_ryd_sales_insights": {
+      const result = await rydSalesInsights(admin, params);
+      data = result.data;
+      warnings.push(...result.warnings);
+      break;
+    }
+    case "list_ryd_orders": {
+      const result = await listRydOrders(admin, params);
+      data = result.items;
+      page = result.pagination;
+      warnings.push(...result.warnings);
       break;
     }
   }
