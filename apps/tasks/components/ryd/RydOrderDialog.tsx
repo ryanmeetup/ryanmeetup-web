@@ -2,12 +2,19 @@
 
 import { useMemo, useState } from "react";
 import { Button, DropdownSelect, Modal, Textarea, toast } from "@ryanmeetup/ui";
+import type { IconType } from "react-icons";
 import {
   FiAlertTriangle,
+  FiCalendar,
   FiCheck,
+  FiCreditCard,
   FiHelpCircle,
+  FiInfo,
   FiLink,
   FiMail,
+  FiPhone,
+  FiPlus,
+  FiSend,
   FiX,
 } from "react-icons/fi";
 import { mutate } from "@/lib/mutation-client";
@@ -16,23 +23,43 @@ import type { RydSubmission } from "@/lib/ryd/matching";
 import type { RydOrderStatus } from "@/lib/ryd/orders";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 import { orderSubmissions } from "@/lib/ryd/queue-view";
-import { RydConfidenceChip, RydStatusChip } from "./RydStatusChip";
+import {
+  RydConfidenceChip,
+  RydStatusChip,
+  prefersPhone,
+} from "./RydStatusChip";
 import { RydSubmissionCard } from "./RydSubmissionCard";
 
+/** One fact about the order: the icon leads, the label is for screen readers. */
 function Detail({
+  icon: Icon,
   label,
   children,
 }: {
+  icon: IconType;
   label: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-w-0">
-      <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-black/55 dark:text-white/55">
-        {label}
+    <div className="flex min-w-0 items-start gap-3">
+      <dt className="mt-0.5 shrink-0 text-black/55 dark:text-white/55">
+        <Icon aria-hidden className="h-4 w-4" />
+        <span className="sr-only">{label}</span>
       </dt>
-      <dd className="mt-1 break-words text-sm">{children}</dd>
+      <dd className="min-w-0 break-words text-sm">{children}</dd>
     </div>
+  );
+}
+
+/** A reason the form suggested this pairing; caveats get a softer icon. */
+function Reason({ reason }: { reason: string }) {
+  const Icon =
+    /match/i.test(reason) && !/differ/i.test(reason) ? FiCheck : FiInfo;
+  return (
+    <li className="inline-flex items-center gap-1.5 rounded-full border border-black/10 px-2.5 py-0.5 text-xs text-black/75 dark:border-white/10 dark:text-white/75">
+      <Icon aria-hidden className="h-3 w-3 shrink-0" />
+      {reason}
+    </li>
   );
 }
 
@@ -57,6 +84,7 @@ export function RydOrderDialog({
   const [note, setNote] = useState(order.note ?? "");
   const [pending, setPending] = useState<string | null>(null);
   const [linkChoice, setLinkChoice] = useState("");
+  const [choosing, setChoosing] = useState(false);
   const shown = orderSubmissions(order, submissions);
 
   const linkOptions = useMemo(
@@ -196,21 +224,31 @@ export function RydOrderDialog({
             id="ryd-order-heading"
             className="text-xs font-semibold uppercase tracking-[0.2em] text-black/70 dark:text-white/70"
           >
-            From fulfillment
+            Order
           </h3>
-          <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
-            <Detail label="Bill to">{name}</Detail>
-            <Detail label="Email">
+          <dl className="space-y-3">
+            <Detail icon={FiMail} label="Email">
               <span className="break-all">{order.displayEmail}</span>
             </Detail>
-            <Detail label="Ordered">{order.orderedAt || "Not given"}</Detail>
-            <Detail label="Prefers">
-              {order.contactMethod || "Not given"}
+            <Detail icon={FiCalendar} label="Ordered">
+              {order.orderedAt || "Not given"}
             </Detail>
-            {order.total && <Detail label="Total">${order.total}</Detail>}
+            {order.total && (
+              <Detail icon={FiCreditCard} label="Total">
+                ${order.total}
+              </Detail>
+            )}
+            <Detail
+              icon={prefersPhone(order) ? FiPhone : FiMail}
+              label="Prefers"
+            >
+              {order.contactMethod
+                ? `Prefers ${order.contactMethod.toLowerCase()}`
+                : "No contact preference"}
+            </Detail>
             {order.lastEmailedAt && (
-              <Detail label="Last emailed">
-                {new Date(order.lastEmailedAt).toLocaleString()}
+              <Detail icon={FiSend} label="Last emailed">
+                Emailed {new Date(order.lastEmailedAt).toLocaleString()}
               </Detail>
             )}
           </dl>
@@ -222,7 +260,7 @@ export function RydOrderDialog({
             maxLength={2000}
             value={note}
             onChange={(event) => setNote(event.target.value)}
-            placeholder="What did you check? e.g. gift for a 14-year-old Ryan, mom confirmed."
+            placeholder="What did you check? e.g. gift for her son Ryan."
           />
         </section>
 
@@ -235,7 +273,7 @@ export function RydOrderDialog({
               id="ryd-submissions-heading"
               className="text-xs font-semibold uppercase tracking-[0.2em] text-black/70 dark:text-white/70"
             >
-              {shown.linked ? "Linked submissions" : "From the form"}
+              {shown.linked ? "Linked" : "From the form"}
             </h3>
             {!shown.linked && order.suggestion && (
               <RydConfidenceChip confidence={order.suggestion.confidence} />
@@ -243,10 +281,14 @@ export function RydOrderDialog({
           </div>
 
           {!shown.linked && order.suggestion && (
-            <p className="text-sm text-black/70 dark:text-white/70">
-              Suggested because: {order.suggestion.reasons.join(" · ")}.
-              Verifying links it to this order.
-            </p>
+            <ul
+              aria-label="Why it was suggested"
+              className="flex flex-wrap gap-2"
+            >
+              {order.suggestion.reasons.map((reason) => (
+                <Reason key={reason} reason={reason} />
+              ))}
+            </ul>
           )}
           {shown.missing > 0 && (
             <p className="flex items-center gap-2 text-sm text-black/70 dark:text-white/70">
@@ -312,48 +354,61 @@ export function RydOrderDialog({
             </div>
           ) : (
             <p className="rounded-2xl border border-dashed border-black/15 p-4 text-sm text-black/70 dark:border-white/15 dark:text-white/70">
-              Nothing on the form looks like {order.firstName || "this buyer"}.
-              If they ordered for someone else, or used another email, link
-              their submission below.
+              Nothing on the form matches {order.firstName || "this buyer"}.
+              Ordered for someone else? Link their submission below.
             </p>
           )}
 
-          {linkOptions.length > 0 && (
-            <div className="flex flex-col gap-2 border-t border-black/10 pt-4 dark:border-white/10 2xl:flex-row 2xl:items-end">
-              <div className="min-w-0 flex-1">
-                <DropdownSelect
-                  variant="field"
-                  label="Link a different submission"
-                  options={linkOptions}
-                  value={linkChoice}
-                  onChange={setLinkChoice}
-                  searchPlaceholder="Search by name or email"
-                  disabled={busy}
-                />
+          {linkOptions.length > 0 &&
+            (choosing || !shown.submissions.length ? (
+              <div className="flex flex-col gap-2 border-t border-black/10 pt-4 dark:border-white/10 sm:flex-row sm:items-end">
+                <div className="min-w-0 flex-1">
+                  <DropdownSelect
+                    variant="field"
+                    label="Link another submission"
+                    options={linkOptions}
+                    value={linkChoice}
+                    onChange={setLinkChoice}
+                    searchPlaceholder="Search by name or email"
+                    disabled={busy}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  size="field"
+                  variant="secondary"
+                  className="w-full sm:w-auto"
+                  leftIcon={<FiLink aria-hidden />}
+                  disabled={busy || !linkChoice}
+                  loading={pending === "manual"}
+                  onClick={async () => {
+                    if (
+                      await run(
+                        "manual",
+                        () => link(linkChoice, "manual"),
+                        "Linked to this order.",
+                      )
+                    ) {
+                      setLinkChoice("");
+                      setChoosing(false);
+                    }
+                  }}
+                >
+                  Link
+                </Button>
               </div>
+            ) : (
               <Button
                 type="button"
-                size="field"
-                variant="secondary"
-                className="w-full sm:w-auto"
-                leftIcon={<FiLink aria-hidden />}
-                disabled={busy || !linkChoice}
-                loading={pending === "manual"}
-                onClick={async () => {
-                  if (
-                    await run(
-                      "manual",
-                      () => link(linkChoice, "manual"),
-                      "Linked to this order.",
-                    )
-                  )
-                    setLinkChoice("");
-                }}
+                size="xs"
+                variant="ghost"
+                leftIcon={<FiPlus aria-hidden />}
+                disabled={busy}
+                onClick={() => setChoosing(true)}
               >
-                Link
+                Link another submission
               </Button>
-            </div>
-          )}
+            ))}
         </section>
       </div>
     </Modal>

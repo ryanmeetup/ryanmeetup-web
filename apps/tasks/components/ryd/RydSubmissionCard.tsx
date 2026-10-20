@@ -2,12 +2,14 @@
 
 import { useState, type ReactNode } from "react";
 import {
+  FiClock,
   FiExternalLink,
   FiFacebook,
   FiFile,
   FiGlobe,
   FiInstagram,
   FiLinkedin,
+  FiMail,
   FiTwitter,
 } from "react-icons/fi";
 import { Spinner } from "@ryanmeetup/ui";
@@ -100,11 +102,17 @@ export function RydSubmissionCard({
           <p className="font-semibold">
             {submission.legalName || "No name given"}
           </p>
-          <p className="break-all text-sm text-black/70 dark:text-white/70">
-            {submission.email}
-          </p>
-          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-black/55 dark:text-white/55">
-            Sent {submission.submittedAt}
+          <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-black/70 dark:text-white/70">
+            <span className="inline-flex min-w-0 items-center gap-1.5 break-all">
+              <FiMail aria-hidden className="shrink-0" />
+              <span className="sr-only">Email</span>
+              {submission.email}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <FiClock aria-hidden className="shrink-0" />
+              <span className="sr-only">Sent</span>
+              {submission.submittedAt}
+            </span>
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
