@@ -70,19 +70,17 @@ const areaRows = [
 ];
 
 describe("access preview page visibility", () => {
-  it("leaves a page with no row open", () => {
+  it("leaves older unconfigured pages open and requires RY-D metadata", () => {
     expect(accessibleAreasForPreview([], [], ["leads"], false)).toEqual([
       "notes",
       "contacts",
       "calendar",
-      "ryd",
     ]);
   });
 
   it("closes a restricted page that names no group", () => {
     expect(accessibleAreasForPreview(areaRows, [], ["leads"], false)).toEqual([
       "notes",
-      "ryd",
     ]);
   });
 
@@ -94,13 +92,12 @@ describe("access preview page visibility", () => {
 
     expect(
       accessibleAreasForPreview(areaRows, grants, ["leads"], false),
-    ).toEqual(["notes", "contacts", "ryd"]);
+    ).toEqual(["notes", "contacts"]);
   });
 
   it("does not let workspace-wide work authority bypass page restrictions", () => {
     expect(accessibleAreasForPreview(areaRows, [], [], false)).toEqual([
       "notes",
-      "ryd",
     ]);
   });
 
@@ -111,5 +108,42 @@ describe("access preview page visibility", () => {
       "calendar",
       "ryd",
     ]);
+  });
+
+  it("does not let an orphaned RY-D grant substitute for page metadata", () => {
+    expect(
+      accessibleAreasForPreview(
+        [],
+        [{ area: "ryd", group_id: "reviewers" }],
+        ["reviewers"],
+        false,
+      ),
+    ).not.toContain("ryd");
+  });
+
+  it("allows an explicitly open RY-D page", () => {
+    expect(
+      accessibleAreasForPreview(
+        [{ area: "ryd", access_mode: "open" }],
+        [],
+        [],
+        false,
+      ),
+    ).toContain("ryd");
+  });
+
+  it("requires a selected group on a restricted RY-D page", () => {
+    const rows = [{ area: "ryd", access_mode: "restricted" as const }];
+    const grants = [{ area: "ryd", group_id: "reviewers" }];
+    expect(accessibleAreasForPreview(rows, grants, [], false)).not.toContain(
+      "ryd",
+    );
+    expect(
+      accessibleAreasForPreview(rows, grants, ["reviewers"], false),
+    ).toContain("ryd");
+  });
+
+  it("retains app-owner access when RY-D metadata is missing", () => {
+    expect(accessibleAreasForPreview([], [], [], true)).toContain("ryd");
   });
 });

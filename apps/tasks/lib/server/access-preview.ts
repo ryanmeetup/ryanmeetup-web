@@ -39,8 +39,8 @@ type PreviewAreaGrant = { area: string; group_id: string };
 
 /**
  * The same rule `can_view_workspace_area` applies, projected for the preview:
- * a page with no restricted row is open, a restricted page needs a selected
- * group the subject reaches, and only app owners bypass page restrictions.
+ * unconfigured pages other than RY-D are open. RY-D needs an explicit row;
+ * restricted pages need a selected group, and only app owners bypass them.
  * Diagnostic only — it never authorizes a request.
  */
 export function accessibleAreasForPreview(
@@ -50,6 +50,7 @@ export function accessibleAreasForPreview(
   isAppOwner: boolean,
 ): WorkspaceAreaKey[] {
   if (isAppOwner) return [...WORKSPACE_AREA_KEYS];
+  const configured = new Set(areas.map((area) => area.area));
   const restricted = new Set(
     areas
       .filter((area) => area.access_mode === "restricted")
@@ -62,7 +63,9 @@ export function accessibleAreasForPreview(
       .map((grant) => grant.area),
   );
   return WORKSPACE_AREA_KEYS.filter(
-    (area) => !restricted.has(area) || grantedAreas.has(area),
+    (area) =>
+      (area !== "ryd" || configured.has(area)) &&
+      (!restricted.has(area) || grantedAreas.has(area)),
   );
 }
 
@@ -76,13 +79,15 @@ async function resolveAreaAccess(
     supabase.from("workspace_area_access").select("area, access_mode"),
     supabase.from("workspace_area_group_grants").select("area, group_id"),
   ]);
-  // Before the migration lands there is nothing restricting a page, so the
-  // preview shows what the database would actually allow: all of them.
+  // Older pages retain their pre-migration open default. RY-D's privileged
+  // reads require metadata, including in this diagnostic projection.
   if (
     isMissingRelation(areasResult.error?.code) ||
     isMissingRelation(grantsResult.error?.code)
   )
-    return { accessibleAreas: [...WORKSPACE_AREA_KEYS] };
+    return {
+      accessibleAreas: WORKSPACE_AREA_KEYS.filter((area) => area !== "ryd"),
+    };
   return {
     accessibleAreas: accessibleAreasForPreview(
       requireQueryData("preview page access", areasResult),

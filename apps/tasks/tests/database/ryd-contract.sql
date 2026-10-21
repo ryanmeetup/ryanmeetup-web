@@ -4,6 +4,7 @@ create extension if not exists pgtap with schema extensions;
 set local search_path=public,extensions;
 select no_plan();
 -- APPLY_RYD_CONTRACT_MIGRATION
+-- APPLY_RYD_READ_ACCESS_MIGRATION
 
 -- Every drift simulation rolls back its DDL before returning the diagnostic.
 create function pg_temp.health_after(change text) returns jsonb language plpgsql as $$
@@ -46,6 +47,9 @@ select is(pg_temp.health_after('drop index public.ryd_fulfillment_one_prepared_i
 select is(pg_temp.health_after('alter table public.ryd_settings disable trigger ryd_guard_form_change')->>'contractOk','false','disabled form guard fails');
 select is(pg_temp.health_after('alter table public.ryd_order_submissions disable trigger ryd_guard_reserved_evidence')->>'contractOk','false','disabled evidence reservation guard fails');
 select is(pg_temp.health_after($$delete from public.workspace_area_access where area='ryd'$$)->>'contractOk','false','missing page metadata fails');
+select is(pg_temp.health_after('alter function public.member_can_view_workspace_area(uuid,text) rename to missing_member_gate')->>'contractOk','false','missing shared page predicate fails');
+select is(pg_temp.health_after('grant execute on function public.member_can_view_workspace_area(uuid,text) to authenticated')->>'contractOk','false','member access to the private member predicate fails');
+select is(pg_temp.health_after('grant execute on function public.workspace_area_members(text) to authenticated')->>'contractOk','false','publicly readable recipient lists fail');
 select is(public.ryd_contract_health()->>'contractOk','true','drift simulations leave the schema healthy');
 select * from finish();
 rollback;

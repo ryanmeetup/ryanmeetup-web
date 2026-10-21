@@ -14,6 +14,7 @@ Run from the repository root:
 
 ```sh
 npm run check:database-contract --workspace=@ryanmeetup/tasks
+npm run test:database:ryd --workspace=@ryanmeetup/tasks
 npm run test:database:ryd-contract --workspace=@ryanmeetup/tasks
 npm run test:e2e:ryd --workspace=@ryanmeetup/tasks
 ```
@@ -24,6 +25,14 @@ service/anonymous/member permissions and deliberately damages tables, columns,
 grants, policies, RPCs, constraints, indexes, triggers, and access metadata.
 It does not reset the local database. The other transaction and concurrency
 checks remain under `test:database:ryd-transactions`.
+
+The page-access command applies the real access migrations twice within its
+rollback transaction, provisions synthetic owners, tiers, and team members,
+and checks RY-D reads, navigation, writes, and worker recipients with restricted,
+open, and missing metadata. It also checks onboarding, revoked membership,
+owner overrides, and private-function permissions. Other unconfigured pages
+retain their open default. The contract check includes the new private access
+predicate and recipient resolver.
 
 The RY-D browser suite builds and runs the real Next app on port 3110, with a
 separate Supabase transport on 54339. Override those with
@@ -50,3 +59,6 @@ synthetic; the suite never sends an email.
 
 Apply the contract migration to both instances. RMT uses the linked CLI;
 PRD uses the [complete dashboard SQL and verification](PRD_RYD_CONTRACT_SQL.md).
+Apply the later [RY-D read-access update](PRD_RYD_READ_ACCESS_SQL.md) as well;
+it makes reads, writes, and recipient resolution share the fail-closed rule and
+extends the contract to cover its private functions.

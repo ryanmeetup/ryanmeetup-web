@@ -73,7 +73,9 @@ lockable pages is owned by the application registry in
 `lib/access/workspace-areas.ts`, not by the database; `workspace_area_access`
 holds a row only for a page an app owner has configured.
 
-- A page with no row is open to every onboarded member.
+- An unconfigured Notes, Contacts, or Calendar page is open to every onboarded
+  member. RY-D requires an explicit access row: if it is missing, only
+  onboarded app owners retain their override.
 - A restricted page is available only through its selected access groups and
   app ownership. A restricted page with no selected groups is therefore
   app-owner-only.
@@ -92,6 +94,11 @@ holds a row only for a page an app owner has configured.
 - Contact images live in a public storage bucket, so an existing image URL
   stays reachable regardless of page access; what page access decides for that
   bucket is who may add, replace, or remove an image.
+- `member_can_view_workspace_area(member, area)` owns the page-access rule.
+  `can_view_workspace_area` asks it about the signed-in member, while
+  `workspace_area_members(area)` uses it for worker recipients and
+  `ryd_require_operator` uses it before writes. The per-member predicate and
+  recipient list are service-role-only; members cannot probe other identities.
 - RY-D starts restricted to the lateral RY-D team and explicitly selected
   administrator tiers with workspace-wide content access. Higher tiers inherit
   those selected tier grants; app owners retain their override. Page access

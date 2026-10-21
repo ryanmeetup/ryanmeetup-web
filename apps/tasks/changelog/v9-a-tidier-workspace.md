@@ -60,6 +60,9 @@ The RY-D access team can manage verification, fulfillment, settings, and the
 Google connection. Administrator tiers and app owners retain access, while
 other members need the RY-D team grant.
 
+If RY-D's page-access configuration is missing, access stays with app owners
+until it is restored. Reviews and reminder recipients follow the same rule.
+
 ### Safer RY-D bulk actions
 
 Large production selections save in bounded groups with visible progress and safe retries. Mixed backward moves save together. Unmatched emails confirm each sent draft independently, contact retries cannot count twice, and a person's responses link together. Actions wait while search results catch up.

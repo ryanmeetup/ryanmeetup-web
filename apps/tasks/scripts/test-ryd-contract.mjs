@@ -16,6 +16,10 @@ const fixture = await readFile(
   path.join(appRoot, "tests/database/ryd-contract.sql"),
   "utf8",
 );
+const readAccessMigration = await readFile(
+  path.join(appRoot, "supabase/migrations/20261102000000_ryd_read_access.sql"),
+  "utf8",
+);
 const directory = await mkdtemp(path.join(tmpdir(), "ryd-contract-test-"));
 try {
   const sqlPath = path.join(directory, "ryd-contract.sql");
@@ -25,7 +29,13 @@ try {
     .replace(/^commit;$/m, "");
   await writeFile(
     sqlPath,
-    fixture.replace("-- APPLY_RYD_CONTRACT_MIGRATION", () => definition),
+    fixture
+      .replace("-- APPLY_RYD_CONTRACT_MIGRATION", () => definition)
+      .replace("-- APPLY_RYD_READ_ACCESS_MIGRATION", () =>
+        readAccessMigration
+          .replace(/^begin;$/m, "")
+          .replace(/^commit;$/m, ""),
+      ),
   );
   const result = spawnSync(
     "supabase",

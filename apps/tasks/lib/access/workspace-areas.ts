@@ -5,8 +5,9 @@ import { FiCalendar, FiCheckSquare, FiFileText, FiUsers } from "react-icons/fi";
  * The pages an app owner can lock behind access groups.
  *
  * This registry, not the database, owns the set. `workspace_area_access` holds
- * a row only for a page an owner has actually configured, and no row means the
- * page is open, so adding a lockable page is an entry here plus the matching
+ * a row only for a page an owner has actually configured. Unconfigured pages
+ * are open except RY-D, which requires explicit access metadata. Adding a
+ * lockable page is an entry here plus the matching
  * RLS predicate — never a schema change to a table of pages.
  *
  * `key` is the value written to the database and passed to
