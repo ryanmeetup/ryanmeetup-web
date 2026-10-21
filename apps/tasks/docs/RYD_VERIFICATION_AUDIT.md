@@ -31,14 +31,19 @@ buyer-facing form link, privacy language, and fail-closed read access.
 
 Review, fulfillment, import/reminder, and bulk-operation migrations
 (`20261028000000` through `20261031000000`) were applied and metadata-verified
-on RMT. PRD still needs all three complete SQL blocks in
-[the cumulative dashboard handoff](PRD_RYD_FULFILLMENT_SQL.md).
-Its verification must return one row with all fifteen values true. The new
-`20261101000000` contract migration is also applied and health-verified on RMT.
-PRD additionally needs [the complete contract SQL block](PRD_RYD_CONTRACT_SQL.md);
-its verification must return `contractOk: true`, an empty `failures` array, and
-`migration_recorded: true`. The block was applied twice in a disposable database
-and verified there before handoff.
+on RMT. The `20261101000000` contract migration is also applied and
+health-verified on RMT. PRD's reported verification confirms that the contract
+migration is recorded, but `contractOk` is false: all six failures concern the
+missing `ryd_submitter_contacts` table from migration `20261024000000`.
+PRD needs [the complete earlier-table repair](PRD_RYD_SUBMITTER_CONTACTS_SQL.md),
+then verification must return `contractOk: true`, an empty `failures` array,
+and both migration-recorded values true. The diagnostic's recorded version
+alone does not establish schema health. Verification of all fifteen values in
+[the cumulative dashboard handoff](PRD_RYD_FULFILLMENT_SQL.md) has not been
+reported. The contract block was applied twice in a disposable database and
+verified there before handoff. The earlier-table repair also reproduced PRD's
+six failures in a disposable schema-only database, restored a healthy contract,
+and preserved synthetic contact history when applied again.
 
 Local migrations were applied from empty and diffed against RMT. Database
 coverage includes 144 assertions and ten synchronized two-session races.
@@ -134,5 +139,6 @@ and separate email-less identities in both unmatched layouts.
 The component checks substitute Next navigation/image wrappers; they are not
 an authenticated end-to-end test. The committed browser suite uses real Next
 rendering and route authorization, with stubbed identity/database/Google
-transports. Real Google consent, Drive media, sheet writes, and PRD's live
-database remain untested.
+transports. Real Google consent, Drive media, and sheet writes remain untested.
+PRD database checks are limited to the health result reported by the user;
+direct access to that database is unavailable.

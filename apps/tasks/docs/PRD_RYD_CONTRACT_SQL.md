@@ -12,6 +12,11 @@ installed while RY-D is off, but its verification requires that earlier schema.
 A disabled instance does not call it during a build. An enabled instance fails
 its build when the check is missing, unhealthy, or unreadable.
 
+If verification reports `Missing table: ryd_submitter_contacts` with its missing
+columns and primary key, apply [the complete earlier-table repair](PRD_RYD_SUBMITTER_CONTACTS_SQL.md)
+on PRD, then verify again. Installing this diagnostic does not install earlier
+schema; `migration_recorded = true` alone does not mean the contract is healthy.
+
 ```sql
 -- Read-only deployment diagnostics. No customer rows, OAuth credentials, or
 -- mutation RPCs are read/executed. Disabled instances need not call this RPC.

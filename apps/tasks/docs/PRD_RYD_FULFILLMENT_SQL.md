@@ -1,8 +1,12 @@
 # PRD: RY-D transaction updates
 
-Run both complete blocks in the **PRD** Supabase dashboard SQL Editor, for
+Run all three complete blocks in the **PRD** Supabase dashboard SQL Editor, for
 `projects.ryanle.dev` (project `vjsnobmfsfrsnwukfaoq`). RMT is applied and
 verified separately by the agent. No PRD CLI access is required.
+
+These transaction updates require the earlier RY-D tables. If the contract
+diagnostic reports a missing `ryd_submitter_contacts` table, apply
+[the complete earlier-table repair](PRD_RYD_SUBMITTER_CONTACTS_SQL.md) on PRD.
 
 The first block includes the review (`20261028000000`), fulfillment
 (`20261029000000`), and import/reminder (`20261030000000`) migrations, copied
