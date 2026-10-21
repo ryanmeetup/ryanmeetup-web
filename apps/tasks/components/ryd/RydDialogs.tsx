@@ -13,7 +13,8 @@ import { FiLogOut, FiUpload } from "react-icons/fi";
 import { mutate } from "@/lib/mutation-client";
 import { errorMessage } from "@/lib/presentation";
 import type { RydImportSummary } from "@/lib/ryd/orders";
-import type { RydQueue } from "@/lib/ryd/queue-types";
+import type { RydQueueChange } from "@/lib/ryd/queue-reconciliation";
+import type { RydQueue, RydSettings } from "@/lib/ryd/queue-types";
 
 export { RydRemindDialog } from "./RydRemindDialog";
 export { RydSendDialog } from "./RydSendDialog";
@@ -126,9 +127,11 @@ export function RydSettingsDialog({
   googleConfigured,
   onClose,
   onChanged,
+  onApplied,
 }: {
   queue: RydQueue;
   googleConfigured: boolean;
+  onApplied: (change: RydQueueChange) => void;
   onClose: () => void;
   onChanged: () => Promise<void>;
 }) {
@@ -159,11 +162,12 @@ export function RydSettingsDialog({
         event.preventDefault();
         setSaving(true);
         try {
-          await mutate("/api/ryd/settings", {
+          const settings = await mutate<RydSettings>("/api/ryd/settings", {
             method: "PATCH",
             body: JSON.stringify({ form, fulfillmentEmail }),
           });
-          await onChanged();
+          onApplied({ type: "settings", settings });
+          void onChanged().catch(() => {});
           toast.success("RY-D settings saved.");
           onClose();
         } catch (error) {
@@ -224,7 +228,8 @@ export function RydSettingsDialog({
                       method: "POST",
                       body: "{}",
                     });
-                    await onChanged();
+                    onApplied({ type: "disconnect" });
+                    void onChanged().catch(() => {});
                     toast.success("Google disconnected.");
                   } catch (error) {
                     toast.error(

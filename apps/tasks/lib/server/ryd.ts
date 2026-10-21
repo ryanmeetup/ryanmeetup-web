@@ -6,15 +6,10 @@ import type {
   RydSettings,
   RydSheetState,
 } from "@/lib/ryd/queue-types";
-import {
-  groupSubmissions,
-  suggestMatches,
-  type RydSubmission,
-} from "@/lib/ryd/matching";
+import { type RydSubmission } from "@/lib/ryd/matching";
 import type { RydProductionStage } from "@/lib/ryd/queue-view";
-import {
-  type RydOrderStatus,
-} from "@/lib/ryd/orders";
+import { type RydOrderStatus } from "@/lib/ryd/orders";
+import { withRydQueueMatches } from "@/lib/ryd/queue-reconciliation";
 import { getAdminClient } from "./admin-client";
 import { apiError, notFound } from "./api-response";
 import { authorize } from "./auth";
@@ -89,9 +84,15 @@ export async function loadRydSettings(
     .select("form_id, fulfillment_email")
     .maybeSingle();
   if (result.error) throw result.error;
+  return rydSettingsFrom(result.data);
+}
+
+export function rydSettingsFrom(
+  row: Record<string, unknown> | null,
+): RydSettings {
   return {
-    formId: result.data?.form_id ?? null,
-    fulfillmentEmail: result.data?.fulfillment_email ?? null,
+    formId: (row?.form_id as string | null) ?? null,
+    fulfillmentEmail: (row?.fulfillment_email as string | null) ?? null,
   };
 }
 
@@ -258,31 +259,15 @@ export async function loadRydQueue(
     keys.push(link.submission_key);
     linkedByOrder.set(link.order_id, keys);
   }
-  const keyToEmail = new Map(submissions.map((s) => [s.key, s.email]));
-  const claimedEmails = new Set(
-    (linksResult.data ?? [])
-      .map((link) => keyToEmail.get(link.submission_key))
-      .filter((email): email is string => Boolean(email)),
-  );
-
   const rows = (ordersResult.data ?? []) as RydOrderRow[];
-  // Every unpaired order is offered a suggestion, decided or not. An order
-  // ticked in the fulfillment file arrives verified with nothing linked, and
-  // without one it would read as having no form submission at all.
-  const suggestions = suggestMatches(
-    rows
-      .filter((row) => !linkedByOrder.has(row.order_id))
-      .map((row) => ({
-        orderId: row.order_id,
-        firstName: row.first_name,
-        lastName: row.last_name,
-        email: row.email,
-      })),
-    groupSubmissions(submissions),
-    claimedEmails,
-  );
 
-  return {
+  return withRydQueueMatches({
+    submissionClaims: Object.fromEntries(
+      (linksResult.data ?? []).map((link) => [
+        link.submission_key,
+        link.order_id,
+      ]),
+    ),
     orders: rows.map((row) => ({
       orderId: row.order_id,
       salesOrder: row.sales_order,
@@ -302,7 +287,7 @@ export async function loadRydQueue(
       productionSentAt: row.production_sent_at ?? null,
       doneAt: row.done_at ?? null,
       linkedKeys: linkedByOrder.get(row.order_id) ?? [],
-      suggestion: suggestions.get(row.order_id) ?? null,
+      suggestion: null,
     })),
     submissions,
     dismissed,
@@ -319,7 +304,7 @@ export async function loadRydQueue(
         }
       : null,
     installed: true,
-  };
+  });
 }
 
 /**

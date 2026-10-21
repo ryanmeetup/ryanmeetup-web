@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 import type { RydSubmission } from "@/lib/ryd/matching";
-import { decideRydOrder } from "@/lib/ryd/ryd-decisions";
+import {
+  changeRydLinks,
+  decideRydOrder,
+  saveRydNote,
+} from "@/lib/ryd/ryd-decisions";
 
 const mutate = vi.hoisted(() => vi.fn().mockResolvedValue({ ok: true }));
 vi.mock("@/lib/mutation-client", () => ({ mutate }));
@@ -37,7 +41,23 @@ describe("RY-D decisions", () => {
       { key: "first-response", email: "ryan@example.com" },
       { key: "second-response", email: "ryan@example.com" },
     ] as RydSubmission[];
-    await decideRydOrder(order, submissions, "verified", "Checked");
+    const result = {
+      ok: true,
+      order: {
+        order_id: "123",
+        status: "verified",
+        note: "Checked",
+        updated_at: "new",
+      },
+    };
+    mutate.mockResolvedValueOnce(result);
+    await expect(
+      decideRydOrder(order, submissions, "verified", "Checked"),
+    ).resolves.toEqual({
+      type: "review",
+      result,
+      linkedKeys: ["first-response", "second-response"],
+    });
     expect(mutate).toHaveBeenCalledExactlyOnceWith("/api/ryd/orders/123", {
       method: "PATCH",
       body: JSON.stringify({
@@ -48,5 +68,49 @@ describe("RY-D decisions", () => {
         submissionKeys: ["first-response", "second-response"],
       }),
     });
+  });
+  it("returns the saved note and revision without re-reading the queue", async () => {
+    const result = {
+      ok: true,
+      order: {
+        order_id: "1001",
+        status: "verified",
+        note: "Checked",
+        updated_at: "new",
+      },
+    };
+    mutate.mockClear().mockResolvedValueOnce(result);
+    await expect(
+      saveRydNote(
+        { orderId: "1001", updatedAt: "old" } as RydQueueOrder,
+        "  Checked  ",
+      ),
+    ).resolves.toEqual({ type: "review", result, linkedKeys: [] });
+    expect(mutate).toHaveBeenCalledExactlyOnceWith("/api/ryd/orders/1001", {
+      method: "PATCH",
+      body: JSON.stringify({ note: "  Checked  ", expectedUpdatedAt: "old" }),
+    });
+  });
+  it("returns only acknowledged link changes and propagates a refused write", async () => {
+    mutate.mockClear().mockResolvedValueOnce({ ok: true, changed: false });
+    await expect(
+      changeRydLinks("1001", ["response-1"], false),
+    ).resolves.toEqual({
+      type: "links",
+      orderId: "1001",
+      keys: ["response-1"],
+      linked: false,
+    });
+    expect(mutate).toHaveBeenCalledExactlyOnceWith(
+      "/api/ryd/orders/1001/links",
+      {
+        method: "DELETE",
+        body: JSON.stringify({ submissionKey: "response-1" }),
+      },
+    );
+    mutate.mockRejectedValueOnce(new Error("Already claimed"));
+    await expect(changeRydLinks("1001", ["response-1"], true)).rejects.toThrow(
+      "Already claimed",
+    );
   });
 });

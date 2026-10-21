@@ -5,6 +5,7 @@ import type { RydSubmission } from "./matching";
 import type { RydOrderStatus } from "./orders";
 import type { RydQueueOrder } from "./queue-types";
 import { orderSubmissions } from "./queue-view";
+import type { RydQueueChange, RydReviewResult } from "./queue-reconciliation";
 
 /** Fulfillment has it, or it's being made: its decision can't change. */
 export function rydDecisionLocked(order: RydQueueOrder) {
@@ -21,10 +22,14 @@ export async function decideRydOrder(
   submissions: RydSubmission[],
   status: RydOrderStatus,
   note?: string,
-) {
+): Promise<RydQueueChange> {
   const base = `/api/ryd/orders/${encodeURIComponent(order.orderId)}`;
   const shown = orderSubmissions(order, submissions);
-  await mutate(base, {
+  const linkedKeys =
+    status === "verified" && !shown.linked
+      ? shown.submissions.map((submission) => submission.key)
+      : [];
+  const result = await mutate<RydReviewResult>(base, {
     method: "PATCH",
     body: JSON.stringify({
       status,
@@ -33,11 +38,39 @@ export async function decideRydOrder(
       expectedUpdatedAt: order.updatedAt,
       ...(status === "verified" && !shown.linked
         ? {
-            submissionKeys: shown.submissions.map(
-              (submission) => submission.key,
-            ),
+            submissionKeys: linkedKeys,
           }
         : {}),
     }),
   });
+  return { type: "review", result, linkedKeys };
+}
+
+export async function saveRydNote(
+  order: RydQueueOrder,
+  note: string,
+): Promise<RydQueueChange> {
+  const result = await mutate<RydReviewResult>(
+    `/api/ryd/orders/${encodeURIComponent(order.orderId)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ note, expectedUpdatedAt: order.updatedAt }),
+    },
+  );
+  return { type: "review", result, linkedKeys: [] };
+}
+
+export async function changeRydLinks(
+  orderId: string,
+  keys: string[],
+  linked: boolean,
+  source: "suggested" | "manual" = "manual",
+): Promise<RydQueueChange> {
+  await mutate(`/api/ryd/orders/${encodeURIComponent(orderId)}/links`, {
+    method: linked ? "POST" : "DELETE",
+    body: JSON.stringify(
+      linked ? { submissionKeys: keys, source } : { submissionKey: keys[0] },
+    ),
+  });
+  return { type: "links", orderId, keys, linked };
 }

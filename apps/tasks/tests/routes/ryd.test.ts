@@ -158,6 +158,13 @@ describe("RY-D routes", () => {
         updated_by: member.user.id,
       }),
     ]);
+    expect(calls.filter((call) => (call as unknown[])[0] === "select")).toEqual(
+      [["select", "*"]],
+    );
+    expect(await response.json()).toMatchObject({
+      formId: "f".repeat(30),
+      fulfillmentEmail: "orders@example.com",
+    });
   });
 
   it("refuses to change the decision on an order already sent as verified", async () => {
@@ -206,6 +213,8 @@ describe("RY-D routes", () => {
   });
 
   it("validates every suggested response before dispatching one review transaction", async () => {
+    const result = { ok: true, order: { order_id: "1001", status: "verified", note: "Checked", decided_at: "now", decided_by: member.user.id, updated_at: "new-revision" } };
+    rpc.mockResolvedValue({ data: result, error: null });
     getAdminClient.mockReturnValue(admin({}));
     const { PATCH } = await import("@/app/api/ryd/orders/[orderId]/route");
     const response = await PATCH(
@@ -220,6 +229,7 @@ describe("RY-D routes", () => {
       { params: Promise.resolve({ orderId: "1001" }) },
     );
     expect(response.status).toBe(200);
+    expect(await response.json()).toEqual(result);
     expect(rpc).toHaveBeenCalledExactlyOnceWith("ryd_review_order", {
       requested_actor: "member-1",
       requested_order: "1001",

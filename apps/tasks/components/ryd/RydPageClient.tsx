@@ -8,6 +8,7 @@ import {
   ConfirmationDialog,
   DropdownSelect,
   EmptyState,
+  ErrorCallout,
   FilterChip,
   ManagementSurface,
   Pagination,
@@ -26,6 +27,7 @@ import {
   FiMail,
   FiPackage,
   FiPhoneOutgoing,
+  FiRefreshCw,
   FiSend,
   FiSettings,
   FiShoppingBag,
@@ -42,6 +44,11 @@ import { errorMessage } from "@/lib/presentation";
 import { RYD_STATUS_LABELS, type RydOrderStatus } from "@/lib/ryd/orders";
 import type { RydSubmission, RydSubmitter } from "@/lib/ryd/matching";
 import { isRydContactEmail } from "@/lib/ryd/normalize";
+import { changeRydLinks } from "@/lib/ryd/ryd-decisions";
+import {
+  reconcileRydQueue,
+  type RydQueueChange,
+} from "@/lib/ryd/queue-reconciliation";
 import type { RydQueue, RydQueueOrder } from "@/lib/ryd/queue-types";
 import {
   followUpOrders,
@@ -187,7 +194,8 @@ export function RydPageClient({
 }) {
   const [data, setData] = useState(initialData);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { queue, refresh, reconcile } = useRydQueueController(initialQueue);
+  const { queue, refresh, refreshState, reconcile } =
+    useRydQueueController(initialQueue);
   const [dialog, setDialog] = useState<Dialog>(null);
   const [viewParam, setViewParam] = useQueryParamState("view");
   const [statusParam, setStatusParam] = useQueryParamState("status");
@@ -205,9 +213,9 @@ export function RydPageClient({
   const [productionParam, setProductionParam] =
     useQueryParamState("production");
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
-  const [selectedSubmitterKeys, setSelectedSubmitterKeys] = useState<ReadonlySet<string>>(
-    new Set(),
-  );
+  const [selectedSubmitterKeys, setSelectedSubmitterKeys] = useState<
+    ReadonlySet<string>
+  >(new Set());
   const [emailOrder, setEmailOrder] = useState<RydQueueOrder | null>(null);
   const [productionOperation, setProductionOperation] = useState<{
     action: RydProductionAction;
@@ -307,7 +315,9 @@ export function RydPageClient({
   const selectedSubmitters = useMemo(
     () =>
       view === "unmatched"
-        ? selectableSubmitters.filter((submitter) => selectedSubmitterKeys.has(submitter.key))
+        ? selectableSubmitters.filter((submitter) =>
+            selectedSubmitterKeys.has(submitter.key),
+          )
         : [],
     [view, selectableSubmitters, selectedSubmitterKeys],
   );
@@ -381,6 +391,10 @@ export function RydPageClient({
     setProductionOperation({ action, orders: selectedOrders });
   }
 
+  function applyChange(change: RydQueueChange) {
+    reconcile((current) => reconcileRydQueue(current, change));
+  }
+
   function productionApplied(result: RydProductionResult) {
     const saved = new Map(result.orders.map((order) => [order.orderId, order]));
     reconcile((current) => ({
@@ -436,19 +450,10 @@ export function RydPageClient({
     }
     setLinking(submitter.key);
     try {
-      await mutate(`/api/ryd/orders/${encodeURIComponent(orderId)}/links`, {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
+      applyChange(await changeRydLinks(orderId, submissionKeys, true));
       toast.success("Linked. Review the order to decide.");
       setOpenOrderId(orderId);
-      try {
-        await refresh();
-      } catch {
-        toast.error(
-          "The responses were linked, but the queue could not reload. Refresh the page to see them.",
-        );
-      }
+      void refresh().catch(() => {});
     } catch (error) {
       toast.error(
         errorMessage(
@@ -474,7 +479,8 @@ export function RydPageClient({
         method: restore ? "DELETE" : "POST",
         body: JSON.stringify({ submissionKey: submission.key }),
       });
-      await refresh();
+      applyChange({ type: "dismissal", submission, dismissed: !restore });
+      void refresh().catch(() => {});
       setRemoving(null);
       toast.success(
         restore
@@ -559,6 +565,36 @@ export function RydPageClient({
           }
         >
           <div className="space-y-6">
+            <div className="empty:hidden">
+              {refreshState.pending && (
+                <p
+                  role="status"
+                  className="text-sm text-black/70 dark:text-white/70"
+                >
+                  Refreshing orders and form responses...
+                </p>
+              )}
+              {refreshState.error != null && (
+                <ErrorCallout>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <p>
+                      The queue could not refresh. Confirmed changes stay saved.
+                      The queue may be out of date.{" "}
+                      {errorMessage(refreshState.error, "Try again.")}
+                    </p>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      className="w-full shrink-0 sm:w-auto"
+                      onClick={() => void refresh().catch(() => {})}
+                    >
+                      Retry refresh
+                    </Button>
+                  </div>
+                </ErrorCallout>
+              )}
+            </div>
             {!queue.installed && (
               <p className="flex items-start gap-2 rounded-2xl border border-black/10 p-4 text-sm dark:border-white/10">
                 <FiAlertTriangle aria-hidden className="mt-0.5 shrink-0" />
@@ -618,7 +654,7 @@ export function RydPageClient({
             )}
 
             <div
-              className="flex flex-wrap gap-2 border-b border-black/10 pb-4 dark:border-white/10"
+              className="flex flex-wrap items-center gap-2 border-b border-black/10 pb-4 dark:border-white/10"
               role="group"
               aria-label="View"
             >
@@ -644,10 +680,27 @@ export function RydPageClient({
                   </FilterChip>
                 );
               })}
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                className="w-full sm:ml-auto sm:w-auto"
+                leftIcon={<FiRefreshCw aria-hidden />}
+                loading={refreshState.pending}
+                loadingText="Refreshing..."
+                disabled={refreshState.pending}
+                onClick={() => void refresh().catch(() => {})}
+              >
+                Refresh
+              </Button>
             </div>
 
             {view === "unmatched" ? (
-              <section aria-label="Unmatched submissions" className="space-y-4">
+              <section
+                aria-busy={refreshState.pending}
+                aria-label="Unmatched submissions"
+                className="space-y-4"
+              >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-sm text-black/70 dark:text-white/70">
                     Form answers no order has claimed: often a gift, a different
@@ -698,7 +751,8 @@ export function RydPageClient({
                     }
                     onToggleAll={() =>
                       setSelectedSubmitterKeys(
-                        selectedSubmitters.length === selectableSubmitters.length
+                        selectedSubmitters.length ===
+                          selectableSubmitters.length
                           ? new Set()
                           : new Set(selectableSubmitters.map((s) => s.key)),
                       )
@@ -778,7 +832,11 @@ export function RydPageClient({
                 />
               </section>
             ) : (
-              <section aria-label={VIEW_LABELS[view]} className="space-y-4">
+              <section
+                aria-busy={refreshState.pending}
+                aria-label={VIEW_LABELS[view]}
+                className="space-y-4"
+              >
                 {view === "follow-up" && followUp.length > 0 && (
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-sm text-black/70 dark:text-white/70">
@@ -1028,6 +1086,7 @@ export function RydPageClient({
           order={openOrder}
           submissions={queue.submissions}
           claimedKeys={claimedElsewhere(queue.orders, openOrder.orderId)}
+          onApplied={applyChange}
           onClose={() => setOpenOrderId("")}
           onChanged={refresh}
         />
@@ -1053,12 +1112,16 @@ export function RydPageClient({
         <RydUploadDialog onClose={() => setDialog(null)} onChanged={refresh} />
       )}
       {dialog === "send" && (
-        <RydSendDialog
-          onClose={() => setDialog(null)}
+        <RydSendDialog onClose={() => setDialog(null)} onChanged={refresh} />
+      )}
+      {emailOrder && (
+        <RydRemindDialog
+          orders={[emailOrder]}
+          title={`Email ${emailOrder.firstName || "buyer"}`}
+          onClose={() => setEmailOrder(null)}
           onChanged={refresh}
         />
       )}
-      {emailOrder && <RydRemindDialog orders={[emailOrder]} title={`Email ${emailOrder.firstName || "buyer"}`} onClose={() => setEmailOrder(null)} onChanged={refresh} />}
       {(dialog === "remind" || dialog === "remind-selected") && (
         <RydRemindDialog
           {...(dialog === "remind-selected"
@@ -1120,6 +1183,7 @@ export function RydPageClient({
         <RydSettingsDialog
           queue={queue}
           googleConfigured={googleConfigured}
+          onApplied={applyChange}
           onClose={() => setDialog(null)}
           onChanged={refresh}
         />

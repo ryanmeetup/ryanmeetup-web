@@ -49,6 +49,8 @@ export type RydSheetState =
 
 export type RydQueue = {
   orders: RydQueueOrder[];
+  /** Includes claims on finished orders omitted from the active queue. */
+  submissionClaims?: Record<string, string>;
   submissions: RydSubmission[];
   /** Responses set aside, usually duplicates; kept so they can be restored. */
   dismissed: RydSubmission[];

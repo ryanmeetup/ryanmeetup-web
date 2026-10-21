@@ -29,13 +29,17 @@ import {
   FiSend,
   FiX,
 } from "react-icons/fi";
-import { mutate } from "@/lib/mutation-client";
 import { errorMessage } from "@/lib/presentation";
 import type { RydSubmission } from "@/lib/ryd/matching";
 import type { RydOrderStatus } from "@/lib/ryd/orders";
+import type { RydQueueChange } from "@/lib/ryd/queue-reconciliation";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 import { canEmailRydOrder, orderSubmissions } from "@/lib/ryd/queue-view";
-import { decideRydOrder } from "@/lib/ryd/ryd-decisions";
+import {
+  changeRydLinks,
+  decideRydOrder,
+  saveRydNote,
+} from "@/lib/ryd/ryd-decisions";
 import {
   RydConfidenceChip,
   RydProductionChip,
@@ -104,6 +108,7 @@ export function RydOrderDialog({
   claimedKeys,
   onClose,
   onChanged,
+  onApplied,
 }: {
   order: RydQueueOrder;
   submissions: RydSubmission[];
@@ -111,6 +116,7 @@ export function RydOrderDialog({
   claimedKeys: ReadonlySet<string>;
   onClose: () => void;
   onChanged: () => Promise<void>;
+  onApplied: (change: RydQueueChange) => void;
 }) {
   const [note, setNote] = useState(order.note ?? "");
   const [pending, setPending] = useState<string | null>(null);
@@ -144,13 +150,15 @@ export function RydOrderDialog({
 
   async function run(
     label: string,
-    action: () => Promise<unknown>,
+    action: () => Promise<RydQueueChange>,
     success: string,
   ) {
     setPending(label);
     try {
-      await action();
-      await onChanged();
+      const change = await action();
+      onApplied(change);
+      // Reload status belongs to the queue; this write is already confirmed.
+      void onChanged().catch(() => {});
       toast.success(success);
       return true;
     } catch (error) {
@@ -161,12 +169,8 @@ export function RydOrderDialog({
     }
   }
 
-  const base = `/api/ryd/orders/${encodeURIComponent(order.orderId)}`;
   const link = (submissionKey: string, source: "suggested" | "manual") =>
-    mutate(`${base}/links`, {
-      method: "POST",
-      body: JSON.stringify({ submissionKey, source }),
-    });
+    changeRydLinks(order.orderId, [submissionKey], true, source);
 
   async function decide(status: RydOrderStatus) {
     const saved = await run(
@@ -182,13 +186,7 @@ export function RydOrderDialog({
   const noteChanged = note.trim() !== (order.note ?? "");
 
   async function saveNote() {
-    if (
-      await run(
-        "note",
-        () => mutate(base, { method: "PATCH", body: JSON.stringify({ note, expectedUpdatedAt: order.updatedAt }) }),
-        "Note saved.",
-      )
-    )
+    if (await run("note", () => saveRydNote(order, note), "Note saved."))
       onClose();
   }
 
@@ -382,12 +380,11 @@ export function RydOrderDialog({
                           run(
                             `unlink:${submission.key}`,
                             () =>
-                              mutate(`${base}/links`, {
-                                method: "DELETE",
-                                body: JSON.stringify({
-                                  submissionKey: submission.key,
-                                }),
-                              }),
+                              changeRydLinks(
+                                order.orderId,
+                                [submission.key],
+                                false,
+                              ),
                             "Unlinked.",
                           )
                         }
