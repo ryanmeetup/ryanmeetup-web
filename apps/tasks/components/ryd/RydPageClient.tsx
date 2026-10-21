@@ -38,6 +38,11 @@ import {
   MetricLinkCard,
   WorkspacePageShell,
 } from "@/components/global";
+import { derivePagination } from "@/lib/pagination";
+import {
+  rydSubmitterSearchText,
+  sortRydSubmitters,
+} from "@/lib/ryd/submission-view";
 import { usePagination } from "@/hooks/usePagination";
 import { mutate } from "@/lib/mutation-client";
 import { errorMessage } from "@/lib/presentation";
@@ -263,14 +268,31 @@ export function RydPageClient({
   ).length;
   const followUp = useMemo(() => followUpOrders(queue), [queue]);
   const unmatched = useMemo(() => unmatchedSubmitters(queue), [queue]);
+  const {
+    query: submissionQuery,
+    setQuery: setSubmissionQuery,
+    filtered: matchingSubmitters,
+    isPending: submissionSearchPending,
+  } = useSearchFilter({
+    data: unmatched,
+    buildHaystack: rydSubmitterSearchText,
+    queryParam: "submissionSearch",
+  });
+  const sortedSubmitters = useMemo(
+    () => sortRydSubmitters(matchingSubmitters),
+    [matchingSubmitters],
+  );
   const selectableSubmitters = useMemo(
-    () => unmatched.filter((submitter) => isRydContactEmail(submitter.email)),
-    [unmatched],
+    () =>
+      sortedSubmitters.filter((submitter) =>
+        isRydContactEmail(submitter.email),
+      ),
+    [sortedSubmitters],
   );
 
   const contactable = useMemo(
-    () => contactableSubmitters(unmatched, queue.contacts),
-    [unmatched, queue.contacts],
+    () => contactableSubmitters(sortedSubmitters, queue.contacts),
+    [sortedSubmitters, queue.contacts],
   );
   const remindable = useMemo(() => remindableOrders(followUp), [followUp]);
   const statusFilter = RYD_STATUS_PARAMS[status];
@@ -291,12 +313,14 @@ export function RydPageClient({
     query,
     setQuery,
     filtered,
-    isPending: searchPending,
+    isPending: orderSearchPending,
   } = useSearchFilter({
     data: listed,
     buildHaystack: orderSearchText,
     queryParam: "search",
   });
+  const searchPending =
+    view === "unmatched" ? submissionSearchPending : orderSearchPending;
   const ryanPositions = useMemo(
     () => orderRyanPositions(queue.orders, queue.submissions),
     [queue.orders, queue.submissions],
@@ -326,14 +350,17 @@ export function RydPageClient({
   const emailableSelected = selectedOrders.filter(
     (order) => order.status !== "rejected" && order.email,
   );
-  const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
-  const currentPage = Math.min(page, totalPages);
-  const pageOrders = sorted.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize,
-  );
+  const totalCount =
+    view === "unmatched" ? sortedSubmitters.length : sorted.length;
+  const {
+    page: currentPage,
+    from,
+    to,
+  } = derivePagination(page, pageSize, totalCount);
+  const pageOrders = sorted.slice(from, to + 1);
+  const pageSubmitters = sortedSubmitters.slice(from, to + 1);
 
-  // Deciding orders can empty the last page; land on the one that's left.
+  // Saved changes can empty the last page; land on the one that's left.
   useEffect(() => {
     if (page !== currentPage) syncPage(currentPage);
   }, [currentPage, page, syncPage]);
@@ -341,8 +368,14 @@ export function RydPageClient({
     <Pagination
       page={currentPage}
       pageSize={pageSize}
-      totalCount={sorted.length}
-      itemLabel="orders"
+      totalCount={totalCount}
+      itemLabel={
+        view === "unmatched"
+          ? totalCount === 1
+            ? "person"
+            : "people"
+          : "orders"
+      }
       disabled={searchPending}
       onPageChange={setPage}
       onPageSizeChange={setPageSize}
@@ -738,10 +771,36 @@ export function RydPageClient({
                     </div>
                   )}
                 </div>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                  <div className="min-w-0 flex-1">
+                    <SearchInput
+                      label="Search submissions"
+                      hideLabel={false}
+                      name="submissionSearch"
+                      value={submissionQuery}
+                      onChange={(event) => {
+                        setSubmissionQuery(event.target.value);
+                        setPage(1);
+                      }}
+                      placeholder="Search by Ryan, email, or answer..."
+                      pending={submissionSearchPending}
+                      pendingLabel="Loading submission results"
+                    />
+                  </div>
+                  {submissionQuery && (
+                    <ClearFiltersButton
+                      className="self-start sm:self-center"
+                      onClick={() => {
+                        setSubmissionQuery("");
+                        setPage(1);
+                      }}
+                    />
+                  )}
+                </div>
                 {selectableSubmitters.length > 0 && (
                   <RydSelectionBar
                     total={selectableSubmitters.length}
-                    scope="All contactable unmatched people in this view"
+                    scope="All contactable people matching this search, across pages"
                     selectedCount={selectedSubmitters.length}
                     disabled={
                       searchPending ||
@@ -797,39 +856,49 @@ export function RydPageClient({
                     </Button>
                   </RydSelectionBar>
                 )}
-                {unmatched.length === 0 && (
-                  <EmptyState
-                    className="py-12"
-                    message={
-                      queue.sheet.status === "ok"
-                        ? "Every form submission is paired with an order."
-                        : "No form submissions to show."
+                <PendingResults
+                  pending={submissionSearchPending}
+                  label="Loading submission results"
+                >
+                  {sortedSubmitters.length === 0 && (
+                    <EmptyState
+                      className="py-12"
+                      message={
+                        submissionQuery.trim()
+                          ? "No submissions match this search. Try another name, email, or answer."
+                          : queue.sheet.status === "ok"
+                            ? "Every form submission is paired with an order."
+                            : "No form submissions to show."
+                      }
+                    />
+                  )}
+                  <RydUnmatchedView
+                    submitters={pageSubmitters}
+                    footer={
+                      sortedSubmitters.length > 0 ? pagination : undefined
                     }
+                    dismissed={queue.dismissed}
+                    contacts={queue.contacts}
+                    layout={unmatchedLayout}
+                    orderOptions={orderOptions}
+                    linking={linking}
+                    busy={dismissing}
+                    contacting={contacting}
+                    onLink={linkSubmitter}
+                    onMarkContacted={(email) => markContacted([email])}
+                    selection={{
+                      selected: selectedSubmitterKeys,
+                      onToggle: toggleSubmitter,
+                      disabled:
+                        searchPending ||
+                        contacting !== null ||
+                        linking !== null ||
+                        dismissing !== null,
+                    }}
+                    onRemove={setRemoving}
+                    onRestore={(submission) => setDismissed(submission, true)}
                   />
-                )}
-                <RydUnmatchedView
-                  submitters={unmatched}
-                  dismissed={queue.dismissed}
-                  contacts={queue.contacts}
-                  layout={unmatchedLayout}
-                  orderOptions={orderOptions}
-                  linking={linking}
-                  busy={dismissing}
-                  contacting={contacting}
-                  onLink={linkSubmitter}
-                  onMarkContacted={(email) => markContacted([email])}
-                  selection={{
-                    selected: selectedSubmitterKeys,
-                    onToggle: toggleSubmitter,
-                    disabled:
-                      searchPending ||
-                      contacting !== null ||
-                      linking !== null ||
-                      dismissing !== null,
-                  }}
-                  onRemove={setRemoving}
-                  onRestore={(submission) => setDismissed(submission, true)}
-                />
+                </PendingResults>
               </section>
             ) : (
               <section

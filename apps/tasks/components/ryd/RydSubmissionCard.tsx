@@ -15,6 +15,7 @@ import {
 import { Spinner } from "@ryanmeetup/ui";
 import type { RydSubmission } from "@/lib/ryd/matching";
 import type { SocialLink } from "@/lib/ryd/normalize";
+import { rydSubmissionFileIds } from "@/lib/ryd/submission-view";
 
 export const PLATFORM_ICONS: Record<SocialLink["platform"], ReactNode> = {
   instagram: <FiInstagram aria-hidden />,
@@ -102,11 +103,53 @@ export function RydCardFooter({ children }: { children: ReactNode }) {
   );
 }
 
+/** Private evidence uses the session-bound proxy in both presentations. */
+export function RydEvidenceFiles({
+  fileIds,
+  links = false,
+}: {
+  fileIds: string[];
+  links?: boolean;
+}) {
+  const unique = rydSubmissionFileIds([{ fileIds }]);
+  if (!unique.length) return null;
+  if (links)
+    return (
+      <ul
+        className="mt-2 flex flex-wrap gap-3 text-sm"
+        aria-label="Previously shown uploads"
+      >
+        {unique.map((fileId, index) => (
+          <li key={fileId}>
+            <a
+              href={`/api/ryd/evidence/${encodeURIComponent(fileId)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/40"
+            >
+              <FiFile aria-hidden /> Shared file {index + 1}{" "}
+              <FiExternalLink aria-hidden />
+            </a>
+          </li>
+        ))}
+      </ul>
+    );
+  return (
+    <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-4">
+      {unique.map((fileId, index) => (
+        <EvidenceTile key={fileId} fileId={fileId} index={index} />
+      ))}
+    </div>
+  );
+}
+
 export function RydSubmissionCard({
   submission,
   badge,
   action,
   footer,
+  evidence,
+  showFullSocialAnswer = false,
 }: {
   submission: RydSubmission;
   /** Sits beside the name, such as how often they've been contacted. */
@@ -114,14 +157,19 @@ export function RydSubmissionCard({
   action?: ReactNode;
   /** Actions under the evidence, set off by a rule. */
   footer?: ReactNode;
+  /** Grouped responses can link back to uploads already previewed above. */
+  evidence?: ReactNode;
+  showFullSocialAnswer?: boolean;
 }) {
-  const note = noteText(submission.socialText);
+  const note = showFullSocialAnswer
+    ? submission.socialText.trim()
+    : noteText(submission.socialText);
   return (
-    <article className="rounded-2xl border border-black/10 bg-black/[0.02] p-4 dark:border-white/10 dark:bg-white/[0.03]">
+    <article className="min-w-0 wrap-anywhere rounded-2xl border border-black/10 bg-black/[0.02] p-4 dark:border-white/10 dark:bg-white/[0.03]">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="font-semibold">
+            <p className="wrap-anywhere font-semibold">
               {submission.legalName || "No name given"}
             </p>
             {badge}
@@ -146,26 +194,20 @@ export function RydSubmissionCard({
         )}
       </div>
 
-      {submission.fileIds.length > 0 && (
-        <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-4">
-          {submission.fileIds.map((fileId, index) => (
-            <EvidenceTile key={fileId} fileId={fileId} index={index} />
-          ))}
-        </div>
-      )}
+      {evidence ?? <RydEvidenceFiles fileIds={submission.fileIds} />}
 
       {submission.socialLinks.length > 0 && (
         <ul className="mt-4 flex flex-wrap gap-2" aria-label="Social links">
           {submission.socialLinks.map((link) => (
-            <li key={link.url}>
+            <li key={link.url} className="min-w-0 max-w-full">
               <a
                 href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-full border border-black/10 px-3 py-1 text-xs font-semibold text-black/75 transition hover:border-black/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:border-white/10 dark:text-white/75 dark:hover:border-white/30 dark:focus-visible:ring-white/40"
+                className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-black/10 px-3 py-1 text-xs font-semibold text-black/75 transition hover:border-black/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:border-white/10 dark:text-white/75 dark:hover:border-white/30 dark:focus-visible:ring-white/40 [&_svg]:shrink-0"
               >
                 {PLATFORM_ICONS[link.platform]}
-                {link.label}
+                <span className="min-w-0 wrap-anywhere">{link.label}</span>
                 <FiExternalLink aria-hidden className="opacity-60" />
               </a>
             </li>
@@ -174,19 +216,20 @@ export function RydSubmissionCard({
       )}
 
       {note && (
-        <blockquote className="mt-4 whitespace-pre-line border-l-2 border-black/15 pl-3 text-sm text-black/70 dark:border-white/15 dark:text-white/70">
+        <blockquote className="mt-4 whitespace-pre-line wrap-anywhere border-l-2 border-black/15 pl-3 text-sm text-black/70 dark:border-white/15 dark:text-white/70">
           {note}
         </blockquote>
       )}
 
       {submission.otherAnswers.length > 0 && (
         <dl className="mt-4 space-y-3 border-t border-black/10 pt-4 dark:border-white/10">
-          {submission.otherAnswers.map((entry) => (
-            <div key={entry.question}>
-              <dt className="text-xs font-semibold uppercase tracking-[0.16em] text-black/60 dark:text-white/60">
+          {submission.otherAnswers.map((entry, index) => (
+            // Question titles may repeat; these parsed answers have no question ID.
+            <div key={`${index}:${entry.question}`}>
+              <dt className="wrap-anywhere text-xs font-semibold uppercase tracking-[0.16em] text-black/60 dark:text-white/60">
                 {entry.question}
               </dt>
-              <dd className="mt-1 whitespace-pre-line break-words text-sm">
+              <dd className="mt-1 whitespace-pre-line wrap-anywhere text-sm">
                 {entry.answer}
               </dd>
             </div>

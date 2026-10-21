@@ -66,6 +66,10 @@ Large production selections save in bounded groups with visible progress and saf
 
 Refresh picks up new form responses without leaving the queue. Confirmed reviews, pairings, settings, and removed responses stay visible if reloading fails, with a clear retry action.
 
+### Read every unmatched response
+
+Both submission layouts now offer complete response details, including every upload and answer. Shared uploads appear once, people stay together across pages, and search finds names, emails, and form answers. Bulk selections follow the filtered people across pages.
+
 ### Faster RY-D evidence loading
 
 Evidence thumbnails share brief form reads, so opening several uploads no longer reloads every form answer for each file. Google requests time out and stop when their readers cancel, while each file still requires current RY-D access.

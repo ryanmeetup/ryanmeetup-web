@@ -1,11 +1,12 @@
 "use client";
 
-import { useId, useMemo, useState, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 import {
   FiCheck,
   FiChevronDown,
   FiExternalLink,
   FiGrid,
+  FiEye,
   FiList,
   FiRotateCcw,
   FiTrash2,
@@ -19,6 +20,8 @@ import {
 } from "@ryanmeetup/ui";
 import type { RydSubmission, RydSubmitter } from "@/lib/ryd/matching";
 import type { RydQueue } from "@/lib/ryd/queue-types";
+import { rydSubmissionFileIds } from "@/lib/ryd/submission-view";
+import { RydResponseCards, RydSubmissionDetails } from "./RydSubmissionDetails";
 import { isRydContactEmail } from "@/lib/ryd/normalize";
 import { RydSelectCheckbox } from "./RydSelection";
 import { RydContactedChip } from "./RydStatusChip";
@@ -39,13 +42,6 @@ const LAYOUTS = [
 
 /** Thumbnails a table row shows before it summarizes the rest. */
 const ROW_TILES = 4;
-
-function latestTime(submitter: RydSubmitter) {
-  return Math.max(
-    0,
-    ...submitter.submissions.map((s) => Date.parse(s.submittedAtIso) || 0),
-  );
-}
 
 export function RydUnmatchedLayoutToggle({
   layout,
@@ -93,8 +89,11 @@ export function RydUnmatchedView({
   onRestore,
   onMarkContacted,
   selection,
+  footer,
 }: {
+  /** Already sorted and paginated as whole people. */
   submitters: RydSubmitter[];
+  footer?: ReactNode;
   dismissed: RydSubmission[];
   contacts: RydQueue["contacts"];
   layout: RydUnmatchedLayout;
@@ -115,33 +114,42 @@ export function RydUnmatchedView({
     disabled?: boolean;
   };
 }) {
-  const newestFirst = useMemo(
-    () => [...submitters].sort((a, b) => latestTime(b) - latestTime(a)),
-    [submitters],
-  );
+  const [detailsKey, setDetailsKey] = useState<string | null>(null);
+  const details = submitters.find((submitter) => submitter.key === detailsKey);
   const results =
     layout === "cards" ? (
       <UnmatchedCards
-        submitters={newestFirst}
+        submitters={submitters}
         contacts={contacts}
         linkControl={linkControl}
         removeControl={removeControl}
         contactControl={contactControl}
         selectControl={selectControl}
+        detailControl={detailControl}
       />
     ) : (
       <UnmatchedTable
-        submitters={newestFirst}
+        submitters={submitters}
         contacts={contacts}
         linkControl={linkControl}
         removeControl={removeControl}
         contactControl={contactControl}
         selectControl={selectControl}
+        detailControl={detailControl}
       />
     );
   return (
     <div className="space-y-6">
-      {submitters.length > 0 && results}
+      {submitters.length > 0 && (
+        <div inert={selection.disabled || undefined}>{results}</div>
+      )}
+      {footer}
+      {details && (
+        <RydSubmissionDetails
+          submitter={details}
+          onClose={() => setDetailsKey(null)}
+        />
+      )}
       {dismissed.length > 0 && (
         <RemovedResponses
           dismissed={dismissed}
@@ -152,13 +160,46 @@ export function RydUnmatchedView({
     </div>
   );
 
+  function detailControl(submitter: RydSubmitter, remainingFiles?: number) {
+    const name =
+      submitter.submissions.find((s) => s.legalName)?.legalName ||
+      submitter.email ||
+      "unnamed submitter";
+    return (
+      <Button
+        type="button"
+        size="xs"
+        variant="ghost"
+        leftIcon={
+          remainingFiles === undefined ? <FiEye aria-hidden /> : undefined
+        }
+        aria-label={
+          remainingFiles === undefined
+            ? `View responses from ${name}`
+            : `View all uploaded files from ${name}`
+        }
+        disabled={selection.disabled}
+        onClick={() => setDetailsKey(submitter.key)}
+      >
+        {remainingFiles === undefined
+          ? "View responses"
+          : `+${remainingFiles} more`}
+      </Button>
+    );
+  }
+
   function removeControl(submission: RydSubmission) {
     return (
       <IconButton
         label={`Remove the response sent ${submission.submittedAt || "without a date"}`}
         variant="danger"
         size="sm"
-        disabled={busy !== null || linking !== null || contacting !== null}
+        disabled={
+          selection.disabled ||
+          busy !== null ||
+          linking !== null ||
+          contacting !== null
+        }
         onClick={() => onRemove(submission)}
       >
         <FiTrash2 aria-hidden />
@@ -233,6 +274,10 @@ type Controls = {
   removeControl: (submission: RydSubmission) => ReactNode;
   contactControl: (submitter: RydSubmitter) => ReactNode;
   selectControl: (submitter: RydSubmitter) => ReactNode;
+  detailControl: (
+    submitter: RydSubmitter,
+    remainingFiles?: number,
+  ) => ReactNode;
 };
 
 /**
@@ -247,6 +292,7 @@ function UnmatchedCards({
   removeControl,
   contactControl,
   selectControl,
+  detailControl,
 }: Controls) {
   return (
     <div className="columns-1 gap-4 xl:columns-2 2xl:columns-3">
@@ -261,6 +307,7 @@ function UnmatchedCards({
                 <>
                   {linkControl(submitter)}
                   {contactControl(submitter)}
+                  {detailControl(submitter)}
                   <span className="ml-auto">
                     {removeControl(submitter.submissions[0])}
                   </span>
@@ -283,18 +330,16 @@ function UnmatchedCards({
               </div>
               {selectControl(submitter)}
             </div>
-            {submitter.submissions.map((submission) => (
-              <RydSubmissionCard
-                key={submission.key}
-                submission={submission}
-                footer={
-                  <span className="ml-auto">{removeControl(submission)}</span>
-                }
-              />
-            ))}
+            <RydResponseCards
+              submissions={submitter.submissions}
+              footer={(submission) => (
+                <span className="ml-auto">{removeControl(submission)}</span>
+              )}
+            />
             <RydCardFooter>
               {linkControl(submitter)}
               {contactControl(submitter)}
+              {detailControl(submitter)}
             </RydCardFooter>
           </section>
         ),
@@ -310,19 +355,25 @@ function UnmatchedTable({
   removeControl,
   contactControl,
   selectControl,
+  detailControl,
 }: Controls) {
   return (
     <div className="overflow-hidden rounded-2xl border border-black/10 dark:border-white/10">
-      <div className="overflow-x-auto">
+      <div
+        className="overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/30 dark:focus-visible:ring-white/40"
+        role="region"
+        aria-label="Unmatched submission table"
+        tabIndex={0}
+      >
         <table className="w-full min-w-[920px] table-fixed text-left text-sm">
           <caption className="sr-only">Unmatched submissions</caption>
           <colgroup>
             <col className="w-10" />
-            <col className="w-[22%]" />
-            <col className="w-[13%]" />
-            <col className="w-[21%]" />
-            <col className="w-[22%]" />
             <col className="w-[18%]" />
+            <col className="w-[13%]" />
+            <col className="w-[20%]" />
+            <col className="w-[21%]" />
+            <col className="w-[24%]" />
           </colgroup>
           <thead className="border-b border-black/10 bg-black/[0.025] text-[10px] uppercase tracking-[0.16em] text-black/60 dark:border-white/10 dark:bg-white/[0.025] dark:text-white/60">
             <tr>
@@ -344,7 +395,7 @@ function UnmatchedTable({
               const name =
                 submissions.find((s) => s.legalName)?.legalName ||
                 "No name given";
-              const fileIds = submissions.flatMap((s) => s.fileIds);
+              const fileIds = rydSubmissionFileIds(submissions);
               // A second response often repeats the first one's links.
               const links = [
                 ...new Map(
@@ -397,16 +448,21 @@ function UnmatchedTable({
                   </td>
                   <td className="px-3 py-2.5">
                     {fileIds.length ? (
-                      <div className="flex items-center gap-1.5">
-                        {fileIds.slice(0, ROW_TILES).map((fileId, index) => (
-                          <div key={fileId} className="w-10 shrink-0">
-                            <EvidenceTile fileId={fileId} index={index} />
-                          </div>
-                        ))}
+                      <div className="space-y-1.5">
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {fileIds.slice(0, ROW_TILES).map((fileId, index) => (
+                            <div key={fileId} className="min-w-0">
+                              <EvidenceTile fileId={fileId} index={index} />
+                            </div>
+                          ))}
+                        </div>
                         {fileIds.length > ROW_TILES && (
-                          <span className="text-xs font-semibold text-black/70 dark:text-white/70">
-                            +{fileIds.length - ROW_TILES}
-                          </span>
+                          <div>
+                            {detailControl(
+                              submitter,
+                              fileIds.length - ROW_TILES,
+                            )}
+                          </div>
                         )}
                       </div>
                     ) : (
@@ -456,9 +512,10 @@ function UnmatchedTable({
                     )}
                   </td>
                   <td className="px-4 py-2.5">
-                    <div className="flex flex-col items-end gap-2">
+                    <div className="flex flex-col items-end gap-2 whitespace-nowrap">
                       {linkControl(submitter)}
                       {contactControl(submitter)}
+                      {detailControl(submitter)}
                     </div>
                   </td>
                 </tr>
