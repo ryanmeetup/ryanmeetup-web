@@ -61,6 +61,16 @@ drop trigger test_audit_failure on public.ryd_order_events;
 
 select ok(not has_function_privilege('authenticated', 'public.ryd_review_order(uuid,text,jsonb,text,text[])','EXECUTE'), 'members cannot call privileged RPCs directly');
 select ok(not has_function_privilege('anon', 'public.ryd_set_production(uuid,text[],text)','EXECUTE'), 'anonymous callers cannot call production RPCs');
+insert into public.access_groups(id,name,kind,created_by) values
+  ('10000000-0000-4000-8000-000000000201','RY-D transaction test team','team','00000000-0000-4000-8000-000000000201');
+insert into public.access_group_members(group_id,profile_id,added_by) values
+  ('10000000-0000-4000-8000-000000000201','00000000-0000-4000-8000-000000000202','00000000-0000-4000-8000-000000000201');
+insert into public.workspace_area_group_grants(area,group_id,granted_by) values
+  ('ryd','10000000-0000-4000-8000-000000000201','00000000-0000-4000-8000-000000000201');
+set local role service_role;
+select lives_ok($$select public.ryd_review_order('00000000-0000-4000-8000-000000000202', 'test-1', '{"note":"Reviewed by the delegated team"}')$$, 'service role can execute a transaction for an authorized non-owner');
+set local role postgres;
+delete from public.workspace_area_group_grants where area='ryd' and group_id='10000000-0000-4000-8000-000000000201';
 select throws_ok($$select public.ryd_review_order('00000000-0000-4000-8000-000000000202', 'test-1', '{"status":"verified"}')$$, '42501', 'RY-D access is required.', 'actor must have real page authority');
 delete from public.workspace_area_group_grants where area='ryd';
 delete from public.workspace_area_access where area='ryd';

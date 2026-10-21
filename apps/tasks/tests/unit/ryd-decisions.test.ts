@@ -10,14 +10,28 @@ describe("RY-D decisions", () => {
   it("accepts the complete suggested evidence and status in a single request", async () => {
     const order: RydQueueOrder = {
       orderId: "123",
-      salesOrder: "", orderedAt: "", firstName: "Ryan", lastName: "Example",
-      email: "ryan@example.com", displayEmail: "ryan@example.com", total: "",
+      salesOrder: "",
+      orderedAt: "",
+      firstName: "Ryan",
+      lastName: "Example",
+      email: "ryan@example.com",
+      displayEmail: "ryan@example.com",
+      total: "",
       status: "pending",
-      note: null, decidedAt: null, decidedBy: null, lastEmailedAt: null,
-      sentToFulfillment: false, productionSentAt: null, doneAt: null,
+      note: null,
+      decidedAt: null,
+      decidedBy: null,
+      lastEmailedAt: null,
+      sentToFulfillment: false,
+      productionSentAt: null,
+      doneAt: null,
       updatedAt: "2026-10-20T12:00:00Z",
       linkedKeys: [],
-      suggestion: { email: "ryan@example.com", confidence: "strong", reasons: [] },
+      suggestion: {
+        email: "ryan@example.com",
+        confidence: "strong",
+        reasons: [],
+      },
     };
     const submissions = [
       { key: "first-response", email: "ryan@example.com" },
