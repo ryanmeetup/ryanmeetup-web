@@ -1,4 +1,5 @@
 import nextEnv from "@next/env";
+import { checkRydContract } from "./check-ryd-contract.mjs";
 
 nextEnv.loadEnvConfig(process.cwd());
 
@@ -139,6 +140,27 @@ const projectDatesResponse = await fetch(
 if (!projectDatesResponse.ok) {
   console.error(
     "Database contract preflight failed: project start and due dates are missing.",
+  );
+  process.exit(1);
+}
+
+try {
+  await checkRydContract((path, init = {}) =>
+    fetch(`${url}/rest/v1/${path}`, {
+      ...init,
+      headers: {
+        apikey: secret,
+        authorization: `Bearer ${secret}`,
+        "content-type": "application/json",
+      },
+      signal: AbortSignal.timeout(15_000),
+      cache: "no-store",
+    }),
+  );
+} catch (error) {
+  console.error(
+    `Database contract preflight failed for ${projectRef}:`,
+    error instanceof Error ? error.message : "RY-D could not be checked.",
   );
   process.exit(1);
 }
