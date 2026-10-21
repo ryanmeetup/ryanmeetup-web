@@ -78,6 +78,7 @@ import {
 } from "./RydDialogs";
 import { RydOrderDialog } from "./RydOrderDialog";
 import { RydOrderTable } from "./RydOrderTable";
+import { RydSelectionBar } from "./RydSelection";
 import {
   RYD_PRODUCTION_ICONS,
   RYD_STATUS_ICONS,
@@ -156,7 +157,14 @@ const STATUS_OPTIONS = Object.keys(RYD_STATUS_PARAMS).map((value) => {
 });
 
 type Dialog =
-  "upload" | "send" | "remind" | "unmatched-email" | "settings" | null;
+  | "upload"
+  | "send"
+  | "remind"
+  | "remind-selected"
+  | "unmatched-email"
+  | "unmatched-email-selected"
+  | "settings"
+  | null;
 
 export function RydPageClient({
   initialData,
@@ -186,11 +194,16 @@ export function RydPageClient({
   const [productionParam, setProductionParam] =
     useQueryParamState("production");
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
+  const [selectedEmails, setSelectedEmails] = useState<ReadonlySet<string>>(
+    new Set(),
+  );
   const [moving, setMoving] = useState<string | null>(null);
   const view = rydView(viewParam);
   const status = rydStatusParam(statusParam);
-  // Verified orders get checkboxes, to move them through production in bulk.
+  // Verified orders get checkboxes, to move them through production in bulk;
+  // Follow-up's, to email just some of the buyers.
   const producing = view === "queue" && status === "verified";
+  const selectable = producing || view === "follow-up";
   const production = producing ? rydProductionParam(productionParam) : null;
   const sort = rydSortParam(sortParam);
   const unmatchedLayout = layoutParam === "table" ? "table" : "cards";
@@ -272,11 +285,21 @@ export function RydPageClient({
   // rows the reviewer can't see.
   const selectedOrders = useMemo(
     () =>
-      producing ? sorted.filter((order) => selected.has(order.orderId)) : [],
-    [producing, sorted, selected],
+      selectable ? sorted.filter((order) => selected.has(order.orderId)) : [],
+    [selectable, sorted, selected],
   );
-  const allSelected =
-    sorted.length > 0 && selectedOrders.length === sorted.length;
+  const selectedSubmitters = useMemo(
+    () =>
+      view === "unmatched"
+        ? unmatched.filter((submitter) => selectedEmails.has(submitter.email))
+        : [],
+    [view, unmatched, selectedEmails],
+  );
+  // Ticked by hand overrides the day's pause, but a rejected order is never
+  // emailed.
+  const emailableSelected = selectedOrders.filter(
+    (order) => order.status !== "rejected" && order.email,
+  );
   const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
   const currentPage = Math.min(page, totalPages);
   const pageOrders = sorted.slice(
@@ -325,14 +348,17 @@ export function RydPageClient({
     [queue.orders],
   );
 
-  function toggleSelected(orderId: string) {
-    setSelected((current) => {
-      const next = new Set(current);
-      if (next.has(orderId)) next.delete(orderId);
-      else next.add(orderId);
-      return next;
-    });
+  function toggleIn(setter: typeof setSelected): (value: string) => void {
+    return (value) =>
+      setter((current) => {
+        const next = new Set(current);
+        if (next.has(value)) next.delete(value);
+        else next.add(value);
+        return next;
+      });
   }
+  const toggleSelected = toggleIn(setSelected);
+  const toggleSubmitter = toggleIn(setSelectedEmails);
 
   /**
    * Move the selected orders a step. Each target only takes the orders it
@@ -383,6 +409,14 @@ export function RydPageClient({
 
   const selectedStages = new Set(selectedOrders.map(rydProductionStage));
 
+  function toggleAllOrders() {
+    setSelected(
+      selectedOrders.length === sorted.length
+        ? new Set()
+        : new Set(sorted.map((order) => order.orderId)),
+    );
+  }
+
   /** The row's Email opens a draft in the reviewer's mail app; this records it. */
   async function markEmailed(order: RydQueueOrder) {
     try {
@@ -421,16 +455,24 @@ export function RydPageClient({
     }
   }
 
-  /** One more contact attempt to a single unmatched submitter. */
-  async function markContacted(email: string) {
-    setContacting(email);
+  /**
+   * One more contact attempt to each of these unmatched submitters. A bulk
+   * mark holds every control without spinning any one card's button.
+   */
+  async function markContacted(emails: string[], bulk = false) {
+    setContacting(bulk ? "*" : emails[0]);
     try {
       await mutate("/api/ryd/submitter-contacts", {
         method: "POST",
-        body: JSON.stringify({ emails: [email] }),
+        body: JSON.stringify({ emails }),
       });
       await refresh();
-      toast.success(`Marked ${email} as contacted.`);
+      if (bulk) setSelectedEmails(new Set());
+      toast.success(
+        emails.length === 1
+          ? `Marked ${emails[0]} as contacted.`
+          : `Marked ${emails.length} people as contacted.`,
+      );
     } catch (error) {
       toast.error(errorMessage(error, "That contact couldn't be recorded."));
     } finally {
@@ -658,6 +700,53 @@ export function RydPageClient({
                     </div>
                   )}
                 </div>
+                {unmatched.length > 0 && (
+                  <RydSelectionBar
+                    total={unmatched.length}
+                    selectedCount={selectedSubmitters.length}
+                    disabled={contacting !== null}
+                    onToggleAll={() =>
+                      setSelectedEmails(
+                        selectedSubmitters.length === unmatched.length
+                          ? new Set()
+                          : new Set(unmatched.map((s) => s.email)),
+                      )
+                    }
+                  >
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      className="w-full sm:w-auto"
+                      leftIcon={<FiMail aria-hidden />}
+                      disabled={
+                        contacting !== null || !selectedSubmitters.length
+                      }
+                      onClick={() => setDialog("unmatched-email-selected")}
+                    >
+                      Email selected
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="w-full sm:w-auto"
+                      leftIcon={<FiCheckSquare aria-hidden />}
+                      disabled={
+                        contacting !== null || !selectedSubmitters.length
+                      }
+                      loading={contacting === "*"}
+                      loadingText="Marking..."
+                      onClick={() =>
+                        markContacted(
+                          selectedSubmitters.map((s) => s.email),
+                          true,
+                        )
+                      }
+                    >
+                      Mark contacted
+                    </Button>
+                  </RydSelectionBar>
+                )}
                 {unmatched.length === 0 && (
                   <EmptyState
                     className="py-12"
@@ -678,7 +767,12 @@ export function RydPageClient({
                   busy={dismissing}
                   contacting={contacting}
                   onLink={linkSubmitter}
-                  onMarkContacted={markContacted}
+                  onMarkContacted={(email) => markContacted([email])}
+                  selection={{
+                    selected: selectedEmails,
+                    onToggle: toggleSubmitter,
+                    disabled: contacting !== null,
+                  }}
                   onRemove={setRemoving}
                   onRestore={(submission) => setDismissed(submission, true)}
                 />
@@ -789,84 +883,92 @@ export function RydPageClient({
                       })}
                     </div>
                     {sorted.length > 0 && (
-                      <div className="flex flex-col gap-3 rounded-2xl border border-black/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-white/10">
-                        <label className="flex items-center gap-3 text-sm font-semibold">
-                          <input
-                            type="checkbox"
-                            className="h-4 w-4"
-                            checked={allSelected}
-                            ref={(input) => {
-                              if (input)
-                                input.indeterminate =
-                                  selectedOrders.length > 0 && !allSelected;
-                            }}
-                            disabled={searchPending || moving !== null}
-                            onChange={() =>
-                              setSelected(
-                                allSelected
-                                  ? new Set()
-                                  : new Set(sorted.map((o) => o.orderId)),
-                              )
-                            }
-                          />
-                          {selectedOrders.length
-                            ? `${selectedOrders.length} of ${sorted.length} selected`
-                            : `Select all ${sorted.length}`}
-                        </label>
-                        <div className="flex flex-col gap-2 sm:flex-row">
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="secondary"
-                            className="w-full sm:w-auto"
-                            leftIcon={<FiPackage aria-hidden />}
-                            disabled={
-                              moving !== null ||
-                              !selectedStages.has("not-started")
-                            }
-                            loading={moving === "sent"}
-                            onClick={() => moveSelected("sent")}
-                          >
-                            Sent for production
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            className="w-full sm:w-auto"
-                            leftIcon={<FiCheckSquare aria-hidden />}
-                            disabled={
-                              moving !== null ||
-                              !selectedOrders.length ||
-                              (selectedStages.size === 1 &&
-                                selectedStages.has("done"))
-                            }
-                            loading={moving === "done"}
-                            onClick={() => moveSelected("done")}
-                          >
-                            Done
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            className="w-full sm:w-auto"
-                            leftIcon={<FiCornerUpLeft aria-hidden />}
-                            disabled={
-                              moving !== null ||
-                              !(
-                                selectedStages.has("in-production") ||
-                                selectedStages.has("done")
-                              )
-                            }
-                            loading={moving === "back"}
-                            onClick={() => moveSelected("back")}
-                          >
-                            Move back
-                          </Button>
-                        </div>
-                      </div>
+                      <RydSelectionBar
+                        total={sorted.length}
+                        selectedCount={selectedOrders.length}
+                        disabled={searchPending || moving !== null}
+                        onToggleAll={toggleAllOrders}
+                      >
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          className="w-full sm:w-auto"
+                          leftIcon={<FiPackage aria-hidden />}
+                          disabled={
+                            moving !== null ||
+                            !selectedStages.has("not-started")
+                          }
+                          loading={moving === "sent"}
+                          onClick={() => moveSelected("sent")}
+                        >
+                          Sent for production
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="w-full sm:w-auto"
+                          leftIcon={<FiCheckSquare aria-hidden />}
+                          disabled={
+                            moving !== null ||
+                            !selectedOrders.length ||
+                            (selectedStages.size === 1 &&
+                              selectedStages.has("done"))
+                          }
+                          loading={moving === "done"}
+                          onClick={() => moveSelected("done")}
+                        >
+                          Done
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="w-full sm:w-auto"
+                          leftIcon={<FiCornerUpLeft aria-hidden />}
+                          disabled={
+                            moving !== null ||
+                            !(
+                              selectedStages.has("in-production") ||
+                              selectedStages.has("done")
+                            )
+                          }
+                          loading={moving === "back"}
+                          onClick={() => moveSelected("back")}
+                        >
+                          Move back
+                        </Button>
+                      </RydSelectionBar>
                     )}
                   </div>
+                )}
+                {view === "follow-up" && sorted.length > 0 && (
+                  <RydSelectionBar
+                    total={sorted.length}
+                    selectedCount={selectedOrders.length}
+                    disabled={searchPending}
+                    onToggleAll={toggleAllOrders}
+                  >
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      className="w-full sm:w-auto"
+                      leftIcon={<FiMail aria-hidden />}
+                      disabled={!emailableSelected.length}
+                      title={
+                        selectedOrders.length && !emailableSelected.length
+                          ? "Rejected orders are never emailed."
+                          : undefined
+                      }
+                      onClick={() => setDialog("remind-selected")}
+                    >
+                      Email selected
+                      {selectedOrders.length
+                        ? ` (${emailableSelected.length})`
+                        : ""}
+                    </Button>
+                  </RydSelectionBar>
                 )}
                 <PendingResults pending={searchPending} label="Loading orders">
                   {filtered.length === 0 ? (
@@ -897,8 +999,9 @@ export function RydPageClient({
                       followUp={view === "follow-up"}
                       onEmailed={markEmailed}
                       onReview={(order) => setOpenOrderId(order.orderId)}
+                      production={producing}
                       selection={
-                        producing
+                        selectable
                           ? {
                               selected,
                               onToggle: toggleSelected,
@@ -953,18 +1056,35 @@ export function RydPageClient({
           onChanged={refresh}
         />
       )}
-      {dialog === "remind" && (
+      {(dialog === "remind" || dialog === "remind-selected") && (
         <RydRemindDialog
-          orders={remindable}
+          {...(dialog === "remind-selected"
+            ? {
+                orders: emailableSelected,
+                title: `Email ${emailableSelected.length} selected`,
+              }
+            : { orders: remindable })}
           onClose={() => setDialog(null)}
-          onChanged={refresh}
+          onChanged={async () => {
+            await refresh();
+            setSelected(new Set());
+          }}
         />
       )}
-      {dialog === "unmatched-email" && (
+      {(dialog === "unmatched-email" ||
+        dialog === "unmatched-email-selected") && (
         <RydUnmatchedEmailDialog
-          submitters={contactable}
+          {...(dialog === "unmatched-email-selected"
+            ? {
+                submitters: selectedSubmitters,
+                title: `Email ${selectedSubmitters.length} selected`,
+              }
+            : { submitters: contactable })}
           onClose={() => setDialog(null)}
-          onChanged={refresh}
+          onChanged={async () => {
+            await refresh();
+            setSelectedEmails(new Set());
+          }}
         />
       )}
       {dialog === "settings" && (

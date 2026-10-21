@@ -19,6 +19,7 @@ import {
 } from "@ryanmeetup/ui";
 import type { RydSubmission, RydSubmitter } from "@/lib/ryd/matching";
 import type { RydQueue } from "@/lib/ryd/queue-types";
+import { RydSelectCheckbox } from "./RydSelection";
 import { RydContactedChip } from "./RydStatusChip";
 import {
   EvidenceTile,
@@ -90,6 +91,7 @@ export function RydUnmatchedView({
   onRemove,
   onRestore,
   onMarkContacted,
+  selection,
 }: {
   submitters: RydSubmitter[];
   dismissed: RydSubmission[];
@@ -105,6 +107,12 @@ export function RydUnmatchedView({
   onRemove: (submission: RydSubmission) => void;
   onRestore: (submission: RydSubmission) => void;
   onMarkContacted: (email: string) => void;
+  /** Submitter emails ticked for the bulk actions above the list. */
+  selection: {
+    selected: ReadonlySet<string>;
+    onToggle: (email: string) => void;
+    disabled?: boolean;
+  };
 }) {
   const newestFirst = useMemo(
     () => [...submitters].sort((a, b) => latestTime(b) - latestTime(a)),
@@ -118,6 +126,7 @@ export function RydUnmatchedView({
         linkControl={linkControl}
         removeControl={removeControl}
         contactControl={contactControl}
+        selectControl={selectControl}
       />
     ) : (
       <UnmatchedTable
@@ -126,6 +135,7 @@ export function RydUnmatchedView({
         linkControl={linkControl}
         removeControl={removeControl}
         contactControl={contactControl}
+        selectControl={selectControl}
       />
     );
   return (
@@ -175,6 +185,20 @@ export function RydUnmatchedView({
     );
   }
 
+  function selectControl(submitter: RydSubmitter) {
+    const name =
+      submitter.submissions.find((s) => s.legalName)?.legalName ||
+      submitter.email;
+    return (
+      <RydSelectCheckbox
+        label={`Select ${name}`}
+        checked={selection.selected.has(submitter.email)}
+        disabled={selection.disabled}
+        onToggle={() => selection.onToggle(submitter.email)}
+      />
+    );
+  }
+
   function contactControl(submitter: RydSubmitter) {
     return (
       <Button
@@ -200,6 +224,7 @@ type Controls = {
   linkControl: (submitter: RydSubmitter) => ReactNode;
   removeControl: (submission: RydSubmission) => ReactNode;
   contactControl: (submitter: RydSubmitter) => ReactNode;
+  selectControl: (submitter: RydSubmitter) => ReactNode;
 };
 
 /**
@@ -213,6 +238,7 @@ function UnmatchedCards({
   linkControl,
   removeControl,
   contactControl,
+  selectControl,
 }: Controls) {
   return (
     <div className="columns-1 gap-4 xl:columns-2 2xl:columns-3">
@@ -222,6 +248,7 @@ function UnmatchedCards({
             <RydSubmissionCard
               submission={submitter.submissions[0]}
               badge={<RydContactedChip contact={contacts[submitter.email]} />}
+              action={selectControl(submitter)}
               footer={
                 <>
                   {linkControl(submitter)}
@@ -246,6 +273,7 @@ function UnmatchedCards({
                 </p>
                 <RydContactedChip contact={contacts[submitter.email]} />
               </div>
+              {selectControl(submitter)}
             </div>
             {submitter.submissions.map((submission) => (
               <RydSubmissionCard
@@ -273,21 +301,26 @@ function UnmatchedTable({
   linkControl,
   removeControl,
   contactControl,
+  selectControl,
 }: Controls) {
   return (
     <div className="overflow-hidden rounded-2xl border border-black/10 dark:border-white/10">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[880px] table-fixed text-left text-sm">
+        <table className="w-full min-w-[920px] table-fixed text-left text-sm">
           <caption className="sr-only">Unmatched submissions</caption>
           <colgroup>
-            <col className="w-[24%]" />
-            <col className="w-[14%]" />
+            <col className="w-10" />
             <col className="w-[22%]" />
+            <col className="w-[13%]" />
+            <col className="w-[21%]" />
             <col className="w-[22%]" />
             <col className="w-[18%]" />
           </colgroup>
           <thead className="border-b border-black/10 bg-black/[0.025] text-[10px] uppercase tracking-[0.16em] text-black/60 dark:border-white/10 dark:bg-white/[0.025] dark:text-white/60">
             <tr>
+              <th className="py-3 pl-4">
+                <span className="sr-only">Selected</span>
+              </th>
               <th className="px-4 py-3 font-semibold">Ryan</th>
               <th className="px-3 py-3 font-semibold">Sent</th>
               <th className="px-3 py-3 font-semibold">Evidence</th>
@@ -320,6 +353,7 @@ function UnmatchedTable({
                   key={submitter.email}
                   className="align-top transition hover:bg-black/[0.025] dark:hover:bg-white/[0.025]"
                 >
+                  <td className="py-2.5 pl-4">{selectControl(submitter)}</td>
                   <td className="px-4 py-2.5">
                     <span className="block truncate font-semibold" title={name}>
                       {name}

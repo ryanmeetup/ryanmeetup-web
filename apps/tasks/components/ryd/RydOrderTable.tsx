@@ -27,6 +27,7 @@ import {
   RydRyanPositionChip,
   RydStatusChip,
 } from "./RydStatusChip";
+import { RydSelectCheckbox } from "./RydSelection";
 
 type SortChoice = { key: RydSortKey; descending: boolean; label: string };
 
@@ -151,6 +152,14 @@ function SortHeader({
 
 /** Column widths; the production view trades Form's room for its own column. */
 const COLUMNS = ["w-[24%]", "w-[13%]", "w-[27%]", "w-[18%]", "w-[18%]"];
+const SELECT_COLUMNS = [
+  "w-10",
+  "w-[22%]",
+  "w-[12%]",
+  "w-[25%]",
+  "w-[17%]",
+  "w-[20%]",
+];
 const PRODUCTION_COLUMNS = [
   "w-10",
   "w-[21%]",
@@ -164,8 +173,8 @@ const PRODUCTION_COLUMNS = [
 /**
  * The queue as one dense table, for working down a long list. It carries the
  * same chips and actions as the cards, one row per order. With `selection`,
- * each row gets a checkbox and a Production column, for moving verified
- * orders along in bulk.
+ * each row gets a checkbox for the bulk actions above the table; `production`
+ * adds a Production column, for moving verified orders along.
  */
 export function RydOrderTable({
   orders,
@@ -177,6 +186,7 @@ export function RydOrderTable({
   onEmailed,
   onReview,
   selection,
+  production = false,
   footer,
 }: {
   orders: RydQueueOrder[];
@@ -193,6 +203,7 @@ export function RydOrderTable({
     onToggle: (orderId: string) => void;
     disabled?: boolean;
   };
+  production?: boolean;
   /** Sits under the table, inside its border, without scrolling sideways. */
   footer?: ReactNode;
 }) {
@@ -200,11 +211,16 @@ export function RydOrderTable({
     <div className="overflow-hidden rounded-2xl border border-black/10 dark:border-white/10">
       <div className="overflow-x-auto">
         <table
-          className={`w-full table-fixed text-left text-sm ${selection ? "min-w-[1040px]" : "min-w-[880px]"}`}
+          className={`w-full table-fixed text-left text-sm ${production ? "min-w-[1040px]" : selection ? "min-w-[920px]" : "min-w-[880px]"}`}
         >
           <caption className="sr-only">{label}</caption>
           <colgroup>
-            {(selection ? PRODUCTION_COLUMNS : COLUMNS).map((width, index) => (
+            {(production
+              ? PRODUCTION_COLUMNS
+              : selection
+                ? SELECT_COLUMNS
+                : COLUMNS
+            ).map((width, index) => (
               <col key={index} className={width} />
             ))}
           </colgroup>
@@ -243,7 +259,7 @@ export function RydOrderTable({
                 onSort={onSort}
                 className="px-3 py-3"
               />
-              {selection && (
+              {production && (
                 <th className="px-3 py-3 font-semibold">Production</th>
               )}
               <th className="px-4 py-3 text-right font-semibold">
@@ -262,13 +278,11 @@ export function RydOrderTable({
                 >
                   {selection && (
                     <td className="py-2.5 pl-4">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 align-middle"
-                        aria-label={`Select ${name || order.displayEmail}`}
+                      <RydSelectCheckbox
+                        label={`Select ${name || order.displayEmail}`}
                         checked={selection.selected.has(order.orderId)}
                         disabled={selection.disabled}
-                        onChange={() => selection.onToggle(order.orderId)}
+                        onToggle={() => selection.onToggle(order.orderId)}
                       />
                     </td>
                   )}
@@ -319,7 +333,7 @@ export function RydOrderTable({
                       {order.orderedAt || "No date"}
                     </span>
                   </td>
-                  {selection && (
+                  {production && (
                     <td className="px-3 py-2.5">
                       <RydProductionChip order={order} />
                     </td>

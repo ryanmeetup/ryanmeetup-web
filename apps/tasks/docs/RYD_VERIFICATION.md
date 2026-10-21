@@ -72,7 +72,10 @@ presses Send. The page then records what was sent.
    one draft with every listed buyer in Bcc — two drafts when some have
    already sent something and are asked for more instead — leaving out
    rejected orders and anyone emailed in the last 20 hours. After sending,
-   **Mark as emailed** records them. Every follow-up goes by email.
+   **Mark as emailed** records them. To ask only some, tick their rows (or
+   **Select all** of what's listed) and **Email selected**: a hand-picked
+   buyer is included even if emailed recently, but rejected orders still
+   aren't. Every follow-up goes by email.
 
    An order still pending with a suggested response isn't in Follow-up, since
    it is waiting on a reviewer rather than the buyer. Mark it **Needs more
@@ -85,6 +88,8 @@ presses Send. The page then records what was sent.
    normalized email); **Mark contacted** on one person's card records a single
    attempt. Each submitter shows **Contacted N×** once they've been asked,
    and anyone contacted in the last 20 hours is left out of the next draft.
+   Ticking people, or **Select all**, offers **Email selected** and **Mark
+   contacted** for just them.
 4. **Send to fulfillment.** **Download CSV** builds every order fulfillment
    hasn't been told is cleared, in their own columns and order, with
    `Verified?` filled. **Open draft** starts an email to fulfillment listing

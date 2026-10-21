@@ -374,10 +374,12 @@ export function RydSendDialog({
 
 export function RydRemindDialog({
   orders,
+  title = "Email everyone",
   onClose,
   onChanged,
 }: {
   orders: RydQueueOrder[];
+  title?: string;
   onClose: () => void;
   onChanged: () => Promise<void>;
 }) {
@@ -421,7 +423,7 @@ export function RydRemindDialog({
       open
       setIsOpen={(open) => !open && !marking && onClose()}
       size="lg"
-      title="Email everyone"
+      title={title}
       description={
         <>
           {BCC_INTRO} Once it&apos;s sent, mark them emailed here and they
@@ -465,10 +467,12 @@ export function RydRemindDialog({
  */
 export function RydUnmatchedEmailDialog({
   submitters,
+  title = "Email unmatched submitters",
   onClose,
   onChanged,
 }: {
   submitters: RydSubmitter[];
+  title?: string;
   onClose: () => void;
   onChanged: () => Promise<void>;
 }) {
@@ -503,7 +507,7 @@ export function RydUnmatchedEmailDialog({
       open
       setIsOpen={(open) => !open && !marking && onClose()}
       size="lg"
-      title="Email unmatched submitters"
+      title={title}
       description={
         <>
           {BCC_INTRO} Once it&apos;s sent, mark them contacted here: each one
