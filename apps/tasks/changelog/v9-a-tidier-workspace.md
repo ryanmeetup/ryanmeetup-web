@@ -32,6 +32,12 @@ In the task tag picker, each category heading now collapses its tags, so a long 
 
 ## Improved
 
+### Delegate RY-D operations
+
+The RY-D access team can manage verification, fulfillment, settings, and the
+Google connection. Administrator tiers and app owners retain access, while
+other members need the RY-D team grant.
+
 ### Give the workspace more room
 
 The desktop sidebar can now be hidden from its header and restored from the workspace header. Tasks remembers that choice between visits, so focused work keeps the extra room until the navigation is needed again.

@@ -80,7 +80,7 @@ describe("RY-D routes", () => {
     expect(authorize).not.toHaveBeenCalled();
   });
 
-  it("asks for the RY-D page, and owner rights only for settings", async () => {
+  it("requires RY-D page access for both the queue and settings", async () => {
     authorize.mockResolvedValue({
       response: Response.json({}, { status: 403 }),
     });
@@ -91,7 +91,6 @@ describe("RY-D routes", () => {
     expect(authorize).toHaveBeenLastCalledWith({
       onboarded: true,
       area: "ryd",
-      owner: false,
     });
     const saved = await settings.PATCH(
       new Request(
@@ -103,8 +102,46 @@ describe("RY-D routes", () => {
     expect(authorize).toHaveBeenLastCalledWith({
       onboarded: true,
       area: "ryd",
-      owner: true,
     });
+  });
+
+  it("lets a RY-D member save settings without app ownership", async () => {
+    const calls: unknown[] = [];
+    getAdminClient.mockReturnValue(
+      admin({
+        ryd_settings: table(
+          {
+            data: {
+              form_id: "f".repeat(30),
+              fulfillment_email: "orders@example.com",
+            },
+            error: null,
+          },
+          calls,
+        ),
+      }),
+    );
+    const { PATCH } = await import("@/app/api/ryd/settings/route");
+
+    const response = await PATCH(
+      new Request(
+        "http://localhost/api/ryd/settings",
+        json({ fulfillmentEmail: "orders@example.com" }),
+      ),
+    );
+
+    expect(response.status).toBe(200);
+    expect(authorize).toHaveBeenCalledExactlyOnceWith({
+      onboarded: true,
+      area: "ryd",
+    });
+    expect(calls).toContainEqual([
+      "upsert",
+      expect.objectContaining({
+        fulfillment_email: "orders@example.com",
+        updated_by: member.user.id,
+      }),
+    ]);
   });
 
   it("refuses to change the decision on an order already sent as verified", async () => {

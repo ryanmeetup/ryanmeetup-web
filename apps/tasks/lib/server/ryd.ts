@@ -39,8 +39,9 @@ export type RydContext = {
  * The gate every RY-D route passes. An instance with RY-D off answers 404, as
  * if the page never existed; a member without the page answers 403. Data is
  * then read with the service role, because the tables carry no user policies.
+ * Page access grants full RY-D control, including settings and Google setup.
  */
-export async function rydContext({ owner = false } = {}): Promise<
+export async function rydContext(): Promise<
   RydContext | { response: Response }
 > {
   if (!(await getInstanceSettings()).rydEnabled)
@@ -48,7 +49,6 @@ export async function rydContext({ owner = false } = {}): Promise<
   const authorization = await authorize({
     onboarded: true,
     area: "ryd",
-    owner,
   });
   if ("response" in authorization) return authorization;
   const admin = getAdminClient();

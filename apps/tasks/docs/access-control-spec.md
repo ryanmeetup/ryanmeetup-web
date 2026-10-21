@@ -92,6 +92,11 @@ holds a row only for a page an app owner has configured.
 - Contact images live in a public storage bucket, so an existing image URL
   stays reachable regardless of page access; what page access decides for that
   bucket is who may add, replace, or remove an image.
+- RY-D starts restricted to the lateral RY-D team and explicitly selected
+  administrator tiers with workspace-wide content access. Higher tiers inherit
+  those selected tier grants; app owners retain their override. Page access
+  grants full RY-D operation, including settings and Google connection setup,
+  without granting workspace administration or access to other restricted pages.
 
 ## Tasks and related content
 

@@ -5,7 +5,6 @@ import { getAdminClient } from "@/lib/server/admin-client";
 import { getInstanceSettings, pageTitle } from "@/lib/server/instance-settings";
 import { loadRydQueue } from "@/lib/server/ryd";
 import { isRydGoogleConfigured } from "@/lib/server/ryd-google";
-import { requireQueryData } from "@/lib/server/workspace-loader";
 import {
   isWorkspaceDemo,
   loadWorkspacePage,
@@ -26,16 +25,11 @@ export default async function RydPage() {
   );
   const admin = getAdminClient();
   if (!admin) notFound();
-  const isOwner = requireQueryData(
-    "owner access",
-    await loaded.supabase.rpc("is_app_owner"),
-  );
 
   return (
     <RydPageClient
       initialData={loaded.data}
       initialQueue={await loadRydQueue(admin)}
-      isOwner={isOwner === true}
       googleConfigured={isRydGoogleConfigured()}
     />
   );

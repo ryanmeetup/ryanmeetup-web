@@ -28,8 +28,14 @@ Access setting, and every `/api/ryd` route answer as if they don't exist.
    paste the form's **editor** link (`docs.google.com/forms/d/<id>/edit`, not
    the public `/forms/d/e/…` one), and enter fulfillment's email so their
    draft is addressed.
-5. The page starts restricted to owners. Open it to the people who verify
-   from /admin/access.
+5. Add the people who verify to the **RY-D** team from /admin/access. The
+   access-group migration selects this team and administrator tiers (R-Suite
+   on Ryan Meetup); higher tiers inherit those grants, and app owners retain
+   access. On an empty database with no owner yet, create the RY-D team and
+   select it alongside administrator tiers for the page from /admin/access.
+   Everyone with page access can operate the queue, change RY-D settings,
+   and connect or disconnect Google. Managing group membership and instance
+   features remains owner-only.
 
 RY-D never sends email itself. Every email — to buyers and to fulfillment —
 opens as a prefilled draft in the reviewer's own mail app (a `mailto:` link,

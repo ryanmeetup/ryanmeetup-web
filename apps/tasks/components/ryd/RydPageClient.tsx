@@ -99,7 +99,7 @@ const GOOGLE_MESSAGES: Record<string, [ok: boolean, message: string]> = {
   ],
   unavailable: [false, "Google sign-in isn't configured on this instance."],
   invalid: [false, "That Google sign-in expired. Try connecting again."],
-  auth: [false, "Only an owner can connect Google."],
+  auth: [false, "You need RY-D access to connect Google."],
   failed: [false, "Google couldn't be connected. Try again."],
 };
 
@@ -169,12 +169,10 @@ type Dialog =
 export function RydPageClient({
   initialData,
   initialQueue,
-  isOwner,
   googleConfigured,
 }: {
   initialData: WorkspaceData;
   initialQueue: RydQueue;
-  isOwner: boolean;
   googleConfigured: boolean;
 }) {
   const [data, setData] = useState(initialData);
@@ -516,9 +514,7 @@ export function RydPageClient({
         ? queue.sheet.message
         : queue.sheet.status === "unconfigured"
           ? "Add the RY-dentification form in RY-D settings to see what buyers sent."
-          : isOwner
-            ? "Connect the Google account that owns the RY-dentification form to see what buyers sent."
-            : "An owner needs to connect the RY-dentification form before submissions show up here.";
+          : "Connect the Google account that owns the RY-dentification form to see what buyers sent.";
 
   return (
     <>
@@ -560,19 +556,17 @@ export function RydPageClient({
               >
                 Send to fulfillment
               </Button>
-              {isOwner && (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="w-full sm:w-auto"
-                  leftIcon={<FiSettings aria-hidden />}
-                  onClick={() => setDialog("settings")}
-                  disabled={!queue.installed}
-                >
-                  Settings
-                </Button>
-              )}
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="w-full sm:w-auto"
+                leftIcon={<FiSettings aria-hidden />}
+                onClick={() => setDialog("settings")}
+                disabled={!queue.installed}
+              >
+                Settings
+              </Button>
             </>
           }
         >
@@ -590,17 +584,15 @@ export function RydPageClient({
                   <FiAlertTriangle aria-hidden className="mt-0.5 shrink-0" />
                   {sheetNotice}
                 </p>
-                {isOwner && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    className="w-full shrink-0 sm:w-auto"
-                    onClick={() => setDialog("settings")}
-                  >
-                    Open settings
-                  </Button>
-                )}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  className="w-full shrink-0 sm:w-auto"
+                  onClick={() => setDialog("settings")}
+                >
+                  Open settings
+                </Button>
               </div>
             )}
 

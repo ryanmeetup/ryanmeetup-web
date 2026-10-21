@@ -36,7 +36,7 @@ export async function GET(request: Request) {
   if (!code || !state || !cookie || state !== cookie.state)
     return rydRedirect(request, "invalid");
 
-  const context = await rydContext({ owner: true });
+  const context = await rydContext();
   if ("response" in context) return rydRedirect(request, "auth");
 
   try {
