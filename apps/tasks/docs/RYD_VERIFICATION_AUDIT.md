@@ -6,27 +6,15 @@ rules; all RY-D API and Google OAuth routes; migrations and access gates; the
 sales connector; and the public `/cards/verify` redirect.
 
 This is the remaining-work list. Resolved findings and repair history are
-removed as fixes land. Next priorities are reliable sheet reconciliation and
-the enabled RY-D contract checks.
+removed as fixes land. The next priority is the enabled RY-D contract check
+and committed browser workflow coverage.
 
 ## Remaining findings, in priority order
 
 P2 marks concrete reliability, performance, or usability work. These are
 source-level failure paths; no concurrency tests wrote to production customer data.
 
-### 1. P2 — Sheet reconciliation relies on the first tab and loose identity
-
-[markRydSubmissionsVerified](../lib/server/ryd-google.ts) assumes the first tab
-is the response tab, then takes the first timestamp match within 1.5 seconds.
-A missing email cell bypasses the email comparison. Reordering tabs or having
-ambiguous timestamps can select the wrong cell or skip the correct one. A
-successful partial tick count does not explain which rows remain unresolved.
-
-Identify and validate the response tab, require an unambiguous row match, and
-report matched, already ticked, missing, and ambiguous responses separately.
-Never guess a row when more than one candidate fits.
-
-### 2. P2 — Contract checks and end-to-end coverage stop short of RY-D
+### 1. P2 — Contract checks and end-to-end coverage stop short of RY-D
 
 [The build preflight](../scripts/check-database-contract.mjs) verifies other
 workspace contracts but not the enabled RY-D tables, columns, grants, or access
@@ -71,11 +59,11 @@ coverage includes 144 assertions and ten synchronized two-session races.
 The latest races cover repeated production moves and contact confirmations;
 earlier races cover overlapping imports, duplicate uploads, and reminders.
 Audit failures roll back the operation and its receipt. Snapshot coverage also
-checks more than 1,000 rows. All 128 Tasks unit/route files and 872 tests passed.
+checks more than 1,000 rows. All 130 Tasks unit/route files and 912 tests passed.
 TypeScript, changed-file ESLint, `git diff --check`, and the production build
 passed; the build ran its normal
-RMT database preflight. The isolated staged source also passed all 126 committed
-test files and 850 tests, plus TypeScript.
+RMT database preflight. The isolated staged source also passed all 128 committed
+test files and 890 tests, plus TypeScript.
 
 The committed synthetic Google fixture measures a queue load followed by 24
 evidence files. Requests fell from 147 to 51, token refreshes from 49 to one,
@@ -86,6 +74,18 @@ reads, cache expiry/capacity, large-result retention limits, connection/form
 isolation, fresh provenance reads, cancellation of shared reads and streamed
 bodies, deadlines after headers arrive, and access rechecks. Retention and
 revocation are specified in [the data policy](RYD_VERIFICATION.md#data).
+
+Sheet tests use synthetic Google API responses to cover non-first and copied
+response tabs, duplicate/moved headers, exact seconds and normalized email,
+blank/nonstring identities, duplicate rows, collisions with unselected form
+responses, daylight-saving folds, existing values/formulas, missing/deleted
+responses, partial results, and uncertain write acknowledgements. Explicit tab
+IDs and single-cell ranges target writes; uncertain writes are never repeated.
+The dialog retains its per-response report after confirmation and queue reload
+failure, with accessible pagination and a manual spreadsheet link. Reports are
+local to that dialog; row reads and writes remain separate requests, so
+concurrent sheet sorting/editing is an operator constraint documented in
+[the guide](RYD_VERIFICATION.md).
 
 Local Playwright component checks use synthetic data at 390, 1024, 1280,
 and 1536 pixels in light and dark themes. Unmatched checks cover complete
@@ -126,5 +126,5 @@ Content-Length and reject malformed files before database writes. Screenshots
 were visually inspected. Earlier checks cover fulfillment snapshots, settings,
 and separate email-less identities in both unmatched layouts.
 These checks substitute Next navigation/image wrappers; they are not an
-authenticated end-to-end test. Google consent, Drive media, sheet writes, and
+authenticated end-to-end test. Live Google consent, Drive media, sheet writes, and
 PRD's live database remain untested.
