@@ -1,5 +1,9 @@
 # PRD: fail-closed RY-D reads and reminder recipients
 
+This is a schema-maintenance handoff. PRD does not need a healthy RY-D schema
+for its enabled features or deployment while `ryd_enabled` is false or null.
+Keep RY-D off there. See [feature availability versus schema alignment](MULTI_INSTANCE.md#the-two-tiers).
+
 Run both SQL blocks below in the **PRD** Supabase dashboard SQL Editor for
 `projects.ryanle.dev` (project `vjsnobmfsfrsnwukfaoq`). RMT is applied and
 verified separately by the agent.

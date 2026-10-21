@@ -296,6 +296,20 @@ RY-D Verification is absent from the sidebar, Access, and every route. Its
 tables still exist on both databases so the schemas never drift. See
 `docs/RYD_VERIFICATION.md`.
 
+Schema alignment and feature availability are separate checks. The normal
+deployment preflight calls `ryd_contract_health()` only when `ryd_enabled` is
+true. With it false or null, PRD can deploy without the RY-D tables or RPCs;
+calling that diagnostic manually may still report missing optional schema.
+That result is not a PRD deployment blocker. Keep RY-D off on PRD and do not
+connect its Google account or populate its customer tables.
+
+The repository still tracks one migration chain for both databases. Pending
+RY-D-only schema updates are maintenance catch-up for parity, rather than
+steps to enable or repair an unused PRD feature. Apply those through the PRD
+dashboard handoffs when scheduling schema maintenance; never record a migration
+as applied without running its SQL. Changes to shared workspace functions or
+dependencies still require review for their effect on PRD's enabled features.
+
 The compiled defaults are unbranded. A deployment that sets nothing and has no
 stored row presents as an unnamed **Workspace**, with no footer subtitle or
 social links, rather than borrowing another

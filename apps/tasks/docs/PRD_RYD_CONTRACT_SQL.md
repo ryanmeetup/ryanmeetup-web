@@ -1,5 +1,9 @@
 # PRD: RY-D contract diagnostics
 
+This is a schema-maintenance handoff. PRD does not need a healthy RY-D schema
+for its enabled features or deployment while `ryd_enabled` is false or null.
+Keep RY-D off there. See [feature availability versus schema alignment](MULTI_INSTANCE.md#the-two-tiers).
+
 After this initial diagnostic is installed, apply
 [the later read-access update](PRD_RYD_READ_ACCESS_SQL.md), which also extends
 the diagnostic to cover its private access functions. After applying that
