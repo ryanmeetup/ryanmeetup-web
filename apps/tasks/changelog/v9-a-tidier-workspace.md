@@ -34,7 +34,7 @@ In the task tag picker, each category heading now collapses its tags, so a long 
 
 ### Reliable RY-D imports and reminders
 
-Uploads now save their orders, counts, and history together. Overlapping uploads report only what each added, and retrying the same upload keeps its original result.
+Uploads now save their orders, counts, and history together. Overlapping uploads report only what each added, and retrying the same upload keeps its original result. Damaged CSV rows are reported before saving.
 
 Single and bulk buyer emails share one draft workflow. Opening a draft records nothing; confirm each sent group separately. Large selections become smaller drafts, and retrying a confirmation cannot record it twice.
 

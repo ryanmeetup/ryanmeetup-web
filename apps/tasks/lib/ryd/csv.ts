@@ -6,11 +6,14 @@
 
 export type CsvTable = { headers: string[]; rows: string[][] };
 
+export class CsvParseError extends Error {}
+
 export function parseCsv(text: string): CsvTable {
   const records: string[][] = [];
   let record: string[] = [];
   let field = "";
   let quoted = false;
+  let closedQuote = false;
   // A leading byte-order mark belongs to the encoding, not the first header.
   const source = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
 
@@ -23,38 +26,55 @@ export function parseCsv(text: string): CsvTable {
           index += 1;
         } else {
           quoted = false;
+          closedQuote = true;
         }
       } else {
         field += char;
       }
       continue;
     }
+    if (closedQuote && char !== "," && char !== "\n" && char !== "\r")
+      throw new CsvParseError(
+        "There is unexpected text after a quoted CSV cell. Check the file's quotes.",
+      );
+    if (char === '"' && field !== "")
+      throw new CsvParseError(
+        "A CSV quote appears inside an unquoted cell. Check the file's quotes.",
+      );
     if (char === '"' && field === "") {
       quoted = true;
     } else if (char === ",") {
       record.push(field);
       field = "";
+      closedQuote = false;
     } else if (char === "\n" || char === "\r") {
       if (char === "\r" && source[index + 1] === "\n") index += 1;
       record.push(field);
       records.push(record);
       record = [];
       field = "";
+      closedQuote = false;
     } else {
       field += char;
     }
   }
-  if (field !== "" || record.length) {
+  if (quoted)
+    throw new CsvParseError(
+      "A quoted CSV cell was not closed. Check the file's quotes.",
+    );
+  if (field !== "" || record.length || closedQuote) {
     record.push(field);
     records.push(record);
   }
 
   const nonEmpty = records.filter((row) => row.some((cell) => cell !== ""));
   const [headers = [], ...rows] = nonEmpty;
-  return {
-    headers,
-    rows: rows.map((row) => headers.map((_, column) => row[column] ?? "")),
-  };
+  const wrong = rows.findIndex((row) => row.length !== headers.length);
+  if (wrong >= 0)
+    throw new CsvParseError(
+      `CSV data row ${wrong + 1} has ${rows[wrong].length} cells; expected ${headers.length}. Check its delimiters.`,
+    );
+  return { headers, rows };
 }
 
 function csvCell(value: string) {

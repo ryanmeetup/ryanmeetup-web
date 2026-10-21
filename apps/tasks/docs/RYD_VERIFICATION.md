@@ -48,7 +48,9 @@ presses Send. The page then records what was sent.
    Re-uploading the same file changes nothing; an order already in the queue
    keeps its decision. Import accounting, inserted orders, and their history
    save in one transaction; retrying the same upload returns its first result.
-   Files are limited to 2 MB before multipart parsing.
+   Files are limited to 2 MB before multipart parsing. Invalid quotes, uneven
+   rows, repeated column names, and missing or overlong order IDs are reported
+   before any writes.
    A ✅ fulfillment already put in the file imports as
    verified, but with nothing linked; it is still offered a suggestion, and
    **Link** on that submission pairs it. A decided order only offers the

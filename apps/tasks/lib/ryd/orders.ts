@@ -1,4 +1,4 @@
-import { csvColumn, parseCsv, serializeCsv } from "./csv";
+import { csvColumn, CsvParseError, parseCsv, serializeCsv } from "./csv";
 import { normalizeEmail } from "./normalize";
 
 export const RYD_ORDER_STATUSES = [
@@ -64,7 +64,24 @@ export type RydOrderImport =
   | { ok: false; error: string };
 
 export function parseRydOrderCsv(text: string): RydOrderImport {
-  const { headers, rows } = parseCsv(text);
+  let table;
+  try {
+    table = parseCsv(text);
+  } catch (error) {
+    if (error instanceof CsvParseError)
+      return { ok: false, error: error.message };
+    throw error;
+  }
+  const { headers, rows } = table;
+  const normalizedHeaders = headers.map((header) =>
+    header.trim().toLowerCase(),
+  );
+  if (new Set(normalizedHeaders).size !== normalizedHeaders.length)
+    return {
+      ok: false,
+      error:
+        "That file has repeated column names. Give each column a unique name, then upload it again.",
+    };
   const missing = REQUIRED_COLUMNS.filter(
     (column) => csvColumn(headers, column) < 0,
   );
@@ -81,9 +98,19 @@ export function parseRydOrderCsv(text: string): RydOrderImport {
   const seen = new Set<string>();
   const duplicates: string[] = [];
   const orders: ParsedRydOrder[] = [];
-  for (const row of rows) {
+  for (const [rowIndex, row] of rows.entries()) {
     const orderId = cell(row, "OrderId");
-    if (!orderId) continue;
+    if (!orderId)
+      return {
+        ok: false,
+        error: `Order row ${rowIndex + 1} has no OrderId. Fill it in or remove that row before uploading.`,
+      };
+    if (orderId.length > 64)
+      return {
+        ok: false,
+        error:
+          "An order number is longer than 64 characters. Check the OrderId column, then upload it again.",
+      };
     if (seen.has(orderId)) {
       duplicates.push(orderId);
       continue;

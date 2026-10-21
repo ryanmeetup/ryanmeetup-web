@@ -374,6 +374,31 @@ describe("RY-D routes", () => {
     },
   );
 
+  it("rejects a damaged CSV before making any database writes", async () => {
+    getAdminClient.mockReturnValue(admin({}));
+    const { POST } = await import("@/app/api/ryd/imports/route");
+    const form = new FormData();
+    form.set("operationId", "30000000-0000-4000-8000-000000000401");
+    form.set(
+      "file",
+      new File(
+        [
+          'OrderId,BillFirstName,BillLastName,BillEmail,Verified?\n1001,"unclosed',
+        ],
+        "bad.csv",
+      ),
+    );
+    const response = await POST(
+      new Request("http://localhost/api/ryd/imports", {
+        method: "POST",
+        headers: { origin: "http://localhost" },
+        body: form,
+      }),
+    );
+    expect(response.status).toBe(400);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
   it("won't remove a response that already vouches for an order", async () => {
     rpc.mockResolvedValue({
       data: null,
