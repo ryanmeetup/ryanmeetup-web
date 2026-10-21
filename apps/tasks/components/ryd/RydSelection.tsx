@@ -34,31 +34,37 @@ export function RydSelectionBar({
   disabled,
   onToggleAll,
   children,
+  scope = "All filtered orders, across every page",
 }: {
   total: number;
   selectedCount: number;
   disabled?: boolean;
   onToggleAll: () => void;
   children: ReactNode;
+  scope?: string;
 }) {
   const allSelected = total > 0 && selectedCount === total;
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-black/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-white/10">
-      <label className="flex items-center gap-3 text-sm font-semibold">
-        <input
-          type="checkbox"
-          className="h-4 w-4"
-          checked={allSelected}
-          ref={(input) => {
-            if (input) input.indeterminate = selectedCount > 0 && !allSelected;
-          }}
-          disabled={disabled}
-          onChange={onToggleAll}
-        />
-        {selectedCount
-          ? `${selectedCount} of ${total} selected`
-          : `Select all ${total}`}
-      </label>
+      <div>
+        <label className="flex items-center gap-3 text-sm font-semibold">
+          <input
+            type="checkbox"
+            className="h-4 w-4"
+            checked={allSelected}
+            ref={(input) => {
+              if (input)
+                input.indeterminate = selectedCount > 0 && !allSelected;
+            }}
+            disabled={disabled}
+            onChange={onToggleAll}
+          />
+          {selectedCount
+            ? `${selectedCount} of ${total} selected`
+            : `Select all ${total}`}
+        </label>
+        <p className="mt-1 text-xs text-black/70 dark:text-white/70">{scope}</p>
+      </div>
       <div className="flex flex-col gap-2 sm:flex-row">{children}</div>
     </div>
   );

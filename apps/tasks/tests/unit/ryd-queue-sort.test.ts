@@ -296,16 +296,12 @@ describe("RY-D production", () => {
     expect(rydProductionParam("")).toBeNull();
   });
 
-  it("accepts order IDs and a known stage only", () => {
-    expect(
-      rydProductionSchema({ orderIds: ["1", "1", "2"], stage: "done" }),
-    ).toEqual({ orderIds: ["1", "2"], stage: "done" });
-    expect(
-      rydProductionSchema({ orderIds: ["1"], stage: "shipped" }),
-    ).toBeNull();
-    expect(rydProductionSchema({ orderIds: [], stage: "done" })).toBeNull();
-    expect(
-      rydProductionSchema({ orderIds: ["1"], stage: "done", extra: 1 }),
-    ).toBeNull();
+  it("accepts a pinned production operation", () => {
+    const request = {
+      operationId: "00000000-0000-4000-8000-000000000601",
+      moves: [{ orderId: "1", from: "not-started", to: "done" }],
+    };
+    expect(rydProductionSchema(request)).toEqual(request);
+    expect(rydProductionSchema({ orderIds: ["1"], stage: "done" })).toBeNull();
   });
 });

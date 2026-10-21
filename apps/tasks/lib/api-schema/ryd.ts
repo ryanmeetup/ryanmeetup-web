@@ -7,6 +7,12 @@ import { formIdFrom } from "@/lib/ryd/form-responses";
 import { isRydContactEmail, normalizeEmail } from "@/lib/ryd/normalize";
 import { RYD_REMINDER_GROUP_LIMIT, type RydReminderTarget } from "@/lib/ryd/reminders";
 import { isJsonObject, isUuid } from "./shared";
+import {
+  RYD_BULK_BODY_BYTES,
+  RYD_BULK_LIMIT,
+  rydBodyBytes,
+  type RydProductionMove,
+} from "@/lib/ryd/bulk-operations";
 
 /** A decision, a note, or both. An empty note clears it. */
 export function rydDecisionSchema(value: unknown) {
@@ -84,13 +90,29 @@ export function rydLinkSchema(value: unknown) {
 
 export function rydLinkCreateSchema(
   value: unknown,
-): { submissionKey: string; source: "manual" | "suggested" } | null {
+): { submissionKeys: string[]; source: "manual" | "suggested" } | null {
   if (!isJsonObject(value)) return null;
-  const { source, ...rest } = value;
-  const link = rydLinkSchema(rest);
-  return link && (source === "manual" || source === "suggested")
-    ? { ...link, source }
-    : null;
+  if (
+    Object.keys(value).length !== 2 ||
+    (value.source !== "manual" && value.source !== "suggested")
+  )
+    return null;
+  const keys =
+    "submissionKey" in value ? [value.submissionKey] : value.submissionKeys;
+  if (
+    !Array.isArray(keys) ||
+    !keys.length ||
+    keys.length > RYD_BULK_LIMIT ||
+    !keys.every(
+      (key) => typeof key === "string" && key.length >= 3 && key.length <= 400,
+    ) ||
+    rydBodyBytes(value) > RYD_BULK_BODY_BYTES
+  )
+    return null;
+  return {
+    submissionKeys: [...new Set(keys as string[])],
+    source: value.source,
+  };
 }
 
 export function rydSettingsSchema(value: unknown) {
@@ -123,11 +145,21 @@ export function rydSettingsSchema(value: unknown) {
 export const emptyObjectSchema = (value: unknown) =>
   isJsonObject(value) && Object.keys(value).length === 0 ? {} : null;
 
-/** Submitter emails, as the form gave them; they're normalized on the way in. */
+/** One pinned contact confirmation, reused verbatim after a lost response. */
 export function rydEmailsSchema(value: unknown) {
-  if (!isJsonObject(value) || Object.keys(value).length !== 1) return null;
+  if (
+    !isJsonObject(value) ||
+    Object.keys(value).length !== 2 ||
+    !isUuid(value.operationId) ||
+    rydBodyBytes(value) > RYD_BULK_BODY_BYTES
+  )
+    return null;
   const emails = value.emails;
-  if (!Array.isArray(emails) || !emails.length || emails.length > 500)
+  if (
+    !Array.isArray(emails) ||
+    !emails.length ||
+    emails.length > RYD_BULK_LIMIT
+  )
     return null;
   if (
     !emails.every(
@@ -139,6 +171,7 @@ export function rydEmailsSchema(value: unknown) {
   )
     return null;
   return {
+    operationId: value.operationId,
     emails: [...new Set((emails as string[]).map(normalizeEmail))],
   };
 }
@@ -150,7 +183,7 @@ function orderIds(ids: unknown) {
   return [...new Set(ids as string[])];
 }
 
-/** Up to 500 distinct order IDs, more than the queue ever holds at once. */
+/** Legacy internal order lists; bulk production has its own bounded envelope. */
 export function rydOrderIdsSchema(value: unknown) {
   if (!isJsonObject(value) || Object.keys(value).length !== 1) return null;
   const ids = orderIds(value.orderIds);
@@ -159,14 +192,39 @@ export function rydOrderIdsSchema(value: unknown) {
 
 /** Verified orders, and the production stage to move them to. */
 export function rydProductionSchema(value: unknown) {
-  if (!isJsonObject(value) || Object.keys(value).length !== 2) return null;
-  const ids = orderIds(value.orderIds);
   if (
-    !ids ||
-    !RYD_PRODUCTION_STAGES.includes(value.stage as RydProductionStage)
+    !isJsonObject(value) ||
+    Object.keys(value).length !== 2 ||
+    !isUuid(value.operationId) ||
+    !Array.isArray(value.moves) ||
+    !value.moves.length ||
+    value.moves.length > RYD_BULK_LIMIT ||
+    rydBodyBytes(value) > RYD_BULK_BODY_BYTES
   )
     return null;
-  return { orderIds: ids, stage: value.stage as RydProductionStage };
+  const moves: RydProductionMove[] = [];
+  const seen = new Set<string>();
+  for (const move of value.moves) {
+    if (
+      !isJsonObject(move) ||
+      Object.keys(move).length !== 3 ||
+      typeof move.orderId !== "string" ||
+      !move.orderId.trim() ||
+      move.orderId.length > 64 ||
+      seen.has(move.orderId) ||
+      !RYD_PRODUCTION_STAGES.includes(move.from as RydProductionStage) ||
+      !RYD_PRODUCTION_STAGES.includes(move.to as RydProductionStage) ||
+      move.from === move.to
+    )
+      return null;
+    seen.add(move.orderId);
+    moves.push({
+      orderId: move.orderId,
+      from: move.from as RydProductionStage,
+      to: move.to as RydProductionStage,
+    });
+  }
+  return { operationId: value.operationId, moves };
 }
 
 /** A server-owned batch identity replaces client-computed ready-order lists. */

@@ -81,6 +81,26 @@ export async function changeRydSubmission(
   return result.data as { ok: true; changed: boolean };
 }
 
+/** All of a submitter's responses link together or none of them do. */
+export async function linkRydSubmissions(
+  admin: SupabaseClient,
+  actor: string,
+  orderId: string,
+  keys: string[],
+  source: "manual" | "suggested",
+) {
+  const formId = await rydSubmissionForm(admin, keys);
+  const result = await admin.rpc("ryd_link_submissions", {
+    requested_actor: actor,
+    requested_order: orderId,
+    requested_keys: keys,
+    requested_form: formId,
+    requested_source: source,
+  });
+  if (result.error) throw result.error;
+  return result.data as { ok: true; changed: boolean };
+}
+
 export async function reviewRydOrder(
   admin: SupabaseClient,
   actor: string,

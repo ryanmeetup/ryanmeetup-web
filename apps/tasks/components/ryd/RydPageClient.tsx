@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQueryParamState, useSearchFilter } from "@ryanmeetup/hooks";
 import {
   Button,
@@ -37,7 +37,7 @@ import {
   WorkspacePageShell,
 } from "@/components/global";
 import { usePagination } from "@/hooks/usePagination";
-import { mutate, parseMutationResponse } from "@/lib/mutation-client";
+import { mutate } from "@/lib/mutation-client";
 import { errorMessage } from "@/lib/presentation";
 import { RYD_STATUS_LABELS, type RydOrderStatus } from "@/lib/ryd/orders";
 import type { RydSubmission, RydSubmitter } from "@/lib/ryd/matching";
@@ -62,7 +62,6 @@ import {
   rydProductionCounts,
   rydProductionParam,
   rydProductionStage,
-  type RydProductionStage,
   unsentOrders,
   contactableSubmitters,
   remindableOrders,
@@ -74,12 +73,22 @@ import {
   RydRemindDialog,
   RydSendDialog,
   RydSettingsDialog,
-  RydUnmatchedEmailDialog,
   RydUploadDialog,
 } from "./RydDialogs";
 import { RydOrderDialog } from "./RydOrderDialog";
 import { RydOrderTable } from "./RydOrderTable";
 import { RydSelectionBar } from "./RydSelection";
+import { RydContactDialog } from "./RydContactDialog";
+import { RydProductionDialog } from "./RydProductionDialog";
+import { useRydQueueController } from "./useRydQueueController";
+import {
+  RYD_BULK_LIMIT,
+  RYD_BULK_BODY_BYTES,
+  rydBodyBytes,
+  type RydProductionAction,
+  type RydProductionResult,
+  type RydContactResult,
+} from "@/lib/ryd/bulk-operations";
 import {
   RYD_PRODUCTION_ICONS,
   RYD_STATUS_ICONS,
@@ -178,7 +187,7 @@ export function RydPageClient({
 }) {
   const [data, setData] = useState(initialData);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [queue, setQueue] = useState(initialQueue);
+  const { queue, refresh, reconcile } = useRydQueueController(initialQueue);
   const [dialog, setDialog] = useState<Dialog>(null);
   const [viewParam, setViewParam] = useQueryParamState("view");
   const [statusParam, setStatusParam] = useQueryParamState("status");
@@ -189,7 +198,10 @@ export function RydPageClient({
   const [linking, setLinking] = useState<string | null>(null);
   const [removing, setRemoving] = useState<RydSubmission | null>(null);
   const [dismissing, setDismissing] = useState<string | null>(null);
-  const [contacting, setContacting] = useState<string | null>(null);
+  const [contactOperation, setContactOperation] = useState<string[] | null>(
+    null,
+  );
+  const contacting = contactOperation ? "*" : null;
   const [productionParam, setProductionParam] =
     useQueryParamState("production");
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
@@ -197,7 +209,11 @@ export function RydPageClient({
     new Set(),
   );
   const [emailOrder, setEmailOrder] = useState<RydQueueOrder | null>(null);
-  const [moving, setMoving] = useState<string | null>(null);
+  const [productionOperation, setProductionOperation] = useState<{
+    action: RydProductionAction;
+    orders: RydQueueOrder[];
+  } | null>(null);
+  const moving = productionOperation?.action ?? null;
   const view = rydView(viewParam);
   const status = rydStatusParam(statusParam);
   // Verified orders get checkboxes, to move them through production in bulk;
@@ -217,11 +233,6 @@ export function RydPageClient({
     setProductionParam("");
     setPage(1);
   }
-
-  const refresh = useCallback(async () => {
-    const response = await fetch("/api/ryd", { cache: "no-store" });
-    setQueue(await parseMutationResponse<RydQueue>(response));
-  }, []);
 
   // The OAuth callback lands back here with its outcome in the query string.
   useEffect(() => {
@@ -365,51 +376,36 @@ export function RydPageClient({
   const toggleSelected = toggleIn(setSelected);
   const toggleSubmitter = toggleIn(setSelectedSubmitterKeys);
 
-  /**
-   * Move the selected orders a step. Each target only takes the orders it
-   * would move forward, so marking a mix as sent never un-does a done one;
-   * `back` takes each order one stage back.
-   */
-  async function moveSelected(action: "sent" | "done" | "back") {
-    const at = (stage: RydProductionStage) =>
-      selectedOrders
-        .filter((order) => rydProductionStage(order) === stage)
-        .map((order) => order.orderId);
-    const moves: [RydProductionStage, string[]][] =
-      action === "sent"
-        ? [["in-production", at("not-started")]]
-        : action === "done"
-          ? [["done", [...at("not-started"), ...at("in-production")]]]
-          : [
-              ["in-production", at("done")],
-              ["not-started", at("in-production")],
-            ];
-    setMoving(action);
-    try {
-      let moved = 0;
-      for (const [stage, orderIds] of moves)
-        if (orderIds.length)
-          moved += (
-            await mutate<{ movedCount: number }>("/api/ryd/production", {
-              method: "POST",
-              body: JSON.stringify({ orderIds, stage }),
-            })
-          ).movedCount;
-      await refresh();
-      setSelected(new Set());
-      const orders = `${moved} order${moved === 1 ? "" : "s"}`;
-      toast.success(
-        action === "sent"
-          ? `${orders} sent for production.`
-          : action === "done"
-            ? `${orders} marked done.`
-            : `${orders} moved back a step.`,
-      );
-    } catch (error) {
-      toast.error(errorMessage(error, "Those orders couldn't be moved."));
-    } finally {
-      setMoving(null);
-    }
+  function moveSelected(action: RydProductionAction) {
+    if (searchPending || moving !== null) return;
+    setProductionOperation({ action, orders: selectedOrders });
+  }
+
+  function productionApplied(result: RydProductionResult) {
+    const saved = new Map(result.orders.map((order) => [order.orderId, order]));
+    reconcile((current) => ({
+      ...current,
+      orders: current.orders.map((order) => ({
+        ...order,
+        ...saved.get(order.orderId),
+      })),
+    }));
+    setSelected(
+      (current) => new Set([...current].filter((id) => !saved.has(id))),
+    );
+  }
+
+  function contactsRecorded(result: RydContactResult) {
+    reconcile((current) => ({
+      ...current,
+      contacts: { ...current.contacts, ...result.contacts },
+    }));
+    const saved = new Set(
+      Object.keys(result.contacts).map((email) => `email:${email}`),
+    );
+    setSelectedSubmitterKeys(
+      (current) => new Set([...current].filter((key) => !saved.has(key))),
+    );
   }
 
   const selectedStages = new Set(selectedOrders.map(rydProductionStage));
@@ -423,49 +419,51 @@ export function RydPageClient({
   }
 
   async function linkSubmitter(submitter: RydSubmitter, orderId: string) {
+    if (searchPending || linking !== null) return;
+    const submissionKeys = [
+      ...new Set(submitter.submissions.map((submission) => submission.key)),
+    ];
+    const payload = { submissionKeys, source: "manual" };
+    if (
+      submissionKeys.length > RYD_BULK_LIMIT ||
+      rydBodyBytes(payload) > RYD_BULK_BODY_BYTES
+    ) {
+      toast.error(
+        "This person has too many responses to link together. Link individual responses from the order review.",
+      );
+      setOpenOrderId(orderId);
+      return;
+    }
     setLinking(submitter.key);
     try {
-      for (const submission of submitter.submissions)
-        await mutate(`/api/ryd/orders/${encodeURIComponent(orderId)}/links`, {
-          method: "POST",
-          body: JSON.stringify({
-            submissionKey: submission.key,
-            source: "manual",
-          }),
-        });
-      await refresh();
+      await mutate(`/api/ryd/orders/${encodeURIComponent(orderId)}/links`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
       toast.success("Linked. Review the order to decide.");
       setOpenOrderId(orderId);
+      try {
+        await refresh();
+      } catch {
+        toast.error(
+          "The responses were linked, but the queue could not reload. Refresh the page to see them.",
+        );
+      }
     } catch (error) {
-      toast.error(errorMessage(error, "That submission couldn't be linked."));
+      toast.error(
+        errorMessage(
+          error,
+          "Those responses couldn't be linked. Nothing was partially linked.",
+        ),
+      );
     } finally {
       setLinking(null);
     }
   }
 
-  /**
-   * One more contact attempt to each of these unmatched submitters. A bulk
-   * mark holds every control without spinning any one card's button.
-   */
-  async function markContacted(emails: string[], bulk = false) {
-    setContacting(bulk ? "*" : emails[0]);
-    try {
-      await mutate("/api/ryd/submitter-contacts", {
-        method: "POST",
-        body: JSON.stringify({ emails }),
-      });
-      await refresh();
-      if (bulk) setSelectedSubmitterKeys(new Set());
-      toast.success(
-        emails.length === 1
-          ? `Marked ${emails[0]} as contacted.`
-          : `Marked ${emails.length} people as contacted.`,
-      );
-    } catch (error) {
-      toast.error(errorMessage(error, "That contact couldn't be recorded."));
-    } finally {
-      setContacting(null);
-    }
+  function markContacted(emails: string[]) {
+    if (searchPending || contacting !== null) return;
+    setContactOperation(emails);
   }
 
   /** Remove a response from the queue, or with `restore`, put it back. */
@@ -664,7 +662,12 @@ export function RydPageClient({
                         className="w-full sm:w-auto"
                         leftIcon={<FiMail aria-hidden />}
                         onClick={() => setDialog("unmatched-email")}
-                        disabled={!contactable.length}
+                        disabled={
+                          searchPending ||
+                          linking !== null ||
+                          dismissing !== null ||
+                          !contactable.length
+                        }
                         title={
                           contactable.length
                             ? undefined
@@ -685,8 +688,14 @@ export function RydPageClient({
                 {selectableSubmitters.length > 0 && (
                   <RydSelectionBar
                     total={selectableSubmitters.length}
+                    scope="All contactable unmatched people in this view"
                     selectedCount={selectedSubmitters.length}
-                    disabled={contacting !== null}
+                    disabled={
+                      searchPending ||
+                      contacting !== null ||
+                      linking !== null ||
+                      dismissing !== null
+                    }
                     onToggleAll={() =>
                       setSelectedSubmitterKeys(
                         selectedSubmitters.length === selectableSubmitters.length
@@ -702,7 +711,11 @@ export function RydPageClient({
                       className="w-full sm:w-auto"
                       leftIcon={<FiMail aria-hidden />}
                       disabled={
-                        contacting !== null || !selectedSubmitters.length
+                        searchPending ||
+                        linking !== null ||
+                        dismissing !== null ||
+                        contacting !== null ||
+                        !selectedSubmitters.length
                       }
                       onClick={() => setDialog("unmatched-email-selected")}
                     >
@@ -714,15 +727,16 @@ export function RydPageClient({
                       className="w-full sm:w-auto"
                       leftIcon={<FiCheckSquare aria-hidden />}
                       disabled={
-                        contacting !== null || !selectedSubmitters.length
+                        searchPending ||
+                        linking !== null ||
+                        dismissing !== null ||
+                        contacting !== null ||
+                        !selectedSubmitters.length
                       }
                       loading={contacting === "*"}
                       loadingText="Marking..."
                       onClick={() =>
-                        markContacted(
-                          selectedSubmitters.map((s) => s.email),
-                          true,
-                        )
+                        markContacted(selectedSubmitters.map((s) => s.email))
                       }
                     >
                       Mark contacted
@@ -753,7 +767,11 @@ export function RydPageClient({
                   selection={{
                     selected: selectedSubmitterKeys,
                     onToggle: toggleSubmitter,
-                    disabled: contacting !== null,
+                    disabled:
+                      searchPending ||
+                      contacting !== null ||
+                      linking !== null ||
+                      dismissing !== null,
                   }}
                   onRemove={setRemoving}
                   onRestore={(submission) => setDismissed(submission, true)}
@@ -775,7 +793,7 @@ export function RydPageClient({
                       className="w-full shrink-0 sm:w-auto"
                       leftIcon={<FiMail aria-hidden />}
                       onClick={() => setDialog("remind")}
-                      disabled={!remindable.length}
+                      disabled={searchPending || !remindable.length}
                       title={
                         remindable.length
                           ? undefined
@@ -878,6 +896,7 @@ export function RydPageClient({
                           className="w-full sm:w-auto"
                           leftIcon={<FiPackage aria-hidden />}
                           disabled={
+                            searchPending ||
                             moving !== null ||
                             !selectedStages.has("not-started")
                           }
@@ -892,6 +911,7 @@ export function RydPageClient({
                           className="w-full sm:w-auto"
                           leftIcon={<FiCheckSquare aria-hidden />}
                           disabled={
+                            searchPending ||
                             moving !== null ||
                             !selectedOrders.length ||
                             (selectedStages.size === 1 &&
@@ -909,6 +929,7 @@ export function RydPageClient({
                           className="w-full sm:w-auto"
                           leftIcon={<FiCornerUpLeft aria-hidden />}
                           disabled={
+                            searchPending ||
                             moving !== null ||
                             !(
                               selectedStages.has("in-production") ||
@@ -937,7 +958,7 @@ export function RydPageClient({
                       variant="secondary"
                       className="w-full sm:w-auto"
                       leftIcon={<FiMail aria-hidden />}
-                      disabled={!emailableSelected.length}
+                      disabled={searchPending || !emailableSelected.length}
                       title={
                         selectedOrders.length && !emailableSelected.length
                           ? "Rejected orders are never emailed."
@@ -1053,19 +1074,45 @@ export function RydPageClient({
           }}
         />
       )}
-      {(dialog === "unmatched-email" ||
+      {(contactOperation ||
+        dialog === "unmatched-email" ||
         dialog === "unmatched-email-selected") && (
-        <RydUnmatchedEmailDialog
-          {...(dialog === "unmatched-email-selected"
-            ? {
-                submitters: selectedSubmitters,
-                title: `Email ${selectedSubmitters.length} selected`,
-              }
-            : { submitters: contactable })}
-          onClose={() => setDialog(null)}
-          onChanged={async () => {
-            await refresh();
-            setSelectedSubmitterKeys(new Set());
+        <RydContactDialog
+          emails={
+            contactOperation ??
+            (dialog === "unmatched-email-selected"
+              ? selectedSubmitters
+              : contactable
+            ).map((submitter) => submitter.email)
+          }
+          draft={!contactOperation}
+          title={
+            contactOperation
+              ? "Record contact"
+              : dialog === "unmatched-email-selected"
+                ? `Email ${selectedSubmitters.length} selected`
+                : "Email unmatched submitters"
+          }
+          onClose={() => {
+            setContactOperation(null);
+            setDialog(null);
+          }}
+          onRecorded={contactsRecorded}
+          onChanged={refresh}
+        />
+      )}
+      {productionOperation && (
+        <RydProductionDialog
+          orders={productionOperation.orders}
+          action={productionOperation.action}
+          onApplied={productionApplied}
+          onClose={() => {
+            setProductionOperation(null);
+            void refresh().catch(() =>
+              toast.error(
+                "The queue could not reload. Confirmed production changes stay saved.",
+              ),
+            );
           }}
         />
       )}

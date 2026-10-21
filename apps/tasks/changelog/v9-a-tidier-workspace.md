@@ -58,6 +58,10 @@ The RY-D access team can manage verification, fulfillment, settings, and the
 Google connection. Administrator tiers and app owners retain access, while
 other members need the RY-D team grant.
 
+### Safer RY-D bulk actions
+
+Large production selections save in bounded groups with visible progress and safe retries. Mixed backward moves save together. Unmatched emails confirm each sent draft independently, contact retries cannot count twice, and a person's responses link together. Actions wait while search results catch up.
+
 ### Faster RY-D evidence loading
 
 Evidence thumbnails share brief form reads, so opening several uploads no longer reloads every form answer for each file. Google requests time out and stop when their readers cancel, while each file still requires current RY-D access.

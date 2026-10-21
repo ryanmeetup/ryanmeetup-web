@@ -177,6 +177,7 @@ export function RydUnmatchedView({
         searchPlaceholder="Search orders"
         menuWidth="wide"
         disabled={
+          selection.disabled ||
           linking !== null ||
           busy !== null ||
           contacting !== null ||
@@ -211,6 +212,7 @@ export function RydUnmatchedView({
         loading={contacting === submitter.email}
         loadingText="Marking..."
         disabled={
+          selection.disabled ||
           linking !== null ||
           busy !== null ||
           contacting !== null ||

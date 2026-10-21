@@ -4,6 +4,7 @@ import { readJson } from "@/lib/server/request";
 import { rydContext } from "@/lib/server/ryd";
 import {
   changeRydSubmission,
+  linkRydSubmissions,
   rydMutationFailure,
 } from "@/lib/server/ryd-mutations";
 
@@ -12,22 +13,31 @@ type Params = { params: Promise<{ orderId: string }> };
 async function change(
   request: Request,
   { params }: Params,
-  action: "link" | "unlink",
-  data: { submissionKey: string; source?: "manual" | "suggested" },
+  data:
+    | { submissionKey: string }
+    | { submissionKeys: string[]; source: "manual" | "suggested" },
 ) {
+  const action = "submissionKeys" in data ? "link" : "unlink";
   const context = await rydContext();
   if ("response" in context) return context.response;
   const { orderId } = await params;
   try {
     return NextResponse.json(
-      await changeRydSubmission(
-        context.admin,
-        context.user.id,
-        action,
-        data.submissionKey,
-        orderId,
-        data.source,
-      ),
+      "submissionKeys" in data
+        ? await linkRydSubmissions(
+            context.admin,
+            context.user.id,
+            orderId,
+            data.submissionKeys,
+            data.source,
+          )
+        : await changeRydSubmission(
+            context.admin,
+            context.user.id,
+            action,
+            data.submissionKey,
+            orderId,
+          ),
     );
   } catch (error) {
     return rydMutationFailure(
@@ -43,12 +53,12 @@ export async function POST(request: Request, params: Params) {
   const parsed = await readJson(request, rydLinkCreateSchema);
   return "response" in parsed
     ? parsed.response
-    : change(request, params, "link", parsed.data);
+    : change(request, params, parsed.data);
 }
 
 export async function DELETE(request: Request, params: Params) {
   const parsed = await readJson(request, rydLinkSchema);
   return "response" in parsed
     ? parsed.response
-    : change(request, params, "unlink", parsed.data);
+    : change(request, params, parsed.data);
 }

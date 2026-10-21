@@ -126,6 +126,17 @@ history come only from inserted orders; a retry does not create another import.
 Reminder confirmations pin the draft's recipients, skip orders no longer
 waiting, and reject a changed email. Draft opening never records a send.
 
+Bounded production and unmatched-contact confirmations use service-role-only
+`ryd_move_production` and `ryd_record_contacts`. Each group and its receipt
+commit together, with keys bound to the actor, operation kind, and canonical
+input hash. Replays still require current RY-D authority. Production locks the
+whole sorted order set and refuses a changed original stage; mixed backward
+moves cannot partially save or repeat on retry. Contact attempts and their
+receipt save together. Receipts retain summary counts and timestamps; canonical
+orders and contact totals are queried for the response rather than copied into
+receipts. `ryd_link_submissions` locks every response key before linking the
+bounded group, so conflicting claims or audit failures roll back all its links.
+
 ## Tasks and related content
 
 - A project task is visible only when the member can access its project and

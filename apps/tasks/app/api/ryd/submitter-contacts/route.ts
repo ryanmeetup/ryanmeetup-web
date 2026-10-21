@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { rydEmailsSchema } from "@/lib/api-schema";
-import { apiError, databaseFailure } from "@/lib/server/api-response";
 import { readJson } from "@/lib/server/request";
 import { rydContext } from "@/lib/server/ryd";
-import { isMissingRelation } from "@/lib/server/supabase-errors";
+import { recordRydContacts } from "@/lib/server/ryd-bulk";
+import { rydMutationFailure } from "@/lib/server/ryd-mutations";
 
 /**
  * Record that the reviewer emailed these unmatched submitters from their own
- * mail app. Each call is one more attempt per address.
+ * mail app. Reusing an operation ID cannot record the attempt twice.
  */
 export async function POST(request: Request) {
   const parsed = await readJson(request, rydEmailsSchema);
@@ -15,27 +15,21 @@ export async function POST(request: Request) {
   const context = await rydContext();
   if ("response" in context) return context.response;
 
-  const contactedAt = new Date().toISOString();
-  const result = await context.admin.from("ryd_submitter_contacts").insert(
-    parsed.data.emails.map((email) => ({
-      email,
-      contacted_by: context.user.id,
-      contacted_at: contactedAt,
-    })),
-  );
-  if (result.error) {
-    if (isMissingRelation(result.error.code))
-      return apiError(
-        503,
-        "SERVICE_UNAVAILABLE",
-        "Marking people contacted needs a pending database update. Apply it, then try again.",
-      );
-    return databaseFailure(request, "ryd.contacts", result.error, {
-      error: "Those contacts couldn't be recorded. Try again.",
-    });
+  try {
+    return NextResponse.json(
+      await recordRydContacts(
+        context.admin,
+        context.user.id,
+        parsed.data.operationId,
+        parsed.data.emails,
+      ),
+    );
+  } catch (error) {
+    return rydMutationFailure(
+      request,
+      "ryd.contacts",
+      error,
+      "Those contacts couldn't be recorded. Retry the same group.",
+    );
   }
-  return NextResponse.json({
-    contactedAt,
-    markedCount: parsed.data.emails.length,
-  });
 }

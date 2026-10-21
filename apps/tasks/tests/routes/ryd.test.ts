@@ -234,6 +234,33 @@ describe("RY-D routes", () => {
     );
   });
 
+  it("links a submitter's responses with one provenance check and one transaction", async () => {
+    getAdminClient.mockReturnValue(admin({}));
+    readRydSubmissions.mockResolvedValue({
+      submissions: [{ key: "response-1" }, { key: "response-2" }],
+    });
+    const { POST } = await import("@/app/api/ryd/orders/[orderId]/links/route");
+    const response = await POST(
+      new Request(
+        "http://localhost/api/ryd/orders/1001/links",
+        json(
+          { submissionKeys: ["response-1", "response-2"], source: "manual" },
+          "POST",
+        ),
+      ),
+      { params: Promise.resolve({ orderId: "1001" }) },
+    );
+    expect(response.status).toBe(200);
+    expect(readRydSubmissions).toHaveBeenCalledTimes(1);
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("ryd_link_submissions", {
+      requested_actor: "member-1",
+      requested_order: "1001",
+      requested_keys: ["response-1", "response-2"],
+      requested_form: "f".repeat(30),
+      requested_source: "manual",
+    });
+  });
+
   it("does not persist a response ID from outside the configured form", async () => {
     getAdminClient.mockReturnValue(admin({}));
     const { POST } = await import("@/app/api/ryd/orders/[orderId]/links/route");
@@ -677,16 +704,22 @@ describe("RY-D routes", () => {
     const response = await POST(
       new Request(
         "http://localhost/api/ryd/production",
-        json({ orderIds: ["1001", "1001"], stage: "done" }, "POST"),
+        json(
+          {
+            operationId: "00000000-0000-4000-8000-000000000601",
+            moves: [{ orderId: "1001", from: "not-started", to: "done" }],
+          },
+          "POST",
+        ),
       ),
     );
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ movedCount: 1 });
-    expect(rpc).toHaveBeenCalledExactlyOnceWith("ryd_set_production", {
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("ryd_move_production", {
       requested_actor: "member-1",
-      requested_orders: ["1001"],
-      requested_stage: "done",
+      requested_operation: "00000000-0000-4000-8000-000000000601",
+      requested_moves: [{ orderId: "1001", from: "not-started", to: "done" }],
     });
     expect(calls).toEqual([]);
   });
@@ -718,6 +751,7 @@ describe("RY-D routes", () => {
   });
 
   it("records one contact attempt per unmatched submitter, normalized", async () => {
+    rpc.mockResolvedValue({ data: { markedCount: 2 }, error: null });
     const calls: unknown[] = [];
     getAdminClient.mockReturnValue(
       admin({
@@ -730,7 +764,10 @@ describe("RY-D routes", () => {
       new Request(
         "http://localhost/api/ryd/submitter-contacts",
         json(
-          { emails: ["Ryan@Example.com ", "ryan@example.com", "b@x.dev"] },
+          {
+            operationId: "00000000-0000-4000-8000-000000000601",
+            emails: ["Ryan@Example.com ", "ryan@example.com", "b@x.dev"],
+          },
           "POST",
         ),
       ),
@@ -739,32 +776,33 @@ describe("RY-D routes", () => {
     expect(response.status).toBe(200);
     const body = await response.json();
     expect(body.markedCount).toBe(2);
-    const [method, rows] = calls[0] as [string, Record<string, unknown>[]];
-    expect(method).toBe("insert");
-    expect(rows.map((row) => [row.email, row.contacted_by])).toEqual([
-      ["ryan@example.com", "member-1"],
-      ["b@x.dev", "member-1"],
-    ]);
+    expect(calls).toEqual([]);
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("ryd_record_contacts", {
+      requested_actor: "member-1",
+      requested_operation: "00000000-0000-4000-8000-000000000601",
+      requested_emails: ["ryan@example.com", "b@x.dev"],
+    });
   });
 
-  it("says a pending migration blocks marking contacts before the table exists", async () => {
-    getAdminClient.mockReturnValue(
-      admin({
-        ryd_submitter_contacts: table({
-          data: null,
-          error: { code: "42P01", message: "missing" },
-        }),
-      }),
-    );
+  it("says a pending migration blocks contact confirmations before the RPC exists", async () => {
+    getAdminClient.mockReturnValue(admin({}));
+    rpc.mockResolvedValue({
+      data: null,
+      error: { code: "PGRST202", message: "missing" },
+    });
     const { POST } = await import("@/app/api/ryd/submitter-contacts/route");
-
     const response = await POST(
       new Request(
         "http://localhost/api/ryd/submitter-contacts",
-        json({ emails: ["ryan@example.com"] }, "POST"),
+        json(
+          {
+            operationId: "00000000-0000-4000-8000-000000000601",
+            emails: ["ryan@example.com"],
+          },
+          "POST",
+        ),
       ),
     );
-
     expect(response.status).toBe(503);
   });
 

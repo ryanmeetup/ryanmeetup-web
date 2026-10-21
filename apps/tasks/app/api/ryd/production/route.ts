@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { rydProductionSchema } from "@/lib/api-schema";
 import { rydMutationFailure } from "@/lib/server/ryd-mutations";
 import { readJson } from "@/lib/server/request";
-import { rydContext, setRydProductionStage } from "@/lib/server/ryd";
+import { rydContext } from "@/lib/server/ryd";
+import { moveRydProduction } from "@/lib/server/ryd-bulk";
 
 /**
- * Move verified orders between not sent, in production, and done. Orders
- * that aren't verified are left alone.
+ * Apply one bounded group atomically, refusing stale stages. A retry with the
+ * same operation returns its receipt and the current canonical order state.
  */
 export async function POST(request: Request) {
   const parsed = await readJson(request, rydProductionSchema);
@@ -15,11 +16,11 @@ export async function POST(request: Request) {
   if ("response" in context) return context.response;
   try {
     return NextResponse.json(
-      await setRydProductionStage(
+      await moveRydProduction(
         context.admin,
-        context.user,
-        parsed.data.orderIds,
-        parsed.data.stage,
+        context.user.id,
+        parsed.data.operationId,
+        parsed.data.moves,
       ),
     );
   } catch (error) {

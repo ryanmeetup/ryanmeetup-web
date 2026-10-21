@@ -103,15 +103,22 @@ presses Send. The page then records what was sent.
    it is waiting on a reviewer rather than the buyer. Mark it **Needs more
    info** to chase it.
 
-   **Unmatched submissions** has its own **Email everyone**: one Bcc draft to
-   everyone whose form answers no order claims, asking for the email or order
-   number the RY-D was bought under. **Mark as contacted** then records one
-   attempt per person (`ryd_submitter_contacts`, a row per attempt, keyed by
-   normalized email); **Mark contacted** on one person's card records a single
-   attempt. Each submitter shows **Contacted N×** once they've been asked,
-   and anyone contacted in the last 20 hours is left out of the next draft.
-   Ticking people, or **Select all**, offers **Email selected** and **Mark
-   contacted** for just them.
+   **Unmatched submissions** has its own **Email everyone**, asking for the
+   email or order number the RY-D was bought under. The selection becomes
+   independent Bcc drafts bounded by recipient count, request bytes, and mail
+   link length. Copy the addresses and email if a draft cannot open. Confirm
+   only each draft you sent; opening or closing it records nothing. Each
+   confirmation records one attempt per person and has a stable retry key, so
+   retrying cannot add another attempt. A reload failure leaves the confirmed
+   draft recorded. Recently contacted people are left out of **Email everyone**;
+   hand-picked selections can override that pause.
+
+   **Mark contacted** on a person or selection opens the same bounded group
+   confirmations without preparing a new email. Confirm only the groups already
+   contacted. Counts and last-contact dates reconcile from the database result.
+   Linking a person's responses uses one transaction: a conflicting claim leaves
+   the whole group unlinked. Groups above 100 responses or the request budget
+   open the order review for individual linking instead of partially saving.
 4. **Send to fulfillment.** Opening this dialog prepares or resumes one
    shared batch. Fulfillment's address must be configured first. The batch
    pins its recipient, raw order rows, header schema, decisions, and ready
@@ -145,6 +152,18 @@ presses Send. The page then records what was sent.
    that was never sent stamps both, and re-marking keeps the first date.
    **Move back** takes each ticked order one step back. Once an order is in
    production, or fulfillment has its file, its decision can't be changed.
+
+   Selection covers every filtered page, with the scope shown beside its count.
+   The confirmation pins each order's original and target stage. Production
+   groups contain at most 100 moves and 14,000 encoded request bytes; a mixed
+   backward group commits together. Larger selections show confirmed progress,
+   stop at the first failed group, and retry that same group without repeating
+   completed ones. A changed or deleted order refuses its entire group and
+   requires reviewing the remaining selection. Completed groups stay saved.
+   Closing and starting another operation creates new retry keys; retry an
+   unconfirmed group in its existing dialog first. Reloading the page also loses
+   the dialog's local retry keys. Search-pending actions and checkboxes stay
+   disabled until the results catch up.
 
 ## Data
 

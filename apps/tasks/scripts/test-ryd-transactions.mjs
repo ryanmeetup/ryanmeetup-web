@@ -13,10 +13,17 @@ for (const file of [
   "ryd-transactions.sql",
   "ryd-fulfillment.sql",
   "ryd-import-reminders.sql",
+  "ryd-bulk-operations.sql",
 ]) {
   const tap = spawnSync(
     "supabase",
-    ["test", "db", `tests/database/${file}`, "--workdir", appRoot],
+    [
+      "test",
+      "db",
+      fileURLToPath(new URL(`../tests/database/${file}`, import.meta.url)),
+      "--workdir",
+      appRoot,
+    ],
     { stdio: "inherit" },
   );
   if (tap.error) throw tap.error;
@@ -277,6 +284,38 @@ try {
   console.log(
     "PASS: concurrent reminder retries retain one timestamp and audit event",
   );
+  const moves = JSON.stringify([
+    { orderId: "race-2", from: "done", to: "in-production" },
+  ]);
+  await race(
+    `select public.ryd_move_production('${actor}','60000000-0000-4000-8000-000000000601','${moves}')`,
+    `select public.ryd_move_production('${actor}','60000000-0000-4000-8000-000000000601','${moves}')`,
+    true,
+  );
+  if (
+    sql(
+      "select done_at is null and production_sent_at is not null from public.ryd_orders where order_id='race-2';",
+    ) !== "t" ||
+    sql(
+      "select count(*) from public.ryd_order_events where order_id='race-2' and action='production';",
+    ) !== "2"
+  )
+    throw new Error("Concurrent backward-move retries changed an order twice");
+  console.log("PASS: concurrent production retries move back exactly once");
+  await race(
+    `select public.ryd_record_contacts('${actor}','70000000-0000-4000-8000-000000000601',array['contact-race@example.test'])`,
+    `select public.ryd_record_contacts('${actor}','70000000-0000-4000-8000-000000000601',array['contact-race@example.test'])`,
+    true,
+  );
+  if (
+    sql(
+      "select count(*) from public.ryd_submitter_contacts where email='contact-race@example.test';",
+    ) !== "1"
+  )
+    throw new Error(
+      "Concurrent contact retries duplicated the contact attempt",
+    );
+  console.log("PASS: concurrent contact retries retain one attempt");
 } finally {
   run("docker", [
     "exec",

@@ -7,24 +7,11 @@ import {
   Input,
   Modal,
   ModalActions,
-  Pill,
   toast,
 } from "@ryanmeetup/ui";
-import {
-  FiCheck,
-  FiLogOut,
-  FiMail,
-  FiUpload,
-} from "react-icons/fi";
-import { CopyButton } from "@/components/global";
+import { FiLogOut, FiUpload } from "react-icons/fi";
 import { mutate } from "@/lib/mutation-client";
 import { errorMessage } from "@/lib/presentation";
-import {
-  rydMailtoHref,
-  rydUnmatchedEmail,
-  type RydDraft,
-} from "@/lib/ryd/emails";
-import type { RydSubmitter } from "@/lib/ryd/matching";
 import type { RydImportSummary } from "@/lib/ryd/orders";
 import type { RydQueue } from "@/lib/ryd/queue-types";
 
@@ -130,154 +117,6 @@ export function RydUploadDialog({
         </label>
         <ErrorCallout>{error}</ErrorCallout>
       </div>
-    </Modal>
-  );
-}
-
-/** Bcc set apart, since putting buyers in To would show everyone's address. */
-const BccTag = () => (
-  <span className="rounded-md border border-black/15 bg-black/[0.05] px-1.5 py-px font-mono text-[0.85em] font-semibold text-black dark:border-white/20 dark:bg-white/10 dark:text-white">
-    Bcc
-  </span>
-);
-
-const draftText = (draft: RydDraft) =>
-  `Subject: ${draft.subject}\n\n${draft.body}`;
-
-const BCC_INTRO = (
-  <>
-    Every recipient goes in <BccTag />, so nobody sees anyone else&apos;s
-    address.
-  </>
-);
-
-/** One Bcc draft to a group of people, previewed with ways to send it. */
-function BulkDraftCard({
-  label,
-  addresses,
-  draft,
-}: {
-  label: string;
-  addresses: string[];
-  draft: RydDraft;
-}) {
-  return (
-    <li className="rounded-2xl border border-black/10 p-4 dark:border-white/10">
-      <div className="flex flex-wrap items-center gap-2">
-        <p className="text-sm font-semibold">{label}</p>
-        <Pill variant="neutral" size="sm">
-          {addresses.length} {addresses.length === 1 ? "person" : "people"}
-        </Pill>
-      </div>
-      <div className="mt-3 rounded-xl border border-black/10 bg-black/[0.02] p-3 text-sm dark:border-white/10 dark:bg-white/[0.03]">
-        <p className="font-semibold">{draft.subject}</p>
-        <p className="mt-2 whitespace-pre-line break-words text-black/70 dark:text-white/70">
-          {draft.body}
-        </p>
-      </div>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Button.Link
-          href={rydMailtoHref({ bcc: addresses, ...draft })}
-          size="xs"
-          variant="secondary"
-          leftIcon={<FiMail aria-hidden />}
-          prefetch={false}
-          newTab
-        >
-          Open draft
-        </Button.Link>
-        <CopyButton value={addresses.join(", ")} label="Addresses">
-          Copy addresses
-        </CopyButton>
-        <CopyButton value={draftText(draft)} label="Email">
-          Copy email
-        </CopyButton>
-      </div>
-    </li>
-  );
-}
-
-const BULK_FALLBACK = (
-  <p className="mt-4 text-sm text-black/70 dark:text-white/70">
-    Draft didn&apos;t open? Copy the addresses into <BccTag />, then paste the
-    email.
-  </p>
-);
-
-/**
- * Emails everyone whose form answers no order claims, then records the
- * attempt. A reply brings the order email back, and linking it clears them.
- */
-export function RydUnmatchedEmailDialog({
-  submitters,
-  title = "Email unmatched submitters",
-  onClose,
-  onChanged,
-}: {
-  submitters: RydSubmitter[];
-  title?: string;
-  onClose: () => void;
-  onChanged: () => Promise<void>;
-}) {
-  const [marking, setMarking] = useState(false);
-
-  async function markContacted() {
-    setMarking(true);
-    try {
-      const result = await mutate<{ markedCount: number }>(
-        "/api/ryd/submitter-contacts",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            emails: submitters.map((submitter) => submitter.email),
-          }),
-        },
-      );
-      await onChanged();
-      toast.success(
-        `Marked ${result.markedCount} ${result.markedCount === 1 ? "person" : "people"} as contacted.`,
-      );
-      onClose();
-    } catch (error) {
-      toast.error(errorMessage(error, "Those contacts couldn't be recorded."));
-    } finally {
-      setMarking(false);
-    }
-  }
-
-  return (
-    <Modal
-      open
-      setIsOpen={(open) => !open && !marking && onClose()}
-      size="lg"
-      title={title}
-      description={
-        <>
-          {BCC_INTRO} Once it&apos;s sent, mark them contacted here: each one
-          counts as another attempt, and they won&apos;t be asked again for a
-          day.
-        </>
-      }
-      closable={!marking}
-      actions={
-        <ModalActions
-          confirmLabel={`Mark ${submitters.length} as contacted`}
-          confirmIcon={<FiCheck aria-hidden />}
-          onConfirm={markContacted}
-          onCancel={onClose}
-          pending={marking}
-          pendingLabel="Marking..."
-        />
-      }
-    >
-      <ul className="space-y-4">
-        <BulkDraftCard
-          label="No matching order"
-          addresses={submitters.map((submitter) => submitter.email)}
-          draft={rydUnmatchedEmail()}
-        />
-      </ul>
-      {BULK_FALLBACK}
     </Modal>
   );
 }
