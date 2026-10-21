@@ -58,6 +58,10 @@ The RY-D access team can manage verification, fulfillment, settings, and the
 Google connection. Administrator tiers and app owners retain access, while
 other members need the RY-D team grant.
 
+### Faster RY-D evidence loading
+
+Evidence thumbnails share brief form reads, so opening several uploads no longer reloads every form answer for each file. Google requests time out and stop when their readers cancel, while each file still requires current RY-D access.
+
 ### Give the workspace more room
 
 The desktop sidebar can now be hidden from its header and restored from the workspace header. Tasks remembers that choice between visits, so focused work keeps the extra room until the navigation is needed again.

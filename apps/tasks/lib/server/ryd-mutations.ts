@@ -44,6 +44,7 @@ export async function rydSubmissionForm(admin: SupabaseClient, keys: string[]) {
   const { submissions } = await readRydSubmissions(
     integration,
     settings.formId,
+    { fresh: true },
   );
   const known = new Set(submissions.map((submission) => submission.key));
   if (keys.some((key) => !known.has(key)))

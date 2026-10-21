@@ -110,6 +110,7 @@ describe("RY-D immutable fulfillment manifests", () => {
     expect(google.read).toHaveBeenCalledWith(
       expect.anything(),
       "original-form",
+      { fresh: true },
     );
     expect(google.tick).toHaveBeenCalledWith(
       expect.anything(),

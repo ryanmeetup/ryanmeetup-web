@@ -12,7 +12,7 @@ import {
  * of its Drive, and this route must not become a way to browse it.
  */
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ fileId: string }> },
 ) {
   const context = await rydContext();
@@ -29,10 +29,11 @@ export async function GET(
     const { submissions } = await readRydSubmissions(
       integration,
       settings.formId,
+      { signal: request.signal },
     );
     if (!submissions.some((submission) => submission.fileIds.includes(fileId)))
       return notFound();
-    const file = await fetchRydEvidence(integration, fileId);
+    const file = await fetchRydEvidence(integration, fileId, request.signal);
     const name = file.name.replace(/["\\\r\n]/g, "_");
     return new Response(file.body, {
       headers: {
@@ -45,6 +46,12 @@ export async function GET(
       },
     });
   } catch (error) {
+    if (request.signal.aborted)
+      return apiError(
+        499,
+        "SERVICE_UNAVAILABLE",
+        "The file request was cancelled.",
+      );
     console.error("RY-D evidence could not be fetched", error);
     return apiError(
       502,

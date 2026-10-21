@@ -167,7 +167,12 @@ export async function googleJson<T>(
   init: RequestInit,
   service = "Google",
 ) {
-  const response = await fetch(url, { ...init, cache: "no-store" });
+  const response = await fetch(url, {
+    ...init,
+    cache: "no-store",
+    // Includes reading the response body, not just receiving its headers.
+    signal: googleRequestSignal(init.signal ?? undefined),
+  });
   if (!response.ok) {
     const body = await response.text();
     console.error(`${service} request failed`, {
@@ -177,6 +182,12 @@ export async function googleJson<T>(
     throw new Error(`${service} could not be reached.`);
   }
   return response.json() as Promise<T>;
+}
+
+/** Every Google request has a deadline and can inherit its caller's abort. */
+export function googleRequestSignal(signal?: AbortSignal, timeoutMs = 10_000) {
+  const deadline = AbortSignal.timeout(timeoutMs);
+  return signal ? AbortSignal.any([signal, deadline]) : deadline;
 }
 
 export async function exchangeGoogleAuthorizationCode(
@@ -192,6 +203,7 @@ export async function exchangeGoogleAuthorizationCode(
     scope?: string;
   }>(GOOGLE_TOKEN_URL, {
     method: "POST",
+    signal: request.signal,
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       client_id: config.clientId,
@@ -216,12 +228,14 @@ export async function googleAccountEmail(accessToken: string) {
 export async function googleAccessToken(
   encryptedRefreshToken: string,
   service = "Google",
+  signal?: AbortSignal,
 ) {
   const config = requireConfiguration();
   const result = await googleJson<{ access_token: string }>(
     GOOGLE_TOKEN_URL,
     {
       method: "POST",
+      signal,
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
         client_id: config.clientId,
@@ -249,6 +263,7 @@ export async function revokeGoogleRefreshToken(
         token: decryptGoogleRefreshToken(encryptedRefreshToken),
       }),
       cache: "no-store",
+      signal: googleRequestSignal(),
     });
   } catch (error) {
     console.error(`${service} token revocation failed`, error);

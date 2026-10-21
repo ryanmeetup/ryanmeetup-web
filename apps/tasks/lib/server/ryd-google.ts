@@ -1,5 +1,6 @@
 import "server-only";
 
+import { createHash } from "node:crypto";
 import {
   parseRydFormResponses,
   sheetSerial,
@@ -16,9 +17,11 @@ import {
   exchangeGoogleAuthorizationCode,
   googleAccessToken,
   googleJson,
+  googleRequestSignal,
   isGoogleOAuthConfigured,
   revokeGoogleRefreshToken,
 } from "./google-oauth";
+import { createRydGoogleReadCache } from "./ryd-google-read-cache";
 
 /**
  * The Google account that owns the RY-dentification form. It is a separate
@@ -117,8 +120,36 @@ export function revokeRydGoogle(connection: RydGoogleIntegrationRow) {
   return revokeGoogleRefreshToken(connection.encrypted_refresh_token, SERVICE);
 }
 
-function token(connection: RydGoogleIntegrationRow) {
-  return googleAccessToken(connection.encrypted_refresh_token, SERVICE);
+// No Next cache, database storage, or media retention. Keys include the current
+// credential and connection revision; callers still authorize every request.
+const tokens = createRydGoogleReadCache<string>({ ttlMs: 10_000, maxEntries: 4 });
+const forms = createRydGoogleReadCache<RydFormRead>({
+  ttlMs: 10_000,
+  maxEntries: 2,
+  // Large forms still share an in-flight read, without retaining its result.
+  retain: (value) => Buffer.byteLength(JSON.stringify(value)) <= 4 * 1024 * 1024,
+});
+
+function connectionKey(connection: RydGoogleIntegrationRow) {
+  return createHash("sha256")
+    .update(
+      JSON.stringify([
+        connection.id,
+        connection.encrypted_refresh_token,
+        connection.updated_at,
+        connection.connected_at,
+      ]),
+    )
+    .digest("hex");
+}
+
+function token(connection: RydGoogleIntegrationRow, signal?: AbortSignal) {
+  return tokens.read(
+    connectionKey(connection),
+    (sharedSignal) =>
+      googleAccessToken(connection.encrypted_refresh_token, SERVICE, sharedSignal),
+    { signal },
+  );
 }
 
 type ResponsePage = {
@@ -126,10 +157,10 @@ type ResponsePage = {
   nextPageToken?: string;
 };
 
-async function readForm(accessToken: string, formId: string) {
+async function readForm(accessToken: string, formId: string, signal: AbortSignal) {
   const headers = { Authorization: `Bearer ${accessToken}` };
   const base = `${FORMS_URL}/${encodeURIComponent(formId)}`;
-  const form = await googleJson<GoogleForm>(base, { headers }, SERVICE);
+  const form = await googleJson<GoogleForm>(base, { headers, signal }, SERVICE);
   const responses: GoogleFormResponse[] = [];
   let pageToken: string | undefined;
   do {
@@ -138,7 +169,7 @@ async function readForm(accessToken: string, formId: string) {
     if (pageToken) url.searchParams.set("pageToken", pageToken);
     const page = await googleJson<ResponsePage>(
       url.toString(),
-      { headers },
+      { headers, signal },
       SERVICE,
     );
     responses.push(...(page.responses ?? []));
@@ -147,18 +178,39 @@ async function readForm(accessToken: string, formId: string) {
   return { form, responses };
 }
 
-/** Every response to the form, live. Nothing from Google is stored. */
+type RydFormRead = {
+  submissions: RydSubmission[];
+  title: string;
+  linkedSheetId: string | null;
+};
+
+export type RydGoogleReadOptions = { signal?: AbortSignal; fresh?: boolean };
+
+/** Live Google responses with at most ten seconds of process-local reuse. */
 export async function readRydSubmissions(
   connection: RydGoogleIntegrationRow,
   formId: string,
+  options: RydGoogleReadOptions = {},
 ) {
-  const { form, responses } = await readForm(await token(connection), formId);
-  return {
-    submissions: parseRydFormResponses(form, responses),
-    title:
-      form.info?.title || form.info?.documentTitle || "RY-dentification form",
-    linkedSheetId: form.linkedSheetId ?? null,
-  };
+  return forms.read(
+    JSON.stringify([connectionKey(connection), formId]),
+    async (sharedSignal) => {
+      // One deadline bounds the token refresh and every response page together.
+      const signal = googleRequestSignal(sharedSignal, 25_000);
+      const { form, responses } = await readForm(
+        await token(connection, signal),
+        formId,
+        signal,
+      );
+      return {
+        submissions: parseRydFormResponses(form, responses),
+        title:
+          form.info?.title || form.info?.documentTitle || "RY-dentification form",
+        linkedSheetId: form.linkedSheetId ?? null,
+      };
+    },
+    options,
+  );
 }
 
 type SpreadsheetMeta = {
@@ -188,15 +240,17 @@ export async function markRydSubmissionsVerified(
   connection: RydGoogleIntegrationRow,
   linkedSheetId: string | null,
   submissions: RydSubmission[],
+  requestSignal?: AbortSignal,
 ) {
   if (!linkedSheetId) return null;
   if (!submissions.length) return 0;
-  const accessToken = await token(connection);
+  const signal = googleRequestSignal(requestSignal, 30_000);
+  const accessToken = await token(connection, signal);
   const headers = { Authorization: `Bearer ${accessToken}` };
   const sheetUrl = `${SHEETS_URL}/${encodeURIComponent(linkedSheetId)}`;
   const meta = await googleJson<SpreadsheetMeta>(
     `${sheetUrl}?fields=properties.timeZone,sheets.properties.title`,
-    { headers },
+    { headers, signal },
     "Google Sheets",
   );
   // Forms writes its responses to the first tab.
@@ -205,7 +259,7 @@ export async function markRydSubmissionsVerified(
   if (!title) return null;
   const values = await googleJson<{ values?: unknown[][] }>(
     `${sheetUrl}/values/${encodeURIComponent(a1Sheet(title))}?valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=SERIAL_NUMBER`,
-    { headers },
+    { headers, signal },
     "Google Sheets",
   );
   const [headerRow = [], ...rows] = values.values ?? [];
@@ -242,6 +296,7 @@ export async function markRydSubmissionsVerified(
     `${sheetUrl}/values:batchUpdate`,
     {
       method: "POST",
+      signal,
       headers: { ...headers, "Content-Type": "application/json" },
       body: JSON.stringify({
         valueInputOption: "RAW",
@@ -260,11 +315,14 @@ const INLINE_TYPES =
 export async function fetchRydEvidence(
   connection: RydGoogleIntegrationRow,
   fileId: string,
+  requestSignal?: AbortSignal,
 ) {
-  const accessToken = await token(connection);
+  // This deadline stays attached through the streamed media body.
+  const signal = googleRequestSignal(requestSignal, 30_000);
+  const accessToken = await token(connection, signal);
   const meta = await googleJson<{ name?: string; mimeType?: string }>(
     `${DRIVE_URL}/${encodeURIComponent(fileId)}?fields=name,mimeType&supportsAllDrives=true`,
-    { headers: { Authorization: `Bearer ${accessToken}` } },
+    { headers: { Authorization: `Bearer ${accessToken}` }, signal },
     "Google Drive",
   );
   const response = await fetch(
@@ -272,6 +330,7 @@ export async function fetchRydEvidence(
     {
       headers: { Authorization: `Bearer ${accessToken}` },
       cache: "no-store",
+      signal,
     },
   );
   if (!response.ok || !response.body)

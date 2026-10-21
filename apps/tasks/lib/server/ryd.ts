@@ -22,6 +22,7 @@ import { getInstanceSettings } from "./instance-settings";
 import {
   loadRydGoogleIntegration,
   readRydSubmissions,
+  type RydGoogleReadOptions,
   type RydGoogleIntegrationRow,
 } from "./ryd-google";
 import { isMissingRelation } from "./supabase-errors";
@@ -97,6 +98,7 @@ export async function loadRydSettings(
 async function loadSheet(
   integration: RydGoogleIntegrationRow | null,
   settings: RydSettings,
+  options: RydGoogleReadOptions,
 ): Promise<{ sheet: RydSheetState; submissions: RydSubmission[] }> {
   if (!integration)
     return { sheet: { status: "disconnected" }, submissions: [] };
@@ -112,12 +114,14 @@ async function loadSheet(
     const { submissions } = await readRydSubmissions(
       integration,
       settings.formId,
+      options,
     );
     return {
       sheet: { status: "ok", accountEmail: integration.account_email },
       submissions,
     };
   } catch (error) {
+    options.signal?.throwIfAborted();
     // The queue still works without the form: decisions, notes, and the
     // export only need the orders. The page says why the evidence is missing.
     console.error("RY-D form could not be read", error);
@@ -196,7 +200,10 @@ const emptyQueue = (installed: boolean): RydQueue => ({
  * its production can be tracked), the live form responses, and a suggested
  * pairing for every order nobody has paired yet.
  */
-export async function loadRydQueue(admin: SupabaseClient): Promise<RydQueue> {
+export async function loadRydQueue(
+  admin: SupabaseClient,
+  options: RydGoogleReadOptions = {},
+): Promise<RydQueue> {
   const [ordersResult, linksResult, clearedResult, batchResult] =
     await Promise.all([
       admin
@@ -233,6 +240,7 @@ export async function loadRydQueue(admin: SupabaseClient): Promise<RydQueue> {
   const { sheet, submissions: answered } = await loadSheet(
     integration,
     settings,
+    options,
   );
   // A set-aside response drops out of matching and every list. One linked
   // since keeps its place on the order.

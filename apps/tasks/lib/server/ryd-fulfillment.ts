@@ -105,7 +105,9 @@ export async function finishRydFulfillment(
     try {
       const integration = await loadRydGoogleIntegration();
       if (integration) {
-        const form = await readRydSubmissions(integration, snapshot.form_id);
+        const form = await readRydSubmissions(integration, snapshot.form_id, {
+          fresh: true,
+        });
         const keys = new Set(snapshot.response_keys);
         sheetTicks = await markRydSubmissionsVerified(
           integration,

@@ -227,6 +227,11 @@ describe("RY-D routes", () => {
       requested_form: "f".repeat(30),
       requested_keys: ["response-1"],
     });
+    expect(readRydSubmissions).toHaveBeenCalledWith(
+      expect.anything(),
+      "f".repeat(30),
+      { fresh: true },
+    );
   });
 
   it("does not persist a response ID from outside the configured form", async () => {
@@ -284,7 +289,87 @@ describe("RY-D routes", () => {
     expect(listed.status).toBe(200);
     expect(listed.headers.get("content-type")).toBe("image/png");
     expect(listed.headers.get("cache-control")).toBe("private, no-store");
+    expect(readRydSubmissions).toHaveBeenLastCalledWith(
+      expect.anything(),
+      "f".repeat(30),
+      { signal: expect.any(AbortSignal) },
+    );
+    expect(fetchRydEvidence).toHaveBeenCalledWith(
+      expect.anything(),
+      "listedFile123",
+      expect.any(AbortSignal),
+    );
+  });
 
+  it.each(["anonymous", "denied", "feature-off", "disconnected", "form-changed"])(
+    "rechecks %s access or provenance on subsequent evidence requests",
+    async (change) => {
+      getAdminClient.mockReturnValue(admin({}));
+      readRydSubmissions.mockResolvedValue({
+        submissions: [{ fileIds: ["listedFile123"] }],
+      });
+      fetchRydEvidence.mockImplementation(async () => ({
+        body: "synthetic image",
+        name: "synthetic.png",
+        mimeType: "image/png",
+        inline: true,
+      }));
+      const { GET } = await import("@/app/api/ryd/evidence/[fileId]/route");
+      const request = () =>
+        GET(new Request("http://localhost/"), {
+          params: Promise.resolve({ fileId: "listedFile123" }),
+        });
+      expect((await request()).status).toBe(200);
+      if (change === "anonymous" || change === "denied")
+        authorize.mockResolvedValue({
+          response: Response.json({}, { status: change === "anonymous" ? 401 : 403 }),
+        });
+      if (change === "feature-off")
+        getInstanceSettings.mockResolvedValue({ rydEnabled: false });
+      if (change === "disconnected")
+        loadRydGoogleIntegration.mockResolvedValue(null);
+      if (change === "form-changed") {
+        getAdminClient.mockReturnValue(
+          admin({
+            ryd_settings: table({ data: { form_id: "new-form" }, error: null }),
+          }),
+        );
+        readRydSubmissions.mockResolvedValue({ submissions: [] });
+      }
+      const expectedStatus = change === "anonymous" ? 401 : change === "denied" ? 403 : 404;
+      expect((await request()).status).toBe(expectedStatus);
+      expect(fetchRydEvidence).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it("forwards an explicit queue refresh and cancellation to Google", async () => {
+    getAdminClient.mockReturnValue(admin({}));
+    readRydSubmissions.mockResolvedValue({ submissions: [] });
+    const { GET } = await import("@/app/api/ryd/route");
+    const request = new Request("http://localhost/api/ryd", {
+      headers: { "cache-control": "no-cache" },
+    });
+    const response = await GET(request);
+    expect(response.status).toBe(200);
+    expect(readRydSubmissions).toHaveBeenCalledWith(
+      expect.anything(),
+      "f".repeat(30),
+      { signal: request.signal, fresh: true },
+    );
+  });
+
+  it("ends a cancelled evidence request without downloading media", async () => {
+    getAdminClient.mockReturnValue(admin({}));
+    const controller = new AbortController();
+    controller.abort();
+    readRydSubmissions.mockRejectedValue(controller.signal.reason);
+    const { GET } = await import("@/app/api/ryd/evidence/[fileId]/route");
+    const response = await GET(
+      new Request("http://localhost/", { signal: controller.signal }),
+      { params: Promise.resolve({ fileId: "listedFile123" }) },
+    );
+    expect(response.status).toBe(499);
+    expect(fetchRydEvidence).not.toHaveBeenCalled();
   });
 
   it("rejects an upload from another origin", async () => {
