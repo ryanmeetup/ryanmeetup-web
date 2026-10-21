@@ -107,6 +107,16 @@ same transaction. A response belongs to one order; production requires a
 verified decision. Routes validate new response references against the configured
 Google form, and the transaction refuses a changed form or stale order revision.
 
+Fulfillment uses private, service-role-only snapshots. `ryd_prepare_fulfillment`
+resumes the one prepared manifest or captures it under order locks.
+`ryd_finish_fulfillment` confirms or cancels it with the same actor check.
+Prepared ready orders cannot change decision, export data, or evidence until
+finished. Confirmation atomically records the batch, clears its captured ready
+IDs, and writes their history; retries add no writes. Snapshots retain their
+fulfillment rows for batch history, including cancellations, under the same
+private access boundary as orders. No Google answers or media are copied.
+
+
 - A project task is visible only when the member can access its project and
   every category assigned to the task.
 - Editing a task requires collaborator access to its project and access to all

@@ -96,16 +96,30 @@ presses Send. The page then records what was sent.
    and anyone contacted in the last 20 hours is left out of the next draft.
    Ticking people, or **Select all**, offers **Email selected** and **Mark
    contacted** for just them.
-4. **Send to fulfillment.** **Download CSV** builds every order fulfillment
-   hasn't been told is cleared, in their own columns and order, with
-   `Verified?` filled. **Open draft** starts an email to fulfillment listing
-   the ready orders; attach the file and send it. **Mark as sent** then
-   clears the verified orders the dialog listed, so one verified while the
-   email was being written waits for the next send; everything else comes
-   round again too. Afterwards the matching rows of the form's linked
-   response sheet, if it has one with a `Verified?` column, get their ✅
-   (best effort — the toast says if Google refused). Rows are found by
-   submission time and email, since the sheet has no response IDs.
+4. **Send to fulfillment.** Opening this dialog prepares or resumes one
+   shared batch. Fulfillment's address must be configured first. The batch
+   pins its recipient, raw order rows, header schema, decisions, and ready
+   orders' form/response references. **Download CSV** and **Open draft** use
+   that same manifest; the draft and filename carry its batch reference.
+   Header spelling changes preserve saved cells, and columns missing from
+   later imports are appended so older details survive.
+
+   Send the file yourself, then **Mark as sent**. One database transaction
+   records the batch, clears exactly its ready orders, and writes their
+   history. Repeated confirmations return the existing result. New imports
+   and later verifications wait for the next file. Ready decisions and evidence
+   cannot change while reserved; notes and production tracking remain available.
+
+   Closing keeps the batch available to the team. It has no automatic expiry:
+   the file may already have been emailed. **Cancel this batch** explicitly
+   releases it; coordinate with other reviewers and only cancel an unsent file.
+   Cancelled downloads and confirmations are refused. Discard that file and
+   draft before preparing another batch.
+
+   Afterwards the captured responses in the form's linked sheet get their ✅
+   if it has a `Verified?` column (best effort — the toast reports a failure).
+   Retried confirmations do not repeat this external step. Sheet reconciliation
+   still uses submission time and email because the sheet has no response IDs.
    Downloading the file alone clears nothing.
 5. **Track production.** Verified orders stay under **Verified**, sent to
    fulfillment or not, with a Production column and filters for **Not
@@ -127,7 +141,10 @@ The database keeps the orders (`ryd_orders`, with fulfillment's raw row), the
 pairings (`ryd_order_submissions`, keyed by the form's response ID, which
 survives a respondent editing their answers), an audit trail (`ryd_order_events`), contact
 attempts to unmatched submitters (`ryd_submitter_contacts`), the imports and
-batches, the settings, and the Google connection. Every table is
+batches, private fulfillment manifests (`ryd_fulfillment_snapshots`), the
+settings, and the Google connection. Manifests preserve the fulfillment rows
+for batch history, including cancelled batches; they contain no copied Google
+answers or media. Every table is
 service-role only; routes check the instance switch and
 `can_view_workspace_area('ryd')` first.
 

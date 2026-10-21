@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import {
   Button,
   ErrorCallout,
@@ -12,7 +12,6 @@ import {
 } from "@ryanmeetup/ui";
 import {
   FiCheck,
-  FiDownload,
   FiLogOut,
   FiMail,
   FiUpload,
@@ -22,14 +21,14 @@ import { mutate } from "@/lib/mutation-client";
 import { errorMessage } from "@/lib/presentation";
 import {
   rydBuyerEmail,
-  rydFulfillmentEmail,
   rydMailtoHref,
   rydUnmatchedEmail,
   type RydDraft,
 } from "@/lib/ryd/emails";
 import type { RydSubmitter } from "@/lib/ryd/matching";
 import type { RydQueue, RydQueueOrder } from "@/lib/ryd/queue-types";
-import { unsentOrders } from "@/lib/ryd/queue-view";
+
+export { RydSendDialog } from "./RydSendDialog";
 
 const UPLOAD_FORM = "ryd-upload-form";
 const SETTINGS_FORM = "ryd-settings-form";
@@ -131,37 +130,6 @@ export function RydUploadDialog({
   );
 }
 
-/** One numbered step of a manual send, with its actions beside it. */
-function DraftStep({
-  index,
-  title,
-  description,
-  children,
-}: {
-  index: number;
-  title: string;
-  description?: ReactNode;
-  children?: ReactNode;
-}) {
-  return (
-    <li className="flex flex-col gap-3 border-t border-black/10 pt-4 sm:flex-row sm:items-start sm:justify-between dark:border-white/10">
-      <div className="min-w-0">
-        <p className="text-sm font-semibold">
-          {index}. {title}
-        </p>
-        {description && (
-          <p className="mt-1 text-sm text-black/70 dark:text-white/70">
-            {description}
-          </p>
-        )}
-      </div>
-      {children && (
-        <div className="flex shrink-0 flex-wrap gap-2">{children}</div>
-      )}
-    </li>
-  );
-}
-
 /** Bcc set apart, since putting buyers in To would show everyone's address. */
 const BccTag = () => (
   <span className="rounded-md border border-black/15 bg-black/[0.05] px-1.5 py-px font-mono text-[0.85em] font-semibold text-black dark:border-white/20 dark:bg-white/10 dark:text-white">
@@ -231,146 +199,6 @@ const BULK_FALLBACK = (
     email.
   </p>
 );
-
-export function RydSendDialog({
-  queue,
-  onClose,
-  onChanged,
-}: {
-  queue: RydQueue;
-  onClose: () => void;
-  onChanged: () => Promise<void>;
-}) {
-  const [sending, setSending] = useState(false);
-  // Orders already cleared stay listed for production; they're not resent.
-  const unsent = unsentOrders(queue.orders);
-  const total = unsent.length;
-  const ready = unsent.filter((order) => order.status === "verified");
-  const recipient = queue.settings.fulfillmentEmail;
-  const draft = rydFulfillmentEmail(ready, total);
-
-  async function markSent() {
-    setSending(true);
-    try {
-      const result = await mutate<{
-        verifiedCount: number;
-        orderCount: number;
-        sheetTicks: number | null;
-      }>("/api/ryd/batches", {
-        method: "POST",
-        body: JSON.stringify({ orderIds: ready.map((order) => order.orderId) }),
-      });
-      await onChanged();
-      toast.success(
-        `Marked sent: ${result.verifiedCount} of ${result.orderCount} cleared to start.` +
-          (result.sheetTicks === null && result.verifiedCount
-            ? " The response sheet couldn't be ticked; tick it by hand if you keep it."
-            : ""),
-      );
-      onClose();
-    } catch (error) {
-      toast.error(errorMessage(error, "The batch couldn't be marked sent."));
-    } finally {
-      setSending(false);
-    }
-  }
-
-  return (
-    <Modal
-      open
-      setIsOpen={(open) => !open && !sending && onClose()}
-      size="lg"
-      title="Send to fulfillment"
-      description="Fulfillment gets back their own file with Verified? filled in. Send it from your own email, then mark it sent: verified orders stay under Verified for production, and everything else comes round again next time."
-      closable={!sending}
-      actions={
-        <ModalActions
-          confirmLabel="Mark as sent"
-          confirmIcon={<FiCheck aria-hidden />}
-          onConfirm={markSent}
-          confirmDisabled={!ready.length}
-          onCancel={onClose}
-          pending={sending}
-          pendingLabel="Marking..."
-        />
-      }
-    >
-      <dl className="grid gap-4 sm:grid-cols-3">
-        {[
-          ["In the file", total],
-          ["Cleared to start", ready.length],
-          ["Still being checked", total - ready.length],
-        ].map(([label, value]) => (
-          <div
-            key={label}
-            className="rounded-2xl border border-black/10 p-4 dark:border-white/10"
-          >
-            <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-black/70 dark:text-white/70">
-              {label}
-            </dt>
-            <dd className="mt-1 font-cooper text-3xl">{value}</dd>
-          </div>
-        ))}
-      </dl>
-      <ol className="mt-6 space-y-4">
-        <DraftStep
-          index={1}
-          title="Download the file"
-          description="Every open order, with Verified? ticked on the ones ready to start."
-        >
-          <Button.Link
-            href="/api/ryd/export"
-            size="xs"
-            variant="secondary"
-            leftIcon={<FiDownload aria-hidden />}
-            prefetch={false}
-            download
-          >
-            Download CSV
-          </Button.Link>
-        </DraftStep>
-        <DraftStep
-          index={2}
-          title="Email it to fulfillment"
-          description={
-            <>
-              Opens a draft
-              {recipient ? (
-                <>
-                  {" "}
-                  to <span className="font-semibold">{recipient}</span>
-                </>
-              ) : null}{" "}
-              listing the {ready.length} ready order
-              {ready.length === 1 ? "" : "s"}. Attach the file, then send.
-              {!recipient &&
-                " Add fulfillment's address in RY-D settings to fill it in."}
-            </>
-          }
-        >
-          <Button.Link
-            href={rydMailtoHref({ to: recipient ? [recipient] : [], ...draft })}
-            size="xs"
-            variant="secondary"
-            leftIcon={<FiMail aria-hidden />}
-            prefetch={false}
-            newTab
-          >
-            Open draft
-          </Button.Link>
-          <CopyButton value={draftText(draft)} label="Email">
-            Copy email
-          </CopyButton>
-        </DraftStep>
-        <DraftStep
-          index={3}
-          title="Mark it sent"
-          description="Once it's sent, Mark as sent clears the ready orders and ticks them in the form's response sheet."
-        />
-      </ol>
-    </Modal>
-  );
-}
 
 export function RydRemindDialog({
   orders,

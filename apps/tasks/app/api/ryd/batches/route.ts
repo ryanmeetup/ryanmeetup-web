@@ -1,39 +1,36 @@
 import { NextResponse } from "next/server";
-import { rydOrderIdsSchema } from "@/lib/api-schema";
-import { apiError, logServerFailure } from "@/lib/server/api-response";
+import { rydBatchSchema } from "@/lib/api-schema";
 import { readJson } from "@/lib/server/request";
-import { markRydBatchSent, rydContext } from "@/lib/server/ryd";
+import { rydContext } from "@/lib/server/ryd";
+import {
+  finishRydFulfillment,
+  prepareRydFulfillment,
+} from "@/lib/server/ryd-fulfillment";
+import { rydMutationFailure } from "@/lib/server/ryd-mutations";
 
-/**
- * Record that the reviewer emailed fulfillment the file, and clear the
- * verified orders it listed.
- */
 export async function POST(request: Request) {
-  const parsed = await readJson(request, rydOrderIdsSchema);
+  const parsed = await readJson(request, rydBatchSchema);
   if ("response" in parsed) return parsed.response;
   const context = await rydContext();
   if ("response" in context) return context.response;
   try {
-    const result = await markRydBatchSent(
-      context.admin,
-      context.user,
-      parsed.data.orderIds,
+    const data = parsed.data;
+    return NextResponse.json(
+      data.action === "prepare"
+        ? await prepareRydFulfillment(context.admin, context.user.id)
+        : await finishRydFulfillment(
+            context.admin,
+            context.user.id,
+            data.snapshotId,
+            data.action,
+          ),
     );
-    if (!result.ok) return apiError(400, "INVALID_REQUEST", result.error);
-    return NextResponse.json(result);
   } catch (error) {
-    const id = logServerFailure(
+    return rydMutationFailure(
       request,
       "ryd.batch",
-      error as { code?: string; message?: string },
-    );
-    return NextResponse.json(
-      {
-        code: "OPERATION_FAILED",
-        error: "The batch could not be marked sent. Try again.",
-        requestId: id,
-      },
-      { status: 500 },
+      error,
+      "The batch could not be updated. Try again.",
     );
   }
 }

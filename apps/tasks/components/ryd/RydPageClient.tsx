@@ -1047,7 +1047,6 @@ export function RydPageClient({
       )}
       {dialog === "send" && (
         <RydSendDialog
-          queue={queue}
           onClose={() => setDialog(null)}
           onChanged={refresh}
         />

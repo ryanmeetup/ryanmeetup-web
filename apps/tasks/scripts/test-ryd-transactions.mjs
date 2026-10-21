@@ -9,13 +9,15 @@ const database = `ryd_review_${randomBytes(6).toString("hex")}`;
 const actor = "00000000-0000-4000-8000-000000000291";
 const form = "f".repeat(30);
 const appRoot = fileURLToPath(new URL("../", import.meta.url));
-const tap = spawnSync(
-  "supabase",
-  ["test", "db", "tests/database/ryd-transactions.sql", "--workdir", appRoot],
-  { stdio: "inherit" },
-);
-if (tap.error) throw tap.error;
-if (tap.status !== 0) process.exit(tap.status ?? 1);
+for (const file of ["ryd-transactions.sql", "ryd-fulfillment.sql"]) {
+  const tap = spawnSync(
+    "supabase",
+    ["test", "db", `tests/database/${file}`, "--workdir", appRoot],
+    { stdio: "inherit" },
+  );
+  if (tap.error) throw tap.error;
+  if (tap.status !== 0) process.exit(tap.status ?? 1);
+}
 
 function run(command, args, input) {
   const result = spawnSync(command, args, {
@@ -84,7 +86,7 @@ function connection(name) {
   return { child, locked, exited };
 }
 
-async function race(first, second) {
+async function race(first, second, idempotent = false) {
   const a = connection("ryd-race-a");
   a.child.stdin.write(`begin;\n${first};\n\\echo ryd-test-locked\n`);
   await Promise.race([
@@ -114,7 +116,12 @@ async function race(first, second) {
     a.child.stdin.end("commit;\n");
   }
   const [left, right] = await Promise.all([a.exited, b.exited]);
-  if (left.code !== 0 || right.code === 0 || !right.stderr.includes("RY409"))
+  if (
+    left.code !== 0 ||
+    (idempotent
+      ? right.code !== 0
+      : right.code === 0 || !right.stderr.includes("RY409"))
+  )
     throw new Error(
       `Expected one commit and one conflict: ${left.stderr} ${right.stderr}`,
     );
@@ -140,7 +147,7 @@ try {
     update public.profiles set app_role='owner',onboarding_completed=true where id='${actor}';
     set session_replication_role=origin;
     insert into public.instance_settings(id,ryd_enabled) values(true,true);
-    insert into public.ryd_settings(id,form_id) values(true,'${form}');
+    insert into public.ryd_settings(id,form_id,fulfillment_email) values(true,'${form}','fulfillment@example.test');
     insert into public.ryd_imports(id,filename,headers,row_count,new_count,uploaded_by)
       values('20000000-0000-4000-8000-000000000291','race.csv','[]',2,2,'${actor}');
     insert into public.ryd_orders(order_id,raw,first_import_id) values
@@ -177,6 +184,35 @@ try {
     throw new Error("A stale decision changed an order in production");
   console.log(
     "PASS: a decision racing production rechecks the committed lock state",
+  );
+  sql(
+    `select public.ryd_review_order('${actor}','race-1','{"status":"verified"}');`,
+  );
+  await race(
+    `select public.ryd_prepare_fulfillment('${actor}')`,
+    `select public.ryd_review_order('${actor}','race-1','{"status":"rejected"}')`,
+  );
+  console.log(
+    "PASS: preparation reserves ready decisions before a waiting reviewer can change them",
+  );
+  const snapshot = sql(
+    "select id from public.ryd_fulfillment_snapshots where state='prepared';",
+  );
+  await race(
+    `select public.ryd_finish_fulfillment('${actor}','${snapshot}','confirm')`,
+    `select public.ryd_finish_fulfillment('${actor}','${snapshot}','confirm')`,
+    true,
+  );
+  if (
+    sql("select count(*) from public.ryd_fulfillment_batches;") !== "1" ||
+    sql("select count(*) from public.ryd_order_events where action='sent';") !==
+      "2"
+  )
+    throw new Error(
+      "Concurrent confirmations duplicated the batch or its history",
+    );
+  console.log(
+    "PASS: concurrent confirmations commit one batch and one event per cleared order",
   );
 } finally {
   run("docker", [

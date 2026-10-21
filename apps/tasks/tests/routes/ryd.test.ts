@@ -600,61 +600,112 @@ describe("RY-D routes", () => {
     expect(response.status).toBe(400);
   });
 
-  it("marks a batch sent, clearing only the orders the reviewer drafted", async () => {
-    const orderCalls: unknown[] = [];
-    const batchCalls: unknown[] = [];
-    getAdminClient.mockReturnValue(
-      admin({
-        ryd_settings: table({
-          data: { form_id: null, fulfillment_email: "toney@example.com" },
-          error: null,
-        }),
-        ryd_imports: table({ data: { headers: ["OrderId"] }, error: null }),
-        ryd_orders: table(
-          {
-            data: [
-              {
-                order_id: "1001",
-                raw: { OrderId: "1001" },
-                status: "verified",
-              },
-              {
-                order_id: "1002",
-                raw: { OrderId: "1002" },
-                status: "verified",
-              },
-              { order_id: "1003", raw: { OrderId: "1003" }, status: "pending" },
-            ],
-            error: null,
-          },
-          orderCalls,
-        ),
-        ryd_fulfillment_batches: table({ data: null, error: null }, batchCalls),
-      }),
-    );
-    loadRydGoogleIntegration.mockResolvedValue(null);
+  it("prepares a server-owned batch without accepting client order lists", async () => {
+    getAdminClient.mockReturnValue(admin({}));
+    rpc.mockResolvedValue({
+      data: {
+        id: "00000000-0000-4000-8000-000000000301",
+        recipient: "fulfillment@example.test",
+        prepared_at: "2026-10-20T12:00:00Z",
+        verified_ids: ["1001"],
+        order_rows: [
+          { order_id: "1001", first_name: "Ryan", last_name: "Example" },
+        ],
+      },
+      error: null,
+    });
     const { POST } = await import("@/app/api/ryd/batches/route");
-
     const response = await POST(
+      new Request(
+        "http://localhost/api/ryd/batches",
+        json({ action: "prepare" }, "POST"),
+      ),
+    );
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      orderCount: 1,
+      verifiedCount: 1,
+      recipient: "fulfillment@example.test",
+    });
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("ryd_prepare_fulfillment", {
+      requested_actor: "member-1",
+    });
+    const legacy = await POST(
       new Request(
         "http://localhost/api/ryd/batches",
         json({ orderIds: ["1001"] }, "POST"),
       ),
     );
+    expect(legacy.status).toBe(400);
+  });
 
+  it("confirms only an existing batch identity through one transaction", async () => {
+    getAdminClient.mockReturnValue(admin({}));
+    rpc.mockResolvedValue({
+      data: {
+        changed: false,
+        snapshot: {
+          id: "00000000-0000-4000-8000-000000000301",
+          verified_ids: ["1001"],
+          order_rows: [{}],
+          form_id: null,
+        },
+      },
+      error: null,
+    });
+    const { POST } = await import("@/app/api/ryd/batches/route");
+    const response = await POST(
+      new Request(
+        "http://localhost/api/ryd/batches",
+        json(
+          {
+            action: "confirm",
+            snapshotId: "00000000-0000-4000-8000-000000000301",
+          },
+          "POST",
+        ),
+      ),
+    );
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({
-      orderCount: 3,
+      changed: false,
+      orderCount: 1,
       verifiedCount: 1,
     });
-    expect(batchCalls[0]).toEqual([
-      "insert",
-      expect.objectContaining({
-        recipient: "toney@example.com",
-        order_count: 3,
-        verified_count: 1,
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("ryd_finish_fulfillment", {
+      requested_actor: "member-1",
+      requested_snapshot: "00000000-0000-4000-8000-000000000301",
+      requested_action: "confirm",
+    });
+    expect(loadRydGoogleIntegration).not.toHaveBeenCalled();
+  });
+
+  it("refuses downloads without a manifest and never exports a live queue", async () => {
+    getAdminClient.mockReturnValue(admin({}));
+    const { GET } = await import("@/app/api/ryd/export/route");
+    expect(
+      (await GET(new Request("http://localhost/api/ryd/export"))).status,
+    ).toBe(400);
+    expect(
+      (await GET(new Request("http://localhost/api/ryd/export?batch=bad")))
+        .status,
+    ).toBe(400);
+    getAdminClient.mockReturnValue(
+      admin({
+        ryd_fulfillment_snapshots: table({
+          data: { state: "cancelled" },
+          error: null,
+        }),
       }),
-    ]);
-    expect(orderCalls).toContainEqual(["in", "order_id", ["1001"]]);
+    );
+    expect(
+      (
+        await GET(
+          new Request(
+            "http://localhost/api/ryd/export?batch=00000000-0000-4000-8000-000000000301",
+          ),
+        )
+      ).status,
+    ).toBe(409);
   });
 });

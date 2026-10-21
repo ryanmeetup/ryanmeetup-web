@@ -14,7 +14,6 @@ import {
 import type { RydProductionStage } from "@/lib/ryd/queue-view";
 import {
   parseRydOrderCsv,
-  rydOrderExportCsv,
   type RydOrderStatus,
 } from "@/lib/ryd/orders";
 import { getAdminClient } from "./admin-client";
@@ -23,7 +22,6 @@ import { authorize } from "./auth";
 import { getInstanceSettings } from "./instance-settings";
 import {
   loadRydGoogleIntegration,
-  markRydSubmissionsVerified,
   readRydSubmissions,
   type RydGoogleIntegrationRow,
 } from "./ryd-google";
@@ -433,123 +431,6 @@ export async function importRydOrders(
     existingCount: parsed.orders.length - fresh.length,
     duplicateCount: parsed.duplicates.length,
     preverifiedCount: fresh.filter((order) => order.verified).length,
-  };
-}
-
-/** The headers of the newest file, which is the shape fulfillment expects back. */
-async function exportHeaders(admin: SupabaseClient) {
-  const result = await admin
-    .from("ryd_imports")
-    .select("headers")
-    .order("uploaded_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (result.error) throw result.error;
-  return (result.data?.headers as string[] | undefined) ?? [];
-}
-
-/**
- * Every order fulfillment hasn't yet been told is cleared, in the order they
- * arrived, with `Verified?` reflecting the decision.
- */
-export async function buildRydExport(admin: SupabaseClient) {
-  const [headers, orders] = await Promise.all([
-    exportHeaders(admin),
-    admin
-      .from("ryd_orders")
-      .select("order_id, raw, status, created_at")
-      .is("cleared_batch_id", null)
-      .order("created_at")
-      .order("import_position"),
-  ]);
-  if (orders.error) throw orders.error;
-  const rows = (orders.data ?? []) as Pick<
-    RydOrderRow,
-    "order_id" | "raw" | "status"
-  >[];
-  return {
-    csv: rydOrderExportCsv(headers, rows),
-    orderIds: rows.map((row) => row.order_id),
-    verifiedIds: rows
-      .filter((row) => row.status === "verified")
-      .map((row) => row.order_id),
-  };
-}
-
-export function rydExportFilename(date = new Date()) {
-  return `ry-d-verified-${date.toISOString().slice(0, 10)}.csv`;
-}
-
-/**
- * Record that fulfillment was sent the file, and clear the orders it told them
- * could start. The reviewer sends the email themselves, so only the orders
- * they saw as verified are cleared: one verified since stays in the queue for
- * the next file. Ticking the form sheet comes last and is best effort, because
- * the order is already cleared whether or not Google answers.
- */
-export async function markRydBatchSent(
-  admin: SupabaseClient,
-  user: User,
-  readyIds: string[],
-) {
-  const settings = await loadRydSettings(admin);
-  const exported = await buildRydExport(admin);
-  if (!exported.orderIds.length)
-    return { ok: false as const, error: "There are no orders to send." };
-  const ready = new Set(readyIds);
-  const verifiedIds = exported.verifiedIds.filter((id) => ready.has(id));
-
-  const batchId = crypto.randomUUID();
-  const batch = await admin.from("ryd_fulfillment_batches").insert({
-    id: batchId,
-    recipient: settings.fulfillmentEmail,
-    order_count: exported.orderIds.length,
-    verified_count: verifiedIds.length,
-    sent_by: user.id,
-  });
-  if (batch.error) throw batch.error;
-  if (verifiedIds.length) {
-    const cleared = await admin
-      .from("ryd_orders")
-      .update({
-        cleared_batch_id: batchId,
-        updated_at: new Date().toISOString(),
-      })
-      .in("order_id", verifiedIds)
-      .eq("status", "verified");
-    if (cleared.error) throw cleared.error;
-  }
-  await recordRydEvent(admin, user, exported.orderIds, "sent", {
-    batch_id: batchId,
-    recipient: settings.fulfillmentEmail,
-  });
-
-  let sheetTicks: number | null = null;
-  const integration = await loadRydGoogleIntegration().catch(() => null);
-  if (integration && settings.formId && verifiedIds.length) {
-    const links = await admin
-      .from("ryd_order_submissions")
-      .select("submission_key")
-      .in("order_id", verifiedIds);
-    if (!links.error) {
-      try {
-        const keys = new Set(links.data.map((link) => link.submission_key));
-        const form = await readRydSubmissions(integration, settings.formId);
-        sheetTicks = await markRydSubmissionsVerified(
-          integration,
-          form.linkedSheetId,
-          form.submissions.filter((submission) => keys.has(submission.key)),
-        );
-      } catch (error) {
-        console.error("RY-D response sheet could not be ticked", error);
-      }
-    }
-  }
-  return {
-    ok: true as const,
-    orderCount: exported.orderIds.length,
-    verifiedCount: verifiedIds.length,
-    sheetTicks,
   };
 }
 

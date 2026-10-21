@@ -32,6 +32,11 @@ In the task tag picker, each category heading now collapses its tags, so a long 
 
 ## Improved
 
+### Fulfillment files stay in sync
+
+The download, email draft, and send confirmation now use one saved batch. Ready orders stay reserved until it is marked sent or explicitly cancelled, and later verifications wait for the next file. Closing resumes the same batch, and retrying a confirmation cannot clear orders or record the send twice.
+
+
 ### Keep email-less submissions separate
 
 Form responses without a usable email stay separate in Unmatched submissions. Linking one attaches only that response, and email actions stay unavailable until there is an address to contact.

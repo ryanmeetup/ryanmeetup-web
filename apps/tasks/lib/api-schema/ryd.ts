@@ -4,8 +4,8 @@ import {
   type RydProductionStage,
 } from "@/lib/ryd/queue-view";
 import { formIdFrom } from "@/lib/ryd/form-responses";
-import { normalizeEmail } from "@/lib/ryd/normalize";
-import { isJsonObject } from "./shared";
+import { isRydContactEmail, normalizeEmail } from "@/lib/ryd/normalize";
+import { isJsonObject, isUuid } from "./shared";
 
 /** A decision, a note, or both. An empty note clears it. */
 export function rydDecisionSchema(value: unknown) {
@@ -112,7 +112,7 @@ export function rydSettingsSchema(value: unknown) {
       typeof value.fulfillmentEmail === "string"
         ? value.fulfillmentEmail.trim()
         : "";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254)
+    if (!isRydContactEmail(email) || email.length > 254)
       return null;
     parsed.fulfillmentEmail = email;
   }
@@ -166,4 +166,23 @@ export function rydProductionSchema(value: unknown) {
   )
     return null;
   return { orderIds: ids, stage: value.stage as RydProductionStage };
+}
+
+/** A server-owned batch identity replaces client-computed ready-order lists. */
+export function rydBatchSchema(
+  value: unknown,
+):
+  | { action: "prepare" }
+  | { action: "confirm" | "cancel"; snapshotId: string }
+  | null {
+  if (!isJsonObject(value)) return null;
+  if (value.action === "prepare" && Object.keys(value).length === 1)
+    return { action: "prepare" };
+  if (
+    (value.action === "confirm" || value.action === "cancel") &&
+    Object.keys(value).length === 2 &&
+    isUuid(value.snapshotId)
+  )
+    return { action: value.action, snapshotId: value.snapshotId };
+  return null;
 }
