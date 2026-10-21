@@ -32,6 +32,13 @@ In the task tag picker, each category heading now collapses its tags, so a long 
 
 ## Improved
 
+### Reliable RY-D imports and reminders
+
+Uploads now save their orders, counts, and history together. Overlapping uploads report only what each added, and retrying the same upload keeps its original result.
+
+Single and bulk buyer emails share one draft workflow. Opening a draft records nothing; confirm each sent group separately. Large selections become smaller drafts, and retrying a confirmation cannot record it twice.
+
+
 ### Fulfillment files stay in sync
 
 The download, email draft, and send confirmation now use one saved batch. Ready orders stay reserved until it is marked sent or explicitly cancelled, and later verifications wait for the next file. Closing resumes the same batch, and retrying a confirmation cannot clear orders or record the send twice.

@@ -13,7 +13,6 @@ import {
 } from "@/lib/ryd/matching";
 import type { RydProductionStage } from "@/lib/ryd/queue-view";
 import {
-  parseRydOrderCsv,
   type RydOrderStatus,
 } from "@/lib/ryd/orders";
 import { getAdminClient } from "./admin-client";
@@ -312,125 +311,6 @@ export async function loadRydQueue(admin: SupabaseClient): Promise<RydQueue> {
         }
       : null,
     installed: true,
-  };
-}
-
-export async function recordRydEvent(
-  admin: SupabaseClient,
-  user: User,
-  orderIds: string[],
-  action:
-    | "imported"
-    | "status"
-    | "note"
-    | "linked"
-    | "unlinked"
-    | "emailed"
-    | "sent"
-    | "production",
-  detail: Record<string, unknown> = {},
-) {
-  if (!orderIds.length) return;
-  const result = await admin.from("ryd_order_events").insert(
-    orderIds.map((orderId) => ({
-      order_id: orderId,
-      action,
-      detail,
-      actor_id: user.id,
-    })),
-  );
-  // The history is for people reading back, never a reason to undo the work.
-  if (result.error)
-    console.error("RY-D event could not be recorded", result.error);
-}
-
-export type RydImportResult =
-  | {
-      ok: true;
-      rowCount: number;
-      newCount: number;
-      existingCount: number;
-      duplicateCount: number;
-      preverifiedCount: number;
-    }
-  | { ok: false; error: string };
-
-/**
- * Add a week's file to the queue. Orders already in the queue keep their
- * decision; the file only ever adds. A tick fulfillment already put in the
- * file is taken as verified, with a note saying so.
- */
-export async function importRydOrders(
-  admin: SupabaseClient,
-  user: User,
-  filename: string,
-  text: string,
-): Promise<RydImportResult> {
-  const parsed = parseRydOrderCsv(text);
-  if (!parsed.ok) return parsed;
-  if (!parsed.orders.length)
-    return { ok: false, error: "That file has no orders in it." };
-
-  const ids = parsed.orders.map((order) => order.orderId);
-  const existing = await admin
-    .from("ryd_orders")
-    .select("order_id")
-    .in("order_id", ids);
-  if (existing.error) throw existing.error;
-  const known = new Set((existing.data ?? []).map((row) => row.order_id));
-  const fresh = parsed.orders.filter((order) => !known.has(order.orderId));
-
-  const batch = await admin
-    .from("ryd_imports")
-    .insert({
-      filename: filename.slice(0, 255) || "orders.csv",
-      headers: parsed.headers,
-      row_count: parsed.orders.length,
-      new_count: fresh.length,
-      uploaded_by: user.id,
-    })
-    .select("id")
-    .single();
-  if (batch.error) throw batch.error;
-
-  const now = new Date().toISOString();
-  if (fresh.length) {
-    const inserted = await admin.from("ryd_orders").upsert(
-      fresh.map((order) => ({
-        order_id: order.orderId,
-        import_position: parsed.orders.indexOf(order),
-        sales_order: order.salesOrder,
-        ordered_at: order.orderedAt,
-        first_name: order.firstName,
-        last_name: order.lastName,
-        email: order.email,
-        raw: order.raw,
-        first_import_id: batch.data.id,
-        status: order.verified ? "verified" : "pending",
-        note: order.verified ? "Already ticked in the fulfillment file." : null,
-        decided_at: order.verified ? now : null,
-        decided_by: order.verified ? user.id : null,
-      })),
-      { onConflict: "order_id", ignoreDuplicates: true },
-    );
-    if (inserted.error) throw inserted.error;
-    await recordRydEvent(
-      admin,
-      user,
-      fresh.map((order) => order.orderId),
-      "imported",
-      {
-        filename,
-      },
-    );
-  }
-  return {
-    ok: true,
-    rowCount: parsed.orders.length,
-    newCount: fresh.length,
-    existingCount: parsed.orders.length - fresh.length,
-    duplicateCount: parsed.duplicates.length,
-    preverifiedCount: fresh.filter((order) => order.verified).length,
   };
 }
 

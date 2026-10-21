@@ -3,7 +3,7 @@
  * reviewer's own mail app, and they press Send.
  */
 
-import type { RydQueueOrder } from "./queue-types";
+import { isRydContactEmail, normalizeEmail } from "./normalize";
 
 /** Where buyers send their evidence. The page on ryanmeetup.com redirects to the form. */
 export const RYD_FORM_URL = "https://ryanmeetup.com/cards/verify";
@@ -82,21 +82,18 @@ export function rydMailtoHref({
   subject,
   body,
 }: RydDraft & { to?: string[]; bcc?: string[] }) {
+  const recipients = (addresses: string[]) => [
+    ...new Map(
+      addresses
+        .filter(isRydContactEmail)
+        .map((address) => [normalizeEmail(address), address.trim()]),
+    ).values(),
+  ];
+  const copied = recipients(bcc);
   const params = [
-    bcc.length ? `bcc=${encodeURIComponent(bcc.join(","))}` : "",
+    copied.length ? `bcc=${encodeURIComponent(copied.join(","))}` : "",
     `subject=${encodeURIComponent(subject)}`,
     `body=${encodeURIComponent(body)}`,
   ].filter(Boolean);
-  return `mailto:${to.join(",")}?${params.join("&")}`;
-}
-
-/** A draft to one buyer, greeting them by name. */
-export function rydBuyerMailtoHref(
-  order: Pick<RydQueueOrder, "firstName" | "displayEmail">,
-  hasSubmission: boolean,
-) {
-  return rydMailtoHref({
-    to: [order.displayEmail],
-    ...rydBuyerEmail({ firstName: order.firstName, hasSubmission }),
-  });
+  return `mailto:${recipients(to).map(encodeURIComponent).join(",")}?${params.join("&")}`;
 }

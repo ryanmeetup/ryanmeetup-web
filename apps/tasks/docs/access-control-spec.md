@@ -98,7 +98,7 @@ holds a row only for a page an app owner has configured.
   grants full RY-D operation, including settings and Google connection setup,
   without granting workspace administration or access to other restricted pages.
 
-## Tasks and related content
+## RY-D Verification
 
 RY-D review writes use service-role-only `ryd_change_submission`,
 `ryd_review_order`, and `ryd_set_production`. They recheck the actor's page
@@ -116,6 +116,17 @@ IDs, and writes their history; retries add no writes. Snapshots retain their
 fulfillment rows for batch history, including cancellations, under the same
 private access boundary as orders. No Google answers or media are copied.
 
+
+Imports and reminder confirmations use service-role-only `ryd_import_orders`
+and `ryd_record_reminders`. They recheck the actor and commit their effects,
+audit records, and private retry receipts together. Each operation key is bound
+to its actor, operation kind, and a hash of the input. Receipts contain hashes
+and summary counts, never a copied CSV or recipient list. Import counts and
+history come only from inserted orders; a retry does not create another import.
+Reminder confirmations pin the draft's recipients, skip orders no longer
+waiting, and reject a changed email. Draft opening never records a send.
+
+## Tasks and related content
 
 - A project task is visible only when the member can access its project and
   every category assigned to the task.

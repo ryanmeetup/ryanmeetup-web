@@ -9,7 +9,11 @@ const database = `ryd_review_${randomBytes(6).toString("hex")}`;
 const actor = "00000000-0000-4000-8000-000000000291";
 const form = "f".repeat(30);
 const appRoot = fileURLToPath(new URL("../", import.meta.url));
-for (const file of ["ryd-transactions.sql", "ryd-fulfillment.sql"]) {
+for (const file of [
+  "ryd-transactions.sql",
+  "ryd-fulfillment.sql",
+  "ryd-import-reminders.sql",
+]) {
   const tap = spawnSync(
     "supabase",
     ["test", "db", `tests/database/${file}`, "--workdir", appRoot],
@@ -213,6 +217,65 @@ try {
     );
   console.log(
     "PASS: concurrent confirmations commit one batch and one event per cleared order",
+  );
+  const payload = (id, filename) =>
+    JSON.stringify({
+      filename,
+      headers: [],
+      duplicateCount: 0,
+      orders: [
+        { orderId: id, verified: false, email: "ryan@example.test", raw: {} },
+      ],
+    });
+  await race(
+    `select public.ryd_import_orders('${actor}','30000000-0000-4000-8000-000000000501','${payload("overlap-import", "parallel.csv")}')`,
+    `select public.ryd_import_orders('${actor}','30000000-0000-4000-8000-000000000502','${payload("overlap-import", "parallel.csv")}')`,
+    true,
+  );
+  if (
+    sql(
+      "select sum(new_count) from public.ryd_imports where filename='parallel.csv';",
+    ) !== "1" ||
+    sql(
+      "select count(*) from public.ryd_order_events where order_id='overlap-import' and action='imported';",
+    ) !== "1"
+  )
+    throw new Error(
+      "Concurrent uploads misreported or double-audited the same order",
+    );
+  console.log(
+    "PASS: overlapping imports report and audit only their actual insertions",
+  );
+  await race(
+    `select public.ryd_import_orders('${actor}','30000000-0000-4000-8000-000000000503','${payload("retry-import", "retry.csv")}')`,
+    `select public.ryd_import_orders('${actor}','30000000-0000-4000-8000-000000000503','${payload("retry-import", "retry.csv")}')`,
+    true,
+  );
+  if (
+    sql(
+      "select count(*) from public.ryd_imports where filename='retry.csv';",
+    ) !== "1"
+  )
+    throw new Error("Concurrent upload retries duplicated the import batch");
+  console.log(
+    "PASS: concurrent upload retries return one committed import receipt",
+  );
+  const targets = JSON.stringify([
+    { orderId: "retry-import", email: "ryan@example.test" },
+  ]);
+  await race(
+    `select public.ryd_record_reminders('${actor}','40000000-0000-4000-8000-000000000501','${targets}')`,
+    `select public.ryd_record_reminders('${actor}','40000000-0000-4000-8000-000000000501','${targets}')`,
+    true,
+  );
+  if (
+    sql(
+      "select count(*) from public.ryd_order_events where order_id='retry-import' and action='emailed';",
+    ) !== "1"
+  )
+    throw new Error("Concurrent reminder retries duplicated the audit history");
+  console.log(
+    "PASS: concurrent reminder retries retain one timestamp and audit event",
   );
 } finally {
   run("docker", [

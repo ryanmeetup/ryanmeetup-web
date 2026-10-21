@@ -13,6 +13,7 @@ export { taskMoveSchema, taskSaveSchema } from "./task";
 export { inviteSchema, profileSchema, userDeleteSchema } from "./team";
 export {
   rydBatchSchema,
+  rydReminderSchema,
   rydDecisionSchema,
   rydLinkSchema,
   rydLinkCreateSchema,

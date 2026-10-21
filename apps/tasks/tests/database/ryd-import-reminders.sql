@@ -1,0 +1,60 @@
+begin;
+set local role postgres;
+create extension if not exists pgtap with schema extensions;
+set local search_path = public, extensions;
+select no_plan();
+insert into auth.users(id,email,raw_user_meta_data) values
+  ('00000000-0000-4000-8000-000000000401','import-owner@example.test','{}'),
+  ('00000000-0000-4000-8000-000000000402','import-denied@example.test','{}');
+set local session_replication_role = replica;
+update public.profiles set app_role='owner',onboarding_completed=true where id='00000000-0000-4000-8000-000000000401';
+update public.profiles set app_role='member',onboarding_completed=true where id='00000000-0000-4000-8000-000000000402';
+set local session_replication_role = origin;
+insert into public.instance_settings(id,ryd_enabled) values(true,true) on conflict(id) do update set ryd_enabled=true;
+create function pg_temp.payload(order_ids text[], verified boolean default false) returns jsonb language sql as $$
+  select jsonb_build_object('filename','transaction.csv','headers','["OrderId","Verified?"]'::jsonb,'duplicateCount',0,
+    'orders',jsonb_agg(jsonb_build_object('orderId',id,'verified',verified,'email','ryan@example.test','firstName','Ryan','raw',jsonb_build_object('OrderId',id)))) from unnest(order_ids) id
+$$;
+select is(public.ryd_import_orders('00000000-0000-4000-8000-000000000401','30000000-0000-4000-8000-000000000401',pg_temp.payload(array['import-one','import-two'],true))->>'newCount','2','import reports actual insertions');
+select is((select count(*) from public.ryd_order_events where action='imported' and order_id in ('import-one','import-two')),2::bigint,'only inserted orders get import history');
+select is(public.ryd_import_orders('00000000-0000-4000-8000-000000000401','30000000-0000-4000-8000-000000000401',pg_temp.payload(array['import-one','import-two'],true))->>'newCount','2','a retry returns the original receipt');
+select is((select count(*) from public.ryd_imports where filename='transaction.csv'),1::bigint,'a retry does not duplicate the import batch');
+select is((select count(*) from public.ryd_order_events where action='imported' and order_id in ('import-one','import-two')),2::bigint,'a retry adds no duplicate history');
+select throws_ok($$select public.ryd_import_orders('00000000-0000-4000-8000-000000000401','30000000-0000-4000-8000-000000000401',pg_temp.payload(array['different-file']))$$,'RY409',null,'operation keys cannot be reused for a different file');
+select is(public.ryd_import_orders('00000000-0000-4000-8000-000000000401','30000000-0000-4000-8000-000000000403',pg_temp.payload(array['import-one','import-new'],true))->>'newCount','1','overlapping new uploads count only newly inserted orders');
+select is((select new_count from public.ryd_imports where id=(select first_import_id from public.ryd_orders where order_id='import-new')),1,'stored count agrees with the committed insertions');
+select is(public.ryd_import_orders('00000000-0000-4000-8000-000000000401','30000000-0000-4000-8000-000000000403',pg_temp.payload(array['import-one','import-new'],true))->>'preverifiedCount','1','preverified count excludes existing orders');
+select is(public.ryd_import_orders('00000000-0000-4000-8000-000000000401','30000000-0000-4000-8000-000000000404',pg_temp.payload(array['import-one']))->>'newCount','0','re-uploading an existing order does not overwrite its decision');
+select is((select status from public.ryd_orders where order_id='import-one'),'verified','existing decisions are preserved');
+create function pg_temp.fail_write_audit() returns trigger language plpgsql as $$begin raise exception 'audit unavailable'; end$$;
+create trigger write_audit_failure before insert on public.ryd_order_events for each row execute function pg_temp.fail_write_audit();
+select throws_ok($$select public.ryd_import_orders('00000000-0000-4000-8000-000000000401','30000000-0000-4000-8000-000000000405',pg_temp.payload(array['failed-import']))$$,'P0001','audit unavailable','an import cannot succeed without history');
+select is((select count(*) from public.ryd_orders where order_id='failed-import'),0::bigint,'failed import rolls back its orders');
+select is((select count(*) from public.ryd_write_receipts where operation_id='30000000-0000-4000-8000-000000000405'),0::bigint,'failed import leaves no successful receipt');
+select is((select count(*) from public.ryd_imports where filename='transaction.csv'),3::bigint,'failed import rolls back its batch');
+drop trigger write_audit_failure on public.ryd_order_events;
+set local role service_role;
+select lives_ok($$select public.ryd_import_orders('00000000-0000-4000-8000-000000000401','30000000-0000-4000-8000-000000000406','{"filename":"service.csv","headers":[],"duplicateCount":0,"orders":[{"orderId":"reminder-one","email":"ryan@example.test","verified":false,"raw":{}}]}')$$,'service role imports for an authorized actor');
+set local role postgres;
+select throws_ok($$select public.ryd_import_orders('00000000-0000-4000-8000-000000000402','30000000-0000-4000-8000-000000000407',pg_temp.payload(array['denied-import']))$$,'42501',null,'denied members cannot import');
+create trigger write_audit_failure before insert on public.ryd_order_events for each row execute function pg_temp.fail_write_audit();
+select throws_ok($$select public.ryd_record_reminders('00000000-0000-4000-8000-000000000401','40000000-0000-4000-8000-000000000401','[{"orderId":"reminder-one","email":"ryan@example.test"}]')$$,'P0001','audit unavailable','reminders require their history');
+select is((select last_emailed_at from public.ryd_orders where order_id='reminder-one'),null::timestamptz,'failed reminder rolls back its timestamp');
+select is((select count(*) from public.ryd_write_receipts where operation_id='40000000-0000-4000-8000-000000000401'),0::bigint,'failed reminder leaves no successful receipt');
+drop trigger write_audit_failure on public.ryd_order_events;
+set local role service_role;
+select is(public.ryd_record_reminders('00000000-0000-4000-8000-000000000401','40000000-0000-4000-8000-000000000401','[{"orderId":"reminder-one","email":"ryan@example.test"},{"orderId":"import-one","email":"ryan@example.test"}]')->>'markedCount','1','service role records only orders still waiting');
+set local role postgres;
+select is(public.ryd_record_reminders('00000000-0000-4000-8000-000000000401','40000000-0000-4000-8000-000000000401','[{"orderId":"import-one","email":"Ryan@example.test"},{"orderId":"reminder-one","email":"ryan@example.test"}]')->>'skippedCount','1','retry is independent of order and email case');
+select is((select count(*) from public.ryd_order_events where action='emailed' and order_id='reminder-one'),1::bigint,'retrying a reminder does not duplicate history');
+select is((select last_emailed_at from public.ryd_orders where order_id='reminder-one'),(select (result->>'sentAt')::timestamptz from public.ryd_write_receipts where operation_id='40000000-0000-4000-8000-000000000401'),'retry preserves the first timestamp');
+select throws_ok($$select public.ryd_record_reminders('00000000-0000-4000-8000-000000000401','40000000-0000-4000-8000-000000000401','[{"orderId":"reminder-one","email":"changed@example.test"}]')$$,'RY409',null,'one confirmation key cannot mark another draft');
+select throws_ok($$select public.ryd_record_reminders('00000000-0000-4000-8000-000000000401','40000000-0000-4000-8000-000000000402','[{"orderId":"reminder-one","email":"wrong@example.test"}]')$$,'RY409',null,'changed recipient identity requires review');
+select throws_ok($$select public.ryd_record_reminders('00000000-0000-4000-8000-000000000402','40000000-0000-4000-8000-000000000403','[{"orderId":"reminder-one","email":"ryan@example.test"}]')$$,'42501',null,'denied members cannot record reminders');
+update public.instance_settings set ryd_enabled=false;
+select throws_ok($$select public.ryd_record_reminders('00000000-0000-4000-8000-000000000401','40000000-0000-4000-8000-000000000401','[{"orderId":"reminder-one","email":"ryan@example.test"},{"orderId":"import-one","email":"ryan@example.test"}]')$$,'42501',null,'even receipt replays require the feature to remain enabled');
+select ok(not has_table_privilege('authenticated','public.ryd_write_receipts','SELECT'),'receipt data is private');
+select ok(not has_function_privilege('authenticated','public.ryd_import_orders(uuid,uuid,jsonb)','EXECUTE'),'members cannot call import RPCs directly');
+select ok(not has_function_privilege('anon','public.ryd_record_reminders(uuid,uuid,jsonb)','EXECUTE'),'anonymous callers cannot record reminders');
+select * from finish();
+rollback;

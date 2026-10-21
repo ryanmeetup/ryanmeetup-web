@@ -31,11 +31,10 @@ import {
 } from "react-icons/fi";
 import { mutate } from "@/lib/mutation-client";
 import { errorMessage } from "@/lib/presentation";
-import { rydBuyerMailtoHref } from "@/lib/ryd/emails";
 import type { RydSubmission } from "@/lib/ryd/matching";
 import type { RydOrderStatus } from "@/lib/ryd/orders";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
-import { orderSubmissions } from "@/lib/ryd/queue-view";
+import { canEmailRydOrder, orderSubmissions } from "@/lib/ryd/queue-view";
 import { decideRydOrder } from "@/lib/ryd/ryd-decisions";
 import {
   RydConfidenceChip,
@@ -43,6 +42,8 @@ import {
   rydProductionSummary,
   RydStatusChip,
 } from "./RydStatusChip";
+import { rydReminderHasEvidence } from "@/lib/ryd/reminders";
+import { RydRemindDialog } from "./RydRemindDialog";
 import { RydSubmissionCard } from "./RydSubmissionCard";
 
 /**
@@ -114,6 +115,7 @@ export function RydOrderDialog({
   const [note, setNote] = useState(order.note ?? "");
   const [pending, setPending] = useState<string | null>(null);
   const [linkChoice, setLinkChoice] = useState("");
+  const [emailOpen, setEmailOpen] = useState(false);
   const [choosing, setChoosing] = useState(false);
   const shown = orderSubmissions(order, submissions);
 
@@ -197,6 +199,16 @@ export function RydOrderDialog({
   const name =
     `${order.firstName} ${order.lastName}`.trim() || order.displayEmail;
 
+  if (emailOpen)
+    return (
+      <RydRemindDialog
+        orders={[order]}
+        title={`Email ${order.firstName || "buyer"}`}
+        onClose={() => setEmailOpen(false)}
+        onChanged={onChanged}
+      />
+    );
+
   return (
     <Modal
       open
@@ -211,29 +223,16 @@ export function RydOrderDialog({
         </span>
       }
       supportingActions={
-        order.status !== "verified" && (
-          <Button.Link
-            href={rydBuyerMailtoHref(order, shown.submissions.length > 0)}
+        canEmailRydOrder(order) && (
+          <Button
             size="sm"
             variant="ghost"
             leftIcon={<FiMail aria-hidden />}
-            prefetch={false}
-            newTab
-            disabled={busy || !order.displayEmail}
-            onClick={() =>
-              run(
-                "email",
-                () =>
-                  mutate("/api/ryd/reminders", {
-                    method: "POST",
-                    body: JSON.stringify({ orderIds: [order.orderId] }),
-                  }),
-                `Draft opened for ${order.displayEmail}.`,
-              )
-            }
+            disabled={busy}
+            onClick={() => setEmailOpen(true)}
           >
-            {shown.submissions.length ? "Ask for more" : "Ask to verify"}
-          </Button.Link>
+            {rydReminderHasEvidence(order) ? "Ask for more" : "Ask to verify"}
+          </Button>
         )
       }
       actions={

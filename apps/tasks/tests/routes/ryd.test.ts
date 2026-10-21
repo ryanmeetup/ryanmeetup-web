@@ -302,6 +302,78 @@ describe("RY-D routes", () => {
     expect(authorize).not.toHaveBeenCalled();
   });
 
+  it("imports the parsed file and its operation key through one transaction", async () => {
+    getAdminClient.mockReturnValue(admin({}));
+    rpc.mockResolvedValue({
+      data: { ok: true, newCount: 1, rowCount: 1 },
+      error: null,
+    });
+    const { POST } = await import("@/app/api/ryd/imports/route");
+    const form = new FormData();
+    form.set("operationId", "30000000-0000-4000-8000-000000000401");
+    form.set(
+      "file",
+      new File(
+        [
+          "OrderId,BillFirstName,BillLastName,BillEmail,Verified?\n1001,Ryan,Example,Ryan@example.test,✅\n",
+        ],
+        "orders.csv",
+      ),
+    );
+    const response = await POST(
+      new Request("http://localhost/api/ryd/imports", {
+        method: "POST",
+        headers: { origin: "http://localhost" },
+        body: form,
+      }),
+    );
+    expect(response.status).toBe(200);
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("ryd_import_orders", {
+      requested_actor: "member-1",
+      requested_operation: "30000000-0000-4000-8000-000000000401",
+      requested_payload: expect.objectContaining({
+        filename: "orders.csv",
+        orders: [
+          expect.objectContaining({
+            orderId: "1001",
+            email: "ryan@example.test",
+            verified: true,
+          }),
+        ],
+      }),
+    });
+  });
+
+  it.each([undefined, "1"])(
+    "stops oversized streamed uploads before multipart parsing with length %s",
+    async (length) => {
+      getAdminClient.mockReturnValue(admin({}));
+      const cancel = vi.fn();
+      const body = new ReadableStream({
+        start(controller) {
+          controller.enqueue(new Uint8Array(2 * 1024 * 1024 + 64 * 1024 + 1));
+        },
+        cancel,
+      });
+      const { POST } = await import("@/app/api/ryd/imports/route");
+      const response = await POST(
+        new Request("http://localhost/api/ryd/imports", {
+          method: "POST",
+          headers: {
+            origin: "http://localhost",
+            "content-type": "multipart/form-data; boundary=synthetic",
+            ...(length ? { "content-length": length } : {}),
+          },
+          body,
+          duplex: "half",
+        } as RequestInit & { duplex: string }),
+      );
+      expect(response.status).toBe(413);
+      expect(cancel).toHaveBeenCalledOnce();
+      expect(rpc).not.toHaveBeenCalled();
+    },
+  );
+
   it("won't remove a response that already vouches for an order", async () => {
     rpc.mockResolvedValue({
       data: null,
@@ -419,33 +491,32 @@ describe("RY-D routes", () => {
     );
     expect(calls).toEqual([]);
   });
-  it("records drafted reminders only on orders still waiting on the buyer", async () => {
-    const calls: unknown[] = [];
-    getAdminClient.mockReturnValue(
-      admin({
-        ryd_orders: table(
-          {
-            data: [{ order_id: "1001", email: "ryan@example.com" }],
-            error: null,
-          },
-          calls,
-        ),
-      }),
-    );
+  it("records only one confirmed draft through its retry-safe transaction", async () => {
+    getAdminClient.mockReturnValue(admin({}));
+    rpc.mockResolvedValue({
+      data: { markedCount: 1, skippedCount: 0, sentAt: "2026-10-21T12:00:00Z" },
+      error: null,
+    });
     const { POST } = await import("@/app/api/ryd/reminders/route");
-
     const response = await POST(
       new Request(
         "http://localhost/api/ryd/reminders",
-        json({ orderIds: ["1001", "1002", "1001"] }, "POST"),
+        json(
+          {
+            operationId: "40000000-0000-4000-8000-000000000401",
+            targets: [{ orderId: "1001", email: "Ryan@example.com" }],
+          },
+          "POST",
+        ),
       ),
     );
-
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ markedCount: 1 });
-    expect(calls).toContainEqual(["in", "order_id", ["1001", "1002"]]);
-    expect(calls).toContainEqual(["in", "status", ["pending", "needs_info"]]);
-    expect(calls).toContainEqual(["is", "cleared_batch_id", null]);
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("ryd_record_reminders", {
+      requested_actor: "member-1",
+      requested_operation: "40000000-0000-4000-8000-000000000401",
+      requested_targets: [{ orderId: "1001", email: "ryan@example.com" }],
+    });
   });
 
   it("refuses to change the decision on an order in production", async () => {

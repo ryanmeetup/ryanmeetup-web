@@ -196,6 +196,7 @@ export function RydPageClient({
   const [selectedSubmitterKeys, setSelectedSubmitterKeys] = useState<ReadonlySet<string>>(
     new Set(),
   );
+  const [emailOrder, setEmailOrder] = useState<RydQueueOrder | null>(null);
   const [moving, setMoving] = useState<string | null>(null);
   const view = rydView(viewParam);
   const status = rydStatusParam(statusParam);
@@ -419,21 +420,6 @@ export function RydPageClient({
         ? new Set()
         : new Set(sorted.map((order) => order.orderId)),
     );
-  }
-
-  /** The row's Email opens a draft in the reviewer's mail app; this records it. */
-  async function markEmailed(order: RydQueueOrder) {
-    try {
-      await mutate("/api/ryd/reminders", {
-        method: "POST",
-        body: JSON.stringify({ orderIds: [order.orderId] }),
-      });
-      await refresh();
-    } catch (error) {
-      toast.error(
-        errorMessage(error, "The draft opened, but it couldn't be recorded."),
-      );
-    }
   }
 
   async function linkSubmitter(submitter: RydSubmitter, orderId: string) {
@@ -993,7 +979,7 @@ export function RydPageClient({
                         setPage(1);
                       }}
                       followUp={view === "follow-up"}
-                      onEmailed={markEmailed}
+                      onEmail={setEmailOrder}
                       onReview={(order) => setOpenOrderId(order.orderId)}
                       production={producing}
                       selection={
@@ -1051,6 +1037,7 @@ export function RydPageClient({
           onChanged={refresh}
         />
       )}
+      {emailOrder && <RydRemindDialog orders={[emailOrder]} title={`Email ${emailOrder.firstName || "buyer"}`} onClose={() => setEmailOrder(null)} onChanged={refresh} />}
       {(dialog === "remind" || dialog === "remind-selected") && (
         <RydRemindDialog
           {...(dialog === "remind-selected"

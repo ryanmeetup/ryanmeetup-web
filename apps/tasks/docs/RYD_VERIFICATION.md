@@ -46,7 +46,10 @@ presses Send. The page then records what was sent.
 
 1. **Upload orders.** The CSV is added to a rolling queue keyed by `OrderId`.
    Re-uploading the same file changes nothing; an order already in the queue
-   keeps its decision. A ✅ fulfillment already put in the file imports as
+   keeps its decision. Import accounting, inserted orders, and their history
+   save in one transaction; retrying the same upload returns its first result.
+   Files are limited to 2 MB before multipart parsing.
+   A ✅ fulfillment already put in the file imports as
    verified, but with nothing linked; it is still offered a suggestion, and
    **Link** on that submission pairs it. A decided order only offers the
    other decisions, plus **Save note** when its note changes.
@@ -73,15 +76,25 @@ presses Send. The page then records what was sent.
    submission by hand — from the order, or from **Unmatched submissions**.
    Every order needs a person to press Verify, Needs more info, or Reject.
 3. **Follow up.** The Follow-up view lists orders asked for more, rejected,
-   or with nothing on the form. **Email** on a row opens a reminder to that
-   buyer, by name, and records that they were asked. **Email everyone** opens
-   one draft with every listed buyer in Bcc — two drafts when some have
-   already sent something and are asked for more instead — leaving out
-   rejected orders and anyone emailed in the last 20 hours. After sending,
-   **Mark as emailed** records them. To ask only some, tick their rows (or
-   **Select all** of what's listed) and **Email selected**: a hand-picked
-   buyer is included even if emailed recently, but rejected orders still
-   aren't. Every follow-up goes by email.
+   or with nothing on the form. **Email** on a row and the review dialog's ask
+   action open the same draft workflow as **Email everyone** and **Email
+   selected**. A single buyer gets a personal greeting; groups use Bcc.
+   Evidence state is considered across each buyer's orders, so someone with a
+   linked or suggested response is asked for more rather than to start again.
+
+   Opening or closing a draft records nothing. After sending, use **Mark this
+   draft as emailed** on that group only. Each draft is confirmed independently;
+   another group's buyers remain unrecorded until that draft is confirmed.
+   Selections are split into at most 100 orders per draft, also bounded by the
+   confirmation's byte size. Copy the addresses and email if a mail link fails.
+   A retried confirmation returns its first result without another timestamp
+   or history entry. Orders no longer waiting are skipped, and an email changed
+   since preparation requires review. A reload failure does not undo a saved
+   confirmation or import.
+
+   **Email everyone** leaves out rejected/verified orders, invalid addresses,
+   and anyone emailed in the last 20 hours. Hand-picking rows can override the
+   time window. All buyer follow-up goes by email.
 
    An order still pending with a suggested response isn't in Follow-up, since
    it is waiting on a reviewer rather than the buyer. Mark it **Needs more

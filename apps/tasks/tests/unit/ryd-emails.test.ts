@@ -45,4 +45,21 @@ describe("RY-D email drafts", () => {
       "mailto:?bcc=a%40example.com%2Cb%40example.com&subject=Hi%20%26%20bye&body=Line%20one%0ALine%20two",
     );
   });
+
+  it("deduplicates addresses and refuses injected recipients or query parameters", () => {
+    const href = rydMailtoHref({
+      to: ["ryan+one@example.com", "bad@example.com?bcc=other@example.com"],
+      bcc: [
+        " Ryan@example.com ",
+        "ryan@example.com",
+        "a@example.com,b@example.com",
+        "",
+      ],
+      subject: "Hello",
+      body: "Hi",
+    });
+    expect(href).toBe(
+      "mailto:ryan%2Bone%40example.com?bcc=ryan%40example.com&subject=Hello&body=Hi",
+    );
+  });
 });

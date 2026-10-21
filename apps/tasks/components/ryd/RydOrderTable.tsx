@@ -16,7 +16,7 @@ import {
   DropdownMenuItems,
   DropdownMenuSeparator,
 } from "@ryanmeetup/ui";
-import { rydBuyerMailtoHref } from "@/lib/ryd/emails";
+import { canEmailRydOrder } from "@/lib/ryd/queue-view";
 import type { RyanPosition } from "@/lib/ryd/normalize";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 import type { RydSort, RydSortKey } from "@/lib/ryd/queue-view";
@@ -183,7 +183,7 @@ export function RydOrderTable({
   sort,
   onSort,
   followUp,
-  onEmailed,
+  onEmail,
   onReview,
   selection,
   production = false,
@@ -195,8 +195,8 @@ export function RydOrderTable({
   sort: RydSort;
   onSort: (sort: RydSort) => void;
   followUp: boolean;
-  /** The row's Email opened a draft; record that the buyer was asked. */
-  onEmailed: (order: RydQueueOrder) => void;
+  /** Open the same explicit draft/confirmation flow used by bulk reminders. */
+  onEmail: (order: RydQueueOrder) => void;
   onReview: (order: RydQueueOrder) => void;
   selection?: {
     selected: ReadonlySet<string>;
@@ -340,27 +340,21 @@ export function RydOrderTable({
                   )}
                   <td className="px-4 py-2.5">
                     <div className="flex justify-end gap-2">
-                      {followUp && order.status !== "rejected" && (
-                        <Button.Link
-                          href={rydBuyerMailtoHref(
-                            order,
-                            order.linkedKeys.length > 0,
-                          )}
+                      {followUp && canEmailRydOrder(order) && (
+                        <Button
                           size="xs"
                           variant="ghost"
                           leftIcon={<FiMail aria-hidden />}
-                          prefetch={false}
-                          newTab
                           aria-label={`${order.lastEmailedAt ? "Email again" : "Email"} ${name || order.displayEmail}`}
                           title={
                             order.lastEmailedAt
                               ? `Emailed ${new Date(order.lastEmailedAt).toLocaleString()}`
                               : undefined
                           }
-                          onClick={() => onEmailed(order)}
+                          onClick={() => onEmail(order)}
                         >
                           {order.lastEmailedAt ? "Again" : "Email"}
-                        </Button.Link>
+                        </Button>
                       )}
                       <Button
                         type="button"

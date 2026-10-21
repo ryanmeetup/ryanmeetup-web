@@ -3,7 +3,7 @@ import {
   type RydSubmission,
   type RydSubmitter,
 } from "./matching";
-import { ryanPosition, type RyanPosition } from "./normalize";
+import { isRydContactEmail, ryanPosition, type RyanPosition } from "./normalize";
 import type { RydOrderStatus } from "./orders";
 import type { RydQueue, RydQueueOrder } from "./queue-types";
 
@@ -165,12 +165,22 @@ export function followUpOrders(queue: Pick<RydQueue, "orders">) {
  */
 export const RYD_REMIND_AGAIN_MS = 20 * 60 * 60 * 1000;
 
+/** The same email eligibility rule for row actions, dialogs, and bulk drafts. */
+export function canEmailRydOrder(
+  order: Pick<RydQueueOrder, "status" | "email" | "sentToFulfillment">,
+) {
+  return (
+    (order.status === "pending" || order.status === "needs_info") &&
+    !order.sentToFulfillment &&
+    isRydContactEmail(order.email)
+  );
+}
+
 /** The follow-up orders Email everyone would send to right now. */
 export function remindableOrders(orders: RydQueueOrder[], now = Date.now()) {
   return orders.filter(
     (order) =>
-      order.status !== "rejected" &&
-      order.email &&
+      canEmailRydOrder(order) &&
       !(
         order.lastEmailedAt &&
         Date.parse(order.lastEmailedAt) > now - RYD_REMIND_AGAIN_MS

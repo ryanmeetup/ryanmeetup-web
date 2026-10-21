@@ -45,6 +45,15 @@ export type ParsedRydOrder = {
   raw: Record<string, string>;
 };
 
+/** Counts from a committed import, also returned for a retry. */
+export type RydImportSummary = {
+  rowCount: number;
+  newCount: number;
+  existingCount: number;
+  duplicateCount: number;
+  preverifiedCount: number;
+};
+
 export type RydOrderImport =
   | {
       ok: true;

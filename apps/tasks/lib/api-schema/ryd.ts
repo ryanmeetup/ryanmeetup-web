@@ -5,6 +5,7 @@ import {
 } from "@/lib/ryd/queue-view";
 import { formIdFrom } from "@/lib/ryd/form-responses";
 import { isRydContactEmail, normalizeEmail } from "@/lib/ryd/normalize";
+import { RYD_REMINDER_GROUP_LIMIT, type RydReminderTarget } from "@/lib/ryd/reminders";
 import { isJsonObject, isUuid } from "./shared";
 
 /** A decision, a note, or both. An empty note clears it. */
@@ -185,4 +186,37 @@ export function rydBatchSchema(
   )
     return { action: value.action, snapshotId: value.snapshotId };
   return null;
+}
+
+export function rydReminderSchema(value: unknown) {
+  if (
+    !isJsonObject(value) ||
+    Object.keys(value).length !== 2 ||
+    !isUuid(value.operationId) ||
+    !Array.isArray(value.targets) ||
+    value.targets.length < 1 ||
+    value.targets.length > RYD_REMINDER_GROUP_LIMIT
+  )
+    return null;
+  const targets: RydReminderTarget[] = [];
+  const seen = new Set<string>();
+  for (const target of value.targets) {
+    if (
+      !isJsonObject(target) ||
+      Object.keys(target).length !== 2 ||
+      typeof target.orderId !== "string" ||
+      !target.orderId.trim() ||
+      target.orderId.length > 64 ||
+      typeof target.email !== "string" ||
+      !isRydContactEmail(target.email) ||
+      seen.has(target.orderId)
+    )
+      return null;
+    seen.add(target.orderId);
+    targets.push({
+      orderId: target.orderId,
+      email: normalizeEmail(target.email),
+    });
+  }
+  return { operationId: value.operationId, targets };
 }

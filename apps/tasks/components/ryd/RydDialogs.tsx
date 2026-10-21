@@ -20,28 +20,21 @@ import { CopyButton } from "@/components/global";
 import { mutate } from "@/lib/mutation-client";
 import { errorMessage } from "@/lib/presentation";
 import {
-  rydBuyerEmail,
   rydMailtoHref,
   rydUnmatchedEmail,
   type RydDraft,
 } from "@/lib/ryd/emails";
 import type { RydSubmitter } from "@/lib/ryd/matching";
-import type { RydQueue, RydQueueOrder } from "@/lib/ryd/queue-types";
+import type { RydImportSummary } from "@/lib/ryd/orders";
+import type { RydQueue } from "@/lib/ryd/queue-types";
 
+export { RydRemindDialog } from "./RydRemindDialog";
 export { RydSendDialog } from "./RydSendDialog";
 
 const UPLOAD_FORM = "ryd-upload-form";
 const SETTINGS_FORM = "ryd-settings-form";
 
-type ImportResult = {
-  rowCount: number;
-  newCount: number;
-  existingCount: number;
-  duplicateCount: number;
-  preverifiedCount: number;
-};
-
-function importSummary(result: ImportResult) {
+function importSummary(result: RydImportSummary) {
   const parts = [
     `${result.newCount} new order${result.newCount === 1 ? "" : "s"} added`,
   ];
@@ -62,6 +55,7 @@ export function RydUploadDialog({
   onChanged: () => Promise<void>;
 }) {
   const [file, setFile] = useState<File | null>(null);
+  const [operationId, setOperationId] = useState(() => crypto.randomUUID());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -81,12 +75,19 @@ export function RydUploadDialog({
         try {
           const body = new FormData();
           body.set("file", file);
-          const result = await mutate<ImportResult>("/api/ryd/imports", {
+          body.set("operationId", operationId);
+          const result = await mutate<RydImportSummary>("/api/ryd/imports", {
             method: "POST",
             body,
           });
-          await onChanged();
           toast.success(importSummary(result));
+          try {
+            await onChanged();
+          } catch {
+            toast.error(
+              "The file imported, but the queue could not reload. Refresh the page to see it.",
+            );
+          }
           onClose();
         } catch (failure) {
           setError(errorMessage(failure, "The file couldn't be imported."));
@@ -120,7 +121,10 @@ export function RydUploadDialog({
             required
             aria-required="true"
             disabled={saving}
-            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+            onChange={(event) => {
+              setFile(event.target.files?.[0] ?? null);
+              setOperationId(crypto.randomUUID());
+            }}
             className="mt-2 block w-full rounded-xl border border-black/15 bg-white p-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-black/[0.06] file:px-3 file:py-2 file:text-xs file:font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:border-white/15 dark:bg-white/[0.04] dark:file:bg-white/10 dark:file:text-white dark:focus-visible:ring-white/40"
           />
         </label>
@@ -199,95 +203,6 @@ const BULK_FALLBACK = (
     email.
   </p>
 );
-
-export function RydRemindDialog({
-  orders,
-  title = "Email everyone",
-  onClose,
-  onChanged,
-}: {
-  orders: RydQueueOrder[];
-  title?: string;
-  onClose: () => void;
-  onChanged: () => Promise<void>;
-}) {
-  const [marking, setMarking] = useState(false);
-  // Someone who already sent something is asked for more, not to start.
-  const groups = [false, true]
-    .map((hasSubmission) => ({
-      hasSubmission,
-      orders: orders.filter(
-        (order) => order.linkedKeys.length > 0 === hasSubmission,
-      ),
-    }))
-    .filter((group) => group.orders.length);
-
-  async function markEmailed() {
-    setMarking(true);
-    try {
-      const result = await mutate<{ markedCount: number }>(
-        "/api/ryd/reminders",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            orderIds: orders.map((order) => order.orderId),
-          }),
-        },
-      );
-      await onChanged();
-      toast.success(
-        `Marked ${result.markedCount} buyer${result.markedCount === 1 ? "" : "s"} as emailed.`,
-      );
-      onClose();
-    } catch (error) {
-      toast.error(errorMessage(error, "Those emails couldn't be recorded."));
-    } finally {
-      setMarking(false);
-    }
-  }
-
-  return (
-    <Modal
-      open
-      setIsOpen={(open) => !open && !marking && onClose()}
-      size="lg"
-      title={title}
-      description={
-        <>
-          {BCC_INTRO} Once it&apos;s sent, mark them emailed here and they
-          won&apos;t be asked again for a day.
-        </>
-      }
-      closable={!marking}
-      actions={
-        <ModalActions
-          confirmLabel={`Mark ${orders.length} as emailed`}
-          confirmIcon={<FiCheck aria-hidden />}
-          onConfirm={markEmailed}
-          onCancel={onClose}
-          pending={marking}
-          pendingLabel="Marking..."
-        />
-      }
-    >
-      <ul className="space-y-4">
-        {groups.map((group) => (
-          <BulkDraftCard
-            key={String(group.hasSubmission)}
-            label={
-              group.hasSubmission
-                ? "Sent something, needs more"
-                : "Nothing sent yet"
-            }
-            addresses={group.orders.map((order) => order.displayEmail)}
-            draft={rydBuyerEmail({ hasSubmission: group.hasSubmission })}
-          />
-        ))}
-      </ul>
-      {BULK_FALLBACK}
-    </Modal>
-  );
-}
 
 /**
  * Emails everyone whose form answers no order claims, then records the
