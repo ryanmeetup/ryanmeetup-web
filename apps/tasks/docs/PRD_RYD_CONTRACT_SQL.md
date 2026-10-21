@@ -1,5 +1,11 @@
 # PRD: RY-D contract diagnostics
 
+After this initial diagnostic is installed, apply
+[the later read-access update](PRD_RYD_READ_ACCESS_SQL.md), which also extends
+the diagnostic to cover its private access functions. After applying that
+update, use its complete SQL for reruns; the original definition below does
+not include those later contract requirements.
+
 Run the complete SQL block below in the **PRD** Supabase dashboard SQL Editor
 for `projects.ryanle.dev` (project `vjsnobmfsfrsnwukfaoq`), rather than RMT.
 RMT is applied and verified separately by the agent. This block only creates

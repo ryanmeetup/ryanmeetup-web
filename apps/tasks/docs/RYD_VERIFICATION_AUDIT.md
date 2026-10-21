@@ -7,7 +7,7 @@ sales connector; and the public `/cards/verify` redirect.
 
 This is the remaining-work list. Resolved findings and repair history are
 removed as fixes land. Remaining work concerns form-question mapping, the
-buyer-facing form link, privacy language, and fail-closed read access.
+buyer-facing form link, and privacy language.
 
 ## Remaining work
 
@@ -22,23 +22,21 @@ buyer-facing form link, privacy language, and fail-closed read access.
   separate bearer-token authority; that is documented behavior. Its typed email
   field is reduced to a domain, but free-text notes/answers and social URLs are
   returned. Do not describe that payload as fully anonymized or email-free.
-- RY-D reads and recipient resolution still inherit the global “missing row
-  is open” rule if the access metadata is deleted while the access RPC exists.
-  The new write RPCs require actual page metadata or ownership. Align the read
-  gate and recipient resolver with that fail-closed write rule.
 
 ## Validation and rollout
 
 Review, fulfillment, import/reminder, and bulk-operation migrations
 (`20261028000000` through `20261031000000`) were applied and metadata-verified
-on RMT. The `20261101000000` contract migration is also applied and
-health-verified on RMT. PRD's reported verification confirms that the contract
-migration is recorded, but `contractOk` is false: all six failures concern the
+on RMT. The `20261101000000` contract and `20261102000000` read-access
+migrations are also applied, recorded, and health-verified on RMT; the committed
+schema diff is clean. PRD's reported verification confirms that the earlier
+contract migration is recorded, but `contractOk` is false: all six failures concern the
 missing `ryd_submitter_contacts` table from migration `20261024000000`.
-PRD needs [the complete earlier-table repair](PRD_RYD_SUBMITTER_CONTACTS_SQL.md),
-then verification must return `contractOk: true`, an empty `failures` array,
-and both migration-recorded values true. The diagnostic's recorded version
-alone does not establish schema health. Verification of all fifteen values in
+PRD needs [the complete earlier-table repair](PRD_RYD_SUBMITTER_CONTACTS_SQL.md)
+and [the complete read-access update](PRD_RYD_READ_ACCESS_SQL.md).
+The latest verification must return `contractOk: true`, an empty `failures`
+array, and `migration_recorded: true` for `20261102000000`. The diagnostic's
+recorded version alone does not establish schema health. Verification of all fifteen values in
 [the cumulative dashboard handoff](PRD_RYD_FULFILLMENT_SQL.md) has not been
 reported. The contract block was applied twice in a disposable database and
 verified there before handoff. The earlier-table repair also reproduced PRD's
@@ -46,24 +44,36 @@ six failures in a disposable schema-only database, restored a healthy contract,
 and preserved synthetic contact history when applied again.
 
 Local migrations were applied from empty and diffed against RMT. Database
-coverage includes 144 assertions and ten synchronized two-session races.
+coverage includes 144 transaction assertions, 43 page-access checks, and ten
+synchronized two-session races.
 The latest races cover repeated production moves and contact confirmations;
 earlier races cover overlapping imports, duplicate uploads, and reminders.
 Audit failures roll back the operation and its receipt. Snapshot coverage also
-checks more than 1,000 rows. All 131 Tasks unit/route files and 934 tests passed.
+checks more than 1,000 rows. All 131 Tasks unit/route files and 938 tests passed.
 TypeScript, changed-file ESLint, `git diff --check`, and the production build
 passed; the build ran its normal
 RMT database preflight. The isolated staged source also passed all 129 committed
-test files and 912 tests, plus TypeScript.
+test files and 916 tests, plus TypeScript.
 
 The enabled RY-D preflight now calls the read-only, service-only contract RPC.
-Twenty-five pgTAP checks cover missing schema, unsafe table/column/RPC grants,
+Twenty-eight pgTAP checks cover missing schema, unsafe table/column/RPC grants,
 RLS policies, service privileges, RPC search paths, weakened constraints, changed
 receipt keys, missing unique indexes, disabled triggers, and deleted page
 metadata. Tests roll back every simulated change. Twenty-two unit cases verify
 feature-off compatibility and refusal of unreadable or malformed settings and
 health results. The full migration chain applied in a fresh shadow database;
 the existing local database was preserved instead of reset.
+
+One private per-member predicate now governs RY-D reads, navigation, writes,
+and worker recipients. Missing RY-D metadata denies nonowners; explicit open
+mode or a selected group is required, and onboarding still applies to owners.
+Other unconfigured pages retain their existing open default. The owner-only
+access preview follows the same metadata rule. Tests exercise deleted metadata,
+open and restricted modes, inherited tiers, team removal, onboarding, owner
+overrides, and private-function permissions. The exact PRD block was applied
+twice in a disposable database before the 144 transaction regressions passed
+against the new predicate. RMT's live health check passes and a missing identity
+is denied. The existing ten race checks were not repeated for this access change.
 
 The committed browser suite runs the actual Next page and API routes against
 isolated Supabase and Google transports, using only synthetic credentials/data.
