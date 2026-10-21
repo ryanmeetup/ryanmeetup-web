@@ -6,29 +6,10 @@ rules; all RY-D API and Google OAuth routes; migrations and access gates; the
 sales connector; and the public `/cards/verify` redirect.
 
 This is the remaining-work list. Resolved findings and repair history are
-removed as fixes land. The next priority is the enabled RY-D contract check
-and committed browser workflow coverage.
+removed as fixes land. Remaining work concerns form-question mapping, the
+buyer-facing form link, privacy language, and fail-closed read access.
 
-## Remaining findings, in priority order
-
-P2 marks concrete reliability, performance, or usability work. These are
-source-level failure paths; no concurrency tests wrote to production customer data.
-
-### 1. P2 — Contract checks and end-to-end coverage stop short of RY-D
-
-[The build preflight](../scripts/check-database-contract.mjs) verifies other
-workspace contracts but not the enabled RY-D tables, columns, grants, or access
-metadata. A successful build is therefore not proof that RY-D migrations are
-present on both instances. The canonical review, fulfillment, import, reminder,
-and bulk-operation RPCs have real database permission, rollback, and concurrency
-coverage, but the committed browser suite still has no RY-D workflow coverage.
-
-Conditionally check the enabled RY-D contract, including its private RPCs and
-constraints. Add a committed synthetic browser fixture covering the full
-import → link → decide → export → confirm → production lifecycle, including
-feature-off, anonymous, denied member, and settings-authority cases.
-
-## Smaller consolidations and policy gaps
+## Remaining work
 
 - Title-based form-question inference is heuristic. Validate the name/email
   question mapping and surface ambiguity.
@@ -52,18 +33,43 @@ Review, fulfillment, import/reminder, and bulk-operation migrations
 (`20261028000000` through `20261031000000`) were applied and metadata-verified
 on RMT. PRD still needs all three complete SQL blocks in
 [the cumulative dashboard handoff](PRD_RYD_FULFILLMENT_SQL.md).
-Its verification must return one row with all fifteen values true.
+Its verification must return one row with all fifteen values true. The new
+`20261101000000` contract migration is also applied and health-verified on RMT.
+PRD additionally needs [the complete contract SQL block](PRD_RYD_CONTRACT_SQL.md);
+its verification must return `contractOk: true`, an empty `failures` array, and
+`migration_recorded: true`. The block was applied twice in a disposable database
+and verified there before handoff.
 
 Local migrations were applied from empty and diffed against RMT. Database
 coverage includes 144 assertions and ten synchronized two-session races.
 The latest races cover repeated production moves and contact confirmations;
 earlier races cover overlapping imports, duplicate uploads, and reminders.
 Audit failures roll back the operation and its receipt. Snapshot coverage also
-checks more than 1,000 rows. All 130 Tasks unit/route files and 912 tests passed.
+checks more than 1,000 rows. All 131 Tasks unit/route files and 934 tests passed.
 TypeScript, changed-file ESLint, `git diff --check`, and the production build
 passed; the build ran its normal
-RMT database preflight. The isolated staged source also passed all 128 committed
-test files and 890 tests, plus TypeScript.
+RMT database preflight. The isolated staged source also passed all 129 committed
+test files and 912 tests, plus TypeScript.
+
+The enabled RY-D preflight now calls the read-only, service-only contract RPC.
+Twenty-five pgTAP checks cover missing schema, unsafe table/column/RPC grants,
+RLS policies, service privileges, RPC search paths, weakened constraints, changed
+receipt keys, missing unique indexes, disabled triggers, and deleted page
+metadata. Tests roll back every simulated change. Twenty-two unit cases verify
+feature-off compatibility and refusal of unreadable or malformed settings and
+health results. The full migration chain applied in a fresh shadow database;
+the existing local database was preserved instead of reset.
+
+The committed browser suite runs the actual Next page and API routes against
+isolated Supabase and Google transports, using only synthetic credentials/data.
+Its twelve desktop/mobile cases cover import → explicit link → decision → saved
+CSV export → resume/confirm → production/done, confirmation replay without a
+second sheet write, feature-off/anonymous/denied requests never reaching private
+tables, and operator/owner settings authority. CI runs it separately from the
+existing suite. The isolated staged source passed the same twelve cases, and
+the existing four login checks passed against the shared test double. The
+committed migration chain also diffed cleanly against RMT after application.
+See [the test commands and boundaries](RYD_TESTING.md).
 
 The committed synthetic Google fixture measures a queue load followed by 24
 evidence files. Requests fell from 147 to 51, token refreshes from 49 to one,
@@ -125,6 +131,8 @@ Route tests also exercise oversized chunked uploads with absent or false
 Content-Length and reject malformed files before database writes. Screenshots
 were visually inspected. Earlier checks cover fulfillment snapshots, settings,
 and separate email-less identities in both unmatched layouts.
-These checks substitute Next navigation/image wrappers; they are not an
-authenticated end-to-end test. Live Google consent, Drive media, sheet writes, and
-PRD's live database remain untested.
+The component checks substitute Next navigation/image wrappers; they are not
+an authenticated end-to-end test. The committed browser suite uses real Next
+rendering and route authorization, with stubbed identity/database/Google
+transports. Real Google consent, Drive media, sheet writes, and PRD's live
+database remain untested.
