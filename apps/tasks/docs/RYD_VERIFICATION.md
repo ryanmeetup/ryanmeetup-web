@@ -56,7 +56,8 @@ presses Send. The page then records what was sent.
    **Link** on that submission pairs it. A decided order only offers the
    other decisions, plus **Save note** when its note changes.
 2. **Review.** The RY-dentification form is the source of truth. Its
-   responses are read live through the Google Forms API — not from the
+   responses are read through the Google Forms API, with up to ten seconds of
+   server-memory reuse between reads — not from the
    response spreadsheet — and paired with orders. The form's link never
    changes but its questions may: the name, email, and social questions are
    recognised by what they ask, every upload question contributes files, and
@@ -147,10 +148,35 @@ presses Send. The page then records what was sent.
 
 ## Data
 
-Form answers and uploads are **not copied** into the database; they stay in
-Google and are read per request. Uploads are streamed through
+Form answers and uploads are **not copied** into the database. Authorized
+Google reads share in-flight requests and briefly reuse completed results in
+server memory. Uploads are streamed through
 `/api/ryd/evidence/[fileId]`, which only serves file IDs that appear in the
-form's responses and never caches them.
+configured form's responses. Media and Drive metadata are never retained;
+media responses use `private, no-store` and bypass Next's image optimizer.
+
+Completed form reads and access tokens expire ten seconds after completion,
+without extending their lifetime on reuse. Timers remove idle entries. Each
+process retains at most two form reads (each at most 4 MiB of serialized data)
+and four tokens; larger forms share only in-flight work. Cache keys include the
+form ID and a hash of the credential and connection revision. Every file request
+still checks sign-in, the instance feature, page access, current settings, and
+the current Google connection before using a cached form. Access removal or
+disconnect denies subsequent requests; changing forms or reconnecting cannot
+reuse the previous connection's answers. Requests already authorized may finish
+within their deadlines. A response or file reference removed in Google can
+remain visible in a completed form read for its remaining ten-second lifetime.
+Link/dismiss/review provenance checks and fulfillment sheet reconciliation bypass
+retained answers. `GET /api/ryd` with `Cache-Control: no-cache` also bypasses
+retained answers; concurrent fresh reads can still share in-flight work.
+
+Google JSON requests have ten-second deadlines, including their response bodies.
+One form read, including token refresh and all response pages, has a 25-second
+deadline. File fetching and streaming, and sheet reconciliation, each have
+30-second deadlines. Queue and file requests propagate browser cancellation;
+one cancelled reader does not interrupt other readers sharing the work, and
+the last cancelled reader stops the upstream request. Nothing uses Next's
+persistent cache or a public evidence manifest.
 
 The database keeps the orders (`ryd_orders`, with fulfillment's raw row), the
 pairings (`ryd_order_submissions`, keyed by the form's response ID, which
