@@ -12,11 +12,13 @@ export type RydSheetColumns = Record<keyof typeof COLUMN_PATTERNS, number>;
 
 export function rydSheetColumns(headers: unknown[]): RydSheetColumns {
   return Object.fromEntries(
-    Object.entries(COLUMN_PATTERNS).map(([key, pattern]) => [
-      key,
-      headers.findIndex(
-        (header) => typeof header === "string" && pattern.test(header.trim()),
-      ),
-    ]),
+    Object.entries(COLUMN_PATTERNS).map(([key, pattern]) => {
+      const matches = headers.flatMap((header, index) =>
+        typeof header === "string" && pattern.test(header.trim())
+          ? [index]
+          : [],
+      );
+      return [key, matches.length === 1 ? matches[0] : -1];
+    }),
   ) as RydSheetColumns;
 }

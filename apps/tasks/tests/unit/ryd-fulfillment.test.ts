@@ -63,9 +63,12 @@ beforeEach(() => {
   google.load.mockResolvedValue({ account_email: "form@example.test" });
   google.read.mockResolvedValue({
     linkedSheetId: "original-sheet",
+    questionTitles: ["Your email"],
     submissions: [{ key: "original-response" }, { key: "later-response" }],
   });
-  google.tick.mockResolvedValue(1);
+  google.tick.mockResolvedValue({
+    responses: [{ key: "original-response", outcome: "updated" }],
+  });
 });
 
 describe("RY-D immutable fulfillment manifests", () => {
@@ -105,7 +108,7 @@ describe("RY-D immutable fulfillment manifests", () => {
       changed: true,
       verifiedCount: 1,
       orderCount: 2,
-      sheetTicks: 1,
+      sheet: { responses: [{ key: "original-response", outcome: "updated" }] },
     });
     expect(google.read).toHaveBeenCalledWith(
       expect.anything(),
@@ -114,18 +117,23 @@ describe("RY-D immutable fulfillment manifests", () => {
     );
     expect(google.tick).toHaveBeenCalledWith(
       expect.anything(),
-      "original-sheet",
-      [{ key: "original-response" }],
+      {
+        linkedSheetId: "original-sheet",
+        questionTitles: ["Your email"],
+        submissions: [{ key: "original-response" }, { key: "later-response" }],
+      },
+      ["original-response"],
     );
   });
   it("does not repeat external work after an idempotent confirmation", async () => {
-    await finishRydFulfillment(
+    const result = await finishRydFulfillment(
       client({ changed: false, snapshot }),
       "actor",
       snapshot.id,
       "confirm",
     );
     expect(google.load).not.toHaveBeenCalled();
+    expect(result.sheet.issue).toBe("already-confirmed");
   });
   it("preserves a successful confirmation when Google is unavailable", async () => {
     google.load.mockResolvedValue(null);
@@ -136,7 +144,68 @@ describe("RY-D immutable fulfillment manifests", () => {
         snapshot.id,
         "confirm",
       ),
-    ).toMatchObject({ changed: true, sheetTicks: null });
+    ).toMatchObject({
+      changed: true,
+      sheet: {
+        issue: "disconnected",
+        responses: [{ key: "original-response", outcome: "unchecked" }],
+      },
+    });
+  });
+  it("passes deleted pinned keys through to the missing-response report", async () => {
+    google.read.mockResolvedValue({
+      linkedSheetId: "sheet",
+      questionTitles: ["Email"],
+      submissions: [],
+    });
+    await finishRydFulfillment(
+      client({ changed: true, snapshot }),
+      "actor",
+      snapshot.id,
+      "confirm",
+    );
+    expect(google.tick).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ submissions: [] }),
+      ["original-response"],
+    );
+  });
+  it("keeps the saved confirmation when reading Google fails", async () => {
+    google.read.mockRejectedValue(new Error("synthetic Google failure"));
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const result = await finishRydFulfillment(
+        client({ changed: true, snapshot }),
+        "actor",
+        snapshot.id,
+        "confirm",
+      );
+      expect(result).toMatchObject({
+        changed: true,
+        sheet: {
+          issue: "google-unavailable",
+          responses: [{ outcome: "unchecked" }],
+        },
+      });
+      expect(google.tick).not.toHaveBeenCalled();
+    } finally {
+      log.mockRestore();
+    }
+  });
+  it("does not contact Google for cancellation or a batch without response keys", async () => {
+    for (const [action, row] of [
+      ["cancel", snapshot],
+      ["confirm", { ...snapshot, response_keys: [] }],
+    ] as const) {
+      const result = await finishRydFulfillment(
+        client({ changed: true, snapshot: row }),
+        "actor",
+        snapshot.id,
+        action,
+      );
+      expect(result.sheet.issue).toBe("not-required");
+    }
+    expect(google.load).not.toHaveBeenCalled();
   });
   it.each([
     {},

@@ -139,10 +139,33 @@ presses Send. The page then records what was sent.
    Cancelled downloads and confirmations are refused. Discard that file and
    draft before preparing another batch.
 
-   Afterwards the captured responses in the form's linked sheet get their ✅
-   if it has a `Verified?` column (best effort — the toast reports a failure).
-   Retried confirmations do not repeat this external step. Sheet reconciliation
-   still uses submission time and email because the sheet has no response IDs.
+   Afterwards the captured form responses receive a best-effort ✅ in the
+   linked spreadsheet. The response tab must uniquely match the current form's
+   question titles and have one Timestamp, email, and `Verified?` column.
+   Reordered or renamed tabs work; duplicate tabs, duplicate headers, and
+   unfamiliar schemas require a manual check. Matching requires the same usable
+   email and wall-clock submission second in the spreadsheet's time zone, with
+   exactly one row and one response across the entire form. Blank emails,
+   neighboring seconds, and ambiguous identities never match. Existing ticks
+   stay ticked; other nonempty values and formulas remain untouched.
+
+   After **Mark as sent**, the dialog stays open with separate counts and
+   paginated response details for **Updated**, **Already ticked**, **Missing**,
+   **Ambiguous**, and **Unchecked**, plus a link to the spreadsheet. Missing
+   captured responses are reported too. Unresolved responses need a manual
+   check. Results last until the dialog closes; they are not stored in batch
+   history. Retried confirmations never repeat the external step and explain
+   that the earlier sheet result is unavailable. A timeout after a write may
+   mean cells changed, so check the sheet before editing it manually.
+
+   Keep the response tab still while confirming: Sheets row reads and writes
+   are separate requests, so a concurrent sort, row insertion, or cell edit
+   can move a row after it was matched. Tab IDs protect against tab renaming
+   and reordering, but do not lock rows. Fulfillment decisions remain saved
+   even if Google fails. The Sheets adapter uses Google's
+   [filtered reads](https://developers.google.com/workspace/sheets/api/reference/rest/v4/spreadsheets.values/batchGetByDataFilter)
+   and [filtered writes](https://developers.google.com/workspace/sheets/api/reference/rest/v4/spreadsheets.values/batchUpdateByDataFilter)
+   with explicit tab IDs and cell ranges.
    Downloading the file alone clears nothing.
 5. **Track production.** Verified orders stay under **Verified**, sent to
    fulfillment or not, with a Production column and filters for **Not

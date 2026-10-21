@@ -3,13 +3,18 @@ import "server-only";
 import { createHash } from "node:crypto";
 import {
   parseRydFormResponses,
-  sheetSerial,
+  rydFormQuestions,
   type GoogleForm,
   type GoogleFormResponse,
 } from "@/lib/ryd/form-responses";
 import type { RydSubmission } from "@/lib/ryd/matching";
-import { normalizeEmail } from "@/lib/ryd/normalize";
-import { rydSheetColumns } from "@/lib/ryd/sheet-columns";
+import {
+  planRydSheetReconciliation,
+  rydResponseSheetColumns,
+  rydUncheckedSheet,
+  type RydSheetIssue,
+  type RydSheetReport,
+} from "@/lib/ryd/sheet-reconciliation";
 import { getAdminClient } from "./admin-client";
 import {
   createGoogleOAuthRequest,
@@ -182,6 +187,7 @@ type RydFormRead = {
   submissions: RydSubmission[];
   title: string;
   linkedSheetId: string | null;
+  questionTitles: string[];
 };
 
 export type RydGoogleReadOptions = { signal?: AbortSignal; fresh?: boolean };
@@ -207,6 +213,7 @@ export async function readRydSubmissions(
         title:
           form.info?.title || form.info?.documentTitle || "RY-dentification form",
         linkedSheetId: form.linkedSheetId ?? null,
+        questionTitles: rydFormQuestions(form).map((question) => question.title),
       };
     },
     options,
@@ -215,97 +222,162 @@ export async function readRydSubmissions(
 
 type SpreadsheetMeta = {
   properties?: { timeZone?: string };
-  sheets?: { properties?: { title?: string } }[];
+  sheets?: {
+    properties?: { sheetId?: number; title?: string; sheetType?: string };
+  }[];
 };
 
-function a1Sheet(title: string) {
-  return `'${title.replace(/'/g, "''")}'`;
-}
+type SheetValues = {
+  valueRanges?: {
+    dataFilters?: { gridRange?: { sheetId?: number } }[];
+    valueRange?: { values?: unknown[][] };
+  }[];
+};
 
-function columnLetter(index: number) {
-  let letter = "";
-  for (let n = index + 1; n > 0; n = Math.floor((n - 1) / 26))
-    letter = String.fromCharCode(65 + ((n - 1) % 26)) + letter;
-  return letter;
-}
-
-/**
- * Tick `Verified?` in the form's linked response sheet for these
- * submissions. The sheet carries no response IDs, so each response is found
- * by its submission time (to the second, in the sheet's zone) and, where the
- * sheet has one, its email. Returns how many cells were written, or null when
- * the form has no linked sheet or the sheet has no `Verified?` column.
- */
+/** A best-effort sheet tick never changes the already committed batch decision. */
 export async function markRydSubmissionsVerified(
   connection: RydGoogleIntegrationRow,
-  linkedSheetId: string | null,
-  submissions: RydSubmission[],
+  form: RydFormRead,
+  responseKeys: string[],
   requestSignal?: AbortSignal,
-) {
-  if (!linkedSheetId) return null;
-  if (!submissions.length) return 0;
+): Promise<RydSheetReport> {
+  const fallback = (issue: RydSheetIssue) =>
+    rydUncheckedSheet(
+      responseKeys,
+      form.submissions,
+      issue,
+      form.linkedSheetId,
+    );
+  if (!responseKeys.length) return fallback("not-required");
+  if (!form.linkedSheetId) return fallback("no-linked-sheet");
   const signal = googleRequestSignal(requestSignal, 30_000);
   const accessToken = await token(connection, signal);
-  const headers = { Authorization: `Bearer ${accessToken}` };
-  const sheetUrl = `${SHEETS_URL}/${encodeURIComponent(linkedSheetId)}`;
+  const headers = {
+    Authorization: `Bearer ${accessToken}`,
+    "Content-Type": "application/json",
+  };
+  const sheetUrl = `${SHEETS_URL}/${encodeURIComponent(form.linkedSheetId)}`;
   const meta = await googleJson<SpreadsheetMeta>(
-    `${sheetUrl}?fields=properties.timeZone,sheets.properties.title`,
+    `${sheetUrl}?fields=properties.timeZone,sheets.properties(sheetId,title,sheetType)`,
     { headers, signal },
     "Google Sheets",
   );
-  // Forms writes its responses to the first tab.
-  const title = meta.sheets?.[0]?.properties?.title;
-  const timeZone = meta.properties?.timeZone ?? "America/New_York";
-  if (!title) return null;
-  const values = await googleJson<{ values?: unknown[][] }>(
-    `${sheetUrl}/values/${encodeURIComponent(a1Sheet(title))}?valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=SERIAL_NUMBER`,
-    { headers, signal },
-    "Google Sheets",
+  // Never guess the time zone, a tab position, or a response schema.
+  if (!meta.properties?.timeZone) return fallback("tab-missing");
+  const tabs = (meta.sheets ?? []).flatMap(({ properties }) =>
+    properties &&
+    Number.isInteger(properties.sheetId) &&
+    properties.title &&
+    properties.sheetType === "GRID"
+      ? [{ id: properties.sheetId!, title: properties.title }]
+      : [],
   );
-  const [headerRow = [], ...rows] = values.values ?? [];
-  const columns = rydSheetColumns(headerRow);
-  if (columns.verified < 0 || columns.timestamp < 0) return null;
-
-  const oneSecond = 1 / 86_400;
-  const cells: string[] = [];
-  for (const submission of submissions) {
-    if (!submission.submittedAtIso) continue;
-    const serial = sheetSerial(submission.submittedAtIso, timeZone);
-    const index = rows.findIndex((row) => {
-      const stamp = row[columns.timestamp];
-      if (
-        typeof stamp !== "number" ||
-        Math.abs(stamp - serial) > oneSecond * 1.5
-      )
-        return false;
-      const email = columns.email < 0 ? "" : row[columns.email];
-      return (
-        typeof email !== "string" ||
-        !email ||
-        normalizeEmail(email) === submission.email
-      );
-    });
-    if (index < 0) continue;
-    if (String(rows[index][columns.verified] ?? "").includes("✅")) continue;
-    cells.push(
-      `${a1Sheet(title)}!${columnLetter(columns.verified)}${index + 2}`,
+  if (!tabs.length) return fallback("tab-missing");
+  const readValues = (
+    dataFilters: {
+      gridRange: {
+        sheetId: number;
+        startRowIndex?: number;
+        endRowIndex?: number;
+      };
+    }[],
+  ) =>
+    googleJson<SheetValues>(
+      `${sheetUrl}/values:batchGetByDataFilter`,
+      {
+        method: "POST",
+        headers,
+        signal,
+        body: JSON.stringify({
+          dataFilters,
+          majorDimension: "ROWS",
+          valueRenderOption: "FORMULA",
+          dateTimeRenderOption: "SERIAL_NUMBER",
+        }),
+      },
+      "Google Sheets",
     );
-  }
-  if (!cells.length) return 0;
-  await googleJson(
-    `${sheetUrl}/values:batchUpdate`,
-    {
-      method: "POST",
-      signal,
-      headers: { ...headers, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        valueInputOption: "RAW",
-        data: cells.map((range) => ({ range, values: [["✅"]] })),
-      }),
-    },
-    "Google Sheets",
+  const headerValues = await readValues(
+    tabs.map((tab) => ({
+      gridRange: { sheetId: tab.id, startRowIndex: 0, endRowIndex: 1 },
+    })),
   );
-  return cells.length;
+  const valuesFor = (values: SheetValues, id: number) => {
+    const matches = (values.valueRanges ?? []).filter((range) =>
+      range.dataFilters?.some((filter) => filter.gridRange?.sheetId === id),
+    );
+    return matches.length === 1 ? matches[0].valueRange?.values : undefined;
+  };
+  const candidates = tabs.filter((tab) =>
+    rydResponseSheetColumns(
+      valuesFor(headerValues, tab.id)?.[0] ?? [],
+      form.questionTitles,
+    ),
+  );
+  if (candidates.length !== 1)
+    return fallback(candidates.length ? "tab-ambiguous" : "tab-missing");
+  const tab = candidates[0];
+  const values = await readValues([{ gridRange: { sheetId: tab.id } }]);
+  const [headerRow = [], ...rows] = valuesFor(values, tab.id) ?? [];
+  // Revalidate the headers from the full read: columns may have moved since selection.
+  const columns = rydResponseSheetColumns(headerRow, form.questionTitles);
+  if (!columns) return fallback("tab-missing");
+  const plan = planRydSheetReconciliation(
+    rows,
+    columns,
+    form.submissions,
+    responseKeys,
+    meta.properties.timeZone,
+  );
+  const report: RydSheetReport = {
+    spreadsheetId: form.linkedSheetId,
+    sheetId: tab.id,
+    sheetTitle: tab.title,
+    responses: plan.responses,
+  };
+  if (!plan.writes.length) return report;
+  try {
+    const result = await googleJson<{ totalUpdatedCells?: number }>(
+      `${sheetUrl}/values:batchUpdateByDataFilter`,
+      {
+        method: "POST",
+        signal,
+        headers,
+        body: JSON.stringify({
+          valueInputOption: "RAW",
+          data: plan.writes.map(({ row, column }) => ({
+            dataFilter: {
+              gridRange: {
+                sheetId: tab.id,
+                startRowIndex: row - 1,
+                endRowIndex: row,
+                startColumnIndex: column,
+                endColumnIndex: column + 1,
+              },
+            },
+            majorDimension: "ROWS",
+            values: [["✅"]],
+          })),
+        }),
+      },
+      "Google Sheets",
+    );
+    if (result.totalUpdatedCells !== plan.writes.length)
+      return { ...report, issue: "write-unconfirmed" };
+    const updated = new Set(plan.writes.map(({ key }) => key));
+    return {
+      ...report,
+      responses: report.responses.map((response) =>
+        updated.has(response.key)
+          ? { ...response, outcome: "updated" }
+          : response,
+      ),
+    };
+  } catch (error) {
+    console.error("RY-D response sheet write could not be confirmed", error);
+    // A timeout may follow a successful write. Report uncertainty; never retry it here.
+    return { ...report, issue: "write-unconfirmed" };
+  }
 }
 
 const INLINE_TYPES =

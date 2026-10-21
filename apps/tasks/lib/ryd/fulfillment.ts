@@ -1,4 +1,5 @@
 import type { RydDraft } from "./emails";
+import type { RydSheetReport } from "./sheet-reconciliation";
 
 /** Browser projection of one immutable server-owned fulfillment manifest. */
 export type RydFulfillmentSnapshot = {
@@ -14,5 +15,5 @@ export type RydFulfillmentResult = {
   changed: boolean;
   verifiedCount: number;
   orderCount: number;
-  sheetTicks: number | null;
+  sheet: RydSheetReport;
 };

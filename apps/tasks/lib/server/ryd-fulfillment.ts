@@ -2,8 +2,12 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { rydFulfillmentEmail } from "@/lib/ryd/emails";
-import type { RydFulfillmentSnapshot } from "@/lib/ryd/fulfillment";
+import type {
+  RydFulfillmentResult,
+  RydFulfillmentSnapshot,
+} from "@/lib/ryd/fulfillment";
 import { rydOrderExportCsv, type RydOrderStatus } from "@/lib/ryd/orders";
+import { rydUncheckedSheet } from "@/lib/ryd/sheet-reconciliation";
 import {
   loadRydGoogleIntegration,
   markRydSubmissionsVerified,
@@ -87,7 +91,7 @@ export async function finishRydFulfillment(
   actor: string,
   id: string,
   action: "confirm" | "cancel",
-) {
+): Promise<RydFulfillmentResult> {
   const result = await admin.rpc("ryd_finish_fulfillment", {
     requested_actor: actor,
     requested_snapshot: id,
@@ -98,31 +102,38 @@ export async function finishRydFulfillment(
     changed: boolean;
     snapshot: SnapshotRow;
   };
-  let sheetTicks: number | null = null;
+  const keys = snapshot.response_keys ?? [];
+  let sheet = rydUncheckedSheet(
+    keys,
+    [],
+    !keys.length || action === "cancel"
+      ? "not-required"
+      : !changed
+        ? "already-confirmed"
+        : "no-linked-sheet",
+  );
   // A retry does not re-read Google or repeat the external side effect. The
   // manifest pins both the form and response IDs, independently of settings.
-  if (action === "confirm" && changed && snapshot.form_id) {
+  if (action === "confirm" && changed && snapshot.form_id && keys.length) {
     try {
       const integration = await loadRydGoogleIntegration();
       if (integration) {
         const form = await readRydSubmissions(integration, snapshot.form_id, {
           fresh: true,
         });
-        const keys = new Set(snapshot.response_keys);
-        sheetTicks = await markRydSubmissionsVerified(
-          integration,
-          form.linkedSheetId,
-          form.submissions.filter((submission) => keys.has(submission.key)),
-        );
+        sheet = await markRydSubmissionsVerified(integration, form, keys);
+      } else {
+        sheet = rydUncheckedSheet(keys, [], "disconnected");
       }
     } catch (error) {
-      console.error("RY-D response sheet could not be ticked", error);
+      console.error("RY-D response sheet could not be checked", error);
+      sheet = rydUncheckedSheet(keys, [], "google-unavailable");
     }
   }
   return {
     changed,
     verifiedCount: snapshot.verified_ids.length,
     orderCount: snapshot.order_rows.length,
-    sheetTicks,
+    sheet,
   };
 }

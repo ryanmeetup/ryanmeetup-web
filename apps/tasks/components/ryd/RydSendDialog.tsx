@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Button,
   ConfirmationDialog,
@@ -20,6 +20,8 @@ import type {
   RydFulfillmentSnapshot,
 } from "@/lib/ryd/fulfillment";
 
+import { RydSheetReport } from "./RydSheetReport";
+
 const prepareBatch = () =>
   mutate<RydFulfillmentSnapshot>("/api/ryd/batches", {
     method: "POST",
@@ -34,11 +36,17 @@ export function RydSendDialog({
   onChanged: () => Promise<void>;
 }) {
   const [snapshot, setSnapshot] = useState<RydFulfillmentSnapshot | null>(null);
+  const [completed, setCompleted] = useState<RydFulfillmentResult | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const completionRef = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    if (completed) completionRef.current?.focus({ preventScroll: true });
+  }, [completed]);
 
   useEffect(() => {
     let active = true;
@@ -62,22 +70,19 @@ export function RydSendDialog({
   }, [attempt]);
 
   async function finish(action: "confirm" | "cancel") {
-    if (!snapshot) return;
+    if (!snapshot || sending || completed) return;
     setSending(true);
     try {
       const result = await mutate<RydFulfillmentResult>("/api/ryd/batches", {
         method: "POST",
         body: JSON.stringify({ action, snapshotId: snapshot.id }),
       });
+      setError("");
+      if (action === "confirm") setCompleted(result);
       toast.success(
         action === "cancel"
           ? "Batch cancelled. Its ready orders are available for a new batch."
-          : `${result.changed ? "Marked sent" : "Already marked sent"}: ${result.verifiedCount} of ${result.orderCount} cleared to start.` +
-              (result.changed &&
-              result.sheetTicks === null &&
-              result.verifiedCount
-                ? " The response sheet couldn't be ticked; tick it by hand if you keep it."
-                : ""),
+          : `${result.changed ? "Marked sent" : "Already marked sent"}: ${result.verifiedCount} of ${result.orderCount} cleared to start.`,
       );
       // Once the transaction succeeds, a reload failure must not invite a
       // second send. Retrying confirmation is also safe after a lost response.
@@ -88,7 +93,7 @@ export function RydSendDialog({
           "The batch saved, but the queue could not reload. Refresh the page to see it.",
         );
       }
-      onClose();
+      if (action === "cancel") onClose();
     } catch (failure) {
       setError(errorMessage(failure, "The batch could not be updated."));
       setCancelOpen(false);
@@ -103,20 +108,34 @@ export function RydSendDialog({
         open
         setIsOpen={(open) => !open && !sending && onClose()}
         size="lg"
-        title="Send to fulfillment"
-        description="Download this batch, attach it to the draft, send it from your own email, then mark it sent. Closing keeps the same batch available to the team."
+        title={completed ? "Batch marked sent" : "Send to fulfillment"}
+        description={
+          completed
+            ? "The batch is saved. Review the response-sheet results below."
+            : "Download this batch, attach it to the draft, send it from your own email, then mark it sent. Closing keeps the same batch available to the team."
+        }
         closable={!sending}
         actions={
-          <ModalActions
-            confirmLabel="Mark as sent"
-            confirmIcon={<FiCheck aria-hidden />}
-            onConfirm={() => finish("confirm")}
-            confirmDisabled={!snapshot || loading}
-            cancelLabel="Close"
-            onCancel={onClose}
-            pending={sending}
-            pendingLabel="Saving..."
-          />
+          completed ? (
+            <Button
+              onClick={onClose}
+              disabled={sending}
+              className="w-full sm:w-auto"
+            >
+              Close
+            </Button>
+          ) : (
+            <ModalActions
+              confirmLabel="Mark as sent"
+              confirmIcon={<FiCheck aria-hidden />}
+              onConfirm={() => finish("confirm")}
+              confirmDisabled={!snapshot || loading}
+              cancelLabel="Close"
+              onCancel={onClose}
+              pending={sending}
+              pendingLabel="Saving..."
+            />
+          )
         }
       >
         {loading && (
@@ -138,7 +157,16 @@ export function RydSendDialog({
             Try again
           </Button>
         )}
-        {snapshot && (
+        {completed && (
+          <div className="space-y-6">
+            <p role="status" ref={completionRef} tabIndex={-1}>
+              {completed.verifiedCount} of {completed.orderCount} orders cleared
+              to start. The batch is marked sent.
+            </p>
+            <RydSheetReport report={completed.sheet} />
+          </div>
+        )}
+        {snapshot && !completed && (
           <div aria-busy={sending} className="space-y-6">
             <dl className="grid gap-4 sm:grid-cols-3">
               {[

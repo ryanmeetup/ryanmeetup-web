@@ -43,6 +43,8 @@ Single and bulk buyer emails share one draft workflow. Opening a draft records n
 
 The download, email draft, and send confirmation now use one saved batch. Ready orders stay reserved until it is marked sent or explicitly cancelled, and later verifications wait for the next file. Closing resumes the same batch, and retrying a confirmation cannot clear orders or record the send twice.
 
+Response-sheet updates require a unique tab and matching response. After marking a batch sent, review which responses were updated, already ticked, missing, ambiguous, or unchecked. Uncertain updates stay available for a manual check without repeating the send.
+
 
 ### Keep email-less submissions separate
 
