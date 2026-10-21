@@ -44,8 +44,13 @@ The API exposes database-backed workspace content:
 
 It deliberately excludes encrypted integration tokens, environment secrets,
 MCP token hashes, rate-limit internals, raw Supabase auth records, and binary
-attachment contents. RY-D buyers' email addresses are reduced to their domain,
-and files uploaded through the RY-dentification form are never returned.
+attachment contents. RY-D's structured buyer-email field is reduced to its
+domain, and uploaded file identifiers and file contents are left out. This is
+still private customer data: buyer and legal names, reviewer notes, other form
+answers, social URLs, and order text are retained. Free text and URLs may
+contain full email addresses or other identifying details; the payload is
+neither anonymized nor guaranteed email-free. Aggregate answer buckets also
+retain answer text.
 Form answers are read live from Google on each call, as `/ryd` reads them; if
 the form can't be read, the order data still comes back with a warning.
 Imported Google Calendar event payloads are fetched live

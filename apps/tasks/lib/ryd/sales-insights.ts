@@ -12,8 +12,9 @@ import type { RydOrderStatus } from "./orders";
  *
  * An order is fulfillment's row plus whatever the buyer sent through the
  * RY-dentification form, once someone has linked the two. Everything here
- * describes the Ryan, not the evidence: email addresses are reduced to their
- * domain and uploaded files are left out entirely.
+ * includes private identifying data. Only the structured buyer email is
+ * reduced to its domain; names, notes, answer text, social URLs, and order
+ * text remain and can contain addresses. Upload IDs and contents are omitted.
  */
 
 export type RydInsightOrder = {

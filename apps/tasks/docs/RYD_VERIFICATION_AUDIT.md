@@ -7,7 +7,7 @@ sales connector; and the public `/cards/verify` redirect.
 
 This is the remaining-work list. Resolved findings and repair history are
 removed as fixes land. Remaining work concerns form-question mapping, the
-buyer-facing form link, and privacy language.
+buyer-facing form link.
 
 ## Remaining work
 
@@ -18,10 +18,6 @@ buyer-facing form link, and privacy language.
   reach. Show or validate that relationship. RY-D draft signatures and the
   verification URL also bypass instance branding/settings; either explicitly
   define RY-D as a Ryan Meetup-only feature or make those values configurable.
-- The sales connector intentionally bypasses member page permissions under its
-  separate bearer-token authority; that is documented behavior. Its typed email
-  field is reduced to a domain, but free-text notes/answers and social URLs are
-  returned. Do not describe that payload as fully anonymized or email-free.
 
 ## Validation and rollout
 
@@ -29,19 +25,14 @@ Review, fulfillment, import/reminder, and bulk-operation migrations
 (`20261028000000` through `20261031000000`) were applied and metadata-verified
 on RMT. The `20261101000000` contract and `20261102000000` read-access
 migrations are also applied, recorded, and health-verified on RMT; the committed
-schema diff is clean. PRD's reported verification confirms that the earlier
-contract migration is recorded, but `contractOk` is false: all six failures concern the
-missing `ryd_submitter_contacts` table from migration `20261024000000`.
-PRD needs [the complete earlier-table repair](PRD_RYD_SUBMITTER_CONTACTS_SQL.md)
-and [the complete read-access update](PRD_RYD_READ_ACCESS_SQL.md).
-The latest verification must return `contractOk: true`, an empty `failures`
-array, and `migration_recorded: true` for `20261102000000`. The diagnostic's
-recorded version alone does not establish schema health. Verification of all fifteen values in
-[the cumulative dashboard handoff](PRD_RYD_FULFILLMENT_SQL.md) has not been
-reported. The contract block was applied twice in a disposable database and
-verified there before handoff. The earlier-table repair also reproduced PRD's
-six failures in a disposable schema-only database, restored a healthy contract,
-and preserved synthetic contact history when applied again.
+schema diff is clean. PRD stays outside the RY-D rollout: the product workflow belongs to Ryan
+Meetup, and PRD keeps `ryd_enabled` false or null. Its reported manual health
+check found a missing `ryd_submitter_contacts` table, but the normal preflight
+skips the RY-D contract while the feature is off. That optional-schema result
+is not a PRD deployment blocker. The earlier repair and later read-access SQL
+remain documented for scheduled schema-parity maintenance, without enabling
+RY-D or requiring Google setup there. See
+[the multi-instance distinction](MULTI_INSTANCE.md#the-two-tiers).
 
 Local migrations were applied from empty and diffed against RMT. Database
 coverage includes 144 transaction assertions, 43 page-access checks, and ten

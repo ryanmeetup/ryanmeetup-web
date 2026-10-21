@@ -85,7 +85,7 @@ describe("RY-D order profiles", () => {
     expect(emailKind(null)).toBe("none");
   });
 
-  it("keeps the email domain and drops the address and uploaded files", () => {
+  it("keeps the structured email domain and omits structured addresses and uploads", () => {
     const profile = profileRydOrder(order(), [submission()]);
     expect(profile).toMatchObject({
       buyerFirstName: "Ryan",
@@ -100,6 +100,31 @@ describe("RY-D order profiles", () => {
     const serialized = JSON.stringify(profile);
     expect(serialized).not.toContain("ryan.example@gmail.com");
     expect(serialized).not.toContain("secret-upload");
+  });
+
+  it("retains private names, free text, and URLs rather than anonymizing them", () => {
+    const profile = profileRydOrder(
+      order({ note: "Contact gift.recipient@example.test" }),
+      [submission({
+        socialLinks: [{
+          platform: "web",
+          label: "Ryan Example",
+          url: "https://example.test/ryan?contact=ryan@example.test",
+          handle: null,
+        }],
+        otherAnswers: [{
+          question: "Contact details",
+          answer: "alternate@example.test",
+        }],
+      })],
+    );
+    expect(profile.buyerLastName).toBe("Example");
+    expect(profile.submissions[0].legalName).toBe("Ryan Example");
+    expect(profile.note).toBe("Contact gift.recipient@example.test");
+    expect(profile.submissions[0].socialLinks[0].url).toContain("ryan@example.test");
+    expect(profile.submissions[0].otherAnswers[0].answer).toBe("alternate@example.test");
+    expect(JSON.stringify(summarizeRydSales([profile]))).toContain("alternate@example.test");
+    expect(JSON.stringify(profile)).not.toContain("secret-upload");
   });
 
   it("records where Ryan falls in the form's name", () => {

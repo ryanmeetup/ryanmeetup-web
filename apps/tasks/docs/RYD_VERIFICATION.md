@@ -6,7 +6,10 @@ week fulfillment sends an order CSV; someone matches it against the form,
 ticks who is verified, and sends the file back so fulfillment knows which
 orders to start. `/ryd` does that work in one place.
 
-It is a Ryan Meetup feature: **off by default**, turned on per instance from
+It is a Ryan Meetup-only product workflow: its buyer links and draft signatures
+use Ryan Meetup branding, and it stays off on PRD (`projects.ryanle.dev`). The
+instance switch supports Ryan Meetup environments; it does not make this a
+generic feature for other workspaces. It is **off by default**, turned on from
 **/admin/settings → Features**. With it off the page, its sidebar entry, its
 Access setting, and every `/api/ryd` route answer as if they don't exist.
 
@@ -233,5 +236,8 @@ service-role only; routes check the instance switch and
 
 The read-only Claude Desktop connector (`docs/MCP.md`) can also read RY-D
 sales through `get_ryd_sales_insights` and `list_ryd_orders`. It bypasses the
-page's access setting, like the rest of that connector, but returns only email
-domains and never the uploaded files.
+page's access setting under the connector's separate bearer-token authority.
+Only the structured buyer-email field is reduced to a domain. Names, notes,
+other form answers, social URLs, and order text remain private identifying data
+and may contain full email addresses. Uploaded file identifiers and file
+contents are excluded; the payload is not anonymized or guaranteed email-free.
