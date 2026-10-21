@@ -23,6 +23,10 @@ select public.ryd_change_submission('00000000-0000-4000-8000-000000000301','snap
 create temp table test_snapshot as select (public.ryd_prepare_fulfillment('00000000-0000-4000-8000-000000000301')->>'id')::uuid as id;
 select is(public.ryd_prepare_fulfillment('00000000-0000-4000-8000-000000000301')->>'id', (select id::text from test_snapshot), 'preparation resumes the same shared batch');
 select is((select count(*) from public.ryd_fulfillment_snapshots where state='prepared'),1::bigint,'only one prepared batch exists');
+set local role service_role;
+select lives_ok($$select public.ryd_prepare_fulfillment('00000000-0000-4000-8000-000000000301')$$,'service role can resume a private manifest for an authorized actor');
+set local role postgres;
+
 select is((select jsonb_array_length(order_rows) from public.ryd_fulfillment_snapshots where id=(select id from test_snapshot)),3,'manifest freezes the file row count');
 select is((select response_keys from public.ryd_fulfillment_snapshots where id=(select id from test_snapshot)),array['snapshot-response'],'manifest pins evidence references');
 update public.ryd_settings set fulfillment_email='changed@example.test';
@@ -45,7 +49,9 @@ select is((select state from public.ryd_fulfillment_snapshots where id=(select i
 select is((select cleared_batch_id from public.ryd_orders where order_id='snapshot-1'),null::uuid,'audit failure rolls back order clearing');
 select is((select count(*) from public.ryd_fulfillment_batches where id=(select id from test_snapshot)),0::bigint,'audit failure rolls back the batch record');
 drop trigger snapshot_audit_failure on public.ryd_order_events;
-select is(public.ryd_finish_fulfillment('00000000-0000-4000-8000-000000000301',(select id from test_snapshot),'confirm')->>'changed','true','confirmation commits the prepared batch');
+set local role service_role;
+select is(public.ryd_finish_fulfillment('00000000-0000-4000-8000-000000000301',(select id from public.ryd_fulfillment_snapshots where state='prepared'),'confirm')->>'changed','true','confirmation commits the prepared batch');
+set local role postgres;
 select is((select cleared_batch_id from public.ryd_orders where order_id='snapshot-1'),(select id from test_snapshot),'exactly the snapshot ready order is cleared');
 select is((select count(*) from public.ryd_orders where order_id in ('snapshot-2','snapshot-later') and cleared_batch_id is null),2::bigint,'later ready orders wait for the next file');
 select is((select order_count from public.ryd_fulfillment_batches where id=(select id from test_snapshot)),3,'later imports do not inflate the sent count');
