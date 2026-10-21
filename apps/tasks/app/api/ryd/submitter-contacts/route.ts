@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { rydEmailsSchema } from "@/lib/api-schema/ryd";
+import { rydEmailsSchema } from "@/lib/api-schema";
 import { apiError, databaseFailure } from "@/lib/server/api-response";
 import { readJson } from "@/lib/server/request";
 import { rydContext } from "@/lib/server/ryd";

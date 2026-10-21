@@ -291,6 +291,7 @@ export async function loadRydQueue(admin: SupabaseClient): Promise<RydQueue> {
       note: row.note,
       decidedAt: row.decided_at,
       decidedBy: row.decided_by,
+      updatedAt: (row as RydOrderRow & { updated_at?: string }).updated_at,
       lastEmailedAt: row.last_emailed_at,
       sentToFulfillment: Boolean(row.cleared_batch_id),
       productionSentAt: row.production_sent_at ?? null,
@@ -564,41 +565,11 @@ export async function setRydProductionStage(
   orderIds: string[],
   stage: RydProductionStage,
 ) {
-  const now = new Date().toISOString();
-  const verified = (fields: Record<string, unknown>) =>
-    admin
-      .from("ryd_orders")
-      .update({ ...fields, updated_at: now })
-      .in("order_id", orderIds)
-      .eq("status", "verified");
-  const sent = { production_sent_at: now, production_sent_by: user.id };
-  const notDone = { done_at: null, done_by: null };
-  // In order: the table refuses a done date without a sent one.
-  const steps = {
-    "not-started": [
-      () =>
-        verified({
-          production_sent_at: null,
-          production_sent_by: null,
-          ...notDone,
-        }).not("production_sent_at", "is", null),
-    ],
-    "in-production": [
-      () => verified(sent).is("production_sent_at", null),
-      () => verified(notDone).not("done_at", "is", null),
-    ],
-    done: [
-      () => verified(sent).is("production_sent_at", null),
-      () => verified({ done_at: now, done_by: user.id }).is("done_at", null),
-    ],
-  }[stage];
-
-  const moved = new Set<string>();
-  for (const step of steps) {
-    const result = await step().select("order_id");
-    if (result.error) throw result.error;
-    for (const row of result.data ?? []) moved.add(row.order_id);
-  }
-  await recordRydEvent(admin, user, [...moved], "production", { stage });
-  return { movedCount: moved.size };
+  const result = await admin.rpc("ryd_set_production", {
+    requested_actor: user.id,
+    requested_orders: orderIds,
+    requested_stage: stage,
+  });
+  if (result.error) throw result.error;
+  return result.data as { movedCount: number; orderIds: string[] };
 }

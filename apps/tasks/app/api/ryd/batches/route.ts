@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { rydOrderIdsSchema } from "@/lib/api-schema/ryd";
+import { rydOrderIdsSchema } from "@/lib/api-schema";
 import { apiError, logServerFailure } from "@/lib/server/api-response";
 import { readJson } from "@/lib/server/request";
 import { markRydBatchSent, rydContext } from "@/lib/server/ryd";

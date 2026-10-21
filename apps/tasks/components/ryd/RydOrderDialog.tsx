@@ -36,6 +36,7 @@ import type { RydSubmission } from "@/lib/ryd/matching";
 import type { RydOrderStatus } from "@/lib/ryd/orders";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 import { orderSubmissions } from "@/lib/ryd/queue-view";
+import { decideRydOrder } from "@/lib/ryd/ryd-decisions";
 import {
   RydConfidenceChip,
   RydProductionChip,
@@ -168,17 +169,7 @@ export function RydOrderDialog({
   async function decide(status: RydOrderStatus) {
     const saved = await run(
       status,
-      async () => {
-        // Verifying from a suggestion accepts it: the pairing is what lets
-        // the send step tick the right rows in the response sheet.
-        if (status === "verified" && !shown.linked)
-          for (const submission of shown.submissions)
-            await link(submission.key, "suggested");
-        await mutate(base, {
-          method: "PATCH",
-          body: JSON.stringify({ status, note }),
-        });
-      },
+      () => decideRydOrder(order, submissions, status, note),
       status === "verified"
         ? `${order.firstName} ${order.lastName} is verified.`
         : "Decision saved.",
@@ -192,7 +183,7 @@ export function RydOrderDialog({
     if (
       await run(
         "note",
-        () => mutate(base, { method: "PATCH", body: JSON.stringify({ note }) }),
+        () => mutate(base, { method: "PATCH", body: JSON.stringify({ note, expectedUpdatedAt: order.updatedAt }) }),
         "Note saved.",
       )
     )

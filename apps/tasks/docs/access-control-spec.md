@@ -100,6 +100,13 @@ holds a row only for a page an app owner has configured.
 
 ## Tasks and related content
 
+RY-D review writes use service-role-only `ryd_change_submission`,
+`ryd_review_order`, and `ryd_set_production`. They recheck the actor's page
+authority, serialize competing response claims, and write audit events in the
+same transaction. A response belongs to one order; production requires a
+verified decision. Routes validate new response references against the configured
+Google form, and the transaction refuses a changed form or stale order revision.
+
 - A project task is visible only when the member can access its project and
   every category assigned to the task.
 - Editing a task requires collaborator access to its project and access to all

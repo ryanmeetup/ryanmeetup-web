@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { emptyObjectSchema } from "@/lib/api-schema/ryd";
+import { emptyObjectSchema } from "@/lib/api-schema";
 import { apiError } from "@/lib/server/api-response";
 import { readJson } from "@/lib/server/request";
 import { rydContext } from "@/lib/server/ryd";

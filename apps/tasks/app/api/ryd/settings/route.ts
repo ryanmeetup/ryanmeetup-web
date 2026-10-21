@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { rydSettingsSchema } from "@/lib/api-schema/ryd";
-import { databaseFailure } from "@/lib/server/api-response";
+import { rydSettingsSchema } from "@/lib/api-schema";
+import { rydMutationFailure } from "@/lib/server/ryd-mutations";
 import { readJson } from "@/lib/server/request";
 import { loadRydSettings, rydContext } from "@/lib/server/ryd";
 
@@ -21,8 +21,6 @@ export async function PATCH(request: Request) {
     row.fulfillment_email = parsed.data.fulfillmentEmail;
   const result = await context.admin.from("ryd_settings").upsert(row);
   if (result.error)
-    return databaseFailure(request, "ryd.settings", result.error, {
-      error: "The settings could not be saved. Try again.",
-    });
+    return rydMutationFailure(request, "ryd.settings", result.error, "The settings could not be saved. Try again.");
   return NextResponse.json(await loadRydSettings(context.admin));
 }

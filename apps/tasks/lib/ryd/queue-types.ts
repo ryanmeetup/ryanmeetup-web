@@ -23,6 +23,8 @@ export type RydQueueOrder = {
   note: string | null;
   decidedAt: string | null;
   decidedBy: string | null;
+  /** Server revision used to refuse edits based on stale queue state. */
+  updatedAt?: string;
   lastEmailedAt: string | null;
   /** Fulfillment has had a file clearing this order; its decision is final. */
   sentToFulfillment: boolean;

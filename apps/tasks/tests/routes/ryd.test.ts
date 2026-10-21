@@ -6,6 +6,7 @@ const getAdminClient = vi.fn();
 const loadRydGoogleIntegration = vi.fn();
 const readRydSubmissions = vi.fn();
 const fetchRydEvidence = vi.fn();
+const rpc = vi.fn();
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/server/auth", () => ({ authorize }));
@@ -28,6 +29,8 @@ function table(result: unknown, calls: unknown[] = []) {
     "is",
     "not",
     "order",
+    "range",
+    "or",
     "limit",
     "update",
     "insert",
@@ -47,7 +50,13 @@ function table(result: unknown, calls: unknown[] = []) {
 
 function admin(tables: Record<string, ReturnType<typeof table>>) {
   return {
-    from: (name: string) => tables[name] ?? table({ data: null, error: null }),
+    from: (name: string) =>
+      tables[name] ??
+      table({
+        data: name === "ryd_settings" ? { form_id: "f".repeat(30) } : null,
+        error: null,
+      }),
+    rpc,
   };
 }
 
@@ -65,8 +74,15 @@ describe("RY-D routes", () => {
     authorize.mockReset().mockResolvedValue(member);
     getInstanceSettings.mockReset().mockResolvedValue({ rydEnabled: true });
     getAdminClient.mockReset();
-    loadRydGoogleIntegration.mockReset();
-    readRydSubmissions.mockReset();
+    loadRydGoogleIntegration
+      .mockReset()
+      .mockResolvedValue({ account_email: "form@example.com" });
+    readRydSubmissions
+      .mockReset()
+      .mockResolvedValue({ submissions: [{ key: "response-1", fileIds: [] }] });
+    rpc
+      .mockReset()
+      .mockResolvedValue({ data: { ok: true, changed: true }, error: null });
     fetchRydEvidence.mockReset();
   });
 
@@ -145,6 +161,14 @@ describe("RY-D routes", () => {
   });
 
   it("refuses to change the decision on an order already sent as verified", async () => {
+    rpc.mockResolvedValue({
+      data: null,
+      error: {
+        code: "RY409",
+        message:
+          "This order is already with fulfillment or in production. Its decision cannot be changed.",
+      },
+    });
     getAdminClient.mockReturnValue(
       admin({
         ryd_orders: table({
@@ -179,6 +203,50 @@ describe("RY-D routes", () => {
 
     expect(response.status).toBe(400);
     expect(authorize).not.toHaveBeenCalled();
+  });
+
+  it("validates every suggested response before dispatching one review transaction", async () => {
+    getAdminClient.mockReturnValue(admin({}));
+    const { PATCH } = await import("@/app/api/ryd/orders/[orderId]/route");
+    const response = await PATCH(
+      new Request(
+        "http://localhost/api/ryd/orders/1001",
+        json({
+          status: "verified",
+          expectedStatus: "pending",
+          submissionKeys: ["response-1"],
+        }),
+      ),
+      { params: Promise.resolve({ orderId: "1001" }) },
+    );
+    expect(response.status).toBe(200);
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("ryd_review_order", {
+      requested_actor: "member-1",
+      requested_order: "1001",
+      requested_patch: { status: "verified", expectedStatus: "pending" },
+      requested_form: "f".repeat(30),
+      requested_keys: ["response-1"],
+    });
+  });
+
+  it("does not persist a response ID from outside the configured form", async () => {
+    getAdminClient.mockReturnValue(admin({}));
+    const { POST } = await import("@/app/api/ryd/orders/[orderId]/links/route");
+    const response = await POST(
+      new Request(
+        "http://localhost/api/ryd/orders/1001/links",
+        json(
+          {
+            submissionKey: "unlisted-response",
+            source: "manual",
+          },
+          "POST",
+        ),
+      ),
+      { params: Promise.resolve({ orderId: "1001" }) },
+    );
+    expect(response.status).toBe(409);
+    expect(rpc).not.toHaveBeenCalled();
   });
 
   it("only serves Drive files the form's responses name", async () => {
@@ -216,6 +284,7 @@ describe("RY-D routes", () => {
     expect(listed.status).toBe(200);
     expect(listed.headers.get("content-type")).toBe("image/png");
     expect(listed.headers.get("cache-control")).toBe("private, no-store");
+
   });
 
   it("rejects an upload from another origin", async () => {
@@ -234,6 +303,14 @@ describe("RY-D routes", () => {
   });
 
   it("won't remove a response that already vouches for an order", async () => {
+    rpc.mockResolvedValue({
+      data: null,
+      error: {
+        code: "RY409",
+        message:
+          "That response is already linked to an order. Unlink it there first.",
+      },
+    });
     const calls: unknown[] = [];
     getAdminClient.mockReturnValue(
       admin({
@@ -275,14 +352,20 @@ describe("RY-D routes", () => {
     );
 
     expect(response.status).toBe(200);
-    expect(calls[0]).toEqual([
-      "upsert",
-      { submission_key: "response-1", dismissed_by: "member-1" },
-      { onConflict: "submission_key", ignoreDuplicates: true },
-    ]);
+    expect(rpc).toHaveBeenCalledWith(
+      "ryd_change_submission",
+      expect.objectContaining({
+        requested_key: "response-1",
+        requested_actor: "member-1",
+        requested_action: "dismiss",
+        requested_form: "f".repeat(30),
+      }),
+    );
+    expect(calls).toEqual([]);
   });
 
-  it("says a pending migration blocks removing before the table exists", async () => {
+  it("says a pending migration blocks removing before the RPC exists", async () => {
+    rpc.mockResolvedValue({ data: null, error: { code: "PGRST202" } });
     getAdminClient.mockReturnValue(
       admin({
         ryd_order_submissions: table({ data: null, error: null }),
@@ -326,7 +409,15 @@ describe("RY-D routes", () => {
     );
 
     expect(response.status).toBe(200);
-    expect(calls).toEqual([["delete"], ["eq", "submission_key", "response-1"]]);
+    expect(rpc).toHaveBeenCalledWith(
+      "ryd_change_submission",
+      expect.objectContaining({
+        requested_key: "response-1",
+        requested_actor: "member-1",
+        requested_action: "restore",
+      }),
+    );
+    expect(calls).toEqual([]);
   });
   it("records drafted reminders only on orders still waiting on the buyer", async () => {
     const calls: unknown[] = [];
@@ -358,6 +449,14 @@ describe("RY-D routes", () => {
   });
 
   it("refuses to change the decision on an order in production", async () => {
+    rpc.mockResolvedValue({
+      data: null,
+      error: {
+        code: "RY409",
+        message:
+          "This order is already with fulfillment or in production. Its decision cannot be changed.",
+      },
+    });
     getAdminClient.mockReturnValue(
       admin({
         ryd_orders: table({
@@ -384,7 +483,8 @@ describe("RY-D routes", () => {
     expect(response.status).toBe(409);
   });
 
-  it("marks verified orders done, stamping a missing sent date first", async () => {
+  it("dispatches production changes through one atomic RPC", async () => {
+    rpc.mockResolvedValue({ data: { movedCount: 1 }, error: null });
     const calls: unknown[] = [];
     getAdminClient.mockReturnValue(
       admin({
@@ -402,16 +502,12 @@ describe("RY-D routes", () => {
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ movedCount: 1 });
-    const updates = calls.filter(
-      (call): call is [string, Record<string, unknown>] =>
-        (call as unknown[])[0] === "update",
-    );
-    expect(Object.keys(updates[0][1])).toContain("production_sent_at");
-    expect(Object.keys(updates[1][1])).toContain("done_at");
-    expect(calls).toContainEqual(["in", "order_id", ["1001"]]);
-    expect(calls).toContainEqual(["eq", "status", "verified"]);
-    expect(calls).toContainEqual(["is", "production_sent_at", null]);
-    expect(calls).toContainEqual(["is", "done_at", null]);
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("ryd_set_production", {
+      requested_actor: "member-1",
+      requested_orders: ["1001"],
+      requested_stage: "done",
+    });
+    expect(calls).toEqual([]);
   });
 
   it("rejects an unknown production stage", async () => {

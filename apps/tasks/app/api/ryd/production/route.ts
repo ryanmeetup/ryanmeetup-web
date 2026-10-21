@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { rydProductionSchema } from "@/lib/api-schema/ryd";
-import { logServerFailure } from "@/lib/server/api-response";
+import { rydProductionSchema } from "@/lib/api-schema";
+import { rydMutationFailure } from "@/lib/server/ryd-mutations";
 import { readJson } from "@/lib/server/request";
 import { rydContext, setRydProductionStage } from "@/lib/server/ryd";
 
@@ -23,18 +23,11 @@ export async function POST(request: Request) {
       ),
     );
   } catch (error) {
-    const id = logServerFailure(
+    return rydMutationFailure(
       request,
       "ryd.production",
-      error as { code?: string; message?: string },
-    );
-    return NextResponse.json(
-      {
-        code: "OPERATION_FAILED",
-        error: "Those orders couldn't be moved. Try again.",
-        requestId: id,
-      },
-      { status: 500 },
+      error,
+      "Those orders couldn't be moved. Try again.",
     );
   }
 }

@@ -11,9 +11,54 @@ import { isJsonObject } from "./shared";
 export function rydDecisionSchema(value: unknown) {
   if (!isJsonObject(value)) return null;
   const keys = Object.keys(value);
-  if (!keys.length || keys.some((key) => key !== "status" && key !== "note"))
+  if (
+    (!("status" in value) && !("note" in value)) ||
+    keys.some(
+      (key) =>
+        ![
+          "status",
+          "note",
+          "expectedStatus",
+          "expectedUpdatedAt",
+          "submissionKeys",
+        ].includes(key),
+    )
+  )
     return null;
-  const parsed: { status?: RydOrderStatus; note?: string | null } = {};
+  const parsed: {
+    status?: RydOrderStatus;
+    note?: string | null;
+    expectedStatus?: RydOrderStatus;
+    expectedUpdatedAt?: string;
+    submissionKeys?: string[];
+  } = {};
+  if ("expectedStatus" in value) {
+    if (!RYD_ORDER_STATUSES.includes(value.expectedStatus as RydOrderStatus))
+      return null;
+    parsed.expectedStatus = value.expectedStatus as RydOrderStatus;
+  }
+  if ("expectedUpdatedAt" in value) {
+    if (
+      typeof value.expectedUpdatedAt !== "string" ||
+      value.expectedUpdatedAt.length > 40 ||
+      !Number.isFinite(Date.parse(value.expectedUpdatedAt))
+    )
+      return null;
+    parsed.expectedUpdatedAt = value.expectedUpdatedAt;
+  }
+  if ("submissionKeys" in value) {
+    if (
+      value.status !== "verified" ||
+      !Array.isArray(value.submissionKeys) ||
+      value.submissionKeys.length > 100 ||
+      !value.submissionKeys.every(
+        (key) =>
+          typeof key === "string" && key.length >= 3 && key.length <= 400,
+      )
+    )
+      return null;
+    parsed.submissionKeys = [...new Set(value.submissionKeys as string[])];
+  }
   if ("status" in value) {
     if (!RYD_ORDER_STATUSES.includes(value.status as RydOrderStatus))
       return null;
@@ -33,6 +78,17 @@ export function rydLinkSchema(value: unknown) {
   const key = value.submissionKey;
   return typeof key === "string" && key.length >= 3 && key.length <= 400
     ? { submissionKey: key }
+    : null;
+}
+
+export function rydLinkCreateSchema(
+  value: unknown,
+): { submissionKey: string; source: "manual" | "suggested" } | null {
+  if (!isJsonObject(value)) return null;
+  const { source, ...rest } = value;
+  const link = rydLinkSchema(rest);
+  return link && (source === "manual" || source === "suggested")
+    ? { ...link, source }
     : null;
 }
 
