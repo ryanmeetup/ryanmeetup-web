@@ -6,26 +6,15 @@ rules; all RY-D API and Google OAuth routes; migrations and access gates; the
 sales connector; and the public `/cards/verify` redirect.
 
 This is the remaining-work list. Resolved findings and repair history are
-removed as fixes land. Next priorities are complete unmatched submission details
-and reliable sheet reconciliation.
+removed as fixes land. Next priorities are reliable sheet reconciliation and
+the enabled RY-D contract checks.
 
 ## Remaining findings, in priority order
 
 P2 marks concrete reliability, performance, or usability work. These are
 source-level failure paths; no concurrency tests wrote to production customer data.
 
-### 1. P2 — The unmatched table hides evidence available in cards
-
-[The table](../components/ryd/RydUnmatchedView.tsx) shows at most four files and
-a `+N` label with no expansion action; it does not render `otherAnswers`.
-There is no unmatched pagination or search. Repeated uploaded file IDs across
-responses also create duplicate React keys and repeat thumbnail requests.
-
-Add an accessible detail/expand action with the complete submission, deduplicate
-file IDs, and page the results. Use the existing debounced-search contract if
-search is added. Keep horizontal scrolling contained at mobile widths.
-
-### 2. P2 — Sheet reconciliation relies on the first tab and loose identity
+### 1. P2 — Sheet reconciliation relies on the first tab and loose identity
 
 [markRydSubmissionsVerified](../lib/server/ryd-google.ts) assumes the first tab
 is the response tab, then takes the first timestamp match within 1.5 seconds.
@@ -37,7 +26,7 @@ Identify and validate the response tab, require an unambiguous row match, and
 report matched, already ticked, missing, and ambiguous responses separately.
 Never guess a row when more than one candidate fits.
 
-### 3. P2 — Contract checks and end-to-end coverage stop short of RY-D
+### 2. P2 — Contract checks and end-to-end coverage stop short of RY-D
 
 [The build preflight](../scripts/check-database-contract.mjs) verifies other
 workspace contracts but not the enabled RY-D tables, columns, grants, or access
@@ -54,7 +43,7 @@ feature-off, anonymous, denied member, and settings-authority cases.
 ## Smaller consolidations and policy gaps
 
 - Title-based form-question inference is heuristic. Validate the name/email
-  question mapping, surface ambiguity, and retain all answers in detail views.
+  question mapping and surface ambiguity.
 - The public redirect and reminder URL are separate from the editable form
   setting. An owner can point review at a different form from the one buyers
   reach. Show or validate that relationship. RY-D draft signatures and the
@@ -82,11 +71,11 @@ coverage includes 144 assertions and ten synchronized two-session races.
 The latest races cover repeated production moves and contact confirmations;
 earlier races cover overlapping imports, duplicate uploads, and reminders.
 Audit failures roll back the operation and its receipt. Snapshot coverage also
-checks more than 1,000 rows. All 127 Tasks unit/route files and 864 tests passed.
-TypeScript, changed-file ESLint,
-`git diff --check`, and the production build passed; the build ran its normal
-RMT database preflight. The isolated staged source also passed all 125 committed
-test files and 843 tests, plus TypeScript.
+checks more than 1,000 rows. All 128 Tasks unit/route files and 872 tests passed.
+TypeScript, changed-file ESLint, `git diff --check`, and the production build
+passed; the build ran its normal
+RMT database preflight. The isolated staged source also passed all 126 committed
+test files and 850 tests, plus TypeScript.
 
 The committed synthetic Google fixture measures a queue load followed by 24
 evidence files. Requests fell from 147 to 51, token refreshes from 49 to one,
@@ -99,7 +88,20 @@ bodies, deadlines after headers arrive, and access rechecks. Retention and
 revocation are specified in [the data policy](RYD_VERIFICATION.md#data).
 
 Local Playwright component checks use synthetic data at 390, 1024, 1280,
-and 1536 pixels in light and dark themes. Refresh checks cover confirmed
+and 1536 pixels in light and dark themes. Unmatched checks cover complete
+response details in both layouts, shared-upload deduplication, repeated
+question titles, short social answers, long unbroken content, keyboard opening
+and closing with focus restored, and a contained keyboard-scrollable table.
+People remain intact across pages, and search covers every response's name,
+email, social text, and other answers. Pending searches disable stale results,
+and filtered bulk selections include every matching page while excluding
+email-less identities from contact actions. Detail/draft opening records no
+writes. Direct page links survive unrelated order counts, and removing the
+last person on a page clamps the page even when reloading fails. Committed
+unit tests cover evidence references, full response rendering, stable ordering,
+search content, and pagination boundaries.
+
+Refresh checks cover confirmed
 reviews, normalized notes, link/unlink, settings, Google disconnection, response
 removal/restoration, and rejected writes retaining their drafts. Explicit
 refresh bypasses the Google cache, exposes pending state, loads new answers,
@@ -110,8 +112,7 @@ matching rules recompute suggestions after acknowledged evidence changes,
 retaining claims on finished orders outside the active queue.
 Committed unit/route tests cover canonical reconciliation, saved revisions,
 partial read failures, and refresh/error ordering. Bulk checks cover production
-progress
-through a second-group failure, stable retry payloads, independent bounded
+progress through a second-group failure, stable retry payloads, independent bounded
 contact drafts, no writes on draft open/close, reload failure after a saved
 contact, mail-link copy fallback, and disabled production/email actions while
 search is pending. Out-of-order reloads cannot replace newer reloads or
