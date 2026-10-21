@@ -81,7 +81,7 @@ presses Send. The page then records what was sent.
    or with nothing on the form. **Email** on a row and the review dialog's ask
    action open the same draft workflow as **Email everyone** and **Email
    selected**. A single buyer gets a personal greeting; groups use Bcc.
-   Evidence state is considered across each buyer's orders, so someone with a
+   Evidence state is considered across each buyer's selected orders, so someone with a
    linked or suggested response is asked for more rather than to start again.
 
    Opening or closing a draft records nothing. After sending, use **Mark this
