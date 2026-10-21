@@ -1,4 +1,5 @@
 import { createServer } from "node:http";
+import { createRydFixture } from "./ryd-fixture.mjs";
 
 const port = Number(process.env.PLAYWRIGHT_SUPABASE_PORT ?? 54329);
 
@@ -117,6 +118,11 @@ const readBody = (request) =>
     });
   });
 
+const ryd =
+  process.env.PLAYWRIGHT_RYD_FIXTURE === "1"
+    ? createRydFixture(json, readBody, profile)
+    : null;
+
 const server = createServer(async (request, response) => {
   const url = new URL(request.url ?? "/", `http://${request.headers.host}`);
   const signedIn = (request.headers.authorization ?? "").includes(".");
@@ -137,6 +143,8 @@ const server = createServer(async (request, response) => {
     json(response, 200, { ok: true });
     return;
   }
+
+  if (ryd && (await ryd(request, response, url, { single, signedIn }))) return;
 
   if (url.pathname === "/rest/v1/instance_settings") {
     json(response, 200, {});

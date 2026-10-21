@@ -44,3 +44,5 @@ jobs:
           retention-days: 14
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+      - name: Test RY-D workflows against isolated transports
+        run: npm run test:e2e:ryd

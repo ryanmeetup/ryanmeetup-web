@@ -31,6 +31,7 @@ process.env.NEXT_PUBLIC_TASK_KEY_PREFIX ??= "RMT";
  */
 export default defineConfig({
   testDir: "./tests/e2e",
+  testIgnore: "ryd-workflows.spec.ts",
   fullyParallel: true,
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? "github" : "list",

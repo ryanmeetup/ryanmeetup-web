@@ -17,8 +17,9 @@
     "test:database:ryd-transactions": "node scripts/test-ryd-transactions.mjs",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
+    "test:e2e:ryd": "playwright test --config=playwright.ryd.config.ts",
     "test:e2e": "playwright test",
-    "test:ci": "npm run typecheck && npm run test:coverage && npm run test:e2e"
+    "test:ci": "npm run typecheck && npm run test:coverage && npm run test:e2e && npm run test:e2e:ryd"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
