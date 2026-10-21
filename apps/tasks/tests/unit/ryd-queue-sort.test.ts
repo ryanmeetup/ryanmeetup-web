@@ -228,6 +228,7 @@ describe("linkableOrders", () => {
   it("leaves out submitters contacted within the last day", () => {
     const now = Date.parse("2026-10-20T12:00:00Z");
     const submitters = ["fresh", "stale", "never"].map((name) => ({
+      key: `email:${name}@example.com`,
       email: `${name}@example.com`,
       submissions: [],
     }));

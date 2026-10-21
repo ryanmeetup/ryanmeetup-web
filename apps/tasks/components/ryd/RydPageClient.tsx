@@ -40,7 +40,8 @@ import { usePagination } from "@/hooks/usePagination";
 import { mutate, parseMutationResponse } from "@/lib/mutation-client";
 import { errorMessage } from "@/lib/presentation";
 import { RYD_STATUS_LABELS, type RydOrderStatus } from "@/lib/ryd/orders";
-import type { RydSubmission } from "@/lib/ryd/matching";
+import type { RydSubmission, RydSubmitter } from "@/lib/ryd/matching";
+import { isRydContactEmail } from "@/lib/ryd/normalize";
 import type { RydQueue, RydQueueOrder } from "@/lib/ryd/queue-types";
 import {
   followUpOrders,
@@ -192,7 +193,7 @@ export function RydPageClient({
   const [productionParam, setProductionParam] =
     useQueryParamState("production");
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
-  const [selectedEmails, setSelectedEmails] = useState<ReadonlySet<string>>(
+  const [selectedSubmitterKeys, setSelectedSubmitterKeys] = useState<ReadonlySet<string>>(
     new Set(),
   );
   const [moving, setMoving] = useState<string | null>(null);
@@ -242,6 +243,11 @@ export function RydPageClient({
   ).length;
   const followUp = useMemo(() => followUpOrders(queue), [queue]);
   const unmatched = useMemo(() => unmatchedSubmitters(queue), [queue]);
+  const selectableSubmitters = useMemo(
+    () => unmatched.filter((submitter) => isRydContactEmail(submitter.email)),
+    [unmatched],
+  );
+
   const contactable = useMemo(
     () => contactableSubmitters(unmatched, queue.contacts),
     [unmatched, queue.contacts],
@@ -289,9 +295,9 @@ export function RydPageClient({
   const selectedSubmitters = useMemo(
     () =>
       view === "unmatched"
-        ? unmatched.filter((submitter) => selectedEmails.has(submitter.email))
+        ? selectableSubmitters.filter((submitter) => selectedSubmitterKeys.has(submitter.key))
         : [],
-    [view, unmatched, selectedEmails],
+    [view, selectableSubmitters, selectedSubmitterKeys],
   );
   // Ticked by hand overrides the day's pause, but a rejected order is never
   // emailed.
@@ -356,7 +362,7 @@ export function RydPageClient({
       });
   }
   const toggleSelected = toggleIn(setSelected);
-  const toggleSubmitter = toggleIn(setSelectedEmails);
+  const toggleSubmitter = toggleIn(setSelectedSubmitterKeys);
 
   /**
    * Move the selected orders a step. Each target only takes the orders it
@@ -430,12 +436,10 @@ export function RydPageClient({
     }
   }
 
-  async function linkSubmitter(email: string, orderId: string) {
-    setLinking(email);
+  async function linkSubmitter(submitter: RydSubmitter, orderId: string) {
+    setLinking(submitter.key);
     try {
-      for (const submission of queue.submissions.filter(
-        (s) => s.email === email,
-      ))
+      for (const submission of submitter.submissions)
         await mutate(`/api/ryd/orders/${encodeURIComponent(orderId)}/links`, {
           method: "POST",
           body: JSON.stringify({
@@ -465,7 +469,7 @@ export function RydPageClient({
         body: JSON.stringify({ emails }),
       });
       await refresh();
-      if (bulk) setSelectedEmails(new Set());
+      if (bulk) setSelectedSubmitterKeys(new Set());
       toast.success(
         emails.length === 1
           ? `Marked ${emails[0]} as contacted.`
@@ -692,16 +696,16 @@ export function RydPageClient({
                     </div>
                   )}
                 </div>
-                {unmatched.length > 0 && (
+                {selectableSubmitters.length > 0 && (
                   <RydSelectionBar
-                    total={unmatched.length}
+                    total={selectableSubmitters.length}
                     selectedCount={selectedSubmitters.length}
                     disabled={contacting !== null}
                     onToggleAll={() =>
-                      setSelectedEmails(
-                        selectedSubmitters.length === unmatched.length
+                      setSelectedSubmitterKeys(
+                        selectedSubmitters.length === selectableSubmitters.length
                           ? new Set()
-                          : new Set(unmatched.map((s) => s.email)),
+                          : new Set(selectableSubmitters.map((s) => s.key)),
                       )
                     }
                   >
@@ -761,7 +765,7 @@ export function RydPageClient({
                   onLink={linkSubmitter}
                   onMarkContacted={(email) => markContacted([email])}
                   selection={{
-                    selected: selectedEmails,
+                    selected: selectedSubmitterKeys,
                     onToggle: toggleSubmitter,
                     disabled: contacting !== null,
                   }}
@@ -1075,7 +1079,7 @@ export function RydPageClient({
           onClose={() => setDialog(null)}
           onChanged={async () => {
             await refresh();
-            setSelectedEmails(new Set());
+            setSelectedSubmitterKeys(new Set());
           }}
         />
       )}

@@ -263,6 +263,21 @@ describe("matching", () => {
     expect(groups.map((g) => g.submissions.length)).toEqual([2, 1]);
   });
 
+  it("keeps responses without contact addresses as distinct people", () => {
+    const groups = groupSubmissions([
+      submission({ key: "no-email-one", email: "", legalName: "Ryan One" }),
+      submission({ key: "no-email-two", email: "", legalName: "Ryan Two" }),
+    ]);
+    expect(
+      groups.map((group) => [group.key, group.submissions.length]),
+    ).toEqual([
+      ["response:no-email-one", 1],
+      ["response:no-email-two", 1],
+    ]);
+    expect(scoreSubmitter(order("One", ""), groups[0])).toBeNull();
+    expect(suggestMatches([order("One", "")], groups).size).toBe(0);
+  });
+
   it("keeps two same-name orders from sharing one submitter", () => {
     const submitters = groupSubmissions([
       submission({ legalName: "Ryan Johnson", email: "rj.one@test.dev" }),

@@ -3,6 +3,7 @@ import {
   nameIncludes,
   nameTokens,
   normalizeEmail,
+  isRydContactEmail,
   type SocialLink,
 } from "./normalize";
 
@@ -27,6 +28,8 @@ export type RydSubmission = {
  * two people. Grouping by email is what keeps Basabe's two uploads together.
  */
 export type RydSubmitter = {
+  /** Identity for grouping and selection, separate from a contact address. */
+  key: string;
   email: string;
   submissions: RydSubmission[];
 };
@@ -34,12 +37,17 @@ export type RydSubmitter = {
 export function groupSubmissions(submissions: RydSubmission[]) {
   const groups = new Map<string, RydSubmitter>();
   for (const submission of submissions) {
-    const group = groups.get(submission.email) ?? {
-      email: submission.email,
+    const email = normalizeEmail(submission.email);
+    const key = isRydContactEmail(email)
+      ? `email:${email}`
+      : `response:${submission.key}`;
+    const group = groups.get(key) ?? {
+      key,
+      email,
       submissions: [],
     };
     group.submissions.push(submission);
-    groups.set(submission.email, group);
+    groups.set(key, group);
   }
   return [...groups.values()];
 }
@@ -77,6 +85,7 @@ export function scoreSubmitter(
   order: OrderIdentity,
   submitter: RydSubmitter,
 ): RydMatchSuggestion | null {
+  if (!isRydContactEmail(submitter.email)) return null;
   const names = submitter.submissions.map((s) => s.legalName);
   const orderEmail = normalizeEmail(order.email);
   const theirs = submitter.email;

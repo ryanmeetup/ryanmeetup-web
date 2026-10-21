@@ -4,6 +4,16 @@ export function normalizeEmail(value: string) {
   return value.trim().toLowerCase();
 }
 
+/** A single address usable in a draft, without recipient or query delimiters. */
+export function isRydContactEmail(value: string) {
+  return (
+    value.length <= 320 &&
+    /^[^\s@,;<>?&#="\r\n]+@[^\s@,;<>?&#="\r\n]+\.[^\s@,;<>?&#="\r\n]+$/.test(
+      value.trim(),
+    )
+  );
+}
+
 /**
  * Lowercase, accent-free words. Buyers type "Pêrez", "O’Shea", and
  * "SHUSTER-CONLEY"; the order sheet has "Perez", "O'Shea", and

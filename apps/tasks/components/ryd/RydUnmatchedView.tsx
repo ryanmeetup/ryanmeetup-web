@@ -19,6 +19,7 @@ import {
 } from "@ryanmeetup/ui";
 import type { RydSubmission, RydSubmitter } from "@/lib/ryd/matching";
 import type { RydQueue } from "@/lib/ryd/queue-types";
+import { isRydContactEmail } from "@/lib/ryd/normalize";
 import { RydSelectCheckbox } from "./RydSelection";
 import { RydContactedChip } from "./RydStatusChip";
 import {
@@ -103,14 +104,14 @@ export function RydUnmatchedView({
   busy: string | null;
   /** The submitter email being marked contacted. */
   contacting: string | null;
-  onLink: (email: string, orderId: string) => void;
+  onLink: (submitter: RydSubmitter, orderId: string) => void;
   onRemove: (submission: RydSubmission) => void;
   onRestore: (submission: RydSubmission) => void;
   onMarkContacted: (email: string) => void;
-  /** Submitter emails ticked for the bulk actions above the list. */
+  /** Stable submitter keys ticked for the bulk actions above the list. */
   selection: {
     selected: ReadonlySet<string>;
-    onToggle: (email: string) => void;
+    onToggle: (key: string) => void;
     disabled?: boolean;
   };
 }) {
@@ -172,7 +173,7 @@ export function RydUnmatchedView({
         label="Link to order"
         options={orderOptions}
         value=""
-        onChange={(orderId) => onLink(submitter.email, orderId)}
+        onChange={(orderId) => onLink(submitter, orderId)}
         searchPlaceholder="Search orders"
         menuWidth="wide"
         disabled={
@@ -192,9 +193,9 @@ export function RydUnmatchedView({
     return (
       <RydSelectCheckbox
         label={`Select ${name}`}
-        checked={selection.selected.has(submitter.email)}
-        disabled={selection.disabled}
-        onToggle={() => selection.onToggle(submitter.email)}
+        checked={selection.selected.has(submitter.key)}
+        disabled={selection.disabled || !isRydContactEmail(submitter.email)}
+        onToggle={() => selection.onToggle(submitter.key)}
       />
     );
   }
@@ -209,7 +210,12 @@ export function RydUnmatchedView({
         aria-label={`Mark ${submitter.email} as contacted`}
         loading={contacting === submitter.email}
         loadingText="Marking..."
-        disabled={linking !== null || busy !== null || contacting !== null}
+        disabled={
+          linking !== null ||
+          busy !== null ||
+          contacting !== null ||
+          !isRydContactEmail(submitter.email)
+        }
         onClick={() => onMarkContacted(submitter.email)}
       >
         Mark contacted
@@ -244,7 +250,7 @@ function UnmatchedCards({
     <div className="columns-1 gap-4 xl:columns-2 2xl:columns-3">
       {submitters.map((submitter) =>
         submitter.submissions.length === 1 ? (
-          <div key={submitter.email} className="mb-4 break-inside-avoid">
+          <div key={submitter.key} className="mb-4 break-inside-avoid">
             <RydSubmissionCard
               submission={submitter.submissions[0]}
               badge={<RydContactedChip contact={contacts[submitter.email]} />}
@@ -262,7 +268,7 @@ function UnmatchedCards({
           </div>
         ) : (
           <section
-            key={submitter.email}
+            key={submitter.key}
             aria-label={`${submitter.submissions.length} responses from ${submitter.email}`}
             className="mb-4 space-y-3 break-inside-avoid rounded-2xl border border-dashed border-black/15 p-3 dark:border-white/15"
           >
@@ -350,7 +356,7 @@ function UnmatchedTable({
                 .filter((note): note is string => Boolean(note));
               return (
                 <tr
-                  key={submitter.email}
+                  key={submitter.key}
                   className="align-top transition hover:bg-black/[0.025] dark:hover:bg-white/[0.025]"
                 >
                   <td className="py-2.5 pl-4">{selectControl(submitter)}</td>
@@ -362,7 +368,7 @@ function UnmatchedTable({
                       className="block truncate text-xs text-black/70 dark:text-white/70"
                       title={submitter.email}
                     >
-                      {submitter.email}
+                      {submitter.email || "No email given"}
                     </span>
                     {contacts[submitter.email] && (
                       <span className="mt-1 block">

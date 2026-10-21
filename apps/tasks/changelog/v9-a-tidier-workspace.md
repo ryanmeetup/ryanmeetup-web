@@ -32,6 +32,10 @@ In the task tag picker, each category heading now collapses its tags, so a long 
 
 ## Improved
 
+### Keep email-less submissions separate
+
+Form responses without a usable email stay separate in Unmatched submissions. Linking one attaches only that response, and email actions stay unavailable until there is an address to contact.
+
 ### Safer RY-D reviews
 
 Pairing evidence and verifying an order now save together. Conflicting reviewers cannot claim the same response, stale decisions are refused, and production changes keep their audit history in the same transaction. Changing the verification form requires resolving its saved pairings first.
