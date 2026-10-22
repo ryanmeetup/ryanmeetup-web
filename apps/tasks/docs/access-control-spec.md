@@ -68,7 +68,7 @@ visibility remain limited to members with workspace-wide content management.
 
 ## Pages
 
-Notes, Contacts, and the Calendar can each be locked as a whole. The set of
+Notes, Contacts, the Calendar, and RY-D Verification can each be locked as a whole. The set of
 lockable pages is owned by the application registry in
 `lib/access/workspace-areas.ts`, not by the database; `workspace_area_access`
 holds a row only for a page an app owner has configured.
@@ -99,6 +99,10 @@ holds a row only for a page an app owner has configured.
   `workspace_area_members(area)` uses it for worker recipients and
   `ryd_require_operator` uses it before writes. The per-member predicate and
   recipient list are service-role-only; members cannot probe other identities.
+- RY-D is available only when its instance feature is enabled. Its tables are
+  service-role-only and its evidence proxy can access a connected Drive account,
+  so both page loading and APIs must deny access when the page-access function
+  is missing. The legacy pre-migration open fallback does not apply to RY-D.
 - RY-D starts restricted to the lateral RY-D team and explicitly selected
   administrator tiers with workspace-wide content access. Higher tiers inherit
   those selected tier grants; app owners retain their override. Page access
@@ -122,7 +126,6 @@ finished. Confirmation atomically records the batch, clears its captured ready
 IDs, and writes their history; retries add no writes. Snapshots retain their
 fulfillment rows for batch history, including cancellations, under the same
 private access boundary as orders. No Google answers or media are copied.
-
 
 Imports and reminder confirmations use service-role-only `ryd_import_orders`
 and `ryd_record_reminders`. They recheck the actor and commit their effects,

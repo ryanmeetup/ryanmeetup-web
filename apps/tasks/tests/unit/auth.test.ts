@@ -141,6 +141,21 @@ describe("authorize", () => {
     });
   });
 
+  it("denies service-role-only RY-D data when the access function is missing", async () => {
+    createClient.mockResolvedValue({
+      auth: {
+        getUser: vi
+          .fn()
+          .mockResolvedValue({ data: { user: { id: "user-1" } }, error: null }),
+      },
+      rpc: vi
+        .fn()
+        .mockResolvedValue({ data: null, error: { code: "PGRST202" } }),
+    });
+    const result = await authorize({ area: "ryd" });
+    expect("response" in result && result.response.status).toBe(403);
+  });
+
   it("returns the authenticated context after every requested gate passes", async () => {
     const user = { id: "owner-1" };
     const supabase = {

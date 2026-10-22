@@ -1,8 +1,10 @@
-import { describe, expect, it } from "vitest";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { describe, expect, it, vi } from "vitest";
 import {
   canViewWorkspaceArea,
   isWorkspaceAreaKey,
   workspaceAreaLabel,
+  workspaceAreaRequiresAccessCheck,
   WORKSPACE_AREA_KEYS,
 } from "@/lib/access/workspace-areas";
 
@@ -26,5 +28,37 @@ describe("workspace area registry", () => {
   it("opens every page where there is no server to ask", () => {
     for (const area of WORKSPACE_AREA_KEYS)
       expect(canViewWorkspaceArea(undefined, area)).toBe(true);
+  });
+
+  it("requires a real access lookup for service-role-only RY-D data", () => {
+    expect(workspaceAreaRequiresAccessCheck("ryd")).toBe(true);
+    expect(workspaceAreaRequiresAccessCheck("notes")).toBe(false);
+  });
+
+  it("keeps RY-D out of the server page fallback when page-access functions are absent", async () => {
+    const { loadWorkspace } = await import("@/lib/server/workspace-loader");
+    const query = {
+      select: () => query,
+      eq: () => query,
+      maybeSingle: async () => ({ data: { id: "member-1" }, error: null }),
+    };
+    const supabase = {
+      from: () => query,
+      rpc: async (name: string) =>
+        name === "accessible_workspace_areas"
+          ? { data: null, error: { code: "PGRST202" } }
+          : { data: false, error: null },
+    } as unknown as SupabaseClient;
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const workspace = await loadWorkspace(supabase, "member-1", []);
+      expect(workspace?.accessibleAreas).toEqual([
+        "notes",
+        "contacts",
+        "calendar",
+      ]);
+    } finally {
+      warning.mockRestore();
+    }
   });
 });

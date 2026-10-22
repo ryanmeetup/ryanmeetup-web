@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import {
   WORKSPACE_AREA_KEYS,
+  workspaceAreaRequiresAccessCheck,
   type WorkspaceAreaKey,
 } from "@/lib/access/workspace-areas";
 import { APPLY_MIGRATIONS_HINT, isMissingFunction } from "./supabase-errors";
@@ -133,7 +134,8 @@ const emptyWorkspace = (): Omit<WorkspaceData, "currentProfile"> => ({
  * pages stays in `lib/access/workspace-areas.ts`. A build whose migrations have
  * not been applied yet has no function to call and no RLS restricting the
  * pages either, so treating every page as open there is the state of the
- * database, not a widened one; every other failure propagates.
+ * database, not a widened one. Service-role-only areas remain closed in that
+ * fallback; every other failure propagates.
  */
 async function loadAccessibleAreas(
   supabase: SupabaseClient,
@@ -147,7 +149,9 @@ async function loadAccessibleAreas(
     console.warn("Page access is not enforced yet", {
       hint: APPLY_MIGRATIONS_HINT,
     });
-    return [...WORKSPACE_AREA_KEYS];
+    return WORKSPACE_AREA_KEYS.filter(
+      (key) => !workspaceAreaRequiresAccessCheck(key),
+    );
   }
   return (Array.isArray(data) ? data : []).filter(
     (area): area is WorkspaceAreaKey =>

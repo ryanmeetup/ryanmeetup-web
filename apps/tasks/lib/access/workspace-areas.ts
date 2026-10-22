@@ -46,6 +46,8 @@ export const WORKSPACE_AREAS = [
       "RY-D orders, the identity evidence buyers sent, and what goes back to fulfillment.",
     // Only an instance that sells RY-Ds has this page. See `rydEnabled`.
     instanceFlag: "rydEnabled",
+    // Service-role-only customer data has no user RLS fallback.
+    requiresAccessCheck: true,
   },
 ] as const satisfies readonly {
   key: string;
@@ -54,6 +56,7 @@ export const WORKSPACE_AREAS = [
   icon: IconType;
   description: string;
   instanceFlag?: "rydEnabled";
+  requiresAccessCheck?: boolean;
 }[];
 
 export type WorkspaceArea = (typeof WORKSPACE_AREAS)[number];
@@ -81,6 +84,14 @@ export function isWorkspaceAreaKey(value: unknown): value is WorkspaceAreaKey {
 
 export function workspaceAreaLabel(key: WorkspaceAreaKey) {
   return WORKSPACE_AREAS.find((area) => area.key === key)?.label ?? key;
+}
+
+/** Areas with privileged data may never use the pre-migration open fallback. */
+export function workspaceAreaRequiresAccessCheck(key: WorkspaceAreaKey) {
+  const area = WORKSPACE_AREAS.find((area) => area.key === key);
+  return Boolean(
+    area && "requiresAccessCheck" in area && area.requiresAccessCheck,
+  );
 }
 
 /**

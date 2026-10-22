@@ -1,6 +1,9 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import type { WorkspaceAreaKey } from "@/lib/access/workspace-areas";
+import {
+  workspaceAreaRequiresAccessCheck,
+  type WorkspaceAreaKey,
+} from "@/lib/access/workspace-areas";
 import { apiError, authRequired, forbidden } from "./api-response";
 import { isMissingFunction } from "./supabase-errors";
 
@@ -55,8 +58,13 @@ export async function authorize({
       { requested_area: area },
     );
     // A build whose migrations have not run has no function to call and no
-    // policy restricting the page either. Every other failure denies.
-    if (areaError && !isMissingFunction(areaError.code))
+    // policy restricting the page either. Privileged-data areas always need
+    // a working access check; every other failure denies too.
+    if (
+      areaError &&
+      (!isMissingFunction(areaError.code) ||
+        workspaceAreaRequiresAccessCheck(area))
+    )
       return { response: forbidden() };
     if (!areaError && !canView) return { response: forbidden() };
   }
