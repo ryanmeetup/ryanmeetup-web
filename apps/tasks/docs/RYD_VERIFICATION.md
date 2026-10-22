@@ -98,6 +98,9 @@ presses Send. The page then records what was sent.
    the form (Jamie Perez buying for Ryan Pêrez), the reviewer links the
    submission by hand — from the order, or from **Unmatched submissions**.
    Every order needs a person to press Verify, Needs more info, or Reject.
+   Select orders in the queue to apply one decision together, then confirm.
+   The confirmation flags missing evidence and skips orders already with
+   fulfillment or in production. Failed decisions remain selected to retry.
 3. **Follow up.** The Follow-up view lists orders asked for more, rejected,
    or with nothing on the form. **Email** on a row and the review dialog's ask
    action open the same draft workflow as **Email everyone** and **Email

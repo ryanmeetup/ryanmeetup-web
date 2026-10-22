@@ -39,6 +39,7 @@ import {
   changeRydLinks,
   decideRydOrder,
   saveRydNote,
+  rydDecisionLocked,
 } from "@/lib/ryd/ryd-decisions";
 import {
   RydConfidenceChip,
@@ -51,10 +52,11 @@ import { RydRemindDialog } from "./RydRemindDialog";
 import { RydSubmissionCard } from "./RydSubmissionCard";
 
 /**
- * The ways an order can be decided. The dialog offers every one except where
- * the order already stands, so a decided order shows only a change of mind.
+ * The ways an order can be decided. The dialog, and the bulk bar on the page,
+ * offer every one except where the order already stands, so a decided order
+ * shows only a change of mind.
  */
-const DECISIONS: {
+export const RYD_DECISIONS: {
   status: Exclude<RydOrderStatus, "pending">;
   label: string;
   icon: IconType;
@@ -193,7 +195,7 @@ export function RydOrderDialog({
   const busy = pending !== null;
   // Fulfillment was told, or it's being made: the decision is settled. The
   // routes refuse a change; the buttons just don't offer one.
-  const locked = order.sentToFulfillment || Boolean(order.productionSentAt);
+  const locked = rydDecisionLocked(order);
   const name =
     `${order.firstName} ${order.lastName}`.trim() || order.displayEmail;
 
@@ -236,7 +238,7 @@ export function RydOrderDialog({
       actions={
         <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
           {!locked &&
-            DECISIONS.filter(({ status }) => status !== order.status).map(
+            RYD_DECISIONS.filter(({ status }) => status !== order.status).map(
               ({ status, label, icon: Icon }) => (
                 <Button
                   key={status}
@@ -322,6 +324,7 @@ export function RydOrderDialog({
             rows={4}
             maxLength={2000}
             value={note}
+            disabled={busy}
             onChange={(event) => setNote(event.target.value)}
             placeholder="What did you check? e.g. gift for her son Ryan."
           />

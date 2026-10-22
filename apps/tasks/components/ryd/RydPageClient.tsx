@@ -49,7 +49,11 @@ import { errorMessage } from "@/lib/presentation";
 import { RYD_STATUS_LABELS, type RydOrderStatus } from "@/lib/ryd/orders";
 import type { RydSubmission, RydSubmitter } from "@/lib/ryd/matching";
 import { isRydContactEmail } from "@/lib/ryd/normalize";
-import { changeRydLinks } from "@/lib/ryd/ryd-decisions";
+import {
+  changeRydLinks,
+  decideRydOrder,
+  rydDecisionLocked,
+} from "@/lib/ryd/ryd-decisions";
 import {
   reconcileRydQueue,
   type RydQueueChange,
@@ -60,6 +64,7 @@ import {
   claimedElsewhere,
   linkableOrders,
   orderSearchText,
+  orderSubmissions,
   RYD_STATUS_PARAMS,
   rydCounts,
   orderRyanPositions,
@@ -87,7 +92,7 @@ import {
   RydSettingsDialog,
   RydUploadDialog,
 } from "./RydDialogs";
-import { RydOrderDialog } from "./RydOrderDialog";
+import { RYD_DECISIONS, RydOrderDialog } from "./RydOrderDialog";
 import { RydOrderTable } from "./RydOrderTable";
 import { RydSelectionBar } from "./RydSelection";
 import { RydContactDialog } from "./RydContactDialog";
@@ -227,12 +232,15 @@ export function RydPageClient({
     orders: RydQueueOrder[];
   } | null>(null);
   const moving = productionOperation?.action ?? null;
+  const [deciding, setDeciding] = useState<RydOrderStatus | null>(null);
+  const [decisionPending, setDecisionPending] = useState(false);
   const view = rydView(viewParam);
   const status = rydStatusParam(statusParam);
-  // Verified orders get checkboxes, to move them through production in bulk;
-  // Follow-up's, to email just some of the buyers.
+  // Every order list gets checkboxes: verified orders move through
+  // production in bulk, the rest are decided in bulk, and Follow-up's are
+  // emailed.
   const producing = view === "queue" && status === "verified";
-  const selectable = producing || view === "follow-up";
+  const selectable = view !== "unmatched";
   const production = producing ? rydProductionParam(productionParam) : null;
   const sort = rydSortParam(sortParam);
   const unmatchedLayout = layoutParam === "table" ? "table" : "cards";
@@ -289,7 +297,6 @@ export function RydPageClient({
       ),
     [sortedSubmitters],
   );
-
   const contactable = useMemo(
     () => contactableSubmitters(sortedSubmitters, queue.contacts),
     [sortedSubmitters, queue.contacts],
@@ -456,6 +463,63 @@ export function RydPageClient({
   }
 
   const selectedStages = new Set(selectedOrders.map(rydProductionStage));
+
+  /** The selected orders a decision would change; final ones are left alone. */
+  function decidable(target: RydOrderStatus) {
+    return selectedOrders.filter(
+      (order) => order.status !== target && !rydDecisionLocked(order),
+    );
+  }
+
+  /**
+   * Decide each selected order the way its dialog would, one at a time so a
+   * refusal on one doesn't lose the rest. What failed stays selected.
+   */
+  async function decideSelected(target: RydOrderStatus) {
+    const orders = decidable(target);
+    setDecisionPending(true);
+    const failed: string[] = [];
+    let lastError: unknown;
+    for (const order of orders)
+      try {
+        applyChange(await decideRydOrder(order, queue.submissions, target));
+      } catch (error) {
+        failed.push(order.orderId);
+        lastError = error;
+      }
+    try {
+      await refresh();
+    } catch {
+      // The decisions saved; a reload shows them.
+    }
+    setSelected(new Set(failed));
+    setDeciding(null);
+    setDecisionPending(false);
+    const saved = orders.length - failed.length;
+    if (saved)
+      toast.success(
+        `${saved} order${saved === 1 ? "" : "s"} marked ${RYD_STATUS_LABELS[target].toLowerCase()}.`,
+      );
+    if (failed.length)
+      toast.error(
+        errorMessage(
+          lastError,
+          `${failed.length} order${failed.length === 1 ? "" : "s"} couldn't be decided.`,
+        ),
+      );
+  }
+
+  const decidingOrders = deciding ? decidable(deciding) : [];
+  const decidingSkipped = deciding
+    ? selectedOrders.filter(rydDecisionLocked).length
+    : 0;
+  const decidingBare =
+    deciding === "verified"
+      ? decidingOrders.filter(
+          (order) =>
+            !orderSubmissions(order, queue.submissions).submissions.length,
+        ).length
+      : 0;
 
   function toggleAllOrders() {
     setSelected(
@@ -1072,6 +1136,37 @@ export function RydPageClient({
                     )}
                   </div>
                 )}
+                {view === "queue" && !producing && sorted.length > 0 && (
+                  <RydSelectionBar
+                    total={sorted.length}
+                    selectedCount={selectedOrders.length}
+                    disabled={searchPending || decisionPending}
+                    onToggleAll={toggleAllOrders}
+                  >
+                    {RYD_DECISIONS.filter(
+                      (decision) => decision.status !== statusFilter,
+                    ).map(({ status: target, label, icon: Icon }) => (
+                      <Button
+                        key={target}
+                        type="button"
+                        size="sm"
+                        variant={
+                          target === "verified" ? "primary" : "secondary"
+                        }
+                        className="w-full sm:w-auto"
+                        leftIcon={<Icon aria-hidden />}
+                        disabled={
+                          searchPending ||
+                          decisionPending ||
+                          !decidable(target).length
+                        }
+                        onClick={() => setDeciding(target)}
+                      >
+                        {label}
+                      </Button>
+                    ))}
+                  </RydSelectionBar>
+                )}
                 {view === "follow-up" && sorted.length > 0 && (
                   <RydSelectionBar
                     total={sorted.length}
@@ -1160,6 +1255,41 @@ export function RydPageClient({
           onChanged={refresh}
         />
       )}
+      <ConfirmationDialog
+        open={deciding !== null}
+        setOpen={(open) => {
+          if (!open && !decisionPending) setDeciding(null);
+        }}
+        title={
+          deciding
+            ? `${RYD_DECISIONS.find((d) => d.status === deciding)?.label} ${decidingOrders.length} order${decidingOrders.length === 1 ? "" : "s"}?`
+            : ""
+        }
+        description={
+          deciding
+            ? [
+                deciding === "verified"
+                  ? "Each one is cleared for fulfillment, and any suggested form response is linked to it."
+                  : `Each one is marked ${RYD_STATUS_LABELS[deciding].toLowerCase()}.`,
+                decidingBare
+                  ? `${decidingBare} ha${decidingBare === 1 ? "s" : "ve"} nothing on the form.`
+                  : "",
+                decidingSkipped
+                  ? `${decidingSkipped} already with fulfillment or in production ${decidingSkipped === 1 ? "is" : "are"} left alone.`
+                  : "",
+              ]
+                .filter(Boolean)
+                .join(" ")
+            : undefined
+        }
+        confirmLabel={
+          RYD_DECISIONS.find((d) => d.status === deciding)?.label ?? "Confirm"
+        }
+        pendingLabel="Saving..."
+        pending={decisionPending}
+        destructive={deciding === "rejected"}
+        onConfirm={() => deciding && decideSelected(deciding)}
+      />
       <ConfirmationDialog
         open={removing !== null}
         setOpen={(open) => {

@@ -72,6 +72,10 @@ until it is restored. Reviews and reminder recipients follow the same rule.
 
 Large production selections save in bounded groups with visible progress and safe retries. Mixed backward moves save together. Unmatched emails confirm each sent draft independently, contact retries cannot count twice, and a person's responses link together. Actions wait while search results catch up.
 
+Select orders to verify, request more information, or reject them together.
+Confirm before saving; orders already with fulfillment stay protected, and
+failed decisions stay selected for another try.
+
 ### Refresh RY-D without losing saved changes
 
 Refresh picks up new form responses without leaving the queue. Confirmed reviews, pairings, settings, and removed responses stay visible if reloading fails, with a clear retry action.

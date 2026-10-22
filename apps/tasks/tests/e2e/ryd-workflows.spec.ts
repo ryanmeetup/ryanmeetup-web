@@ -270,6 +270,31 @@ test("shows ambiguous identity mapping and distinguishes buyer and review form l
   expect((await state(request)).calls).toEqual([]);
 });
 
+test("decides selected orders together after confirming missing evidence", async ({ page, request }, testInfo) => {
+  await reset(request);
+  await signIn(page);
+  await page.goto("/ryd");
+  await page.getByRole("button", { name: "Upload orders", exact: true }).click();
+  const upload = page.getByRole("dialog", { name: "Upload orders", exact: true });
+  await upload.getByLabel("Order CSV", { exact: false }).setInputFiles({
+    name: "synthetic-bulk.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(`${csv}802,Ryan,Second,second@example.test,,36\r\n`),
+  });
+  await upload.getByRole("button", { name: "Upload", exact: true }).click();
+  await expect(upload).toHaveCount(0);
+  await page.getByRole("checkbox", { name: "Select all 2", exact: true }).check();
+  await page.getByRole("button", { name: "Verify", exact: true }).click();
+  const confirm = page.getByRole("dialog", { name: "Verify 2 orders?", exact: true });
+  await expect(confirm).toContainText("1 has nothing on the form.");
+  await page.screenshot({ path: testInfo.outputPath("bulk-review.png"), fullPage: true });
+  await confirm.getByRole("button", { name: "Verify", exact: true }).click();
+  await expect(confirm).toHaveCount(0);
+  const saved = await state(request);
+  expect(saved.orders.map((order: { status: string }) => order.status)).toEqual(["verified", "verified"]);
+  expect(saved.calls.filter((call: { name: string }) => call.name === "ryd_review_order")).toHaveLength(2);
+});
+
 test("disabled instances hide the page and RY-D APIs", async ({
   page,
   request,
