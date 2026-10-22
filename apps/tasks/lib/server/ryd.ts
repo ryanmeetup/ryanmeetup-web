@@ -112,13 +112,17 @@ async function loadSheet(
       submissions: [],
     };
   try {
-    const { submissions } = await readRydSubmissions(
+    const { submissions, warnings } = await readRydSubmissions(
       integration,
       settings.formId,
       options,
     );
     return {
-      sheet: { status: "ok", accountEmail: integration.account_email },
+      sheet: {
+        status: "ok",
+        accountEmail: integration.account_email,
+        ...(warnings?.length ? { warnings } : {}),
+      },
       submissions,
     };
   } catch (error) {

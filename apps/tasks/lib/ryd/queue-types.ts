@@ -45,7 +45,7 @@ export type RydSheetState =
   | { status: "unconfigured"; accountEmail: string }
   | { status: "disconnected" }
   | { status: "error"; message: string; accountEmail: string }
-  | { status: "ok"; accountEmail: string };
+  | { status: "ok"; accountEmail: string; warnings?: string[] };
 
 export type RydQueue = {
   orders: RydQueueOrder[];

@@ -66,7 +66,9 @@ async function formSubmissions(admin: SupabaseClient, warnings: string[]) {
       );
       return null;
     }
-    return (await readRydSubmissions(integration, settings.formId)).submissions;
+    const read = await readRydSubmissions(integration, settings.formId);
+    warnings.push(...(read.warnings ?? []));
+    return read.submissions;
   } catch (error) {
     console.error("RY-D form could not be read for MCP", error);
     warnings.push(

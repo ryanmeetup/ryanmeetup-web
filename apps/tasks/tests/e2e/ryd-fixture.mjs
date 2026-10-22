@@ -25,6 +25,7 @@ export function createRydFixture(json, readBody, profile) {
     state = {
       enabled: options.enabled !== false,
       denied: options.role === "denied",
+      ambiguousForm: options.ambiguousForm === true,
       settings: {
         id: true,
         form_id: FORM,
@@ -120,6 +121,13 @@ export function createRydFixture(json, readBody, profile) {
               title: "Social profile",
               questionItem: { question: { questionId: "social" } },
             },
+            ...(state.ambiguousForm ? [{
+              title: "Full name",
+              questionItem: { question: { questionId: "otherName" } },
+            }, {
+              title: "Alternative email",
+              questionItem: { question: { questionId: "otherEmail" } },
+            }] : []),
           ],
         });
       else if (
@@ -134,6 +142,10 @@ export function createRydFixture(json, readBody, profile) {
               answers: {
                 email: { textAnswers: { answers: [{ value: EMAIL }] } },
                 name: { textAnswers: { answers: [{ value: "Ryan Fixture" }] } },
+                ...(state.ambiguousForm ? {
+                  otherName: { textAnswers: { answers: [{ value: "Ryan Other" }] } },
+                  otherEmail: { textAnswers: { answers: [{ value: "other@example.test" }] } },
+                } : {}),
                 social: {
                   textAnswers: {
                     answers: [{ value: "https://instagram.com/ryanfixture" }],

@@ -198,6 +198,27 @@ describe("RY-D Google reads", () => {
     expect(fetcher).toHaveBeenCalledTimes(4);
   });
 
+  it("returns mapping warnings without discarding ambiguous answers or uploads", async () => {
+    const { readRydSubmissions, connection, network } = await fixture();
+    network.form = { ...form, items: [
+      ...form.items!,
+      { title: "Legal name", questionItem: { question: { questionId: "name" } } },
+      { title: "Full name", questionItem: { question: { questionId: "otherName" } } },
+    ] };
+    network.page = { responses: [{ ...network.page.responses[0], answers: {
+      ...network.page.responses[0].answers,
+      name: { textAnswers: { answers: [{ value: "Ryan Fixture" }] } },
+      otherName: { textAnswers: { answers: [{ value: "Ryan Other" }] } },
+    } }] };
+    const read = readRydSubmissions(connection, formId);
+    await vi.advanceTimersByTimeAsync(100);
+    const result = await read;
+    expect(result.warnings.join(" ")).toContain("2 possible legal-name questions");
+    expect(result.submissions[0].legalName).toBe("");
+    expect(result.submissions[0].otherAnswers).toContainEqual({ question: "Full name", answer: "Ryan Other" });
+    expect(result.submissions[0].fileIds).toEqual(files);
+  });
+
   it("does not retain form results exceeding four MiB of serialized data", async () => {
     const { readRydSubmissions, connection, fetcher, network } = await fixture();
     network.form = { ...form, info: { title: "a".repeat(4 * 1024 * 1024) } };

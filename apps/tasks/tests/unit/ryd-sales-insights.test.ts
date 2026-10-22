@@ -277,6 +277,17 @@ describe("RY-D MCP reads", () => {
     ).toEqual([]);
   });
 
+  it("reports form mapping warnings alongside available order data", async () => {
+    readRydSubmissions.mockResolvedValue({
+      submissions: [],
+      warnings: ["The form has 2 possible email questions."],
+    });
+    const { rydSalesInsights } = await import("@/lib/server/mcp/ryd-read");
+    const result = await rydSalesInsights(admin(enabled), {});
+    expect(result.data).toMatchObject({ available: true, totals: { orders: 2 } });
+    expect(result.warnings).toContain("The form has 2 possible email questions.");
+  });
+
   it("still returns orders, with a warning, when Google won't answer", async () => {
     readRydSubmissions.mockRejectedValue(new Error("invalid_grant"));
     vi.spyOn(console, "error").mockImplementation(() => {});

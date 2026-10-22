@@ -536,7 +536,7 @@ export function RydPageClient({
 
   const sheetNotice =
     queue.sheet.status === "ok"
-      ? null
+      ? queue.sheet.warnings?.join(" ") || null
       : queue.sheet.status === "error"
         ? queue.sheet.message
         : queue.sheet.status === "unconfigured"
@@ -636,7 +636,7 @@ export function RydPageClient({
               </p>
             )}
             {queue.installed && sheetNotice && (
-              <div className="flex flex-col gap-3 rounded-2xl border border-black/10 p-4 text-sm sm:flex-row sm:items-center sm:justify-between dark:border-white/10">
+              <div role="status" className="flex flex-col gap-3 rounded-2xl border border-black/10 p-4 text-sm sm:flex-row sm:items-center sm:justify-between dark:border-white/10">
                 <p className="flex items-start gap-2">
                   <FiAlertTriangle aria-hidden className="mt-0.5 shrink-0" />
                   {sheetNotice}

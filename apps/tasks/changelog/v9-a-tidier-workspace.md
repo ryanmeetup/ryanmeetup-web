@@ -54,6 +54,11 @@ Form responses without a usable email stay separate in Unmatched submissions. Li
 
 Pairing evidence and verifying an order now save together. Conflicting reviewers cannot claim the same response, stale decisions are refused, and production changes keep their audit history in the same transaction. Changing the verification form requires resolving its saved pairings first.
 
+Ambiguous name and email questions now show a warning and keep their answers
+available for review. Invalid order emails no longer fall back to a different
+Google sign-in address. Settings also distinguishes the buyer verification
+link from the form reviewers read, so changing one does not imply both changed.
+
 ### Delegate RY-D operations
 
 The RY-D access team can manage verification, fulfillment, settings, and the

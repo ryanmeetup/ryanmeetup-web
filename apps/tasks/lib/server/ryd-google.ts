@@ -3,6 +3,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import {
   parseRydFormResponses,
+  inspectRydForm,
   rydFormQuestions,
   type GoogleForm,
   type GoogleFormResponse,
@@ -188,6 +189,7 @@ type RydFormRead = {
   title: string;
   linkedSheetId: string | null;
   questionTitles: string[];
+  warnings: string[];
 };
 
 export type RydGoogleReadOptions = { signal?: AbortSignal; fresh?: boolean };
@@ -214,6 +216,7 @@ export async function readRydSubmissions(
           form.info?.title || form.info?.documentTitle || "RY-dentification form",
         linkedSheetId: form.linkedSheetId ?? null,
         questionTitles: rydFormQuestions(form).map((question) => question.title),
+        warnings: inspectRydForm(form).warnings,
       };
     },
     options,
@@ -237,7 +240,7 @@ type SheetValues = {
 /** A best-effort sheet tick never changes the already committed batch decision. */
 export async function markRydSubmissionsVerified(
   connection: RydGoogleIntegrationRow,
-  form: RydFormRead,
+  form: Pick<RydFormRead, "submissions" | "linkedSheetId" | "questionTitles">,
   responseKeys: string[],
   requestSignal?: AbortSignal,
 ): Promise<RydSheetReport> {

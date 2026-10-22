@@ -7,6 +7,7 @@ import {
   Input,
   Modal,
   ModalActions,
+  Text,
   toast,
 } from "@ryanmeetup/ui";
 import { FiLogOut, FiUpload } from "react-icons/fi";
@@ -15,6 +16,8 @@ import { errorMessage } from "@/lib/presentation";
 import type { RydImportSummary } from "@/lib/ryd/orders";
 import type { RydQueueChange } from "@/lib/ryd/queue-reconciliation";
 import type { RydQueue, RydSettings } from "@/lib/ryd/queue-types";
+import { formIdFrom } from "@/lib/ryd/form-responses";
+import { RYD_FORM_URL } from "@/lib/ryd/emails";
 
 export { RydRemindDialog } from "./RydRemindDialog";
 export { RydSendDialog } from "./RydSendDialog";
@@ -148,6 +151,7 @@ export function RydSettingsDialog({
   const connected = queue.sheet.status !== "disconnected";
   const accountEmail =
     "accountEmail" in queue.sheet ? queue.sheet.accountEmail : null;
+  const reviewFormId = formIdFrom(form);
 
   return (
     <Modal
@@ -254,7 +258,36 @@ export function RydSettingsDialog({
           onChange={(event) => setForm(event.target.value)}
           placeholder="https://docs.google.com/forms/d/…/edit"
           disabled={saving}
+          aria-describedby="ryd-form-guidance"
         />
+        <Text id="ryd-form-guidance" className="!text-sm">
+          Buyers and reminder drafts use the{" "}
+          <a
+            href={RYD_FORM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="break-words underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            buyer verification link
+          </a>
+          . This setting changes only the form reviewers read; it does not
+          update that public redirect. Before saving, open both links and
+          confirm they lead to the same Google form.
+          {reviewFormId && (
+            <>
+              {" "}
+              <a
+                href={`https://docs.google.com/forms/d/${reviewFormId}/edit`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              >
+                Open review form editor
+              </a>
+              .
+            </>
+          )}
+        </Text>
         <Input
           name="fulfillmentEmail"
           type="email"

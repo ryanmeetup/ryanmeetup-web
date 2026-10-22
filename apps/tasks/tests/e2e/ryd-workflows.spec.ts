@@ -20,7 +20,7 @@ const state = async (request: APIRequestContext) =>
   (await request.get(`${fixtureOrigin}/__ryd/state`)).json();
 async function reset(
   request: APIRequestContext,
-  options: { enabled?: boolean; role?: string } = {},
+  options: { enabled?: boolean; role?: string; ambiguousForm?: boolean } = {},
 ) {
   expect(
     (
@@ -221,6 +221,53 @@ test("runs import, explicit linking, review, immutable export, confirmation, and
     "ryd_move_production",
     "ryd_move_production",
   ]);
+});
+
+test("shows ambiguous identity mapping and distinguishes buyer and review form links", async ({
+  page,
+  request,
+}, testInfo) => {
+  await reset(request, { ambiguousForm: true });
+  await signIn(page);
+  await page.goto("/ryd");
+  const notice = page.getByRole("status").filter({ hasText: "possible legal-name questions" });
+  await expect(notice).toContainText("2 possible email questions");
+  const queue = await (await page.request.get("/api/ryd")).json();
+  expect(queue.sheet.status).toBe("ok");
+  expect(queue.sheet.warnings).toHaveLength(2);
+  expect(queue.submissions[0]).toMatchObject({ legalName: "", email: "" });
+  expect(queue.submissions[0].otherAnswers).toEqual(expect.arrayContaining([
+    { question: "Legal name", answer: "Ryan Fixture" },
+    { question: "Full name", answer: "Ryan Other" },
+    { question: "Alternative email", answer: "other@example.test" },
+  ]));
+  await notice.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: testInfo.outputPath("mapping-warning.png"), fullPage: true });
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  const settings = page.getByRole("dialog", { name: "RY-D settings", exact: true });
+  const buyer = settings.getByRole("link", { name: "buyer verification link", exact: true });
+  const editor = settings.getByRole("link", { name: "Open review form editor", exact: true });
+  await expect(buyer).toHaveAttribute("href", "https://ryanmeetup.com/cards/verify");
+  await expect(editor).toHaveAttribute("href", `https://docs.google.com/forms/d/${"f".repeat(30)}/edit`);
+  await expect(settings.getByText("This setting changes only", { exact: false })).toBeVisible();
+  const form = settings.getByLabel("RY-dentification form", { exact: false });
+  await form.fill("g".repeat(30));
+  await expect(editor).toHaveAttribute("href", `https://docs.google.com/forms/d/${"g".repeat(30)}/edit`);
+  const widths = testInfo.project.name === "chromium-mobile" ? [390] : [1024, 1280, 1536];
+  for (const width of widths) {
+    await page.setViewportSize({ width, height: 900 });
+    await editor.scrollIntoViewIfNeeded();
+    await expect(buyer).toBeInViewport();
+    await expect(editor).toBeInViewport();
+    await page.screenshot({ path: testInfo.outputPath(`settings-links-${width}.png`) });
+  }
+  await buyer.focus();
+  await page.keyboard.press("Tab");
+  await expect(editor).toBeFocused();
+  await form.fill("not a valid form link");
+  await expect(editor).toHaveCount(0);
+  await settings.getByRole("button", { name: "Cancel", exact: true }).click();
+  expect((await state(request)).calls).toEqual([]);
 });
 
 test("disabled instances hide the page and RY-D APIs", async ({

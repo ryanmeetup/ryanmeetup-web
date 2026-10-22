@@ -40,6 +40,23 @@ Access setting, and every `/api/ryd` route answer as if they don't exist.
    and connect or disconnect Google. Managing group membership and instance
    features remains owner-only.
 
+The form setting changes what reviewers read; it does not change the public
+`https://ryanmeetup.com/cards/verify` redirect used by buyers and reminder
+drafts. Settings shows both the buyer link and the current review-form editor.
+Open both before saving and confirm they lead to the same Google form. Changing
+the buyer destination also requires updating the Ryan Meetup site's redirect.
+
+Use one text question for the person's legal/full name and one for the order
+email. Duplicate identity questions are never resolved by their position:
+the queue shows a warning, leaves that identity unassigned, and retains all
+answers for manual review. Company, buyer, preferred, and social-profile names
+do not claim the personal-name field. Invalid or blank explicit email answers
+are not replaced by the Google sign-in email; a collected address is used only
+when no explicit email question exists. Uploads remain available. To resolve a
+warning, keep one supported title for each identity and rename extra questions
+to describe their other purpose, then refresh.
+
+
 RY-D never sends email itself. Every email — to buyers and to fulfillment —
 opens as a prefilled draft in the reviewer's own mail app (a `mailto:` link,
 with copy buttons beside it for when a draft won't open), and the reviewer

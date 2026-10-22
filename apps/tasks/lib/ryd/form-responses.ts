@@ -1,21 +1,28 @@
 import type { RydSubmission } from "./matching";
-import { normalizeEmail, parseSocialLinks } from "./normalize";
+import { isRydContactEmail, normalizeEmail, parseSocialLinks } from "./normalize";
 
 /**
  * The RY-dentification form, read through the Google Forms API.
  *
- * The form is the source of truth: one form, one link, forever, but its
- * questions change. So nothing here depends on a question's position or its
- * exact wording. The name, email, and social questions are recognised by what
- * they ask; every upload question contributes files; and any question this
- * code doesn't recognise is still shown to the reviewer as an extra answer,
- * so adding a question to the form never hides what people wrote in it.
+ * Question IDs survive reordering, while titles can change. Identity questions
+ * need a unique, recognizable title; ambiguous questions stay as extra answers.
+ * Every upload contributes files, and unrecognized questions are still shown
+ * to the reviewer, so adding a question never hides what people wrote.
  */
 
 export type GoogleFormItem = {
   title?: string;
   questionItem?: {
-    question?: { questionId?: string; fileUploadQuestion?: object };
+    question?: {
+      questionId?: string;
+      fileUploadQuestion?: object;
+      textQuestion?: object;
+      choiceQuestion?: object;
+      dateQuestion?: object;
+      timeQuestion?: object;
+      scaleQuestion?: object;
+      ratingQuestion?: object;
+    };
   };
   questionGroupItem?: {
     questions?: { questionId?: string; rowQuestion?: { title?: string } }[];
@@ -49,30 +56,28 @@ type Role = "legalName" | "email" | "social" | "files" | "other";
 
 type Question = { id: string; title: string; role: Role };
 
-const ROLE_PATTERNS: [Exclude<Role, "files" | "other">, RegExp][] = [
-  ["email", /e-?mail/i],
-  ["legalName", /\bname\b/i],
-  ["social", /social|instagram|facebook|linkedin|profile|link/i],
-];
+const EMAIL_QUESTION = /\be[\s-]?mail\b/i;
+const NAME_QUESTION = /\b(?:legal|full)\s+name\b|^(?:(?:what(?:'s| is)\s+)?your\s+)?name[?*]?$/i;
+const OTHER_IDENTITY = /\b(?:company|business|organization|organisation|employer|school|buyer|billing|purchaser|parent|guardian|nickname|username|display)\b/i;
+const SOCIAL_QUESTION = /\b(?:social|instagram|facebook|linkedin|profile|links?)\b/i;
 
-/** Every question on the form, with the job it does for matching. */
-export function rydFormQuestions(form: GoogleForm): Question[] {
+/** Ambiguous identity answers are retained for review, never chosen by order. */
+export function inspectRydForm(form: GoogleForm) {
   const questions: Question[] = [];
-  const taken = new Set<Role>();
   for (const item of form.items ?? []) {
     const title = item.title?.trim() ?? "";
     const question = item.questionItem?.question;
     if (question?.questionId) {
       let role: Role = question.fileUploadQuestion ? "files" : "other";
-      if (role === "other")
-        for (const [candidate, pattern] of ROLE_PATTERNS)
-          // The first question that asks for each thing claims it; a second
-          // "name" question (a nickname, say) is shown as an extra answer.
-          if (!taken.has(candidate) && pattern.test(title)) {
-            role = candidate;
-            taken.add(candidate);
-            break;
-          }
+      const nonText =
+        question.choiceQuestion || question.dateQuestion ||
+        question.timeQuestion || question.scaleQuestion || question.ratingQuestion;
+      if (role === "other" && !nonText) {
+        if (EMAIL_QUESTION.test(title)) role = "email";
+        else if (NAME_QUESTION.test(title) && !OTHER_IDENTITY.test(title))
+          role = "legalName";
+        else if (SOCIAL_QUESTION.test(title)) role = "social";
+      }
       questions.push({ id: question.questionId, title, role });
     }
     for (const row of item.questionGroupItem?.questions ?? [])
@@ -83,7 +88,33 @@ export function rydFormQuestions(form: GoogleForm): Question[] {
           role: "other",
         });
   }
-  return questions;
+  const warnings: string[] = [];
+  const counts = {
+    legalName: questions.filter((question) => question.role === "legalName").length,
+    email: questions.filter((question) => question.role === "email").length,
+  };
+  for (const role of ["legalName", "email"] as const) {
+    const label = role === "legalName" ? "legal-name" : "email";
+    if (counts[role] > 1) {
+      warnings.push(
+        `The form has ${counts[role]} possible ${label} questions. None is used for matching; all answers remain available for manual review. Keep one clearly titled ${label} question and rename the others.`,
+      );
+      for (const question of questions)
+        if (question.role === role) question.role = "other";
+    } else if (!counts[role]) {
+      warnings.push(
+        role === "legalName"
+          ? 'The form has no clear legal-name question. Use one text question titled "Legal name" or "Full name"; other answers remain available for manual review.'
+          : "The form has no email question. Google-collected addresses are used when available; other responses stay separate for manual review.",
+      );
+    }
+  }
+  return { questions, warnings, emailQuestionCount: counts.email };
+}
+
+/** Every question on the form, with the job it does for matching. */
+export function rydFormQuestions(form: GoogleForm): Question[] {
+  return inspectRydForm(form).questions;
 }
 
 const text = (answer: GoogleAnswer | undefined) =>
@@ -124,7 +155,7 @@ export function parseRydFormResponses(
   form: GoogleForm,
   responses: GoogleFormResponse[],
 ): RydSubmission[] {
-  const questions = rydFormQuestions(form);
+  const { questions, emailQuestionCount } = inspectRydForm(form);
   const byRole = (role: Role) => questions.filter((q) => q.role === role);
   const submissions: RydSubmission[] = [];
 
@@ -136,11 +167,14 @@ export function parseRydFormResponses(
         .map((q) => text(answers[q.id]))
         .filter(Boolean)
         .join("\n");
-    // A form set to collect addresses records the signed-in email itself;
-    // otherwise the address is whatever the email question says.
-    const email = normalizeEmail(
-      answerFor("email") || response.respondentEmail || "",
-    );
+    // A collected sign-in address must never override an ambiguous, blank, or
+    // invalid explicit order-email answer: it may identify a different person.
+    const emailAnswer = answerFor("email");
+    const candidateEmail =
+      emailQuestionCount === 0 ? response.respondentEmail ?? "" : emailAnswer;
+    const email = isRydContactEmail(candidateEmail)
+      ? normalizeEmail(candidateEmail)
+      : "";
     const submittedAtIso =
       response.lastSubmittedTime ?? response.createTime ?? "";
     const socialText = answerFor("social");
@@ -152,6 +186,10 @@ export function parseRydFormResponses(
     const otherAnswers = byRole("other")
       .map((q) => ({ question: q.title, answer: text(answers[q.id]) }))
       .filter((entry) => entry.answer);
+    if (!email && emailAnswer) {
+      const question = byRole("email")[0];
+      otherAnswers.push({ question: question.title, answer: emailAnswer });
+    }
 
     submissions.push({
       // The response ID survives the respondent editing their answers, and
