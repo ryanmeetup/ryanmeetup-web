@@ -9,6 +9,7 @@ import type {
 import { type RydSubmission } from "@/lib/ryd/matching";
 import type { RydProductionStage } from "@/lib/ryd/queue-view";
 import { type RydOrderStatus } from "@/lib/ryd/orders";
+import { csvRecordCell } from "@/lib/ryd/csv";
 import { withRydQueueMatches } from "@/lib/ryd/queue-reconciliation";
 import { getAdminClient } from "./admin-client";
 import { apiError, notFound } from "./api-response";
@@ -21,6 +22,7 @@ import {
   type RydGoogleIntegrationRow,
 } from "./ryd-google";
 import { isMissingRelation } from "./supabase-errors";
+import { readRydLinks, readRydRows } from "./ryd-queries";
 
 export type RydContext = {
   user: User;
@@ -149,9 +151,13 @@ async function loadSheet(
  * table is applied, nothing is.
  */
 async function loadDismissedKeys(admin: SupabaseClient) {
-  const result = await admin
-    .from("ryd_dismissed_submissions")
-    .select("submission_key");
+  const result = await readRydRows((from, to) =>
+    admin
+      .from("ryd_dismissed_submissions")
+      .select("submission_key")
+      .order("submission_key")
+      .range(from, to),
+  );
   if (result.error) {
     if (isMissingRelation(result.error.code)) return new Set<string>();
     throw result.error;
@@ -164,9 +170,13 @@ async function loadDismissedKeys(admin: SupabaseClient) {
  * Until the migration that adds the table is applied, nobody has any.
  */
 async function loadSubmitterContacts(admin: SupabaseClient) {
-  const result = await admin
-    .from("ryd_submitter_contacts")
-    .select("email, contacted_at");
+  const result = await readRydRows((from, to) =>
+    admin
+      .from("ryd_submitter_contacts")
+      .select("email, contacted_at")
+      .order("id")
+      .range(from, to),
+  );
   if (result.error) {
     if (isMissingRelation(result.error.code)) return {};
     throw result.error;
@@ -211,13 +221,16 @@ export async function loadRydQueue(
 ): Promise<RydQueue> {
   const [ordersResult, linksResult, clearedResult, batchResult] =
     await Promise.all([
-      admin
-        .from("ryd_orders")
-        .select("*")
-        .or("cleared_batch_id.is.null,status.eq.verified")
-        .order("created_at", { ascending: false })
-        .order("order_id"),
-      admin.from("ryd_order_submissions").select("order_id, submission_key"),
+      readRydRows((from, to) =>
+        admin
+          .from("ryd_orders")
+          .select("*")
+          .or("cleared_batch_id.is.null,status.eq.verified")
+          .order("created_at", { ascending: false })
+          .order("order_id")
+          .range(from, to),
+      ),
+      readRydLinks(admin),
       admin
         .from("ryd_orders")
         .select("order_id", { count: "exact", head: true })
@@ -278,9 +291,9 @@ export async function loadRydQueue(
       orderedAt: row.ordered_at,
       firstName: row.first_name,
       lastName: row.last_name,
-      displayEmail: row.raw.BillEmail?.trim() || row.email,
+      displayEmail: csvRecordCell(row.raw, "BillEmail").trim() || row.email,
       email: row.email,
-      total: row.raw.OrderTotal ?? "",
+      total: csvRecordCell(row.raw, "OrderTotal"),
       status: row.status,
       note: row.note,
       decidedAt: row.decided_at,

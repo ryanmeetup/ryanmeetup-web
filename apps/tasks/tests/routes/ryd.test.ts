@@ -53,7 +53,17 @@ function admin(tables: Record<string, ReturnType<typeof table>>) {
     from: (name: string) =>
       tables[name] ??
       table({
-        data: name === "ryd_settings" ? { form_id: "f".repeat(30) } : null,
+        data:
+          name === "ryd_settings"
+            ? { form_id: "f".repeat(30) }
+            : [
+                  "ryd_orders",
+                  "ryd_order_submissions",
+                  "ryd_dismissed_submissions",
+                  "ryd_submitter_contacts",
+                ].includes(name)
+              ? []
+              : null,
         error: null,
       }),
     rpc,

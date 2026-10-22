@@ -93,3 +93,12 @@ export function csvColumn(headers: string[], name: string) {
   const wanted = name.trim().toLowerCase();
   return headers.findIndex((header) => header.trim().toLowerCase() === wanted);
 }
+
+/** Read a saved fulfillment row using the same header rules as the importer. */
+export function csvRecordCell(row: Record<string, string>, name: string) {
+  if (Object.hasOwn(row, name)) return row[name];
+  const header = Object.keys(row).find(
+    (key) => key.trim().toLowerCase() === name.trim().toLowerCase(),
+  );
+  return header === undefined ? "" : row[header];
+}

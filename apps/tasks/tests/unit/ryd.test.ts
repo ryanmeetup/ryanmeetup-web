@@ -91,6 +91,22 @@ describe("parseRydOrderCsv", () => {
     expect(parsed.ok).toBe(false);
   });
 
+  it("preserves saved cells when a later file changes or drops a header", () => {
+    const csv = rydOrderExportCsv(
+      [" orderid ", "Verified?"],
+      [
+        {
+          raw: { OrderId: "1001", Delivery: " Shipping " },
+          status: "verified",
+        },
+      ],
+    );
+    expect(parseCsv(csv)).toEqual({
+      headers: [" orderid ", "Verified?", "Delivery"],
+      rows: [["1001", "✅", " Shipping "]],
+    });
+  });
+
   it("exports fulfillment's own columns with Verified? from the decision", () => {
     const parsed = parseRydOrderCsv(ORDER_CSV);
     if (!parsed.ok) throw new Error(parsed.error);

@@ -1,4 +1,5 @@
 import type { RydSubmission } from "./matching";
+import { csvRecordCell } from "./csv";
 import {
   nameTokens,
   ryanPosition,
@@ -133,11 +134,11 @@ export function profileRydOrder(
     buyerLastName: order.last_name.trim(),
     emailDomain: domain,
     emailKind: emailKind(domain),
-    total: orderTotal(order.raw.OrderTotal),
-    items: (order.raw.OrderItems ?? "").trim(),
-    delivery: (order.raw.Delivery ?? "").trim(),
-    storeName: (order.raw["Store Name"] ?? "").trim(),
-    organization: (order.raw.Organization ?? "").trim(),
+    total: orderTotal(csvRecordCell(order.raw, "OrderTotal")),
+    items: csvRecordCell(order.raw, "OrderItems").trim(),
+    delivery: csvRecordCell(order.raw, "Delivery").trim(),
+    storeName: csvRecordCell(order.raw, "Store Name").trim(),
+    organization: csvRecordCell(order.raw, "Organization").trim(),
     note: order.note,
     formFirstName,
     ryanPosition: ryanPosition(legalName),

@@ -151,16 +151,34 @@ export function rydOrderExportCsv(
   const columns = headers.includes(verifiedHeader)
     ? headers
     : [...headers, verifiedHeader];
+  // A later import can rename or omit a column. Preserve older orders' cells
+  // rather than silently losing them when exporting in the newest format.
+  const names = new Set(columns.map((header) => header.trim().toLowerCase()));
+  const allColumns = [...columns];
+  for (const order of orders)
+    for (const header of Object.keys(order.raw)) {
+      const name = header.trim().toLowerCase();
+      if (!names.has(name)) {
+        names.add(name);
+        allColumns.push(header);
+      }
+    }
   return serializeCsv({
-    headers: columns,
-    rows: orders.map((order) =>
-      columns.map((header) =>
+    headers: allColumns,
+    rows: orders.map((order) => {
+      const cells = new Map(
+        Object.entries(order.raw).map(([header, value]) => [
+          header.trim().toLowerCase(),
+          value,
+        ]),
+      );
+      return allColumns.map((header) =>
         header === verifiedHeader
           ? order.status === "verified"
             ? VERIFIED_MARK
             : ""
-          : (order.raw[header] ?? ""),
-      ),
-    ),
+          : (cells.get(header.trim().toLowerCase()) ?? ""),
+      );
+    }),
   });
 }

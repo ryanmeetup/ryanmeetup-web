@@ -10,6 +10,7 @@ import {
   type RydOrderProfile,
 } from "@/lib/ryd/sales-insights";
 import { loadRydSettings } from "@/lib/server/ryd";
+import { readRydLinks, readRydRows } from "@/lib/server/ryd-queries";
 import {
   loadRydGoogleIntegration,
   readRydSubmissions,
@@ -90,13 +91,17 @@ export async function loadRydProfiles(
     };
 
   const [orders, links] = await Promise.all([
-    admin
-      .from("ryd_orders")
-      .select(ORDER_COLUMNS)
-      .order("created_at", { ascending: false })
-      .order("order_id")
-      .limit(MAX_ORDERS),
-    admin.from("ryd_order_submissions").select("order_id, submission_key"),
+    readRydRows(
+      (from, to) =>
+        admin
+          .from("ryd_orders")
+          .select(ORDER_COLUMNS)
+          .order("created_at", { ascending: false })
+          .order("order_id")
+          .range(from, to),
+      MAX_ORDERS + 1,
+    ),
+    readRydLinks(admin),
   ]);
   const failure = orders.error ?? links.error;
   if (failure) {
@@ -124,7 +129,7 @@ export async function loadRydProfiles(
   const rows = (orders.data ?? []) as RydInsightOrder[];
   return {
     available: true,
-    profiles: rows.map((order) =>
+    profiles: rows.slice(0, MAX_ORDERS).map((order) =>
       profileRydOrder(
         order,
         (keysByOrder.get(order.order_id) ?? [])
@@ -135,7 +140,7 @@ export async function loadRydProfiles(
     unlinkedSubmissions: submissions
       ? submissions.filter((s) => !linkedKeys.has(s.key)).length
       : null,
-    capped: rows.length === MAX_ORDERS,
+    capped: rows.length > MAX_ORDERS,
     warnings,
   };
 }

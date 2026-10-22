@@ -61,7 +61,9 @@ function submission(overrides: Partial<RydSubmission> = {}): RydSubmission {
         handle: "ryanexample",
       },
     ],
-    otherAnswers: [{ question: "How did you hear about us?", answer: "TikTok" }],
+    otherAnswers: [
+      { question: "How did you hear about us?", answer: "TikTok" },
+    ],
     ...overrides,
   };
 }
@@ -128,9 +130,10 @@ describe("RY-D order profiles", () => {
   });
 
   it("records where Ryan falls in the form's name", () => {
-    const middle = profileRydOrder(order({ first_name: "Ryan", last_name: "Fox" }), [
-      submission({ legalName: "Steven Ryan Fox" }),
-    ]);
+    const middle = profileRydOrder(
+      order({ first_name: "Ryan", last_name: "Fox" }),
+      [submission({ legalName: "Steven Ryan Fox" })],
+    );
     expect(middle).toMatchObject({
       formFirstName: "Steven",
       ryanPosition: "middle",
@@ -222,6 +225,7 @@ function admin(tables: Record<string, Result>) {
       select: () => query,
       order: () => query,
       limit: () => query,
+      range: () => query,
       maybeSingle: () => Promise.resolve(result),
       then: (resolve: (value: Result) => unknown) => resolve(result),
     };
@@ -232,7 +236,10 @@ function admin(tables: Record<string, Result>) {
 
 describe("RY-D MCP reads", () => {
   beforeEach(() => {
-    loadRydSettings.mockResolvedValue({ formId: "form", fulfillmentEmail: null });
+    loadRydSettings.mockResolvedValue({
+      formId: "form",
+      fulfillmentEmail: null,
+    });
     loadRydGoogleIntegration.mockResolvedValue({ account_email: "a@test.dev" });
     readRydSubmissions.mockResolvedValue({
       submissions: [submission(), submission({ key: "response-unlinked" })],
