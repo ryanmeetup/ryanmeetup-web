@@ -49,6 +49,11 @@ closing/resuming that manifest, confirming it, replaying confirmation without
 a second sheet write, and moving the order through production to done. Separate
 cases exercise feature-off, anonymous, denied-member, and operator/owner
 settings authority. Opening a draft or exporting creates no send record.
+The identity-mapping case keeps duplicate name/email answers available while
+excluding them from identity matching, shows the queue warning, distinguishes
+the buyer redirect from the review editor, and verifies keyboard access to both
+links. It checks guidance at 390, 1024, 1280, and 1536 pixels, updates the editor
+link as the draft changes, and cancels without writes.
 The fixture records RPC and Sheets requests so assertions check the actual
 server path rather than replacing `/api/ryd` in the browser.
 
@@ -57,8 +62,12 @@ or real Google consent/media/Sheets behavior. The pgTAP and two-session races
 cover database invariants separately. All browser data and email drafts are
 synthetic; the suite never sends an email.
 
-Apply the contract migration to both instances. RMT uses the linked CLI;
+Schema-parity maintenance targets both instances. RMT uses the linked CLI;
 PRD uses the [complete dashboard SQL and verification](PRD_RYD_CONTRACT_SQL.md).
 Apply the later [RY-D read-access update](PRD_RYD_READ_ACCESS_SQL.md) as well;
 it makes reads, writes, and recipient resolution share the fail-closed rule and
 extends the contract to cover its private functions.
+PRD keeps RY-D disabled: its normal preflight skips this contract while
+`ryd_enabled` is false or null. An unhealthy manual RY-D diagnostic is not a
+deployment blocker for PRD's enabled features. The SQL handoffs remain available
+for scheduled schema maintenance; they do not enable the feature.

@@ -251,6 +251,9 @@ answers or media. Every table is
 service-role only; routes check the instance switch and
 `can_view_workspace_area('ryd')` first.
 
+See [the verification audit](RYD_VERIFICATION_AUDIT.md) for validation coverage,
+rollout state, and the live checks outside the synthetic fixtures.
+
 The read-only Claude Desktop connector (`docs/MCP.md`) can also read RY-D
 sales through `get_ryd_sales_insights` and `list_ryd_orders`. It bypasses the
 page's access setting under the connector's separate bearer-token authority.

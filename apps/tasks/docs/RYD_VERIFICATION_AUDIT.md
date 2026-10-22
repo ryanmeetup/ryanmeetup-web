@@ -1,23 +1,14 @@
 # RY-D verification audit
 
-Reviewed October 20, 2026; remaining work updated October 21, 2026. Scope: the Orders, Follow-up, and Unmatched views;
+Reviewed October 20, 2026; implementation findings closed October 22, 2026.
+Scope: the Orders, Follow-up, and Unmatched views;
 review, upload, reminder, fulfillment, and settings dialogs; matching and CSV
 rules; all RY-D API and Google OAuth routes; migrations and access gates; the
 sales connector; and the public `/cards/verify` redirect.
 
-This is the remaining-work list. Resolved findings and repair history are
-removed as fixes land. Remaining work concerns form-question mapping, the
-buyer-facing form link.
-
-## Remaining work
-
-- Title-based form-question inference is heuristic. Validate the name/email
-  question mapping and surface ambiguity.
-- The public redirect and reminder URL are separate from the editable form
-  setting. An owner can point review at a different form from the one buyers
-  reach. Show or validate that relationship. RY-D draft signatures and the
-  verification URL also bypass instance branding/settings; either explicitly
-  define RY-D as a Ryan Meetup-only feature or make those values configurable.
+No unresolved implementation findings remain from this review. Completed
+findings are removed as fixes land. The notes below record validation coverage,
+rollout state, and the live checks that remain outside the synthetic fixtures.
 
 ## Validation and rollout
 
@@ -25,7 +16,7 @@ Review, fulfillment, import/reminder, and bulk-operation migrations
 (`20261028000000` through `20261031000000`) were applied and metadata-verified
 on RMT. The `20261101000000` contract and `20261102000000` read-access
 migrations are also applied, recorded, and health-verified on RMT; the committed
-schema diff is clean. PRD stays outside the RY-D rollout: the product workflow belongs to Ryan
+schema diff is clean. PRD stays outside the RY-D rollout: the workflow belongs to Ryan
 Meetup, and PRD keeps `ryd_enabled` false or null. Its reported manual health
 check found a missing `ryd_submitter_contacts` table, but the normal preflight
 skips the RY-D contract while the feature is off. That optional-schema result
@@ -40,11 +31,11 @@ synchronized two-session races.
 The latest races cover repeated production moves and contact confirmations;
 earlier races cover overlapping imports, duplicate uploads, and reminders.
 Audit failures roll back the operation and its receipt. Snapshot coverage also
-checks more than 1,000 rows. All 131 Tasks unit/route files and 938 tests passed.
+checks more than 1,000 rows. All 132 Tasks unit/route files and 959 tests passed.
 TypeScript, changed-file ESLint, `git diff --check`, and the production build
 passed; the build ran its normal
-RMT database preflight. The isolated staged source also passed all 129 committed
-test files and 916 tests, plus TypeScript.
+RMT database preflight. The isolated staged source also passed all 130 committed
+test files and 937 tests, plus TypeScript and changed-file ESLint.
 
 The enabled RY-D preflight now calls the read-only, service-only contract RPC.
 Twenty-eight pgTAP checks cover missing schema, unsafe table/column/RPC grants,
@@ -68,14 +59,25 @@ is denied. The existing ten race checks were not repeated for this access change
 
 The committed browser suite runs the actual Next page and API routes against
 isolated Supabase and Google transports, using only synthetic credentials/data.
-Its twelve desktop/mobile cases cover import → explicit link → decision → saved
+Its fourteen desktop/mobile cases cover import → explicit link → decision → saved
 CSV export → resume/confirm → production/done, confirmation replay without a
 second sheet write, feature-off/anonymous/denied requests never reaching private
 tables, and operator/owner settings authority. CI runs it separately from the
-existing suite. The isolated staged source passed the same twelve cases, and
+existing suite. The isolated staged source passed the same fourteen cases, and
 the existing four login checks passed against the shared test double. The
 committed migration chain also diffed cleanly against RMT after application.
 See [the test commands and boundaries](RYD_TESTING.md).
+
+Form checks cover duplicate or missing identity questions, unrelated personal
+and organization fields, nontext questions, invalid explicit email answers,
+collected-email fallback, and retained raw answers and uploads. Queue and
+connector warnings expose ambiguity. Browser checks verify the buyer/review
+link distinction, editor-link updates, keyboard access, cancellation without
+writes, and readable guidance at 390, 1024, 1280, and 1536 pixels. Screenshots
+were visually inspected in light and dark themes. Mapping still needs clear
+supported titles; operators resolve ambiguity in Google and refresh. The buyer
+redirect and review-form setting remain separate, with an explicit manual
+comparison in Settings. Their live destinations were not automatically compared.
 
 The committed synthetic Google fixture measures a queue load followed by 24
 evidence files. Requests fell from 147 to 51, token refreshes from 49 to one,
