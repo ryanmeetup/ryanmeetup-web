@@ -34,11 +34,15 @@ export async function GET(
     if (!submissions.some((submission) => submission.fileIds.includes(fileId)))
       return notFound();
     const file = await fetchRydEvidence(integration, fileId, request.signal);
-    const name = file.name.replace(/["\\\r\n]/g, "_");
+    const name = file.name.replace(/[^\x20-\x7e]|["\\]/g, "_");
+    const encodedName = encodeURIComponent(file.name).replace(
+      /['()*]/g,
+      (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`,
+    );
     return new Response(file.body, {
       headers: {
         "content-type": file.mimeType,
-        "content-disposition": `${file.inline ? "inline" : "attachment"}; filename="${name}"`,
+        "content-disposition": `${file.inline ? "inline" : "attachment"}; filename="${name}"; filename*=UTF-8''${encodedName}`,
         "cache-control": "private, no-store",
         "x-content-type-options": "nosniff",
         "content-security-policy":

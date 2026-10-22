@@ -3,6 +3,7 @@ import { rydProductionSchema } from "@/lib/api-schema/ryd";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 import {
   claimedElsewhere,
+  canEmailRydOrder,
   contactableSubmitters,
   linkableOrders,
   orderRyanPositions,
@@ -12,6 +13,7 @@ import {
   unsentOrders,
   rydSortParam,
   rydSortValue,
+  rydStatusParam,
   sortRydOrders,
 } from "@/lib/ryd/queue-view";
 
@@ -42,6 +44,25 @@ function order(overrides: Partial<RydQueueOrder>): RydQueueOrder {
 const ids = (orders: RydQueueOrder[]) => orders.map((o) => o.orderId);
 
 describe("RY-D queue sorting", () => {
+  it("rejects inherited object properties as status query values", () => {
+    for (const param of ["constructor", "toString", "__proto__"])
+      expect(rydStatusParam(param)).toBe("pending");
+  });
+
+  it("only emails waiting orders with a usable address", () => {
+    expect(canEmailRydOrder(order({ email: "ryan@example.com" }))).toBe(true);
+    expect(
+      canEmailRydOrder(
+        order({ status: "rejected", email: "ryan@example.com" }),
+      ),
+    ).toBe(false);
+    expect(
+      canEmailRydOrder(
+        order({ status: "verified", email: "ryan@example.com" }),
+      ),
+    ).toBe(false);
+    expect(canEmailRydOrder(order({ email: "" }))).toBe(false);
+  });
   it("reads and writes readable sort params", () => {
     expect(rydSortParam("name")).toEqual({ key: "name", descending: false });
     expect(rydSortParam("form-desc")).toEqual({
@@ -109,6 +130,9 @@ describe("RY-D queue sorting", () => {
     expect(
       ids(sortRydOrders(orders, { key: "ordered", descending: false })),
     ).toEqual(["early", "late", "undated"]);
+    expect(
+      ids(sortRydOrders(orders, { key: "ordered", descending: true })),
+    ).toEqual(["late", "early", "undated"]);
   });
 
   it("groups by where Ryan falls in the form's name, unknown last", () => {

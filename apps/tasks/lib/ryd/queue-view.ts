@@ -3,7 +3,11 @@ import {
   type RydSubmission,
   type RydSubmitter,
 } from "./matching";
-import { isRydContactEmail, ryanPosition, type RyanPosition } from "./normalize";
+import {
+  isRydContactEmail,
+  ryanPosition,
+  type RyanPosition,
+} from "./normalize";
 import type { RydOrderStatus } from "./orders";
 import type { RydQueue, RydQueueOrder } from "./queue-types";
 
@@ -18,7 +22,9 @@ export const RYD_STATUS_PARAMS = {
 export type RydStatusParam = keyof typeof RYD_STATUS_PARAMS;
 
 export function rydStatusParam(value: string): RydStatusParam {
-  return value in RYD_STATUS_PARAMS ? (value as RydStatusParam) : "pending";
+  return Object.hasOwn(RYD_STATUS_PARAMS, value)
+    ? (value as RydStatusParam)
+    : "pending";
 }
 
 export const RYD_VIEWS = ["queue", "follow-up", "unmatched"] as const;
@@ -198,6 +204,7 @@ export function contactableSubmitters(
   now = Date.now(),
 ) {
   return submitters.filter((submitter) => {
+    if (!isRydContactEmail(submitter.email)) return false;
     const contact = contacts[submitter.email];
     return !(
       contact && Date.parse(contact.lastContactedAt) > now - RYD_REMIND_AGAIN_MS
@@ -346,9 +353,15 @@ export function sortRydOrders(
       return direction * (left - right) || byName(a, b);
     });
   }
-  return [...orders].sort(
-    (a, b) => direction * COMPARE[key](a, b) || byName(a, b),
-  );
+  return [...orders].sort((a, b) => {
+    if (key === "ordered") {
+      const leftMissing = !Number.isFinite(orderedTime(a));
+      const rightMissing = !Number.isFinite(orderedTime(b));
+      if (leftMissing || rightMissing)
+        return Number(leftMissing) - Number(rightMissing) || byName(a, b);
+    }
+    return direction * COMPARE[key](a, b) || byName(a, b);
+  });
 }
 
 /**

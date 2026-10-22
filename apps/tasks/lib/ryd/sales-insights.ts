@@ -167,7 +167,12 @@ function add(
   total: number | null,
 ) {
   const name = key?.trim() || "none";
-  const bucket = (group[name] ??= { orders: 0, revenue: 0 });
+  if (!Object.hasOwn(group, name))
+    Object.defineProperty(group, name, {
+      value: { orders: 0, revenue: 0 },
+      enumerable: true,
+    });
+  const bucket = group[name];
   bucket.orders += 1;
   bucket.revenue += total ?? 0;
 }

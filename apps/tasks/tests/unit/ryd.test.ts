@@ -152,11 +152,32 @@ describe("normalize", () => {
     );
   });
 
+  it("reads a handle followed by its platform in brackets or after a dash", () => {
+    expect(
+      parseSocialLinks("Great_lake_runner (Instagram)").map((l) => l.url),
+    ).toEqual(["https://www.instagram.com/great_lake_runner/"]);
+    expect(parseSocialLinks("ryan.x - ig").map((l) => l.label)).toEqual([
+      "@ryan.x",
+    ]);
+  });
+
   it("unwraps Instagram's login redirect", () => {
     const [link] = parseSocialLinks(
       "https://www.instagram.com/accounts/login/?next=https%3A%2F%2Fwww.instagram.com%2Fryan_x%3Fa%3Db&is_from_rle",
     );
     expect(link.handle).toBe("ryan_x");
+  });
+
+  it("survives malformed or foreign Instagram redirect destinations", () => {
+    expect(() =>
+      parseSocialLinks(
+        "https://instagram.com/accounts/login/?next=http%3A%2F%2F%5B",
+      ),
+    ).not.toThrow();
+    const links = parseSocialLinks(
+      "https://instagram.com/accounts/login/?next=https://example.com/someone",
+    );
+    expect(links.some((link) => link.handle === "someone")).toBe(false);
   });
 
   it("does not mistake an email address or a dotted handle for a website", () => {
@@ -292,6 +313,16 @@ describe("matching", () => {
     ]);
     expect(scoreSubmitter(order("One", ""), groups[0])).toBeNull();
     expect(suggestMatches([order("One", "")], groups).size).toBe(0);
+  });
+
+  it("does not combine different people's first and last names into a strong match", () => {
+    const [submitter] = groupSubmissions([
+      submission({ legalName: "Ryan Smith" }),
+      submission({ legalName: "Jamie Example" }),
+    ]);
+    expect(
+      scoreSubmitter(order("Example", "ryan.example@test.dev"), submitter),
+    ).toBeNull();
   });
 
   it("keeps two same-name orders from sharing one submitter", () => {

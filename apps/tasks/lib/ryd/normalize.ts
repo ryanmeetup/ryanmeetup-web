@@ -31,7 +31,14 @@ export function nameTokens(value: string) {
 
 export type RyanPosition = "first" | "middle" | "last" | "absent";
 
-const RYAN_SPELLINGS = new Set(["ryan", "ryann", "ryanne", "rian", "ryen", "ryne"]);
+const RYAN_SPELLINGS = new Set([
+  "ryan",
+  "ryann",
+  "ryanne",
+  "rian",
+  "ryen",
+  "ryne",
+]);
 
 /**
  * Where Ryan falls in a name: "Steven Ryan Fox" is a middle-name Ryan, "Paul
@@ -103,10 +110,17 @@ function platformOf(host: string): SocialLink["platform"] {
 function handleFromUrl(url: URL, platform: SocialLink["platform"]) {
   // Instagram's login wall wraps the profile in `?next=/handle`.
   const next = url.searchParams.get("next");
-  const path =
-    next && platform === "instagram"
-      ? new URL(next, url).pathname
-      : url.pathname;
+  let path = url.pathname;
+  if (next && platform === "instagram") {
+    try {
+      const destination = new URL(next, url);
+      if (platformOf(destination.hostname) === "instagram")
+        path = destination.pathname;
+    } catch {
+      // One malformed profile must not hide every response to the form.
+      return null;
+    }
+  }
   const segments = path.split("/").filter(Boolean);
   if (platform === "linkedin")
     return segments[0] === "in" ? (segments[1] ?? null) : null;
@@ -165,7 +179,7 @@ function linkFromUrl(raw: string): SocialLink | null {
 const URL_PATTERN =
   /(?<![@\w.])(?:https?:\/\/[^\s]+|www\.[^\s]+|(?:[a-z0-9-]+\.)+[a-z]{2,}\/[^\s]*|(?:[a-z0-9-]+\.)+(?:com|net|org|dev|io|co|me|us|app|info|biz)\b)/gi;
 const HANDLE_PATTERN =
-  /\b(insta(?:gram)?|ig|x|twitter|tiktok)\b\s*[-:]?\s*@?([a-z0-9._]{2,30})|@([a-z0-9._]{2,30})/gi;
+  /(?<![\w.])(insta(?:gram)?|ig|x|twitter|tiktok)\b\s*[-:]?\s*@?([a-z0-9._]{2,30})|@([a-z0-9._]{2,30})/gi;
 
 /**
  * Pull clickable profiles out of the form's free-text social answer. It holds
@@ -196,9 +210,10 @@ export function parseSocialLinks(text: string): SocialLink[] {
     links.set(url, { url, label: `@${handle}`, platform, handle });
   }
 
-  // "Ryanvalley on insta": the handle comes first.
+  // "Ryanvalley on insta", "Great_lake_runner (Instagram)" or "ryan_x - ig":
+  // the handle comes first.
   for (const match of withoutUrls.matchAll(
-    /\b([a-z0-9._]{2,30})\s+on\s+(insta(?:gram)?|ig)\b/gi,
+    /\b([a-z0-9._]{2,30})\s*(?:\s+on\s+|\(\s*|[-–—]\s*)(insta(?:gram)?|ig)\b/gi,
   )) {
     const handle = match[1].toLowerCase();
     const url = `${HANDLE_PROFILES.instagram}${handle}/`;

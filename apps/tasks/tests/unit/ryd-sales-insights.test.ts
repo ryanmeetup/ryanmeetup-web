@@ -155,6 +155,18 @@ describe("RY-D order profiles", () => {
 });
 
 describe("RY-D sales summary", () => {
+  it("keeps user-entered bucket names that resemble object properties", () => {
+    const summary = summarizeRydSales([
+      profileRydOrder(order({ last_name: "__proto__" }), []),
+      profileRydOrder(order({ last_name: "constructor" }), []),
+    ]);
+    expect(summary.distributions.byLastName).toEqual(
+      expect.arrayContaining([
+        { value: "__proto__", orders: 1, revenue: 36.75 },
+        { value: "constructor", orders: 1, revenue: 36.75 },
+      ]),
+    );
+  });
   it("groups orders and revenue, and counts form answers", () => {
     const summary = summarizeRydSales([
       profileRydOrder(order(), [submission()]),

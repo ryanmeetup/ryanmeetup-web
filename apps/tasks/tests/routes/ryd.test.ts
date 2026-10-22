@@ -318,7 +318,7 @@ describe("RY-D routes", () => {
     });
     fetchRydEvidence.mockResolvedValue({
       body: "image-bytes",
-      name: "ryan.png",
+      name: 'Ryan 的照片 "one".png',
       mimeType: "image/png",
       inline: true,
     });
@@ -336,6 +336,10 @@ describe("RY-D routes", () => {
     expect(listed.status).toBe(200);
     expect(listed.headers.get("content-type")).toBe("image/png");
     expect(listed.headers.get("cache-control")).toBe("private, no-store");
+    expect(listed.headers.get("content-disposition")).toContain(
+      "filename*=UTF-8''Ryan%20",
+    );
+    expect(listed.headers.get("content-disposition")).toContain("%E7%9A%84");
     expect(readRydSubmissions).toHaveBeenLastCalledWith(
       expect.anything(),
       "f".repeat(30),

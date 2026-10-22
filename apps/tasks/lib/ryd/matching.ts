@@ -110,7 +110,11 @@ export function scoreSubmitter(
 
   const surnameMatches =
     nameTokens(order.lastName).length > 0 &&
-    names.some((name) => nameIncludes(name, order.lastName));
+    names.some(
+      (name) =>
+        nameIncludes(name, order.firstName) &&
+        nameIncludes(name, order.lastName),
+    );
   if (!surnameMatches) {
     // "Ryan" alone on the form, from the address on the order.
     const firstNameOnly = names.every((name) => nameTokens(name).length <= 1);
