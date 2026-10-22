@@ -9,7 +9,7 @@ import {
   type DigestSectionKey,
 } from "@/lib/digest/digest-settings";
 
-const escapeHtml = (value: string) =>
+export const escapeHtml = (value: string) =>
   value.replace(
     /[&<>"']/g,
     (character) =>

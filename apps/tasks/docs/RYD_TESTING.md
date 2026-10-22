@@ -54,6 +54,9 @@ excluding them from identity matching, shows the queue warning, distinguishes
 the buyer redirect from the review editor, and verifies keyboard access to both
 links. It checks guidance at 390, 1024, 1280, and 1536 pixels, updates the editor
 link as the draft changes, and cancels without writes.
+Bulk review confirms missing evidence before deciding two selected orders.
+The upload-reminder case saves the schedule, checks its workspace-local banner,
+and captures settings at the same mobile and desktop boundary widths.
 The fixture records RPC and Sheets requests so assertions check the actual
 server path rather than replacing `/api/ryd` in the browser.
 
@@ -67,6 +70,10 @@ PRD uses the [complete dashboard SQL and verification](PRD_RYD_CONTRACT_SQL.md).
 Apply the later [RY-D read-access update](PRD_RYD_READ_ACCESS_SQL.md) as well;
 it makes reads, writes, and recipient resolution share the fail-closed rule and
 extends the contract to cover its private functions.
+The [upload-reminder handoff](PRD_RYD_UPLOAD_REMINDER_SQL.md) adds its schedule
+columns while preserving that shared recipient rule, including when the older
+reminder migration is backfilled after the read-access update. The access SQL
+suite exercises that order and replay inside its rollback transaction.
 PRD keeps RY-D disabled: its normal preflight skips this contract while
 `ryd_enabled` is false or null. An unhealthy manual RY-D diagnostic is not a
 deployment blocker for PRD's enabled features. The SQL handoffs remain available

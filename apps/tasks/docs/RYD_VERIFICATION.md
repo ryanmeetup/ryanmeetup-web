@@ -56,11 +56,28 @@ when no explicit email question exists. Uploads remain available. To resolve a
 warning, keep one supported title for each identity and rename extra questions
 to describe their other purpose, then refresh.
 
-
-RY-D never sends email itself. Every email — to buyers and to fulfillment —
+RY-D never emails buyers or fulfillment itself. Every one of those emails
 opens as a prefilled draft in the reviewer's own mail app (a `mailto:` link,
 with copy buttons beside it for when a draft won't open), and the reviewer
-presses Send. The page then records what was sent.
+presses Send. The page then records what was sent. The one email the app
+sends on its own is the internal upload reminder below.
+
+## Upload reminder
+
+Fulfillment's file doesn't announce itself, so once a week the app nudges
+the team to check for it. RY-D Settings holds the slot — on by default,
+**Tuesdays at 12 PM** in the workspace time zone (the one the task digest
+uses, set in /admin/usage).
+
+- **Email.** `/api/cron/ryd-upload-reminder` runs hourly and sends in the
+  slot's hour, through Resend with the digest's sender, to everyone who can
+  open the page (`workspace_area_members('ryd')`: owners, plus the groups
+  granted the page when it's restricted). It goes out every week, uploaded
+  or not, and says how many orders are still pending or waiting on more
+  info. The slot is claimed on `ryd_settings.upload_reminder_sent_on` before
+  sending, so it's sent once; a run where every send failed gives it back.
+- **Banner.** From the slot until someone uploads, the page says it's upload
+  day, with an Upload orders button.
 
 ## The weekly flow
 
@@ -94,9 +111,10 @@ presses Send. The page then records what was sent.
    - "Ryan" alone on the form from the order's email → possible;
    - same full name, different email → weak.
 
-   **Gift orders are never suggested.** When the buyer's first name isn't on
-   the form (Jamie Perez buying for Ryan Pêrez), the reviewer links the
-   submission by hand — from the order, or from **Unmatched submissions**.
+   **Gifts with the buyer's exact email can be suggested as possible.** When
+   the buyer's first name isn't on the form and the email differs (Jamie Perez
+   buying for Ryan Pêrez), the reviewer links the submission by hand — from
+   the order, or from **Unmatched submissions**.
    Every order needs a person to press Verify, Needs more info, or Reject.
    Select orders in the queue to apply one decision together, then confirm.
    The confirmation flags missing evidence and skips orders already with
@@ -253,6 +271,8 @@ for batch history, including cancelled batches; they contain no copied Google
 answers or media. Every table is
 service-role only; routes check the instance switch and
 `can_view_workspace_area('ryd')` first.
+RY-D stays closed if the page-access functions are unavailable; unlike older
+workspace pages, it never uses the pre-migration open fallback for customer data.
 
 See [the verification checks](RYD_TESTING.md) for test commands, coverage, and
 the live checks outside the synthetic fixtures.

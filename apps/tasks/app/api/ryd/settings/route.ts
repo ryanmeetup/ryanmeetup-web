@@ -4,7 +4,10 @@ import { rydMutationFailure } from "@/lib/server/ryd-mutations";
 import { readJson } from "@/lib/server/request";
 import { rydSettingsFrom, rydContext } from "@/lib/server/ryd";
 
-/** Which form buyers verify through, and who receives the finished file. */
+/**
+ * Which form buyers verify through, who receives the finished file, and when
+ * everyone is reminded to upload fulfillment's orders.
+ */
 export async function PATCH(request: Request) {
   const parsed = await readJson(request, rydSettingsSchema);
   if ("response" in parsed) return parsed.response;
@@ -19,6 +22,11 @@ export async function PATCH(request: Request) {
   if (parsed.data.formId !== undefined) row.form_id = parsed.data.formId;
   if (parsed.data.fulfillmentEmail !== undefined)
     row.fulfillment_email = parsed.data.fulfillmentEmail;
+  if (parsed.data.uploadReminder) {
+    row.upload_reminder_enabled = parsed.data.uploadReminder.enabled;
+    row.upload_reminder_weekday = parsed.data.uploadReminder.weekday;
+    row.upload_reminder_hour = parsed.data.uploadReminder.hour;
+  }
   const result = await context.admin
     .from("ryd_settings")
     .upsert(row)

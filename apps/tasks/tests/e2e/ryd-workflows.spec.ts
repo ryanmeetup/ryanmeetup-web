@@ -295,6 +295,39 @@ test("decides selected orders together after confirming missing evidence", async
   expect(saved.calls.filter((call: { name: string }) => call.name === "ryd_review_order")).toHaveLength(2);
 });
 
+test("saves the weekly upload reminder and displays its workspace-local time", async ({ page, request }, testInfo) => {
+  await reset(request);
+  await signIn(page);
+  await page.goto("/ryd");
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  const settings = page.getByRole("dialog", { name: "RY-D settings", exact: true });
+  await settings.getByRole("checkbox", { name: "Weekly upload reminder", exact: false }).check();
+  await settings.getByRole("button", { name: "Day", exact: false }).click();
+  await page.getByRole("option", { name: "Wednesday", exact: true }).click();
+  await settings.getByRole("button", { name: "Time", exact: false }).click();
+  await page.getByRole("option", { name: "9 AM", exact: true }).click();
+  const widths = testInfo.project.name === "chromium-mobile" ? [390] : [1024, 1280, 1536];
+  for (const width of widths) {
+    await page.setViewportSize({ width, height: 900 });
+    await settings.getByRole("button", { name: "Time", exact: false }).scrollIntoViewIfNeeded();
+    await page.screenshot({ path: testInfo.outputPath(`reminder-settings-${width}.png`) });
+  }
+  await settings.getByRole("button", { name: "Save settings", exact: true }).click();
+  await expect(settings).toHaveCount(0);
+  const queue = await (await page.request.get("/api/ryd")).json();
+  expect(queue.settings.uploadReminder).toEqual({ enabled: true, weekday: 3, hour: 9 });
+  const banner = page.getByRole("status").filter({ hasText: "It's upload day." });
+  // Chromium and Node's ICU versions differ in punctuation. Check the actual
+  // weekday/hour/day period independently, retaining the workspace-zone check.
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: queue.timeZone, weekday: "long", hour: "numeric",
+  }).formatToParts(new Date(queue.uploadDueSince));
+  for (const part of parts.filter((part) => part.type !== "literal"))
+    await expect(banner).toContainText(part.value);
+  await banner.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: testInfo.outputPath("upload-reminder-banner.png") });
+});
+
 test("disabled instances hide the page and RY-D APIs", async ({
   page,
   request,

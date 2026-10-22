@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   Button,
+  DropdownSelect,
   ErrorCallout,
   Input,
   Modal,
@@ -16,6 +17,8 @@ import { errorMessage } from "@/lib/presentation";
 import type { RydImportSummary } from "@/lib/ryd/orders";
 import type { RydQueueChange } from "@/lib/ryd/queue-reconciliation";
 import type { RydQueue, RydSettings } from "@/lib/ryd/queue-types";
+import { WEEKDAY_LABELS } from "@/lib/digest/digest-settings";
+import { rydHourLabel } from "@/lib/ryd/upload-reminder";
 import { formIdFrom } from "@/lib/ryd/form-responses";
 import { RYD_FORM_URL } from "@/lib/ryd/emails";
 
@@ -24,6 +27,15 @@ export { RydSendDialog } from "./RydSendDialog";
 
 const UPLOAD_FORM = "ryd-upload-form";
 const SETTINGS_FORM = "ryd-settings-form";
+
+const WEEKDAY_OPTIONS = WEEKDAY_LABELS.map((label, index) => ({
+  value: String(index),
+  label,
+}));
+const HOUR_OPTIONS = Array.from({ length: 24 }, (_, hour) => ({
+  value: String(hour),
+  label: rydHourLabel(hour),
+}));
 
 function importSummary(result: RydImportSummary) {
   const parts = [
@@ -146,8 +158,12 @@ export function RydSettingsDialog({
   const [fulfillmentEmail, setFulfillmentEmail] = useState(
     queue.settings.fulfillmentEmail ?? "",
   );
+  const [uploadReminder, setUploadReminder] = useState(
+    queue.settings.uploadReminder,
+  );
   const [saving, setSaving] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
+  const busy = saving || disconnecting;
   const connected = queue.sheet.status !== "disconnected";
   const accountEmail =
     "accountEmail" in queue.sheet ? queue.sheet.accountEmail : null;
@@ -156,11 +172,11 @@ export function RydSettingsDialog({
   return (
     <Modal
       open
-      setIsOpen={(open) => !open && !saving && onClose()}
+      setIsOpen={(open) => !open && !busy && onClose()}
       size="lg"
       title="RY-D settings"
       description="The form buyers verify through, and who gets the finished file."
-      closable={!saving}
+      closable={!busy}
       formId={SETTINGS_FORM}
       onSubmit={async (event) => {
         event.preventDefault();
@@ -168,7 +184,7 @@ export function RydSettingsDialog({
         try {
           const settings = await mutate<RydSettings>("/api/ryd/settings", {
             method: "PATCH",
-            body: JSON.stringify({ form, fulfillmentEmail }),
+            body: JSON.stringify({ form, fulfillmentEmail, uploadReminder }),
           });
           onApplied({ type: "settings", settings });
           void onChanged().catch(() => {});
@@ -191,6 +207,8 @@ export function RydSettingsDialog({
           confirmLabel="Save settings"
           onCancel={onClose}
           pending={saving}
+          confirmDisabled={disconnecting}
+          cancelDisabled={busy}
           pendingLabel="Saving..."
         />
       }
@@ -210,6 +228,8 @@ export function RydSettingsDialog({
                 size="sm"
                 variant={connected ? "secondary" : "primary"}
                 prefetch={false}
+                disabled={busy}
+                className="w-full sm:w-auto"
               >
                 {connected ? "Reconnect Google" : "Connect Google"}
               </Button.Link>
@@ -225,6 +245,8 @@ export function RydSettingsDialog({
                 variant="ghost"
                 leftIcon={<FiLogOut aria-hidden />}
                 loading={disconnecting}
+                disabled={busy}
+                className="w-full sm:w-auto"
                 onClick={async () => {
                   setDisconnecting(true);
                   try {
@@ -257,7 +279,7 @@ export function RydSettingsDialog({
           value={form}
           onChange={(event) => setForm(event.target.value)}
           placeholder="https://docs.google.com/forms/d/…/edit"
-          disabled={saving}
+          disabled={busy}
           aria-describedby="ryd-form-guidance"
         />
         <Text id="ryd-form-guidance" className="!text-sm">
@@ -296,8 +318,63 @@ export function RydSettingsDialog({
           value={fulfillmentEmail}
           onChange={(event) => setFulfillmentEmail(event.target.value)}
           placeholder="orders@fulfillment.example"
-          disabled={saving}
+          disabled={busy}
         />
+
+        <section className="space-y-4 border-t border-black/10 pt-6 dark:border-white/10">
+          <label className="flex items-start gap-3 text-sm">
+            <input
+              type="checkbox"
+              checked={uploadReminder.enabled}
+              disabled={busy}
+              onChange={(event) =>
+                setUploadReminder({
+                  ...uploadReminder,
+                  enabled: event.target.checked,
+                })
+              }
+              className="mt-0.5 h-4 w-4 rounded border-black/30 accent-black dark:border-white/30 dark:accent-white"
+            />
+            <span>
+              <span className="font-semibold">Weekly upload reminder</span>
+              <span className="mt-1 block text-black/70 dark:text-white/70">
+                Emails everyone who can open RY-D Verification to check for
+                fulfillment&apos;s new orders, and flags this page until someone
+                uploads. Times are in the workspace time zone,{" "}
+                {queue.timeZone.replace(/_/g, " ")}.
+              </span>
+            </span>
+          </label>
+          {uploadReminder.enabled && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <DropdownSelect
+                label="Day"
+                variant="field"
+                required
+                options={WEEKDAY_OPTIONS}
+                value={String(uploadReminder.weekday)}
+                disabled={busy}
+                onChange={(value) =>
+                  setUploadReminder({
+                    ...uploadReminder,
+                    weekday: Number(value),
+                  })
+                }
+              />
+              <DropdownSelect
+                label="Time"
+                variant="field"
+                required
+                options={HOUR_OPTIONS}
+                value={String(uploadReminder.hour)}
+                disabled={busy}
+                onChange={(value) =>
+                  setUploadReminder({ ...uploadReminder, hour: Number(value) })
+                }
+              />
+            </div>
+          )}
+        </section>
       </div>
     </Modal>
   );

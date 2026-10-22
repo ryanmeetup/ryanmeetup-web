@@ -717,6 +717,37 @@ export function RydPageClient({
               </div>
             )}
 
+            {queue.installed && queue.uploadDueSince && (
+              <div
+                role="status"
+                className="flex flex-col gap-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm sm:flex-row sm:items-center sm:justify-between"
+              >
+                <p className="flex items-start gap-2">
+                  <FiUpload aria-hidden className="mt-0.5 shrink-0" />
+                  <span>
+                    <span className="font-semibold">It&apos;s upload day.</span>{" "}
+                    Nothing has been uploaded since{" "}
+                    {new Date(queue.uploadDueSince).toLocaleString(undefined, {
+                      timeZone: queue.timeZone,
+                      weekday: "long",
+                      hour: "numeric",
+                    })}
+                    . Check for fulfillment&apos;s new order file and add it
+                    here.
+                  </span>
+                </p>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="w-full shrink-0 sm:w-auto"
+                  leftIcon={<FiUpload aria-hidden />}
+                  onClick={() => setDialog("upload")}
+                >
+                  Upload orders
+                </Button>
+              </div>
+            )}
+
             <div
               className="grid grid-cols-2 gap-3 lg:grid-cols-4"
               role="group"

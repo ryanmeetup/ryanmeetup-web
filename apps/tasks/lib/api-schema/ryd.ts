@@ -5,7 +5,14 @@ import {
 } from "@/lib/ryd/queue-view";
 import { formIdFrom } from "@/lib/ryd/form-responses";
 import { isRydContactEmail, normalizeEmail } from "@/lib/ryd/normalize";
-import { RYD_REMINDER_GROUP_LIMIT, type RydReminderTarget } from "@/lib/ryd/reminders";
+import {
+  isRydUploadReminder,
+  type RydUploadReminder,
+} from "@/lib/ryd/upload-reminder";
+import {
+  RYD_REMINDER_GROUP_LIMIT,
+  type RydReminderTarget,
+} from "@/lib/ryd/reminders";
 import { isJsonObject, isUuid } from "./shared";
 import {
   RYD_BULK_BODY_BYTES,
@@ -120,10 +127,23 @@ export function rydSettingsSchema(value: unknown) {
   const keys = Object.keys(value);
   if (
     !keys.length ||
-    keys.some((key) => key !== "form" && key !== "fulfillmentEmail")
+    keys.some(
+      (key) =>
+        key !== "form" &&
+        key !== "fulfillmentEmail" &&
+        key !== "uploadReminder",
+    )
   )
     return null;
-  const parsed: { formId?: string; fulfillmentEmail?: string } = {};
+  const parsed: {
+    formId?: string;
+    fulfillmentEmail?: string;
+    uploadReminder?: RydUploadReminder;
+  } = {};
+  if ("uploadReminder" in value) {
+    if (!isRydUploadReminder(value.uploadReminder)) return null;
+    parsed.uploadReminder = value.uploadReminder;
+  }
   if ("form" in value) {
     if (typeof value.form !== "string") return null;
     const id = formIdFrom(value.form);
@@ -135,8 +155,7 @@ export function rydSettingsSchema(value: unknown) {
       typeof value.fulfillmentEmail === "string"
         ? value.fulfillmentEmail.trim()
         : "";
-    if (!isRydContactEmail(email) || email.length > 254)
-      return null;
+    if (!isRydContactEmail(email) || email.length > 254) return null;
     parsed.fulfillmentEmail = email;
   }
   return parsed;

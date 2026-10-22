@@ -8,12 +8,18 @@ import type {
 } from "@/lib/ryd/queue-types";
 import { type RydSubmission } from "@/lib/ryd/matching";
 import type { RydProductionStage } from "@/lib/ryd/queue-view";
-import { type RydOrderStatus } from "@/lib/ryd/orders";
-import { csvRecordCell } from "@/lib/ryd/csv";
+import {
+  rydUploadDueSince,
+  rydUploadReminderFrom,
+} from "@/lib/ryd/upload-reminder";
+import { digestDefaults } from "@/lib/digest/digest-settings";
 import { withRydQueueMatches } from "@/lib/ryd/queue-reconciliation";
+import { csvRecordCell } from "@/lib/ryd/csv";
+import { type RydOrderStatus } from "@/lib/ryd/orders";
 import { getAdminClient } from "./admin-client";
 import { apiError, notFound } from "./api-response";
 import { authorize } from "./auth";
+import { readDigestSettings } from "./digest-settings";
 import { getInstanceSettings } from "./instance-settings";
 import {
   loadRydGoogleIntegration,
@@ -83,7 +89,8 @@ export async function loadRydSettings(
 ): Promise<RydSettings> {
   const result = await admin
     .from("ryd_settings")
-    .select("form_id, fulfillment_email")
+    // Everything, so this still reads before the reminder columns exist.
+    .select("*")
     .maybeSingle();
   if (result.error) throw result.error;
   return rydSettingsFrom(result.data);
@@ -95,6 +102,7 @@ export function rydSettingsFrom(
   return {
     formId: (row?.form_id as string | null) ?? null,
     fulfillmentEmail: (row?.fulfillment_email as string | null) ?? null,
+    uploadReminder: rydUploadReminderFrom(row),
   };
 }
 
@@ -204,9 +212,15 @@ const emptyQueue = (installed: boolean): RydQueue => ({
   dismissed: [],
   contacts: {},
   sheet: { status: "disconnected" },
-  settings: { formId: null, fulfillmentEmail: null },
+  settings: {
+    formId: null,
+    fulfillmentEmail: null,
+    uploadReminder: rydUploadReminderFrom(null),
+  },
   clearedCount: 0,
   lastBatch: null,
+  timeZone: digestDefaults.timeZone,
+  uploadDueSince: null,
   installed,
 });
 
@@ -219,7 +233,7 @@ export async function loadRydQueue(
   admin: SupabaseClient,
   options: RydGoogleReadOptions = {},
 ): Promise<RydQueue> {
-  const [ordersResult, linksResult, clearedResult, batchResult] =
+  const [ordersResult, linksResult, clearedResult, batchResult, importResult] =
     await Promise.all([
       readRydRows((from, to) =>
         admin
@@ -241,20 +255,31 @@ export async function loadRydQueue(
         .order("sent_at", { ascending: false })
         .limit(1)
         .maybeSingle(),
+      admin
+        .from("ryd_imports")
+        .select("uploaded_at")
+        .order("uploaded_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
     ]);
   const failure =
     ordersResult.error ??
     linksResult.error ??
     clearedResult.error ??
-    batchResult.error;
+    batchResult.error ??
+    importResult.error;
   if (failure) {
     if (isMissingRelation(failure.code)) return emptyQueue(false);
     throw failure;
   }
-  const settings = await loadRydSettings(admin);
-  const integration = await loadRydGoogleIntegration();
-  const dismissedKeys = await loadDismissedKeys(admin);
-  const contacts = await loadSubmitterContacts(admin);
+  const [settings, integration, dismissedKeys, contacts, digest] =
+    await Promise.all([
+      loadRydSettings(admin),
+      loadRydGoogleIntegration(),
+      loadDismissedKeys(admin),
+      loadSubmitterContacts(admin),
+      readDigestSettings(admin),
+    ]);
   const { sheet, submissions: answered } = await loadSheet(
     integration,
     settings,
@@ -320,6 +345,13 @@ export async function loadRydQueue(
           verifiedCount: batchResult.data.verified_count,
         }
       : null,
+    timeZone: digest.timeZone,
+    uploadDueSince: rydUploadDueSince(
+      settings.uploadReminder,
+      digest.timeZone,
+      importResult.data?.uploaded_at ?? null,
+      new Date(),
+    ),
     installed: true,
   });
 }

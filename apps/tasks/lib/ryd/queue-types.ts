@@ -1,5 +1,6 @@
 import type { RydMatchSuggestion, RydSubmission } from "./matching";
 import type { RydOrderStatus } from "./orders";
+import type { RydUploadReminder } from "./upload-reminder";
 
 /** What the RY-D page receives from the server, and re-reads after each change. */
 
@@ -7,6 +8,7 @@ export type RydSettings = {
   /** The RY-dentification form's ID, from its editor link. */
   formId: string | null;
   fulfillmentEmail: string | null;
+  uploadReminder: RydUploadReminder;
 };
 
 export type RydQueueOrder = {
@@ -65,6 +67,10 @@ export type RydQueue = {
     orderCount: number;
     verifiedCount: number;
   } | null;
+  /** The workspace's time zone, which the upload reminder's slot is in. */
+  timeZone: string;
+  /** The reminder slot this week's file is overdue since, if not uploaded. */
+  uploadDueSince: string | null;
   /** False until the migration that creates the RY-D tables is applied. */
   installed: boolean;
 };

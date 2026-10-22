@@ -38,13 +38,11 @@ Uploads now save their orders, counts, and history together. Overlapping uploads
 
 Single and bulk buyer emails share one draft workflow. Opening a draft records nothing; confirm each sent group separately. Large selections become smaller drafts, and retrying a confirmation cannot record it twice.
 
-
 ### Fulfillment files stay in sync
 
 The download, email draft, and send confirmation now use one saved batch. Ready orders stay reserved until it is marked sent or explicitly cancelled, and later verifications wait for the next file. Closing resumes the same batch, and retrying a confirmation cannot clear orders or record the send twice.
 
 Response-sheet updates require a unique tab and matching response. After marking a batch sent, review which responses were updated, already ticked, missing, ambiguous, or unchecked. Uncertain updates stay available for a manual check without repeating the send.
-
 
 ### Keep email-less submissions separate
 
@@ -76,6 +74,12 @@ Select orders to verify, request more information, or reject them together.
 Confirm before saving; orders already with fulfillment stay protected, and
 failed decisions stay selected for another try.
 
+### Remember the weekly RY-D upload
+
+RY-D can email the verification team to check for fulfillment's next order
+file, with a configurable day and hour in the workspace time zone. The page
+also flags when an upload is due and clears the reminder after an upload.
+
 ### Refresh RY-D without losing saved changes
 
 Refresh picks up new form responses without leaving the queue. Confirmed reviews, pairings, settings, and removed responses stay visible if reloading fails, with a clear retry action.
@@ -87,6 +91,10 @@ Both submission layouts now offer complete response details, including every upl
 ### Faster RY-D evidence loading
 
 Evidence thumbnails share brief form reads, so opening several uploads no longer reloads every form answer for each file. Google requests time out and stop when their readers cancel, while each file still requires current RY-D access.
+
+### More reliable RY-D verification
+
+Large order queues and fulfillment exports keep every order, and saved CSV cells survive changes to column capitalization or later files. Verification handles malformed social links and uploaded filenames with international characters, avoids combining names from different responses into a strong match, and keeps rejected orders out of reminder actions. RY-D access stays closed when its permission checks are unavailable.
 
 ### Give the workspace more room
 

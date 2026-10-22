@@ -11,7 +11,10 @@ const migration = await readFile(
 );
 const readAccessMigration = (
   await readFile(
-    path.join(appRoot, "supabase/migrations/20261102000000_ryd_read_access.sql"),
+    path.join(
+      appRoot,
+      "supabase/migrations/20261102000000_ryd_read_access.sql",
+    ),
     "utf8",
   )
 )
@@ -21,6 +24,20 @@ const fixture = await readFile(
   path.join(appRoot, "tests/database/ryd-access.sql"),
   "utf8",
 );
+// RMT already has the newer access rule when the earlier reminder migration
+// is backfilled. Verify that the follow-up restores the canonical resolver.
+const reminderBackfill = (
+  await Promise.all(
+    [
+      "20261026000000_ryd_upload_reminder.sql",
+      "20261103000000_ryd_upload_reminder_access.sql",
+    ].map((name) =>
+      readFile(path.join(appRoot, "supabase/migrations", name), "utf8"),
+    ),
+  )
+)
+  .map((sql) => sql.replace(/^begin;$/m, "").replace(/^commit;$/m, ""))
+  .join("\n");
 // The CLI copies test files into its container without their sibling migrations.
 // Inline the real migration so the test exercises it after provisioning users.
 const directory = await mkdtemp(path.join(tmpdir(), "ryd-access-test-"));
@@ -30,7 +47,14 @@ try {
     sqlPath,
     fixture
       .replaceAll("-- APPLY_RYD_ACCESS_MIGRATION", () => migration)
-      .replaceAll("-- APPLY_RYD_READ_ACCESS_MIGRATION", () => readAccessMigration),
+      .replaceAll(
+        "-- APPLY_RYD_READ_ACCESS_MIGRATION",
+        () => readAccessMigration,
+      )
+      .replaceAll(
+        "-- APPLY_RYD_UPLOAD_REMINDER_BACKFILL",
+        () => reminderBackfill,
+      ),
   );
   const result = spawnSync(
     "supabase",

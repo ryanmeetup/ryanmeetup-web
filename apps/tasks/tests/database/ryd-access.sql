@@ -38,6 +38,8 @@ values ('ryd', '10000000-0000-4000-8000-000000000103');
 -- APPLY_RYD_ACCESS_MIGRATION
 -- APPLY_RYD_READ_ACCESS_MIGRATION
 -- APPLY_RYD_READ_ACCESS_MIGRATION
+-- APPLY_RYD_UPLOAD_REMINDER_BACKFILL
+-- APPLY_RYD_UPLOAD_REMINDER_BACKFILL
 
 select is((select count(*) from public.access_groups where name = 'RY-D'), 1::bigint,
   'replaying the migration keeps one RY-D group');

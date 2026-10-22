@@ -7,6 +7,10 @@ const crons = [
     path: "/api/cron/send-task-digests",
     schedule: "0 * * * *",
   },
+  {
+    path: "/api/cron/ryd-upload-reminder",
+    schedule: "0 * * * *",
+  },
 ];
 
 export const config = {
