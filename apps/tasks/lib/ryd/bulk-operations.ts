@@ -65,6 +65,10 @@ export function rydProductionGroups(
     if (seen.has(order.orderId) || order.status !== "verified") continue;
     seen.add(order.orderId);
     const from = rydProductionStage(order);
+    // Starting production records fulfillment's acknowledgment, after the
+    // email has been recorded. Completion waits for production to start.
+    if (action === "sent" && !order.sentToFulfillment) continue;
+    if (action === "done" && from !== "in-production") continue;
     const to =
       action === "done"
         ? "done"

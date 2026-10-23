@@ -23,7 +23,7 @@ export function RydProductionDialog({
   const done = operation.completed === operation.total;
   const label =
     action === "sent"
-      ? "Send for production"
+      ? "Confirm production started"
       : action === "done"
         ? "Mark done"
         : "Move back one step";
@@ -31,7 +31,13 @@ export function RydProductionDialog({
     <Modal
       open
       title={label}
-      description={`${orders.length} selected verified orders across all filtered pages. Only orders this action changes are included. Each group saves together; retries resume at the first unconfirmed group.`}
+      description={
+        action === "sent"
+          ? "Use this after fulfillment confirms production has started. This records their acknowledgment for the selected orders already emailed to fulfillment."
+          : action === "done"
+            ? "Mark the selected orders finished after production is complete. Only orders currently in production are included."
+            : "Done orders return to In production. Orders in production return to Sent to fulfillment when their email is recorded; otherwise they return to Ready to send. Email history stays recorded."
+      }
       setIsOpen={(open) => !open && !operation.pending && onClose()}
       closable={!operation.pending}
       actions={

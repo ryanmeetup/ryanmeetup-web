@@ -10,6 +10,10 @@ import {
 } from "./normalize";
 import type { RydOrderStatus } from "./orders";
 import type { RydQueue, RydQueueOrder } from "./queue-types";
+import {
+  RYD_FULFILLMENT_STAGES,
+  rydFulfillmentStage,
+} from "./fulfillment-view";
 
 /** Readable `?status=` values; the enum is an implementation detail. */
 export const RYD_STATUS_PARAMS = {
@@ -36,7 +40,7 @@ export function rydView(value: string): RydView {
     : "queue";
 }
 
-/** Where a verified order is in being made. Done always implies sent. */
+/** Internal production states. The email handoff is displayed by fulfillment-view. */
 export const RYD_PRODUCTION_STAGES = [
   "not-started",
   "in-production",
@@ -44,40 +48,11 @@ export const RYD_PRODUCTION_STAGES = [
 ] as const;
 export type RydProductionStage = (typeof RYD_PRODUCTION_STAGES)[number];
 
-export const RYD_PRODUCTION_LABELS: Record<RydProductionStage, string> = {
-  "not-started": "Not sent",
-  "in-production": "In production",
-  done: "Done",
-};
-
 export function rydProductionStage(
   order: Pick<RydQueueOrder, "productionSentAt" | "doneAt">,
 ): RydProductionStage {
   if (order.doneAt) return "done";
   return order.productionSentAt ? "in-production" : "not-started";
-}
-
-/** `?production=` narrows the Verified list; anything else shows it all. */
-export function rydProductionParam(value: string): RydProductionStage | null {
-  return (RYD_PRODUCTION_STAGES as readonly string[]).includes(value)
-    ? (value as RydProductionStage)
-    : null;
-}
-
-export function rydProductionCounts(orders: RydQueueOrder[]) {
-  const counts: Record<RydProductionStage, number> = {
-    "not-started": 0,
-    "in-production": 0,
-    done: 0,
-  };
-  for (const order of orders)
-    if (order.status === "verified") counts[rydProductionStage(order)] += 1;
-  return counts;
-}
-
-/** Orders with no recorded fulfillment batch, including manual production sends. */
-export function unsentOrders(orders: RydQueueOrder[]) {
-  return orders.filter((order) => !order.sentToFulfillment);
 }
 
 export function submissionsByKey(submissions: RydSubmission[]) {
@@ -330,8 +305,8 @@ const COMPARE: Record<
     orderTime(a, "ordered") - orderTime(b, "ordered") ||
     a.orderId.localeCompare(b.orderId, undefined, { numeric: true }),
   production: (a, b) =>
-    RYD_PRODUCTION_STAGES.indexOf(rydProductionStage(a)) -
-    RYD_PRODUCTION_STAGES.indexOf(rydProductionStage(b)),
+    RYD_FULFILLMENT_STAGES.indexOf(rydFulfillmentStage(a)) -
+    RYD_FULFILLMENT_STAGES.indexOf(rydFulfillmentStage(b)),
   "production-sent": (a, b) =>
     orderTime(a, "production-sent") - orderTime(b, "production-sent"),
 };

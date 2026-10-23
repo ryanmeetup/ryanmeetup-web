@@ -45,7 +45,7 @@ export function RydSelectionBar({
 }) {
   const allSelected = total > 0 && selectedCount === total;
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-black/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-white/10">
+    <div className="flex flex-col gap-3 rounded-2xl border border-black/10 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between dark:border-white/10">
       <div>
         <label className="flex items-center gap-3 text-sm font-semibold">
           <input
@@ -65,7 +65,9 @@ export function RydSelectionBar({
         </label>
         <p className="mt-1 text-xs text-black/70 dark:text-white/70">{scope}</p>
       </div>
-      <div className="flex flex-col gap-2 sm:flex-row">{children}</div>
+      <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
+        {children}
+      </div>
     </div>
   );
 }

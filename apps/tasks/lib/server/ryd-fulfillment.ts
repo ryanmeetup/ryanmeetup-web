@@ -146,6 +146,7 @@ export async function finishRydFulfillment(
   }
   return {
     changed,
+    orderIds: snapshot.verified_ids,
     verifiedCount: snapshot.verified_ids.length,
     orderCount: snapshot.order_rows.length,
     sheet,

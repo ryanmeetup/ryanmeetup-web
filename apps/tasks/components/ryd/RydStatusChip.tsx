@@ -6,6 +6,7 @@ import {
   FiCheckSquare,
   FiCircle,
   FiPackage,
+  FiMail,
   FiInfo,
   FiLink,
   FiSend,
@@ -20,10 +21,10 @@ import type { MatchConfidence } from "@/lib/ryd/matching";
 import type { RyanPosition } from "@/lib/ryd/normalize";
 import type { RydQueueOrder, RydSubmitterContact } from "@/lib/ryd/queue-types";
 import {
-  RYD_PRODUCTION_LABELS,
-  rydProductionStage,
-  type RydProductionStage,
-} from "@/lib/ryd/queue-view";
+  RYD_FULFILLMENT_LABELS,
+  rydFulfillmentStage,
+  type RydFulfillmentStage,
+} from "@/lib/ryd/fulfillment-view";
 
 /** One colour per status, shared by the chips, the stat cards, and the rows. */
 export const RYD_STATUS_TONES = {
@@ -61,7 +62,7 @@ export const RYD_STATUS_TEXT: Record<RydOrderStatus, string> = {
 };
 
 const CHIP =
-  "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-sans text-[11px] font-semibold normal-case tracking-normal";
+  "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-0.5 font-sans text-[11px] font-semibold normal-case tracking-normal";
 
 /**
  * Where an order stands. A chip, not a button: the label and icon carry the
@@ -77,40 +78,52 @@ export function RydStatusChip({ status }: { status: RydOrderStatus }) {
   );
 }
 
-export const RYD_PRODUCTION_ICONS: Record<RydProductionStage, IconType> = {
-  "not-started": FiCircle,
+export const RYD_FULFILLMENT_ICONS: Record<RydFulfillmentStage, IconType> = {
+  "ready-to-send": FiCircle,
+  "sent-to-fulfillment": FiMail,
   "in-production": FiPackage,
   done: FiCheckSquare,
 };
 
-const PRODUCTION_TINTS: Record<RydProductionStage, string> = {
-  "not-started":
+const PRODUCTION_TINTS: Record<RydFulfillmentStage, string> = {
+  "ready-to-send":
     "border-black/15 bg-black/[0.04] text-black/75 dark:border-white/15 dark:bg-white/[0.06] dark:text-white/75",
+  "sent-to-fulfillment":
+    "border-blue-500/30 bg-blue-500/10 text-blue-800 dark:border-blue-400/30 dark:bg-blue-500/15 dark:text-blue-200",
   "in-production":
     "border-indigo-500/30 bg-indigo-500/10 text-indigo-800 dark:border-indigo-400/30 dark:bg-indigo-500/15 dark:text-indigo-200",
   done: RYD_STATUS_TINTS.verified,
 };
 
-/** Both production dates as a sentence, for a title or a detail line. */
+/** The recorded email handoff and production dates, for a title or detail. */
 export function rydProductionSummary(
-  order: Pick<RydQueueOrder, "productionSentAt" | "doneAt">,
+  order: Pick<
+    RydQueueOrder,
+    "sentToFulfillment" | "productionSentAt" | "doneAt"
+  >,
 ) {
   const parts = [
+    order.sentToFulfillment && "Email recorded as sent to fulfillment",
     order.productionSentAt &&
-      `Sent for production ${formatRydSubmittedAt(order.productionSentAt)}`,
+      `Production started ${formatRydSubmittedAt(order.productionSentAt)}`,
     order.doneAt && `done ${formatRydSubmittedAt(order.doneAt)}`,
   ].filter(Boolean);
-  return parts.length ? `${parts.join(", ")}.` : "Not sent for production.";
+  return parts.length
+    ? `${parts.join(", ")}.`
+    : "Ready to send to fulfillment.";
 }
 
-/** Where a verified order is in being made, with the day it got there. */
+/** The verified order's handoff stage, with recorded production dates. */
 export function RydProductionChip({
   order,
 }: {
-  order: Pick<RydQueueOrder, "productionSentAt" | "doneAt">;
+  order: Pick<
+    RydQueueOrder,
+    "sentToFulfillment" | "productionSentAt" | "doneAt"
+  >;
 }) {
-  const stage = rydProductionStage(order);
-  const Icon = RYD_PRODUCTION_ICONS[stage];
+  const stage = rydFulfillmentStage(order);
+  const Icon = RYD_FULFILLMENT_ICONS[stage];
   const day =
     stage === "done"
       ? order.doneAt
@@ -124,8 +137,8 @@ export function RydProductionChip({
     >
       <Icon aria-hidden className="h-3 w-3" />
       {stage === "in-production" && day
-        ? `Sent ${formatRydDay(day)}`
-        : RYD_PRODUCTION_LABELS[stage] + (day ? ` ${formatRydDay(day)}` : "")}
+        ? `Started ${formatRydDay(day)}`
+        : RYD_FULFILLMENT_LABELS[stage] + (day ? ` ${formatRydDay(day)}` : "")}
     </span>
   );
 }

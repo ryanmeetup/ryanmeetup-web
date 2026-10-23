@@ -233,41 +233,53 @@ export async function loadRydQueue(
   admin: SupabaseClient,
   options: RydGoogleReadOptions = {},
 ): Promise<RydQueue> {
-  const [ordersResult, linksResult, clearedResult, batchResult, importResult] =
-    await Promise.all([
-      readRydRows((from, to) =>
-        admin
-          .from("ryd_orders")
-          .select("*")
-          .or("cleared_batch_id.is.null,status.eq.verified")
-          .order("created_at", { ascending: false })
-          .order("order_id")
-          .range(from, to),
-      ),
-      readRydLinks(admin),
+  const [
+    ordersResult,
+    linksResult,
+    clearedResult,
+    batchResult,
+    importResult,
+    preparedResult,
+  ] = await Promise.all([
+    readRydRows((from, to) =>
       admin
         .from("ryd_orders")
-        .select("order_id", { count: "exact", head: true })
-        .not("cleared_batch_id", "is", null),
-      admin
-        .from("ryd_fulfillment_batches")
-        .select("sent_at, recipient, order_count, verified_count")
-        .order("sent_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      admin
-        .from("ryd_imports")
-        .select("uploaded_at")
-        .order("uploaded_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-    ]);
+        .select("*")
+        .or("cleared_batch_id.is.null,status.eq.verified")
+        .order("created_at", { ascending: false })
+        .order("order_id")
+        .range(from, to),
+    ),
+    readRydLinks(admin),
+    admin
+      .from("ryd_orders")
+      .select("order_id", { count: "exact", head: true })
+      .not("cleared_batch_id", "is", null),
+    admin
+      .from("ryd_fulfillment_batches")
+      .select("sent_at, recipient, order_count, verified_count")
+      .order("sent_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    admin
+      .from("ryd_imports")
+      .select("uploaded_at")
+      .order("uploaded_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    admin
+      .from("ryd_fulfillment_snapshots")
+      .select("id, verified_ids")
+      .eq("state", "prepared")
+      .maybeSingle(),
+  ]);
   const failure =
     ordersResult.error ??
     linksResult.error ??
     clearedResult.error ??
     batchResult.error ??
-    importResult.error;
+    importResult.error ??
+    preparedResult.error;
   if (failure) {
     if (isMissingRelation(failure.code)) return emptyQueue(false);
     throw failure;
@@ -336,6 +348,12 @@ export async function loadRydQueue(
     contacts,
     sheet,
     settings,
+    preparedBatch: preparedResult.data
+      ? {
+          id: preparedResult.data.id,
+          verifiedCount: preparedResult.data.verified_ids.length,
+        }
+      : null,
     clearedCount: clearedResult.count ?? 0,
     lastBatch: batchResult.data
       ? {

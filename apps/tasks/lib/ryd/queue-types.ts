@@ -30,7 +30,7 @@ export type RydQueueOrder = {
   lastEmailedAt: string | null;
   /** Fulfillment has had a file clearing this order; its decision is final. */
   sentToFulfillment: boolean;
-  /** When a verified order went off to be made, and when it was finished. */
+  /** When production was acknowledged, and when the order was finished. */
   productionSentAt: string | null;
   doneAt: string | null;
   linkedKeys: string[];
@@ -67,6 +67,8 @@ export type RydQueue = {
     orderCount: number;
     verifiedCount: number;
   } | null;
+  /** A shared draft survives closing the send dialog and reloading the page. */
+  preparedBatch?: { id: string; verifiedCount: number } | null;
   /** The workspace's time zone, which the upload reminder's slot is in. */
   timeZone: string;
   /** The reminder slot this week's file is overdue since, if not uploaded. */

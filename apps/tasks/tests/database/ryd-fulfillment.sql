@@ -57,6 +57,7 @@ set local role service_role;
 select is(public.ryd_finish_fulfillment('00000000-0000-4000-8000-000000000301',(select id from public.ryd_fulfillment_snapshots where state='prepared'),'confirm')->>'changed','true','confirmation commits the prepared batch');
 set local role postgres;
 select is((select cleared_batch_id from public.ryd_orders where order_id='snapshot-1'),(select id from test_snapshot),'exactly the snapshot ready order is cleared');
+select ok((select production_sent_at is null and done_at is null from public.ryd_orders where order_id='snapshot-1'),'confirming the fulfillment email waits for a separate production acknowledgment');
 select is((select count(*) from public.ryd_orders where order_id in ('snapshot-2','snapshot-later') and cleared_batch_id is null),2::bigint,'later ready orders wait for the next file');
 select is((select order_count from public.ryd_fulfillment_batches where id=(select id from test_snapshot)),1,'later imports do not inflate the sent count');
 select is((select recipient from public.ryd_fulfillment_batches where id=(select id from test_snapshot)),'fulfillment@example.test','confirmation retains the drafted recipient');

@@ -306,9 +306,8 @@ export function RydOrderDialog({
               </Detail>
             )}
             {order.status === "verified" && (
-              <Detail icon={FiPackage} label="Production">
+              <Detail icon={FiPackage} label="Progress">
                 {rydProductionSummary(order)}
-                {order.sentToFulfillment && " Fulfillment has its file."}
               </Detail>
             )}
             {order.lastEmailedAt && (

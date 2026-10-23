@@ -7,10 +7,7 @@ import {
   contactableSubmitters,
   linkableOrders,
   orderRyanPositions,
-  rydProductionCounts,
-  rydProductionParam,
   rydProductionStage,
-  unsentOrders,
   rydSortParam,
   rydSortValue,
   rydStatusParam,
@@ -152,15 +149,22 @@ describe("RY-D queue sorting", () => {
       order({ orderId: "done", productionSentAt: sent, doneAt: sent }),
       order({ orderId: "waiting-z", lastName: "Z" }),
       order({ orderId: "sent", productionSentAt: sent }),
+      order({ orderId: "emailed", sentToFulfillment: true }),
       order({ orderId: "waiting-a", lastName: "A" }),
     ];
     expect(
       ids(sortRydOrders(orders, { key: "production", descending: false })),
-    ).toEqual(["waiting-a", "waiting-z", "sent", "done"]);
+    ).toEqual(["waiting-a", "waiting-z", "emailed", "sent", "done"]);
     expect(
       ids(sortRydOrders(orders, { key: "production", descending: true })),
-    ).toEqual(["done", "sent", "waiting-a", "waiting-z"]);
-    expect(ids(orders)).toEqual(["done", "waiting-z", "sent", "waiting-a"]);
+    ).toEqual(["done", "sent", "emailed", "waiting-a", "waiting-z"]);
+    expect(ids(orders)).toEqual([
+      "done",
+      "waiting-z",
+      "sent",
+      "emailed",
+      "waiting-a",
+    ]);
   });
 
   it("sorts sent dates chronologically, keeping missing dates last in either direction", () => {
@@ -338,39 +342,6 @@ describe("RY-D production", () => {
     expect(
       rydProductionStage(order({ productionSentAt: sent, doneAt: done })),
     ).toBe("done");
-  });
-
-  it("counts only verified orders", () => {
-    expect(
-      rydProductionCounts([
-        order({ orderId: "1", status: "verified" }),
-        order({ orderId: "2", status: "verified", productionSentAt: sent }),
-        order({
-          orderId: "3",
-          status: "verified",
-          productionSentAt: sent,
-          doneAt: done,
-        }),
-        order({ orderId: "4", status: "pending" }),
-      ]),
-    ).toEqual({ "not-started": 1, "in-production": 1, done: 1 });
-  });
-
-  it("keeps cleared orders out of the next fulfillment file", () => {
-    expect(
-      ids(
-        unsentOrders([
-          order({ orderId: "1" }),
-          order({ orderId: "2", sentToFulfillment: true }),
-        ]),
-      ),
-    ).toEqual(["1"]);
-  });
-
-  it("reads readable production params", () => {
-    expect(rydProductionParam("in-production")).toBe("in-production");
-    expect(rydProductionParam("in_production")).toBeNull();
-    expect(rydProductionParam("")).toBeNull();
   });
 
   it("accepts a pinned production operation", () => {

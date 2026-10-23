@@ -20,6 +20,7 @@ const order = (id: string, stage = "not-started") =>
   ({
     orderId: id,
     status: "verified",
+    sentToFulfillment: true,
     productionSentAt: stage === "not-started" ? null : "2026-10-20T12:00:00Z",
     doneAt: stage === "done" ? "2026-10-21T12:00:00Z" : null,
   }) as RydQueueOrder;
@@ -44,7 +45,11 @@ describe("RY-D bounded operation contracts", () => {
       const orders = Array.from({ length: 603 }, (_, i) =>
         order(
           `${i}${"界".repeat(60)}`,
-          action === "back" ? "done" : "not-started",
+          action === "back"
+            ? "done"
+            : action === "done"
+              ? "in-production"
+              : "not-started",
         ),
       );
       const groups = rydProductionGroups(orders, action);
@@ -69,6 +74,15 @@ describe("RY-D bounded operation contracts", () => {
         "sent",
       ),
     ).toEqual([[{ orderId: "3", from: "not-started", to: "in-production" }]]);
+  });
+  it("waits for an emailed batch before recording production and for production before completion", () => {
+    expect(
+      rydProductionGroups(
+        [{ ...order("ready"), sentToFulfillment: false }],
+        "sent",
+      ),
+    ).toEqual([]);
+    expect(rydProductionGroups([order("emailed")], "done")).toEqual([]);
   });
   it.each([true, false])(
     "bounds long contact addresses with draft=%s",

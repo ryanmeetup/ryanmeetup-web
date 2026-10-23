@@ -15,6 +15,7 @@ export type RydFulfillmentSnapshot = {
 
 export type RydFulfillmentResult = {
   changed: boolean;
+  orderIds: string[];
   verifiedCount: number;
   orderCount: number;
   sheet: RydSheetReport;

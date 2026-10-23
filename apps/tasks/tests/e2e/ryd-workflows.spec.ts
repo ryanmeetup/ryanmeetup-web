@@ -94,11 +94,14 @@ test("runs import, explicit linking, review, immutable export, confirmation, and
     .fill("Checked the synthetic form response.");
   await review.getByRole("button", { name: "Verify", exact: true }).click();
   await expect(review).toHaveCount(0);
+  await page.goto("/ryd?status=verified");
+  await expect(page.getByRole("button", { name: "Ready to send 1", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("checkbox", { name: "Select Ryan Fixture", exact: true })).toHaveCount(0);
   await page
-    .getByRole("button", { name: "Send to fulfillment", exact: true })
+    .getByRole("button", { name: /^(Prepare fulfillment batch \(\d+\)|Resume fulfillment batch)$/ })
     .click();
   const send = page.getByRole("dialog", {
-    name: "Send to fulfillment",
+    name: "Prepare fulfillment batch",
     exact: true,
   });
   const downloadLink = send.getByRole("link", {
@@ -125,19 +128,21 @@ test("runs import, explicit linking, review, immutable export, confirmation, and
   expect(prepared.snapshot.state).toBe("prepared");
   expect(prepared.batches).toEqual([]);
   await send.getByRole("button", { name: "Close", exact: true }).click();
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Resume fulfillment batch", exact: true })).toBeVisible();
   await page
-    .getByRole("button", { name: "Send to fulfillment", exact: true })
+    .getByRole("button", { name: /^(Prepare fulfillment batch \(\d+\)|Resume fulfillment batch)$/ })
     .click();
   await expect(
     page.getByRole("link", { name: "Download CSV" }),
   ).toHaveAttribute("href", `/api/ryd/export?batch=${snapshotId}`);
-  await page.getByRole("button", { name: "Mark as sent", exact: true }).click();
+  await page.getByRole("button", { name: "Confirm email sent", exact: true }).click();
   const completed = page.getByRole("dialog", {
-    name: "Batch marked sent",
+    name: "Sent to fulfillment",
     exact: true,
   });
   await expect(completed.getByRole("status")).toContainText(
-    "1 of 1 orders cleared to start",
+    "Email recorded for 1 order",
   );
   await expect(completed.getByRole("status")).toBeFocused();
   await completed
@@ -157,7 +162,16 @@ test("runs import, explicit linking, review, immutable export, confirmation, and
     fullPage: true,
   });
   await completed.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Sent to fulfillment 1", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: "In production 0", exact: true })).toBeVisible();
+  const widths = testInfo.project.name === "chromium-mobile" ? [390] : [1024, 1280, 1536];
+  for (const width of widths) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.getByRole("button", { name: "Sent to fulfillment 1", exact: true }).scrollIntoViewIfNeeded();
+    await page.screenshot({ path: testInfo.outputPath(`awaiting-production-${width}.png`) });
+  }
   const confirmed = await state(request);
+  expect(confirmed.orders[0].production_sent_at).toBeNull();
   expect(confirmed.batches).toHaveLength(1);
   expect(confirmed.sheetWrites).toHaveLength(1);
   expect(confirmed.sheetWrites[0].data[0].dataFilter.gridRange).toMatchObject({
@@ -173,19 +187,19 @@ test("runs import, explicit linking, review, immutable export, confirmation, and
     sheet: { issue: "already-confirmed" },
   });
   expect((await state(request)).sheetWrites).toHaveLength(1);
-  await page.goto("/ryd?status=verified");
+  await page.goto("/ryd?status=verified&production=sent-to-fulfillment");
   await page
     .getByRole("checkbox", { name: "Select Ryan Fixture", exact: true })
     .check();
   await page
-    .getByRole("button", { name: "Sent for production", exact: true })
+    .getByRole("button", { name: "Confirm production started", exact: true })
     .click();
   const production = page.getByRole("dialog", {
-    name: "Send for production",
+    name: "Confirm production started",
     exact: true,
   });
   await production
-    .getByRole("button", { name: "Send for production", exact: true })
+    .getByRole("button", { name: "Confirm production started", exact: true })
     .click();
   await expect(
     production
@@ -254,10 +268,10 @@ test("sends only newly verified orders and rebuilds an older unsent batch", asyn
   });
   expect(moved.ok()).toBeTruthy();
   await page.goto("/ryd?status=verified&production=not-started");
-  await page.getByRole("button", { name: "Send to fulfillment", exact: true }).click();
-  const send = page.getByRole("dialog", { name: "Send to fulfillment", exact: true });
+  await page.getByRole("button", { name: /^(Prepare fulfillment batch \(\d+\)|Resume fulfillment batch)$/ }).click();
+  const send = page.getByRole("dialog", { name: "Prepare fulfillment batch", exact: true });
   await expect(send.getByText("This saved batch includes", { exact: false })).toBeVisible();
-  await expect(send.getByRole("button", { name: "Mark as sent", exact: true })).toBeDisabled();
+  await expect(send.getByRole("button", { name: "Confirm email sent", exact: true })).toBeDisabled();
   await expect(send.getByRole("link", { name: "Download CSV", exact: true })).toHaveCount(0);
   expect((await page.request.get(`/api/ryd/export?batch=${snapshotId}`)).status()).toBe(409);
   const widths = testInfo.project.name === "chromium-mobile" ? [390] : [1024, 1280, 1536];
@@ -269,7 +283,7 @@ test("sends only newly verified orders and rebuilds an older unsent batch", asyn
   await page.getByRole("dialog", { name: "Cancel this fulfillment batch?", exact: true })
     .getByRole("button", { name: "Cancel batch", exact: true }).click();
   await expect(send).toHaveCount(0);
-  await page.getByRole("button", { name: "Send to fulfillment", exact: true }).click();
+  await page.getByRole("button", { name: /^(Prepare fulfillment batch \(\d+\)|Resume fulfillment batch)$/ }).click();
   const download = send.getByRole("link", { name: "Download CSV", exact: true });
   await expect(download).toBeVisible();
   const file = await page.request.get((await download.getAttribute("href"))!);
@@ -284,8 +298,8 @@ test("sends only newly verified orders and rebuilds an older unsent batch", asyn
     await page.setViewportSize({ width, height: 900 });
     await page.screenshot({ path: testInfo.outputPath(`new-batch-${width}.png`) });
   }
-  await send.getByRole("button", { name: "Mark as sent", exact: true }).click();
-  await page.getByRole("dialog", { name: "Batch marked sent", exact: true })
+  await send.getByRole("button", { name: "Confirm email sent", exact: true }).click();
+  await page.getByRole("dialog", { name: "Sent to fulfillment", exact: true })
     .getByRole("button", { name: "Close", exact: true }).click();
   const verified = await page.request.patch("/api/ryd/orders/804", { data: { status: "verified" } });
   expect(verified.ok()).toBeTruthy();
@@ -322,13 +336,13 @@ test("sorts the production column by stage and sent date", async ({ page, reques
       ],
     },
   })).ok()).toBeTruthy();
-  await page.goto("/ryd?status=verified");
-  const sort = page.getByRole("button", { name: "Sort by production", exact: true });
+  await page.goto("/ryd?status=verified&production=all");
+  const sort = page.getByRole("button", { name: "Sort by progress", exact: true });
   const header = page.getByRole("columnheader").filter({ has: sort });
   const rows = page.locator("table tbody tr");
   await sort.scrollIntoViewIfNeeded();
   await sort.press("Enter");
-  await page.getByRole("menuitem", { name: "Not sent first", exact: true }).press("Enter");
+  await page.getByRole("menuitem", { name: "Ready to send first", exact: true }).press("Enter");
   await expect(header).toHaveAttribute("aria-sort", "ascending");
   await expect(rows).toHaveText([/Ryan Waiting/, /Ryan Sent/, /Ryan Done/]);
   await expect(page).toHaveURL(/sort=production(?:&|$)/);
@@ -342,12 +356,12 @@ test("sorts the production column by stage and sent date", async ({ page, reques
   await expect(rows).toHaveText([/Ryan Done/, /Ryan Sent/, /Ryan Waiting/]);
   await sort.scrollIntoViewIfNeeded();
   await sort.click();
-  await page.getByRole("menuitem", { name: "Newest sent first", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Newest start first", exact: true }).click();
   await expect(page).toHaveURL(/sort=production-sent-desc(?:&|$)/);
   await expect(header).toHaveAttribute("aria-sort", "descending");
   await expect(rows).toHaveText([/Ryan Done/, /Ryan Sent/, /Ryan Waiting/]);
   await sort.click();
-  await page.getByRole("menuitem", { name: "Oldest sent first", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Oldest start first", exact: true }).click();
   await expect(page).toHaveURL(/sort=production-sent(?:&|$)/);
   await expect(header).toHaveAttribute("aria-sort", "ascending");
   const widths = testInfo.project.name === "chromium-mobile" ? [390] : [1024, 1280, 1536];
@@ -357,7 +371,7 @@ test("sorts the production column by stage and sent date", async ({ page, reques
     await sort.click();
     await expect(page.getByRole("menu")).toHaveCSS("opacity", "1");
     await expect(page.getByRole("menu")).toBeInViewport();
-    await expect(page.getByRole("menuitem", { name: "Newest sent first", exact: true })).toBeInViewport();
+    await expect(page.getByRole("menuitem", { name: "Newest start first", exact: true })).toBeInViewport();
     await page.screenshot({ path: testInfo.outputPath(`production-sort-${width}.png`) });
     await page.keyboard.press("Escape");
   }

@@ -95,6 +95,23 @@ describe("RY-D complete collection reads", () => {
     expect(parseCsv(csv).rows.at(-1)?.[0]).toBe("1005");
   });
 
+  it("loads enough saved-batch metadata to resume after a page reload", async () => {
+    const { loadRydQueue } = await import("@/lib/server/ryd");
+    const queue = await loadRydQueue(
+      database({
+        ryd_orders: orders(2),
+        ryd_settings: [{ form_id: "f".repeat(30) }],
+        ryd_fulfillment_snapshots: [
+          { id: "saved-batch", verified_ids: ["1", "2"], state: "prepared" },
+        ],
+      }),
+    );
+    expect(queue.preparedBatch).toEqual({
+      id: "saved-batch",
+      verifiedCount: 2,
+    });
+  });
+
   it("keeps links, removed responses, and contact counts beyond the first page", async () => {
     const submissions: RydSubmission[] = ["linked", "removed"].map((key) => ({
       key,

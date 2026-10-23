@@ -31,9 +31,16 @@ const prepareBatch = () =>
 export function RydSendDialog({
   onClose,
   onChanged,
+  onPrepared,
+  onFinished,
 }: {
   onClose: () => void;
   onChanged: () => Promise<void>;
+  onPrepared: (snapshot: RydFulfillmentSnapshot) => void;
+  onFinished: (
+    result: RydFulfillmentResult,
+    action: "confirm" | "cancel",
+  ) => void;
 }) {
   const [snapshot, setSnapshot] = useState<RydFulfillmentSnapshot | null>(null);
   const [completed, setCompleted] = useState<RydFulfillmentResult | null>(null);
@@ -54,6 +61,7 @@ export function RydSendDialog({
       .then((result) => {
         if (active) {
           setSnapshot(result);
+          onPrepared(result);
           setError("");
         }
       })
@@ -67,7 +75,7 @@ export function RydSendDialog({
     return () => {
       active = false;
     };
-  }, [attempt]);
+  }, [attempt, onPrepared]);
 
   async function finish(action: "confirm" | "cancel") {
     if (!snapshot || sending || completed) return;
@@ -79,10 +87,11 @@ export function RydSendDialog({
       });
       setError("");
       if (action === "confirm") setCompleted(result);
+      onFinished(result, action);
       toast.success(
         action === "cancel"
           ? "Batch cancelled. Its ready orders are available for a new batch."
-          : `${result.changed ? "Marked sent" : "Already marked sent"}: ${result.verifiedCount} of ${result.orderCount} cleared to start.`,
+          : `Email ${result.changed ? "recorded" : "already recorded"}: ${result.verifiedCount} ${result.verifiedCount === 1 ? "order" : "orders"} sent to fulfillment, awaiting production confirmation.`,
       );
       // Once the transaction succeeds, a reload failure must not invite a
       // second send. Retrying confirmation is also safe after a lost response.
@@ -108,11 +117,11 @@ export function RydSendDialog({
         open
         setIsOpen={(open) => !open && !sending && onClose()}
         size="lg"
-        title={completed ? "Batch marked sent" : "Send to fulfillment"}
+        title={completed ? "Sent to fulfillment" : "Prepare fulfillment batch"}
         description={
           completed
-            ? "The batch is saved. Review the response-sheet results below."
-            : "Send only verified orders that have not already gone to fulfillment or production. Download this batch, email it, then mark it sent. Closing keeps the same batch available to the team."
+            ? "The email is recorded. Production starts only after fulfillment confirms it."
+            : "Download the CSV, attach it to the draft, and send it from your email app. Then confirm the email was sent. Closing keeps this batch available to the team."
         }
         closable={!sending}
         actions={
@@ -126,7 +135,7 @@ export function RydSendDialog({
             </Button>
           ) : (
             <ModalActions
-              confirmLabel="Mark as sent"
+              confirmLabel="Confirm email sent"
               confirmIcon={<FiCheck aria-hidden />}
               onConfirm={() => finish("confirm")}
               confirmDisabled={!snapshot || loading || snapshot.requiresRebuild}
@@ -160,8 +169,9 @@ export function RydSendDialog({
         {completed && (
           <div className="space-y-6">
             <p role="status" ref={completionRef} tabIndex={-1}>
-              {completed.verifiedCount} of {completed.orderCount} orders cleared
-              to start. The batch is marked sent.
+              Email recorded for {completed.verifiedCount}{" "}
+              {completed.verifiedCount === 1 ? "order" : "orders"}. They are now
+              Sent to fulfillment, awaiting production confirmation.
             </p>
             <RydSheetReport report={completed.sheet} />
           </div>
@@ -172,29 +182,15 @@ export function RydSendDialog({
               <ErrorCallout>
                 This saved batch includes orders still being checked or already
                 sent for production. If nobody has emailed it, cancel this
-                batch, then reopen Send to fulfillment to prepare only the new
-                verified orders.
+                batch, then prepare a new batch with only the new verified
+                orders.
               </ErrorCallout>
             )}
-            <dl className="grid gap-4 sm:grid-cols-3">
-              {[
-                ["In the file", snapshot.orderCount],
-                ["Cleared to start", snapshot.verifiedCount],
-                [
-                  "Still being checked",
-                  snapshot.orderCount - snapshot.verifiedCount,
-                ],
-              ].map(([label, value]) => (
-                <div
-                  key={label}
-                  className="rounded-2xl border border-black/10 p-4 dark:border-white/10"
-                >
-                  <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-black/70 dark:text-white/70">
-                    {label}
-                  </dt>
-                  <dd className="mt-1 font-cooper text-3xl">{value}</dd>
-                </div>
-              ))}
+            <dl className="rounded-2xl border border-black/10 p-4 dark:border-white/10">
+              <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-black/70 dark:text-white/70">
+                Orders in this batch
+              </dt>
+              <dd className="mt-1 font-cooper text-3xl">{snapshot.orderCount}</dd>
             </dl>
             <p className="text-sm text-black/70 dark:text-white/70">
               Prepared {new Date(snapshot.preparedAt).toLocaleString()}. Ready
@@ -259,8 +255,8 @@ export function RydSendDialog({
                 </RydDraftStep>
                 <RydDraftStep
                   index={3}
-                  title="Mark it sent"
-                  description="After sending, mark this batch sent to clear exactly its ready orders. The form sheet tick happens afterwards."
+                  title="Confirm the email was sent"
+                  description="Moves this batch to Sent to fulfillment and keeps it out of future files. Confirm production started separately when fulfillment acknowledges it."
                 />
               </ol>
             )}

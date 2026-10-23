@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQueryParamState, useSearchFilter } from "@ryanmeetup/hooks";
 import {
   Button,
@@ -74,17 +74,23 @@ import {
   type RydStatusParam,
   rydStatusParam,
   rydView,
-  RYD_PRODUCTION_LABELS,
-  RYD_PRODUCTION_STAGES,
-  rydProductionCounts,
-  rydProductionParam,
-  rydProductionStage,
-  unsentOrders,
   contactableSubmitters,
   remindableOrders,
   unmatchedSubmitters,
   type RydView,
 } from "@/lib/ryd/queue-view";
+import {
+  RYD_FULFILLMENT_LABELS,
+  readyForRydFulfillment,
+  reconcileRydFulfillment,
+  rydFulfillmentCounts,
+  rydFulfillmentParam,
+  rydFulfillmentStage,
+} from "@/lib/ryd/fulfillment-view";
+import type {
+  RydFulfillmentResult,
+  RydFulfillmentSnapshot,
+} from "@/lib/ryd/fulfillment";
 import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import {
   RydRemindDialog,
@@ -93,6 +99,7 @@ import {
   RydUploadDialog,
 } from "./RydDialogs";
 import { RYD_DECISIONS, RydOrderDialog } from "./RydOrderDialog";
+import { RydFulfillmentFilters } from "./RydFulfillmentFilters";
 import { RydOrderTable } from "./RydOrderTable";
 import { RydSelectionBar } from "./RydSelection";
 import { RydContactDialog } from "./RydContactDialog";
@@ -107,7 +114,6 @@ import {
   type RydContactResult,
 } from "@/lib/ryd/bulk-operations";
 import {
-  RYD_PRODUCTION_ICONS,
   RYD_STATUS_ICONS,
   RYD_STATUS_TEXT,
   RYD_STATUS_TONES,
@@ -236,12 +242,12 @@ export function RydPageClient({
   const [decisionPending, setDecisionPending] = useState(false);
   const view = rydView(viewParam);
   const status = rydStatusParam(statusParam);
-  // Every order list gets checkboxes: verified orders move through
-  // production in bulk, the rest are decided in bulk, and Follow-up's are
-  // emailed.
+  // A new batch includes the entire ready queue. Later stages and other
+  // order lists use selection for their acknowledgment, review, and email actions.
   const producing = view === "queue" && status === "verified";
-  const selectable = view !== "unmatched";
-  const production = producing ? rydProductionParam(productionParam) : null;
+  const production = producing ? rydFulfillmentParam(productionParam) : null;
+  const selectable =
+    view !== "unmatched" && (!producing || production !== "ready-to-send");
   const sort = rydSortParam(sortParam);
   const unmatchedLayout = layoutParam === "table" ? "table" : "cards";
   const { page, pageSize, setPage, setPageSize, syncPage } = usePagination();
@@ -266,10 +272,37 @@ export function RydPageClient({
 
   const counts = useMemo(() => rydCounts(queue.orders), [queue.orders]);
   const productionCounts = useMemo(
-    () => rydProductionCounts(queue.orders),
+    () => rydFulfillmentCounts(queue.orders),
     [queue.orders],
   );
-  const unsent = useMemo(() => unsentOrders(queue.orders), [queue.orders]);
+  const ready = useMemo(
+    () => readyForRydFulfillment(queue.orders),
+    [queue.orders],
+  );
+  const batchPrepared = useCallback(
+    (snapshot: RydFulfillmentSnapshot) => {
+      reconcile((current) => ({
+        ...current,
+        preparedBatch: {
+          id: snapshot.id,
+          verifiedCount: snapshot.verifiedCount,
+        },
+      }));
+    },
+    [reconcile],
+  );
+  const batchFinished = useCallback(
+    (result: RydFulfillmentResult, action: "confirm" | "cancel") => {
+      reconcile((current) => reconcileRydFulfillment(current, result, action));
+      if (action === "confirm") {
+        setViewParam("");
+        setStatusParam("verified");
+        setProductionParam("sent-to-fulfillment");
+        setPage(1);
+      }
+    },
+    [reconcile, setViewParam, setStatusParam, setProductionParam, setPage],
+  );
   // Finished all round: fulfillment has been told and the RY-D is made.
   const activeCount = queue.orders.filter(
     (order) => !(order.doneAt && order.sentToFulfillment),
@@ -311,7 +344,7 @@ export function RydPageClient({
           ? queue.orders.filter(
               (order) =>
                 order.status === statusFilter &&
-                (!production || rydProductionStage(order) === production),
+                (!production || rydFulfillmentStage(order) === production),
             )
           : queue.orders,
     [view, followUp, queue.orders, statusFilter, production],
@@ -436,6 +469,9 @@ export function RydPageClient({
   }
 
   function productionApplied(result: RydProductionResult) {
+    if (productionOperation?.action === "sent")
+      setProductionParam("in-production");
+    if (productionOperation?.action === "done") setProductionParam("done");
     const saved = new Map(result.orders.map((order) => [order.orderId, order]));
     reconcile((current) => ({
       ...current,
@@ -462,7 +498,7 @@ export function RydPageClient({
     );
   }
 
-  const selectedStages = new Set(selectedOrders.map(rydProductionStage));
+  const selectedStages = new Set(selectedOrders.map(rydFulfillmentStage));
 
   /** The selected orders a decision would change; final ones are left alone. */
   function decidable(target: RydOrderStatus) {
@@ -625,12 +661,12 @@ export function RydPageClient({
           }
           description="Match each RY-D order to what the buyer sent the RY-dentification form, decide, then send fulfillment the orders they can start."
           actions={
-            <>
+            <div className="flex w-full flex-col gap-2 2xl:flex-row 2xl:items-center">
               <Button
                 type="button"
                 size="sm"
                 variant="secondary"
-                className="w-full sm:w-auto"
+                className="w-full 2xl:w-auto"
                 leftIcon={<FiUpload aria-hidden />}
                 onClick={() => setDialog("upload")}
                 disabled={!queue.installed}
@@ -640,25 +676,29 @@ export function RydPageClient({
               <Button
                 type="button"
                 size="sm"
-                className="w-full sm:w-auto"
+                className="w-full 2xl:w-auto"
                 leftIcon={<FiSend aria-hidden />}
                 onClick={() => setDialog("send")}
-                disabled={!queue.installed || !unsent.length}
+                disabled={
+                  !queue.installed || (!queue.preparedBatch && !ready.length)
+                }
               >
-                Send to fulfillment
+                {queue.preparedBatch
+                  ? "Resume fulfillment batch"
+                  : `Prepare fulfillment batch (${ready.length})`}
               </Button>
               <Button
                 type="button"
                 size="sm"
                 variant="ghost"
-                className="w-full sm:w-auto"
+                className="w-full 2xl:w-auto"
                 leftIcon={<FiSettings aria-hidden />}
                 onClick={() => setDialog("settings")}
                 disabled={!queue.installed}
               >
                 Settings
               </Button>
-            </>
+            </div>
           }
         >
           <div className="space-y-6">
@@ -771,13 +811,15 @@ export function RydPageClient({
             </div>
             {queue.lastBatch && (
               <p className="text-sm text-black/70 dark:text-white/70">
-                Last sent {new Date(queue.lastBatch.sentAt).toLocaleString()}
+                Last email recorded{" "}
+                {new Date(queue.lastBatch.sentAt).toLocaleString()}
                 {queue.lastBatch.recipient
                   ? ` to ${queue.lastBatch.recipient}`
                   : ""}
                 : {queue.lastBatch.verifiedCount} of{" "}
-                {queue.lastBatch.orderCount} cleared. {queue.clearedCount} order
-                {queue.clearedCount === 1 ? "" : "s"} cleared so far.
+                {queue.lastBatch.orderCount} in the file. {queue.clearedCount}{" "}
+                order
+                {queue.clearedCount === 1 ? "" : "s"} emailed so far.
               </p>
             )}
 
@@ -1071,98 +1113,82 @@ export function RydPageClient({
                 </div>
                 {producing && (
                   <div className="space-y-3">
-                    <div
-                      className="flex flex-wrap gap-2"
-                      role="group"
-                      aria-label="Filter by production"
-                    >
-                      <FilterChip
-                        active={!production}
-                        onClick={() => {
-                          setProductionParam("");
-                          setPage(1);
-                        }}
-                      >
-                        All verified {counts.verified}
-                      </FilterChip>
-                      {RYD_PRODUCTION_STAGES.map((stage) => {
-                        const Icon = RYD_PRODUCTION_ICONS[stage];
-                        return (
-                          <FilterChip
-                            key={stage}
-                            active={production === stage}
-                            onClick={() => {
-                              setProductionParam(stage);
-                              setPage(1);
-                            }}
-                            className="inline-flex items-center gap-1.5"
-                          >
-                            <Icon aria-hidden className="h-3 w-3" />
-                            {RYD_PRODUCTION_LABELS[stage]}{" "}
-                            {productionCounts[stage]}
-                          </FilterChip>
-                        );
-                      })}
-                    </div>
-                    {sorted.length > 0 && (
+                    <RydFulfillmentFilters
+                      stage={production}
+                      counts={productionCounts}
+                      total={counts.verified}
+                      preparedCount={queue.preparedBatch?.verifiedCount}
+                      onChange={(stage) => {
+                        setProductionParam(stage ?? "all");
+                        setPage(1);
+                      }}
+                    />
+                    {selectable && sorted.length > 0 && (
                       <RydSelectionBar
                         total={sorted.length}
                         selectedCount={selectedOrders.length}
                         disabled={searchPending || moving !== null}
                         onToggleAll={toggleAllOrders}
                       >
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="secondary"
-                          className="w-full sm:w-auto"
-                          leftIcon={<FiPackage aria-hidden />}
-                          disabled={
-                            searchPending ||
-                            moving !== null ||
-                            !selectedStages.has("not-started")
-                          }
-                          loading={moving === "sent"}
-                          onClick={() => moveSelected("sent")}
-                        >
-                          Sent for production
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          className="w-full sm:w-auto"
-                          leftIcon={<FiCheckSquare aria-hidden />}
-                          disabled={
-                            searchPending ||
-                            moving !== null ||
-                            !selectedOrders.length ||
-                            (selectedStages.size === 1 &&
-                              selectedStages.has("done"))
-                          }
-                          loading={moving === "done"}
-                          onClick={() => moveSelected("done")}
-                        >
-                          Done
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          className="w-full sm:w-auto"
-                          leftIcon={<FiCornerUpLeft aria-hidden />}
-                          disabled={
-                            searchPending ||
-                            moving !== null ||
-                            !(
-                              selectedStages.has("in-production") ||
-                              selectedStages.has("done")
-                            )
-                          }
-                          loading={moving === "back"}
-                          onClick={() => moveSelected("back")}
-                        >
-                          Move back
-                        </Button>
+                        {(!production ||
+                          production === "sent-to-fulfillment") && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            className="w-full sm:w-auto"
+                            leftIcon={<FiPackage aria-hidden />}
+                            disabled={
+                              searchPending ||
+                              moving !== null ||
+                              !selectedStages.has("sent-to-fulfillment")
+                            }
+                            loading={moving === "sent"}
+                            onClick={() => moveSelected("sent")}
+                          >
+                            Confirm production started
+                          </Button>
+                        )}
+                        {(!production || production === "in-production") && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="w-full sm:w-auto"
+                            leftIcon={<FiCheckSquare aria-hidden />}
+                            disabled={
+                              searchPending ||
+                              moving !== null ||
+                              !selectedStages.has("in-production")
+                            }
+                            loading={moving === "done"}
+                            onClick={() => moveSelected("done")}
+                          >
+                            Done
+                          </Button>
+                        )}
+                        {(!production ||
+                          production === "in-production" ||
+                          production === "done") && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="w-full sm:w-auto"
+                            leftIcon={<FiCornerUpLeft aria-hidden />}
+                            disabled={
+                              searchPending ||
+                              moving !== null ||
+                              !(
+                                selectedStages.has("in-production") ||
+                                selectedStages.has("done")
+                              )
+                            }
+                            loading={moving === "back"}
+                            onClick={() => moveSelected("back")}
+                          >
+                            Move back
+                          </Button>
+                        )}
                       </RydSelectionBar>
                     )}
                   </div>
@@ -1238,7 +1264,7 @@ export function RydPageClient({
                             : view === "follow-up"
                               ? "Nobody to chase right now."
                               : production
-                                ? `No verified orders are ${RYD_PRODUCTION_LABELS[production].toLowerCase()}.`
+                                ? `No verified orders are ${RYD_FULFILLMENT_LABELS[production].toLowerCase()}.`
                                 : "No orders with that status."
                       }
                     />
@@ -1342,7 +1368,12 @@ export function RydPageClient({
         <RydUploadDialog onClose={() => setDialog(null)} onChanged={refresh} />
       )}
       {dialog === "send" && (
-        <RydSendDialog onClose={() => setDialog(null)} onChanged={refresh} />
+        <RydSendDialog
+          onClose={() => setDialog(null)}
+          onChanged={refresh}
+          onPrepared={batchPrepared}
+          onFinished={batchFinished}
+        />
       )}
       {emailOrder && (
         <RydRemindDialog

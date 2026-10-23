@@ -160,18 +160,26 @@ uses, set in /admin/usage).
    Linking a person's responses uses one transaction: a conflicting claim leaves
    the whole group unlinked. Groups above 100 responses or the request budget
    open the order review for individual linking instead of partially saving.
-4. **Send to fulfillment.** Opening this dialog prepares or resumes one
-   shared batch. Fulfillment's address must be configured first. The batch
+4. **Prepare a fulfillment batch.** Verified opens to **Ready to send** by
+   default. The Progress column and filters distinguish **Ready to send**,
+   **Sent to fulfillment**, **In production**, and **Done**. The batch button
+   counts every eligible verified order across all pages, independently of list
+   search and selection. **Prepare fulfillment batch** opens one saved batch;
+   an existing draft instead shows **Resume fulfillment batch**. Fulfillment's
+   address must be configured first. The batch
    pins its recipient, raw order rows, header schema, decisions, and ready
    orders' form/response references. **Download CSV** and **Open draft** use
    that same manifest; the draft and filename carry its batch reference.
    Header spelling changes preserve saved cells, and columns missing from
    later imports are appended so older details survive.
 
-   Send the file yourself, then **Mark as sent**. One database transaction
-   records the batch, clears exactly its ready orders, and writes their
-   history. Repeated confirmations return the existing result. New imports
-   and later verifications wait for the next file. Ready decisions and evidence
+   Send the file yourself, then **Confirm email sent**. One database transaction
+   records the batch, moves exactly its captured orders to **Sent to fulfillment**,
+   and writes their history. These orders wait for fulfillment's acknowledgment;
+   no production timestamp is set. Confirmed orders stay out of Ready to send
+   even if reloading the queue fails. Repeated confirmations return the existing
+   result. New imports and later verifications wait for the next file. Ready
+   decisions and evidence
    cannot change while reserved; notes and production tracking remain available.
 
    Closing keeps the batch available to the team. It has no automatic expiry:
@@ -190,7 +198,7 @@ uses, set in /admin/usage).
    neighboring seconds, and ambiguous identities never match. Existing ticks
    stay ticked; other nonempty values and formulas remain untouched.
 
-   After **Mark as sent**, the dialog stays open with separate counts and
+   After **Confirm email sent**, the dialog stays open with separate counts and
    paginated response details for **Updated**, **Already ticked**, **Missing**,
    **Ambiguous**, and **Unchecked**, plus a link to the spreadsheet. Missing
    captured responses are reported too. Unresolved responses need a manual
@@ -208,14 +216,21 @@ uses, set in /admin/usage).
    and [filtered writes](https://developers.google.com/workspace/sheets/api/reference/rest/v4/spreadsheets.values/batchUpdateByDataFilter)
    with explicit tab IDs and cell ranges.
    Downloading the file alone clears nothing.
-5. **Track production.** Verified orders stay under **Verified**, sent to
-   fulfillment or not, with a Production column and filters for **Not
-   sent**, **In production**, and **Done**. Tick orders, or **Select all**
-   of what's listed, then **Sent for production** or **Done**. Each records
-   its own date (`production_sent_at`, `done_at`); marking an order done
-   that was never sent stamps both, and re-marking keeps the first date.
-   **Move back** takes each ticked order one step back. Once an order is in
-   production, or fulfillment has its file, its decision can't be changed.
+5. **Confirm production and completion.** In **Sent to fulfillment**, select
+   the orders fulfillment has acknowledged and choose **Confirm production
+   started**. This separately records `production_sent_at` and moves them to
+   **In production**. The email confirmation never does this automatically.
+   In **In production**, select finished orders and choose **Done** to record
+   `done_at`. Ready orders cannot skip the email handoff through these controls,
+   and completion includes only orders already in production.
+
+   **Move back** takes Done orders to In production. An order in production
+   returns to Sent to fulfillment when its email is recorded, or to Ready to
+   send for a legacy manual production record with no saved email. Moving back
+   never erases the email record or queues an already emailed order again.
+   Existing production dates remain authoritative even for older manual records.
+   Once an order is in production, or fulfillment has its file, its decision
+   cannot be changed.
 
    Selection covers every filtered page, with the scope shown beside its count.
    The confirmation pins each order's original and target stage. Production

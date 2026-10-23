@@ -61,8 +61,8 @@ const SORT_CHOICES: Record<
   form: [both("form", "Surest match first", "No submission first")],
   ordered: [both("ordered", "Oldest first", "Newest first")],
   production: [
-    both("production", "Not sent first", "Done first"),
-    both("production-sent", "Oldest sent first", "Newest sent first"),
+    both("production", "Ready to send first", "Done first"),
+    both("production-sent", "Oldest start first", "Newest start first"),
   ],
 };
 
@@ -220,7 +220,7 @@ export function RydOrderTable({
           <caption className="sr-only">{label}</caption>
           <colgroup>
             {(production
-              ? PRODUCTION_COLUMNS
+              ? PRODUCTION_COLUMNS.slice(selection ? 0 : 1)
               : selection
                 ? SELECT_COLUMNS
                 : COLUMNS
@@ -266,7 +266,7 @@ export function RydOrderTable({
               {production && (
                 <SortHeader
                   column="production"
-                  label="Production"
+                  label="Progress"
                   sort={sort}
                   onSort={onSort}
                   className="px-3 py-3"
