@@ -294,6 +294,80 @@ test("sends only newly verified orders and rebuilds an older unsent batch", asyn
   expect((await state(request)).snapshot.verified_ids).toEqual(["804"]);
 });
 
+test("sorts the production column by stage and sent date", async ({ page, request }, testInfo) => {
+  await reset(request);
+  await signIn(page);
+  const imported = await page.request.post("/api/ryd/imports", {
+    multipart: {
+      operationId: "00000000-0000-4000-8000-000000000821",
+      file: {
+        name: "production-sort.csv",
+        mimeType: "text/csv",
+        buffer: Buffer.from(
+          "OrderId,BillFirstName,BillLastName,BillEmail,Verified?\r\n" +
+          "801,Ryan,Waiting,waiting@example.test,✅\r\n" +
+          "802,Ryan,Sent,sent@example.test,✅\r\n" +
+          "803,Ryan,Done,done@example.test,✅\r\n",
+        ),
+      },
+    },
+  });
+  expect(imported.ok()).toBeTruthy();
+  expect((await page.request.post("/api/ryd/production", {
+    data: {
+      operationId: "00000000-0000-4000-8000-000000000822",
+      moves: [
+        { orderId: "802", from: "not-started", to: "in-production" },
+        { orderId: "803", from: "not-started", to: "done" },
+      ],
+    },
+  })).ok()).toBeTruthy();
+  await page.goto("/ryd?status=verified");
+  const sort = page.getByRole("button", { name: "Sort by production", exact: true });
+  const header = page.getByRole("columnheader").filter({ has: sort });
+  const rows = page.locator("table tbody tr");
+  await sort.scrollIntoViewIfNeeded();
+  await sort.press("Enter");
+  await page.getByRole("menuitem", { name: "Not sent first", exact: true }).press("Enter");
+  await expect(header).toHaveAttribute("aria-sort", "ascending");
+  await expect(rows).toHaveText([/Ryan Waiting/, /Ryan Sent/, /Ryan Done/]);
+  await expect(page).toHaveURL(/sort=production(?:&|$)/);
+  await sort.click();
+  await page.getByRole("menuitem", { name: "Done first", exact: true }).click();
+  await expect(header).toHaveAttribute("aria-sort", "descending");
+  await expect(rows).toHaveText([/Ryan Done/, /Ryan Sent/, /Ryan Waiting/]);
+  await expect(page).toHaveURL(/sort=production-desc(?:&|$)/);
+  await page.reload();
+  await expect(header).toHaveAttribute("aria-sort", "descending");
+  await expect(rows).toHaveText([/Ryan Done/, /Ryan Sent/, /Ryan Waiting/]);
+  await sort.scrollIntoViewIfNeeded();
+  await sort.click();
+  await page.getByRole("menuitem", { name: "Newest sent first", exact: true }).click();
+  await expect(page).toHaveURL(/sort=production-sent-desc(?:&|$)/);
+  await expect(header).toHaveAttribute("aria-sort", "descending");
+  await expect(rows).toHaveText([/Ryan Done/, /Ryan Sent/, /Ryan Waiting/]);
+  await sort.click();
+  await page.getByRole("menuitem", { name: "Oldest sent first", exact: true }).click();
+  await expect(page).toHaveURL(/sort=production-sent(?:&|$)/);
+  await expect(header).toHaveAttribute("aria-sort", "ascending");
+  const widths = testInfo.project.name === "chromium-mobile" ? [390] : [1024, 1280, 1536];
+  for (const width of widths) {
+    await page.setViewportSize({ width, height: 900 });
+    await sort.scrollIntoViewIfNeeded();
+    await sort.click();
+    await expect(page.getByRole("menu")).toHaveCSS("opacity", "1");
+    await expect(page.getByRole("menu")).toBeInViewport();
+    await expect(page.getByRole("menuitem", { name: "Newest sent first", exact: true })).toBeInViewport();
+    await page.screenshot({ path: testInfo.outputPath(`production-sort-${width}.png`) });
+    await page.keyboard.press("Escape");
+  }
+  await sort.click();
+  await page.getByRole("menuitem", { name: "Clear sort", exact: true }).click();
+  await expect(header).toHaveAttribute("aria-sort", "none");
+  await expect(page).not.toHaveURL(/[?&]sort=/);
+  await expect(rows).toHaveText([/Ryan Waiting/, /Ryan Sent/, /Ryan Done/]);
+});
+
 test("shows ambiguous identity mapping and distinguishes buyer and review form links", async ({
   page,
   request,

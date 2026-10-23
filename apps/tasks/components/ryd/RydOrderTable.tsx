@@ -42,7 +42,7 @@ const both = (
 
 /** Each column's choices, in groups the menu separates. */
 const SORT_CHOICES: Record<
-  "name" | "status" | "form" | "ordered",
+  "name" | "status" | "form" | "ordered" | "production",
   SortChoice[][]
 > = {
   name: [
@@ -60,6 +60,10 @@ const SORT_CHOICES: Record<
   status: [both("status", "Pending first", "Rejected first")],
   form: [both("form", "Surest match first", "No submission first")],
   ordered: [both("ordered", "Oldest first", "Newest first")],
+  production: [
+    both("production", "Not sent first", "Done first"),
+    both("production-sent", "Oldest sent first", "Newest sent first"),
+  ],
 };
 
 /**
@@ -260,7 +264,13 @@ export function RydOrderTable({
                 className="px-3 py-3"
               />
               {production && (
-                <th className="px-3 py-3 font-semibold">Production</th>
+                <SortHeader
+                  column="production"
+                  label="Production"
+                  sort={sort}
+                  onSort={onSort}
+                  className="px-3 py-3"
+                />
               )}
               <th className="px-4 py-3 text-right font-semibold">
                 <span className="sr-only">Actions</span>

@@ -70,6 +70,8 @@ until it is restored. Reviews and reminder recipients follow the same rule.
 
 ### Safer RY-D bulk actions
 
+The Production column now sorts verified orders by production stage or sent date, with choices for either direction.
+
 Large production selections save in bounded groups with visible progress and safe retries. Mixed backward moves save together. Unmatched emails confirm each sent draft independently, contact retries cannot count twice, and a person's responses link together. Actions wait while search results catch up.
 
 Select orders to verify, request more information, or reject them together.

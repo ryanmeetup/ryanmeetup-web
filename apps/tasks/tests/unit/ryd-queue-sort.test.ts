@@ -69,6 +69,17 @@ describe("RY-D queue sorting", () => {
       key: "form",
       descending: true,
     });
+    expect(rydSortParam("production")).toEqual({
+      key: "production",
+      descending: false,
+    });
+    expect(rydSortParam("production-sent-desc")).toEqual({
+      key: "production-sent",
+      descending: true,
+    });
+    expect(rydSortValue({ key: "production-sent", descending: true })).toBe(
+      "production-sent-desc",
+    );
     expect(rydSortParam("total")).toBeNull();
     expect(rydSortParam("")).toBeNull();
     expect(rydSortValue({ key: "status", descending: true })).toBe(
@@ -133,6 +144,48 @@ describe("RY-D queue sorting", () => {
     expect(
       ids(sortRydOrders(orders, { key: "ordered", descending: true })),
     ).toEqual(["late", "early", "undated"]);
+  });
+
+  it("sorts production stages in workflow order with names breaking ties", () => {
+    const sent = "2026-10-20T12:00:00Z";
+    const orders = [
+      order({ orderId: "done", productionSentAt: sent, doneAt: sent }),
+      order({ orderId: "waiting-z", lastName: "Z" }),
+      order({ orderId: "sent", productionSentAt: sent }),
+      order({ orderId: "waiting-a", lastName: "A" }),
+    ];
+    expect(
+      ids(sortRydOrders(orders, { key: "production", descending: false })),
+    ).toEqual(["waiting-a", "waiting-z", "sent", "done"]);
+    expect(
+      ids(sortRydOrders(orders, { key: "production", descending: true })),
+    ).toEqual(["done", "sent", "waiting-a", "waiting-z"]);
+    expect(ids(orders)).toEqual(["done", "waiting-z", "sent", "waiting-a"]);
+  });
+
+  it("sorts sent dates chronologically, keeping missing dates last in either direction", () => {
+    const orders = [
+      order({ orderId: "waiting", lastName: "A" }),
+      order({ orderId: "late", productionSentAt: "2026-10-21T12:00:00Z" }),
+      order({
+        orderId: "early-z",
+        lastName: "Z",
+        productionSentAt: "2026-10-20T08:00:00-04:00",
+      }),
+      order({ orderId: "invalid", lastName: "B", productionSentAt: "invalid" }),
+      order({
+        orderId: "early-a",
+        lastName: "A",
+        productionSentAt: "2026-10-20T12:00:00Z",
+        doneAt: "2026-10-23T12:00:00Z",
+      }),
+    ];
+    expect(
+      ids(sortRydOrders(orders, { key: "production-sent", descending: false })),
+    ).toEqual(["early-a", "early-z", "late", "waiting", "invalid"]);
+    expect(
+      ids(sortRydOrders(orders, { key: "production-sent", descending: true })),
+    ).toEqual(["late", "early-a", "early-z", "waiting", "invalid"]);
   });
 
   it("groups by where Ryan falls in the form's name, unknown last", () => {

@@ -259,6 +259,8 @@ export const RYD_SORT_KEYS = [
   "status",
   "form",
   "ordered",
+  "production",
+  "production-sent",
 ] as const;
 export type RydSortKey = (typeof RYD_SORT_KEYS)[number];
 export type RydSort = { key: RydSortKey; descending: boolean } | null;
@@ -291,8 +293,10 @@ function formRank(order: RydQueueOrder) {
   return { strong: 1, possible: 2, weak: 3 }[order.suggestion.confidence];
 }
 
-function orderedTime(order: RydQueueOrder) {
-  const time = Date.parse(order.orderedAt);
+function orderTime(order: RydQueueOrder, key: "ordered" | "production-sent") {
+  const time = Date.parse(
+    (key === "ordered" ? order.orderedAt : order.productionSentAt) ?? "",
+  );
   return Number.isNaN(time) ? Number.POSITIVE_INFINITY : time;
 }
 
@@ -323,8 +327,13 @@ const COMPARE: Record<
   status: (a, b) => STATUS_RANK[a.status] - STATUS_RANK[b.status],
   form: (a, b) => formRank(a) - formRank(b),
   ordered: (a, b) =>
-    orderedTime(a) - orderedTime(b) ||
+    orderTime(a, "ordered") - orderTime(b, "ordered") ||
     a.orderId.localeCompare(b.orderId, undefined, { numeric: true }),
+  production: (a, b) =>
+    RYD_PRODUCTION_STAGES.indexOf(rydProductionStage(a)) -
+    RYD_PRODUCTION_STAGES.indexOf(rydProductionStage(b)),
+  "production-sent": (a, b) =>
+    orderTime(a, "production-sent") - orderTime(b, "production-sent"),
 };
 
 /**
@@ -354,9 +363,9 @@ export function sortRydOrders(
     });
   }
   return [...orders].sort((a, b) => {
-    if (key === "ordered") {
-      const leftMissing = !Number.isFinite(orderedTime(a));
-      const rightMissing = !Number.isFinite(orderedTime(b));
+    if (key === "ordered" || key === "production-sent") {
+      const leftMissing = !Number.isFinite(orderTime(a, key));
+      const rightMissing = !Number.isFinite(orderTime(b, key));
       if (leftMissing || rightMissing)
         return Number(leftMissing) - Number(rightMissing) || byName(a, b);
     }
