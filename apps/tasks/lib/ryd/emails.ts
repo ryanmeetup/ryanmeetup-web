@@ -66,7 +66,9 @@ export function rydFulfillmentEmail(
     subject: `RY-D orders cleared to start: ${ready.length}`,
     body: [
       "Hi,",
-      `${ready.length} of ${orderCount} RY-D order${orderCount === 1 ? "" : "s"} ${ready.length === 1 ? "is" : "are"} verified and ready to start. They're marked ✅ in the Verified? column of the attached file; the rest are still being checked and will come round again.`,
+      ready.length === orderCount
+        ? `${ready.length} verified RY-D order${ready.length === 1 ? " is" : "s are"} ready for production. The attached file contains only these orders, marked ✅ in the Verified? column. Please confirm when production has started.`
+        : `${ready.length} of ${orderCount} RY-D order${orderCount === 1 ? "" : "s"} ${ready.length === 1 ? "is" : "are"} verified and ready to start. They're marked ✅ in the Verified? column of the attached file; the rest are still being checked and will come round again.`,
       lines.length ? `Ready to start:\n${lines.join("\n")}` : "",
       "Thanks,\nRyan Meetup",
     ]

@@ -33,6 +33,15 @@ describe("RY-D email drafts", () => {
     expect(draft.body).toContain("1 of 3 RY-D orders is verified");
     expect(draft.body).toContain("Ready to start:\n1001 · Ryan Fox");
   });
+  it("describes a ready-only file and asks fulfillment to confirm production", () => {
+    const draft = rydFulfillmentEmail(
+      [{ orderId: "1001", firstName: "Ryan", lastName: "Fox" }],
+      1,
+    );
+    expect(draft.body).toContain("contains only these orders");
+    expect(draft.body).toContain("confirm when production has started");
+    expect(draft.body).not.toContain("the rest are still being checked");
+  });
 
   it("puts bulk recipients in bcc and encodes the draft", () => {
     const href = rydMailtoHref({
