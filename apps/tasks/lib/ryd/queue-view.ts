@@ -75,7 +75,7 @@ export function rydProductionCounts(orders: RydQueueOrder[]) {
   return counts;
 }
 
-/** Orders a fulfillment file would still carry: those not yet cleared. */
+/** Orders with no recorded fulfillment batch, including manual production sends. */
 export function unsentOrders(orders: RydQueueOrder[]) {
   return orders.filter((order) => !order.sentToFulfillment);
 }

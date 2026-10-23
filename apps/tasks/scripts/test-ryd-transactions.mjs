@@ -217,7 +217,8 @@ try {
   if (
     sql("select count(*) from public.ryd_fulfillment_batches;") !== "1" ||
     sql("select count(*) from public.ryd_order_events where action='sent';") !==
-      "2"
+      "1" ||
+    sql("select cleared_batch_id is null from public.ryd_orders where order_id='race-2';") !== "t"
   )
     throw new Error(
       "Concurrent confirmations duplicated the batch or its history",

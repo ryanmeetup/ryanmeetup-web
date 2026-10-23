@@ -120,6 +120,10 @@ Google form, and the transaction refuses a changed form or stale order revision.
 
 Fulfillment uses private, service-role-only snapshots. `ryd_prepare_fulfillment`
 resumes the one prepared manifest or captures it under order locks.
+New manifests contain only verified orders with no fulfillment batch, production
+send timestamp, or completion timestamp. Older prepared manifests containing
+ineligible orders must be explicitly cancelled before rebuilding; downloads and
+confirmation refuse those manifests without changing their saved contents.
 `ryd_finish_fulfillment` confirms or cancels it with the same actor check.
 Prepared ready orders cannot change decision, export data, or evidence until
 finished. Confirmation atomically records the batch, clears its captured ready

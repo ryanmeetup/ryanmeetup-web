@@ -31,6 +31,7 @@ type SnapshotRow = {
   response_keys: string[];
   form_id: string | null;
   prepared_at: string;
+  requires_rebuild?: boolean;
 };
 
 export async function prepareRydFulfillment(
@@ -59,6 +60,7 @@ export async function prepareRydFulfillment(
     preparedAt: snapshot.prepared_at,
     orderCount: snapshot.order_rows.length,
     verifiedCount: ready.size,
+    requiresRebuild: snapshot.requires_rebuild === true,
     draft: { ...draft, body: `${draft.body}\n\nBatch: ${snapshot.id}` },
   };
 }
@@ -83,6 +85,18 @@ export async function rydFulfillmentCsv(admin: SupabaseClient, id: string) {
       message:
         "That batch was cancelled. Prepare or resume a batch before downloading.",
     };
+  if (snapshot.state === "prepared") {
+    const ready = await admin.rpc("ryd_fulfillment_is_ready", {
+      requested_snapshot: id,
+    });
+    if (ready.error) throw ready.error;
+    if (ready.data !== true)
+      throw {
+        code: "RY409",
+        message:
+          "This batch includes orders still being checked or already sent for production. Cancel the unsent batch and prepare a new one.",
+      };
+  }
   return rydOrderExportCsv(snapshot.headers, snapshot.order_rows);
 }
 

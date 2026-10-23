@@ -83,7 +83,7 @@ describe("RY-D complete collection reads", () => {
       database({
         ryd_fulfillment_snapshots: [
           {
-            state: "prepared",
+            state: "sent",
             headers: ["OrderId", "Verified?"],
             order_rows: orders(1005),
           },

@@ -79,14 +79,50 @@ describe("RY-D immutable fulfillment manifests", () => {
       recipient: snapshot.recipient,
       orderCount: 2,
       verifiedCount: 1,
+      requiresRebuild: false,
     });
     expect(draft.draft.body).toContain("1 · Ryan One");
     expect(draft.draft.body).toContain(`Batch: ${snapshot.id}`);
     expect(draft.draft.body).not.toContain("Ryan Two");
   });
+  it("flags an older prepared manifest without silently replacing it", async () => {
+    const draft = await prepareRydFulfillment(
+      client({ ...snapshot, requires_rebuild: true }),
+      "actor",
+    );
+    expect(draft).toMatchObject({ id: snapshot.id, requiresRebuild: true });
+  });
+  it("refuses downloading a prepared batch containing ineligible orders", async () => {
+    const admin = createClient("http://ryd.test", "synthetic-test-key", {
+      global: {
+        fetch: async (input) =>
+          Response.json(String(input).includes("/rpc/") ? false : snapshot),
+      },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    await expect(rydFulfillmentCsv(admin, snapshot.id)).rejects.toMatchObject({
+      code: "RY409",
+    });
+  });
+  it("downloads a prepared batch after checking its current eligibility", async () => {
+    const admin = createClient("http://ryd.test", "synthetic-test-key", {
+      global: {
+        fetch: async (input) =>
+          Response.json(
+            String(input).includes("/rpc/")
+              ? true
+              : { ...snapshot, order_rows: snapshot.order_rows.slice(0, 1) },
+          ),
+      },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    expect(parseCsv(await rydFulfillmentCsv(admin, snapshot.id)).rows).toEqual([
+      ["1", "✅"],
+    ]);
+  });
   it("downloads only saved rows and decisions", async () => {
     const csv = await rydFulfillmentCsv(
-      client(snapshot, (url) => {
+      client({ ...snapshot, state: "sent" }, (url) => {
         expect(url.pathname).toContain("ryd_fulfillment_snapshots");
         expect(url.searchParams.get("id")).toBe(`eq.${snapshot.id}`);
       }),

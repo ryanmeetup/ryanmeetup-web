@@ -8,6 +8,8 @@ export type RydFulfillmentSnapshot = {
   preparedAt: string;
   orderCount: number;
   verifiedCount: number;
+  /** An older unsent manifest must be cancelled before preparing a new file. */
+  requiresRebuild: boolean;
   draft: RydDraft;
 };
 
