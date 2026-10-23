@@ -11,8 +11,7 @@ const form = "f".repeat(30);
 const appRoot = fileURLToPath(new URL("../", import.meta.url));
 for (const file of [
   "ryd-transactions.sql",
-  "ryd-fulfillment.sql",
-  "ryd-selected-fulfillment.sql",
+  "ryd-manual-fulfillment.sql",
   "ryd-import-reminders.sql",
   "ryd-bulk-operations.sql",
 ]) {
@@ -200,41 +199,17 @@ try {
   sql(
     `select public.ryd_review_order('${actor}','race-1','{"status":"verified"}');`,
   );
+  const manualOperation = "40000000-0000-4000-8000-000000000291";
+  const manualMove = JSON.stringify([{ orderId: "race-1", from: "ready-to-send", to: "sent-to-fulfillment" }]);
   await race(
-    `select public.ryd_prepare_selected_fulfillment('${actor}',array['race-1'],null)`,
-    `select public.ryd_review_order('${actor}','race-1','{"status":"rejected"}')`,
-  );
-  console.log(
-    "PASS: preparation reserves ready decisions before a waiting reviewer can change them",
-  );
-  await race(
-    `select public.ryd_prepare_selected_fulfillment('${actor}',array['race-1'],null)`,
-    `select public.ryd_prepare_selected_fulfillment('${actor}',array['race-1'],null)`,
+    `select public.ryd_move_production('${actor}','${manualOperation}','${manualMove}')`,
+    `select public.ryd_move_production('${actor}','${manualOperation}','${manualMove}')`,
     true,
   );
-  if (sql("select count(*) from public.ryd_fulfillment_snapshots where state='prepared';") !== "1")
-    throw new Error("Concurrent selection preparation created duplicate drafts");
-  console.log("PASS: concurrent identical selections resume one immutable manifest");
-  const snapshot = sql(
-    "select id from public.ryd_fulfillment_snapshots where state='prepared';",
-  );
-  await race(
-    `select public.ryd_finish_fulfillment('${actor}','${snapshot}','confirm')`,
-    `select public.ryd_finish_fulfillment('${actor}','${snapshot}','confirm')`,
-    true,
-  );
-  if (
-    sql("select count(*) from public.ryd_fulfillment_batches;") !== "1" ||
-    sql("select count(*) from public.ryd_order_events where action='sent';") !==
-      "1" ||
-    sql("select cleared_batch_id is null from public.ryd_orders where order_id='race-2';") !== "t"
-  )
-    throw new Error(
-      "Concurrent confirmations duplicated the batch or its history",
-    );
-  console.log(
-    "PASS: concurrent confirmations commit one batch and one event per cleared order",
-  );
+  if (sql("select count(*) from public.ryd_fulfillment_batches;") !== "1" ||
+      sql("select count(*) from public.ryd_fulfillment_snapshots;") !== "0")
+    throw new Error("Manual handoff retries must record one stage change without a saved email");
+  console.log("PASS: concurrent manual handoff retries record one stage change and no saved emails");
   const payload = (id, filename) =>
     JSON.stringify({
       filename,

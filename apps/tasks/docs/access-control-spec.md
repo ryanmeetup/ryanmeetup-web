@@ -118,25 +118,26 @@ same transaction. A response belongs to one order; production requires a
 verified decision. Routes validate new response references against the configured
 Google form, and the transaction refuses a changed form or stale order revision.
 
-Fulfillment uses private, service-role-only snapshots.
-`ryd_prepare_selected_fulfillment` rechecks actor access and every selected ID
-under stable order locks, capturing exactly those IDs. Unknown or ineligible
-IDs reject the entire selection; none are silently skipped. A request without
-IDs only resumes an existing draft. Matching selections resume the immutable
-file; differing selections return a conflict without changing it. Explicit
-replacement pins the old snapshot ID and cancels/recreates in one transaction,
-so failure restores its reservations. The legacy `ryd_prepare_fulfillment`
-remains available to internal callers. New manifests contain only verified
-orders with no fulfillment batch, production
-send timestamp, or completion timestamp. Older prepared manifests containing
-ineligible orders must be explicitly cancelled before rebuilding; downloads and
-confirmation refuse those manifests without changing their saved contents.
-`ryd_finish_fulfillment` confirms or cancels it with the same actor check.
-Prepared ready orders cannot change decision, export data, or evidence until
-finished. Confirmation atomically records the batch, clears its captured ready
-IDs, and writes their history; retries add no writes. Snapshots retain their
-fulfillment rows for batch history, including cancellations, under the same
-private access boundary as orders. No Google answers or media are copied.
+Fulfillment generation uses service-role-only `ryd_generate_fulfillment`.
+It is read-only and rechecks the actor and every selected ID against one
+consistent database snapshot. Missing or ineligible orders reject the whole
+selection. It returns exactly the selected ready orders and configured
+recipient; it never saves an email, CSV, reservation, receipt, or send event.
+The browser holds the generated content only while the dialog is open.
+Historical snapshot records stay private, but are no longer loaded into the
+queue and cannot reserve decisions or evidence. Reservation triggers are
+removed. Current routes expose no saved-batch mutations; the private legacy
+RPCs remain available to older deployments during rollout.
+
+Fulfillment stages are manual. `ryd_move_production` supports Ready to send,
+Sent to fulfillment, In production, and Done, checking each original stage
+under sorted row locks. Marking sent stores minimal handoff metadata and an
+audit event, never an email body, CSV, or recipient. Returning an order to
+Ready to send clears its handoff flag without deleting historical events.
+Idempotent receipts keep retries from repeating stage changes. Generation,
+opening mail, downloading, and closing the dialog never move orders or update
+Google Sheets. Historical sent-file downloads retain the existing private
+boundary.
 
 Imports and reminder confirmations use service-role-only `ryd_import_orders`
 and `ryd_record_reminders`. They recheck the actor and commit their effects,

@@ -8,7 +8,7 @@ const appRoot = fileURLToPath(new URL("../", import.meta.url));
 const migration = await readFile(
   path.join(
     appRoot,
-    "supabase/migrations/20261101000000_ryd_contract_health.sql",
+    "supabase/migrations/20261106000000_ryd_manual_fulfillment.sql",
   ),
   "utf8",
 );
@@ -16,25 +16,20 @@ const fixture = await readFile(
   path.join(appRoot, "tests/database/ryd-contract.sql"),
   "utf8",
 );
-const readAccessMigration = await readFile(
-  path.join(appRoot, "supabase/migrations/20261102000000_ryd_read_access.sql"),
-  "utf8",
-);
 const directory = await mkdtemp(path.join(tmpdir(), "ryd-contract-test-"));
 try {
   const sqlPath = path.join(directory, "ryd-contract.sql");
   // Keep function creation and every simulated drift inside the test rollback.
-  const definition = migration
-    .replace(/^begin;$/m, "")
-    .replace(/^commit;$/m, "");
+  const definition = migration.slice(
+    migration.indexOf("create or replace function public.ryd_contract_health()"),
+    migration.indexOf("notify pgrst"),
+  );
   await writeFile(
     sqlPath,
     fixture
       .replace("-- APPLY_RYD_CONTRACT_MIGRATION", () => definition)
       .replace("-- APPLY_RYD_READ_ACCESS_MIGRATION", () =>
-        readAccessMigration
-          .replace(/^begin;$/m, "")
-          .replace(/^commit;$/m, ""),
+        definition,
       ),
   );
   const result = spawnSync(

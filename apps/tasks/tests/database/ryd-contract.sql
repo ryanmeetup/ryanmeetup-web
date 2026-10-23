@@ -45,7 +45,7 @@ select is(pg_temp.health_after('alter table public.ryd_write_receipts drop const
 select is(pg_temp.health_after('drop index public.ryd_order_submissions_one_order_idx')->>'contractOk','false','missing unique response claim fails');
 select is(pg_temp.health_after('drop index public.ryd_fulfillment_one_prepared_idx')->>'contractOk','false','missing singleton prepared snapshot fails');
 select is(pg_temp.health_after('alter table public.ryd_settings disable trigger ryd_guard_form_change')->>'contractOk','false','disabled form guard fails');
-select is(pg_temp.health_after('alter table public.ryd_order_submissions disable trigger ryd_guard_reserved_evidence')->>'contractOk','false','disabled evidence reservation guard fails');
+select is(pg_temp.health_after('grant execute on function public.ryd_generate_fulfillment(uuid,text[]) to authenticated')->>'contractOk','false','public access to generated fulfillment data fails');
 select is(pg_temp.health_after($$delete from public.workspace_area_access where area='ryd'$$)->>'contractOk','false','missing page metadata fails');
 select is(pg_temp.health_after('alter function public.member_can_view_workspace_area(uuid,text) rename to missing_member_gate')->>'contractOk','false','missing shared page predicate fails');
 select is(pg_temp.health_after('grant execute on function public.member_can_view_workspace_area(uuid,text) to authenticated')->>'contractOk','false','member access to the private member predicate fails');
