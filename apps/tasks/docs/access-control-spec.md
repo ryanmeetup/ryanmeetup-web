@@ -118,9 +118,16 @@ same transaction. A response belongs to one order; production requires a
 verified decision. Routes validate new response references against the configured
 Google form, and the transaction refuses a changed form or stale order revision.
 
-Fulfillment uses private, service-role-only snapshots. `ryd_prepare_fulfillment`
-resumes the one prepared manifest or captures it under order locks.
-New manifests contain only verified orders with no fulfillment batch, production
+Fulfillment uses private, service-role-only snapshots.
+`ryd_prepare_selected_fulfillment` rechecks actor access and every selected ID
+under stable order locks, capturing exactly those IDs. Unknown or ineligible
+IDs reject the entire selection; none are silently skipped. A request without
+IDs only resumes an existing draft. Matching selections resume the immutable
+file; differing selections return a conflict without changing it. Explicit
+replacement pins the old snapshot ID and cancels/recreates in one transaction,
+so failure restores its reservations. The legacy `ryd_prepare_fulfillment`
+remains available to internal callers. New manifests contain only verified
+orders with no fulfillment batch, production
 send timestamp, or completion timestamp. Older prepared manifests containing
 ineligible orders must be explicitly cancelled before rebuilding; downloads and
 confirmation refuse those manifests without changing their saved contents.

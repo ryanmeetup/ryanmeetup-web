@@ -12,6 +12,7 @@ const appRoot = fileURLToPath(new URL("../", import.meta.url));
 for (const file of [
   "ryd-transactions.sql",
   "ryd-fulfillment.sql",
+  "ryd-selected-fulfillment.sql",
   "ryd-import-reminders.sql",
   "ryd-bulk-operations.sql",
 ]) {
@@ -200,12 +201,20 @@ try {
     `select public.ryd_review_order('${actor}','race-1','{"status":"verified"}');`,
   );
   await race(
-    `select public.ryd_prepare_fulfillment('${actor}')`,
+    `select public.ryd_prepare_selected_fulfillment('${actor}',array['race-1'],null)`,
     `select public.ryd_review_order('${actor}','race-1','{"status":"rejected"}')`,
   );
   console.log(
     "PASS: preparation reserves ready decisions before a waiting reviewer can change them",
   );
+  await race(
+    `select public.ryd_prepare_selected_fulfillment('${actor}',array['race-1'],null)`,
+    `select public.ryd_prepare_selected_fulfillment('${actor}',array['race-1'],null)`,
+    true,
+  );
+  if (sql("select count(*) from public.ryd_fulfillment_snapshots where state='prepared';") !== "1")
+    throw new Error("Concurrent selection preparation created duplicate drafts");
+  console.log("PASS: concurrent identical selections resume one immutable manifest");
   const snapshot = sql(
     "select id from public.ryd_fulfillment_snapshots where state='prepared';",
   );
