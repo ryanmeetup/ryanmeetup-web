@@ -20,7 +20,7 @@ const state = async (request: APIRequestContext) =>
   (await request.get(`${fixtureOrigin}/__ryd/state`)).json();
 async function reset(
   request: APIRequestContext,
-  options: { enabled?: boolean; role?: string; ambiguousForm?: boolean } = {},
+  options: { enabled?: boolean; role?: string; ambiguousForm?: boolean; legacyBatch?: boolean } = {},
 ) {
   expect(
     (
@@ -221,6 +221,77 @@ test("runs import, explicit linking, review, immutable export, confirmation, and
     "ryd_move_production",
     "ryd_move_production",
   ]);
+});
+
+test("sends only newly verified orders and rebuilds an older unsent batch", async ({ page, request }, testInfo) => {
+  await reset(request, { legacyBatch: true });
+  await signIn(page);
+  const imported = await page.request.post("/api/ryd/imports", {
+    multipart: {
+      operationId: "00000000-0000-4000-8000-000000000811",
+      file: {
+        name: "next-batch.csv",
+        mimeType: "text/csv",
+        buffer: Buffer.from(
+          "OrderId,BillFirstName,BillLastName,BillEmail,Verified?\r\n" +
+          "801,Ryan,New,new@example.test,✅\r\n" +
+          "802,Ryan,Production,production@example.test,✅\r\n" +
+          "803,Ryan,Done,done@example.test,✅\r\n" +
+          "804,Ryan,Pending,pending@example.test,\r\n",
+        ),
+      },
+    },
+  });
+  expect(imported.ok()).toBeTruthy();
+  const moved = await page.request.post("/api/ryd/production", {
+    data: {
+      operationId: "00000000-0000-4000-8000-000000000812",
+      moves: [
+        { orderId: "802", from: "not-started", to: "in-production" },
+        { orderId: "803", from: "not-started", to: "done" },
+      ],
+    },
+  });
+  expect(moved.ok()).toBeTruthy();
+  await page.goto("/ryd?status=verified&production=not-started");
+  await page.getByRole("button", { name: "Send to fulfillment", exact: true }).click();
+  const send = page.getByRole("dialog", { name: "Send to fulfillment", exact: true });
+  await expect(send.getByText("This saved batch includes", { exact: false })).toBeVisible();
+  await expect(send.getByRole("button", { name: "Mark as sent", exact: true })).toBeDisabled();
+  await expect(send.getByRole("link", { name: "Download CSV", exact: true })).toHaveCount(0);
+  expect((await page.request.get(`/api/ryd/export?batch=${snapshotId}`)).status()).toBe(409);
+  const widths = testInfo.project.name === "chromium-mobile" ? [390] : [1024, 1280, 1536];
+  for (const width of widths) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.screenshot({ path: testInfo.outputPath(`old-batch-${width}.png`) });
+  }
+  await send.getByRole("button", { name: "Cancel this batch", exact: true }).click();
+  await page.getByRole("dialog", { name: "Cancel this fulfillment batch?", exact: true })
+    .getByRole("button", { name: "Cancel batch", exact: true }).click();
+  await expect(send).toHaveCount(0);
+  await page.getByRole("button", { name: "Send to fulfillment", exact: true }).click();
+  const download = send.getByRole("link", { name: "Download CSV", exact: true });
+  await expect(download).toBeVisible();
+  const file = await page.request.get((await download.getAttribute("href"))!);
+  expect((await file.text()).trim().split(/\r?\n/)).toEqual([
+    "OrderId,BillFirstName,BillLastName,BillEmail,Verified?",
+    "801,Ryan,New,new@example.test,✅",
+  ]);
+  const draft = decodeURIComponent((await send.getByRole("link", { name: "Open draft", exact: true }).getAttribute("href"))!);
+  expect(draft).toContain("801 · Ryan New");
+  for (const name of ["Ryan Production", "Ryan Done", "Ryan Pending"]) expect(draft).not.toContain(name);
+  for (const width of widths) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.screenshot({ path: testInfo.outputPath(`new-batch-${width}.png`) });
+  }
+  await send.getByRole("button", { name: "Mark as sent", exact: true }).click();
+  await page.getByRole("dialog", { name: "Batch marked sent", exact: true })
+    .getByRole("button", { name: "Close", exact: true }).click();
+  const verified = await page.request.patch("/api/ryd/orders/804", { data: { status: "verified" } });
+  expect(verified.ok()).toBeTruthy();
+  const next = await page.request.post("/api/ryd/batches", { data: { action: "prepare" } });
+  expect(await next.json()).toMatchObject({ orderCount: 1, verifiedCount: 1 });
+  expect((await state(request)).snapshot.verified_ids).toEqual(["804"]);
 });
 
 test("shows ambiguous identity mapping and distinguishes buyer and review form links", async ({

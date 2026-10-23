@@ -112,7 +112,7 @@ export function RydSendDialog({
         description={
           completed
             ? "The batch is saved. Review the response-sheet results below."
-            : "Download this batch, attach it to the draft, send it from your own email, then mark it sent. Closing keeps the same batch available to the team."
+            : "Send only verified orders that have not already gone to fulfillment or production. Download this batch, email it, then mark it sent. Closing keeps the same batch available to the team."
         }
         closable={!sending}
         actions={
@@ -129,7 +129,7 @@ export function RydSendDialog({
               confirmLabel="Mark as sent"
               confirmIcon={<FiCheck aria-hidden />}
               onConfirm={() => finish("confirm")}
-              confirmDisabled={!snapshot || loading}
+              confirmDisabled={!snapshot || loading || snapshot.requiresRebuild}
               cancelLabel="Close"
               onCancel={onClose}
               pending={sending}
@@ -168,6 +168,14 @@ export function RydSendDialog({
         )}
         {snapshot && !completed && (
           <div aria-busy={sending} className="space-y-6">
+            {snapshot.requiresRebuild && (
+              <ErrorCallout>
+                This saved batch includes orders still being checked or already
+                sent for production. If nobody has emailed it, cancel this
+                batch, then reopen Send to fulfillment to prepare only the new
+                verified orders.
+              </ErrorCallout>
+            )}
             <dl className="grid gap-4 sm:grid-cols-3">
               {[
                 ["In the file", snapshot.orderCount],
@@ -194,66 +202,68 @@ export function RydSendDialog({
               sent or cancelled. New orders and later verifications go in the
               next file.
             </p>
-            <ol className="space-y-4">
-              <RydDraftStep
-                index={1}
-                title="Download the file"
-                description="The exact orders and decisions saved when this batch was prepared."
-              >
-                <Button.Link
-                  href={`/api/ryd/export?batch=${snapshot.id}`}
-                  size="xs"
-                  variant="secondary"
-                  leftIcon={<FiDownload aria-hidden />}
-                  prefetch={false}
-                  download
-                  disabled={sending}
+            {!snapshot.requiresRebuild && (
+              <ol className="space-y-4">
+                <RydDraftStep
+                  index={1}
+                  title="Download the file"
+                  description="The exact orders and decisions saved when this batch was prepared."
                 >
-                  Download CSV
-                </Button.Link>
-              </RydDraftStep>
-              <RydDraftStep
-                index={2}
-                title="Email it to fulfillment"
-                description={
-                  <>
-                    Opens a draft to{" "}
-                    <span className="font-semibold break-all">
-                      {snapshot.recipient}
-                    </span>{" "}
-                    listing the {snapshot.verifiedCount} ready order
-                    {snapshot.verifiedCount === 1 ? "" : "s"}. Attach this
-                    batch&apos;s file, then send.
-                  </>
-                }
-              >
-                <Button.Link
-                  href={rydMailtoHref({
-                    to: [snapshot.recipient],
-                    ...snapshot.draft,
-                  })}
-                  size="xs"
-                  variant="secondary"
-                  leftIcon={<FiMail aria-hidden />}
-                  prefetch={false}
-                  newTab
-                  disabled={sending}
+                  <Button.Link
+                    href={`/api/ryd/export?batch=${snapshot.id}`}
+                    size="xs"
+                    variant="secondary"
+                    leftIcon={<FiDownload aria-hidden />}
+                    prefetch={false}
+                    download
+                    disabled={sending}
+                  >
+                    Download CSV
+                  </Button.Link>
+                </RydDraftStep>
+                <RydDraftStep
+                  index={2}
+                  title="Email it to fulfillment"
+                  description={
+                    <>
+                      Opens a draft to{" "}
+                      <span className="font-semibold break-all">
+                        {snapshot.recipient}
+                      </span>{" "}
+                      listing the {snapshot.verifiedCount} ready order
+                      {snapshot.verifiedCount === 1 ? "" : "s"}. Attach this
+                      batch&apos;s file, then send.
+                    </>
+                  }
                 >
-                  Open draft
-                </Button.Link>
-                <CopyButton
-                  value={`Subject: ${snapshot.draft.subject}\n\n${snapshot.draft.body}`}
-                  label="Email"
-                >
-                  Copy email
-                </CopyButton>
-              </RydDraftStep>
-              <RydDraftStep
-                index={3}
-                title="Mark it sent"
-                description="After sending, mark this batch sent to clear exactly its ready orders. The form sheet tick happens afterwards."
-              />
-            </ol>
+                  <Button.Link
+                    href={rydMailtoHref({
+                      to: [snapshot.recipient],
+                      ...snapshot.draft,
+                    })}
+                    size="xs"
+                    variant="secondary"
+                    leftIcon={<FiMail aria-hidden />}
+                    prefetch={false}
+                    newTab
+                    disabled={sending}
+                  >
+                    Open draft
+                  </Button.Link>
+                  <CopyButton
+                    value={`Subject: ${snapshot.draft.subject}\n\n${snapshot.draft.body}`}
+                    label="Email"
+                  >
+                    Copy email
+                  </CopyButton>
+                </RydDraftStep>
+                <RydDraftStep
+                  index={3}
+                  title="Mark it sent"
+                  description="After sending, mark this batch sent to clear exactly its ready orders. The form sheet tick happens afterwards."
+                />
+              </ol>
+            )}
             <Button
               variant="secondary"
               size="xs"

@@ -14,7 +14,9 @@ const headers = ["Timestamp", "Your email", "Legal name", "Verified?"];
 export function createRydFixture(json, readBody, profile) {
   let state;
   let revision = 0;
+  let snapshotSequence = 0;
   function reset(options = {}) {
+    snapshotSequence = 0;
     const iv = randomBytes(12);
     const cipher = createCipheriv("aes-256-gcm", Buffer.alloc(32, 8), iv);
     const token = Buffer.concat([
@@ -26,6 +28,7 @@ export function createRydFixture(json, readBody, profile) {
       enabled: options.enabled !== false,
       denied: options.role === "denied",
       ambiguousForm: options.ambiguousForm === true,
+      legacyBatch: options.legacyBatch === true,
       settings: {
         id: true,
         form_id: FORM,
@@ -74,6 +77,17 @@ export function createRydFixture(json, readBody, profile) {
       .filter((link) => link.order_id === order.order_id)
       .map((link) => link.submission_key),
   });
+  const eligible = (order) =>
+    order.status === "verified" &&
+    !order.cleared_batch_id &&
+    !order.production_sent_at &&
+    !order.done_at;
+  const snapshotReady = () =>
+    state.snapshot?.state === "prepared" &&
+    state.snapshot.order_rows.length === state.snapshot.verified_ids.length &&
+    state.snapshot.verified_ids.every((id) =>
+      state.orders.some((o) => o.order_id === id && eligible(o)),
+    );
   return async function handle(request, response, url, { single }) {
     const path = url.pathname;
     if (path === "/__ryd/reset") {
@@ -237,6 +251,10 @@ export function createRydFixture(json, readBody, profile) {
     if (path.startsWith("/rest/v1/rpc/ryd_")) {
       const name = path.split("/").at(-1);
       const body = await readBody(request);
+      if (name === "ryd_fulfillment_is_ready") {
+        json(response, 200, snapshotReady());
+        return true;
+      }
       state.calls.push({ name, body });
       if (
         state.denied ||
@@ -314,22 +332,40 @@ export function createRydFixture(json, readBody, profile) {
           order: publicOrder(state.orders[index]),
         });
       } else if (name === "ryd_prepare_fulfillment") {
-        state.snapshot ??= {
-          id: SNAPSHOT,
-          state: "prepared",
-          recipient: state.settings.fulfillment_email,
-          headers: state.imports.at(-1).headers,
-          order_rows: state.orders
-            .filter((o) => !o.cleared_batch_id)
-            .map((o) => ({ ...o })),
-          verified_ids: state.orders
-            .filter((o) => o.status === "verified" && !o.cleared_batch_id)
-            .map((o) => o.order_id),
-          response_keys: state.links.map((link) => link.submission_key),
-          form_id: FORM,
-          prepared_at: NOW,
-        };
-        json(response, 200, state.snapshot);
+        if (state.snapshot?.state !== "prepared") {
+          const orders = state.orders.filter(
+            state.legacyBatch ? (o) => !o.cleared_batch_id : eligible,
+          );
+          if (!orders.some((o) => o.status === "verified")) {
+            error(
+              response,
+              "RY409",
+              "There are no unsent verified orders to prepare.",
+            );
+            return true;
+          }
+          state.snapshot = {
+            id:
+              snapshotSequence++ === 0
+                ? SNAPSHOT
+                : `00000000-0000-4000-8000-${String(801 + snapshotSequence).padStart(12, "0")}`,
+            state: "prepared",
+            recipient: state.settings.fulfillment_email,
+            headers: state.imports.at(-1).headers,
+            order_rows: orders.map((o) => ({ ...o })),
+            verified_ids: orders
+              .filter((o) => o.status === "verified")
+              .map((o) => o.order_id),
+            response_keys: state.links.map((link) => link.submission_key),
+            form_id: FORM,
+            prepared_at: NOW,
+          };
+          state.legacyBatch = false;
+        }
+        json(response, 200, {
+          ...state.snapshot,
+          requires_rebuild: !snapshotReady(),
+        });
       } else if (name === "ryd_finish_fulfillment") {
         const snapshot = state.snapshot;
         const changed = snapshot.state === "prepared";
@@ -345,7 +381,7 @@ export function createRydFixture(json, readBody, profile) {
             });
             for (const order of state.orders)
               if (snapshot.verified_ids.includes(order.order_id))
-                order.cleared_batch_id = SNAPSHOT;
+                order.cleared_batch_id = snapshot.id;
           }
         }
         json(response, 200, { changed, snapshot });
