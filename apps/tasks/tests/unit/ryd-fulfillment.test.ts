@@ -72,6 +72,27 @@ beforeEach(() => {
 });
 
 describe("RY-D immutable fulfillment manifests", () => {
+  it("accepts selected IDs with an optional reviewed draft to replace", () => {
+    expect(
+      rydBatchSchema({
+        action: "prepare",
+        orderIds: ["2", "1", "2"],
+        replaceSnapshotId: snapshot.id,
+      }),
+    ).toEqual({
+      action: "prepare",
+      orderIds: ["2", "1"],
+      replaceSnapshotId: snapshot.id,
+    });
+  });
+  it("exposes a selection conflict for explicit replacement", async () => {
+    const result = await prepareRydFulfillment(
+      client({ ...snapshot, selection_conflict: true }),
+      "actor",
+      { orderIds: ["3"] },
+    );
+    expect(result).toMatchObject({ id: snapshot.id, selectionConflict: true });
+  });
   it("builds its draft from the manifest's ready rows", async () => {
     const draft = await prepareRydFulfillment(client(snapshot), "actor");
     expect(draft).toMatchObject({
@@ -246,7 +267,14 @@ describe("RY-D immutable fulfillment manifests", () => {
   it.each([
     {},
     { action: "confirm" },
-    { action: "prepare", orderIds: ["1"] },
+    { action: "prepare", orderIds: [] },
+    { action: "prepare", orderIds: [null] },
+    { action: "prepare", orderIds: ["1"], replaceSnapshotId: "bad" },
+    { action: "prepare", orderIds: ["1"], recipient: "untrusted@example.test" },
+    {
+      action: "prepare",
+      orderIds: Array.from({ length: 5001 }, (_, i) => String(i)),
+    },
     { action: "cancel", snapshotId: "bad" },
   ])("rejects invalid batch requests: %o", (value) => {
     expect(rydBatchSchema(value)).toBeNull();

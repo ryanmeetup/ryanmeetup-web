@@ -22,18 +22,24 @@ import type {
 
 import { RydSheetReport } from "./RydSheetReport";
 
-const prepareBatch = () =>
+const prepareBatch = (orderIds: string[] | null, replaceSnapshotId?: string) =>
   mutate<RydFulfillmentSnapshot>("/api/ryd/batches", {
     method: "POST",
-    body: JSON.stringify({ action: "prepare" }),
+    body: JSON.stringify({
+      action: "prepare",
+      ...(orderIds ? { orderIds } : {}),
+      ...(replaceSnapshotId ? { replaceSnapshotId } : {}),
+    }),
   });
 
 export function RydSendDialog({
+  orderIds,
   onClose,
   onChanged,
   onPrepared,
   onFinished,
 }: {
+  orderIds: string[] | null;
   onClose: () => void;
   onChanged: () => Promise<void>;
   onPrepared: (snapshot: RydFulfillmentSnapshot) => void;
@@ -48,6 +54,7 @@ export function RydSendDialog({
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [replaceOpen, setReplaceOpen] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const completionRef = useRef<HTMLParagraphElement>(null);
 
@@ -57,7 +64,7 @@ export function RydSendDialog({
 
   useEffect(() => {
     let active = true;
-    prepareBatch()
+    prepareBatch(orderIds)
       .then((result) => {
         if (active) {
           setSnapshot(result);
@@ -75,7 +82,25 @@ export function RydSendDialog({
     return () => {
       active = false;
     };
-  }, [attempt, onPrepared]);
+  }, [attempt, onPrepared, orderIds]);
+
+  async function replaceBatch() {
+    if (!snapshot || !orderIds || sending) return;
+    setSending(true);
+    try {
+      const result = await prepareBatch(orderIds, snapshot.id);
+      setSnapshot(result);
+      onPrepared(result);
+      setError("");
+    } catch (failure) {
+      setError(
+        errorMessage(failure, "The selected batch could not be generated."),
+      );
+    } finally {
+      setSending(false);
+      setReplaceOpen(false);
+    }
+  }
 
   async function finish(action: "confirm" | "cancel") {
     if (!snapshot || sending || completed) return;
@@ -121,7 +146,9 @@ export function RydSendDialog({
         description={
           completed
             ? "The email is recorded. Production starts only after fulfillment confirms it."
-            : "Download the CSV, attach it to the draft, and send it from your email app. Then confirm the email was sent. Closing keeps this batch available to the team."
+            : snapshot?.selectionConflict
+              ? "Review the saved draft before generating the email and CSV for your selected orders."
+              : "Download the CSV, attach it to the draft, and send it from your email app. Then confirm the email was sent. Closing keeps this batch available to the team."
         }
         closable={!sending}
         actions={
@@ -138,7 +165,12 @@ export function RydSendDialog({
               confirmLabel="Confirm email sent"
               confirmIcon={<FiCheck aria-hidden />}
               onConfirm={() => finish("confirm")}
-              confirmDisabled={!snapshot || loading || snapshot.requiresRebuild}
+              confirmDisabled={
+                !snapshot ||
+                loading ||
+                snapshot.requiresRebuild ||
+                snapshot.selectionConflict
+              }
               cancelLabel="Close"
               onCancel={onClose}
               pending={sending}
@@ -149,7 +181,10 @@ export function RydSendDialog({
       >
         {loading && (
           <div className="flex items-center gap-3" role="status">
-            <Spinner aria-hidden /> Preparing or resuming the batch…
+            <Spinner aria-hidden />{" "}
+            {orderIds
+              ? "Generating the selected batch…"
+              : "Resuming the saved batch…"}
           </div>
         )}
         <ErrorCallout>{error}</ErrorCallout>
@@ -178,100 +213,138 @@ export function RydSendDialog({
         )}
         {snapshot && !completed && (
           <div aria-busy={sending} className="space-y-6">
-            {snapshot.requiresRebuild && (
-              <ErrorCallout>
-                This saved batch includes orders still being checked or already
-                sent for production. If nobody has emailed it, cancel this
-                batch, then prepare a new batch with only the new verified
-                orders.
-              </ErrorCallout>
-            )}
-            <dl className="rounded-2xl border border-black/10 p-4 dark:border-white/10">
-              <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-black/70 dark:text-white/70">
-                Orders in this batch
-              </dt>
-              <dd className="mt-1 font-cooper text-3xl">{snapshot.orderCount}</dd>
-            </dl>
-            <p className="text-sm text-black/70 dark:text-white/70">
-              Prepared {new Date(snapshot.preparedAt).toLocaleString()}. Ready
-              orders and their evidence stay reserved until this batch is marked
-              sent or cancelled. New orders and later verifications go in the
-              next file.
-            </p>
-            {!snapshot.requiresRebuild && (
-              <ol className="space-y-4">
-                <RydDraftStep
-                  index={1}
-                  title="Download the file"
-                  description="The exact orders and decisions saved when this batch was prepared."
+            {snapshot.selectionConflict && orderIds ? (
+              <div className="space-y-4 rounded-2xl border border-black/10 p-4 dark:border-white/10">
+                <p>
+                  You selected{" "}
+                  <strong>
+                    {orderIds.length} ready{" "}
+                    {orderIds.length === 1 ? "order" : "orders"}
+                  </strong>
+                  . A different draft with {snapshot.orderCount} orders is still
+                  saved. Replace that unsent draft to generate the email and CSV
+                  for your selection.
+                </p>
+                <Button
+                  className="w-full sm:w-auto"
+                  disabled={sending}
+                  onClick={() => setReplaceOpen(true)}
                 >
-                  <Button.Link
-                    href={`/api/ryd/export?batch=${snapshot.id}`}
-                    size="xs"
-                    variant="secondary"
-                    leftIcon={<FiDownload aria-hidden />}
-                    prefetch={false}
-                    download
-                    disabled={sending}
-                  >
-                    Download CSV
-                  </Button.Link>
-                </RydDraftStep>
-                <RydDraftStep
-                  index={2}
-                  title="Email it to fulfillment"
-                  description={
-                    <>
-                      Opens a draft to{" "}
-                      <span className="font-semibold break-all">
-                        {snapshot.recipient}
-                      </span>{" "}
-                      listing the {snapshot.verifiedCount} ready order
-                      {snapshot.verifiedCount === 1 ? "" : "s"}. Attach this
-                      batch&apos;s file, then send.
-                    </>
-                  }
-                >
-                  <Button.Link
-                    href={rydMailtoHref({
-                      to: [snapshot.recipient],
-                      ...snapshot.draft,
-                    })}
-                    size="xs"
-                    variant="secondary"
-                    leftIcon={<FiMail aria-hidden />}
-                    prefetch={false}
-                    newTab
-                    disabled={sending}
-                  >
-                    Open draft
-                  </Button.Link>
-                  <CopyButton
-                    value={`Subject: ${snapshot.draft.subject}\n\n${snapshot.draft.body}`}
-                    label="Email"
-                  >
-                    Copy email
-                  </CopyButton>
-                </RydDraftStep>
-                <RydDraftStep
-                  index={3}
-                  title="Confirm the email was sent"
-                  description="Moves this batch to Sent to fulfillment and keeps it out of future files. Confirm production started separately when fulfillment acknowledges it."
-                />
-              </ol>
+                  Generate selected batch instead
+                </Button>
+              </div>
+            ) : (
+              snapshot.requiresRebuild && (
+                <ErrorCallout>
+                  This saved batch includes orders still being checked or
+                  already sent for production. If nobody has emailed it, cancel
+                  this batch, then prepare a new batch with only the new
+                  verified orders.
+                </ErrorCallout>
+              )
             )}
-            <Button
-              variant="secondary"
-              size="xs"
-              className="w-full sm:w-auto"
-              disabled={sending}
-              onClick={() => setCancelOpen(true)}
-            >
-              Cancel this batch
-            </Button>
+            {!snapshot.selectionConflict && (
+              <>
+                <dl className="rounded-2xl border border-black/10 p-4 dark:border-white/10">
+                  <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-black/70 dark:text-white/70">
+                    Orders in this batch
+                  </dt>
+                  <dd className="mt-1 font-cooper text-3xl">
+                    {snapshot.orderCount}
+                  </dd>
+                </dl>
+                <p className="text-sm text-black/70 dark:text-white/70">
+                  Prepared {new Date(snapshot.preparedAt).toLocaleString()}.
+                  Ready orders and their evidence stay reserved until this batch
+                  is marked sent or cancelled. New orders and later
+                  verifications go in the next file.
+                </p>
+                {!snapshot.requiresRebuild && (
+                  <ol className="space-y-4">
+                    <RydDraftStep
+                      index={1}
+                      title="Download the file"
+                      description="The exact orders and decisions saved when this batch was prepared."
+                    >
+                      <Button.Link
+                        href={`/api/ryd/export?batch=${snapshot.id}`}
+                        size="xs"
+                        variant="secondary"
+                        leftIcon={<FiDownload aria-hidden />}
+                        prefetch={false}
+                        download
+                        disabled={sending}
+                      >
+                        Download CSV
+                      </Button.Link>
+                    </RydDraftStep>
+                    <RydDraftStep
+                      index={2}
+                      title="Email it to fulfillment"
+                      description={
+                        <>
+                          Opens a draft to{" "}
+                          <span className="font-semibold break-all">
+                            {snapshot.recipient}
+                          </span>{" "}
+                          listing the {snapshot.verifiedCount} ready order
+                          {snapshot.verifiedCount === 1 ? "" : "s"}. Attach this
+                          batch&apos;s file, then send.
+                        </>
+                      }
+                    >
+                      <Button.Link
+                        href={rydMailtoHref({
+                          to: [snapshot.recipient],
+                          ...snapshot.draft,
+                        })}
+                        size="xs"
+                        variant="secondary"
+                        leftIcon={<FiMail aria-hidden />}
+                        prefetch={false}
+                        newTab
+                        disabled={sending}
+                      >
+                        Open draft
+                      </Button.Link>
+                      <CopyButton
+                        value={`Subject: ${snapshot.draft.subject}\n\n${snapshot.draft.body}`}
+                        label="Email"
+                      >
+                        Copy email
+                      </CopyButton>
+                    </RydDraftStep>
+                    <RydDraftStep
+                      index={3}
+                      title="Confirm the email was sent"
+                      description="Moves this batch to Sent to fulfillment and keeps it out of future files. Confirm production started separately when fulfillment acknowledges it."
+                    />
+                  </ol>
+                )}
+                <Button
+                  variant="secondary"
+                  size="xs"
+                  className="w-full sm:w-auto"
+                  disabled={sending}
+                  onClick={() => setCancelOpen(true)}
+                >
+                  Cancel this batch
+                </Button>
+              </>
+            )}
           </div>
         )}
       </Modal>
+      <ConfirmationDialog
+        open={replaceOpen}
+        setOpen={(open) => !sending && setReplaceOpen(open)}
+        title={`Replace the saved draft with ${orderIds?.length ?? 0} selected ${orderIds?.length === 1 ? "order" : "orders"}?`}
+        description={`Only replace if nobody has emailed the previous ${snapshot?.orderCount ?? 0}-order file. Discard that file and draft. This generates a new email and CSV containing exactly your selection.`}
+        confirmLabel="Replace draft & generate"
+        pendingLabel="Generating..."
+        pending={sending}
+        onConfirm={replaceBatch}
+      />
       <ConfirmationDialog
         open={cancelOpen}
         setOpen={(open) => !sending && setCancelOpen(open)}

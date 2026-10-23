@@ -87,6 +87,7 @@ import {
   rydFulfillmentParam,
   rydFulfillmentStage,
 } from "@/lib/ryd/fulfillment-view";
+import { RYD_FULFILLMENT_LIMIT } from "@/lib/ryd/fulfillment";
 import type {
   RydFulfillmentResult,
   RydFulfillmentSnapshot,
@@ -213,6 +214,9 @@ export function RydPageClient({
   const { queue, refresh, refreshState, reconcile } =
     useRydQueueController(initialQueue);
   const [dialog, setDialog] = useState<Dialog>(null);
+  const [fulfillmentOrderIds, setFulfillmentOrderIds] = useState<
+    string[] | null
+  >(null);
   const [viewParam, setViewParam] = useQueryParamState("view");
   const [statusParam, setStatusParam] = useQueryParamState("status");
   const [sortParam, setSortParam] = useQueryParamState("sort");
@@ -242,12 +246,9 @@ export function RydPageClient({
   const [decisionPending, setDecisionPending] = useState(false);
   const view = rydView(viewParam);
   const status = rydStatusParam(statusParam);
-  // A new batch includes the entire ready queue. Later stages and other
-  // order lists use selection for their acknowledgment, review, and email actions.
   const producing = view === "queue" && status === "verified";
   const production = producing ? rydFulfillmentParam(productionParam) : null;
-  const selectable =
-    view !== "unmatched" && (!producing || production !== "ready-to-send");
+  const selectable = view !== "unmatched";
   const sort = rydSortParam(sortParam);
   const unmatchedLayout = layoutParam === "table" ? "table" : "cards";
   const { page, pageSize, setPage, setPageSize, syncPage } = usePagination();
@@ -275,10 +276,6 @@ export function RydPageClient({
     () => rydFulfillmentCounts(queue.orders),
     [queue.orders],
   );
-  const ready = useMemo(
-    () => readyForRydFulfillment(queue.orders),
-    [queue.orders],
-  );
   const batchPrepared = useCallback(
     (snapshot: RydFulfillmentSnapshot) => {
       reconcile((current) => ({
@@ -295,6 +292,7 @@ export function RydPageClient({
     (result: RydFulfillmentResult, action: "confirm" | "cancel") => {
       reconcile((current) => reconcileRydFulfillment(current, result, action));
       if (action === "confirm") {
+        setSelected(new Set());
         setViewParam("");
         setStatusParam("verified");
         setProductionParam("sent-to-fulfillment");
@@ -376,6 +374,11 @@ export function RydPageClient({
       selectable ? sorted.filter((order) => selected.has(order.orderId)) : [],
     [selectable, sorted, selected],
   );
+  const selectedReady = readyForRydFulfillment(selectedOrders);
+  const canGenerate =
+    selectedOrders.length > 0 &&
+    selectedReady.length === selectedOrders.length &&
+    selectedReady.length <= RYD_FULFILLMENT_LIMIT;
   const selectedSubmitters = useMemo(
     () =>
       view === "unmatched"
@@ -673,20 +676,22 @@ export function RydPageClient({
               >
                 Upload orders
               </Button>
-              <Button
-                type="button"
-                size="sm"
-                className="w-full 2xl:w-auto"
-                leftIcon={<FiSend aria-hidden />}
-                onClick={() => setDialog("send")}
-                disabled={
-                  !queue.installed || (!queue.preparedBatch && !ready.length)
-                }
-              >
-                {queue.preparedBatch
-                  ? "Resume fulfillment batch"
-                  : `Prepare fulfillment batch (${ready.length})`}
-              </Button>
+              {queue.preparedBatch && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  className="w-full 2xl:w-auto"
+                  leftIcon={<FiSend aria-hidden />}
+                  onClick={() => {
+                    setFulfillmentOrderIds(null);
+                    setDialog("send");
+                  }}
+                  disabled={!queue.installed}
+                >
+                  Resume fulfillment batch
+                </Button>
+              )}
               <Button
                 type="button"
                 size="sm"
@@ -1117,7 +1122,6 @@ export function RydPageClient({
                       stage={production}
                       counts={productionCounts}
                       total={counts.verified}
-                      preparedCount={queue.preparedBatch?.verifiedCount}
                       onChange={(stage) => {
                         setProductionParam(stage ?? "all");
                         setPage(1);
@@ -1130,6 +1134,32 @@ export function RydPageClient({
                         disabled={searchPending || moving !== null}
                         onToggleAll={toggleAllOrders}
                       >
+                        {(!production || production === "ready-to-send") && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="w-full sm:w-auto"
+                            leftIcon={<FiSend aria-hidden />}
+                            disabled={
+                              searchPending || moving !== null || !canGenerate
+                            }
+                            title={
+                              selectedReady.length > RYD_FULFILLMENT_LIMIT
+                                ? `Select up to ${RYD_FULFILLMENT_LIMIT} orders per batch.`
+                                : selectedOrders.length && !canGenerate
+                                  ? "Select only orders marked Ready to send."
+                                  : undefined
+                            }
+                            onClick={() => {
+                              setFulfillmentOrderIds(
+                                selectedReady.map((order) => order.orderId),
+                              );
+                              setDialog("send");
+                            }}
+                          >
+                            Generate email &amp; CSV ({selectedReady.length})
+                          </Button>
+                        )}
                         {(!production ||
                           production === "sent-to-fulfillment") && (
                           <Button
@@ -1369,6 +1399,7 @@ export function RydPageClient({
       )}
       {dialog === "send" && (
         <RydSendDialog
+          orderIds={fulfillmentOrderIds}
           onClose={() => setDialog(null)}
           onChanged={refresh}
           onPrepared={batchPrepared}

@@ -44,7 +44,7 @@ The download, email draft, and send confirmation now use one saved batch. Ready 
 
 New batches include only verified orders that have not already gone to fulfillment or production. Orders in production, completed orders, and orders still being checked stay out of the next file and email draft.
 
-Verified now opens to Ready to send, with separate stages for Sent to fulfillment, In production, and Done. Preparing a batch shows exactly how many orders it includes, and saved drafts can be resumed. Confirm email sent records the handoff; Confirm production started waits for fulfillment's acknowledgment. Emailing a batch never starts production automatically.
+Verified now opens to Ready to send, with separate stages for Sent to fulfillment, In production, and Done. Select ready orders across pages and choose Generate email & CSV to create a batch containing exactly that selection. Saved drafts can be resumed or explicitly replaced with a new selection. Confirm email sent records the handoff; Confirm production started waits for fulfillment's acknowledgment. Emailing a batch never starts production automatically.
 
 Response-sheet updates require a unique tab and matching response. After marking a batch sent, review which responses were updated, already ticked, missing, ambiguous, or unchecked. Uncertain updates stay available for a manual check without repeating the send.
 

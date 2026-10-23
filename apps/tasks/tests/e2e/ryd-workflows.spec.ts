@@ -96,9 +96,9 @@ test("runs import, explicit linking, review, immutable export, confirmation, and
   await expect(review).toHaveCount(0);
   await page.goto("/ryd?status=verified");
   await expect(page.getByRole("button", { name: "Ready to send 1", exact: true })).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("checkbox", { name: "Select Ryan Fixture", exact: true })).toHaveCount(0);
+  await page.getByRole("checkbox", { name: "Select Ryan Fixture", exact: true }).check();
   await page
-    .getByRole("button", { name: /^(Prepare fulfillment batch \(\d+\)|Resume fulfillment batch)$/ })
+    .getByRole("button", { name: "Generate email & CSV (1)", exact: true })
     .click();
   const send = page.getByRole("dialog", {
     name: "Prepare fulfillment batch",
@@ -131,7 +131,7 @@ test("runs import, explicit linking, review, immutable export, confirmation, and
   await page.reload();
   await expect(page.getByRole("button", { name: "Resume fulfillment batch", exact: true })).toBeVisible();
   await page
-    .getByRole("button", { name: /^(Prepare fulfillment batch \(\d+\)|Resume fulfillment batch)$/ })
+    .getByRole("button", { name: "Resume fulfillment batch", exact: true })
     .click();
   await expect(
     page.getByRole("link", { name: "Download CSV" }),
@@ -228,8 +228,8 @@ test("runs import, explicit linking, review, immutable export, confirmation, and
     "ryd_import_orders",
     "ryd_link_submissions",
     "ryd_review_order",
-    "ryd_prepare_fulfillment",
-    "ryd_prepare_fulfillment",
+    "ryd_prepare_selected_fulfillment",
+    "ryd_prepare_selected_fulfillment",
     "ryd_finish_fulfillment",
     "ryd_finish_fulfillment",
     "ryd_move_production",
@@ -251,7 +251,8 @@ test("sends only newly verified orders and rebuilds an older unsent batch", asyn
           "801,Ryan,New,new@example.test,✅\r\n" +
           "802,Ryan,Production,production@example.test,✅\r\n" +
           "803,Ryan,Done,done@example.test,✅\r\n" +
-          "804,Ryan,Pending,pending@example.test,\r\n",
+          "804,Ryan,Pending,pending@example.test,\r\n" +
+          "805,Ryan,Unselected,unselected@example.test,✅\r\n",
         ),
       },
     },
@@ -268,9 +269,10 @@ test("sends only newly verified orders and rebuilds an older unsent batch", asyn
   });
   expect(moved.ok()).toBeTruthy();
   await page.goto("/ryd?status=verified&production=not-started");
-  await page.getByRole("button", { name: /^(Prepare fulfillment batch \(\d+\)|Resume fulfillment batch)$/ }).click();
+  await page.getByRole("checkbox", { name: "Select Ryan New", exact: true }).check();
+  await page.getByRole("button", { name: "Generate email & CSV (1)", exact: true }).click();
   const send = page.getByRole("dialog", { name: "Prepare fulfillment batch", exact: true });
-  await expect(send.getByText("This saved batch includes", { exact: false })).toBeVisible();
+  await expect(send.getByText("A different draft with 5 orders", { exact: false })).toBeVisible();
   await expect(send.getByRole("button", { name: "Confirm email sent", exact: true })).toBeDisabled();
   await expect(send.getByRole("link", { name: "Download CSV", exact: true })).toHaveCount(0);
   expect((await page.request.get(`/api/ryd/export?batch=${snapshotId}`)).status()).toBe(409);
@@ -279,11 +281,14 @@ test("sends only newly verified orders and rebuilds an older unsent batch", asyn
     await page.setViewportSize({ width, height: 900 });
     await page.screenshot({ path: testInfo.outputPath(`old-batch-${width}.png`) });
   }
-  await send.getByRole("button", { name: "Cancel this batch", exact: true }).click();
-  await page.getByRole("dialog", { name: "Cancel this fulfillment batch?", exact: true })
-    .getByRole("button", { name: "Cancel batch", exact: true }).click();
-  await expect(send).toHaveCount(0);
-  await page.getByRole("button", { name: /^(Prepare fulfillment batch \(\d+\)|Resume fulfillment batch)$/ }).click();
+  // Closing leaves the existing draft untouched. Reopening the selection
+  // still offers explicit replacement rather than using the wrong file.
+  await send.getByRole("button", { name: "Close", exact: true }).click();
+  expect((await state(request)).snapshot.verified_ids).toEqual(["801", "802", "803", "805"]);
+  await page.getByRole("button", { name: "Generate email & CSV (1)", exact: true }).click();
+  await send.getByRole("button", { name: "Generate selected batch instead", exact: true }).click();
+  await page.getByRole("dialog", { name: "Replace the saved draft with 1 selected order?", exact: true })
+    .getByRole("button", { name: "Replace draft & generate", exact: true }).click();
   const download = send.getByRole("link", { name: "Download CSV", exact: true });
   await expect(download).toBeVisible();
   const file = await page.request.get((await download.getAttribute("href"))!);
@@ -293,7 +298,7 @@ test("sends only newly verified orders and rebuilds an older unsent batch", asyn
   ]);
   const draft = decodeURIComponent((await send.getByRole("link", { name: "Open draft", exact: true }).getAttribute("href"))!);
   expect(draft).toContain("801 · Ryan New");
-  for (const name of ["Ryan Production", "Ryan Done", "Ryan Pending"]) expect(draft).not.toContain(name);
+  for (const name of ["Ryan Production", "Ryan Done", "Ryan Pending", "Ryan Unselected"]) expect(draft).not.toContain(name);
   for (const width of widths) {
     await page.setViewportSize({ width, height: 900 });
     await page.screenshot({ path: testInfo.outputPath(`new-batch-${width}.png`) });
@@ -303,9 +308,54 @@ test("sends only newly verified orders and rebuilds an older unsent batch", asyn
     .getByRole("button", { name: "Close", exact: true }).click();
   const verified = await page.request.patch("/api/ryd/orders/804", { data: { status: "verified" } });
   expect(verified.ok()).toBeTruthy();
-  const next = await page.request.post("/api/ryd/batches", { data: { action: "prepare" } });
-  expect(await next.json()).toMatchObject({ orderCount: 1, verifiedCount: 1 });
-  expect((await state(request)).snapshot.verified_ids).toEqual(["804"]);
+  await page.goto("/ryd?status=verified");
+  await page.getByRole("checkbox", { name: "Select all 2", exact: true }).check();
+  await page.getByRole("button", { name: "Generate email & CSV (2)", exact: true }).click();
+  await expect(send.getByRole("link", { name: "Download CSV", exact: true })).toBeVisible();
+  expect((await state(request)).snapshot.verified_ids).toEqual(["804", "805"]);
+
+});
+
+test("generates a selected batch across pages while respecting the ready filter", async ({ page, request }, testInfo) => {
+  await reset(request);
+  await signIn(page);
+  const rows = Array.from({ length: 12 }, (_, i) => `${801 + i},Ryan,Ready${i},ready${i}@example.test,✅`);
+  const imported = await page.request.post("/api/ryd/imports", { multipart: {
+    operationId: "00000000-0000-4000-8000-000000000831",
+    file: { name: "selection.csv", mimeType: "text/csv", buffer: Buffer.from(
+      "OrderId,BillFirstName,BillLastName,BillEmail,Verified?\r\n" + rows.join("\r\n") + "\r\n900,Ryan,Existing,existing@example.test,✅\r\n",
+    ) },
+  } });
+  expect(imported.ok()).toBeTruthy();
+  expect((await page.request.post("/api/ryd/production", { data: {
+    operationId: "00000000-0000-4000-8000-000000000832",
+    moves: [{ orderId: "900", from: "not-started", to: "in-production" }],
+  } })).ok()).toBeTruthy();
+  await page.goto("/ryd?status=verified&pageSize=10");
+  await expect(page.locator("table tbody tr")).toHaveCount(10);
+  await expect(page.getByRole("button", { name: "Generate email & CSV (0)", exact: true })).toBeDisabled();
+  await page.getByRole("checkbox", { name: "Select all 12", exact: true }).check();
+  await expect(page.getByRole("checkbox", { name: "12 of 12 selected", exact: true })).toBeChecked();
+  const widths = testInfo.project.name === "chromium-mobile" ? [390] : [1024, 1280, 1536];
+  for (const width of widths) {
+    await page.setViewportSize({ width, height: 900 });
+    const generate = page.getByRole("button", { name: "Generate email & CSV (12)", exact: true });
+    await generate.scrollIntoViewIfNeeded();
+    await expect(generate).toBeInViewport();
+    await page.screenshot({ path: testInfo.outputPath(`ready-selection-${width}.png`) });
+  }
+  await page.getByRole("button", { name: "Generate email & CSV (12)", exact: true }).click();
+  const send = page.getByRole("dialog", { name: "Prepare fulfillment batch", exact: true });
+  const download = send.getByRole("link", { name: "Download CSV", exact: true });
+  await expect(download).toBeVisible();
+  const file = await page.request.get((await download.getAttribute("href"))!);
+  expect((await file.text()).trim().split(/\r?\n/)).toHaveLength(13);
+  const draft = decodeURIComponent((await send.getByRole("link", { name: "Open draft", exact: true }).getAttribute("href"))!);
+  for (let i = 0; i < 12; i++) expect(draft).toContain(`${801 + i} · Ryan Ready${i}`);
+  expect(draft).not.toContain("Ryan Existing");
+  const prepared = await state(request);
+  expect(prepared.snapshot.verified_ids).toHaveLength(12);
+  expect(prepared.calls.at(-1)).toMatchObject({ name: "ryd_prepare_selected_fulfillment", body: { requested_orders: expect.arrayContaining(["801", "812"]), requested_replace: null } });
 });
 
 test("sorts the production column by stage and sent date", async ({ page, request }, testInfo) => {

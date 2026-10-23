@@ -13,6 +13,7 @@ type ParsedJson<T> =
 export async function readJson<T>(
   request: Request,
   schema: ApiSchema<T>,
+  { maxBytes = MAX_JSON_BYTES }: { maxBytes?: number } = {},
 ): Promise<ParsedJson<T>> {
   const origin = request.headers.get("origin");
   let originAllowed = false;
@@ -42,7 +43,7 @@ export async function readJson<T>(
     } as const;
   }
   const declaredSize = Number(request.headers.get("content-length"));
-  if (Number.isFinite(declaredSize) && declaredSize > MAX_JSON_BYTES) {
+  if (Number.isFinite(declaredSize) && declaredSize > maxBytes) {
     return {
       response: apiError(413, "REQUEST_TOO_LARGE", "The request is too large."),
     } as const;
@@ -59,7 +60,7 @@ export async function readJson<T>(
       ),
     } as const;
   }
-  if (new TextEncoder().encode(text).byteLength > MAX_JSON_BYTES) {
+  if (new TextEncoder().encode(text).byteLength > maxBytes) {
     return {
       response: apiError(413, "REQUEST_TOO_LARGE", "The request is too large."),
     } as const;

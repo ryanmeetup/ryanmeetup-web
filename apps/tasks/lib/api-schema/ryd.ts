@@ -14,6 +14,7 @@ import {
   type RydReminderTarget,
 } from "@/lib/ryd/reminders";
 import { isJsonObject, isUuid } from "./shared";
+import { RYD_FULFILLMENT_LIMIT } from "@/lib/ryd/fulfillment";
 import {
   RYD_BULK_BODY_BYTES,
   RYD_BULK_LIMIT,
@@ -245,16 +246,36 @@ export function rydProductionSchema(value: unknown) {
   return { operationId: value.operationId, moves };
 }
 
-/** A server-owned batch identity replaces client-computed ready-order lists. */
+/** Selected IDs are revalidated and frozen by the database, never trusted as ready. */
 export function rydBatchSchema(
   value: unknown,
 ):
-  | { action: "prepare" }
+  | { action: "prepare"; orderIds?: string[]; replaceSnapshotId?: string }
   | { action: "confirm" | "cancel"; snapshotId: string }
   | null {
   if (!isJsonObject(value)) return null;
   if (value.action === "prepare" && Object.keys(value).length === 1)
     return { action: "prepare" };
+  if (
+    value.action === "prepare" &&
+    Object.keys(value).every((key) =>
+      ["action", "orderIds", "replaceSnapshotId"].includes(key),
+    ) &&
+    Array.isArray(value.orderIds) &&
+    value.orderIds.length > 0 &&
+    value.orderIds.length <= RYD_FULFILLMENT_LIMIT &&
+    value.orderIds.every(
+      (id) => typeof id === "string" && id.trim() && id.length <= 64,
+    ) &&
+    (!("replaceSnapshotId" in value) || isUuid(value.replaceSnapshotId))
+  )
+    return {
+      action: "prepare",
+      orderIds: [...new Set(value.orderIds as string[])],
+      ...(typeof value.replaceSnapshotId === "string"
+        ? { replaceSnapshotId: value.replaceSnapshotId }
+        : {}),
+    };
   if (
     (value.action === "confirm" || value.action === "cancel") &&
     Object.keys(value).length === 2 &&

@@ -32,14 +32,18 @@ type SnapshotRow = {
   form_id: string | null;
   prepared_at: string;
   requires_rebuild?: boolean;
+  selection_conflict?: boolean;
 };
 
 export async function prepareRydFulfillment(
   admin: SupabaseClient,
   actor: string,
+  selection: { orderIds?: string[]; replaceSnapshotId?: string } = {},
 ): Promise<RydFulfillmentSnapshot> {
-  const result = await admin.rpc("ryd_prepare_fulfillment", {
+  const result = await admin.rpc("ryd_prepare_selected_fulfillment", {
     requested_actor: actor,
+    requested_orders: selection.orderIds ?? null,
+    requested_replace: selection.replaceSnapshotId ?? null,
   });
   if (result.error) throw result.error;
   const snapshot = result.data as SnapshotRow;
@@ -61,6 +65,7 @@ export async function prepareRydFulfillment(
     orderCount: snapshot.order_rows.length,
     verifiedCount: ready.size,
     requiresRebuild: snapshot.requires_rebuild === true,
+    selectionConflict: snapshot.selection_conflict === true,
     draft: { ...draft, body: `${draft.body}\n\nBatch: ${snapshot.id}` },
   };
 }

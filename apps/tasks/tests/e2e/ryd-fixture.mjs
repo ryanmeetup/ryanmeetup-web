@@ -53,6 +53,7 @@ export function createRydFixture(json, readBody, profile) {
       imports: [],
       batches: [],
       snapshot: null,
+      snapshotHistory: [],
       calls: [],
       tableRequests: [],
       sheetWrites: [],
@@ -88,6 +89,29 @@ export function createRydFixture(json, readBody, profile) {
     state.snapshot.verified_ids.every((id) =>
       state.orders.some((o) => o.order_id === id && eligible(o)),
     );
+  function createSnapshot(orders) {
+    if (state.snapshot) state.snapshotHistory.push(state.snapshot);
+    state.snapshot = {
+      id:
+        snapshotSequence++ === 0
+          ? SNAPSHOT
+          : `00000000-0000-4000-8000-${String(801 + snapshotSequence).padStart(12, "0")}`,
+      state: "prepared",
+      recipient: state.settings.fulfillment_email,
+      headers: state.imports.at(-1).headers,
+      order_rows: orders.map((o) => ({ ...o })),
+      verified_ids: orders
+        .filter((o) => o.status === "verified")
+        .map((o) => o.order_id),
+      response_keys: state.links
+        .filter((link) =>
+          orders.some((order) => order.order_id === link.order_id),
+        )
+        .map((link) => link.submission_key),
+      form_id: FORM,
+      prepared_at: NOW,
+    };
+  }
   return async function handle(request, response, url, { single }) {
     const path = url.pathname;
     if (path === "/__ryd/reset") {
@@ -331,39 +355,64 @@ export function createRydFixture(json, readBody, profile) {
           ok: true,
           order: publicOrder(state.orders[index]),
         });
-      } else if (name === "ryd_prepare_fulfillment") {
-        if (state.snapshot?.state !== "prepared") {
-          const orders = state.orders.filter(
-            state.legacyBatch ? (o) => !o.cleared_batch_id : eligible,
+      } else if (name === "ryd_prepare_selected_fulfillment") {
+        if (state.legacyBatch) {
+          createSnapshot(
+            state.orders.filter((order) => !order.cleared_batch_id),
           );
-          if (!orders.some((o) => o.status === "verified")) {
+          state.legacyBatch = false;
+        }
+        const ids = body.requested_orders;
+        if (ids === null) {
+          if (state.snapshot?.state !== "prepared") {
+            error(response, "RY409", "There is no prepared batch to resume.");
+            return true;
+          }
+        } else {
+          const selected = [...new Set(ids)];
+          if (
+            !selected.length ||
+            selected.some(
+              (id) =>
+                !state.orders.some((o) => o.order_id === id && eligible(o)),
+            )
+          ) {
             error(
               response,
               "RY409",
-              "There are no unsent verified orders to prepare.",
+              "Some selected orders are no longer ready to send.",
             );
             return true;
           }
-          state.snapshot = {
-            id:
-              snapshotSequence++ === 0
-                ? SNAPSHOT
-                : `00000000-0000-4000-8000-${String(801 + snapshotSequence).padStart(12, "0")}`,
-            state: "prepared",
-            recipient: state.settings.fulfillment_email,
-            headers: state.imports.at(-1).headers,
-            order_rows: orders.map((o) => ({ ...o })),
-            verified_ids: orders
-              .filter((o) => o.status === "verified")
-              .map((o) => o.order_id),
-            response_keys: state.links.map((link) => link.submission_key),
-            form_id: FORM,
-            prepared_at: NOW,
-          };
-          state.legacyBatch = false;
+          const existing = state.snapshot?.state === "prepared";
+          const matches =
+            existing &&
+            snapshotReady() &&
+            selected.length === state.snapshot.verified_ids.length &&
+            selected.every((id) => state.snapshot.verified_ids.includes(id));
+          if (existing && !matches) {
+            if (body.requested_replace === null) {
+              json(response, 200, {
+                ...state.snapshot,
+                selection_conflict: true,
+                requires_rebuild: !snapshotReady(),
+              });
+              return true;
+            }
+            if (body.requested_replace !== state.snapshot.id) {
+              error(response, "RY409", "The prepared batch changed.");
+              return true;
+            }
+            state.snapshot.state = "cancelled";
+          }
+          if (!matches)
+            createSnapshot(
+              state.orders.filter((o) => selected.includes(o.order_id)),
+            );
         }
         json(response, 200, {
           ...state.snapshot,
+          selection_conflict: false,
           requires_rebuild: !snapshotReady(),
         });
       } else if (name === "ryd_finish_fulfillment") {
@@ -417,7 +466,10 @@ export function createRydFixture(json, readBody, profile) {
         ryd_order_submissions: state.links,
         ryd_imports: state.imports,
         ryd_fulfillment_batches: state.batches,
-        ryd_fulfillment_snapshots: state.snapshot ? [state.snapshot] : [],
+        ryd_fulfillment_snapshots: [
+          ...state.snapshotHistory,
+          ...(state.snapshot ? [state.snapshot] : []),
+        ],
         ryd_dismissed_submissions: [],
         ryd_submitter_contacts: [],
       };

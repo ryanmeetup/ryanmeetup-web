@@ -10,13 +10,11 @@ export function RydFulfillmentFilters({
   stage,
   counts,
   total,
-  preparedCount,
   onChange,
 }: {
   stage: RydFulfillmentStage | null;
   counts: Record<RydFulfillmentStage, number>;
   total: number;
-  preparedCount?: number;
   onChange: (stage: RydFulfillmentStage | null) => void;
 }) {
   return (
@@ -46,9 +44,7 @@ export function RydFulfillmentFilters({
       </div>
       <p className="text-sm text-black/70 dark:text-white/70">
         {stage === "ready-to-send"
-          ? preparedCount !== undefined
-            ? `A batch of ${preparedCount} verified orders is already prepared. Resume it above. Orders verified after it was prepared wait for the following batch.`
-            : `The next batch includes all ${counts["ready-to-send"]} ready orders across every page. Prepare the batch above, download the CSV, email it yourself, then confirm the email was sent.`
+          ? "Select ready orders, then choose Generate email & CSV. Select all includes every order matching these filters, across every page."
           : stage === "sent-to-fulfillment"
             ? "Email recorded as sent. Select the orders fulfillment has acknowledged, then confirm production started."
             : stage === "in-production"

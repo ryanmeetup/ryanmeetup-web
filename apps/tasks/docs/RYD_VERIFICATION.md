@@ -160,14 +160,24 @@ uses, set in /admin/usage).
    Linking a person's responses uses one transaction: a conflicting claim leaves
    the whole group unlinked. Groups above 100 responses or the request budget
    open the order review for individual linking instead of partially saving.
-4. **Prepare a fulfillment batch.** Verified opens to **Ready to send** by
-   default. The Progress column and filters distinguish **Ready to send**,
-   **Sent to fulfillment**, **In production**, and **Done**. The batch button
-   counts every eligible verified order across all pages, independently of list
-   search and selection. **Prepare fulfillment batch** opens one saved batch;
-   an existing draft instead shows **Resume fulfillment batch**. Fulfillment's
-   address must be configured first. The batch
-   pins its recipient, raw order rows, header schema, decisions, and ready
+4. **Generate an email and CSV for selected orders.** Verified opens to
+   **Ready to send** by default. Select individual orders or **Select all**,
+   then **Generate email & CSV (N)** beside the selection. Select all includes
+   orders matching the current search and filters across every page; other
+   ready orders wait for a later file. The server rechecks every selected ID
+   under order locks and rejects the whole selection if any order is missing,
+   no longer verified, already emailed, in production, or done. Each batch
+   supports up to 5,000 selected orders without truncation.
+
+   **Resume fulfillment batch** reopens the team's saved draft without creating
+   another file. Generating the same selection resumes that exact draft. A
+   different selection offers **Generate selected batch instead**: confirm the
+   previous file has not been emailed, then **Replace draft & generate**. This
+   cancels the old draft and creates the selected one in one transaction; a
+   failure keeps the old draft reserved. The cancelled file stays in history
+   and cannot be downloaded or confirmed. Fulfillment's address must be
+   configured first. The batch pins its recipient, raw order rows, header
+   schema, decisions, and ready
    orders' form/response references. **Download CSV** and **Open draft** use
    that same manifest; the draft and filename carry its batch reference.
    Header spelling changes preserve saved cells, and columns missing from
