@@ -162,82 +162,35 @@ uses, set in /admin/usage).
    open the order review for individual linking instead of partially saving.
 4. **Generate an email and CSV for selected orders.** Verified opens to
    **Ready to send** by default. Select individual orders or **Select all**,
-   then **Generate email & CSV (N)** beside the selection. Select all includes
-   orders matching the current search and filters across every page; other
-   ready orders wait for a later file. The server rechecks every selected ID
-   under order locks and rejects the whole selection if any order is missing,
-   no longer verified, already emailed, in production, or done. Each batch
-   supports up to 5,000 selected orders without truncation.
+   then **Generate email & CSV (N)**. Select all includes orders matching the
+   current search and filters across every page. Other ready orders wait for
+   a later email. Each selection supports up to 5,000 orders without truncation.
 
-   **Resume fulfillment batch** reopens the team's saved draft without creating
-   another file. Generating the same selection resumes that exact draft. A
-   different selection offers **Generate selected batch instead**: confirm the
-   previous file has not been emailed, then **Replace draft & generate**. This
-   cancels the old draft and creates the selected one in one transaction; a
-   failure keeps the old draft reserved. The cancelled file stays in history
-   and cannot be downloaded or confirmed. Fulfillment's address must be
-   configured first. The batch pins its recipient, raw order rows, header
-   schema, decisions, and ready
-   orders' form/response references. **Download CSV** and **Open draft** use
-   that same manifest; the draft and filename carry its batch reference.
-   Header spelling changes preserve saved cells, and columns missing from
-   later imports are appended so older details survive.
+   Download the CSV, open or copy the email to the fulfillment address in
+   settings, attach the file, and send it yourself. Generation is read-only:
+   no email or CSV is saved, no orders or evidence are reserved, no stage
+   changes, and no Google Sheet is updated. Closing the dialog discards its
+   generated content. You can select different orders and generate another
+   email immediately, with no resume, replace, discard, or send-confirmation
+   workflow. Previously saved historical records do not interfere.
 
-   Send the file yourself, then **Confirm email sent**. One database transaction
-   records the batch, moves exactly its captured orders to **Sent to fulfillment**,
-   and writes their history. These orders wait for fulfillment's acknowledgment;
-   no production timestamp is set. Confirmed orders stay out of Ready to send
-   even if reloading the queue fails. Repeated confirmations return the existing
-   result. New imports and later verifications wait for the next file. Ready
-   decisions and evidence
-   cannot change while reserved; notes and production tracking remain available.
-
-   Closing keeps the batch available to the team. It has no automatic expiry:
-   the file may already have been emailed. **Cancel this batch** explicitly
-   releases it; coordinate with other reviewers and only cancel an unsent file.
-   Cancelled downloads and confirmations are refused. Discard that file and
-   draft before preparing another batch.
-
-   Afterwards the captured form responses receive a best-effort ✅ in the
-   linked spreadsheet. The response tab must uniquely match the current form's
-   question titles and have one Timestamp, email, and `Verified?` column.
-   Reordered or renamed tabs work; duplicate tabs, duplicate headers, and
-   unfamiliar schemas require a manual check. Matching requires the same usable
-   email and wall-clock submission second in the spreadsheet's time zone, with
-   exactly one row and one response across the entire form. Blank emails,
-   neighboring seconds, and ambiguous identities never match. Existing ticks
-   stay ticked; other nonempty values and formulas remain untouched.
-
-   After **Confirm email sent**, the dialog stays open with separate counts and
-   paginated response details for **Updated**, **Already ticked**, **Missing**,
-   **Ambiguous**, and **Unchecked**, plus a link to the spreadsheet. Missing
-   captured responses are reported too. Unresolved responses need a manual
-   check. Results last until the dialog closes; they are not stored in batch
-   history. Retried confirmations never repeat the external step and explain
-   that the earlier sheet result is unavailable. A timeout after a write may
-   mean cells changed, so check the sheet before editing it manually.
-
-   Keep the response tab still while confirming: Sheets row reads and writes
-   are separate requests, so a concurrent sort, row insertion, or cell edit
-   can move a row after it was matched. Tab IDs protect against tab renaming
-   and reordering, but do not lock rows. Fulfillment decisions remain saved
-   even if Google fails. The Sheets adapter uses Google's
-   [filtered reads](https://developers.google.com/workspace/sheets/api/reference/rest/v4/spreadsheets.values/batchGetByDataFilter)
-   and [filtered writes](https://developers.google.com/workspace/sheets/api/reference/rest/v4/spreadsheets.values/batchUpdateByDataFilter)
-   with explicit tab IDs and cell ranges.
-   Downloading the file alone clears nothing.
+   **All stage changes are manual.** After sending the email yourself, select
+   its orders and **Mark sent to fulfillment**. This records only their stage
+   change; it does not save or send an email. The orders leave Ready to send
+   only when you move them. If you leave them ready, they can appear in another
+   generated email. The server rechecks every selected ID at generation time
+   and refuses missing, unverified, already-sent, in-production, or done orders.
 5. **Confirm production and completion.** In **Sent to fulfillment**, select
    the orders fulfillment has acknowledged and choose **Confirm production
    started**. This separately records `production_sent_at` and moves them to
-   **In production**. The email confirmation never does this automatically.
+   **In production**. Generating an email never does this automatically.
    In **In production**, select finished orders and choose **Done** to record
    `done_at`. Ready orders cannot skip the email handoff through these controls,
    and completion includes only orders already in production.
 
-   **Move back** takes Done orders to In production. An order in production
-   returns to Sent to fulfillment when its email is recorded, or to Ready to
-   send for a legacy manual production record with no saved email. Moving back
-   never erases the email record or queues an already emailed order again.
+   **Move back** takes an order one stage backward: Done → In production →
+   Sent to fulfillment → Ready to send. Returning an order to Ready to send
+   makes it eligible for another generated email. Historical audit events stay.
    Existing production dates remain authoritative even for older manual records.
    Once an order is in production, or fulfillment has its file, its decision
    cannot be changed.
@@ -290,10 +243,10 @@ The database keeps the orders (`ryd_orders`, with fulfillment's raw row), the
 pairings (`ryd_order_submissions`, keyed by the form's response ID, which
 survives a respondent editing their answers), an audit trail (`ryd_order_events`), contact
 attempts to unmatched submitters (`ryd_submitter_contacts`), the imports and
-batches, private fulfillment manifests (`ryd_fulfillment_snapshots`), the
-settings, and the Google connection. Manifests preserve the fulfillment rows
-for batch history, including cancelled batches; they contain no copied Google
-answers or media. Every table is
+minimal handoff records, historical fulfillment manifests
+(`ryd_fulfillment_snapshots`), the settings, and the Google connection. The
+historical manifests remain private; new email and CSV generation writes none.
+Every table is
 service-role only; routes check the instance switch and
 `can_view_workspace_area('ryd')` first.
 RY-D stays closed if the page-access functions are unavailable; unlike older

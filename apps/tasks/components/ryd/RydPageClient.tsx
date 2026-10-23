@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQueryParamState, useSearchFilter } from "@ryanmeetup/hooks";
 import {
   Button,
@@ -82,16 +82,11 @@ import {
 import {
   RYD_FULFILLMENT_LABELS,
   readyForRydFulfillment,
-  reconcileRydFulfillment,
   rydFulfillmentCounts,
   rydFulfillmentParam,
   rydFulfillmentStage,
 } from "@/lib/ryd/fulfillment-view";
 import { RYD_FULFILLMENT_LIMIT } from "@/lib/ryd/fulfillment";
-import type {
-  RydFulfillmentResult,
-  RydFulfillmentSnapshot,
-} from "@/lib/ryd/fulfillment";
 import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import {
   RydRemindDialog,
@@ -276,31 +271,6 @@ export function RydPageClient({
     () => rydFulfillmentCounts(queue.orders),
     [queue.orders],
   );
-  const batchPrepared = useCallback(
-    (snapshot: RydFulfillmentSnapshot) => {
-      reconcile((current) => ({
-        ...current,
-        preparedBatch: {
-          id: snapshot.id,
-          verifiedCount: snapshot.verifiedCount,
-        },
-      }));
-    },
-    [reconcile],
-  );
-  const batchFinished = useCallback(
-    (result: RydFulfillmentResult, action: "confirm" | "cancel") => {
-      reconcile((current) => reconcileRydFulfillment(current, result, action));
-      if (action === "confirm") {
-        setSelected(new Set());
-        setViewParam("");
-        setStatusParam("verified");
-        setProductionParam("sent-to-fulfillment");
-        setPage(1);
-      }
-    },
-    [reconcile, setViewParam, setStatusParam, setProductionParam, setPage],
-  );
   // Finished all round: fulfillment has been told and the RY-D is made.
   const activeCount = queue.orders.filter(
     (order) => !(order.doneAt && order.sentToFulfillment),
@@ -472,6 +442,8 @@ export function RydPageClient({
   }
 
   function productionApplied(result: RydProductionResult) {
+    if (productionOperation?.action === "fulfillment")
+      setProductionParam("sent-to-fulfillment");
     if (productionOperation?.action === "sent")
       setProductionParam("in-production");
     if (productionOperation?.action === "done") setProductionParam("done");
@@ -676,22 +648,6 @@ export function RydPageClient({
               >
                 Upload orders
               </Button>
-              {queue.preparedBatch && (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  className="w-full 2xl:w-auto"
-                  leftIcon={<FiSend aria-hidden />}
-                  onClick={() => {
-                    setFulfillmentOrderIds(null);
-                    setDialog("send");
-                  }}
-                  disabled={!queue.installed}
-                >
-                  Resume fulfillment batch
-                </Button>
-              )}
               <Button
                 type="button"
                 size="sm"
@@ -814,20 +770,6 @@ export function RydPageClient({
                 );
               })}
             </div>
-            {queue.lastBatch && (
-              <p className="text-sm text-black/70 dark:text-white/70">
-                Last email recorded{" "}
-                {new Date(queue.lastBatch.sentAt).toLocaleString()}
-                {queue.lastBatch.recipient
-                  ? ` to ${queue.lastBatch.recipient}`
-                  : ""}
-                : {queue.lastBatch.verifiedCount} of{" "}
-                {queue.lastBatch.orderCount} in the file. {queue.clearedCount}{" "}
-                order
-                {queue.clearedCount === 1 ? "" : "s"} emailed so far.
-              </p>
-            )}
-
             <div
               className="flex flex-wrap items-center gap-2 border-b border-black/10 pb-4 dark:border-white/10"
               role="group"
@@ -1160,6 +1102,23 @@ export function RydPageClient({
                             Generate email &amp; CSV ({selectedReady.length})
                           </Button>
                         )}
+                        {(!production || production === "ready-to-send") && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            className="w-full sm:w-auto"
+                            leftIcon={<FiMail aria-hidden />}
+                            disabled={
+                              searchPending ||
+                              moving !== null ||
+                              !selectedStages.has("ready-to-send")
+                            }
+                            onClick={() => moveSelected("fulfillment")}
+                          >
+                            Mark sent to fulfillment
+                          </Button>
+                        )}
                         {(!production ||
                           production === "sent-to-fulfillment") && (
                           <Button
@@ -1197,6 +1156,7 @@ export function RydPageClient({
                           </Button>
                         )}
                         {(!production ||
+                          production === "sent-to-fulfillment" ||
                           production === "in-production" ||
                           production === "done") && (
                           <Button
@@ -1209,6 +1169,7 @@ export function RydPageClient({
                               searchPending ||
                               moving !== null ||
                               !(
+                                selectedStages.has("sent-to-fulfillment") ||
                                 selectedStages.has("in-production") ||
                                 selectedStages.has("done")
                               )
@@ -1397,13 +1358,10 @@ export function RydPageClient({
       {dialog === "upload" && (
         <RydUploadDialog onClose={() => setDialog(null)} onChanged={refresh} />
       )}
-      {dialog === "send" && (
+      {dialog === "send" && fulfillmentOrderIds && (
         <RydSendDialog
           orderIds={fulfillmentOrderIds}
           onClose={() => setDialog(null)}
-          onChanged={refresh}
-          onPrepared={batchPrepared}
-          onFinished={batchFinished}
         />
       )}
       {emailOrder && (

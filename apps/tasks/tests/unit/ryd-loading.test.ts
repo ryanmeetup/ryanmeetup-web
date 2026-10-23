@@ -95,7 +95,7 @@ describe("RY-D complete collection reads", () => {
     expect(parseCsv(csv).rows.at(-1)?.[0]).toBe("1005");
   });
 
-  it("loads enough saved-batch metadata to resume after a page reload", async () => {
+  it("ignores historical saved drafts while loading the manual queue", async () => {
     const { loadRydQueue } = await import("@/lib/server/ryd");
     const queue = await loadRydQueue(
       database({
@@ -106,10 +106,8 @@ describe("RY-D complete collection reads", () => {
         ],
       }),
     );
-    expect(queue.preparedBatch).toEqual({
-      id: "saved-batch",
-      verifiedCount: 2,
-    });
+    expect(queue).not.toHaveProperty("preparedBatch");
+    expect(queue.orders).toHaveLength(2);
   });
 
   it("keeps links, removed responses, and contact counts beyond the first page", async () => {

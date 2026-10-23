@@ -1,9 +1,18 @@
+import { readFile } from "node:fs/promises";
 import {
   expect,
   test,
   type APIRequestContext,
   type Page,
+  type Locator,
 } from "@playwright/test";
+
+async function downloadedCsv(page: Page, link: Locator) {
+  const pending = page.waitForEvent("download");
+  await link.click();
+  const download = await pending;
+  return readFile((await download.path())!, "utf8");
+}
 
 test.beforeEach(async ({ page }, testInfo) => {
   await page.addInitScript(
@@ -46,7 +55,7 @@ async function signIn(page: Page) {
   await expect(page.locator("[data-workspace-shell]")).toBeVisible();
 }
 
-test("runs import, explicit linking, review, immutable export, confirmation, and production", async ({
+test("runs review, on-demand files, and independent manual fulfillment stages", async ({
   page,
   request,
 }, testInfo) => {
@@ -101,92 +110,37 @@ test("runs import, explicit linking, review, immutable export, confirmation, and
     .getByRole("button", { name: "Generate email & CSV (1)", exact: true })
     .click();
   const send = page.getByRole("dialog", {
-    name: "Prepare fulfillment batch",
+    name: "Fulfillment email & CSV",
     exact: true,
   });
   const downloadLink = send.getByRole("link", {
     name: "Download CSV",
     exact: true,
   });
-  await expect(downloadLink).toHaveAttribute(
-    "href",
-    `/api/ryd/export?batch=${snapshotId}`,
-  );
-  // Request the same URL as the download without opening an external mail app.
-  const exported = await page.request.get(
-    (await downloadLink.getAttribute("href"))!,
-  );
-  expect(exported.headers()["cache-control"]).toBe("no-store");
-  expect(await exported.text()).toContain(
-    "801,Ryan,Fixture,ryan.fixture@example.test,✅,36",
-  );
-  const mail = await send
-    .getByRole("link", { name: "Open draft", exact: true })
-    .getAttribute("href");
+  await expect(downloadLink).toHaveAttribute("href", /^blob:/);
+  expect(await downloadedCsv(page, downloadLink)).toContain("801,Ryan,Fixture,ryan.fixture@example.test,✅,36");
+  const mail = await send.getByRole("link", { name: "Open email", exact: true }).getAttribute("href");
   expect(decodeURIComponent(mail!)).toContain("801 · Ryan Fixture");
-  const prepared = await state(request);
-  expect(prepared.snapshot.state).toBe("prepared");
-  expect(prepared.batches).toEqual([]);
+  expect((await state(request)).snapshot).toBeNull();
+  expect((await state(request)).orders[0].cleared_batch_id).toBeNull();
+  await expect(send.getByRole("button", { name: "Confirm email sent", exact: true })).toHaveCount(0);
   await send.getByRole("button", { name: "Close", exact: true }).click();
   await page.reload();
-  await expect(page.getByRole("button", { name: "Resume fulfillment batch", exact: true })).toBeVisible();
-  await page
-    .getByRole("button", { name: "Resume fulfillment batch", exact: true })
-    .click();
-  await expect(
-    page.getByRole("link", { name: "Download CSV" }),
-  ).toHaveAttribute("href", `/api/ryd/export?batch=${snapshotId}`);
-  await page.getByRole("button", { name: "Confirm email sent", exact: true }).click();
-  const completed = page.getByRole("dialog", {
-    name: "Sent to fulfillment",
-    exact: true,
-  });
-  await expect(completed.getByRole("status")).toContainText(
-    "Email recorded for 1 order",
-  );
-  await expect(completed.getByRole("status")).toBeFocused();
-  await completed
-    .getByRole("button", { name: "Response details (1)", exact: true })
-    .click();
-  await expect(
-    completed.getByText("Ryan Fixture · Updated", { exact: true }),
-  ).toBeVisible();
-  await completed
-    .getByText("Ryan Fixture · Updated", { exact: true })
-    .scrollIntoViewIfNeeded();
-  await expect(
-    completed.getByText("Ryan Fixture · Updated", { exact: true }),
-  ).toBeInViewport();
-  await page.screenshot({
-    path: testInfo.outputPath("sheet-result.png"),
-    fullPage: true,
-  });
-  await completed.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Resume fulfillment batch", exact: true })).toHaveCount(0);
+  await page.getByRole("checkbox", { name: "Select Ryan Fixture", exact: true }).check();
+  await page.getByRole("button", { name: "Generate email & CSV (1)", exact: true }).click();
+  await expect(downloadLink).toHaveAttribute("href", /^blob:/);
+  await send.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Ready to send 1", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "Mark sent to fulfillment", exact: true }).click();
+  const handoff = page.getByRole("dialog", { name: "Mark sent to fulfillment", exact: true });
+  await handoff.getByRole("button", { name: "Mark sent to fulfillment", exact: true }).click();
+  await expect(handoff.getByRole("status").filter({ hasText: "orders confirmed saved" })).toContainText("1 of 1 orders confirmed saved");
+  await handoff.getByRole("button", { name: "Close", exact: true }).click();
   await expect(page.getByRole("button", { name: "Sent to fulfillment 1", exact: true })).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("button", { name: "In production 0", exact: true })).toBeVisible();
-  const widths = testInfo.project.name === "chromium-mobile" ? [390] : [1024, 1280, 1536];
-  for (const width of widths) {
-    await page.setViewportSize({ width, height: 900 });
-    await page.getByRole("button", { name: "Sent to fulfillment 1", exact: true }).scrollIntoViewIfNeeded();
-    await page.screenshot({ path: testInfo.outputPath(`awaiting-production-${width}.png`) });
-  }
-  const confirmed = await state(request);
-  expect(confirmed.orders[0].production_sent_at).toBeNull();
-  expect(confirmed.batches).toHaveLength(1);
-  expect(confirmed.sheetWrites).toHaveLength(1);
-  expect(confirmed.sheetWrites[0].data[0].dataFilter.gridRange).toMatchObject({
-    sheetId: 77,
-    startRowIndex: 1,
-    startColumnIndex: 3,
-  });
-  const replay = await page.request.post("/api/ryd/batches", {
-    data: { action: "confirm", snapshotId },
-  });
-  expect(await replay.json()).toMatchObject({
-    changed: false,
-    sheet: { issue: "already-confirmed" },
-  });
-  expect((await state(request)).sheetWrites).toHaveLength(1);
+  expect((await state(request)).orders[0].production_sent_at).toBeNull();
+  await page.screenshot({ path: testInfo.outputPath("manual-handoff.png") });
+  expect((await state(request)).snapshot).toBeNull();
   await page.goto("/ryd?status=verified&production=sent-to-fulfillment");
   await page
     .getByRole("checkbox", { name: "Select Ryan Fixture", exact: true })
@@ -220,24 +174,19 @@ test("runs import, explicit linking, review, immutable export, confirmation, and
   expect(finished.orders[0]).toMatchObject({
     status: "verified",
     note: "Checked the synthetic form response.",
-    cleared_batch_id: snapshotId,
+    cleared_batch_id: expect.any(String),
     production_sent_at: expect.any(String),
     done_at: expect.any(String),
   });
   expect(finished.calls.map((call: { name: string }) => call.name)).toEqual([
-    "ryd_import_orders",
-    "ryd_link_submissions",
-    "ryd_review_order",
-    "ryd_prepare_selected_fulfillment",
-    "ryd_prepare_selected_fulfillment",
-    "ryd_finish_fulfillment",
-    "ryd_finish_fulfillment",
-    "ryd_move_production",
-    "ryd_move_production",
+    "ryd_import_orders", "ryd_link_submissions", "ryd_review_order",
+    "ryd_generate_fulfillment", "ryd_generate_fulfillment",
+    "ryd_move_production", "ryd_move_production", "ryd_move_production",
   ]);
+
 });
 
-test("sends only newly verified orders and rebuilds an older unsent batch", async ({ page, request }, testInfo) => {
+test("ignores a previously saved email and generates fresh selected files without changing stages", async ({ page, request }, testInfo) => {
   await reset(request, { legacyBatch: true });
   await signIn(page);
   const imported = await page.request.post("/api/ryd/imports", {
@@ -271,48 +220,38 @@ test("sends only newly verified orders and rebuilds an older unsent batch", asyn
   await page.goto("/ryd?status=verified&production=not-started");
   await page.getByRole("checkbox", { name: "Select Ryan New", exact: true }).check();
   await page.getByRole("button", { name: "Generate email & CSV (1)", exact: true }).click();
-  const send = page.getByRole("dialog", { name: "Prepare fulfillment batch", exact: true });
-  await expect(send.getByText("A different draft with 5 orders", { exact: false })).toBeVisible();
-  await expect(send.getByRole("button", { name: "Confirm email sent", exact: true })).toBeDisabled();
-  await expect(send.getByRole("link", { name: "Download CSV", exact: true })).toHaveCount(0);
-  expect((await page.request.get(`/api/ryd/export?batch=${snapshotId}`)).status()).toBe(409);
+  const send = page.getByRole("dialog", { name: "Fulfillment email & CSV", exact: true });
+  await expect(send.getByRole("link", { name: "Download CSV", exact: true })).toBeVisible();
+  await expect(send.getByText("A different draft", { exact: false })).toHaveCount(0);
+  await expect(send.getByRole("button", { name: /Replace|Cancel this batch|Confirm email sent/ })).toHaveCount(0);
+  const oldDraft = (await state(request)).snapshot;
   const widths = testInfo.project.name === "chromium-mobile" ? [390] : [1024, 1280, 1536];
-  for (const width of widths) {
-    await page.setViewportSize({ width, height: 900 });
-    await page.screenshot({ path: testInfo.outputPath(`old-batch-${width}.png`) });
-  }
-  // Closing leaves the existing draft untouched. Reopening the selection
-  // still offers explicit replacement rather than using the wrong file.
-  await send.getByRole("button", { name: "Close", exact: true }).click();
-  expect((await state(request)).snapshot.verified_ids).toEqual(["801", "802", "803", "805"]);
-  await page.getByRole("button", { name: "Generate email & CSV (1)", exact: true }).click();
-  await send.getByRole("button", { name: "Generate selected batch instead", exact: true }).click();
-  await page.getByRole("dialog", { name: "Replace the saved draft with 1 selected order?", exact: true })
-    .getByRole("button", { name: "Replace draft & generate", exact: true }).click();
   const download = send.getByRole("link", { name: "Download CSV", exact: true });
   await expect(download).toBeVisible();
-  const file = await page.request.get((await download.getAttribute("href"))!);
-  expect((await file.text()).trim().split(/\r?\n/)).toEqual([
+  const file = await downloadedCsv(page, download);
+  expect(file.trim().split(/\r?\n/)).toEqual([
     "OrderId,BillFirstName,BillLastName,BillEmail,Verified?",
     "801,Ryan,New,new@example.test,✅",
   ]);
-  const draft = decodeURIComponent((await send.getByRole("link", { name: "Open draft", exact: true }).getAttribute("href"))!);
+  const draft = decodeURIComponent((await send.getByRole("link", { name: "Open email", exact: true }).getAttribute("href"))!);
   expect(draft).toContain("801 · Ryan New");
   for (const name of ["Ryan Production", "Ryan Done", "Ryan Pending", "Ryan Unselected"]) expect(draft).not.toContain(name);
   for (const width of widths) {
     await page.setViewportSize({ width, height: 900 });
     await page.screenshot({ path: testInfo.outputPath(`new-batch-${width}.png`) });
   }
-  await send.getByRole("button", { name: "Confirm email sent", exact: true }).click();
-  await page.getByRole("dialog", { name: "Sent to fulfillment", exact: true })
-    .getByRole("button", { name: "Close", exact: true }).click();
+  await send.getByRole("button", { name: "Close", exact: true }).click();
+  expect((await state(request)).snapshot).toEqual(oldDraft);
+  expect((await state(request)).orders.find((order: { order_id: string }) => order.order_id === "801").cleared_batch_id).toBeNull();
   const verified = await page.request.patch("/api/ryd/orders/804", { data: { status: "verified" } });
   expect(verified.ok()).toBeTruthy();
   await page.goto("/ryd?status=verified");
-  await page.getByRole("checkbox", { name: "Select all 2", exact: true }).check();
-  await page.getByRole("button", { name: "Generate email & CSV (2)", exact: true }).click();
+  await page.getByRole("checkbox", { name: "Select all 3", exact: true }).check();
+  await page.getByRole("button", { name: "Generate email & CSV (3)", exact: true }).click();
   await expect(send.getByRole("link", { name: "Download CSV", exact: true })).toBeVisible();
-  expect((await state(request)).snapshot.verified_ids).toEqual(["804", "805"]);
+  const calls = (await state(request)).calls;
+  expect(calls.at(-1)).toMatchObject({ name: "ryd_generate_fulfillment", body: { requested_orders: expect.arrayContaining(["801", "804", "805"]) } });
+  expect((await state(request)).snapshot).toEqual(oldDraft);
 
 });
 
@@ -345,17 +284,17 @@ test("generates a selected batch across pages while respecting the ready filter"
     await page.screenshot({ path: testInfo.outputPath(`ready-selection-${width}.png`) });
   }
   await page.getByRole("button", { name: "Generate email & CSV (12)", exact: true }).click();
-  const send = page.getByRole("dialog", { name: "Prepare fulfillment batch", exact: true });
+  const send = page.getByRole("dialog", { name: "Fulfillment email & CSV", exact: true });
   const download = send.getByRole("link", { name: "Download CSV", exact: true });
   await expect(download).toBeVisible();
-  const file = await page.request.get((await download.getAttribute("href"))!);
-  expect((await file.text()).trim().split(/\r?\n/)).toHaveLength(13);
-  const draft = decodeURIComponent((await send.getByRole("link", { name: "Open draft", exact: true }).getAttribute("href"))!);
+  const file = await downloadedCsv(page, download);
+  expect(file.trim().split(/\r?\n/)).toHaveLength(13);
+  const draft = decodeURIComponent((await send.getByRole("link", { name: "Open email", exact: true }).getAttribute("href"))!);
   for (let i = 0; i < 12; i++) expect(draft).toContain(`${801 + i} · Ryan Ready${i}`);
   expect(draft).not.toContain("Ryan Existing");
   const prepared = await state(request);
-  expect(prepared.snapshot.verified_ids).toHaveLength(12);
-  expect(prepared.calls.at(-1)).toMatchObject({ name: "ryd_prepare_selected_fulfillment", body: { requested_orders: expect.arrayContaining(["801", "812"]), requested_replace: null } });
+  expect(prepared.snapshot).toBeNull();
+  expect(prepared.calls.at(-1)).toMatchObject({ name: "ryd_generate_fulfillment", body: { requested_orders: expect.arrayContaining(["801", "812"]) } });
 });
 
 test("sorts the production column by stage and sent date", async ({ page, request }, testInfo) => {
@@ -568,7 +507,7 @@ test("anonymous visitors cannot read, export, confirm, or change settings", asyn
   expect(
     (
       await page.request.post("/api/ryd/batches", {
-        data: { action: "confirm", snapshotId },
+        data: { orderIds: ["801"] },
       })
     ).status(),
   ).toBe(401);

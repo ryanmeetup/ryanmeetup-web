@@ -2,10 +2,7 @@ import { NextResponse } from "next/server";
 import { rydBatchSchema } from "@/lib/api-schema";
 import { readJson } from "@/lib/server/request";
 import { rydContext } from "@/lib/server/ryd";
-import {
-  finishRydFulfillment,
-  prepareRydFulfillment,
-} from "@/lib/server/ryd-fulfillment";
+import { generateRydFulfillment } from "@/lib/server/ryd-fulfillment";
 import { rydMutationFailure } from "@/lib/server/ryd-mutations";
 import { RYD_FULFILLMENT_BODY_BYTES } from "@/lib/ryd/fulfillment";
 
@@ -17,16 +14,13 @@ export async function POST(request: Request) {
   const context = await rydContext();
   if ("response" in context) return context.response;
   try {
-    const data = parsed.data;
     return NextResponse.json(
-      data.action === "prepare"
-        ? await prepareRydFulfillment(context.admin, context.user.id, data)
-        : await finishRydFulfillment(
-            context.admin,
-            context.user.id,
-            data.snapshotId,
-            data.action,
-          ),
+      await generateRydFulfillment(
+        context.admin,
+        context.user.id,
+        parsed.data.orderIds,
+      ),
+      { headers: { "cache-control": "no-store" } },
     );
   } catch (error) {
     return rydMutationFailure(

@@ -239,7 +239,6 @@ export async function loadRydQueue(
     clearedResult,
     batchResult,
     importResult,
-    preparedResult,
   ] = await Promise.all([
     readRydRows((from, to) =>
       admin
@@ -267,19 +266,13 @@ export async function loadRydQueue(
       .order("uploaded_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
-    admin
-      .from("ryd_fulfillment_snapshots")
-      .select("id, verified_ids")
-      .eq("state", "prepared")
-      .maybeSingle(),
   ]);
   const failure =
     ordersResult.error ??
     linksResult.error ??
     clearedResult.error ??
     batchResult.error ??
-    importResult.error ??
-    preparedResult.error;
+    importResult.error;
   if (failure) {
     if (isMissingRelation(failure.code)) return emptyQueue(false);
     throw failure;
@@ -348,12 +341,6 @@ export async function loadRydQueue(
     contacts,
     sheet,
     settings,
-    preparedBatch: preparedResult.data
-      ? {
-          id: preparedResult.data.id,
-          verifiedCount: preparedResult.data.verified_ids.length,
-        }
-      : null,
     clearedCount: clearedResult.count ?? 0,
     lastBatch: batchResult.data
       ? {

@@ -43,12 +43,14 @@ Its preflight is skipped because the transport has no Postgres catalogs;
 production builds still run the real preflight. Both browser suites run in CI. RY-D runs in desktop dark mode and at 390px
 in mobile light mode.
 
-Coverage includes a signed-in member importing a CSV, explicitly linking a
-Google response, saving a review, downloading the saved fulfillment manifest,
-closing/resuming that manifest, confirming it, replaying confirmation without
-a second sheet write, and moving the order through production to done. Separate
-cases exercise feature-off, anonymous, denied-member, and operator/owner
-settings authority. Opening a draft or exporting creates no send record.
+Coverage includes a signed-in member importing a CSV, linking a Google
+response, saving a review, downloading an on-demand CSV, closing and generating
+again without any saved draft, and manually moving an order through Sent to
+fulfillment, In production, and Done. Generation leaves stages and Google
+Sheets unchanged. Separate cases prove that older saved emails never prompt
+for replacement, only selected ready orders appear in files, and Select all
+covers every filtered page. Feature-off, anonymous, denied-member, and
+operator/owner settings authority are also covered.
 The identity-mapping case keeps duplicate name/email answers available while
 excluding them from identity matching, shows the queue warning, distinguishes
 the buyer redirect from the review editor, and verifies keyboard access to both

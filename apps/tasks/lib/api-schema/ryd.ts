@@ -1,8 +1,4 @@
 import { RYD_ORDER_STATUSES, type RydOrderStatus } from "@/lib/ryd/orders";
-import {
-  RYD_PRODUCTION_STAGES,
-  type RydProductionStage,
-} from "@/lib/ryd/queue-view";
 import { formIdFrom } from "@/lib/ryd/form-responses";
 import { isRydContactEmail, normalizeEmail } from "@/lib/ryd/normalize";
 import {
@@ -14,6 +10,7 @@ import {
   type RydReminderTarget,
 } from "@/lib/ryd/reminders";
 import { isJsonObject, isUuid } from "./shared";
+import { RYD_FULFILLMENT_STAGES } from "@/lib/ryd/fulfillment-view";
 import { RYD_FULFILLMENT_LIMIT } from "@/lib/ryd/fulfillment";
 import {
   RYD_BULK_BODY_BYTES,
@@ -221,6 +218,8 @@ export function rydProductionSchema(value: unknown) {
     rydBodyBytes(value) > RYD_BULK_BODY_BYTES
   )
     return null;
+  // Continue accepting the previous production-only stage for older clients.
+  const stages: readonly string[] = [...RYD_FULFILLMENT_STAGES, "not-started"];
   const moves: RydProductionMove[] = [];
   const seen = new Set<string>();
   for (const move of value.moves) {
@@ -231,58 +230,35 @@ export function rydProductionSchema(value: unknown) {
       !move.orderId.trim() ||
       move.orderId.length > 64 ||
       seen.has(move.orderId) ||
-      !RYD_PRODUCTION_STAGES.includes(move.from as RydProductionStage) ||
-      !RYD_PRODUCTION_STAGES.includes(move.to as RydProductionStage) ||
+      !stages.includes(move.from as string) ||
+      !stages.includes(move.to as string) ||
       move.from === move.to
     )
       return null;
     seen.add(move.orderId);
     moves.push({
       orderId: move.orderId,
-      from: move.from as RydProductionStage,
-      to: move.to as RydProductionStage,
+      from: move.from as RydProductionMove["from"],
+      to: move.to as RydProductionMove["to"],
     });
   }
   return { operationId: value.operationId, moves };
 }
 
-/** Selected IDs are revalidated and frozen by the database, never trusted as ready. */
-export function rydBatchSchema(
-  value: unknown,
-):
-  | { action: "prepare"; orderIds?: string[]; replaceSnapshotId?: string }
-  | { action: "confirm" | "cancel"; snapshotId: string }
-  | null {
-  if (!isJsonObject(value)) return null;
-  if (value.action === "prepare" && Object.keys(value).length === 1)
-    return { action: "prepare" };
+/** Generate files for an explicit selection, without creating a saved batch. */
+export function rydBatchSchema(value: unknown): { orderIds: string[] } | null {
   if (
-    value.action === "prepare" &&
-    Object.keys(value).every((key) =>
-      ["action", "orderIds", "replaceSnapshotId"].includes(key),
-    ) &&
-    Array.isArray(value.orderIds) &&
-    value.orderIds.length > 0 &&
-    value.orderIds.length <= RYD_FULFILLMENT_LIMIT &&
-    value.orderIds.every(
+    !isJsonObject(value) ||
+    Object.keys(value).length !== 1 ||
+    !Array.isArray(value.orderIds) ||
+    !value.orderIds.length ||
+    value.orderIds.length > RYD_FULFILLMENT_LIMIT ||
+    !value.orderIds.every(
       (id) => typeof id === "string" && id.trim() && id.length <= 64,
-    ) &&
-    (!("replaceSnapshotId" in value) || isUuid(value.replaceSnapshotId))
+    )
   )
-    return {
-      action: "prepare",
-      orderIds: [...new Set(value.orderIds as string[])],
-      ...(typeof value.replaceSnapshotId === "string"
-        ? { replaceSnapshotId: value.replaceSnapshotId }
-        : {}),
-    };
-  if (
-    (value.action === "confirm" || value.action === "cancel") &&
-    Object.keys(value).length === 2 &&
-    isUuid(value.snapshotId)
-  )
-    return { action: value.action, snapshotId: value.snapshotId };
-  return null;
+    return null;
+  return { orderIds: [...new Set(value.orderIds as string[])] };
 }
 
 export function rydReminderSchema(value: unknown) {

@@ -316,6 +316,10 @@ export function createRydFixture(json, readBody, profile) {
             production_sent_at: null,
             done_at: null,
           });
+        if (state.legacyBatch) {
+          createSnapshot(state.orders);
+          state.legacyBatch = false;
+        }
         json(response, 200, {
           ok: true,
           rowCount: payload.orders.length,
@@ -355,93 +359,30 @@ export function createRydFixture(json, readBody, profile) {
           ok: true,
           order: publicOrder(state.orders[index]),
         });
-      } else if (name === "ryd_prepare_selected_fulfillment") {
-        if (state.legacyBatch) {
-          createSnapshot(
-            state.orders.filter((order) => !order.cleared_batch_id),
-          );
-          state.legacyBatch = false;
+      } else if (name === "ryd_generate_fulfillment") {
+        const ids = [...new Set(body.requested_orders)];
+        if (ids.some((id) => !state.orders.some((order) => order.order_id === id && eligible(order)))) {
+          error(response, "RY409", "Some selected orders are no longer ready to send.");
+          return true;
         }
-        const ids = body.requested_orders;
-        if (ids === null) {
-          if (state.snapshot?.state !== "prepared") {
-            error(response, "RY409", "There is no prepared batch to resume.");
-            return true;
-          }
-        } else {
-          const selected = [...new Set(ids)];
-          if (
-            !selected.length ||
-            selected.some(
-              (id) =>
-                !state.orders.some((o) => o.order_id === id && eligible(o)),
-            )
-          ) {
-            error(
-              response,
-              "RY409",
-              "Some selected orders are no longer ready to send.",
-            );
-            return true;
-          }
-          const existing = state.snapshot?.state === "prepared";
-          const matches =
-            existing &&
-            snapshotReady() &&
-            selected.length === state.snapshot.verified_ids.length &&
-            selected.every((id) => state.snapshot.verified_ids.includes(id));
-          if (existing && !matches) {
-            if (body.requested_replace === null) {
-              json(response, 200, {
-                ...state.snapshot,
-                selection_conflict: true,
-                requires_rebuild: !snapshotReady(),
-              });
-              return true;
-            }
-            if (body.requested_replace !== state.snapshot.id) {
-              error(response, "RY409", "The prepared batch changed.");
-              return true;
-            }
-            state.snapshot.state = "cancelled";
-          }
-          if (!matches)
-            createSnapshot(
-              state.orders.filter((o) => selected.includes(o.order_id)),
-            );
-        }
-        json(response, 200, {
-          ...state.snapshot,
-          selection_conflict: false,
-          requires_rebuild: !snapshotReady(),
+        json(response, 200, { recipient: state.settings.fulfillment_email, generated_at: NOW,
+          headers: state.imports.at(-1).headers,
+          order_rows: state.orders.filter((order) => ids.includes(order.order_id)).map((order) => ({ ...order })),
         });
-      } else if (name === "ryd_finish_fulfillment") {
-        const snapshot = state.snapshot;
-        const changed = snapshot.state === "prepared";
-        if (changed) {
-          snapshot.state =
-            body.requested_action === "confirm" ? "sent" : "cancelled";
-          if (snapshot.state === "sent") {
-            state.batches.push({
-              sent_at: NOW,
-              recipient: snapshot.recipient,
-              order_count: snapshot.order_rows.length,
-              verified_count: snapshot.verified_ids.length,
-            });
-            for (const order of state.orders)
-              if (snapshot.verified_ids.includes(order.order_id))
-                order.cleared_batch_id = snapshot.id;
-          }
-        }
-        json(response, 200, { changed, snapshot });
       } else if (name === "ryd_move_production") {
         const orders = [];
         for (const move of body.requested_moves) {
           const order = state.orders.find((o) => o.order_id === move.orderId);
-          order.production_sent_at = move.to === "not-started" ? null : NOW;
+          if (move.to === "sent-to-fulfillment" && !order.cleared_batch_id) {
+            order.cleared_batch_id = body.requested_operation;
+            state.batches.push({ recipient: null, order_count: 1, verified_count: 1, sent_at: NOW });
+          }
+          if (move.to === "ready-to-send") order.cleared_batch_id = null;
+          order.production_sent_at = ["in-production", "done"].includes(move.to) ? NOW : null;
           order.done_at = move.to === "done" ? NOW : null;
           orders.push({
             orderId: order.order_id,
+            sentToFulfillment: Boolean(order.cleared_batch_id),
             productionSentAt: order.production_sent_at,
             doneAt: order.done_at,
             updatedAt: order.updated_at,

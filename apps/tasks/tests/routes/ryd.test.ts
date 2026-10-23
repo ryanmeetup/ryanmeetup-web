@@ -843,146 +843,34 @@ describe("RY-D routes", () => {
     expect(response.status).toBe(400);
   });
 
-  it("resumes a saved batch without broadening to the whole ready queue", async () => {
-    getAdminClient.mockReturnValue(admin({}));
-    rpc.mockResolvedValue({
-      data: {
-        id: "00000000-0000-4000-8000-000000000301",
-        recipient: "fulfillment@example.test",
-        prepared_at: "2026-10-20T12:00:00Z",
-        verified_ids: ["1001"],
-        order_rows: [
-          { order_id: "1001", first_name: "Ryan", last_name: "Example" },
-        ],
-      },
-      error: null,
-    });
-    const { POST } = await import("@/app/api/ryd/batches/route");
-    const response = await POST(
-      new Request(
-        "http://localhost/api/ryd/batches",
-        json({ action: "prepare" }, "POST"),
-      ),
-    );
-    expect(response.status).toBe(200);
-    expect(await response.json()).toMatchObject({
-      orderCount: 1,
-      verifiedCount: 1,
-      recipient: "fulfillment@example.test",
-    });
-    expect(rpc).toHaveBeenCalledExactlyOnceWith(
-      "ryd_prepare_selected_fulfillment",
-      {
-        requested_actor: "member-1",
-        requested_orders: null,
-        requested_replace: null,
-      },
-    );
-    const legacy = await POST(
-      new Request(
-        "http://localhost/api/ryd/batches",
-        json({ orderIds: ["1001"] }, "POST"),
-      ),
-    );
-    expect(legacy.status).toBe(400);
-  });
-
-  it("freezes the explicit selection and pins replacement to the reviewed draft", async () => {
-    getAdminClient.mockReturnValue(admin({}));
-    rpc.mockResolvedValue({
-      data: {
-        id: "00000000-0000-4000-8000-000000000301",
-        recipient: "fulfillment@example.test",
-        prepared_at: "2026-10-20T12:00:00Z",
-        verified_ids: ["1001"],
-        order_rows: [{ order_id: "1001" }],
-        selection_conflict: true,
-      },
-      error: null,
-    });
-    const { POST } = await import("@/app/api/ryd/batches/route");
-    const response = await POST(
-      new Request(
-        "http://localhost/api/ryd/batches",
-        json(
-          {
-            action: "prepare",
-            orderIds: ["1001", "1001"],
-            replaceSnapshotId: "00000000-0000-4000-8000-000000000302",
-          },
-          "POST",
-        ),
-      ),
-    );
-    expect(response.status).toBe(200);
-    expect(await response.json()).toMatchObject({ selectionConflict: true });
-    expect(rpc).toHaveBeenCalledExactlyOnceWith(
-      "ryd_prepare_selected_fulfillment",
-      {
-        requested_actor: "member-1",
-        requested_orders: ["1001"],
-        requested_replace: "00000000-0000-4000-8000-000000000302",
-      },
-    );
-  });
-
-  it("accepts a large selection without truncating IDs or removing the request limit", async () => {
+  it("generates an email and CSV without saving or confirming a batch", async () => {
     getAdminClient.mockReturnValue(admin({}));
     rpc.mockResolvedValue({ data: {
-      id: "00000000-0000-4000-8000-000000000301", recipient: "fulfillment@example.test",
-      prepared_at: "2026-10-20T12:00:00Z", verified_ids: ["1"], order_rows: [{ order_id: "1" }],
+      recipient: "toney@example.test", generated_at: "2026-10-23T12:00:00Z", headers: ["OrderId", "Verified?"],
+      order_rows: [{ order_id: "1001", raw: { OrderId: "1001" }, status: "verified", first_name: "Ryan", last_name: "Example" }],
     }, error: null });
     const { POST } = await import("@/app/api/ryd/batches/route");
-    const orderIds = Array.from({ length: 5000 }, (_, i) => `selected-order-${i}`);
     const send = (body: unknown) => POST(new Request("http://localhost/api/ryd/batches", json(body, "POST")));
-    expect((await send({ action: "prepare", orderIds })).status).toBe(200);
-    expect(rpc).toHaveBeenCalledExactlyOnceWith("ryd_prepare_selected_fulfillment", {
-      requested_actor: "member-1", requested_orders: orderIds, requested_replace: null,
-    });
-    expect((await send({ action: "prepare", orderIds: [...orderIds, "one-too-many"] })).status).toBe(400);
-    expect((await send({ action: "prepare", orderIds: ["x".repeat(512 * 1024)] })).status).toBe(413);
+    const response = await send({ orderIds: ["1001", "1001"] });
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(await response.json()).toMatchObject({ orderCount: 1, recipient: "toney@example.test", csv: expect.stringContaining("1001,✅") });
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("ryd_generate_fulfillment", { requested_actor: "member-1", requested_orders: ["1001"] });
+    for (const body of [{ action: "prepare" }, { action: "confirm", snapshotId: "00000000-0000-4000-8000-000000000301" }, { orderIds: [] }, { orderIds: ["1001"], replaceSnapshotId: "old" }]) expect((await send(body)).status).toBe(400);
     expect(rpc).toHaveBeenCalledTimes(1);
   });
 
-  it("confirms only an existing batch identity through one transaction", async () => {
+  it("accepts a large selection without truncation and keeps a bounded request", async () => {
     getAdminClient.mockReturnValue(admin({}));
-    rpc.mockResolvedValue({
-      data: {
-        changed: false,
-        snapshot: {
-          id: "00000000-0000-4000-8000-000000000301",
-          verified_ids: ["1001"],
-          order_rows: [{}],
-          form_id: null,
-        },
-      },
-      error: null,
-    });
+    rpc.mockResolvedValue({ data: { recipient: "toney@example.test", generated_at: "2026-10-23T12:00:00Z", headers: [], order_rows: [] }, error: null });
     const { POST } = await import("@/app/api/ryd/batches/route");
-    const response = await POST(
-      new Request(
-        "http://localhost/api/ryd/batches",
-        json(
-          {
-            action: "confirm",
-            snapshotId: "00000000-0000-4000-8000-000000000301",
-          },
-          "POST",
-        ),
-      ),
-    );
-    expect(response.status).toBe(200);
-    expect(await response.json()).toMatchObject({
-      changed: false,
-      orderCount: 1,
-      verifiedCount: 1,
-    });
-    expect(rpc).toHaveBeenCalledExactlyOnceWith("ryd_finish_fulfillment", {
-      requested_actor: "member-1",
-      requested_snapshot: "00000000-0000-4000-8000-000000000301",
-      requested_action: "confirm",
-    });
-    expect(loadRydGoogleIntegration).not.toHaveBeenCalled();
+    const send = (body: unknown) => POST(new Request("http://localhost/api/ryd/batches", json(body, "POST")));
+    const orderIds = Array.from({ length: 5000 }, (_, i) => `selected-order-${i}`);
+    expect((await send({ orderIds })).status).toBe(200);
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("ryd_generate_fulfillment", { requested_actor: "member-1", requested_orders: orderIds });
+    expect((await send({ orderIds: [...orderIds, "too-many"] })).status).toBe(400);
+    expect((await send({ orderIds: ["x".repeat(512 * 1024)] })).status).toBe(413);
+    expect(rpc).toHaveBeenCalledTimes(1);
   });
 
   it("refuses downloads without a manifest and never exports a live queue", async () => {

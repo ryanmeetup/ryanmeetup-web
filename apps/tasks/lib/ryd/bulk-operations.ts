@@ -1,23 +1,31 @@
 import { rydMailtoHref, rydUnmatchedEmail } from "./emails";
 import type { RydQueue, RydQueueOrder } from "./queue-types";
 import { isRydContactEmail, normalizeEmail } from "./normalize";
-import { rydProductionStage, type RydProductionStage } from "./queue-view";
+import {
+  RYD_FULFILLMENT_STAGES,
+  rydFulfillmentStage,
+  type RydFulfillmentStage,
+} from "./fulfillment-view";
 
 export const RYD_BULK_LIMIT = 100;
 export const RYD_BULK_BODY_BYTES = 14_000;
 export const RYD_MAILTO_LIMIT = 1900;
 const OPERATION_PLACEHOLDER = "00000000-0000-4000-8000-000000000000";
-export type RydProductionAction = "sent" | "done" | "back";
+export type RydProductionAction = "fulfillment" | "sent" | "done" | "back";
 export type RydProductionMove = {
   orderId: string;
-  from: RydProductionStage;
-  to: RydProductionStage;
+  from: RydFulfillmentStage | "not-started";
+  to: RydFulfillmentStage | "not-started";
 };
 export type RydProductionResult = {
   movedCount: number;
   orders: Pick<
     RydQueueOrder,
-    "orderId" | "productionSentAt" | "doneAt" | "updatedAt"
+    | "orderId"
+    | "productionSentAt"
+    | "doneAt"
+    | "updatedAt"
+    | "sentToFulfillment"
   >[];
 };
 export type RydContactResult = {
@@ -64,21 +72,20 @@ export function rydProductionGroups(
   for (const order of orders) {
     if (seen.has(order.orderId) || order.status !== "verified") continue;
     seen.add(order.orderId);
-    const from = rydProductionStage(order);
-    // Starting production records fulfillment's acknowledgment, after the
-    // email has been recorded. Completion waits for production to start.
-    if (action === "sent" && !order.sentToFulfillment) continue;
+    const from = rydFulfillmentStage(order);
+    if (action === "fulfillment" && from !== "ready-to-send") continue;
+    if (action === "sent" && from !== "sent-to-fulfillment") continue;
     if (action === "done" && from !== "in-production") continue;
     const to =
-      action === "done"
-        ? "done"
+      action === "fulfillment"
+        ? "sent-to-fulfillment"
         : action === "sent"
-          ? from === "not-started"
-            ? "in-production"
-            : from
-          : from === "done"
-            ? "in-production"
-            : "not-started";
+          ? "in-production"
+          : action === "done"
+            ? "done"
+            : RYD_FULFILLMENT_STAGES[
+                Math.max(0, RYD_FULFILLMENT_STAGES.indexOf(from) - 1)
+              ];
     if (to !== from) moves.push({ orderId: order.orderId, from, to });
   }
   return boundedGroups(moves, (group) => ({

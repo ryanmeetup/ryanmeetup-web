@@ -35,7 +35,8 @@ describe("RY-D bounded operation contracts", () => {
     ).toEqual([
       [
         { orderId: "1", from: "done", to: "in-production" },
-        { orderId: "2", from: "in-production", to: "not-started" },
+        { orderId: "2", from: "in-production", to: "sent-to-fulfillment" },
+        { orderId: "3", from: "sent-to-fulfillment", to: "ready-to-send" },
       ],
     ]);
   });
@@ -73,7 +74,13 @@ describe("RY-D bounded operation contracts", () => {
         ],
         "sent",
       ),
-    ).toEqual([[{ orderId: "3", from: "not-started", to: "in-production" }]]);
+    ).toEqual([[{ orderId: "3", from: "sent-to-fulfillment", to: "in-production" }]]);
+  });
+  it("marks only selected ready orders sent through the manual handoff action", () => {
+    expect(rydProductionGroups([
+      { ...order("ready"), sentToFulfillment: false },
+      order("already-sent"), order("started", "in-production"),
+    ], "fulfillment")).toEqual([[{ orderId: "ready", from: "ready-to-send", to: "sent-to-fulfillment" }]]);
   });
   it("waits for an emailed batch before recording production and for production before completion", () => {
     expect(

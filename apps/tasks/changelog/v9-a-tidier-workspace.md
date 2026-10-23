@@ -40,13 +40,9 @@ Single and bulk buyer emails share one draft workflow. Opening a draft records n
 
 ### Fulfillment files stay in sync
 
-The download, email draft, and send confirmation now use one saved batch. Ready orders stay reserved until it is marked sent or explicitly cancelled, and later verifications wait for the next file. Closing resumes the same batch, and retrying a confirmation cannot clear orders or record the send twice.
+Generated files include only verified orders that have not already gone to fulfillment or production. Orders in production, completed orders, and orders still being checked stay out of the next file and email draft.
 
-New batches include only verified orders that have not already gone to fulfillment or production. Orders in production, completed orders, and orders still being checked stay out of the next file and email draft.
-
-Verified now opens to Ready to send, with separate stages for Sent to fulfillment, In production, and Done. Select ready orders across pages and choose Generate email & CSV to create a batch containing exactly that selection. Saved drafts can be resumed or explicitly replaced with a new selection. Confirm email sent records the handoff; Confirm production started waits for fulfillment's acknowledgment. Emailing a batch never starts production automatically.
-
-Response-sheet updates require a unique tab and matching response. After marking a batch sent, review which responses were updated, already ticked, missing, ambiguous, or unchecked. Uncertain updates stay available for a manual check without repeating the send.
+Verified opens to Ready to send, with separate stages for Sent to fulfillment, In production, and Done. Select ready orders across pages and choose Generate email & CSV to prepare exactly that selection for your email app. Emails and files are generated on demand, with no saved drafts or replacement prompts. Every stage change is manual: mark orders Sent to fulfillment after emailing them, then confirm production when fulfillment acknowledges it.
 
 ### Keep email-less submissions separate
 

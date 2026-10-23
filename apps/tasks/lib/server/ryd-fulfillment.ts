@@ -2,18 +2,8 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { rydFulfillmentEmail } from "@/lib/ryd/emails";
-import type {
-  RydFulfillmentResult,
-  RydFulfillmentSnapshot,
-} from "@/lib/ryd/fulfillment";
+import type { RydFulfillmentPreview } from "@/lib/ryd/fulfillment";
 import { rydOrderExportCsv, type RydOrderStatus } from "@/lib/ryd/orders";
-import { rydUncheckedSheet } from "@/lib/ryd/sheet-reconciliation";
-import {
-  loadRydGoogleIntegration,
-  markRydSubmissionsVerified,
-  readRydSubmissions,
-} from "./ryd-google";
-
 type SnapshotRow = {
   id: string;
   state: "prepared" | "sent" | "cancelled";
@@ -35,38 +25,35 @@ type SnapshotRow = {
   selection_conflict?: boolean;
 };
 
-export async function prepareRydFulfillment(
+/** One read-only database snapshot; generation never advances order stages. */
+export async function generateRydFulfillment(
   admin: SupabaseClient,
   actor: string,
-  selection: { orderIds?: string[]; replaceSnapshotId?: string } = {},
-): Promise<RydFulfillmentSnapshot> {
-  const result = await admin.rpc("ryd_prepare_selected_fulfillment", {
+  orderIds: string[],
+): Promise<RydFulfillmentPreview> {
+  const result = await admin.rpc("ryd_generate_fulfillment", {
     requested_actor: actor,
-    requested_orders: selection.orderIds ?? null,
-    requested_replace: selection.replaceSnapshotId ?? null,
+    requested_orders: orderIds,
   });
   if (result.error) throw result.error;
-  const snapshot = result.data as SnapshotRow;
-  const ready = new Set(snapshot.verified_ids);
-  const draft = rydFulfillmentEmail(
-    snapshot.order_rows
-      .filter((row) => ready.has(row.order_id))
-      .map((row) => ({
+  const data = result.data as Pick<
+    SnapshotRow,
+    "recipient" | "headers" | "order_rows"
+  > & { generated_at: string };
+  return {
+    recipient: data.recipient,
+    generatedAt: data.generated_at,
+    orderCount: data.order_rows.length,
+    filename: `ry-d-orders-${data.generated_at.replace(/:/g, "-")}.csv`,
+    csv: rydOrderExportCsv(data.headers, data.order_rows),
+    draft: rydFulfillmentEmail(
+      data.order_rows.map((row) => ({
         orderId: row.order_id,
         firstName: row.first_name,
         lastName: row.last_name,
       })),
-    snapshot.order_rows.length,
-  );
-  return {
-    id: snapshot.id,
-    recipient: snapshot.recipient,
-    preparedAt: snapshot.prepared_at,
-    orderCount: snapshot.order_rows.length,
-    verifiedCount: ready.size,
-    requiresRebuild: snapshot.requires_rebuild === true,
-    selectionConflict: snapshot.selection_conflict === true,
-    draft: { ...draft, body: `${draft.body}\n\nBatch: ${snapshot.id}` },
+      data.order_rows.length,
+    ),
   };
 }
 
@@ -103,57 +90,4 @@ export async function rydFulfillmentCsv(admin: SupabaseClient, id: string) {
       };
   }
   return rydOrderExportCsv(snapshot.headers, snapshot.order_rows);
-}
-
-export async function finishRydFulfillment(
-  admin: SupabaseClient,
-  actor: string,
-  id: string,
-  action: "confirm" | "cancel",
-): Promise<RydFulfillmentResult> {
-  const result = await admin.rpc("ryd_finish_fulfillment", {
-    requested_actor: actor,
-    requested_snapshot: id,
-    requested_action: action,
-  });
-  if (result.error) throw result.error;
-  const { snapshot, changed } = result.data as {
-    changed: boolean;
-    snapshot: SnapshotRow;
-  };
-  const keys = snapshot.response_keys ?? [];
-  let sheet = rydUncheckedSheet(
-    keys,
-    [],
-    !keys.length || action === "cancel"
-      ? "not-required"
-      : !changed
-        ? "already-confirmed"
-        : "no-linked-sheet",
-  );
-  // A retry does not re-read Google or repeat the external side effect. The
-  // manifest pins both the form and response IDs, independently of settings.
-  if (action === "confirm" && changed && snapshot.form_id && keys.length) {
-    try {
-      const integration = await loadRydGoogleIntegration();
-      if (integration) {
-        const form = await readRydSubmissions(integration, snapshot.form_id, {
-          fresh: true,
-        });
-        sheet = await markRydSubmissionsVerified(integration, form, keys);
-      } else {
-        sheet = rydUncheckedSheet(keys, [], "disconnected");
-      }
-    } catch (error) {
-      console.error("RY-D response sheet could not be checked", error);
-      sheet = rydUncheckedSheet(keys, [], "google-unavailable");
-    }
-  }
-  return {
-    changed,
-    orderIds: snapshot.verified_ids,
-    verifiedCount: snapshot.verified_ids.length,
-    orderCount: snapshot.order_rows.length,
-    sheet,
-  };
 }

@@ -67,8 +67,6 @@ export type RydQueue = {
     orderCount: number;
     verifiedCount: number;
   } | null;
-  /** A shared draft survives closing the send dialog and reloading the page. */
-  preparedBatch?: { id: string; verifiedCount: number } | null;
   /** The workspace's time zone, which the upload reminder's slot is in. */
   timeZone: string;
   /** The reminder slot this week's file is overdue since, if not uploaded. */

@@ -1,13 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   readyForRydFulfillment,
-  reconcileRydFulfillment,
   rydFulfillmentCounts,
   rydFulfillmentParam,
   rydFulfillmentStage,
 } from "@/lib/ryd/fulfillment-view";
-import type { RydFulfillmentResult } from "@/lib/ryd/fulfillment";
-import type { RydQueue, RydQueueOrder } from "@/lib/ryd/queue-types";
+import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 
 const order = (overrides: Partial<RydQueueOrder> = {}) =>
   ({
@@ -58,47 +56,5 @@ describe("RY-D fulfillment handoff", () => {
     );
     expect(rydFulfillmentParam("all")).toBeNull();
     expect(rydFulfillmentParam("unknown")).toBeNull();
-  });
-
-  it("records only the confirmed batch without starting production, even if refresh fails", () => {
-    const queue = {
-      orders,
-      clearedCount: 1,
-      preparedBatch: { id: "batch", verifiedCount: 1 },
-    } as RydQueue;
-    const result = {
-      orderIds: ["ready"],
-      changed: true,
-    } as RydFulfillmentResult;
-    const saved = reconcileRydFulfillment(queue, result, "confirm");
-    expect(saved.orders[0]).toMatchObject({
-      sentToFulfillment: true,
-      productionSentAt: null,
-    });
-    expect(rydFulfillmentStage(saved.orders[0])).toBe("sent-to-fulfillment");
-    expect(saved.orders[2]).toBe(orders[2]);
-    expect(saved.preparedBatch).toBeNull();
-    expect(saved.clearedCount).toBe(2);
-    expect(readyForRydFulfillment(saved.orders)).toHaveLength(0);
-    expect(reconcileRydFulfillment(saved, result, "confirm").clearedCount).toBe(
-      2,
-    );
-    expect(queue.orders[0].sentToFulfillment).toBe(false);
-  });
-
-  it("cancels a draft without marking any email sent", () => {
-    const queue = {
-      orders,
-      clearedCount: 1,
-      preparedBatch: { id: "batch", verifiedCount: 1 },
-    } as RydQueue;
-    const cancelled = reconcileRydFulfillment(
-      queue,
-      { orderIds: ["ready"] } as RydFulfillmentResult,
-      "cancel",
-    );
-    expect(cancelled.orders).toBe(orders);
-    expect(cancelled.clearedCount).toBe(1);
-    expect(cancelled.preparedBatch).toBeNull();
   });
 });
