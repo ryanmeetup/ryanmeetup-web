@@ -13,6 +13,7 @@ describe("project list filters", () => {
   const projects = [
     { name: "Current", status: "active" as const, archived_at: null },
     { name: "Complete", status: "complete" as const, archived_at: null },
+    { name: "Dropped", status: "dropped" as const, archived_at: null },
     {
       name: "Archived",
       status: "complete" as const,
@@ -20,24 +21,26 @@ describe("project list filters", () => {
     },
   ];
 
-  it("keeps existing active links on the current view", () => {
+  it("keeps existing active and completed links on their views", () => {
     expect(projectListFilter("active")).toBe("current");
     expect(projectListFilter("unexpected")).toBe("current");
-    expect(projectListFilter("completed")).toBe("completed");
+    expect(projectListFilter("completed")).toBe("closed");
+    expect(projectListFilter("closed")).toBe("closed");
   });
 
-  it("keeps completed projects out of the default view without archiving them", () => {
-    expect(projects.map(isCurrentProject)).toEqual([true, false, false]);
+  it("keeps closed projects out of the default view without archiving them", () => {
+    expect(projects.map(isCurrentProject)).toEqual([true, false, false, false]);
     expect(filterProjects(projects, "current").map((item) => item.name)).toEqual([
       "Current",
     ]);
-    expect(filterProjects(projects, "completed").map((item) => item.name)).toEqual([
+    expect(filterProjects(projects, "closed").map((item) => item.name)).toEqual([
       "Complete",
+      "Dropped",
     ]);
     expect(filterProjects(projects, "archived").map((item) => item.name)).toEqual([
       "Archived",
     ]);
-    expect(filterProjects(projects, "all")).toHaveLength(3);
+    expect(filterProjects(projects, "all")).toHaveLength(4);
   });
 });
 
@@ -79,6 +82,7 @@ describe("project status grouping", () => {
       "discovery",
       "paused",
       "complete",
+      "dropped",
     ]);
   });
 

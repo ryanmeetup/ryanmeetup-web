@@ -1,4 +1,5 @@
 import { localDateValue } from "@/lib/tasks/task-scheduling";
+import { isClosedProjectStatus } from "./project-status";
 import type { Project } from "./resource-types";
 
 const dayMs = 24 * 60 * 60 * 1000;
@@ -134,7 +135,7 @@ export function projectTimeline(
       ended: Boolean(project.archived_at),
     },
     due: project.due_date
-      ? dueState(project.due_date, todayValue, project.status === "complete")
+      ? dueState(project.due_date, todayValue, isClosedProjectStatus(project.status))
       : null,
   };
 }

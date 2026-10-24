@@ -44,6 +44,7 @@ import {
 } from "@/lib/activity/task-activity";
 import { formatShortTimestamp } from "@/lib/date-format";
 import { projectPath } from "@/lib/resources/project-route";
+import { isClosedProjectStatus } from "@/lib/resources/project-status";
 import {
   boundedWidgetPage,
   DashboardTaskList,
@@ -168,7 +169,7 @@ export function DashboardPageClient({
   const favoriteProjects = data.projects.filter(
     (project) =>
       !project.archived_at &&
-      project.status !== "complete" &&
+      !isClosedProjectStatus(project.status) &&
       (data.currentProfile.favorite_project_ids ?? []).includes(project.id),
   );
   const visibleAssignedPage = boundedWidgetPage(

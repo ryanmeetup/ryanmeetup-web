@@ -21,7 +21,7 @@ function request(favorite: boolean) {
   });
 }
 
-function projectQuery(status: "active" | "complete") {
+function projectQuery(status: "active" | "complete" | "dropped") {
   const builder: Record<string, unknown> = {};
   for (const method of ["select", "eq", "is"])
     builder[method] = vi.fn(() => builder);
@@ -38,22 +38,26 @@ describe("project favorite route", () => {
     process.env.TASKS_APP_URL = "http://localhost";
   });
 
-  it("does not add a completed project to favorites", async () => {
-    const admin = { from: vi.fn() };
-    const supabase = {
-      from: vi.fn().mockReturnValue(projectQuery("complete")),
-    };
-    privilegedContext.mockResolvedValue({ user, admin, supabase });
-    const { PATCH } = await import("@/app/api/profile/favorite-projects/route");
+  it.each(["complete", "dropped"] as const)(
+    "does not add a %s project to favorites",
+    async (status) => {
+      const admin = { from: vi.fn() };
+      const supabase = {
+        from: vi.fn().mockReturnValue(projectQuery(status)),
+      };
+      privilegedContext.mockResolvedValue({ user, admin, supabase });
+      const { PATCH } =
+        await import("@/app/api/profile/favorite-projects/route");
 
-    const response = await PATCH(request(true));
+      const response = await PATCH(request(true));
 
-    expect(response.status).toBe(409);
-    expect((await response.json()).error).toBe(
-      "Completed projects cannot be added to favorites.",
-    );
-    expect(admin.from).not.toHaveBeenCalled();
-  });
+      expect(response.status).toBe(409);
+      expect((await response.json()).error).toBe(
+        "Closed projects cannot be added to favorites.",
+      );
+      expect(admin.from).not.toHaveBeenCalled();
+    },
+  );
 
   it("still lets a stale completed favorite be removed", async () => {
     const profileRead = {

@@ -58,7 +58,10 @@ import {
   projectUpcomingRange,
 } from "@/lib/resources/project-overview";
 import { projectPath } from "@/lib/resources/project-route";
-import { projectStatusDetails } from "@/lib/resources/project-status";
+import {
+  isClosedProjectStatus,
+  projectStatusDetails,
+} from "@/lib/resources/project-status";
 import { projectTimeline } from "@/lib/resources/project-timeline";
 import type {
   ProjectAttachment,
@@ -229,7 +232,7 @@ export function ProjectOverviewPageClient({
   const timeline = projectTimeline(project);
   const isFavorite =
     !project.archived_at &&
-    project.status !== "complete" &&
+    !isClosedProjectStatus(project.status) &&
     favorites.isFavorite(project.id);
   const canOpenCalendar = canViewWorkspaceArea(
     data.accessibleAreas,
@@ -321,7 +324,7 @@ export function ProjectOverviewPageClient({
             titleActions={
               !data.accessPreview &&
               !project.archived_at &&
-              project.status !== "complete" ? (
+              !isClosedProjectStatus(project.status) ? (
                 <ProjectFavoriteButton
                   projectName={project.name}
                   favorite={isFavorite}

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { apiError, privilegedContext } from "@/lib/server/privileged-api";
 import { databaseFailure } from "@/lib/server/api-response";
+import { isClosedProjectStatus } from "@/lib/resources/project-status";
 
 export async function PATCH(request: Request) {
   const context = await privilegedContext();
@@ -26,11 +27,11 @@ export async function PATCH(request: Request) {
   if (projectError || !project) {
     return apiError(404, "NOT_FOUND", "That project is not available.");
   }
-  if (body.favorite && project.status === "complete") {
+  if (body.favorite && isClosedProjectStatus(project.status)) {
     return apiError(
       409,
       "CONFLICT",
-      "Completed projects cannot be added to favorites.",
+      "Closed projects cannot be added to favorites.",
     );
   }
 

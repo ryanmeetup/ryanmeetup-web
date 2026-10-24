@@ -47,7 +47,7 @@ test("completed projects leave Current and remain available to archive", async (
     }),
   ).toHaveCount(0);
 
-  await filters.getByRole("button", { name: "Completed" }).click();
+  await filters.getByRole("button", { name: "Closed" }).click();
   await expect(
     results.getByText("Finished launch", { exact: true }),
   ).toBeVisible();
@@ -93,7 +93,7 @@ test("completing a favorite removes it from the sidebar", async ({
   );
   await page
     .getByLabel("Filter projects")
-    .getByRole("button", { name: "Completed" })
+    .getByRole("button", { name: "Closed" })
     .click();
   await expect(
     page.locator("main").getByText("Website Refresh", { exact: true }),
@@ -110,7 +110,7 @@ test("all project filters fit at mobile and desktop widths", async ({
   const filters = page.getByLabel("Filter projects");
   for (const width of [390, 1024, 1280, 1536]) {
     await page.setViewportSize({ width, height: 844 });
-    for (const label of ["Current", "Completed", "Archived", "All"]) {
+    for (const label of ["Current", "Closed", "Archived", "All"]) {
       await expect(filters.getByRole("button", { name: label })).toBeVisible();
     }
     // Poll rather than measure once: a resize reflows the row over the next

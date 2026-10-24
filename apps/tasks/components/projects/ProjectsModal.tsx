@@ -52,6 +52,7 @@ import {
   defaultProjectStatus,
   filterProjects,
   groupProjectsByStatus,
+  isClosedProjectStatus,
   projectListFilter,
   type ProjectListFilter,
 } from "@/lib/resources/project-status";
@@ -121,7 +122,7 @@ export type ProjectsModalProps = ProjectsModalCommonProps &
 
 const projectFilterLabels: Record<ProjectListFilter, string> = {
   current: "Current",
-  completed: "Completed",
+  closed: "Closed",
   archived: "Archived",
   all: "All",
 };
@@ -428,8 +429,8 @@ export function ProjectsModal({
       setNewStartDate(defaultProjectStartDate());
       setNewDueDate("");
       toast.success(
-        project.status === "complete"
-          ? `${project.name} created. Find it under Completed projects.`
+        isClosedProjectStatus(project.status)
+          ? `${project.name} created. Find it under Closed projects.`
           : `${project.name} created.`,
       );
       await onCreated?.(project);
@@ -520,7 +521,7 @@ export function ProjectsModal({
         currentProfile: {
           ...current.currentProfile,
           favorite_project_ids:
-            editingStatus === "complete"
+            isClosedProjectStatus(editingStatus)
               ? (current.currentProfile.favorite_project_ids ?? []).filter(
                   (id) => id !== project.id,
                 )
@@ -528,8 +529,9 @@ export function ProjectsModal({
         },
       }));
       toast.success(
-        project.status !== "complete" && editingStatus === "complete"
-          ? `${nextName} completed. Find it under Completed projects.`
+        !isClosedProjectStatus(project.status) &&
+          isClosedProjectStatus(editingStatus)
+          ? `${nextName} ${editingStatus === "dropped" ? "dropped" : "completed"}. Find it under Closed projects.`
           : `${nextName} updated.`,
       );
       accessState.commit();
@@ -639,7 +641,7 @@ export function ProjectsModal({
       data.tasks.filter((task) => task.project_id === project.id).length;
     const isFavorite =
       !project.archived_at &&
-      project.status !== "complete" &&
+      !isClosedProjectStatus(project.status) &&
       favorites.isFavorite(project.id);
     const owners = data.projectOwners
       .filter((item) => item.project_id === project.id)
@@ -656,7 +658,7 @@ export function ProjectsModal({
     if (
       !data.accessPreview &&
       !project.archived_at &&
-      project.status !== "complete"
+      !isClosedProjectStatus(project.status)
     )
       actions.push({
         key: "favorite",
@@ -692,7 +694,7 @@ export function ProjectsModal({
         });
       actions.push(
         taskCount > 0 ||
-        project.status === "complete" ||
+        isClosedProjectStatus(project.status) ||
         Boolean(project.archived_at)
           ? {
               key: "archive",
@@ -1071,7 +1073,7 @@ export function ProjectsModal({
                   className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap"
                   aria-label="Filter projects"
                 >
-                  {(["current", "completed", "archived", "all"] as const).map(
+                  {(["current", "closed", "archived", "all"] as const).map(
                     (filter) => (
                       <FilterChip
                         key={filter}
