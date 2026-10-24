@@ -6,38 +6,68 @@ import type {
   ExplainedAccess,
 } from "@/lib/access/access-overview";
 
+function AccessItem({
+  item,
+  available,
+}: {
+  item: ExplainedAccess;
+  available: boolean;
+}) {
+  return (
+    <li
+      className={`rounded-lg border px-3 py-2 ${available ? "border-black/10 bg-black/[0.025] dark:border-white/10 dark:bg-white/[0.025]" : "border-dashed border-black/15 dark:border-white/15"}`}
+    >
+      <p
+        className={`text-sm font-semibold ${available ? "" : "text-black/70 dark:text-white/70"}`}
+      >
+        {item.name}
+      </p>
+      <p className="mt-0.5 text-xs text-black/55 dark:text-white/55">
+        {item.reason}
+      </p>
+    </li>
+  );
+}
+
 function AccessList({
   items,
-  total,
+  unavailable,
 }: {
   items: ExplainedAccess[];
-  total: number;
+  unavailable: ExplainedAccess[];
 }) {
-  if (items.length === 0)
+  if (items.length === 0 && unavailable.length === 0)
     return (
       <p className="mt-4 text-sm text-black/55 dark:text-white/55">
-        No access from this group.
+        Nothing to show yet.
       </p>
     );
   return (
-    <ul className="mt-4 max-h-64 space-y-2 overflow-y-auto overscroll-contain border-y border-black/10 py-3 pr-1 dark:border-white/10">
-      {items.map((item) => (
-        <li
-          key={item.id}
-          className="rounded-lg border border-black/10 bg-black/[0.025] px-3 py-2 dark:border-white/10 dark:bg-white/[0.025]"
-        >
-          <p className="text-sm font-semibold">{item.name}</p>
-          <p className="mt-0.5 text-xs text-black/55 dark:text-white/55">
-            {item.reason}
-          </p>
-        </li>
-      ))}
-      {items.length < total && (
-        <li className="px-1 pt-1 text-xs text-black/50 dark:text-white/50">
-          {total - items.length} not available through this group
-        </li>
+    <div className="mt-4 max-h-64 space-y-2 overflow-y-auto overscroll-contain border-y border-black/10 py-3 pr-1 dark:border-white/10">
+      {items.length > 0 ? (
+        <ul className="space-y-2">
+          {items.map((item) => (
+            <AccessItem key={item.id} item={item} available />
+          ))}
+        </ul>
+      ) : (
+        <p className="px-1 text-sm text-black/55 dark:text-white/55">
+          No access from this group.
+        </p>
       )}
-    </ul>
+      {unavailable.length > 0 && (
+        <>
+          <p className="px-1 pt-2 text-xs font-semibold uppercase tracking-wider text-black/55 dark:text-white/55">
+            Not available · {unavailable.length}
+          </p>
+          <ul className="space-y-2">
+            {unavailable.map((item) => (
+              <AccessItem key={item.id} item={item} available={false} />
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -46,11 +76,13 @@ function ResourceCard({
   items,
   title,
   total,
+  unavailable,
 }: {
   icon: ReactNode;
   items: ExplainedAccess[];
   title: string;
   total: number;
+  unavailable: ExplainedAccess[];
 }) {
   return (
     <Card className="p-5">
@@ -62,7 +94,7 @@ function ResourceCard({
           {items.length} of {total}
         </span>
       </div>
-      <AccessList items={items} total={total} />
+      <AccessList items={items} unavailable={unavailable} />
     </Card>
   );
 }
@@ -90,18 +122,21 @@ export function AccessGroupOverview({
           title="Projects"
           items={overview.projects}
           total={overview.projectCount}
+          unavailable={overview.unavailableProjects}
         />
         <ResourceCard
           icon={<FiTag aria-hidden />}
           title="Categories"
           items={overview.categories}
           total={overview.categoryCount}
+          unavailable={overview.unavailableCategories}
         />
         <ResourceCard
           icon={<FiGrid aria-hidden />}
           title="Pages"
           items={overview.pages}
           total={overview.pageCount}
+          unavailable={overview.unavailablePages}
         />
       </div>
       <Card className="flex items-start gap-3 p-4 text-sm">

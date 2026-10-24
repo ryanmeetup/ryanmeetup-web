@@ -109,4 +109,40 @@ describe("access group explanations", () => {
     ]);
     expect(overviews.get("base")?.projectCount).toBe(2);
   });
+
+  it("lists what a group cannot open, with the rule that keeps it out", () => {
+    const base = group("base", 0, { name: "Members" });
+    const lead = group("lead", 10, { name: "Leads" });
+    const overview = buildAccessGroupOverview({
+      group: base,
+      groups: [base, lead],
+      projects: [
+        { id: "open", name: "Open", access_mode: "open" },
+        { id: "leads", name: "Leads only", access_mode: "restricted" },
+        { id: "nobody", name: "Nobody yet", access_mode: "restricted" },
+        { id: "private", name: "Private", access_mode: "owners" },
+      ],
+      categories: [],
+      projectGrants: [{ resourceId: "leads", groupId: "lead" }],
+      categoryGrants: [],
+      areaAccess: [{ area: "notes", accessMode: "restricted" }],
+      areaGrants: [{ area: "notes", groupId: "lead" }],
+    });
+
+    expect(overview.unavailableProjects).toEqual([
+      { id: "leads", name: "Leads only", reason: "Restricted to other groups" },
+      {
+        id: "nobody",
+        name: "Nobody yet",
+        reason: "Restricted, with no groups selected",
+      },
+      { id: "private", name: "Private", reason: "Owners only" },
+    ]);
+    expect(
+      overview.unavailablePages.map(({ id, reason }) => [id, reason]),
+    ).toEqual([["notes", "Restricted to other groups"]]);
+    expect(overview.projects.length + overview.unavailableProjects.length).toBe(
+      overview.projectCount,
+    );
+  });
 });

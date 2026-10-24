@@ -35,10 +35,14 @@ export type ExplainedAccess = {
 export type AccessGroupOverview = {
   projects: ExplainedAccess[];
   projectCount: number;
+  /** Everything the group cannot open, with the rule that keeps it out. */
+  unavailableProjects: ExplainedAccess[];
   categories: ExplainedAccess[];
   categoryCount: number;
+  unavailableCategories: ExplainedAccess[];
   pages: ExplainedAccess[];
   pageCount: number;
+  unavailablePages: ExplainedAccess[];
   calendarReason: string | null;
 };
 
@@ -85,6 +89,12 @@ function grantReason(
     : `Inherited from ${groupsById.get(selectedGroupId)?.name ?? "a lower tier"}`;
 }
 
+function denialReason(hasAnyGrant: boolean) {
+  return hasAnyGrant
+    ? "Restricted to other groups"
+    : "Restricted, with no groups selected";
+}
+
 function explainResources({
   group,
   resources,
@@ -101,41 +111,45 @@ function explainResources({
   workspaceWide: boolean;
 }) {
   const grantsByResource = new Map<string, string[]>();
+  const grantedResourceIds = new Set<string>();
   for (const grant of grants) {
+    grantedResourceIds.add(grant.resourceId);
     if (!effectiveGroupIds.has(grant.groupId)) continue;
     grantsByResource.set(grant.resourceId, [
       ...(grantsByResource.get(grant.resourceId) ?? []),
       grant.groupId,
     ]);
   }
-  return resources.flatMap((resource) => {
-    if (workspaceWide)
-      return [
-        {
-          id: resource.id,
-          name: resource.name,
-          reason: "Workspace-wide manager access",
-        },
-      ];
-    if (resource.access_mode === "open")
-      return [
-        {
-          id: resource.id,
-          name: resource.name,
-          reason: "Open to the workspace",
-        },
-      ];
-    const selectedGroupId = grantsByResource.get(resource.id)?.[0];
-    return selectedGroupId
-      ? [
-          {
-            id: resource.id,
-            name: resource.name,
-            reason: grantReason(selectedGroupId, group.id, groupsById),
-          },
-        ]
-      : [];
-  });
+  const available: ExplainedAccess[] = [];
+  const unavailable: ExplainedAccess[] = [];
+  for (const resource of resources) {
+    const { id, name } = resource;
+    if (workspaceWide) {
+      available.push({ id, name, reason: "Workspace-wide manager access" });
+      continue;
+    }
+    if (resource.access_mode === "open") {
+      available.push({ id, name, reason: "Open to the workspace" });
+      continue;
+    }
+    const selectedGroupId = grantsByResource.get(id)?.[0];
+    if (selectedGroupId)
+      available.push({
+        id,
+        name,
+        reason: grantReason(selectedGroupId, group.id, groupsById),
+      });
+    else
+      unavailable.push({
+        id,
+        name,
+        reason:
+          resource.access_mode === "owners"
+            ? "Owners only"
+            : denialReason(grantedResourceIds.has(id)),
+      });
+  }
+  return { available, unavailable };
 }
 
 export function buildAccessGroupOverview({
@@ -166,7 +180,7 @@ export function buildAccessGroupOverview({
     groups.map((candidate) => [candidate.id, candidate]),
   );
   const workspaceWide = group.grants_global_content;
-  const projectsWithAccess = explainResources({
+  const projectAccess = explainResources({
     group,
     resources: projects,
     grants: projectGrants,
@@ -174,7 +188,7 @@ export function buildAccessGroupOverview({
     groupsById,
     workspaceWide,
   });
-  const categoriesWithAccess = explainResources({
+  const categoryAccess = explainResources({
     group,
     resources: categories,
     grants: categoryGrants,
@@ -185,25 +199,31 @@ export function buildAccessGroupOverview({
   const areaMode = new Map(
     areaAccess.map((area) => [area.area, area.accessMode]),
   );
-  const pages = areas.flatMap((area) => {
-    if ((areaMode.get(area.key) ?? "open") === "open")
-      return [
-        { id: area.key, name: area.label, reason: "Open to the workspace" },
-      ];
-    const selectedGroupId = areaGrants.find(
-      (grant) =>
-        grant.area === area.key && effectiveGroupIds.has(grant.groupId),
+  const pages: ExplainedAccess[] = [];
+  const unavailablePages: ExplainedAccess[] = [];
+  for (const area of areas) {
+    const page = { id: area.key, name: area.label };
+    if ((areaMode.get(area.key) ?? "open") === "open") {
+      pages.push({ ...page, reason: "Open to the workspace" });
+      continue;
+    }
+    const areaGrantsForPage = areaGrants.filter(
+      (grant) => grant.area === area.key,
+    );
+    const selectedGroupId = areaGrantsForPage.find((grant) =>
+      effectiveGroupIds.has(grant.groupId),
     )?.groupId;
-    return selectedGroupId
-      ? [
-          {
-            id: area.key,
-            name: area.label,
-            reason: grantReason(selectedGroupId, group.id, groupsById),
-          },
-        ]
-      : [];
-  });
+    if (selectedGroupId)
+      pages.push({
+        ...page,
+        reason: grantReason(selectedGroupId, group.id, groupsById),
+      });
+    else
+      unavailablePages.push({
+        ...page,
+        reason: denialReason(areaGrantsForPage.length > 0),
+      });
+  }
   const calendarSource = groups.find(
     (candidate) =>
       effectiveGroupIds.has(candidate.id) && candidate.calendar_access,
@@ -213,12 +233,15 @@ export function buildAccessGroupOverview({
   );
 
   return {
-    projects: projectsWithAccess,
+    projects: projectAccess.available,
     projectCount: projects.length,
-    categories: categoriesWithAccess,
+    unavailableProjects: projectAccess.unavailable,
+    categories: categoryAccess.available,
     categoryCount: categories.length,
+    unavailableCategories: categoryAccess.unavailable,
     pages,
     pageCount: areas.length,
+    unavailablePages,
     calendarReason:
       canOpenCalendar && calendarSource
         ? calendarSource.id === group.id
