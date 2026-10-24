@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, DropdownSelect, MultiSelect, toast } from "@ryanmeetup/ui";
-import { FiGlobe, FiLock } from "react-icons/fi";
+import { FiCheck, FiGlobe, FiLock } from "react-icons/fi";
 import {
   enabledWorkspaceAreas,
   type WorkspaceAreaKey,
@@ -83,6 +83,29 @@ export function WorkspaceAreaAccessPanel({
   const persisted = useRef(new Map(access.map((entry) => [entry.area, entry])));
   const latest = useRef(new Map<WorkspaceAreaKey, WorkspaceAreaAccess>());
   const queues = useRef(new Map<WorkspaceAreaKey, Promise<void>>());
+  // A brief "Saved" after each write, then nothing: the card itself is the
+  // record of what is in force.
+  const [saved, setSaved] = useState<
+    Partial<Record<WorkspaceAreaKey, boolean>>
+  >({});
+  const savedTimers = useRef(
+    new Map<WorkspaceAreaKey, ReturnType<typeof setTimeout>>(),
+  );
+  useEffect(() => {
+    const timers = savedTimers.current;
+    return () => timers.forEach(clearTimeout);
+  }, []);
+  const flashSaved = (key: WorkspaceAreaKey) => {
+    clearTimeout(savedTimers.current.get(key));
+    setSaved((current) => ({ ...current, [key]: true }));
+    savedTimers.current.set(
+      key,
+      setTimeout(
+        () => setSaved((current) => ({ ...current, [key]: false })),
+        2000,
+      ),
+    );
+  };
 
   const entryFor = (key: WorkspaceAreaKey) =>
     access.find((entry) => entry.area === key)!;
@@ -124,6 +147,7 @@ export function WorkspaceAreaAccessPanel({
             }),
           });
           persisted.current.set(key, next);
+          flashSaved(key);
           onSaved?.(next);
         } catch (error) {
           toast.error(
@@ -215,9 +239,20 @@ export function WorkspaceAreaAccessPanel({
             {enforced && (
               <p
                 role="status"
-                className="mt-auto text-xs font-semibold uppercase tracking-wider text-black/55 dark:text-white/55"
+                aria-hidden={!saving[area.key] && !saved[area.key]}
+                className={`mt-auto flex h-4 items-center justify-end gap-1 text-xs font-semibold text-black/60 transition-opacity duration-300 motion-reduce:transition-none dark:text-white/60 ${saving[area.key] || saved[area.key] ? "opacity-100" : "opacity-0"}`}
               >
-                {saving[area.key] ? "Saving…" : "Saved automatically"}
+                {saving[area.key] ? (
+                  "Saving…"
+                ) : (
+                  <>
+                    <FiCheck
+                      aria-hidden
+                      className="text-green-600 dark:text-green-400"
+                    />
+                    Saved
+                  </>
+                )}
               </p>
             )}
           </Card>

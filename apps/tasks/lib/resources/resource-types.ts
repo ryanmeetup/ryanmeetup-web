@@ -11,7 +11,8 @@ export type ProjectStatus =
   | "queued"
   | "active"
   | "complete"
-  | "paused";
+  | "paused"
+  | "dropped";
 
 export type Category = {
   id: string;

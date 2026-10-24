@@ -11,6 +11,7 @@ export const projectStatusOptions: {
   { label: "Active", value: "active", color: "#d97706" },
   { label: "Complete", value: "complete", color: "#059669" },
   { label: "Paused", value: "paused", color: "#64748b" },
+  { label: "Dropped", value: "dropped", color: "#e11d48" },
 ];
 
 export const defaultProjectStatus: ProjectStatus = "discovery";
@@ -23,6 +24,7 @@ export const projectStatusSectionOrder: ProjectStatus[] = [
   "discovery",
   "paused",
   "complete",
+  "dropped",
 ];
 
 export function isProjectStatus(value: unknown): value is ProjectStatus {
@@ -38,11 +40,18 @@ export function projectStatusDetails(status: ProjectStatus) {
   );
 }
 
-export type ProjectListFilter = "current" | "completed" | "archived" | "all";
+/** Complete and Dropped both end a project; only Complete means it shipped. */
+export function isClosedProjectStatus(status: ProjectStatus) {
+  return status === "complete" || status === "dropped";
+}
+
+export type ProjectListFilter = "current" | "closed" | "archived" | "all";
 
 export function projectListFilter(value: string): ProjectListFilter {
-  if (value === "completed" || value === "archived" || value === "all")
+  if (value === "closed" || value === "archived" || value === "all")
     return value;
+  // Before Dropped existed, the closed view was "completed".
+  if (value === "completed") return "closed";
   // Older shared links used "active" for all unarchived projects.
   return "current";
 }
@@ -50,7 +59,7 @@ export function projectListFilter(value: string): ProjectListFilter {
 export function isCurrentProject(
   project: Pick<Project, "status" | "archived_at">,
 ) {
-  return !project.archived_at && project.status !== "complete";
+  return !project.archived_at && !isClosedProjectStatus(project.status);
 }
 
 export function filterProjects<
@@ -62,8 +71,8 @@ export function filterProjects<
   );
   if (filter === "current")
     return visible.filter(isCurrentProject);
-  if (filter === "completed")
-    return visible.filter((project) => project.status === "complete");
+  if (filter === "closed")
+    return visible.filter((project) => isClosedProjectStatus(project.status));
   return visible;
 }
 
