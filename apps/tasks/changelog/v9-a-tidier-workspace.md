@@ -36,7 +36,7 @@ In the task tag picker, each category heading now collapses its tags, so a long 
 
 Uploads now save their orders, counts, and history together. Overlapping uploads report only what each added, and retrying the same upload keeps its original result. Damaged CSV rows are reported before saving.
 
-Single and bulk buyer emails share one draft workflow. Opening a draft records nothing; confirm each sent group separately. Large selections become smaller drafts, and retrying a confirmation cannot record it twice.
+Single and bulk buyer emails share one draft workflow. Select all in the Pending queue and choose Email selected to nudge every buyer to verify in one Bcc draft. Opening a draft records nothing; confirm each sent group separately. Large selections become smaller drafts, and retrying a confirmation cannot record it twice.
 
 ### Fulfillment files stay in sync
 

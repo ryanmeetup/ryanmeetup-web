@@ -459,6 +459,36 @@ test("decides selected orders together after confirming missing evidence", async
   expect(saved.calls.filter((call: { name: string }) => call.name === "ryd_review_order")).toHaveLength(2);
 });
 
+test("emails every selected pending buyer in one Bcc draft", async ({ page, request }) => {
+  await reset(request);
+  await signIn(page);
+  await page.goto("/ryd");
+  await page.getByRole("button", { name: "Upload orders", exact: true }).click();
+  const upload = page.getByRole("dialog", { name: "Upload orders", exact: true });
+  await upload.getByLabel("Order CSV", { exact: false }).setInputFiles({
+    name: "synthetic-pending.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(
+      "OrderId,BillFirstName,BillLastName,BillEmail,Verified?\r\n" +
+        "802,Ryan,Second,second@example.test,\r\n" +
+        "803,Ryan,Third,third@example.test,\r\n",
+    ),
+  });
+  await upload.getByRole("button", { name: "Upload", exact: true }).click();
+  await expect(upload).toHaveCount(0);
+  await page.goto("/ryd?status=pending");
+  await page.getByRole("checkbox", { name: "Select all 2", exact: true }).check();
+  await page.getByRole("button", { name: "Email selected (2)", exact: true }).click();
+  const remind = page.getByRole("dialog", { name: "Email 2 selected", exact: true });
+  const draft = remind.getByRole("link", { name: "Open draft", exact: true });
+  await expect(draft).toHaveCount(1);
+  const href = decodeURIComponent((await draft.getAttribute("href"))!);
+  expect(href).toMatch(/^mailto:\?bcc=/);
+  expect(href).toContain("second@example.test");
+  expect(href).toContain("third@example.test");
+  expect(href).toContain("One quick step before we make your RY-D");
+});
+
 test("saves the weekly upload reminder and displays its workspace-local time", async ({ page, request }, testInfo) => {
   await reset(request);
   await signIn(page);

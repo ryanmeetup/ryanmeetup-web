@@ -144,6 +144,11 @@ uses, set in /admin/usage).
    it is waiting on a reviewer rather than the buyer. Mark it **Needs more
    info** to chase it.
 
+   The Pending and Needs more info queues also offer **Email selected** beside
+   the decisions, so a reviewer can select all pending orders and nudge every
+   buyer to verify in one Bcc draft without leaving the queue. It opens the
+   same drafts and confirmation as Follow-up.
+
    **Unmatched submissions** has its own **Email everyone**, asking for the
    email or order number the RY-D was bought under. The selection becomes
    independent Bcc drafts bounded by recipient count, request bytes, and mail

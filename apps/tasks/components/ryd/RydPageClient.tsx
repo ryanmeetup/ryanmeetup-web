@@ -73,6 +73,7 @@ import {
   type RydStatusParam,
   rydStatusParam,
   rydView,
+  canEmailRydOrder,
   contactableSubmitters,
   remindableOrders,
   unmatchedSubmitters,
@@ -357,10 +358,27 @@ export function RydPageClient({
         : [],
     [view, selectableSubmitters, selectedSubmitterKeys],
   );
-  // Ticked by hand overrides the day's pause, but a rejected order is never
-  // emailed.
-  const emailableSelected = selectedOrders.filter(
-    (order) => order.status !== "rejected" && order.email,
+  // Ticked by hand overrides the day's pause, but only orders still waiting on
+  // the buyer are emailed.
+  const emailableSelected = selectedOrders.filter(canEmailRydOrder);
+  const emailSelectedButton = (
+    <Button
+      type="button"
+      size="sm"
+      variant="secondary"
+      className="w-full sm:w-auto"
+      leftIcon={<FiMail aria-hidden />}
+      disabled={searchPending || decisionPending || !emailableSelected.length}
+      title={
+        selectedOrders.length && !emailableSelected.length
+          ? "Only pending and needs-more-info orders with a valid email are emailed."
+          : undefined
+      }
+      onClick={() => setDialog("remind-selected")}
+    >
+      Email selected
+      {selectedOrders.length ? ` (${emailableSelected.length})` : ""}
+    </Button>
   );
   const totalCount =
     view === "unmatched" ? sortedSubmitters.length : sorted.length;
@@ -1168,6 +1186,7 @@ export function RydPageClient({
                     disabled={searchPending || decisionPending}
                     onToggleAll={toggleAllOrders}
                   >
+                    {statusFilter !== "rejected" && emailSelectedButton}
                     {RYD_DECISIONS.filter(
                       (decision) => decision.status !== statusFilter,
                     ).map(({ status: target, label, icon: Icon }) => (
@@ -1199,25 +1218,7 @@ export function RydPageClient({
                     disabled={searchPending}
                     onToggleAll={toggleAllOrders}
                   >
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="secondary"
-                      className="w-full sm:w-auto"
-                      leftIcon={<FiMail aria-hidden />}
-                      disabled={searchPending || !emailableSelected.length}
-                      title={
-                        selectedOrders.length && !emailableSelected.length
-                          ? "Rejected orders are never emailed."
-                          : undefined
-                      }
-                      onClick={() => setDialog("remind-selected")}
-                    >
-                      Email selected
-                      {selectedOrders.length
-                        ? ` (${emailableSelected.length})`
-                        : ""}
-                    </Button>
+                    {emailSelectedButton}
                   </RydSelectionBar>
                 )}
                 <PendingResults pending={searchPending} label="Loading orders">
