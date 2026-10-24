@@ -1,13 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import {
-  Button,
-  Card,
-  DropdownSelect,
-  MultiSelect,
-  toast,
-} from "@ryanmeetup/ui";
+import { useMemo, useRef, useState } from "react";
+import { Card, DropdownSelect, MultiSelect, toast } from "@ryanmeetup/ui";
 import { FiGlobe, FiLock } from "react-icons/fi";
 import {
   enabledWorkspaceAreas,
@@ -52,7 +46,7 @@ export type WorkspaceAreaAccess = {
  *
  * One card per page rather than a checkbox per group, so "who can see
  * Contacts?" is answered by reading one row instead of opening every group.
- * Each card saves on its own: locking a page is a deliberate act and must not
+ * Each card saves the moment it changes, on its own: locking a page must not
  * ride along with an unrelated edit elsewhere on the screen.
  */
 export function WorkspaceAreaAccessPanel({
@@ -67,8 +61,7 @@ export function WorkspaceAreaAccessPanel({
   enforced: boolean;
   /**
    * Reports the persisted entry after a successful save, so the group cards
-   * above can restate what each group reaches. Editing in place stays local:
-   * an unsaved dropdown must not change what those cards claim is in force.
+   * above can restate what each group reaches only once it is in force.
    */
   onSaved?: (entry: WorkspaceAreaAccess) => void;
 }) {
@@ -84,41 +77,68 @@ export function WorkspaceAreaAccessPanel({
         },
     ),
   );
-  const [savingArea, setSavingArea] = useState<WorkspaceAreaKey | null>(null);
+  const [saving, setSaving] = useState<
+    Partial<Record<WorkspaceAreaKey, number>>
+  >({});
+  const persisted = useRef(new Map(access.map((entry) => [entry.area, entry])));
+  const latest = useRef(new Map<WorkspaceAreaKey, WorkspaceAreaAccess>());
+  const queues = useRef(new Map<WorkspaceAreaKey, Promise<void>>());
 
   const entryFor = (key: WorkspaceAreaKey) =>
     access.find((entry) => entry.area === key)!;
-  const update = (key: WorkspaceAreaKey, patch: Partial<WorkspaceAreaAccess>) =>
+  const replace = (next: WorkspaceAreaAccess) =>
     setAccess((current) =>
-      current.map((entry) =>
-        entry.area === key ? { ...entry, ...patch } : entry,
-      ),
+      current.map((entry) => (entry.area === next.area ? next : entry)),
     );
+  const track = (key: WorkspaceAreaKey, delta: number) =>
+    setSaving((current) => ({
+      ...current,
+      [key]: (current[key] ?? 0) + delta,
+    }));
 
-  async function save(key: WorkspaceAreaKey) {
-    const entry = entryFor(key);
-    const saved: WorkspaceAreaAccess = {
+  /**
+   * Show the change at once and save it behind any save already running for
+   * that page. A save superseded by a newer change is skipped rather than sent,
+   * so a slow response can never put back a choice the owner moved past.
+   */
+  function update(key: WorkspaceAreaKey, patch: Partial<WorkspaceAreaAccess>) {
+    const entry = { ...entryFor(key), ...patch };
+    const next: WorkspaceAreaAccess = {
       ...entry,
       groupIds: entry.accessMode === "restricted" ? entry.groupIds : [],
     };
+    replace(entry);
+    latest.current.set(key, next);
+    track(key, 1);
     const label = areas.find((area) => area.key === key)?.label ?? key;
-    setSavingArea(key);
-    try {
-      await mutate("/api/workspace-area-access", {
-        method: "POST",
-        body: JSON.stringify({
-          area: saved.area,
-          accessMode: saved.accessMode,
-          groupIds: saved.groupIds,
-        }),
-      });
-      onSaved?.(saved);
-      toast.success(`${label} access saved.`);
-    } catch (error) {
-      toast.error(errorMessage(error, `${label} access could not be saved.`));
-    } finally {
-      setSavingArea(null);
-    }
+    const queued = (queues.current.get(key) ?? Promise.resolve()).then(
+      async () => {
+        if (latest.current.get(key) !== next) return;
+        try {
+          await mutate("/api/workspace-area-access", {
+            method: "POST",
+            body: JSON.stringify({
+              area: next.area,
+              accessMode: next.accessMode,
+              groupIds: next.groupIds,
+            }),
+          });
+          persisted.current.set(key, next);
+          onSaved?.(next);
+        } catch (error) {
+          toast.error(
+            errorMessage(error, `${label} access could not be saved.`),
+          );
+          if (latest.current.get(key) !== next) return;
+          const restored = persisted.current.get(key)!;
+          latest.current.set(key, restored);
+          replace(restored);
+        } finally {
+          track(key, -1);
+        }
+      },
+    );
+    queues.current.set(key, queued);
   }
 
   return (
@@ -164,7 +184,7 @@ export function WorkspaceAreaAccessPanel({
                 { label: "Everyone in the workspace", value: "open" },
                 { label: "Selected access groups", value: "restricted" },
               ]}
-              disabled={!enforced || savingArea === area.key}
+              disabled={!enforced}
               required
             />
             {restricted && (
@@ -182,7 +202,7 @@ export function WorkspaceAreaAccessPanel({
                   placeholder="Choose access groups"
                   searchable
                   searchPlaceholder="Search access groups"
-                  disabled={!enforced || savingArea === area.key}
+                  disabled={!enforced}
                 />
                 {entry.groupIds.length === 0 && (
                   <p className="text-sm text-black/65 dark:text-white/65">
@@ -192,15 +212,14 @@ export function WorkspaceAreaAccessPanel({
                 )}
               </>
             )}
-            <Button
-              size="sm"
-              className="mt-auto w-full"
-              loading={savingArea === area.key}
-              disabled={!enforced || savingArea !== null}
-              onClick={() => save(area.key)}
-            >
-              Save {area.label} access
-            </Button>
+            {enforced && (
+              <p
+                role="status"
+                className="mt-auto text-xs font-semibold uppercase tracking-wider text-black/55 dark:text-white/55"
+              >
+                {saving[area.key] ? "Saving…" : "Saved automatically"}
+              </p>
+            )}
           </Card>
         );
       })}
