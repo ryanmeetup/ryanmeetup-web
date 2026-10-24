@@ -189,21 +189,23 @@ uses, set in /admin/usage).
    change; it does not save or send an email. The orders leave Ready to send
    only when you move them. If you leave them ready, they can appear in another
    generated email. The server rechecks every selected ID at generation time
-   and refuses missing, unverified, already-sent, in-production, or done orders.
-5. **Confirm production and completion.** In **Sent to fulfillment**, select
-   the orders fulfillment has acknowledged and choose **Confirm production
-   started**. This separately records `production_sent_at` and moves them to
-   **In production**. Generating an email never does this automatically.
-   In **In production**, select finished orders and choose **Done** to record
-   `done_at`. Ready orders cannot skip the email handoff through these controls,
-   and completion includes only orders already in production.
+   and refuses missing, unverified, already-sent, or done orders.
 
-   **Move back** takes an order one stage backward: Done → In production →
-   Sent to fulfillment → Ready to send. Returning an order to Ready to send
-   makes it eligible for another generated email. Historical audit events stay.
-   Existing production dates remain authoritative even for older manual records.
-   Once an order is in production, or fulfillment has its file, its decision
-   cannot be changed.
+   Marking sent also records `production_sent_at`, which is now the date the
+   order was sent to fulfillment; its progress chip reads "Sent to fulfillment
+   Oct 20". Production runs in fulfillment's own system, so RY-D has no
+   separate production stage. Orders from before the merge carry their
+   handoff's date, and an older record with only a production date counts as
+   sent on that date.
+5. **Mark completion.** In **Sent to fulfillment**, select finished orders and
+   choose **Done** to record `done_at`. Ready orders cannot skip the email
+   handoff through these controls.
+
+   **Move back** takes an order one stage backward: Done → Sent to
+   fulfillment → Ready to send. Moving back from Done keeps the send date;
+   returning an order to Ready to send clears it and makes the order eligible
+   for another generated email. Historical audit events stay. Once fulfillment
+   has an order, its decision cannot be changed.
 
    Selection covers every filtered page, with the scope shown beside its count.
    The confirmation pins each order's original and target stage. Production

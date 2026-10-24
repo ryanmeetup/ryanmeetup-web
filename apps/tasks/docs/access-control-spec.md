@@ -41,8 +41,8 @@ Each project has one visibility mode:
 
 Named project owners receive manager access directly, independently of their
 group membership. Collaborators can view the project and create or edit its
-tasks and attachments. They cannot change project details, owners, visibility,
-archive state, or deletion state. New projects default to `owners` and require
+tasks and attachments. They cannot change project details, status, owners,
+visibility, or deletion state. New projects default to `owners` and require
 at least one named owner.
 
 Project creation writes the project, its named owners, visibility mode, and any
@@ -130,10 +130,13 @@ removed. Current routes expose no saved-batch mutations; the private legacy
 RPCs remain available to older deployments during rollout.
 
 Fulfillment stages are manual. `ryd_move_production` supports Ready to send,
-Sent to fulfillment, In production, and Done, checking each original stage
-under sorted row locks. Marking sent stores minimal handoff metadata and an
-audit event, never an email body, CSV, or recipient. Returning an order to
-Ready to send clears its handoff flag without deleting historical events.
+Sent to fulfillment, and Done, checking each original stage under sorted row
+locks, and reads the retired `not-started` and `in-production` values from
+older clients as Ready to send and Sent to fulfillment. Marking sent stores
+minimal handoff metadata, the send date in `production_sent_at`, and an audit
+event, never an email body, CSV, or recipient. Returning an order to Ready to
+send clears its handoff flag and send date without deleting historical
+events.
 Idempotent receipts keep retries from repeating stage changes. Generation,
 opening mail, downloading, and closing the dialog never move orders or update
 Google Sheets. Historical sent-file downloads retain the existing private

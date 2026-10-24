@@ -7,7 +7,7 @@ dateLabel: September 14–15, 2026
 title: A tidier workspace for finished work, notes, and focused boards
 summary: Completed projects moved out of the everyday workspace, notes and category tags became easier to organize, and the board gained quieter loading, navigation, and drag behavior.
 overview:
-  - Separate Current and Closed project views, with a Dropped status
+  - Closing a project puts it away, with a Dropped status for work that never shipped
   - A denser archive grouped around its task keys and closing dates
   - Note titles separated from note details
   - Category tags with no 20-tag ceiling and a sortable order
@@ -19,7 +19,7 @@ overview:
 
 ### Closed projects leave the current workspace
 
-Projects marked Complete or Dropped move out of the Current view, Favorites, and the sidebar without needing to be archived. Dropped covers the projects that end without shipping, so they no longer have to pose as Paused forever. Both remain available in a dedicated Closed view, keeping active navigation focused while preserving the project as a record.
+Projects marked Complete or Dropped move out of the Current view, Favorites, the sidebar, the calendar, search, and the project pickers for new tasks. Closing replaces the separate Archive step, so finishing a project is one change instead of two, and its timeline stops on the day it closed. Dropped covers the projects that end without shipping, so they no longer have to pose as Paused forever. Both remain available in a dedicated Closed view, keeping active navigation focused while preserving the project as a record.
 
 ### Notes get a title of their own
 
@@ -40,9 +40,9 @@ Single and bulk buyer emails share one draft workflow. Opening a draft records n
 
 ### Fulfillment files stay in sync
 
-Generated files include only verified orders that have not already gone to fulfillment or production. Orders in production, completed orders, and orders still being checked stay out of the next file and email draft. Fulfillment emails name the Ryan from linked form responses and identify the buyer separately for gifts. Regenerate refreshes the selected draft from the form.
+Generated files include only verified orders that have not already gone to fulfillment. Orders already sent, completed orders, and orders still being checked stay out of the next file and email draft. Fulfillment emails name the Ryan from linked form responses and identify the buyer separately for gifts. Regenerate refreshes the selected draft from the form.
 
-Verified opens to Ready to send, with separate stages for Sent to fulfillment, In production, and Done. Select ready orders across pages and choose Generate email & CSV to prepare exactly that selection for your email app. Emails and files are generated on demand, with no saved drafts or replacement prompts. Every stage change is manual: mark orders Sent to fulfillment after emailing them, then confirm production when fulfillment acknowledges it.
+Verified opens to Ready to send, followed by Sent to fulfillment and Done. Select ready orders across pages and choose Generate email & CSV to prepare exactly that selection for your email app. Emails and files are generated on demand, with no saved drafts or replacement prompts. Every stage change is manual: mark orders Sent to fulfillment after emailing them, and each one shows the date it was sent. Production happens in fulfillment's own system, so there is no separate production step to confirm.
 
 ### Keep email-less submissions separate
 
