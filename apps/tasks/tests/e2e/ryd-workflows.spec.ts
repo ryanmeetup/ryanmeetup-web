@@ -459,7 +459,7 @@ test("decides selected orders together after confirming missing evidence", async
   expect(saved.calls.filter((call: { name: string }) => call.name === "ryd_review_order")).toHaveLength(2);
 });
 
-test("emails every selected pending buyer in one Bcc draft", async ({ page, request }) => {
+test("emails every selected pending buyer in one Bcc draft and marks them contacted", async ({ page, request }) => {
   await reset(request);
   await signIn(page);
   await page.goto("/ryd");
@@ -487,6 +487,18 @@ test("emails every selected pending buyer in one Bcc draft", async ({ page, requ
   expect(href).toContain("second@example.test");
   expect(href).toContain("third@example.test");
   expect(href).toContain("One quick step before we make your RY-D");
+  await remind.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(remind).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Mark contacted", exact: true }).click();
+  const contacted = page.getByRole("dialog", { name: "Mark 2 contacted", exact: true });
+  await expect(contacted.getByRole("link", { name: "Open draft" })).toHaveCount(0);
+  await contacted.getByRole("button", { name: "Mark group 1 as contacted", exact: true }).click();
+  await expect(contacted.getByRole("button", { name: "Contact recorded" })).toBeDisabled();
+  await contacted.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(page.getByText(/^Last contacted /)).toHaveCount(2);
+  const saved = await state(request);
+  expect(saved.calls.filter((call: { name: string }) => call.name === "ryd_record_reminders")).toHaveLength(1);
 });
 
 test("saves the weekly upload reminder and displays its workspace-local time", async ({ page, request }, testInfo) => {

@@ -147,7 +147,11 @@ uses, set in /admin/usage).
    The Pending and Needs more info queues also offer **Email selected** beside
    the decisions, so a reviewer can select all pending orders and nudge every
    buyer to verify in one Bcc draft without leaving the queue. It opens the
-   same drafts and confirmation as Follow-up.
+   same drafts and confirmation as Follow-up. **Mark contacted** beside it
+   records contact made outside a draft (a call, a DM, an email sent from
+   elsewhere) through the same confirmation, without opening one. Each row
+   then shows **Last contacted** with the date; recording again moves it
+   forward, so a buyer can be chased as many times as needed.
 
    **Unmatched submissions** has its own **Email everyone**, asking for the
    email or order number the RY-D was bought under. The selection becomes

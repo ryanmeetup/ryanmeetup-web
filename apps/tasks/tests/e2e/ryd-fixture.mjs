@@ -375,6 +375,19 @@ export function createRydFixture(json, readBody, profile) {
           headers: state.imports.at(-1).headers,
           order_rows: state.orders.filter((order) => ids.includes(order.order_id)).map((order) => ({ ...order })),
         });
+      } else if (name === "ryd_record_reminders") {
+        // Mirrors the database: only orders still waiting on the buyer count.
+        const marked = body.requested_targets.filter(({ orderId }) => {
+          const order = state.orders.find((o) => o.order_id === orderId);
+          if (!order || !["pending", "needs_info"].includes(order.status) || order.cleared_batch_id) return false;
+          order.last_emailed_at = NOW;
+          return true;
+        });
+        json(response, 200, {
+          markedCount: marked.length,
+          skippedCount: body.requested_targets.length - marked.length,
+          sentAt: NOW,
+        });
       } else if (name === "ryd_move_production") {
         const orders = [];
         for (const move of body.requested_moves) {

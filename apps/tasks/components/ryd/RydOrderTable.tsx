@@ -16,6 +16,7 @@ import {
   DropdownMenuItems,
   DropdownMenuSeparator,
 } from "@ryanmeetup/ui";
+import { formatRydDay } from "@/lib/ryd/form-responses";
 import { canEmailRydOrder } from "@/lib/ryd/queue-view";
 import type { RyanPosition } from "@/lib/ryd/normalize";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
@@ -319,6 +320,15 @@ export function RydOrderTable({
                   </td>
                   <td className="px-3 py-2.5">
                     <RydStatusChip status={order.status} />
+                    {order.lastEmailedAt && canEmailRydOrder(order) && (
+                      <span
+                        className="mt-1 flex items-center gap-1 truncate text-xs text-black/70 dark:text-white/70"
+                        title={`Last contacted ${new Date(order.lastEmailedAt).toLocaleString()}`}
+                      >
+                        <FiMail aria-hidden className="shrink-0" />
+                        Last contacted {formatRydDay(order.lastEmailedAt)}
+                      </span>
+                    )}
                   </td>
                   <td className="px-3 py-2.5">
                     <RydMatchChip order={order} />

@@ -190,6 +190,7 @@ type Dialog =
   | "send"
   | "remind"
   | "remind-selected"
+  | "contacted-selected"
   | "unmatched-email"
   | "unmatched-email-selected"
   | "settings"
@@ -361,24 +362,37 @@ export function RydPageClient({
   // Ticked by hand overrides the day's pause, but only orders still waiting on
   // the buyer are emailed.
   const emailableSelected = selectedOrders.filter(canEmailRydOrder);
-  const emailSelectedButton = (
-    <Button
-      type="button"
-      size="sm"
-      variant="secondary"
-      className="w-full sm:w-auto"
-      leftIcon={<FiMail aria-hidden />}
-      disabled={searchPending || decisionPending || !emailableSelected.length}
-      title={
-        selectedOrders.length && !emailableSelected.length
-          ? "Only pending and needs-more-info orders with a valid email are emailed."
-          : undefined
-      }
-      onClick={() => setDialog("remind-selected")}
-    >
-      Email selected
-      {selectedOrders.length ? ` (${emailableSelected.length})` : ""}
-    </Button>
+  const emailSelectedButtons = (
+    <>
+      <Button
+        type="button"
+        size="sm"
+        variant="secondary"
+        className="w-full sm:w-auto"
+        leftIcon={<FiMail aria-hidden />}
+        disabled={searchPending || decisionPending || !emailableSelected.length}
+        title={
+          selectedOrders.length && !emailableSelected.length
+            ? "Only pending and needs-more-info orders with a valid email are emailed."
+            : undefined
+        }
+        onClick={() => setDialog("remind-selected")}
+      >
+        Email selected
+        {selectedOrders.length ? ` (${emailableSelected.length})` : ""}
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        variant="secondary"
+        className="w-full sm:w-auto"
+        leftIcon={<FiCheckSquare aria-hidden />}
+        disabled={searchPending || decisionPending || !emailableSelected.length}
+        onClick={() => setDialog("contacted-selected")}
+      >
+        Mark contacted
+      </Button>
+    </>
   );
   const totalCount =
     view === "unmatched" ? sortedSubmitters.length : sorted.length;
@@ -716,7 +730,10 @@ export function RydPageClient({
               </p>
             )}
             {queue.installed && sheetNotice && (
-              <div role="status" className="flex flex-col gap-3 rounded-2xl border border-black/10 p-4 text-sm sm:flex-row sm:items-center sm:justify-between dark:border-white/10">
+              <div
+                role="status"
+                className="flex flex-col gap-3 rounded-2xl border border-black/10 p-4 text-sm sm:flex-row sm:items-center sm:justify-between dark:border-white/10"
+              >
                 <p className="flex items-start gap-2">
                   <FiAlertTriangle aria-hidden className="mt-0.5 shrink-0" />
                   {sheetNotice}
@@ -1186,7 +1203,7 @@ export function RydPageClient({
                     disabled={searchPending || decisionPending}
                     onToggleAll={toggleAllOrders}
                   >
-                    {statusFilter !== "rejected" && emailSelectedButton}
+                    {statusFilter !== "rejected" && emailSelectedButtons}
                     {RYD_DECISIONS.filter(
                       (decision) => decision.status !== statusFilter,
                     ).map(({ status: target, label, icon: Icon }) => (
@@ -1218,7 +1235,7 @@ export function RydPageClient({
                     disabled={searchPending}
                     onToggleAll={toggleAllOrders}
                   >
-                    {emailSelectedButton}
+                    {emailSelectedButtons}
                   </RydSelectionBar>
                 )}
                 <PendingResults pending={searchPending} label="Loading orders">
@@ -1350,14 +1367,22 @@ export function RydPageClient({
           onChanged={refresh}
         />
       )}
-      {(dialog === "remind" || dialog === "remind-selected") && (
+      {(dialog === "remind" ||
+        dialog === "remind-selected" ||
+        dialog === "contacted-selected") && (
         <RydRemindDialog
-          {...(dialog === "remind-selected"
+          {...(dialog === "contacted-selected"
             ? {
                 orders: emailableSelected,
-                title: `Email ${emailableSelected.length} selected`,
+                draft: false,
+                title: `Mark ${emailableSelected.length} contacted`,
               }
-            : { orders: remindable })}
+            : dialog === "remind-selected"
+              ? {
+                  orders: emailableSelected,
+                  title: `Email ${emailableSelected.length} selected`,
+                }
+              : { orders: remindable })}
           onClose={() => setDialog(null)}
           onChanged={async () => {
             await refresh();
