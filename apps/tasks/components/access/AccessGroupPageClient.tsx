@@ -305,7 +305,11 @@ export function AccessGroupPageClient({
             onRemove={(profileId) => access.removeMember(group.id, profileId)}
           />
         </div>
-        <AccessGroupOverview overview={initialOverview} />
+        <AccessGroupOverview
+          groupId={group.id}
+          groupName={group.name}
+          overview={initialOverview}
+        />
         <Card className="flex flex-col items-start gap-4 border-red-500/25 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="font-semibold">Delete access group</h2>
