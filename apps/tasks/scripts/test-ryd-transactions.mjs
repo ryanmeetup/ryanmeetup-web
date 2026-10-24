@@ -270,7 +270,7 @@ try {
     "PASS: concurrent reminder retries retain one timestamp and audit event",
   );
   const moves = JSON.stringify([
-    { orderId: "race-2", from: "done", to: "in-production" },
+    { orderId: "race-2", from: "done", to: "sent-to-fulfillment" },
   ]);
   await race(
     `select public.ryd_move_production('${actor}','60000000-0000-4000-8000-000000000601','${moves}')`,

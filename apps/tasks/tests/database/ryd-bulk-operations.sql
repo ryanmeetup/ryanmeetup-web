@@ -29,7 +29,8 @@ select ok((select production_sent_at is not null and done_at is null from public
 select ok((select production_sent_at is null and done_at is null from public.ryd_orders where order_id='bulk-b'),'in-production order moves back exactly one step');
 select is(public.ryd_move_production('00000000-0000-4000-8000-000000000601','60000000-0000-4000-8000-000000000601',pg_temp.back_moves())->>'movedCount','2','retry returns the original moved count');
 select ok((select production_sent_at is not null from public.ryd_orders where order_id='bulk-a'),'retry cannot move back a second time');
-select is((select count(*) from public.ryd_order_events where action='production'),2::bigint,'production retry adds no duplicate history');
+-- One event each for leaving done and for leaving production, plus the return to Ready to send.
+select is((select count(*) from public.ryd_order_events where action='production'),3::bigint,'production retry adds no duplicate history');
 select throws_ok($$select public.ryd_move_production('00000000-0000-4000-8000-000000000603','60000000-0000-4000-8000-000000000601',pg_temp.back_moves())$$,'RY409',null,'receipt cannot be replayed by a different owner');
 select throws_ok($$select public.ryd_move_production('00000000-0000-4000-8000-000000000601','60000000-0000-4000-8000-000000000601','[{"orderId":"bulk-c","from":"not-started","to":"done"}]')$$,'RY409',null,'receipt cannot be reused for another selection');
 select throws_ok($$select public.ryd_move_production('00000000-0000-4000-8000-000000000601','60000000-0000-4000-8000-000000000602','[{"orderId":"bulk-a","from":"in-production","to":"done"},{"orderId":"bulk-b","from":"in-production","to":"not-started"}]')$$,'RY409',null,'one stale original stage rejects the whole group');
