@@ -20,7 +20,7 @@ function AccessList({
       </p>
     );
   return (
-    <ul className="mt-4 max-h-64 space-y-2 overflow-y-auto pr-1">
+    <ul className="mt-4 max-h-64 space-y-2 overflow-y-auto overscroll-contain border-y border-black/10 py-3 pr-1 dark:border-white/10">
       {items.map((item) => (
         <li
           key={item.id}
