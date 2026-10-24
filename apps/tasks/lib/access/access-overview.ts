@@ -30,6 +30,19 @@ export type ExplainedAccess = {
   id: string;
   name: string;
   reason: string;
+  /**
+   * The one change this group can make here: grant something it cannot open,
+   * or remove a grant selected for it directly. Open, inherited, and
+   * workspace-wide access come from another rule, so they offer nothing.
+   */
+  change?: AccessChangeTarget;
+};
+
+/** Enough of a resource's current rule to rewrite it with one group toggled. */
+export type AccessChangeTarget = {
+  action: "grant" | "revoke";
+  accessMode: Resource["access_mode"];
+  groupIds: string[];
 };
 
 export type AccessGroupOverview = {
@@ -110,16 +123,12 @@ function explainResources({
   groupsById: Map<string, Pick<AccessGroup, "name">>;
   workspaceWide: boolean;
 }) {
-  const grantsByResource = new Map<string, string[]>();
-  const grantedResourceIds = new Set<string>();
-  for (const grant of grants) {
-    grantedResourceIds.add(grant.resourceId);
-    if (!effectiveGroupIds.has(grant.groupId)) continue;
-    grantsByResource.set(grant.resourceId, [
-      ...(grantsByResource.get(grant.resourceId) ?? []),
+  const grantedGroupIds = new Map<string, string[]>();
+  for (const grant of grants)
+    grantedGroupIds.set(grant.resourceId, [
+      ...(grantedGroupIds.get(grant.resourceId) ?? []),
       grant.groupId,
     ]);
-  }
   const available: ExplainedAccess[] = [];
   const unavailable: ExplainedAccess[] = [];
   for (const resource of resources) {
@@ -132,12 +141,21 @@ function explainResources({
       available.push({ id, name, reason: "Open to the workspace" });
       continue;
     }
-    const selectedGroupId = grantsByResource.get(id)?.[0];
+    const groupIds = grantedGroupIds.get(id) ?? [];
+    const current = { accessMode: resource.access_mode, groupIds };
+    // A direct grant wins over an inherited one so it stays removable here.
+    const selectedGroupId = groupIds.includes(group.id)
+      ? group.id
+      : groupIds.find((groupId) => effectiveGroupIds.has(groupId));
     if (selectedGroupId)
       available.push({
         id,
         name,
         reason: grantReason(selectedGroupId, group.id, groupsById),
+        change:
+          selectedGroupId === group.id
+            ? { action: "revoke", ...current }
+            : undefined,
       });
     else
       unavailable.push({
@@ -146,10 +164,31 @@ function explainResources({
         reason:
           resource.access_mode === "owners"
             ? "Owners only"
-            : denialReason(grantedResourceIds.has(id)),
+            : denialReason(groupIds.length > 0),
+        change: { action: "grant", ...current },
       });
   }
   return { available, unavailable };
+}
+
+/**
+ * The request body that toggles one group on a resource, in the full-state
+ * shape the access routes replace in one transaction. A project left with no
+ * selected groups falls back to owners only, because a restricted project must
+ * name at least one group.
+ */
+export function accessChangeRequest(
+  kind: "project" | "category" | "page",
+  groupId: string,
+  target: AccessChangeTarget,
+) {
+  const groupIds =
+    target.action === "grant"
+      ? [...new Set([...target.groupIds, groupId])]
+      : target.groupIds.filter((id) => id !== groupId);
+  const accessMode: Resource["access_mode"] =
+    kind === "project" && groupIds.length === 0 ? "owners" : "restricted";
+  return { accessMode, groupIds };
 }
 
 export function buildAccessGroupOverview({
@@ -207,21 +246,27 @@ export function buildAccessGroupOverview({
       pages.push({ ...page, reason: "Open to the workspace" });
       continue;
     }
-    const areaGrantsForPage = areaGrants.filter(
-      (grant) => grant.area === area.key,
-    );
-    const selectedGroupId = areaGrantsForPage.find((grant) =>
-      effectiveGroupIds.has(grant.groupId),
-    )?.groupId;
+    const groupIds = areaGrants
+      .filter((grant) => grant.area === area.key)
+      .map((grant) => grant.groupId);
+    const current = { accessMode: "restricted" as const, groupIds };
+    const selectedGroupId = groupIds.includes(group.id)
+      ? group.id
+      : groupIds.find((groupId) => effectiveGroupIds.has(groupId));
     if (selectedGroupId)
       pages.push({
         ...page,
         reason: grantReason(selectedGroupId, group.id, groupsById),
+        change:
+          selectedGroupId === group.id
+            ? { action: "revoke", ...current }
+            : undefined,
       });
     else
       unavailablePages.push({
         ...page,
-        reason: denialReason(areaGrantsForPage.length > 0),
+        reason: denialReason(groupIds.length > 0),
+        change: { action: "grant", ...current },
       });
   }
   const calendarSource = groups.find(

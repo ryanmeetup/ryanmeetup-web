@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  accessChangeRequest,
   buildAccessGroupOverview,
   buildAccessGroupOverviews,
   effectiveMembershipGroupIds,
@@ -129,14 +130,12 @@ describe("access group explanations", () => {
       areaGrants: [{ area: "notes", groupId: "lead" }],
     });
 
-    expect(overview.unavailableProjects).toEqual([
-      { id: "leads", name: "Leads only", reason: "Restricted to other groups" },
-      {
-        id: "nobody",
-        name: "Nobody yet",
-        reason: "Restricted, with no groups selected",
-      },
-      { id: "private", name: "Private", reason: "Owners only" },
+    expect(
+      overview.unavailableProjects.map(({ id, reason }) => [id, reason]),
+    ).toEqual([
+      ["leads", "Restricted to other groups"],
+      ["nobody", "Restricted, with no groups selected"],
+      ["private", "Owners only"],
     ]);
     expect(
       overview.unavailablePages.map(({ id, reason }) => [id, reason]),
@@ -144,5 +143,71 @@ describe("access group explanations", () => {
     expect(overview.projects.length + overview.unavailableProjects.length).toBe(
       overview.projectCount,
     );
+  });
+
+  it("offers a grant on what is missing and a removal only on direct grants", () => {
+    const base = group("base", 0, { name: "Members" });
+    const lead = group("lead", 10, { name: "Leads" });
+    const overview = buildAccessGroupOverview({
+      group: lead,
+      groups: [base, lead],
+      projects: [
+        { id: "open", name: "Open", access_mode: "open" },
+        { id: "inherited", name: "Inherited", access_mode: "restricted" },
+        { id: "direct", name: "Direct", access_mode: "restricted" },
+        { id: "private", name: "Private", access_mode: "owners" },
+      ],
+      categories: [],
+      projectGrants: [
+        { resourceId: "inherited", groupId: "base" },
+        { resourceId: "direct", groupId: "base" },
+        { resourceId: "direct", groupId: "lead" },
+      ],
+      categoryGrants: [],
+      areaAccess: [],
+      areaGrants: [],
+    });
+
+    expect(overview.projects.map(({ id, change }) => [id, change])).toEqual([
+      ["open", undefined],
+      ["inherited", undefined],
+      [
+        "direct",
+        {
+          action: "revoke",
+          accessMode: "restricted",
+          groupIds: ["base", "lead"],
+        },
+      ],
+    ]);
+    expect(overview.unavailableProjects[0].change).toEqual({
+      action: "grant",
+      accessMode: "owners",
+      groupIds: [],
+    });
+  });
+
+  it("rewrites the full grant set with one group toggled", () => {
+    expect(
+      accessChangeRequest("project", "lead", {
+        action: "grant",
+        accessMode: "owners",
+        groupIds: [],
+      }),
+    ).toEqual({ accessMode: "restricted", groupIds: ["lead"] });
+    expect(
+      accessChangeRequest("project", "lead", {
+        action: "revoke",
+        accessMode: "restricted",
+        groupIds: ["lead"],
+      }),
+    ).toEqual({ accessMode: "owners", groupIds: [] });
+    expect(
+      accessChangeRequest("page", "lead", {
+        action: "revoke",
+        accessMode: "restricted",
+        groupIds: ["base", "lead"],
+      }),
+    ).toEqual({ accessMode: "restricted", groupIds: ["base"] });
   });
 });
