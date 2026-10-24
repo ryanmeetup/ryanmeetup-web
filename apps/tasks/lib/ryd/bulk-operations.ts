@@ -11,7 +11,7 @@ export const RYD_BULK_LIMIT = 100;
 export const RYD_BULK_BODY_BYTES = 14_000;
 export const RYD_MAILTO_LIMIT = 1900;
 const OPERATION_PLACEHOLDER = "00000000-0000-4000-8000-000000000000";
-export type RydProductionAction = "fulfillment" | "sent" | "done" | "back";
+export type RydProductionAction = "fulfillment" | "done" | "back";
 export type RydProductionMove = {
   orderId: string;
   from: RydFulfillmentStage | "not-started";
@@ -74,18 +74,15 @@ export function rydProductionGroups(
     seen.add(order.orderId);
     const from = rydFulfillmentStage(order);
     if (action === "fulfillment" && from !== "ready-to-send") continue;
-    if (action === "sent" && from !== "sent-to-fulfillment") continue;
-    if (action === "done" && from !== "in-production") continue;
+    if (action === "done" && from !== "sent-to-fulfillment") continue;
     const to =
       action === "fulfillment"
         ? "sent-to-fulfillment"
-        : action === "sent"
-          ? "in-production"
-          : action === "done"
-            ? "done"
-            : RYD_FULFILLMENT_STAGES[
-                Math.max(0, RYD_FULFILLMENT_STAGES.indexOf(from) - 1)
-              ];
+        : action === "done"
+          ? "done"
+          : RYD_FULFILLMENT_STAGES[
+              Math.max(0, RYD_FULFILLMENT_STAGES.indexOf(from) - 1)
+            ];
     if (to !== from) moves.push({ orderId: order.orderId, from, to });
   }
   return boundedGroups(moves, (group) => ({

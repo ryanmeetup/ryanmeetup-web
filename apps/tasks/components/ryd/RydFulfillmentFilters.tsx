@@ -46,12 +46,10 @@ export function RydFulfillmentFilters({
         {stage === "ready-to-send"
           ? "Select ready orders to generate an email and CSV. After emailing fulfillment, mark them Sent to fulfillment. Every stage change is manual."
           : stage === "sent-to-fulfillment"
-            ? "You marked these orders sent to fulfillment. Select the orders fulfillment has acknowledged, then confirm production started."
-            : stage === "in-production"
-              ? "Fulfillment has confirmed these orders are being made. Mark them done when production is complete."
-              : stage === "done"
-                ? "These orders are finished."
-                : "Ready to send → Sent to fulfillment → In production → Done. Move orders between stages manually; generating an email changes nothing."}
+            ? "Fulfillment has these orders, dated by when you marked them sent. Mark them done once they're finished."
+            : stage === "done"
+              ? "These orders are finished."
+              : "Ready to send → Sent to fulfillment → Done. Move orders between stages manually; generating an email changes nothing."}
       </p>
     </>
   );

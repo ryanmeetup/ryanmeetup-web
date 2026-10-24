@@ -157,7 +157,7 @@ describe("RY-D queue sorting", () => {
     ).toEqual(["waiting-a", "waiting-z", "emailed", "sent", "done"]);
     expect(
       ids(sortRydOrders(orders, { key: "production", descending: true })),
-    ).toEqual(["done", "sent", "emailed", "waiting-a", "waiting-z"]);
+    ).toEqual(["done", "emailed", "sent", "waiting-a", "waiting-z"]);
     expect(ids(orders)).toEqual([
       "done",
       "waiting-z",

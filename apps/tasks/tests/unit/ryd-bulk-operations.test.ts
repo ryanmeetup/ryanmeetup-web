@@ -16,12 +16,13 @@ import { rydMailtoHref, rydUnmatchedEmail } from "@/lib/ryd/emails";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 
 const operationId = "00000000-0000-4000-8000-000000000601";
-const order = (id: string, stage = "not-started") =>
+const order = (id: string, stage = "sent-to-fulfillment") =>
   ({
     orderId: id,
     status: "verified",
-    sentToFulfillment: true,
-    productionSentAt: stage === "not-started" ? null : "2026-10-20T12:00:00Z",
+    sentToFulfillment: stage !== "ready-to-send",
+    productionSentAt:
+      stage === "ready-to-send" ? null : "2026-10-20T12:00:00Z",
     doneAt: stage === "done" ? "2026-10-21T12:00:00Z" : null,
   }) as RydQueueOrder;
 
@@ -29,18 +30,17 @@ describe("RY-D bounded operation contracts", () => {
   it("pins mixed backward moves in one atomic group", () => {
     expect(
       rydProductionGroups(
-        [order("1", "done"), order("2", "in-production"), order("3")],
+        [order("1", "done"), order("2"), order("3", "ready-to-send")],
         "back",
       ),
     ).toEqual([
       [
-        { orderId: "1", from: "done", to: "in-production" },
-        { orderId: "2", from: "in-production", to: "sent-to-fulfillment" },
-        { orderId: "3", from: "sent-to-fulfillment", to: "ready-to-send" },
+        { orderId: "1", from: "done", to: "sent-to-fulfillment" },
+        { orderId: "2", from: "sent-to-fulfillment", to: "ready-to-send" },
       ],
     ]);
   });
-  it.each(["sent", "done", "back"] as const)(
+  it.each(["fulfillment", "done", "back"] as const)(
     "bounds a large %s selection by count and encoded bytes",
     (action) => {
       const orders = Array.from({ length: 603 }, (_, i) =>
@@ -49,8 +49,8 @@ describe("RY-D bounded operation contracts", () => {
           action === "back"
             ? "done"
             : action === "done"
-              ? "in-production"
-              : "not-started",
+              ? "sent-to-fulfillment"
+              : "ready-to-send",
         ),
       );
       const groups = rydProductionGroups(orders, action);
@@ -68,28 +68,38 @@ describe("RY-D bounded operation contracts", () => {
       rydProductionGroups(
         [
           order("1", "done"),
-          order("2", "in-production"),
-          order("3"),
-          { ...order("4"), status: "pending" },
+          order("2"),
+          order("3", "ready-to-send"),
+          { ...order("4", "ready-to-send"), status: "pending" },
         ],
-        "sent",
+        "fulfillment",
       ),
-    ).toEqual([[{ orderId: "3", from: "sent-to-fulfillment", to: "in-production" }]]);
+    ).toEqual([[{ orderId: "3", from: "ready-to-send", to: "sent-to-fulfillment" }]]);
   });
   it("marks only selected ready orders sent through the manual handoff action", () => {
     expect(rydProductionGroups([
-      { ...order("ready"), sentToFulfillment: false },
-      order("already-sent"), order("started", "in-production"),
+      order("ready", "ready-to-send"),
+      order("already-sent"),
+      { ...order("legacy-handoff"), productionSentAt: null },
     ], "fulfillment")).toEqual([[{ orderId: "ready", from: "ready-to-send", to: "sent-to-fulfillment" }]]);
   });
-  it("waits for an emailed batch before recording production and for production before completion", () => {
+  it("completes only orders already sent to fulfillment", () => {
     expect(
       rydProductionGroups(
-        [{ ...order("ready"), sentToFulfillment: false }],
-        "sent",
+        [
+          order("ready", "ready-to-send"),
+          { ...order("legacy-handoff"), productionSentAt: null },
+        ],
+        "done",
       ),
-    ).toEqual([]);
-    expect(rydProductionGroups([order("emailed")], "done")).toEqual([]);
+    ).toEqual([[{ orderId: "legacy-handoff", from: "sent-to-fulfillment", to: "done" }]]);
+  });
+  it("accepts retired stages from older clients", () => {
+    const request = {
+      operationId,
+      moves: [{ orderId: "1", from: "not-started", to: "in-production" }],
+    };
+    expect(rydProductionSchema(request)).toEqual(request);
   });
   it.each([true, false])(
     "bounds long contact addresses with draft=%s",

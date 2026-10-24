@@ -62,7 +62,7 @@ const SORT_CHOICES: Record<
   ordered: [both("ordered", "Oldest first", "Newest first")],
   production: [
     both("production", "Ready to send first", "Done first"),
-    both("production-sent", "Oldest start first", "Newest start first"),
+    both("production-sent", "Oldest sent first", "Newest sent first"),
   ],
 };
 

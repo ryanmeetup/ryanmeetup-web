@@ -138,32 +138,17 @@ test("runs review, on-demand files, and independent manual fulfillment stages", 
   await expect(handoff.getByRole("status").filter({ hasText: "orders confirmed saved" })).toContainText("1 of 1 orders confirmed saved");
   await handoff.getByRole("button", { name: "Close", exact: true }).click();
   await expect(page.getByRole("button", { name: "Sent to fulfillment 1", exact: true })).toHaveAttribute("aria-pressed", "true");
-  expect((await state(request)).orders[0].production_sent_at).toBeNull();
+  expect((await state(request)).orders[0].production_sent_at).not.toBeNull();
+  await expect(page.getByText(/^Sent to fulfillment [A-Z][a-z]{2} \d{1,2}$/)).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("manual-handoff.png") });
   expect((await state(request)).snapshot).toBeNull();
   await page.goto("/ryd?status=verified&production=sent-to-fulfillment");
   await page
     .getByRole("checkbox", { name: "Select Ryan Fixture", exact: true })
     .check();
-  await page
-    .getByRole("button", { name: "Confirm production started", exact: true })
-    .click();
-  const production = page.getByRole("dialog", {
-    name: "Confirm production started",
-    exact: true,
-  });
-  await production
-    .getByRole("button", { name: "Confirm production started", exact: true })
-    .click();
   await expect(
-    production
-      .getByRole("status")
-      .filter({ hasText: "orders confirmed saved" }),
-  ).toContainText("1 of 1 orders confirmed saved");
-  await production.getByRole("button", { name: "Close", exact: true }).click();
-  await page
-    .getByRole("checkbox", { name: "Select Ryan Fixture", exact: true })
-    .check();
+    page.getByRole("button", { name: "Confirm production started", exact: true }),
+  ).toHaveCount(0);
   await page.getByRole("button", { name: "Done", exact: true }).click();
   const done = page.getByRole("dialog", { name: "Mark done", exact: true });
   await done.getByRole("button", { name: "Mark done", exact: true }).click();
@@ -181,7 +166,7 @@ test("runs review, on-demand files, and independent manual fulfillment stages", 
   expect(finished.calls.map((call: { name: string }) => call.name)).toEqual([
     "ryd_import_orders", "ryd_link_submissions", "ryd_review_order",
     "ryd_generate_fulfillment", "ryd_generate_fulfillment",
-    "ryd_move_production", "ryd_move_production", "ryd_move_production",
+    "ryd_move_production", "ryd_move_production",
   ]);
 
 });
@@ -376,12 +361,12 @@ test("sorts the production column by stage and sent date", async ({ page, reques
   await expect(rows).toHaveText([/Ryan Done/, /Ryan Sent/, /Ryan Waiting/]);
   await sort.scrollIntoViewIfNeeded();
   await sort.click();
-  await page.getByRole("menuitem", { name: "Newest start first", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Newest sent first", exact: true }).click();
   await expect(page).toHaveURL(/sort=production-sent-desc(?:&|$)/);
   await expect(header).toHaveAttribute("aria-sort", "descending");
   await expect(rows).toHaveText([/Ryan Done/, /Ryan Sent/, /Ryan Waiting/]);
   await sort.click();
-  await page.getByRole("menuitem", { name: "Oldest start first", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Oldest sent first", exact: true }).click();
   await expect(page).toHaveURL(/sort=production-sent(?:&|$)/);
   await expect(header).toHaveAttribute("aria-sort", "ascending");
   const widths = testInfo.project.name === "chromium-mobile" ? [390] : [1024, 1280, 1536];
@@ -391,7 +376,7 @@ test("sorts the production column by stage and sent date", async ({ page, reques
     await sort.click();
     await expect(page.getByRole("menu")).toHaveCSS("opacity", "1");
     await expect(page.getByRole("menu")).toBeInViewport();
-    await expect(page.getByRole("menuitem", { name: "Newest start first", exact: true })).toBeInViewport();
+    await expect(page.getByRole("menuitem", { name: "Newest sent first", exact: true })).toBeInViewport();
     await page.screenshot({ path: testInfo.outputPath(`production-sort-${width}.png`) });
     await page.keyboard.press("Escape");
   }

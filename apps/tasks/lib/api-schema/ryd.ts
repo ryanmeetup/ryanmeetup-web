@@ -218,8 +218,13 @@ export function rydProductionSchema(value: unknown) {
     rydBodyBytes(value) > RYD_BULK_BODY_BYTES
   )
     return null;
-  // Continue accepting the previous production-only stage for older clients.
-  const stages: readonly string[] = [...RYD_FULFILLMENT_STAGES, "not-started"];
+  // Continue accepting retired stages from older clients; the database reads
+  // them as Ready to send and Sent to fulfillment.
+  const stages: readonly string[] = [
+    ...RYD_FULFILLMENT_STAGES,
+    "not-started",
+    "in-production",
+  ];
   const moves: RydProductionMove[] = [];
   const seen = new Set<string>();
   for (const move of value.moves) {

@@ -379,13 +379,15 @@ export function createRydFixture(json, readBody, profile) {
         const orders = [];
         for (const move of body.requested_moves) {
           const order = state.orders.find((o) => o.order_id === move.orderId);
-          if (move.to === "sent-to-fulfillment" && !order.cleared_batch_id) {
+          // Mirrors the database, which reads retired stages as their merged ones.
+          const to = { "not-started": "ready-to-send", "in-production": "sent-to-fulfillment" }[move.to] ?? move.to;
+          if (to === "sent-to-fulfillment" && !order.cleared_batch_id) {
             order.cleared_batch_id = body.requested_operation;
             state.batches.push({ recipient: null, order_count: 1, verified_count: 1, sent_at: NOW });
           }
-          if (move.to === "ready-to-send") order.cleared_batch_id = null;
-          order.production_sent_at = ["in-production", "done"].includes(move.to) ? NOW : null;
-          order.done_at = move.to === "done" ? NOW : null;
+          if (to === "ready-to-send") order.cleared_batch_id = null;
+          order.production_sent_at = to === "ready-to-send" ? null : (order.production_sent_at ?? NOW);
+          order.done_at = to === "done" ? NOW : null;
           orders.push({
             orderId: order.order_id,
             sentToFulfillment: Boolean(order.cleared_batch_id),

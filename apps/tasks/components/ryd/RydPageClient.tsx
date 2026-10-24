@@ -25,7 +25,6 @@ import {
   FiHash,
   FiInbox,
   FiMail,
-  FiPackage,
   FiPhoneOutgoing,
   FiRefreshCw,
   FiSend,
@@ -444,8 +443,6 @@ export function RydPageClient({
   function productionApplied(result: RydProductionResult) {
     if (productionOperation?.action === "fulfillment")
       setProductionParam("sent-to-fulfillment");
-    if (productionOperation?.action === "sent")
-      setProductionParam("in-production");
     if (productionOperation?.action === "done") setProductionParam("done");
     const saved = new Map(result.orders.map((order) => [order.orderId, order]));
     reconcile((current) => ({
@@ -1124,30 +1121,12 @@ export function RydPageClient({
                           <Button
                             type="button"
                             size="sm"
-                            variant="secondary"
-                            className="w-full sm:w-auto"
-                            leftIcon={<FiPackage aria-hidden />}
-                            disabled={
-                              searchPending ||
-                              moving !== null ||
-                              !selectedStages.has("sent-to-fulfillment")
-                            }
-                            loading={moving === "sent"}
-                            onClick={() => moveSelected("sent")}
-                          >
-                            Confirm production started
-                          </Button>
-                        )}
-                        {(!production || production === "in-production") && (
-                          <Button
-                            type="button"
-                            size="sm"
                             className="w-full sm:w-auto"
                             leftIcon={<FiCheckSquare aria-hidden />}
                             disabled={
                               searchPending ||
                               moving !== null ||
-                              !selectedStages.has("in-production")
+                              !selectedStages.has("sent-to-fulfillment")
                             }
                             loading={moving === "done"}
                             onClick={() => moveSelected("done")}
@@ -1157,7 +1136,6 @@ export function RydPageClient({
                         )}
                         {(!production ||
                           production === "sent-to-fulfillment" ||
-                          production === "in-production" ||
                           production === "done") && (
                           <Button
                             type="button"
@@ -1170,7 +1148,6 @@ export function RydPageClient({
                               moving !== null ||
                               !(
                                 selectedStages.has("sent-to-fulfillment") ||
-                                selectedStages.has("in-production") ||
                                 selectedStages.has("done")
                               )
                             }

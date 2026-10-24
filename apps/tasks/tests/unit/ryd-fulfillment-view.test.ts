@@ -29,18 +29,17 @@ const orders = [
 ];
 
 describe("RY-D fulfillment handoff", () => {
-  it("keeps the email handoff separate from production and preserves legacy production records", () => {
+  it("treats a handoff or a legacy production record as sent to fulfillment", () => {
     expect(orders.map(rydFulfillmentStage)).toEqual([
       "ready-to-send",
       "sent-to-fulfillment",
-      "in-production",
+      "sent-to-fulfillment",
       "done",
       "ready-to-send",
     ]);
     expect(rydFulfillmentCounts(orders)).toEqual({
       "ready-to-send": 1,
-      "sent-to-fulfillment": 1,
-      "in-production": 1,
+      "sent-to-fulfillment": 2,
       done: 1,
     });
     expect(readyForRydFulfillment(orders).map((o) => o.orderId)).toEqual([
@@ -54,6 +53,7 @@ describe("RY-D fulfillment handoff", () => {
     expect(rydFulfillmentParam("sent-to-fulfillment")).toBe(
       "sent-to-fulfillment",
     );
+    expect(rydFulfillmentParam("in-production")).toBe("sent-to-fulfillment");
     expect(rydFulfillmentParam("all")).toBeNull();
     expect(rydFulfillmentParam("unknown")).toBeNull();
   });
