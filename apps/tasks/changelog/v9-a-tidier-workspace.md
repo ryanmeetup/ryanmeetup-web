@@ -7,7 +7,7 @@ dateLabel: September 14–15, 2026
 title: A tidier workspace for finished work, notes, and focused boards
 summary: Completed projects moved out of the everyday workspace, notes and category tags became easier to organize, and the board gained quieter loading, navigation, and drag behavior.
 overview:
-  - Separate Current and Completed project views
+  - Separate Current and Closed project views, with a Dropped status
   - A denser archive grouped around its task keys and closing dates
   - Note titles separated from note details
   - Category tags with no 20-tag ceiling and a sortable order
@@ -17,9 +17,9 @@ overview:
 
 ## New
 
-### Completed projects leave the current workspace
+### Closed projects leave the current workspace
 
-Projects marked Complete move out of the Current view, Favorites, and the sidebar without needing to be archived. They remain available in a dedicated Completed view, keeping active navigation focused while preserving the finished project as a record.
+Projects marked Complete or Dropped move out of the Current view, Favorites, and the sidebar without needing to be archived. Dropped covers the projects that end without shipping, so they no longer have to pose as Paused forever. Both remain available in a dedicated Closed view, keeping active navigation focused while preserving the project as a record.
 
 ### Notes get a title of their own
 
