@@ -6,7 +6,7 @@ import {
 import type { Project } from "@/lib/resources/resource-types";
 
 const projects = ["alpha", "beta", "gamma", "delta"].map(
-  (id) => ({ id, status: "active", archived_at: null }) as Project,
+  (id) => ({ id, status: "active", closed_at: null }) as Project,
 );
 
 describe("sortFavoriteProjectsFirst", () => {
@@ -29,11 +29,11 @@ describe("sortFavoriteProjectsFirst", () => {
     ]);
   });
 
-  it("drops completed and archived projects from effective favorites", () => {
+  it("drops completed and dropped projects from effective favorites", () => {
     const lifecycleProjects = [
       projects[0],
       { ...projects[1], status: "complete" as const },
-      { ...projects[2], archived_at: "2026-09-18T12:00:00Z" },
+      { ...projects[2], status: "dropped" as const },
     ];
 
     expect(

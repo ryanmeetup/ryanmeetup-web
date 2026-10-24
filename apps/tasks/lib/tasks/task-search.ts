@@ -4,6 +4,7 @@ import type { Status, Task } from "@/lib/tasks/task-types";
 import { taskKey, taskPath } from "@/lib/tasks/task-key";
 import { profileDisplayName } from "@/lib/presentation";
 import { projectPath } from "@/lib/resources/project-route";
+import { isClosedProjectStatus } from "@/lib/resources/project-status";
 
 export const TASK_SEARCH_LIMIT = 25;
 export const TASK_SEARCH_MIN_LENGTH = 3;
@@ -108,7 +109,8 @@ export function findRelatedTaskSearchResults({
   return {
     projects: projects.filter(
       (project) =>
-        !project.archived_at && matches(project.name, project.description),
+        !isClosedProjectStatus(project.status) &&
+        matches(project.name, project.description),
     ),
     categories: categories.filter(
       (category) =>

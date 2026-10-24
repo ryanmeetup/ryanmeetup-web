@@ -214,13 +214,13 @@ describe("ensureHttpUrlScheme", () => {
     ).toBeNull();
   });
 
-  it("still allows archive-only project updates", () => {
+  it("rejects archive updates now that a closed status puts a project away", () => {
     expect(
       projectPatchSchema({
         id: "7b27db83-577d-4de1-b4ca-9f088832f25b",
         archived: true,
       }),
-    ).toMatchObject({ archived: true });
+    ).toBeNull();
   });
 
   it("allows project details to change without resubmitting owners", () => {

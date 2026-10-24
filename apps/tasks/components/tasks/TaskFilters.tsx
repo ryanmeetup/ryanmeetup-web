@@ -15,6 +15,7 @@ import {
   projectOptionGroup,
 } from "@/components/projects";
 import { categoryTagFilterValue } from "@/lib/tasks/task-filter-values";
+import { isClosedProjectStatus } from "@/lib/resources/project-status";
 
 const priorities: Priority[] = ["low", "medium", "high", "urgent"];
 
@@ -167,7 +168,7 @@ export function TaskFilters({
           ...sortFavoriteProjectsFirst(projects, currentFavoriteIds).map(
             (item) => ({
               group: projectOptionGroup(favoriteProjectIds.has(item.id)),
-              label: `${item.name}${item.archived_at ? " (archived)" : ""}`,
+              label: `${item.name}${isClosedProjectStatus(item.status) ? " (closed)" : ""}`,
               value: item.id,
             }),
           ),

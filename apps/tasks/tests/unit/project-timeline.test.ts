@@ -15,14 +15,14 @@ const project = (
     created_at: string;
     start_date: string | null;
     due_date: string | null;
-    archived_at: string | null;
+    closed_at: string | null;
     status: ProjectStatus;
   }> = {},
 ) => ({
   created_at: new Date(2026, 5, 1, 9, 0, 0).toISOString(),
   start_date: null,
   due_date: null,
-  archived_at: null,
+  closed_at: null,
   status: "active" as ProjectStatus,
   ...overrides,
 });
@@ -99,11 +99,12 @@ describe("projectTimeline", () => {
     expect(running.label).toBe("8 months");
   });
 
-  it("stops the clock at the day the project was archived", () => {
+  it("stops the clock at the day the project closed", () => {
     const { running } = projectTimeline(
       project({
         start_date: "2026-01-15",
-        archived_at: new Date(2026, 2, 16, 12, 0, 0).toISOString(),
+        status: "complete",
+        closed_at: new Date(2026, 2, 16, 12, 0, 0).toISOString(),
       }),
       today,
     );

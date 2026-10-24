@@ -1,5 +1,6 @@
 import type { Category, Project } from "@/lib/resources/resource-types";
 import { projectPath } from "@/lib/resources/project-route";
+import { isClosedProjectStatus } from "@/lib/resources/project-status";
 import { taskPath } from "@/lib/tasks/task-key";
 import type { Task } from "@/lib/tasks/task-types";
 import type { Profile } from "@/lib/workspace/workspace-types";
@@ -151,7 +152,7 @@ export function calendarItems(
   );
   const profileMap = new Map(profiles.map((profile) => [profile.id, profile]));
   const projectItems: CalendarItem[] = projects.flatMap((project) => {
-    if (project.archived_at) return [];
+    if (isClosedProjectStatus(project.status)) return [];
     const href = projectPath(project, projects);
     const milestones: CalendarItem[] = [];
     if (project.start_date)

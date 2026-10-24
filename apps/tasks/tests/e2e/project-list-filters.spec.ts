@@ -14,7 +14,7 @@ async function enterDemoWorkspace(page: Page, baseURL?: string) {
   ]);
 }
 
-test("completed projects leave Current and remain available to archive", async ({
+test("completed projects leave Current for Closed, with no archive step", async ({
   page,
   baseURL,
 }) => {
@@ -51,17 +51,23 @@ test("completed projects leave Current and remain available to archive", async (
   await expect(
     results.getByText("Finished launch", { exact: true }),
   ).toBeVisible();
-
-  await results
-    .getByRole("button", { name: "Archive “Finished launch”" })
-    .click();
   await expect(
-    results.getByText("Finished launch", { exact: true }),
+    results.getByRole("button", { name: /^Archive / }),
   ).toHaveCount(0);
-  await filters.getByRole("button", { name: "Archived" }).click();
+  await expect(filters.getByRole("button", { name: "Archived" })).toHaveCount(
+    0,
+  );
+});
+
+test("old archived links open the Closed view", async ({ page, baseURL }) => {
+  await enterDemoWorkspace(page, baseURL);
+  await page.goto("/projects?project-status=archived");
+
   await expect(
-    results.getByText("Finished launch", { exact: true }),
-  ).toBeVisible();
+    page
+      .getByLabel("Filter projects")
+      .getByRole("button", { name: "Closed" }),
+  ).toHaveAttribute("aria-pressed", "true");
 });
 
 test("completing a favorite removes it from the sidebar", async ({
@@ -110,7 +116,7 @@ test("all project filters fit at mobile and desktop widths", async ({
   const filters = page.getByLabel("Filter projects");
   for (const width of [390, 1024, 1280, 1536]) {
     await page.setViewportSize({ width, height: 844 });
-    for (const label of ["Current", "Closed", "Archived", "All"]) {
+    for (const label of ["Current", "Closed", "All"]) {
       await expect(filters.getByRole("button", { name: label })).toBeVisible();
     }
     // Poll rather than measure once: a resize reflows the row over the next

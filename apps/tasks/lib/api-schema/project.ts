@@ -79,7 +79,6 @@ export function projectPatchSchema(value: unknown) {
     "name",
     "description",
     "links",
-    "archived",
     "ownerIds",
     "status",
     "startDate",
@@ -109,8 +108,7 @@ export function projectPatchSchema(value: unknown) {
     (ownerIds !== undefined && ownerIds.length === 0) ||
     startDate === null ||
     dueDate === null ||
-    !orderedDates(startDate?.date ?? null, dueDate?.date ?? null) ||
-    (body.archived !== undefined && typeof body.archived !== "boolean")
+    !orderedDates(startDate?.date ?? null, dueDate?.date ?? null)
   )
     return null;
   return {
@@ -118,7 +116,6 @@ export function projectPatchSchema(value: unknown) {
     name,
     description,
     links,
-    archived: body.archived as boolean | undefined,
     ownerIds,
     status,
     startDate: startDate?.date,

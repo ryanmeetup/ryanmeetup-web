@@ -1047,7 +1047,7 @@ export async function executeMcpRead(
         columns: WORKSPACE_COLUMNS.projects,
         order: "name",
         ascending: true,
-        archivedColumn: "archived_at",
+        archivedColumn: "closed_at",
         searchColumn: "name",
       });
       data = result.items;

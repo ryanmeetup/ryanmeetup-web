@@ -3,6 +3,7 @@ import {
   filterProjects,
   groupProjectsByStatus,
   isCurrentProject,
+  projectClosedAt,
   projectListFilter,
   projectStatusDetails,
   projectStatusOptions,
@@ -11,25 +12,21 @@ import type { ProjectStatus } from "@/lib/resources/resource-types";
 
 describe("project list filters", () => {
   const projects = [
-    { name: "Current", status: "active" as const, archived_at: null },
-    { name: "Complete", status: "complete" as const, archived_at: null },
-    { name: "Dropped", status: "dropped" as const, archived_at: null },
-    {
-      name: "Archived",
-      status: "complete" as const,
-      archived_at: "2026-08-27T12:00:00.000Z",
-    },
+    { name: "Current", status: "active" as const },
+    { name: "Complete", status: "complete" as const },
+    { name: "Dropped", status: "dropped" as const },
   ];
 
-  it("keeps existing active and completed links on their views", () => {
+  it("keeps existing active, completed, and archived links on their views", () => {
     expect(projectListFilter("active")).toBe("current");
     expect(projectListFilter("unexpected")).toBe("current");
     expect(projectListFilter("completed")).toBe("closed");
+    expect(projectListFilter("archived")).toBe("closed");
     expect(projectListFilter("closed")).toBe("closed");
   });
 
-  it("keeps closed projects out of the default view without archiving them", () => {
-    expect(projects.map(isCurrentProject)).toEqual([true, false, false, false]);
+  it("splits projects by whether their status closed them", () => {
+    expect(projects.map(isCurrentProject)).toEqual([true, false, false]);
     expect(filterProjects(projects, "current").map((item) => item.name)).toEqual([
       "Current",
     ]);
@@ -37,10 +34,31 @@ describe("project list filters", () => {
       "Complete",
       "Dropped",
     ]);
-    expect(filterProjects(projects, "archived").map((item) => item.name)).toEqual([
-      "Archived",
-    ]);
-    expect(filterProjects(projects, "all")).toHaveLength(4);
+    expect(filterProjects(projects, "all")).toHaveLength(3);
+  });
+});
+
+describe("projectClosedAt", () => {
+  const now = new Date("2026-10-23T12:00:00.000Z");
+  const closedAt = "2026-10-01T12:00:00.000Z";
+
+  it("stamps the moment an open project closes", () => {
+    expect(
+      projectClosedAt({ status: "active", closed_at: null }, "complete", now),
+    ).toBe(now.toISOString());
+    expect(projectClosedAt(null, "dropped", now)).toBe(now.toISOString());
+  });
+
+  it("keeps the original close date when a closed project changes outcome", () => {
+    expect(
+      projectClosedAt({ status: "complete", closed_at: closedAt }, "dropped", now),
+    ).toBe(closedAt);
+  });
+
+  it("clears the close date when a project reopens", () => {
+    expect(
+      projectClosedAt({ status: "complete", closed_at: closedAt }, "active", now),
+    ).toBeNull();
   });
 });
 

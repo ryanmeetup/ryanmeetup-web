@@ -17,19 +17,16 @@ import {
   ManagementSurface,
   ModalActions,
   PendingResults,
-  Pill,
   SearchInput,
   toast,
   Tooltip,
 } from "@ryanmeetup/ui";
 import {
-  FiArchive,
   FiArrowRight,
   FiChevronDown,
   FiEdit2,
   FiFolder,
   FiPlus,
-  FiRotateCcw,
   FiStar,
   FiTrash2,
   FiUsers,
@@ -53,6 +50,7 @@ import {
   filterProjects,
   groupProjectsByStatus,
   isClosedProjectStatus,
+  projectClosedAt,
   projectListFilter,
   type ProjectListFilter,
 } from "@/lib/resources/project-status";
@@ -123,7 +121,6 @@ export type ProjectsModalProps = ProjectsModalCommonProps &
 const projectFilterLabels: Record<ProjectListFilter, string> = {
   current: "Current",
   closed: "Closed",
-  archived: "Archived",
   all: "All",
 };
 
@@ -379,7 +376,7 @@ export function ProjectsModal({
         description: projectDescription,
         links,
         created_by: data.currentProfile.id,
-        archived_at: null,
+        closed_at: projectClosedAt(null, newStatus),
         created_at: new Date().toISOString(),
         start_date: newStartDate || null,
         due_date: newDueDate || null,
@@ -497,6 +494,7 @@ export function ProjectsModal({
         name: nextName,
         description: nextDescription,
         status: editingStatus,
+        closed_at: projectClosedAt(project, editingStatus),
         start_date: editingStartDate || null,
         due_date: editingDueDate || null,
         access_mode: editingAccessMode,
@@ -564,30 +562,6 @@ export function ProjectsModal({
     if (editState.close() && editProjectId) setOpen?.(false);
   }
 
-  async function toggleArchived(project: Project) {
-    const archived = !project.archived_at;
-    try {
-      if (!demoMode)
-        await resourceMutations.save("PATCH", { id: project.id, archived });
-      setData((current) => ({
-        ...current,
-        projects: current.projects.map((item) =>
-          item.id === project.id
-            ? {
-                ...item,
-                archived_at: archived ? new Date().toISOString() : null,
-              }
-            : item,
-        ),
-      }));
-      toast.success(`${project.name} ${archived ? "archived" : "restored"}.`);
-      return true;
-    } catch (error) {
-      toast.error(errorMessage(error, "The project could not be updated."));
-      return false;
-    }
-  }
-
   async function deleteProject() {
     if (!deleteTarget) return;
     const project = deleteTarget;
@@ -640,7 +614,6 @@ export function ProjectsModal({
       data.projectTaskCounts?.[project.id] ??
       data.tasks.filter((task) => task.project_id === project.id).length;
     const isFavorite =
-      !project.archived_at &&
       !isClosedProjectStatus(project.status) &&
       favorites.isFavorite(project.id);
     const owners = data.projectOwners
@@ -657,7 +630,6 @@ export function ProjectsModal({
     const actions: ManagementCardAction[] = [];
     if (
       !data.accessPreview &&
-      !project.archived_at &&
       !isClosedProjectStatus(project.status)
     )
       actions.push({
@@ -692,27 +664,17 @@ export function ProjectsModal({
           iconVariant: "edit",
           triggerClassName: triggers.dialogClassName,
         });
-      actions.push(
-        taskCount > 0 ||
-        isClosedProjectStatus(project.status) ||
-        Boolean(project.archived_at)
-          ? {
-              key: "archive",
-              label: project.archived_at ? "Restore" : "Archive",
-              description: `${project.archived_at ? "Restore" : "Archive"} \u201C${project.name}\u201D`,
-              icon: project.archived_at ? <FiRotateCcw /> : <FiArchive />,
-              onClick: () => void toggleArchived(project),
-              iconVariant: "archive",
-            }
-          : {
-              key: "delete",
-              label: "Delete",
-              description: `Delete \u201C${project.name}\u201D`,
-              icon: <FiTrash2 />,
-              onClick: () => setDeleteTarget(project),
-              iconVariant: "danger",
-            },
-      );
+      // The database refuses to delete a project that still has tasks; close
+      // it instead by setting its status to Complete or Dropped.
+      if (taskCount === 0)
+        actions.push({
+          key: "delete",
+          label: "Delete",
+          description: `Delete \u201C${project.name}\u201D`,
+          icon: <FiTrash2 />,
+          onClick: () => setDeleteTarget(project),
+          iconVariant: "danger",
+        });
     }
     return (
       <ManagementCard
@@ -821,13 +783,7 @@ export function ProjectsModal({
         }
       >
         <div className="w-full min-w-0 py-1 sm:flex-1">
-          <ManagementCardTitle
-            className={
-              project.archived_at
-                ? "text-black/60 dark:text-white/60"
-                : undefined
-            }
-          >
+          <ManagementCardTitle>
             <span className="inline-flex min-w-0 max-w-full items-center gap-2">
               <span className="min-w-0 truncate">{project.name}</span>
               <Tooltip
@@ -841,15 +797,6 @@ export function ProjectsModal({
             </span>
           </ManagementCardTitle>
         </div>
-        {project.archived_at && (
-          <Pill
-            variant="neutral"
-            size="sm"
-            className="shrink-0 !px-2.5 !tracking-[0.16em]"
-          >
-            Archived
-          </Pill>
-        )}
       </ManagementCard>
     );
   }
@@ -1070,10 +1017,10 @@ export function ProjectsModal({
                   pendingLabel="Loading project results"
                 />
                 <div
-                  className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap"
+                  className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap"
                   aria-label="Filter projects"
                 >
-                  {(["current", "closed", "archived", "all"] as const).map(
+                  {(["current", "closed", "all"] as const).map(
                     (filter) => (
                       <FilterChip
                         key={filter}

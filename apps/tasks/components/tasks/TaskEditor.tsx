@@ -35,6 +35,7 @@ import { NewTaskDetails } from "./NewTaskDetails";
 import { TaskFields } from "./TaskFields";
 import type { TaskEditorController } from "@/hooks/useTaskEditorController";
 import { EditorSurface, type EditorCrumb } from "@/components/global";
+import { isClosedProjectStatus } from "@/lib/resources/project-status";
 
 const priorities: Priority[] = ["low", "medium", "high", "urgent"];
 
@@ -422,10 +423,11 @@ export function TaskEditor(props: TaskEditorProps) {
                     ...projects
                       .filter(
                         (item) =>
-                          !item.archived_at || item.id === draft.project_id,
+                          !isClosedProjectStatus(item.status) ||
+                          item.id === draft.project_id,
                       )
                       .map((item) => ({
-                        label: `${item.name}${item.archived_at ? " (archived)" : ""}`,
+                        label: `${item.name}${isClosedProjectStatus(item.status) ? " (closed)" : ""}`,
                         value: item.id,
                       })),
                   ]}

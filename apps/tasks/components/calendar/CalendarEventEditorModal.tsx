@@ -16,6 +16,7 @@ import {
   type CalendarEventKind,
 } from "@/lib/calendar/calendar-types";
 import { profileDisplayName } from "@/lib/presentation";
+import { isClosedProjectStatus } from "@/lib/resources/project-status";
 import type { Category, Project } from "@/lib/resources/resource-types";
 import type { Profile } from "@/lib/workspace/workspace-types";
 import { CalendarRecurrenceFields } from "./CalendarRecurrenceFields";
@@ -306,7 +307,7 @@ export function CalendarEventEditorModal(props: CalendarEventEditorProps) {
               options={[
                 { label: "Everyone in the workspace", value: "workspace" },
                 ...projects
-                  .filter((project) => !project.archived_at)
+                  .filter((project) => !isClosedProjectStatus(project.status))
                   .map((project) => ({
                     label: project.name,
                     value: `project:${project.id}`,

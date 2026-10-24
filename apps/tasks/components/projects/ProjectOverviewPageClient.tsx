@@ -231,7 +231,6 @@ export function ProjectOverviewPageClient({
   const status = projectStatusDetails(project.status);
   const timeline = projectTimeline(project);
   const isFavorite =
-    !project.archived_at &&
     !isClosedProjectStatus(project.status) &&
     favorites.isFavorite(project.id);
   const canOpenCalendar = canViewWorkspaceArea(
@@ -323,7 +322,6 @@ export function ProjectOverviewPageClient({
             }
             titleActions={
               !data.accessPreview &&
-              !project.archived_at &&
               !isClosedProjectStatus(project.status) ? (
                 <ProjectFavoriteButton
                   projectName={project.name}

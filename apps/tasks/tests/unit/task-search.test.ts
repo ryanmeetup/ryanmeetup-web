@@ -87,7 +87,7 @@ describe("task search", () => {
       id: "p",
       name: "Alpha",
       description: null,
-      archived_at: null,
+      status: "active",
     } as Project;
     const category = {
       id: "c",

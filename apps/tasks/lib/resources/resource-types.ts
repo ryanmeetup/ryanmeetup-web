@@ -32,7 +32,8 @@ export type Project = {
   description: string | null;
   links: ResourceLink[];
   created_by: string;
-  archived_at: string | null;
+  /** When the status became Complete or Dropped; null while it is open. */
+  closed_at: string | null;
   created_at: string;
   /** The day work began. Null reads as `created_at`. */
   start_date: string | null;

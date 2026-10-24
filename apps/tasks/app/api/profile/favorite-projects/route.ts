@@ -22,7 +22,6 @@ export async function PATCH(request: Request) {
     .from("projects")
     .select("id,status")
     .eq("id", body.projectId)
-    .is("archived_at", null)
     .maybeSingle();
   if (projectError || !project) {
     return apiError(404, "NOT_FOUND", "That project is not available.");

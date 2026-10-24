@@ -1,5 +1,4 @@
 import type { Project, ProjectStatus } from "./resource-types";
-import { filterAndSortResources } from "./resource-management";
 
 export const projectStatusOptions: {
   color: string;
@@ -45,35 +44,45 @@ export function isClosedProjectStatus(status: ProjectStatus) {
   return status === "complete" || status === "dropped";
 }
 
-export type ProjectListFilter = "current" | "closed" | "archived" | "all";
+/**
+ * The close time a project carries after moving to `status`, matching the
+ * database's `set_project_closed_at` trigger so local state agrees with it.
+ */
+export function projectClosedAt(
+  project: Pick<Project, "status" | "closed_at"> | null,
+  status: ProjectStatus,
+  now = new Date(),
+) {
+  if (!isClosedProjectStatus(status)) return null;
+  if (project && isClosedProjectStatus(project.status))
+    return project.closed_at ?? now.toISOString();
+  return now.toISOString();
+}
+
+export type ProjectListFilter = "current" | "closed" | "all";
 
 export function projectListFilter(value: string): ProjectListFilter {
-  if (value === "closed" || value === "archived" || value === "all")
-    return value;
-  // Before Dropped existed, the closed view was "completed".
-  if (value === "completed") return "closed";
-  // Older shared links used "active" for all unarchived projects.
+  if (value === "closed" || value === "all") return value;
+  // Before Dropped existed, the closed view was "completed"; before closing
+  // replaced archiving, archived projects had a view of their own.
+  if (value === "completed" || value === "archived") return "closed";
+  // Older shared links used "active" for all open projects.
   return "current";
 }
 
-export function isCurrentProject(
-  project: Pick<Project, "status" | "archived_at">,
-) {
-  return !project.archived_at && !isClosedProjectStatus(project.status);
+export function isCurrentProject(project: Pick<Project, "status">) {
+  return !isClosedProjectStatus(project.status);
 }
 
 export function filterProjects<
-  T extends Pick<Project, "status" | "archived_at" | "name">,
+  T extends Pick<Project, "status" | "name">,
 >(projects: T[], filter: ProjectListFilter) {
-  const visible = filterAndSortResources(
-    projects,
-    filter === "archived" || filter === "all" ? filter : "active",
+  const sorted = [...projects].sort((a, b) => a.name.localeCompare(b.name));
+  if (filter === "all") return sorted;
+  const closed = filter === "closed";
+  return sorted.filter(
+    (project) => isClosedProjectStatus(project.status) === closed,
   );
-  if (filter === "current")
-    return visible.filter(isCurrentProject);
-  if (filter === "closed")
-    return visible.filter((project) => isClosedProjectStatus(project.status));
-  return visible;
 }
 
 export function groupProjectsByStatus<T extends { status: ProjectStatus }>(

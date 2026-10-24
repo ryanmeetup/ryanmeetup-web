@@ -40,6 +40,7 @@ import {
   ResourceLinks,
   useResourceAttachments,
 } from "@/components/resources";
+import { isClosedProjectStatus } from "@/lib/resources/project-status";
 
 export type TaskWorkspaceHeaderScope = {
   assignee: string;
@@ -286,7 +287,9 @@ export function TaskWorkspaceHeader({
   // Favorites belong to the viewer's own profile, so an access preview - which
   // borrows someone else's view - has none to show.
   const showFavorite = Boolean(
-    selectedProject && !previewing && !selectedProject.archived_at,
+    selectedProject &&
+      !previewing &&
+      !isClosedProjectStatus(selectedProject.status),
   );
   // Actions belonging to the selected project or category, as opposed to the
   // board/list switch, which changes how any scope renders. Below `sm` these

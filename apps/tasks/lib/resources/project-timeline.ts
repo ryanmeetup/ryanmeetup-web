@@ -102,10 +102,9 @@ function dueState(
 /**
  * Everything the overview says about a project's dates.
  *
- * A project that has been archived stopped running when it was archived —
- * that is the only completion moment the workspace actually records, so a
- * finished project reports the span it ran for rather than one that keeps
- * growing after the work stopped.
+ * A closed project stopped running when it closed, so a finished project
+ * reports the span it ran for rather than one that keeps growing after the
+ * work stopped.
  *
  * A complete project keeps its due date but drops the countdown, so marking it
  * done clears an "overdue" warning instead of leaving it to grow.
@@ -113,18 +112,18 @@ function dueState(
 export function projectTimeline(
   project: Pick<
     Project,
-    "created_at" | "start_date" | "due_date" | "archived_at" | "status"
+    "created_at" | "start_date" | "due_date" | "closed_at" | "status"
   >,
   today = new Date(),
 ): ProjectTimeline {
   const todayValue = localDateValue(today);
-  // `created_at` and `archived_at` are instants; the reader thinks in their
+  // `created_at` and `closed_at` are instants; the reader thinks in their
   // own calendar days, so both are collapsed the same way `today` is.
   const start = project.start_date
     ? { date: project.start_date, inferred: false }
     : { date: inferredProjectStartDate(project.created_at), inferred: true };
-  const endValue = project.archived_at
-    ? localDateValue(new Date(project.archived_at))
+  const endValue = project.closed_at
+    ? localDateValue(new Date(project.closed_at))
     : todayValue;
   const days = Math.max(0, calendarDayGap(start.date, endValue));
   return {
@@ -132,7 +131,7 @@ export function projectTimeline(
     running: {
       days,
       label: formatDaySpan(days),
-      ended: Boolean(project.archived_at),
+      ended: Boolean(project.closed_at),
     },
     due: project.due_date
       ? dueState(project.due_date, todayValue, isClosedProjectStatus(project.status))

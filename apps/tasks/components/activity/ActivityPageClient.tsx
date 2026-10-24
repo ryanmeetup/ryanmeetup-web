@@ -47,6 +47,7 @@ import {
   moveFilterValue,
 } from "@/lib/activity/activity-moves";
 import { deliversWork } from "@/lib/tasks/status-outcome";
+import { isClosedProjectStatus } from "@/lib/resources/project-status";
 
 export function ActivityPageClient({
   initialData,
@@ -379,7 +380,7 @@ export function ActivityPageClient({
                   group: projectOptionGroup(
                     favoriteProjectIds.includes(project.id),
                   ),
-                  label: `${project.name}${project.archived_at ? " (archived)" : ""}`,
+                  label: `${project.name}${isClosedProjectStatus(project.status) ? " (closed)" : ""}`,
                   value: project.name,
                 })),
               ]}
