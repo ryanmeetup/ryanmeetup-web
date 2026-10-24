@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { Button, ErrorCallout, Modal, Spinner } from "@ryanmeetup/ui";
-import { FiDownload, FiMail } from "react-icons/fi";
+import { FiDownload, FiMail, FiRefreshCw } from "react-icons/fi";
 import { CopyButton } from "@/components/global";
 import { mutate } from "@/lib/mutation-client";
 import { errorMessage } from "@/lib/presentation";
@@ -21,6 +21,14 @@ export function RydSendDialog({
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [attempt, setAttempt] = useState(0);
+
+  function regenerate() {
+    setPreview(null);
+    setDownloadUrl("");
+    setLoading(true);
+    setError("");
+    setAttempt((value) => value + 1);
+  }
 
   useEffect(() => {
     let active = true;
@@ -76,11 +84,7 @@ export function RydSendDialog({
         <Button
           variant="secondary"
           className="mt-4 w-full sm:w-auto"
-          onClick={() => {
-            setLoading(true);
-            setError("");
-            setAttempt((value) => value + 1);
-          }}
+          onClick={regenerate}
         >
           Try again
         </Button>
@@ -92,6 +96,15 @@ export function RydSendDialog({
             {preview.orderCount === 1 ? "order" : "orders"}. Their stages stay
             unchanged until you move them manually.
           </p>
+          <Button
+            size="xs"
+            variant="secondary"
+            className="w-full sm:w-auto"
+            leftIcon={<FiRefreshCw aria-hidden />}
+            onClick={regenerate}
+          >
+            Regenerate email &amp; CSV
+          </Button>
           <ol className="space-y-4">
             <RydDraftStep
               index={1}

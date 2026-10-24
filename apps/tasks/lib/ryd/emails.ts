@@ -54,14 +54,42 @@ export function rydUnmatchedEmail(): RydDraft {
 
 /** Tells fulfillment which orders can start, for the file attached beside it. */
 export function rydFulfillmentEmail(
-  ready: { orderId: string; firstName: string; lastName: string }[],
+  ready: {
+    orderId: string;
+    firstName: string;
+    lastName: string;
+    /** Names from explicitly linked form responses, never match suggestions. */
+    recipientNames?: string[];
+  }[],
   orderCount: number,
 ): RydDraft {
-  const lines = ready.map((order) =>
-    [order.orderId, `${order.firstName} ${order.lastName}`.trim()]
-      .filter(Boolean)
-      .join(" · "),
-  );
+  const lines = ready.map((order) => {
+    const buyer = `${order.firstName} ${order.lastName}`
+      .replace(/\s+/g, " ")
+      .trim();
+    const names = new Map<string, string>();
+    for (const value of order.recipientNames ?? []) {
+      const answer = value.replace(/\s+/g, " ").trim();
+      // An explicit delegation identifies the recipient after the delimiter.
+      // Other answers remain verbatim instead of guessing who they describe.
+      const name =
+        answer.match(/^.+?\s+on\s+behalf\s+of\s+(.+)$/i)?.[1] ?? answer;
+      const key = name.normalize("NFC").toLowerCase();
+      if (key && !names.has(key)) names.set(key, name);
+    }
+    if (!names.size)
+      return `${order.orderId} · Order placed by ${buyer || "buyer name unavailable"}`;
+    const recipient =
+      names.size === 1
+        ? [...names.values()][0]
+        : `Linked form names: ${[...names.values()].join("; ")}`;
+    const buyerContext =
+      buyer &&
+      (names.size !== 1 || !names.has(buyer.normalize("NFC").toLowerCase()))
+        ? ` (ordered by ${buyer})`
+        : "";
+    return `${order.orderId} · ${recipient}${buyerContext}`;
+  });
   return {
     subject: `RY-D orders cleared to start: ${ready.length}`,
     body: [

@@ -28,6 +28,7 @@ export function createRydFixture(json, readBody, profile) {
       enabled: options.enabled !== false,
       denied: options.role === "denied",
       ambiguousForm: options.ambiguousForm === true,
+      legalName: options.legalName ?? "Ryan Fixture",
       legacyBatch: options.legacyBatch === true,
       settings: {
         id: true,
@@ -119,6 +120,11 @@ export function createRydFixture(json, readBody, profile) {
       json(response, 200, { ok: true });
       return true;
     }
+    if (path === "/__ryd/form-name") {
+      state.legalName = (await readBody(request)).legalName;
+      json(response, 200, { ok: true });
+      return true;
+    }
     if (path === "/__ryd/state") {
       json(response, 200, {
         orders: state.orders,
@@ -179,7 +185,7 @@ export function createRydFixture(json, readBody, profile) {
               lastSubmittedTime: NOW,
               answers: {
                 email: { textAnswers: { answers: [{ value: EMAIL }] } },
-                name: { textAnswers: { answers: [{ value: "Ryan Fixture" }] } },
+                name: { textAnswers: { answers: [{ value: state.legalName }] } },
                 ...(state.ambiguousForm ? {
                   otherName: { textAnswers: { answers: [{ value: "Ryan Other" }] } },
                   otherEmail: { textAnswers: { answers: [{ value: "other@example.test" }] } },

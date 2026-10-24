@@ -40,7 +40,7 @@ Single and bulk buyer emails share one draft workflow. Opening a draft records n
 
 ### Fulfillment files stay in sync
 
-Generated files include only verified orders that have not already gone to fulfillment or production. Orders in production, completed orders, and orders still being checked stay out of the next file and email draft.
+Generated files include only verified orders that have not already gone to fulfillment or production. Orders in production, completed orders, and orders still being checked stay out of the next file and email draft. Fulfillment emails name the Ryan from linked form responses and identify the buyer separately for gifts. Regenerate refreshes the selected draft from the form.
 
 Verified opens to Ready to send, with separate stages for Sent to fulfillment, In production, and Done. Select ready orders across pages and choose Generate email & CSV to prepare exactly that selection for your email app. Emails and files are generated on demand, with no saved drafts or replacement prompts. Every stage change is manual: mark orders Sent to fulfillment after emailing them, then confirm production when fulfillment acknowledges it.
 

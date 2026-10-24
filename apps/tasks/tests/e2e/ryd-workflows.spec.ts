@@ -29,7 +29,7 @@ const state = async (request: APIRequestContext) =>
   (await request.get(`${fixtureOrigin}/__ryd/state`)).json();
 async function reset(
   request: APIRequestContext,
-  options: { enabled?: boolean; role?: string; ambiguousForm?: boolean; legacyBatch?: boolean } = {},
+  options: { enabled?: boolean; role?: string; ambiguousForm?: boolean; legacyBatch?: boolean; legalName?: string } = {},
 ) {
   expect(
     (
@@ -234,7 +234,7 @@ test("ignores a previously saved email and generates fresh selected files withou
     "801,Ryan,New,new@example.test,✅",
   ]);
   const draft = decodeURIComponent((await send.getByRole("link", { name: "Open email", exact: true }).getAttribute("href"))!);
-  expect(draft).toContain("801 · Ryan New");
+  expect(draft).toContain("801 · Order placed by Ryan New");
   for (const name of ["Ryan Production", "Ryan Done", "Ryan Pending", "Ryan Unselected"]) expect(draft).not.toContain(name);
   for (const width of widths) {
     await page.setViewportSize({ width, height: 900 });
@@ -290,11 +290,42 @@ test("generates a selected batch across pages while respecting the ready filter"
   const file = await downloadedCsv(page, download);
   expect(file.trim().split(/\r?\n/)).toHaveLength(13);
   const draft = decodeURIComponent((await send.getByRole("link", { name: "Open email", exact: true }).getAttribute("href"))!);
-  for (let i = 0; i < 12; i++) expect(draft).toContain(`${801 + i} · Ryan Ready${i}`);
+  for (let i = 0; i < 12; i++) expect(draft).toContain(`${801 + i} · Order placed by Ryan Ready${i}`);
   expect(draft).not.toContain("Ryan Existing");
   const prepared = await state(request);
   expect(prepared.snapshot).toBeNull();
   expect(prepared.calls.at(-1)).toMatchObject({ name: "ryd_generate_fulfillment", body: { requested_orders: expect.arrayContaining(["801", "812"]) } });
+});
+
+test("generates the linked Ryan recipient and rerolls a fresh gift email", async ({ page, request }, testInfo) => {
+  await reset(request, { legalName: "Brooke Ericson on behalf of Ryan Ericson" });
+  await signIn(page);
+  expect((await page.request.post("/api/ryd/imports", { multipart: {
+    operationId: "00000000-0000-4000-8000-000000000841",
+    file: { name: "gift.csv", mimeType: "text/csv", buffer: Buffer.from(
+      "OrderId,BillFirstName,BillLastName,BillEmail,Verified?\r\n801,Brooke,Ericson,ryan.fixture@example.test,✅\r\n",
+    ) },
+  } })).ok()).toBeTruthy();
+  expect((await page.request.post("/api/ryd/orders/801/links", { data: {
+    submissionKeys: ["synthetic-response-801"], source: "manual",
+  } })).ok()).toBeTruthy();
+  await page.goto("/ryd?status=verified");
+  await page.getByRole("checkbox", { name: "Select Brooke Ericson", exact: true }).check();
+  await page.getByRole("button", { name: "Generate email & CSV (1)", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Fulfillment email & CSV", exact: true });
+  const email = dialog.getByRole("link", { name: "Open email", exact: true });
+  await expect(email).toBeVisible();
+  const first = decodeURIComponent((await email.getAttribute("href"))!);
+  expect(first).toContain("801 · Ryan Ericson (ordered by Brooke Ericson)");
+  expect(first).not.toContain("801 · Brooke Ericson");
+  expect(await downloadedCsv(page, dialog.getByRole("link", { name: "Download CSV", exact: true }))).toContain("801,Brooke,Ericson");
+  await request.post(`${fixtureOrigin}/__ryd/form-name`, { data: { legalName: "Brooke Ericson on behalf of Ryan Updated" } });
+  await dialog.getByRole("button", { name: "Regenerate email & CSV", exact: true }).click();
+  await expect(email).toHaveAttribute("href", /Ryan%20Updated/);
+  expect(decodeURIComponent((await email.getAttribute("href"))!)).toContain("801 · Ryan Updated (ordered by Brooke Ericson)");
+  await page.screenshot({ path: testInfo.outputPath("regenerated-gift-email.png") });
+  expect((await state(request)).orders[0]).toMatchObject({ cleared_batch_id: null, production_sent_at: null, done_at: null });
+  expect((await state(request)).snapshot).toBeNull();
 });
 
 test("sorts the production column by stage and sent date", async ({ page, request }, testInfo) => {

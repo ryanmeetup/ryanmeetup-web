@@ -166,6 +166,16 @@ uses, set in /admin/usage).
    current search and filters across every page. Other ready orders wait for
    a later email. Each selection supports up to 5,000 orders without truncation.
 
+   The email names recipients from explicitly linked form responses. An answer
+   such as “Buyer on behalf of Ryan Recipient” lists Ryan Recipient as the
+   RY-D recipient, with the buyer identified separately. Orders without linked
+   names identify only who placed the order. Distinct linked names stay labeled
+   as separate form names; they are never guessed into one person. Missing
+   linked responses or unreadable recipient details stop generation for review.
+   Billing names in the CSV stay intact for order matching; evidence files,
+   social profiles, and internal review notes are not added to the email.
+   **Regenerate email & CSV** reads fresh form answers for the same selection.
+
    Download the CSV, open or copy the email to the fulfillment address in
    settings, attach the file, and send it yourself. Generation is read-only:
    no email or CSV is saved, no orders or evidence are reserved, no stage
