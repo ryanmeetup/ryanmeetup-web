@@ -31,7 +31,7 @@ import {
 } from "react-icons/fi";
 import { errorMessage } from "@/lib/presentation";
 import type { RydSubmission } from "@/lib/ryd/matching";
-import type { RydOrderStatus } from "@/lib/ryd/orders";
+import { formatRydOrderTotal, type RydOrderStatus } from "@/lib/ryd/orders";
 import type { RydQueueChange } from "@/lib/ryd/queue-reconciliation";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 import { canEmailRydOrder, orderSubmissions } from "@/lib/ryd/queue-view";
@@ -302,7 +302,7 @@ export function RydOrderDialog({
             </Detail>
             {order.total && (
               <Detail icon={FiCreditCard} label="Total">
-                ${order.total}
+                {formatRydOrderTotal(order.total)}
               </Detail>
             )}
             {order.status === "verified" && (

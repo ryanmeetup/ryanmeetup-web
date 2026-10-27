@@ -18,6 +18,21 @@ export const RYD_STATUS_LABELS: Record<RydOrderStatus, string> = {
 
 export const VERIFIED_MARK = "✅";
 
+const USD = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
+
+/**
+ * An order total as people read it. Fulfillment writes amounts like `36.7500`
+ * or `1,036.75`; anything that isn't a plain amount is shown as written.
+ */
+export function formatRydOrderTotal(total: string) {
+  const amount = total.trim().replace(/^\$/, "").replaceAll(",", "");
+  if (!/^-?\d+(\.\d+)?$/.test(amount)) return total.trim();
+  return USD.format(Number(amount));
+}
+
 /** The columns an order export must carry for the app to read it. */
 const REQUIRED_COLUMNS = [
   "OrderId",

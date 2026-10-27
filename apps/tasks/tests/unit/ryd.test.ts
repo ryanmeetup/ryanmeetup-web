@@ -11,7 +11,11 @@ import {
   parseDriveFileIds,
   parseSocialLinks,
 } from "@/lib/ryd/normalize";
-import { parseRydOrderCsv, rydOrderExportCsv } from "@/lib/ryd/orders";
+import {
+  formatRydOrderTotal,
+  parseRydOrderCsv,
+  rydOrderExportCsv,
+} from "@/lib/ryd/orders";
 import {
   formIdFrom,
   parseRydFormResponses,
@@ -64,6 +68,18 @@ describe("csv", () => {
 
   it("drops a byte-order mark and blank trailing lines", () => {
     expect(parseCsv("﻿a,b\n1,2\n\n").headers).toEqual(["a", "b"]);
+  });
+});
+
+describe("formatRydOrderTotal", () => {
+  it.each([
+    ["36.7500", "$36.75"],
+    ["1,036.75", "$1,036.75"],
+    [" $36 ", "$36.00"],
+    ["36.755", "$36.76"],
+    ["Comped", "Comped"],
+  ])("shows %j as %j", (total, label) => {
+    expect(formatRydOrderTotal(total)).toBe(label);
   });
 });
 
