@@ -37,7 +37,7 @@ export function createRydFixture(json, readBody, profile) {
         id: true,
         form_id: FORM,
         fulfillment_email: "fulfillment@example.test",
-        upload_reminder_enabled: false,
+        upload_reminder_enabled: options.uploadReminder === true,
       },
       integration: {
         id: "ryd_google",

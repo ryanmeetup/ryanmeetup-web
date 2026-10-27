@@ -55,7 +55,6 @@ import {
   rydDecisionLocked,
 } from "@/lib/ryd/ryd-decisions";
 import { rydCardComplete } from "@/lib/ryd/card";
-import { rydUploadDueLabel } from "@/lib/ryd/upload-reminder";
 import {
   reconcileRydQueue,
   type RydQueueChange,
@@ -120,6 +119,7 @@ import {
   RYD_STATUS_TONES,
 } from "./RydStatusChip";
 import { RydUnmatchedLayoutToggle, RydUnmatchedView } from "./RydUnmatchedView";
+import { RydUploadDueNotice } from "./RydUploadDueNotice";
 
 const GOOGLE_MESSAGES: Record<string, [ok: boolean, message: string]> = {
   connected: [true, "Google connected. The form's answers are in."],
@@ -797,30 +797,11 @@ export function RydPageClient({
             )}
 
             {queue.installed && queue.uploadDueSince && (
-              <div
-                role="status"
-                className="flex flex-col gap-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm sm:flex-row sm:items-center sm:justify-between"
-              >
-                <p className="flex items-start gap-2">
-                  <FiUpload aria-hidden className="mt-0.5 shrink-0" />
-                  <span>
-                    <span className="font-semibold">It&apos;s upload day.</span>{" "}
-                    Nothing has been uploaded since{" "}
-                    {rydUploadDueLabel(queue.uploadDueSince, queue.timeZone)}
-                    . Check for fulfillment&apos;s new order file and add it
-                    here.
-                  </span>
-                </p>
-                <Button
-                  type="button"
-                  size="sm"
-                  className="w-full shrink-0 sm:w-auto"
-                  leftIcon={<FiUpload aria-hidden />}
-                  onClick={() => setDialog("upload")}
-                >
-                  Upload orders
-                </Button>
-              </div>
+              <RydUploadDueNotice
+                since={queue.uploadDueSince}
+                timeZone={queue.timeZone}
+                onUpload={() => setDialog("upload")}
+              />
             )}
 
             <div

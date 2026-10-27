@@ -29,7 +29,7 @@ const state = async (request: APIRequestContext) =>
   (await request.get(`${fixtureOrigin}/__ryd/state`)).json();
 async function reset(
   request: APIRequestContext,
-  options: { enabled?: boolean; role?: string; ambiguousForm?: boolean; legacyBatch?: boolean; legalName?: string; evidenceFiles?: string[] } = {},
+  options: { enabled?: boolean; role?: string; ambiguousForm?: boolean; legacyBatch?: boolean; legalName?: string; evidenceFiles?: string[]; uploadReminder?: boolean } = {},
 ) {
   expect(
     (
@@ -74,6 +74,35 @@ async function signIn(page: Page) {
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page.locator("[data-workspace-shell]")).toBeVisible();
 }
+
+test("dismisses the upload-day reminder until the next upload day", async ({
+  page,
+  request,
+}) => {
+  await reset(request, { uploadReminder: true });
+  await signIn(page);
+  await page.goto("/ryd");
+  const reminder = page.getByRole("status").filter({ hasText: "It's upload day." });
+  await expect(reminder).toBeVisible();
+
+  await reminder.getByRole("button", { name: "Dismiss upload reminder", exact: true }).click();
+  await expect(reminder).toHaveCount(0);
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "RY-D Verification", exact: false }),
+  ).toBeVisible();
+  await expect(reminder).toHaveCount(0);
+
+  // A different upload day is a new reminder.
+  await page.evaluate(() =>
+    localStorage.setItem(
+      "ryanmeetup.tasks.ryd.upload-due.dismissed.v1",
+      "2000-01-01T00:00:00.000Z",
+    ),
+  );
+  await page.reload();
+  await expect(reminder).toBeVisible();
+});
 
 test("keeps order reviews bounded with collapsible, independently scrolling details", async ({
   page,
