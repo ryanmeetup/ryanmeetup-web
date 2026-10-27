@@ -44,13 +44,7 @@ export function RydCardFields({
     hint.yearSuggestion && !card.ryanSince.trim() ? hint.yearSuggestion : null;
 
   return (
-    <section aria-labelledby="ryd-card-heading" className="space-y-3">
-      <h3
-        id="ryd-card-heading"
-        className="text-xs font-semibold uppercase tracking-[0.2em] text-black/70 dark:text-white/70"
-      >
-        Card
-      </h3>
+    <div className="space-y-3">
       {!saved && hint.nameFrom === "billing" && !locked && (
         <p className="flex items-start gap-2 text-sm text-black/70 dark:text-white/70">
           <FiGift aria-hidden className="mt-0.5 shrink-0" />
@@ -58,7 +52,7 @@ export function RydCardFields({
           Change it if this is a gift.
         </p>
       )}
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
         <Input
           label="First name"
           name="card-first-name"
@@ -83,7 +77,7 @@ export function RydCardFields({
         name="card-location"
         value={card.location}
         maxLength={RYD_CARD_LIMITS.location}
-        placeholder="As they'd like it printed, e.g. Brooklyn, NY"
+        placeholder="e.g. Brooklyn, NY"
         onChange={(event) => set("location")(event.target.value)}
         disabled={disabled || locked}
         required
@@ -128,6 +122,6 @@ export function RydCardFields({
           approved.
         </p>
       )}
-    </section>
+    </div>
   );
 }

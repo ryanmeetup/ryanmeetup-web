@@ -86,8 +86,9 @@ describe("RY-D submission views", () => {
     expect(markup).toContain("Leave with concierge");
     expect(markup).toContain(">ok</blockquote>");
     expect(markup).toContain("Previously shown uploads");
+    expect(markup.match(/aria-label="Preview uploaded image /g)).toHaveLength(6);
     expect(markup.match(/href="\/api\/ryd\/evidence\/file-a"/g)).toHaveLength(
-      2,
+      1,
     );
     expect(markup).toContain("Ryan Alternate");
   });

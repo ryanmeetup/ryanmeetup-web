@@ -31,6 +31,7 @@ export function createRydFixture(json, readBody, profile) {
       guest: options.role === "partner",
       ambiguousForm: options.ambiguousForm === true,
       legalName: options.legalName ?? "Ryan Fixture",
+      evidenceFiles: options.evidenceFiles ?? [],
       legacyBatch: options.legacyBatch === true,
       settings: {
         id: true,
@@ -174,6 +175,10 @@ export function createRydFixture(json, readBody, profile) {
               title: "Social profile",
               questionItem: { question: { questionId: "social" } },
             },
+            ...(state.evidenceFiles.length ? [{
+              title: "Uploaded evidence",
+              questionItem: { question: { questionId: "files", fileUploadQuestion: {} } },
+            }] : []),
             ...(state.ambiguousForm ? [{
               title: "Full name",
               questionItem: { question: { questionId: "otherName" } },
@@ -195,6 +200,9 @@ export function createRydFixture(json, readBody, profile) {
               answers: {
                 email: { textAnswers: { answers: [{ value: EMAIL }] } },
                 name: { textAnswers: { answers: [{ value: state.legalName }] } },
+                ...(state.evidenceFiles.length ? {
+                  files: { fileUploadAnswers: { answers: state.evidenceFiles.map((fileId) => ({ fileId })) } },
+                } : {}),
                 ...(state.ambiguousForm ? {
                   otherName: { textAnswers: { answers: [{ value: "Ryan Other" }] } },
                   otherEmail: { textAnswers: { answers: [{ value: "other@example.test" }] } },

@@ -82,6 +82,15 @@ Form responses without a usable email stay separate in Unmatched submissions. Li
 
 ### Safer RY-D reviews
 
+Order reviews keep a steady height, with collapsible Order, Card, and Notes
+sections. On desktop, order details scroll separately from the form responses,
+while the review actions stay in view.
+Uploaded images open in a preview above the review, so closing one returns
+to the same order and any unsaved changes.
+Review actions explain what they do in tooltips. When Verify is unavailable,
+its tooltip names the card fields that need attention, including when using
+the keyboard.
+
 Pairing evidence and verifying an order now save together. Conflicting reviewers cannot claim the same response, stale decisions are refused, and production changes keep their audit history in the same transaction. Changing the verification form requires resolving its saved pairings first.
 
 Ambiguous name and email questions now show a warning and keep their answers

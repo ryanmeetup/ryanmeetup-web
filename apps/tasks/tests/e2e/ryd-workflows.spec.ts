@@ -29,7 +29,7 @@ const state = async (request: APIRequestContext) =>
   (await request.get(`${fixtureOrigin}/__ryd/state`)).json();
 async function reset(
   request: APIRequestContext,
-  options: { enabled?: boolean; role?: string; ambiguousForm?: boolean; legacyBatch?: boolean; legalName?: string } = {},
+  options: { enabled?: boolean; role?: string; ambiguousForm?: boolean; legacyBatch?: boolean; legalName?: string; evidenceFiles?: string[] } = {},
 ) {
   expect(
     (
@@ -75,6 +75,227 @@ async function signIn(page: Page) {
   await expect(page.locator("[data-workspace-shell]")).toBeVisible();
 }
 
+test("keeps order reviews bounded with collapsible, independently scrolling details", async ({
+  page,
+  request,
+}, testInfo) => {
+  await reset(request);
+  await signIn(page);
+  await page.goto("/ryd");
+  await page.getByRole("button", { name: "Upload orders", exact: true }).click();
+  const upload = page.getByRole("dialog", { name: "Upload orders", exact: true });
+  await upload.getByLabel("Order CSV", { exact: false }).setInputFiles({
+    name: "synthetic-ryd.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(csv),
+  });
+  await upload.getByRole("button", { name: "Upload", exact: true }).click();
+  await expect(upload).toHaveCount(0);
+  await page.getByRole("button", { name: "Review Ryan Fixture", exact: true }).click();
+
+  const review = page.getByRole("dialog");
+  const sidebar = review.getByRole("region", { name: "Order details", exact: true });
+  const evidence = review.getByRole("region", { name: "From the form", exact: true });
+  const orderToggle = sidebar.getByRole("button", { name: "Order", exact: true });
+  const cardToggle = sidebar.getByRole("button", { name: "Card", exact: true });
+  const notesToggle = sidebar.getByRole("button", { name: "Notes", exact: true });
+  const verify = review.getByRole("button", { name: "Verify", exact: true });
+  await expect(orderToggle).toHaveAttribute("aria-expanded", "true");
+  await expect(cardToggle).toHaveAttribute("aria-expanded", "true");
+  await expect(notesToggle).toHaveAttribute("aria-expanded", "false");
+
+  const widths = testInfo.project.name === "chromium-mobile" ? [390] : [640, 768, 1024, 1280, 1536];
+  for (const width of widths) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(review.getByRole("button", { name: "Close dialog", exact: true })).toBeInViewport();
+    for (const name of ["Cancel order", "Needs more info", "Verify", "Save card"])
+      await expect(review.getByRole("button", { name, exact: true })).toBeInViewport({ ratio: 1 });
+    if (width >= 1024) {
+      await expect.poll(() => sidebar.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true);
+      const evidenceTop = (await evidence.boundingBox())!.y;
+      await sidebar.focus();
+      await page.keyboard.press("End");
+      await expect.poll(() => sidebar.evaluate((element) =>
+        Math.abs(element.scrollHeight - element.clientHeight - element.scrollTop) < 1,
+      )).toBe(true);
+      expect((await evidence.boundingBox())!.y).toBe(evidenceTop);
+      await page.screenshot({ path: testInfo.outputPath(`order-review-scrolled-${width}.png`) });
+      await sidebar.press("Home");
+      await expect.poll(() => sidebar.evaluate((element) => element.scrollTop)).toBe(0);
+    }
+    await page.screenshot({ path: testInfo.outputPath(`order-review-${width}.png`) });
+  }
+
+  const actionsTop = (await verify.boundingBox())!.y;
+  await cardToggle.click();
+  await expect(cardToggle).toHaveAttribute("aria-expanded", "false");
+  await expect(sidebar.getByRole("textbox", { name: "First name", exact: false })).toHaveCount(0);
+  await orderToggle.focus();
+  await page.keyboard.press("Enter");
+  await expect(orderToggle).toHaveAttribute("aria-expanded", "false");
+  await notesToggle.click();
+  await sidebar.getByRole("textbox", { name: "Note", exact: true }).fill("Checked the uploaded evidence.");
+  await notesToggle.click();
+  await notesToggle.click();
+  await expect(sidebar.getByRole("textbox", { name: "Note", exact: true })).toHaveValue("Checked the uploaded evidence.");
+  expect((await verify.boundingBox())!.y).toBe(actionsTop);
+  await cardToggle.click();
+  await review.getByLabel("Location", { exact: false }).fill("Brooklyn, NY");
+  await review.getByLabel("Ryan since", { exact: false }).fill("1999");
+  await cardToggle.click();
+  await cardToggle.click();
+  await expect(review.getByLabel("Location", { exact: false })).toHaveValue("Brooklyn, NY");
+  await expect(review.getByLabel("Ryan since", { exact: false })).toHaveValue("1999");
+  await expect(verify).toBeEnabled();
+});
+
+test("explains unavailable review actions on hover and keyboard focus", async ({
+  page,
+  request,
+}, testInfo) => {
+  await reset(request);
+  await signIn(page);
+  await page.goto("/ryd");
+  await page.getByRole("button", { name: "Upload orders", exact: true }).click();
+  const upload = page.getByRole("dialog", { name: "Upload orders", exact: true });
+  await upload.getByLabel("Order CSV", { exact: false }).setInputFiles({
+    name: "synthetic-ryd.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(csv),
+  });
+  await upload.getByRole("button", { name: "Upload", exact: true }).click();
+  await expect(upload).toHaveCount(0);
+  await page.getByRole("button", { name: "Review Ryan Fixture", exact: true }).click();
+
+  const review = page.getByRole("dialog");
+  const verify = review.getByRole("button", { name: "Verify", exact: true });
+  const unavailable = review.getByRole("group", { name: "Verify unavailable", exact: true });
+  const tooltip = page.getByRole("tooltip");
+  const incomplete = "Complete or correct these card fields: Location, Ryan since. Every line is required to verify.";
+  await expect(verify).toBeDisabled();
+  await unavailable.hover();
+  await expect(tooltip).toHaveText(incomplete);
+  await expect(unavailable).toHaveAccessibleDescription(incomplete);
+
+  // The disabled native button stays inert; its wrapper is a keyboard stop.
+  await page.mouse.move(0, 0);
+  await review.getByRole("button", { name: "Needs more info", exact: true }).focus();
+  await page.keyboard.press("Tab");
+  await expect(unavailable).toBeFocused();
+  await expect(tooltip).toHaveText(incomplete);
+  await page.keyboard.press("Enter");
+  await expect(verify).toBeDisabled();
+  expect((await state(request)).calls.map((call: { name: string }) => call.name)).toEqual(["ryd_import_orders"]);
+
+  const widths = testInfo.project.name === "chromium-mobile" ? [390] : [1024, 1280, 1536];
+  for (const width of widths) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(tooltip).toBeInViewport({ ratio: 1 });
+    await page.screenshot({ path: testInfo.outputPath(`review-tooltip-${width}.png`) });
+  }
+
+  await review.getByLabel("Location", { exact: false }).fill("Brooklyn, NY");
+  await unavailable.hover();
+  await expect(tooltip).toHaveText("Complete or correct these card fields: Ryan since. Every line is required to verify.");
+  await review.getByLabel("Ryan since", { exact: false }).fill("1899");
+  await unavailable.hover();
+  await expect(verify).toBeDisabled();
+  await expect(tooltip).toContainText("Ryan since");
+  await review.getByLabel("Ryan since", { exact: false }).fill("1999");
+  await expect(verify).toBeEnabled();
+  await verify.hover();
+  await expect(tooltip).toHaveText("Verify this order and approve the card exactly as shown.");
+  await expect(verify).toHaveAccessibleDescription("Verify this order and approve the card exactly as shown.");
+
+  await review.getByRole("button", { name: "Save card", exact: true }).hover();
+  await expect(tooltip).toHaveText("Save the card details without verifying the order. Unfinished cards can be saved.");
+  await verify.click();
+  await expect(review).toHaveCount(0);
+  await page.goto("/ryd?status=verified");
+  await page.getByRole("button", { name: "Review Ryan Fixture", exact: true }).click();
+  await review.getByLabel("Location", { exact: false }).fill("");
+  const saveCard = review.getByRole("button", { name: "Save card", exact: true });
+  await expect(saveCard).toBeDisabled();
+  await review.getByRole("group", { name: "Save card unavailable", exact: true }).hover();
+  await expect(tooltip).toHaveText("Complete or correct these card fields: Location. Every line is required to verify.");
+});
+
+test("previews evidence images above the review and preserves unsaved changes", async ({
+  page,
+  request,
+}, testInfo) => {
+  test.setTimeout(60_000);
+  const imageFile = "synthetic-image-801";
+  const pdfFile = "synthetic-document-801";
+  const image = await readFile("public/crumbled.png");
+  await page.setViewportSize({ width: testInfo.project.name === "chromium-mobile" ? 390 : 1536, height: 900 });
+  await page.route(`**/api/ryd/evidence/${imageFile}`, (route) =>
+    route.fulfill({ contentType: "image/png", body: image }),
+  );
+  await page.route(`**/api/ryd/evidence/${pdfFile}`, (route) =>
+    route.fulfill({ contentType: "application/pdf", body: "%PDF-1.7\nsynthetic file" }),
+  );
+  await reset(request, { evidenceFiles: [imageFile, pdfFile] });
+  await signIn(page);
+  await page.goto("/ryd");
+  await page.getByRole("button", { name: "Upload orders", exact: true }).click();
+  const upload = page.getByRole("dialog", { name: "Upload orders", exact: true });
+  await upload.getByLabel("Order CSV", { exact: false }).setInputFiles({
+    name: "synthetic-ryd.csv", mimeType: "text/csv", buffer: Buffer.from(csv),
+  });
+  await upload.getByRole("button", { name: "Upload", exact: true }).click();
+  await expect(upload).toHaveCount(0);
+  await page.getByRole("button", { name: "Review Ryan Fixture", exact: true }).click();
+  const review = page.getByRole("dialog", { name: "Ryan Fixture Pending", exact: true });
+  await review.getByLabel("Location", { exact: false }).fill("Brooklyn, NY");
+  await review.getByRole("button", { name: "Notes", exact: true }).click();
+  await review.getByLabel("Note", { exact: true }).fill("Keep this unsaved note.");
+  const trigger = review.getByRole("button", { name: "Preview uploaded image 1", exact: true });
+  await expect(review.getByRole("status", { name: "Loading uploaded file 1", exact: true })).toHaveCount(0);
+  await expect(review.getByRole("link", { name: "Open uploaded file 2 in a new tab", exact: true })).toHaveAttribute("href", `/api/ryd/evidence/${pdfFile}`);
+  const sidebar = review.getByRole("region", { name: "Order details", exact: true });
+  const scrollTop = await sidebar.evaluate((element) => element.scrollTop);
+
+  await trigger.click();
+  const preview = page.getByRole("dialog", { name: "Uploaded image 1", exact: true });
+  const fullImage = preview.getByRole("img", { name: "Uploaded image 1", exact: true });
+  await expect.poll(() => fullImage.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);
+  const widths = testInfo.project.name === "chromium-mobile" ? [390] : [1024, 1280, 1536];
+  for (const width of widths) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(preview.getByRole("button", { name: "Close preview", exact: true })).toBeInViewport({ ratio: 1 });
+    await page.screenshot({ path: testInfo.outputPath(`evidence-preview-${width}.png`) });
+  }
+  await page.keyboard.press("Escape");
+  await expect(preview).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+  await expect(review.getByLabel("Location", { exact: false })).toHaveValue("Brooklyn, NY");
+  await expect(review.getByLabel("Note", { exact: true })).toHaveValue("Keep this unsaved note.");
+  if (testInfo.project.name !== "chromium-mobile")
+    expect(await sidebar.evaluate((element) => element.scrollTop)).toBe(scrollTop);
+
+  await trigger.click();
+  await expect.poll(() => fullImage.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);
+  await preview.getByRole("button", { name: "Close preview", exact: true }).click();
+  await expect(preview).toHaveCount(0);
+  await expect(review.getByLabel("Note", { exact: true })).toHaveValue("Keep this unsaved note.");
+
+  await reset(request, { evidenceFiles: [imageFile, pdfFile] });
+  await page.goto("/ryd?view=unmatched&layout=table");
+  await page.getByRole("button", { name: "Preview uploaded image 1", exact: true }).click();
+  await expect(fullImage).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(preview).toHaveCount(0);
+  await page.getByRole("button", { name: "View responses from Ryan Fixture", exact: true }).click();
+  const responses = page.getByRole("dialog", { name: "Responses from Ryan Fixture", exact: true });
+  await responses.getByRole("button", { name: "Preview uploaded image 1", exact: true }).click();
+  await expect(fullImage).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(preview).toHaveCount(0);
+  await expect(responses.getByRole("heading", { name: "Responses from Ryan Fixture", exact: true })).toBeVisible();
+  expect(page.context().pages()).toHaveLength(1);
+});
+
 test("runs review, on-demand files, and independent manual fulfillment stages", async ({
   page,
   request,
@@ -118,6 +339,7 @@ test("runs review, on-demand files, and independent manual fulfillment stages", 
   ).toBeVisible();
   await review.getByRole("button", { name: "Link", exact: true }).click();
   await expect(review.getByText("Linked", { exact: true })).toBeVisible();
+  await review.getByRole("button", { name: "Notes", exact: true }).click();
   await review
     .getByLabel("Note", { exact: true })
     .fill("Checked the synthetic form response.");

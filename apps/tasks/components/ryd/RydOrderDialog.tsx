@@ -1,38 +1,25 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  Button,
-  CopyText,
-  DropdownSelect,
-  Modal,
-  Textarea,
-  toast,
-} from "@ryanmeetup/ui";
+import { Button, DropdownSelect, Modal, toast } from "@ryanmeetup/ui";
 import type { IconType } from "react-icons";
 import {
   FiAlertTriangle,
-  FiCalendar,
   FiCheck,
   FiClock,
-  FiCreditCard,
-  FiFileText,
-  FiHash,
   FiHelpCircle,
   FiInfo,
   FiLink,
   FiMail,
-  FiPackage,
   FiPaperclip,
   FiPlus,
   FiSave,
-  FiSend,
   FiX,
 } from "react-icons/fi";
 import { errorMessage } from "@/lib/presentation";
-import { rydCardComplete, type RydCard } from "@/lib/ryd/card";
+import { rydCardProblems, type RydCard } from "@/lib/ryd/card";
 import type { RydSubmission } from "@/lib/ryd/matching";
-import { formatRydOrderTotal, type RydOrderStatus } from "@/lib/ryd/orders";
+import type { RydOrderStatus } from "@/lib/ryd/orders";
 import type { RydQueueChange } from "@/lib/ryd/queue-reconciliation";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 import { canEmailRydOrder, orderSubmissions } from "@/lib/ryd/queue-view";
@@ -46,13 +33,13 @@ import {
 import {
   RydConfidenceChip,
   RydProductionChip,
-  rydProductionSummary,
   RydStatusChip,
 } from "./RydStatusChip";
 import { rydReminderHasEvidence } from "@/lib/ryd/reminders";
 import { RydCancelDialog } from "./RydCancelDialog";
-import { RydCardFields } from "./RydCardFields";
+import { RydOrderSidebar } from "./RydOrderSidebar";
 import { RydRemindDialog } from "./RydRemindDialog";
+import { RydReviewAction } from "./RydReviewAction";
 import { RydSubmissionCard } from "./RydSubmissionCard";
 
 /**
@@ -69,27 +56,6 @@ export const RYD_DECISIONS: {
   { status: "needs_info", label: "Needs more info", icon: FiHelpCircle },
   { status: "verified", label: "Verify", icon: FiCheck },
 ];
-
-/** One fact about the order: the icon leads, the label is for screen readers. */
-function Detail({
-  icon: Icon,
-  label,
-  children,
-}: {
-  icon: IconType;
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex min-w-0 items-start gap-3">
-      <dt className="mt-0.5 shrink-0 text-black/55 dark:text-white/55">
-        <Icon aria-hidden className="h-4 w-4" />
-        <span className="sr-only">{label}</span>
-      </dt>
-      <dd className="min-w-0 break-words text-sm">{children}</dd>
-    </div>
-  );
-}
 
 /** A reason the form suggested this pairing; caveats get a softer icon. */
 function Reason({ reason }: { reason: string }) {
@@ -202,7 +168,9 @@ export function RydOrderDialog({
     (Object.keys(card) as (keyof RydCard)[]).some(
       (field) => card[field].trim() !== order.card[field],
     );
-  const cardComplete = rydCardComplete(card);
+  const cardProblems = rydCardProblems(card);
+  const cardComplete = cardProblems.length === 0;
+  const cardExplanation = `Complete or correct these card fields: ${cardProblems.join(", ")}. Every line is required to verify.`;
 
   async function saveCard() {
     await run(
@@ -220,6 +188,7 @@ export function RydOrderDialog({
   }
 
   const busy = pending !== null;
+  const busyExplanation = "Wait for the current change to finish saving.";
   // Fulfillment was told, or it's being made: the decision is settled. The
   // routes refuse a change; the buttons just don't offer one.
   const locked = rydDecisionLocked(order);
@@ -251,6 +220,8 @@ export function RydOrderDialog({
       open
       setIsOpen={(open) => !open && !busy && onClose()}
       size="xl"
+      panelClassName="h-[44rem]"
+      bodyClassName="lg:h-full lg:py-0"
       closable={!busy}
       title={
         <span className="flex flex-wrap items-center gap-3">
@@ -261,24 +232,41 @@ export function RydOrderDialog({
       }
       supportingActions={
         canEmailRydOrder(order) && (
-          <Button
+          <RydReviewAction
+            tooltip={
+              busy
+                ? busyExplanation
+                : "Prepare an email draft asking the buyer for verification details. Contact is recorded only after you confirm it was sent."
+            }
             size="sm"
             variant="ghost"
+            className="w-full shrink-0 whitespace-nowrap sm:w-auto"
             leftIcon={<FiMail aria-hidden />}
             disabled={busy}
             onClick={() => setEmailOpen(true)}
           >
             {rydReminderHasEvidence(order) ? "Ask for more" : "Ask to verify"}
-          </Button>
+          </RydReviewAction>
         )
       }
       actions={
-        <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
+        <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
           {!locked &&
             RYD_DECISIONS.filter(({ status }) => status !== order.status).map(
               ({ status, label, icon: Icon }) => (
-                <Button
+                <RydReviewAction
                   key={status}
+                  tooltip={
+                    busy
+                      ? busyExplanation
+                      : status === "verified"
+                        ? cardComplete
+                          ? "Verify this order and approve the card exactly as shown."
+                          : cardExplanation
+                        : status === "rejected"
+                          ? "Prepare cancellation and refund email drafts, then confirm the cancellation."
+                          : "Mark this order as needing more information. Buyer emails are prepared separately."
+                  }
                   type="button"
                   size="sm"
                   variant={
@@ -287,7 +275,6 @@ export function RydOrderDialog({
                       : "secondary"
                   }
                   leftIcon={<Icon aria-hidden />}
-                  // A blank line would print; the card says what's missing.
                   disabled={busy || (status === "verified" && !cardComplete)}
                   loading={pending === status}
                   onClick={() =>
@@ -295,11 +282,20 @@ export function RydOrderDialog({
                   }
                 >
                   {label}
-                </Button>
+                </RydReviewAction>
               ),
             )}
           {!locked && order.status !== "rejected" && cardChanged && (
-            <Button
+            <RydReviewAction
+              tooltip={
+                busy
+                  ? busyExplanation
+                  : order.status === "verified" && !cardComplete
+                    ? cardExplanation
+                    : order.status === "verified"
+                      ? "Save and approve the updated card for printing."
+                      : "Save the card details without verifying the order. Unfinished cards can be saved."
+              }
               type="button"
               size="sm"
               variant="secondary"
@@ -309,10 +305,15 @@ export function RydOrderDialog({
               onClick={saveCard}
             >
               Save card
-            </Button>
+            </RydReviewAction>
           )}
           {order.status !== "pending" && noteChanged && (
-            <Button
+            <RydReviewAction
+              tooltip={
+                busy
+                  ? busyExplanation
+                  : "Save the note without changing the order's verification status."
+              }
               type="button"
               size="sm"
               leftIcon={<FiSave aria-hidden />}
@@ -321,80 +322,26 @@ export function RydOrderDialog({
               onClick={saveNote}
             >
               Save note
-            </Button>
+            </RydReviewAction>
           )}
         </div>
       }
     >
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
-        <section aria-labelledby="ryd-order-heading" className="space-y-5">
-          <h3
-            id="ryd-order-heading"
-            className="text-xs font-semibold uppercase tracking-[0.2em] text-black/70 dark:text-white/70"
-          >
-            Order
-          </h3>
-          <dl className="space-y-3">
-            <Detail icon={FiHash} label="Order number">
-              <CopyText value={order.orderId} label="order number">
-                Order {order.orderId}
-              </CopyText>
-            </Detail>
-            {order.salesOrder && (
-              <Detail icon={FiFileText} label="Sales order number">
-                <CopyText value={order.salesOrder} label="sales order number">
-                  Sales order {order.salesOrder}
-                </CopyText>
-              </Detail>
-            )}
-            <Detail icon={FiMail} label="Email">
-              <span className="break-all">{order.displayEmail}</span>
-            </Detail>
-            <Detail icon={FiCalendar} label="Ordered">
-              {order.orderedAt || "Not given"}
-            </Detail>
-            {order.total && (
-              <Detail icon={FiCreditCard} label="Total">
-                {formatRydOrderTotal(order.total)}
-              </Detail>
-            )}
-            {order.status === "verified" && (
-              <Detail icon={FiPackage} label="Progress">
-                {rydProductionSummary(order)}
-              </Detail>
-            )}
-            {order.lastEmailedAt && (
-              <Detail icon={FiSend} label="Last emailed">
-                Emailed {new Date(order.lastEmailedAt).toLocaleString()}
-              </Detail>
-            )}
-          </dl>
-          {order.status !== "rejected" && (
-            <RydCardFields
-              card={card}
-              hint={order.cardHint}
-              saved={order.cardSaved}
-              disabled={busy}
-              locked={locked}
-              onChange={setCard}
-            />
-          )}
-          <Textarea
-            id="ryd-order-note"
-            name="note"
-            label="Note"
-            rows={4}
-            maxLength={2000}
-            value={note}
-            disabled={busy}
-            onChange={(event) => setNote(event.target.value)}
-            placeholder="What did you check? e.g. gift for her son Ryan."
-          />
-        </section>
+      <div className="grid min-h-0 gap-6 lg:h-full lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
+        <RydOrderSidebar
+          order={order}
+          card={card}
+          note={note}
+          busy={busy}
+          locked={locked}
+          onCardChange={setCard}
+          onNoteChange={setNote}
+        />
 
         <section
           aria-labelledby="ryd-submissions-heading"
-          className="min-w-0 space-y-4"
+          tabIndex={0}
+          className="min-h-0 min-w-0 space-y-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/30 dark:focus-visible:ring-white/40 lg:overflow-y-auto lg:overscroll-contain lg:py-6 lg:pr-1 lg:[scrollbar-gutter:stable]"
         >
           <div className="flex flex-wrap items-center gap-3">
             <h3
@@ -505,7 +452,14 @@ export function RydOrderDialog({
                     disabled={busy}
                   />
                 </div>
-                <Button
+                <RydReviewAction
+                  tooltip={
+                    busy
+                      ? busyExplanation
+                      : !linkChoice
+                        ? "Choose a submission to link to this order first."
+                        : "Link the selected submission to this order without verifying it."
+                  }
                   type="button"
                   size="field"
                   variant="secondary"
@@ -527,7 +481,7 @@ export function RydOrderDialog({
                   }}
                 >
                   Link
-                </Button>
+                </RydReviewAction>
               </div>
             ) : (
               <Button

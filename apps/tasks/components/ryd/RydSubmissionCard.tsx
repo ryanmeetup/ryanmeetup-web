@@ -16,6 +16,7 @@ import { Spinner } from "@ryanmeetup/ui";
 import type { RydSubmission } from "@/lib/ryd/matching";
 import type { SocialLink } from "@/lib/ryd/normalize";
 import { rydSubmissionFileIds } from "@/lib/ryd/submission-view";
+import { RydEvidencePreview } from "./RydEvidencePreview";
 
 export const PLATFORM_ICONS: Record<SocialLink["platform"], ReactNode> = {
   instagram: <FiInstagram aria-hidden />,
@@ -38,7 +39,8 @@ export function noteText(text: string) {
 /**
  * A thumbnail for an uploaded file. The proxy serves images and PDFs, and only
  * the image ones render in an `<img>`, so a file that fails to load as an
- * image falls back to a plain file tile; both open the file in a new tab.
+ * image falls back to a plain file link. Images open in a second modal so the
+ * underlying review stays in place.
  * Files come through Google per request and can take a moment, so the tile
  * spins until the image arrives rather than sitting there blank.
  *
@@ -54,43 +56,62 @@ export function EvidenceTile({
 }) {
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const href = `/api/ryd/evidence/${encodeURIComponent(fileId)}`;
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label={`Open uploaded file ${index + 1} in a new tab`}
-      className="group relative block aspect-square overflow-hidden rounded-xl border border-black/10 bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:border-white/10 dark:bg-white/[0.06] dark:focus-visible:ring-white/40"
-    >
-      {failed ? (
+  const tileClassName =
+    "group relative block w-full aspect-square overflow-hidden rounded-xl border border-black/10 bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:border-white/10 dark:bg-white/[0.06] dark:focus-visible:ring-white/40";
+
+  if (failed && !previewOpen)
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`Open uploaded file ${index + 1} in a new tab`}
+        className={tileClassName}
+      >
         <span className="flex h-full flex-col items-center justify-center gap-2 text-xs font-semibold text-black/60 dark:text-white/60">
           <FiFile aria-hidden className="text-xl" />
           File {index + 1}
         </span>
-      ) : (
-        <>
-          {!loaded && (
-            <span className="absolute inset-0 flex items-center justify-center text-black/50 dark:text-white/55">
-              <Spinner size={22} label={`Loading uploaded file ${index + 1}`} />
-            </span>
-          )}
-          {/* eslint-disable-next-line @next/next/no-img-element -- see above */}
-          <img
-            // A cached image can finish before React attaches onLoad.
-            ref={(img) => {
-              if (img?.complete && img.naturalWidth) setLoaded(true);
-            }}
-            src={href}
-            alt={`Uploaded file ${index + 1}`}
-            loading="lazy"
-            onLoad={() => setLoaded(true)}
-            onError={() => setFailed(true)}
-            className={`h-full w-full object-cover transition duration-300 group-hover:opacity-90 motion-reduce:transition-none ${loaded ? "opacity-100" : "opacity-0"}`}
-          />
-        </>
+      </a>
+    );
+
+  return (
+    <>
+      <button
+        type="button"
+        aria-label={`Preview uploaded image ${index + 1}`}
+        onClick={() => setPreviewOpen(true)}
+        className={`${tileClassName} cursor-zoom-in`}
+      >
+        {!loaded && (
+          <span className="absolute inset-0 flex items-center justify-center text-black/50 dark:text-white/55">
+            <Spinner size={22} label={`Loading uploaded file ${index + 1}`} />
+          </span>
+        )}
+        {/* eslint-disable-next-line @next/next/no-img-element -- see above */}
+        <img
+          // A cached image can finish before React attaches onLoad.
+          ref={(img) => {
+            if (img?.complete && img.naturalWidth) setLoaded(true);
+          }}
+          src={href}
+          alt={`Uploaded file ${index + 1}`}
+          loading="lazy"
+          onLoad={() => setLoaded(true)}
+          onError={() => setFailed(true)}
+          className={`h-full w-full object-cover transition duration-300 group-hover:opacity-90 motion-reduce:transition-none ${loaded ? "opacity-100" : "opacity-0"}`}
+        />
+      </button>
+      {previewOpen && (
+        <RydEvidencePreview
+          fileId={fileId}
+          index={index}
+          onClose={() => setPreviewOpen(false)}
+        />
       )}
-    </a>
+    </>
   );
 }
 
