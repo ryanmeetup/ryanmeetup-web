@@ -68,6 +68,12 @@ export function rydUploadReminderLabel(reminder: RydUploadReminder) {
   return `${WEEKDAY_LABELS[reminder.weekday]}s at ${rydHourLabel(reminder.hour)}`;
 }
 
+/** Keep banner text stable across server/browser locales and ICU punctuation. */
+export function rydUploadDueLabel(since: string, timeZone: string) {
+  const { weekday, hour } = zonedParts(new Date(since), timeZone);
+  return `${WEEKDAY_LABELS[weekday]} at ${rydHourLabel(hour)}`;
+}
+
 /** Whether `now` falls in the reminder's hour. */
 export function isRydUploadReminderSlot(
   reminder: RydUploadReminder,

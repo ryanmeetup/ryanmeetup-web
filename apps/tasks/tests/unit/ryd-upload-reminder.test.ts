@@ -4,6 +4,7 @@ import {
   isRydUploadReminderSlot,
   latestRydUploadReminderSlot,
   rydUploadDueSince,
+  rydUploadDueLabel,
   rydUploadReminderDefaults,
   rydUploadReminderFrom,
   rydUploadReminderLabel,
@@ -33,6 +34,16 @@ describe("RY-D upload reminder", () => {
         upload_reminder_hour: 30,
       }),
     ).toEqual({ enabled: false, weekday: 4, hour: 12 });
+  });
+
+  it.each([
+    ["2026-10-20T16:00:00Z", "America/New_York", "Tuesday at 12 PM"],
+    ["2026-10-21T04:00:00Z", "America/New_York", "Wednesday at 12 AM"],
+    ["2026-10-21T01:00:00Z", "America/New_York", "Tuesday at 9 PM"],
+    ["2026-10-20T16:00:00Z", "Asia/Tokyo", "Wednesday at 1 AM"],
+    ["2026-11-03T17:00:00Z", "America/New_York", "Tuesday at 12 PM"],
+  ])("labels %s in %s as %s", (since, timeZone, label) => {
+    expect(rydUploadDueLabel(since, timeZone)).toBe(label);
   });
 
   it("sends only in the slot's hour, in the workspace zone", () => {

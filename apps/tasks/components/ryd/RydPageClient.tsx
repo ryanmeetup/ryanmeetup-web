@@ -55,6 +55,7 @@ import {
   rydDecisionLocked,
 } from "@/lib/ryd/ryd-decisions";
 import { rydCardComplete } from "@/lib/ryd/card";
+import { rydUploadDueLabel } from "@/lib/ryd/upload-reminder";
 import {
   reconcileRydQueue,
   type RydQueueChange,
@@ -805,11 +806,7 @@ export function RydPageClient({
                   <span>
                     <span className="font-semibold">It&apos;s upload day.</span>{" "}
                     Nothing has been uploaded since{" "}
-                    {new Date(queue.uploadDueSince).toLocaleString(undefined, {
-                      timeZone: queue.timeZone,
-                      weekday: "long",
-                      hour: "numeric",
-                    })}
+                    {rydUploadDueLabel(queue.uploadDueSince, queue.timeZone)}
                     . Check for fulfillment&apos;s new order file and add it
                     here.
                   </span>
