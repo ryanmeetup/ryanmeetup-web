@@ -22,6 +22,7 @@ export {
 } from "./editorChrome";
 export * from "./EmptyState";
 export * from "./ErrorCallout";
+export * from "./FileDropField";
 export * from "./FilterBar";
 export * from "./FilterChip";
 export * from "./FilterPanel";
