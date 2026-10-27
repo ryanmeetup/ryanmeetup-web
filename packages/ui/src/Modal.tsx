@@ -37,6 +37,8 @@ export type ModalProps = {
   /** Footer content that sits above the button rows. */
   footerContent?: ReactNode;
   panelClassName?: string;
+  /** Classes for the padded body, including full-height column layouts. */
+  bodyClassName?: string;
   maxHeight?: string;
   /** An exact width, for the rare panel the `size` scale has no rung for. */
   maxWidth?: string;
@@ -69,6 +71,7 @@ const Modal = ({
   supportingActions,
   footerContent,
   panelClassName,
+  bodyClassName,
   maxHeight,
   maxWidth,
   size = "md",
@@ -143,7 +146,7 @@ const Modal = ({
           onScroll={updateScrollState}
           className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain"
         >
-          <div ref={scrollContentRef} className="p-6">
+          <div ref={scrollContentRef} className={`p-6 ${bodyClassName ?? ""}`}>
             {children}
           </div>
         </div>
