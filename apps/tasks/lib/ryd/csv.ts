@@ -1,12 +1,33 @@
 /**
  * RFC 4180 CSV, kept deliberately small. The fulfillment center reads back the
  * file it sent, so the header order and every cell it wrote survive a round
- * trip untouched; only the `Verified?` column is ever rewritten.
+ * trip; only the `Verified?` column is ever rewritten. The one reading beyond
+ * RFC 4180 is Excel's text wrapper, `="607227"`, which Chipply writes to keep
+ * an order number from turning into a number: the cell is its inner text.
  */
 
 export type CsvTable = { headers: string[]; rows: string[][] };
 
 export class CsvParseError extends Error {}
+
+/**
+ * Text from an uploaded file. Chipply's export is Windows-1252, not UTF-8, so a
+ * file that is not valid UTF-8 is read as Windows-1252 rather than turning
+ * `Pérez` into `P�rez`.
+ */
+export function decodeCsvBytes(bytes: ArrayBuffer | Uint8Array) {
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return new TextDecoder("windows-1252").decode(bytes);
+  }
+}
+
+const EXCEL_TEXT = /^="([^"]*)"$/;
+
+function unwrapExcelText(cell: string) {
+  return EXCEL_TEXT.exec(cell)?.[1] ?? cell;
+}
 
 export function parseCsv(text: string): CsvTable {
   const records: string[][] = [];
@@ -37,19 +58,23 @@ export function parseCsv(text: string): CsvTable {
       throw new CsvParseError(
         "There is unexpected text after a quoted CSV cell. Check the file's quotes.",
       );
-    if (char === '"' && field !== "")
+    // `="607227"` unquoted: drop the `=` and read the rest as a quoted cell.
+    if (char === '"' && field === "=") {
+      quoted = true;
+      field = "";
+    } else if (char === '"' && field !== "")
       throw new CsvParseError(
         "A CSV quote appears inside an unquoted cell. Check the file's quotes.",
       );
-    if (char === '"' && field === "") {
+    else if (char === '"' && field === "") {
       quoted = true;
     } else if (char === ",") {
-      record.push(field);
+      record.push(unwrapExcelText(field));
       field = "";
       closedQuote = false;
     } else if (char === "\n" || char === "\r") {
       if (char === "\r" && source[index + 1] === "\n") index += 1;
-      record.push(field);
+      record.push(unwrapExcelText(field));
       records.push(record);
       record = [];
       field = "";
@@ -63,7 +88,7 @@ export function parseCsv(text: string): CsvTable {
       "A quoted CSV cell was not closed. Check the file's quotes.",
     );
   if (field !== "" || record.length || closedQuote) {
-    record.push(field);
+    record.push(unwrapExcelText(field));
     records.push(record);
   }
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { parseUuid } from "@/lib/api-schema";
 import { isAllowedTasksRequestOrigin } from "@/lib/app-url";
+import { decodeCsvBytes } from "@/lib/ryd/csv";
 import { apiError } from "@/lib/server/api-response";
 import { rydContext } from "@/lib/server/ryd";
 import { importRydOrders } from "@/lib/server/ryd-import";
@@ -80,7 +81,7 @@ export async function POST(request: Request) {
       context.user.id,
       operationId,
       file.name,
-      await file.text(),
+      decodeCsvBytes(await file.arrayBuffer()),
     );
     if (!result.ok) return apiError(400, "INVALID_REQUEST", result.error);
     return NextResponse.json(result);
