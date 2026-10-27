@@ -24,7 +24,6 @@ const REQUIRED_COLUMNS = [
   "BillFirstName",
   "BillLastName",
   "BillEmail",
-  "Verified?",
 ] as const;
 
 export type ParsedRydOrder = {
@@ -39,8 +38,6 @@ export type ParsedRydOrder = {
   total: string;
   items: string;
   delivery: string;
-  /** Already ticked by whoever sent the file. */
-  verified: boolean;
   /** Every cell, keyed by its header, so the export can rebuild the row. */
   raw: Record<string, string>;
 };
@@ -51,7 +48,6 @@ export type RydImportSummary = {
   newCount: number;
   existingCount: number;
   duplicateCount: number;
-  preverifiedCount: number;
 };
 
 export type RydOrderImport =
@@ -128,7 +124,6 @@ export function parseRydOrderCsv(text: string): RydOrderImport {
       total: cell(row, "OrderTotal"),
       items: cell(row, "OrderItems"),
       delivery: cell(row, "Delivery"),
-      verified: cell(row, "Verified?").includes(VERIFIED_MARK),
       raw: Object.fromEntries(
         headers.map((header, column) => [header, row[column] ?? ""]),
       ),

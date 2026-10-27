@@ -28,7 +28,9 @@ export async function importRydOrders(
         firstName: order.firstName,
         lastName: order.lastName,
         email: order.email,
-        verified: order.verified,
+        // Every order arrives unverified; a decision is only ever made here.
+        // The import RPC still takes the flag, so it is always false.
+        verified: false,
         raw: order.raw,
       })),
     },

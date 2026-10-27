@@ -77,13 +77,24 @@ describe("parseRydOrderCsv", () => {
       "1003",
     ]);
     expect(parsed.duplicates).toEqual(["1002"]);
-    expect(parsed.orders[0].verified).toBe(true);
+    // A tick in the file is only carried as a raw cell, never a decision.
+    expect(parsed.orders[0]).not.toHaveProperty("verified");
+    expect(parsed.orders[0].raw["Verified?"]).toBe("✅");
     expect(parsed.orders[1]).toMatchObject({
       firstName: "Ryan",
       lastName: "Sample",
       email: "ryan.sample@test.dev",
     });
     expect(parsed.orders[2].raw.OrderTotal).toBe("1,036.75");
+  });
+
+  it("reads the order summary without a Verified? column", () => {
+    const parsed = parseRydOrderCsv(
+      "OrderId,BillFirstName,BillLastName,BillEmail,OrderTotal\n1001,Ryan,Example,ryan@test.dev,36\n",
+    );
+    if (!parsed.ok) throw new Error(parsed.error);
+    expect(parsed.headers).not.toContain("Verified?");
+    expect(parsed.orders.map((o) => o.orderId)).toEqual(["1001"]);
   });
 
   it("refuses a file that is not the order summary", () => {

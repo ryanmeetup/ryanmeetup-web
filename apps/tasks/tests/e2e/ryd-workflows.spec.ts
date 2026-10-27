@@ -23,7 +23,7 @@ test.beforeEach(async ({ page }, testInfo) => {
 
 const fixtureOrigin = `http://127.0.0.1:${process.env.PLAYWRIGHT_RYD_SUPABASE_PORT ?? 54339}`;
 const csv =
-  "OrderId,BillFirstName,BillLastName,BillEmail,Verified?,OrderTotal\r\n801,Ryan,Fixture,ryan.fixture@example.test,,36\r\n";
+  "OrderId,BillFirstName,BillLastName,BillEmail,OrderTotal\r\n801,Ryan,Fixture,ryan.fixture@example.test,36\r\n";
 const snapshotId = "00000000-0000-4000-8000-000000000801";
 const state = async (request: APIRequestContext) =>
   (await request.get(`${fixtureOrigin}/__ryd/state`)).json();
@@ -44,6 +44,17 @@ async function expectMissingPage(page: Page, path: string) {
     page.getByRole("heading", { name: "404", exact: true }),
   ).toBeVisible();
   await page.waitForLoadState("networkidle");
+}
+/** Imports never carry a decision, so a test verifies the way a reviewer does. */
+async function verifyOrders(page: Page, orderIds: string[]) {
+  for (const orderId of orderIds)
+    expect(
+      (
+        await page.request.patch(`/api/ryd/orders/${orderId}`, {
+          data: { status: "verified" },
+        })
+      ).ok(),
+    ).toBeTruthy();
 }
 async function signIn(page: Page) {
   await page.goto("/login");
@@ -118,7 +129,7 @@ test("runs review, on-demand files, and independent manual fulfillment stages", 
     exact: true,
   });
   await expect(downloadLink).toHaveAttribute("href", /^blob:/);
-  expect(await downloadedCsv(page, downloadLink)).toContain("801,Ryan,Fixture,ryan.fixture@example.test,✅,36");
+  expect(await downloadedCsv(page, downloadLink)).toContain("801,Ryan,Fixture,ryan.fixture@example.test,36,✅");
   const mail = await send.getByRole("link", { name: "Open email", exact: true }).getAttribute("href");
   expect(decodeURIComponent(mail!)).toContain("801 · Ryan Fixture");
   expect((await state(request)).snapshot).toBeNull();
@@ -181,17 +192,18 @@ test("ignores a previously saved email and generates fresh selected files withou
         name: "next-batch.csv",
         mimeType: "text/csv",
         buffer: Buffer.from(
-          "OrderId,BillFirstName,BillLastName,BillEmail,Verified?\r\n" +
-          "801,Ryan,New,new@example.test,✅\r\n" +
-          "802,Ryan,Production,production@example.test,✅\r\n" +
-          "803,Ryan,Done,done@example.test,✅\r\n" +
-          "804,Ryan,Pending,pending@example.test,\r\n" +
-          "805,Ryan,Unselected,unselected@example.test,✅\r\n",
+          "OrderId,BillFirstName,BillLastName,BillEmail\r\n" +
+          "801,Ryan,New,new@example.test\r\n" +
+          "802,Ryan,Production,production@example.test\r\n" +
+          "803,Ryan,Done,done@example.test\r\n" +
+          "804,Ryan,Pending,pending@example.test\r\n" +
+          "805,Ryan,Unselected,unselected@example.test\r\n",
         ),
       },
     },
   });
   expect(imported.ok()).toBeTruthy();
+  await verifyOrders(page, ["801", "802", "803", "805"]);
   const moved = await page.request.post("/api/ryd/production", {
     data: {
       operationId: "00000000-0000-4000-8000-000000000812",
@@ -243,14 +255,15 @@ test("ignores a previously saved email and generates fresh selected files withou
 test("generates a selected batch across pages while respecting the ready filter", async ({ page, request }, testInfo) => {
   await reset(request);
   await signIn(page);
-  const rows = Array.from({ length: 12 }, (_, i) => `${801 + i},Ryan,Ready${i},ready${i}@example.test,✅`);
+  const rows = Array.from({ length: 12 }, (_, i) => `${801 + i},Ryan,Ready${i},ready${i}@example.test`);
   const imported = await page.request.post("/api/ryd/imports", { multipart: {
     operationId: "00000000-0000-4000-8000-000000000831",
     file: { name: "selection.csv", mimeType: "text/csv", buffer: Buffer.from(
-      "OrderId,BillFirstName,BillLastName,BillEmail,Verified?\r\n" + rows.join("\r\n") + "\r\n900,Ryan,Existing,existing@example.test,✅\r\n",
+      "OrderId,BillFirstName,BillLastName,BillEmail\r\n" + rows.join("\r\n") + "\r\n900,Ryan,Existing,existing@example.test\r\n",
     ) },
   } });
   expect(imported.ok()).toBeTruthy();
+  await verifyOrders(page, [...Array.from({ length: 12 }, (_, i) => String(801 + i)), "900"]);
   expect((await page.request.post("/api/ryd/production", { data: {
     operationId: "00000000-0000-4000-8000-000000000832",
     moves: [{ orderId: "900", from: "not-started", to: "in-production" }],
@@ -288,9 +301,10 @@ test("generates the linked Ryan recipient and rerolls a fresh gift email", async
   expect((await page.request.post("/api/ryd/imports", { multipart: {
     operationId: "00000000-0000-4000-8000-000000000841",
     file: { name: "gift.csv", mimeType: "text/csv", buffer: Buffer.from(
-      "OrderId,BillFirstName,BillLastName,BillEmail,Verified?\r\n801,Brooke,Ericson,ryan.fixture@example.test,✅\r\n",
+      "OrderId,BillFirstName,BillLastName,BillEmail\r\n801,Brooke,Ericson,ryan.fixture@example.test\r\n",
     ) },
   } })).ok()).toBeTruthy();
+  await verifyOrders(page, ["801"]);
   expect((await page.request.post("/api/ryd/orders/801/links", { data: {
     submissionKeys: ["synthetic-response-801"], source: "manual",
   } })).ok()).toBeTruthy();
@@ -323,15 +337,16 @@ test("sorts the production column by stage and sent date", async ({ page, reques
         name: "production-sort.csv",
         mimeType: "text/csv",
         buffer: Buffer.from(
-          "OrderId,BillFirstName,BillLastName,BillEmail,Verified?\r\n" +
-          "801,Ryan,Waiting,waiting@example.test,✅\r\n" +
-          "802,Ryan,Sent,sent@example.test,✅\r\n" +
-          "803,Ryan,Done,done@example.test,✅\r\n",
+          "OrderId,BillFirstName,BillLastName,BillEmail\r\n" +
+          "801,Ryan,Waiting,waiting@example.test\r\n" +
+          "802,Ryan,Sent,sent@example.test\r\n" +
+          "803,Ryan,Done,done@example.test\r\n",
         ),
       },
     },
   });
   expect(imported.ok()).toBeTruthy();
+  await verifyOrders(page, ["801", "802", "803"]);
   expect((await page.request.post("/api/ryd/production", {
     data: {
       operationId: "00000000-0000-4000-8000-000000000822",
@@ -443,7 +458,7 @@ test("decides selected orders together after confirming missing evidence", async
   await upload.getByLabel("Order CSV", { exact: false }).setInputFiles({
     name: "synthetic-bulk.csv",
     mimeType: "text/csv",
-    buffer: Buffer.from(`${csv}802,Ryan,Second,second@example.test,,36\r\n`),
+    buffer: Buffer.from(`${csv}802,Ryan,Second,second@example.test,36\r\n`),
   });
   await upload.getByRole("button", { name: "Upload", exact: true }).click();
   await expect(upload).toHaveCount(0);
@@ -503,9 +518,9 @@ test("emails every selected pending buyer in one Bcc draft and marks them contac
     name: "synthetic-pending.csv",
     mimeType: "text/csv",
     buffer: Buffer.from(
-      "OrderId,BillFirstName,BillLastName,BillEmail,Verified?\r\n" +
-        "802,Ryan,Second,second@example.test,\r\n" +
-        "803,Ryan,Third,third@example.test,\r\n",
+      "OrderId,BillFirstName,BillLastName,BillEmail\r\n" +
+        "802,Ryan,Second,second@example.test\r\n" +
+        "803,Ryan,Third,third@example.test\r\n",
     ),
   });
   await upload.getByRole("button", { name: "Upload", exact: true }).click();

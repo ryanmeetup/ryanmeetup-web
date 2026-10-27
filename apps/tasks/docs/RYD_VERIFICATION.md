@@ -88,10 +88,13 @@ uses, set in /admin/usage).
    Files are limited to 2 MB before multipart parsing. Invalid quotes, uneven
    rows, repeated column names, and missing or overlong order IDs are reported
    before any writes.
-   A ✅ fulfillment already put in the file imports as
-   verified, but with nothing linked; it is still offered a suggestion, and
-   **Link** on that submission pairs it. A decided order only offers the
-   other decisions, plus **Save note** when its note changes.
+   The file needs `OrderId`, `BillFirstName`, `BillLastName`, and `BillEmail`;
+   a `Verified?` column is optional. Every new order imports as pending — a
+   ✅ already in the file is kept only as a cell, never as a decision. The
+   queue reloads as soon as the import finishes, so each new order is matched
+   against the form's existing responses straight away and arrives with its
+   suggestion. **Link** on that submission pairs it. A decided order only
+   offers the other decisions, plus **Save note** when its note changes.
 2. **Review.** The RY-dentification form is the source of truth. Its
    responses are read through the Google Forms API, with up to ten seconds of
    server-memory reuse between reads — not from the

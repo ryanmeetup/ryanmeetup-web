@@ -473,7 +473,8 @@ describe("RY-D routes", () => {
           expect.objectContaining({
             orderId: "1001",
             email: "ryan@example.test",
-            verified: true,
+            // A tick left in fulfillment's file is not a decision.
+            verified: false,
           }),
         ],
       }),

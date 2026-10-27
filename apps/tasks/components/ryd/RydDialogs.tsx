@@ -44,8 +44,6 @@ function importSummary(result: RydImportSummary) {
   ];
   if (result.existingCount)
     parts.push(`${result.existingCount} already in the queue`);
-  if (result.preverifiedCount)
-    parts.push(`${result.preverifiedCount} already ticked by fulfillment`);
   if (result.duplicateCount)
     parts.push(`${result.duplicateCount} repeated in the file`);
   return `${parts.join(", ")}.`;
@@ -68,7 +66,7 @@ export function RydUploadDialog({
       open
       setIsOpen={(open) => !open && !saving && onClose()}
       title="Upload orders"
-      description="The order summary CSV fulfillment sends each week. Orders already in the queue keep their decisions; only new ones are added."
+      description="The order summary CSV fulfillment sends each week. New orders start pending and are matched to form responses right away; orders already in the queue keep their decisions."
       closable={!saving}
       formId={UPLOAD_FORM}
       onSubmit={async (event) => {
