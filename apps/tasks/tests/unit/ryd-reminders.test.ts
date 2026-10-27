@@ -22,6 +22,14 @@ const order = (overrides: Partial<RydQueueOrder> = {}): RydQueueOrder => ({
   doneAt: null,
   linkedKeys: [],
   suggestion: null,
+  card: {
+    firstName: "Ryan",
+    lastName: "Example",
+    location: "Chicago",
+    ryanSince: "1999",
+  },
+  cardSaved: true,
+  cardHint: { birthday: "", yearSuggestion: null, nameFrom: "options" },
   ...overrides,
 });
 

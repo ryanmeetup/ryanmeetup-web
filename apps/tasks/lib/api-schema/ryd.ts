@@ -18,18 +18,48 @@ import {
   rydBodyBytes,
   type RydProductionMove,
 } from "@/lib/ryd/bulk-operations";
+import {
+  normalizeRydCard,
+  RYD_CARD_FIELDS,
+  RYD_CARD_LIMITS,
+  type RydCard,
+} from "@/lib/ryd/card";
 
-/** A decision, a note, or both. An empty note clears it. */
+/**
+ * Every line of a card, each a string within its limit. Completeness is the
+ * database's call: an unfinished card can be saved, not verified.
+ */
+function rydCardSchema(value: unknown): RydCard | null {
+  if (!isJsonObject(value)) return null;
+  const keys = Object.keys(value);
+  if (
+    keys.length !== RYD_CARD_FIELDS.length ||
+    RYD_CARD_FIELDS.some(
+      ([field]) =>
+        typeof value[field] !== "string" ||
+        String(value[field]).trim().length > RYD_CARD_LIMITS[field],
+    )
+  )
+    return null;
+  const card = normalizeRydCard(value as RydCard);
+  return /^(\d{4})?$/.test(card.ryanSince) ? card : null;
+}
+
+/**
+ * A decision, a note, a card, or any of them together. An empty note clears
+ * it; verifying sends the card being approved.
+ */
 export function rydDecisionSchema(value: unknown) {
   if (!isJsonObject(value)) return null;
   const keys = Object.keys(value);
   if (
-    (!("status" in value) && !("note" in value)) ||
+    (!("status" in value) && !("note" in value) && !("card" in value)) ||
     keys.some(
       (key) =>
         ![
           "status",
           "note",
+          "card",
           "expectedStatus",
           "expectedUpdatedAt",
           "submissionKeys",
@@ -43,6 +73,7 @@ export function rydDecisionSchema(value: unknown) {
     expectedStatus?: RydOrderStatus;
     expectedUpdatedAt?: string;
     submissionKeys?: string[];
+    card?: RydCard;
   } = {};
   if ("expectedStatus" in value) {
     if (!RYD_ORDER_STATUSES.includes(value.expectedStatus as RydOrderStatus))
@@ -81,6 +112,11 @@ export function rydDecisionSchema(value: unknown) {
     const note = value.note?.trim() ?? "";
     if (note.length > 2000) return null;
     parsed.note = note || null;
+  }
+  if ("card" in value) {
+    const card = rydCardSchema(value.card);
+    if (!card) return null;
+    parsed.card = card;
   }
   return parsed;
 }

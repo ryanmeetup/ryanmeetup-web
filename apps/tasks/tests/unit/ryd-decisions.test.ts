@@ -36,6 +36,15 @@ describe("RY-D decisions", () => {
         confidence: "strong",
         reasons: [],
       },
+
+      card: {
+        firstName: "Ryan",
+        lastName: "Example",
+        location: "Chicago",
+        ryanSince: "1999",
+      },
+      cardSaved: true,
+      cardHint: { birthday: "", yearSuggestion: null, nameFrom: "options" },
     };
     const submissions = [
       { key: "first-response", email: "ryan@example.com" },
@@ -65,6 +74,8 @@ describe("RY-D decisions", () => {
         note: "Checked",
         expectedStatus: "pending",
         expectedUpdatedAt: order.updatedAt,
+        // Verifying approves the card as shown.
+        card: order.card,
         submissionKeys: ["first-response", "second-response"],
       }),
     });

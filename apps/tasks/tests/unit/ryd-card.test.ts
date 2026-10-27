@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { rydDecisionSchema } from "@/lib/api-schema";
 import {
   birthYear,
   normalizeRydCard,
@@ -133,5 +134,46 @@ describe("card completeness", () => {
         card_ryan_since: "1999",
       }),
     ).toEqual(card);
+  });
+});
+
+describe("card decisions", () => {
+  const card = {
+    firstName: " Ryan ",
+    lastName: "Le",
+    location: "Chicago",
+    ryanSince: "1999",
+  };
+
+  it("accepts a card alone or with a decision, trimmed", () => {
+    expect(rydDecisionSchema({ card })).toEqual({
+      card: { ...card, firstName: "Ryan" },
+    });
+    expect(rydDecisionSchema({ status: "verified", card })).toMatchObject({
+      status: "verified",
+      card: { firstName: "Ryan" },
+    });
+  });
+
+  it("refuses a partial card, a long line, or a year that isn't four digits", () => {
+    const partial = {
+      firstName: card.firstName,
+      lastName: card.lastName,
+      location: card.location,
+    };
+    expect(rydDecisionSchema({ card: partial })).toBeNull();
+    expect(
+      rydDecisionSchema({ card: { ...card, location: "x".repeat(121) } }),
+    ).toBeNull();
+    expect(
+      rydDecisionSchema({ card: { ...card, ryanSince: "76" } }),
+    ).toBeNull();
+    expect(rydDecisionSchema({ card: { ...card, extra: "line" } })).toBeNull();
+  });
+
+  it("still allows an unfinished card to be saved", () => {
+    expect(
+      rydDecisionSchema({ card: { ...card, location: "", ryanSince: "" } }),
+    ).not.toBeNull();
   });
 });

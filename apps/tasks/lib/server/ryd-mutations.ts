@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { RydCard } from "@/lib/ryd/card";
 import { apiError, databaseFailure } from "./api-response";
 import { loadRydSettings } from "./ryd";
 import { loadRydGoogleIntegration, readRydSubmissions } from "./ryd-google";
@@ -110,6 +111,7 @@ export async function reviewRydOrder(
     note?: string | null;
     expectedStatus?: string;
     expectedUpdatedAt?: string;
+    card?: RydCard;
   },
   keys: string[],
 ) {

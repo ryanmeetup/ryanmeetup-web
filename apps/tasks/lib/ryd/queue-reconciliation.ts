@@ -1,3 +1,4 @@
+import { savedRydCard } from "./card";
 import {
   groupSubmissions,
   suggestMatches,
@@ -15,6 +16,10 @@ export type RydReviewResult = {
     decided_at: string | null;
     decided_by: string | null;
     updated_at: string;
+    card_first_name?: string | null;
+    card_last_name?: string | null;
+    card_location?: string | null;
+    card_ryan_since?: string | null;
   };
 };
 
@@ -66,6 +71,7 @@ export function reconcileRydQueue(
   switch (change.type) {
     case "review": {
       const row = change.result.order;
+      const card = savedRydCard(row);
       queue = {
         ...queue,
         orders: queue.orders.map((order) =>
@@ -77,6 +83,7 @@ export function reconcileRydQueue(
                 decidedAt: row.decided_at,
                 decidedBy: row.decided_by,
                 updatedAt: row.updated_at,
+                ...(card ? { card, cardSaved: true } : {}),
               }
             : order,
         ),

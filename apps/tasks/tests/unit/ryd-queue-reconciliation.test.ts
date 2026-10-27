@@ -37,6 +37,14 @@ const order: RydQueueOrder = {
   doneAt: null,
   linkedKeys: [],
   suggestion: null,
+  card: {
+    firstName: "Ryan",
+    lastName: "Example",
+    location: "Chicago",
+    ryanSince: "1999",
+  },
+  cardSaved: true,
+  cardHint: { birthday: "", yearSuggestion: null, nameFrom: "options" },
 };
 function queue() {
   return withRydQueueMatches({
@@ -87,6 +95,36 @@ describe("RY-D confirmed queue writes", () => {
     });
     expect(saved.orders[1].suggestion).toBeNull();
     expect(queue().orders[0].status).toBe("pending");
+  });
+  it("takes the saved card from the review result", () => {
+    const saved = reconcileRydQueue(queue(), {
+      type: "review",
+      result: {
+        ok: true,
+        order: {
+          order_id: "1001",
+          status: "pending",
+          note: null,
+          decided_at: null,
+          decided_by: null,
+          updated_at: "new",
+          card_first_name: "Ryan",
+          card_last_name: "Pérez",
+          card_location: "Cleveland Ohio",
+          card_ryan_since: "",
+        },
+      },
+      linkedKeys: [],
+    });
+    expect(saved.orders[0]).toMatchObject({
+      card: {
+        firstName: "Ryan",
+        lastName: "Pérez",
+        location: "Cleveland Ohio",
+        ryanSince: "",
+      },
+      cardSaved: true,
+    });
   });
   it("recomputes suggestions on both linking and unlinking without duplicating evidence", () => {
     const change = {

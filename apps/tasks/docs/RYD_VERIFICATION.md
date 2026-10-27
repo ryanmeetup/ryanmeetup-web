@@ -136,6 +136,27 @@ uses, set in /admin/usage).
    Select orders in the queue to apply one decision together, then confirm.
    The confirmation flags missing evidence and skips orders already with
    fulfillment or in production. Failed decisions remain selected to retry.
+
+   **The card.** Each order's review shows the card fulfillment prints:
+   first name, last name, location, and Ryan since. Until someone saves it,
+   the card is a draft read from Chipply's `Options Detail` column
+   (`[First Name : Ryan] [Last Name : Le] [Location : Brooklyn, NY]
+   [Full Birthday : 04/07/1999]`). Location is kept as typed. Ryan since is
+   filled only from a four-digit birthday year; a two-digit year such as
+   `07/14/76` offers **Use 1976** for a person to accept, and a birthday
+   with no year, such as `Dec 3`, is left blank. An export without
+   `Options Detail` falls back to the billing name, which is wrong for a
+   gift, and the dialog says so.
+
+   **Save card** stores an unfinished card. Verify approves the card as
+   shown and is unavailable until every line is filled with a four-digit
+   year; the database refuses a blank line too, so whatever was approved is
+   exactly what gets printed. Changing a verified card re-approves it.
+   Once an order is with fulfillment its card is frozen, and a cancelled
+   order has none. The queue marks rows whose card is unfinished, and bulk
+   Verify leaves them selected rather than verifying them. Orders verified
+   before cards existed have no saved card; open and save one before
+   they can be printed.
 3. **Follow up.** The Follow-up view lists orders asked for more, or with
    nothing on the form. **Email** on a row and the review dialog's ask
    action open the same draft workflow as **Email everyone** and **Email

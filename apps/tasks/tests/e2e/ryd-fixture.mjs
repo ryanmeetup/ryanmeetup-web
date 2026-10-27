@@ -77,6 +77,10 @@ export function createRydFixture(json, readBody, profile) {
     decided_at: order.decided_at,
     decided_by: order.decided_by,
     updated_at: order.updated_at,
+    card_first_name: order.card_first_name ?? null,
+    card_last_name: order.card_last_name ?? null,
+    card_location: order.card_location ?? null,
+    card_ryan_since: order.card_ryan_since ?? null,
     linked_keys: state.links
       .filter((link) => link.order_id === order.order_id)
       .map((link) => link.submission_key),
@@ -367,8 +371,38 @@ export function createRydFixture(json, readBody, profile) {
           error(response, "RY404", "Order missing", 404);
           return true;
         }
-        state.orders[index] = changedOrder({
+        // As the database does: verifying stores the card and needs every line.
+        const card = body.requested_patch.card;
+        const next = {
           ...order,
+          ...(card
+            ? {
+                card_first_name: card.firstName,
+                card_last_name: card.lastName,
+                card_location: card.location,
+                card_ryan_since: card.ryanSince,
+              }
+            : {}),
+        };
+        if (
+          body.requested_patch.status === "verified" &&
+          !(
+            next.card_first_name &&
+            next.card_last_name &&
+            next.card_location &&
+            /^\d{4}$/.test(next.card_ryan_since ?? "")
+          )
+        ) {
+          error(
+            response,
+            "RY400",
+            "Fill in every line of the card, with a four-digit Ryan since year, before verifying.",
+            400,
+          );
+          return true;
+        }
+        state.orders[index] = changedOrder({
+          ...next,
           status: body.requested_patch.status ?? order.status,
           note: body.requested_patch.note ?? order.note,
           decided_at: NOW,

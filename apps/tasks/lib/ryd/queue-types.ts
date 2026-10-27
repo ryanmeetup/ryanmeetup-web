@@ -1,3 +1,4 @@
+import type { RydCard, RydCardHint } from "./card";
 import type { RydMatchSuggestion, RydSubmission } from "./matching";
 import type { RydOrderStatus } from "./orders";
 import type { RydUploadReminder } from "./upload-reminder";
@@ -35,6 +36,10 @@ export type RydQueueOrder = {
   doneAt: string | null;
   linkedKeys: string[];
   suggestion: RydMatchSuggestion | null;
+  /** The saved card, or the draft read from the export until one is saved. */
+  card: RydCard;
+  cardSaved: boolean;
+  cardHint: RydCardHint;
 };
 
 /** How often someone with no matching order has been emailed, and when last. */

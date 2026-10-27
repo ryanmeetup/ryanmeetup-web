@@ -14,6 +14,7 @@ for (const file of [
   "ryd-manual-fulfillment.sql",
   "ryd-import-reminders.sql",
   "ryd-bulk-operations.sql",
+  "ryd-cards.sql",
 ]) {
   const tap = spawnSync(
     "supabase",
@@ -163,7 +164,8 @@ try {
       values('20000000-0000-4000-8000-000000000291','race.csv','[]',2,2,'${actor}');
     insert into public.ryd_orders(order_id,raw,first_import_id) values
       ('race-1','{}','20000000-0000-4000-8000-000000000291'),
-      ('race-2','{}','20000000-0000-4000-8000-000000000291');`);
+      ('race-2','{}','20000000-0000-4000-8000-000000000291');
+    update public.ryd_orders set card_first_name='Ryan',card_last_name='Test',card_location='Testville',card_ryan_since='1999';`);
   await race(
     `select public.ryd_change_submission('${actor}','race-1','race-response','link','${form}')`,
     `select public.ryd_change_submission('${actor}','race-2','race-response','link','${form}')`,

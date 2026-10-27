@@ -15,6 +15,7 @@ import {
 import { digestDefaults } from "@/lib/digest/digest-settings";
 import { withRydQueueMatches } from "@/lib/ryd/queue-reconciliation";
 import { csvRecordCell } from "@/lib/ryd/csv";
+import { rydCardDraft, savedRydCard } from "@/lib/ryd/card";
 import { type RydOrderStatus } from "@/lib/ryd/orders";
 import { getAdminClient } from "./admin-client";
 import { apiError, forbidden, notFound } from "./api-response";
@@ -92,8 +93,27 @@ export type RydOrderRow = {
   /** Absent until the production migration is applied. */
   production_sent_at?: string | null;
   done_at?: string | null;
+  /** Absent until the card migration is applied; NULL until a card is saved. */
+  card_first_name?: string | null;
+  card_last_name?: string | null;
+  card_location?: string | null;
+  card_ryan_since?: string | null;
   created_at: string;
 };
+
+/** The card an order shows: what was saved, else the export's draft. */
+export function rydQueueCard(row: RydOrderRow) {
+  const draft = rydCardDraft(row.raw, {
+    firstName: row.first_name,
+    lastName: row.last_name,
+  });
+  const saved = savedRydCard(row);
+  return {
+    card: saved ?? draft.card,
+    cardSaved: Boolean(saved),
+    cardHint: draft.hint,
+  };
+}
 
 export async function loadRydSettings(
   admin: SupabaseClient,
@@ -327,6 +347,7 @@ export async function loadRydQueue(
       ]),
     ),
     orders: rows.map((row) => ({
+      ...rydQueueCard(row),
       orderId: row.order_id,
       salesOrder: row.sales_order,
       orderedAt: row.ordered_at,

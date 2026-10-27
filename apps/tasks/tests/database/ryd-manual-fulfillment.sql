@@ -19,6 +19,8 @@ insert into public.ryd_orders(order_id,raw,first_import_id,status) values
   ('snapshot-1','{"OrderId":"snapshot-1"}','20000000-0000-4000-8000-000000000301','verified'),
   ('snapshot-2','{"OrderId":"snapshot-2"}','20000000-0000-4000-8000-000000000301','pending'),
   ('snapshot-3','{"OrderId":"snapshot-3"}','20000000-0000-4000-8000-000000000301','pending');
+-- Verifying needs a complete card; these orders arrive with one.
+update public.ryd_orders set card_first_name = 'Ryan', card_last_name = 'Test', card_location = 'Testville', card_ryan_since = '1999';
 select public.ryd_change_submission('00000000-0000-4000-8000-000000000301','snapshot-1','snapshot-response','link',repeat('f',30));
 insert into public.ryd_orders(order_id,raw,first_import_id,status,production_sent_at,done_at) values
   ('snapshot-production','{}','20000000-0000-4000-8000-000000000301','verified',now(),null),

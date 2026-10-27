@@ -54,6 +54,7 @@ import {
   decideRydOrder,
   rydDecisionLocked,
 } from "@/lib/ryd/ryd-decisions";
+import { rydCardComplete } from "@/lib/ryd/card";
 import {
   reconcileRydQueue,
   type RydQueueChange,
@@ -525,11 +526,27 @@ export function RydPageClient({
 
   const selectedStages = new Set(selectedOrders.map(rydFulfillmentStage));
 
-  /** The selected orders a decision would change; final ones are left alone. */
+  /**
+   * The selected orders a decision would change. Final ones are left alone,
+   * and an unfinished card is never verified: it would print a blank line.
+   */
   function decidable(target: RydOrderStatus) {
     return selectedOrders.filter(
-      (order) => order.status !== target && !rydDecisionLocked(order),
+      (order) =>
+        order.status !== target &&
+        !rydDecisionLocked(order) &&
+        (target !== "verified" || rydCardComplete(order.card)),
     );
+  }
+  function unfinishedCards(target: RydOrderStatus) {
+    return target === "verified"
+      ? selectedOrders.filter(
+          (order) =>
+            order.status !== target &&
+            !rydDecisionLocked(order) &&
+            !rydCardComplete(order.card),
+        )
+      : [];
   }
 
   /**
@@ -538,6 +555,7 @@ export function RydPageClient({
    */
   async function decideSelected(target: RydOrderStatus) {
     const orders = decidable(target);
+    const unfinished = unfinishedCards(target).map((order) => order.orderId);
     setDecisionPending(true);
     const failed: string[] = [];
     let lastError: unknown;
@@ -553,7 +571,7 @@ export function RydPageClient({
     } catch {
       // The decisions saved; a reload shows them.
     }
-    setSelected(new Set(failed));
+    setSelected(new Set([...failed, ...unfinished]));
     setDeciding(null);
     setDecisionPending(false);
     const saved = orders.length - failed.length;
@@ -571,6 +589,7 @@ export function RydPageClient({
   }
 
   const decidingOrders = deciding ? decidable(deciding) : [];
+  const decidingUnfinished = deciding ? unfinishedCards(deciding).length : 0;
   const decidingSkipped = deciding
     ? selectedOrders.filter(rydDecisionLocked).length
     : 0;
@@ -1346,6 +1365,9 @@ export function RydPageClient({
                   : `Each one is marked ${RYD_STATUS_LABELS[deciding].toLowerCase()}.`,
                 decidingBare
                   ? `${decidingBare} ha${decidingBare === 1 ? "s" : "ve"} nothing on the form.`
+                  : "",
+                decidingUnfinished
+                  ? `${decidingUnfinished} with an unfinished card ${decidingUnfinished === 1 ? "stays" : "stay"} selected. Finish each card in its review to verify it.`
                   : "",
                 decidingSkipped
                   ? `${decidingSkipped} already with fulfillment or in production ${decidingSkipped === 1 ? "is" : "are"} left alone.`

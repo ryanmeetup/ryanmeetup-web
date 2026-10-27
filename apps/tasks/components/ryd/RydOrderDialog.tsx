@@ -30,6 +30,7 @@ import {
   FiX,
 } from "react-icons/fi";
 import { errorMessage } from "@/lib/presentation";
+import { rydCardComplete, type RydCard } from "@/lib/ryd/card";
 import type { RydSubmission } from "@/lib/ryd/matching";
 import { formatRydOrderTotal, type RydOrderStatus } from "@/lib/ryd/orders";
 import type { RydQueueChange } from "@/lib/ryd/queue-reconciliation";
@@ -38,6 +39,7 @@ import { canEmailRydOrder, orderSubmissions } from "@/lib/ryd/queue-view";
 import {
   changeRydLinks,
   decideRydOrder,
+  saveRydCard,
   saveRydNote,
   rydDecisionLocked,
 } from "@/lib/ryd/ryd-decisions";
@@ -49,6 +51,7 @@ import {
 } from "./RydStatusChip";
 import { rydReminderHasEvidence } from "@/lib/ryd/reminders";
 import { RydCancelDialog } from "./RydCancelDialog";
+import { RydCardFields } from "./RydCardFields";
 import { RydRemindDialog } from "./RydRemindDialog";
 import { RydSubmissionCard } from "./RydSubmissionCard";
 
@@ -125,6 +128,7 @@ export function RydOrderDialog({
   onApplied: (change: RydQueueChange) => void;
 }) {
   const [note, setNote] = useState(order.note ?? "");
+  const [card, setCard] = useState<RydCard>(order.card);
   const [pending, setPending] = useState<string | null>(null);
   const [linkChoice, setLinkChoice] = useState("");
   const [emailOpen, setEmailOpen] = useState(false);
@@ -182,9 +186,9 @@ export function RydOrderDialog({
   async function decide(status: RydOrderStatus) {
     const saved = await run(
       status,
-      () => decideRydOrder(order, submissions, status, note),
+      () => decideRydOrder(order, submissions, status, note, card),
       status === "verified"
-        ? `${order.firstName} ${order.lastName} is verified.`
+        ? `${card.firstName} ${card.lastName} is verified.`
         : status === "rejected"
           ? "Order cancelled."
           : "Decision saved.",
@@ -193,6 +197,22 @@ export function RydOrderDialog({
   }
 
   const noteChanged = note.trim() !== (order.note ?? "");
+  const cardChanged =
+    !order.cardSaved ||
+    (Object.keys(card) as (keyof RydCard)[]).some(
+      (field) => card[field].trim() !== order.card[field],
+    );
+  const cardComplete = rydCardComplete(card);
+
+  async function saveCard() {
+    await run(
+      "card",
+      () => saveRydCard(order, card),
+      order.status === "verified"
+        ? "Card saved. That's what fulfillment will print."
+        : "Card saved.",
+    );
+  }
 
   async function saveNote() {
     if (await run("note", () => saveRydNote(order, note), "Note saved."))
@@ -267,7 +287,8 @@ export function RydOrderDialog({
                       : "secondary"
                   }
                   leftIcon={<Icon aria-hidden />}
-                  disabled={busy}
+                  // A blank line would print; the card says what's missing.
+                  disabled={busy || (status === "verified" && !cardComplete)}
                   loading={pending === status}
                   onClick={() =>
                     status === "rejected" ? setCancelOpen(true) : decide(status)
@@ -277,6 +298,19 @@ export function RydOrderDialog({
                 </Button>
               ),
             )}
+          {!locked && order.status !== "rejected" && cardChanged && (
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              leftIcon={<FiSave aria-hidden />}
+              disabled={busy || (order.status === "verified" && !cardComplete)}
+              loading={pending === "card"}
+              onClick={saveCard}
+            >
+              Save card
+            </Button>
+          )}
           {order.status !== "pending" && noteChanged && (
             <Button
               type="button"
@@ -335,6 +369,16 @@ export function RydOrderDialog({
               </Detail>
             )}
           </dl>
+          {order.status !== "rejected" && (
+            <RydCardFields
+              card={card}
+              hint={order.cardHint}
+              saved={order.cardSaved}
+              disabled={busy}
+              locked={locked}
+              onChange={setCard}
+            />
+          )}
           <Textarea
             id="ryd-order-note"
             name="note"

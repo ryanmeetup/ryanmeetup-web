@@ -23,6 +23,8 @@ insert into public.ryd_orders(order_id, raw, first_import_id) values
   ('test-1', '{}', '20000000-0000-4000-8000-000000000201'),
   ('test-2', '{}', '20000000-0000-4000-8000-000000000201'),
   ('test-3', '{}', '20000000-0000-4000-8000-000000000201');
+-- Verifying needs a complete card; these orders arrive with one.
+update public.ryd_orders set card_first_name = 'Ryan', card_last_name = 'Test', card_location = 'Testville', card_ryan_since = '1999';
 
 select lives_ok($$select public.ryd_change_submission('00000000-0000-4000-8000-000000000201', 'test-1', 'zzz-claimed', 'link', repeat('f', 30))$$, 'links a response');
 select lives_ok($$select public.ryd_change_submission('00000000-0000-4000-8000-000000000201', 'test-1', 'zzz-claimed', 'link', repeat('f', 30))$$, 'repeating a link is idempotent');

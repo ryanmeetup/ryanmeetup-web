@@ -1,5 +1,6 @@
 import { Fragment, type ReactNode } from "react";
 import {
+  FiAlertTriangle,
   FiArrowDown,
   FiArrowUp,
   FiCheck,
@@ -17,7 +18,9 @@ import {
   DropdownMenuSeparator,
 } from "@ryanmeetup/ui";
 import { formatRydDay } from "@/lib/ryd/form-responses";
+import { rydCardComplete, rydCardProblems } from "@/lib/ryd/card";
 import { canEmailRydOrder } from "@/lib/ryd/queue-view";
+import { rydDecisionLocked } from "@/lib/ryd/ryd-decisions";
 import type { RyanPosition } from "@/lib/ryd/normalize";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 import type { RydSort, RydSortKey } from "@/lib/ryd/queue-view";
@@ -320,6 +323,25 @@ export function RydOrderTable({
                   </td>
                   <td className="px-3 py-2.5">
                     <RydStatusChip status={order.status} />
+                    {/* Verified before cards existed: nothing approved to print. */}
+                    {order.status !== "rejected" &&
+                      !rydDecisionLocked(order) &&
+                      (!rydCardComplete(order.card) ||
+                        (order.status === "verified" && !order.cardSaved)) && (
+                        <span
+                          className="mt-1 flex items-center gap-1 truncate text-xs text-black/70 dark:text-white/70"
+                          title={
+                            rydCardComplete(order.card)
+                              ? "Open the review and save the card to approve it for printing"
+                              : `Card needs ${rydCardProblems(order.card).join(", ")}`
+                          }
+                        >
+                          <FiAlertTriangle aria-hidden className="shrink-0" />
+                          {rydCardComplete(order.card)
+                            ? "Card not approved"
+                            : "Card unfinished"}
+                        </span>
+                      )}
                     {order.lastEmailedAt && canEmailRydOrder(order) && (
                       <span
                         className="mt-1 flex items-center gap-1 truncate text-xs text-black/70 dark:text-white/70"

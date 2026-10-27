@@ -1,6 +1,7 @@
 "use client";
 
 import { mutate } from "@/lib/mutation-client";
+import type { RydCard } from "./card";
 import type { RydSubmission } from "./matching";
 import type { RydOrderStatus } from "./orders";
 import type { RydQueueOrder } from "./queue-types";
@@ -15,13 +16,15 @@ export function rydDecisionLocked(order: RydQueueOrder) {
 /**
  * Record a decision on one order, with its note when one is given. Verifying
  * from a suggestion accepts it: the pairing is what lets the send step tick
- * the right rows in the response sheet.
+ * the right rows in the response sheet. Verifying also approves the card as
+ * shown, which is what fulfillment prints; pass `card` for edited lines.
  */
 export async function decideRydOrder(
   order: RydQueueOrder,
   submissions: RydSubmission[],
   status: RydOrderStatus,
   note?: string,
+  card: RydCard = order.card,
 ): Promise<RydQueueChange> {
   const base = `/api/ryd/orders/${encodeURIComponent(order.orderId)}`;
   const shown = orderSubmissions(order, submissions);
@@ -36,6 +39,7 @@ export async function decideRydOrder(
       ...(note !== undefined ? { note } : {}),
       expectedStatus: order.status,
       expectedUpdatedAt: order.updatedAt,
+      ...(status === "verified" ? { card } : {}),
       ...(status === "verified" && !shown.linked
         ? {
             submissionKeys: linkedKeys,
@@ -55,6 +59,21 @@ export async function saveRydNote(
     {
       method: "PATCH",
       body: JSON.stringify({ note, expectedUpdatedAt: order.updatedAt }),
+    },
+  );
+  return { type: "review", result, linkedKeys: [] };
+}
+
+/** Save a card without deciding; on a verified order this re-approves it. */
+export async function saveRydCard(
+  order: RydQueueOrder,
+  card: RydCard,
+): Promise<RydQueueChange> {
+  const result = await mutate<RydReviewResult>(
+    `/api/ryd/orders/${encodeURIComponent(order.orderId)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ card, expectedUpdatedAt: order.updatedAt }),
     },
   );
   return { type: "review", result, linkedKeys: [] };

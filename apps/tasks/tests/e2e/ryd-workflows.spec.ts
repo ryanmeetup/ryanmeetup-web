@@ -45,13 +45,22 @@ async function expectMissingPage(page: Page, path: string) {
   ).toBeVisible();
   await page.waitForLoadState("networkidle");
 }
-/** Imports never carry a decision, so a test verifies the way a reviewer does. */
+/**
+ * Imports never carry a decision, so a test verifies the way a reviewer does,
+ * approving a complete card.
+ */
+const approvedCard = {
+  firstName: "Ryan",
+  lastName: "Fixture",
+  location: "Brooklyn, NY",
+  ryanSince: "1999",
+};
 async function verifyOrders(page: Page, orderIds: string[]) {
   for (const orderId of orderIds)
     expect(
       (
         await page.request.patch(`/api/ryd/orders/${orderId}`, {
-          data: { status: "verified" },
+          data: { status: "verified", card: approvedCard },
         })
       ).ok(),
     ).toBeTruthy();
@@ -112,8 +121,25 @@ test("runs review, on-demand files, and independent manual fulfillment stages", 
   await review
     .getByLabel("Note", { exact: true })
     .fill("Checked the synthetic form response.");
-  await review.getByRole("button", { name: "Verify", exact: true }).click();
+  // This export has no card details: the name is the buyer's and the rest is
+  // blank, so the card has to be finished before it can be verified.
+  await expect(review.getByText("the name is the buyer's")).toBeVisible();
+  const verify = review.getByRole("button", { name: "Verify", exact: true });
+  await expect(verify).toBeDisabled();
+  await review.getByLabel("Location", { exact: false }).fill("Brooklyn, NY");
+  await review.getByLabel("Ryan since", { exact: false }).fill("1999");
+  await verify.click();
   await expect(review).toHaveCount(0);
+  expect(
+    (await state(request)).orders.find(
+      (order: { order_id: string }) => order.order_id === "801",
+    ),
+  ).toMatchObject({
+    card_first_name: "Ryan",
+    card_last_name: "Fixture",
+    card_location: "Brooklyn, NY",
+    card_ryan_since: "1999",
+  });
   await page.goto("/ryd?status=verified");
   await expect(page.getByRole("button", { name: "Ready to send 1", exact: true })).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("checkbox", { name: "Select Ryan Fixture", exact: true }).check();
@@ -240,7 +266,7 @@ test("ignores a previously saved email and generates fresh selected files withou
   await send.getByRole("button", { name: "Close", exact: true }).click();
   expect((await state(request)).snapshot).toEqual(oldDraft);
   expect((await state(request)).orders.find((order: { order_id: string }) => order.order_id === "801").cleared_batch_id).toBeNull();
-  const verified = await page.request.patch("/api/ryd/orders/804", { data: { status: "verified" } });
+  const verified = await page.request.patch("/api/ryd/orders/804", { data: { status: "verified", card: approvedCard } });
   expect(verified.ok()).toBeTruthy();
   await page.goto("/ryd?status=verified");
   await page.getByRole("checkbox", { name: "Select all 3", exact: true }).check();
@@ -455,23 +481,37 @@ test("decides selected orders together after confirming missing evidence", async
   await page.goto("/ryd");
   await page.getByRole("button", { name: "Upload orders", exact: true }).click();
   const upload = page.getByRole("dialog", { name: "Upload orders", exact: true });
+  // Chipply's export, card options and all; 803 has no birthday year.
   await upload.getByLabel("Order CSV", { exact: false }).setInputFiles({
     name: "synthetic-bulk.csv",
     mimeType: "text/csv",
-    buffer: Buffer.from(`${csv}802,Ryan,Second,second@example.test,36\r\n`),
+    buffer: Buffer.from(
+      "OrderId,BillFirstName,BillLastName,BillEmail,OrderTotal,Options Detail\r\n" +
+        '="801",Ryan,Fixture,ryan.fixture@example.test,36,"[First Name : Ryan] [Last Name : Fixture] [Location : Brooklyn, NY] [Full Birthday : 04/07/1999]"\r\n' +
+        '="802",Ryan,Second,second@example.test,36,"[First Name : Ryan] [Last Name : Second] [Location : Chicago] [Full Birthday : 1988-01-02]"\r\n' +
+        '="803",Jamie,Perez,gift@example.test,36,"[First Name : Ryan] [Last Name : Pérez] [Location : Cleveland Ohio] [Full Birthday : Dec 3]"\r\n',
+    ),
   });
   await upload.getByRole("button", { name: "Upload", exact: true }).click();
   await expect(upload).toHaveCount(0);
-  await page.getByRole("checkbox", { name: "Select all 2", exact: true }).check();
+  await expect(page.getByText("Card unfinished")).toHaveCount(1);
+  await page.getByRole("checkbox", { name: "Select all 3", exact: true }).check();
   await page.getByRole("button", { name: "Verify", exact: true }).click();
   const confirm = page.getByRole("dialog", { name: "Verify 2 orders?", exact: true });
   await expect(confirm).toContainText("1 has nothing on the form.");
+  await expect(confirm).toContainText("1 with an unfinished card stays selected.");
   await page.screenshot({ path: testInfo.outputPath("bulk-review.png"), fullPage: true });
   await confirm.getByRole("button", { name: "Verify", exact: true }).click();
   await expect(confirm).toHaveCount(0);
   const saved = await state(request);
-  expect(saved.orders.map((order: { status: string }) => order.status)).toEqual(["verified", "verified"]);
+  expect(saved.orders.map((order: { order_id: string; status: string }) => [order.order_id, order.status])).toEqual([
+    ["801", "verified"],
+    ["802", "verified"],
+    ["803", "pending"],
+  ]);
+  expect(saved.orders[1]).toMatchObject({ card_location: "Chicago", card_ryan_since: "1988" });
   expect(saved.calls.filter((call: { name: string }) => call.name === "ryd_review_order")).toHaveLength(2);
+  await expect(page.getByRole("checkbox", { name: "Select Jamie Perez", exact: true })).toBeChecked();
 });
 
 test("imports an order CSV dropped onto the upload field and refuses other files", async ({ page, request }, testInfo) => {
