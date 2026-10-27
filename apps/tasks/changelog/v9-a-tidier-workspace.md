@@ -30,7 +30,39 @@ Quick notes now ask for a title separately from their details, so the first line
 Categories are no longer limited to 20 tags. Owners can drag tags into the order that makes sense for the category instead of accepting creation order forever.
 In the task tag picker, each category heading now collapses its tags, so a long list like Chapters can fold away while you pick from the others. A collapsed heading still counts its selected tags, and searching looks through every category.
 
+### RY-D cards print exactly as approved
+
+Each RY-D order now carries its card: first name, last name, location, and
+Ryan since. The card starts from Chipply's Options Detail when the export has
+it. A birthday with a two-digit year offers its year for you to accept, and
+one with no year waits for you to add it. Verifying approves the card as
+shown and needs every line, so nothing prints with a blank.
+
+The Verified view's Card files panel downloads every approved card that
+hasn't printed as a four-column file (Order Number, Name, Location, Ryan
+Since) and marks those orders sent to fulfillment with the date, so no card
+prints twice. Past files can be downloaded again without changing anything.
+
+### Guest tiers for partners
+
+A tier can now be a guest tier, for someone outside the organization such as
+a fulfillment partner. Guests reach only the pages and work granted to their
+tier or team. Projects, categories, and pages open to the workspace stay
+closed to them, and their sidebar shows only what they can open.
+
 ## Improved
+
+### RY-D settings have their own access
+
+RY-D Settings is locked separately from the queue, so someone can verify
+orders and pull card files without changing the review form, fulfillment's
+address, the upload reminder, or the Google connection. It starts with the
+same groups as RY-D, so nothing changes until an owner narrows it.
+
+### Chipply exports import as written
+
+Order files that aren't UTF-8 keep accented names like Pérez intact, and
+values Excel wraps as `="607227"` import as `607227`.
 
 ### Reliable RY-D imports and reminders
 
@@ -59,8 +91,8 @@ link from the form reviewers read, so changing one does not imply both changed.
 
 ### Delegate RY-D operations
 
-The RY-D access team can manage verification, fulfillment, settings, and the
-Google connection. Administrator tiers and app owners retain access, while
+The RY-D access team can manage verification and fulfillment, and settings
+and the Google connection with RY-D Settings access. Administrator tiers and app owners retain access, while
 other members need the RY-D team grant.
 
 If RY-D's page-access configuration is missing, access stays with app owners
