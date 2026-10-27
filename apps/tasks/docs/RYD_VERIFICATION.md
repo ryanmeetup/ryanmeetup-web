@@ -101,20 +101,31 @@ uses, set in /admin/usage).
    any other question is shown on the submission as an extra answer, so a
    new question never hides what people wrote. Suggestions, strongest
    first:
-   - same email (any case) and full name → strong. When the order's first
-     name isn't the first word on the form ("Ryan Fox" ordering, "Steven Ryan
-     Fox" on the form), the reason says Ryan is a middle name. The pairing is
-     still strong; whether that Ryan counts is the reviewer's call;
-   - an email one or two characters off, or a mistyped domain → possible;
+   - same email and full name → strong. "Same email" ignores case, a
+     `+tag`, and, at Gmail, dots: one inbox written two ways is one buyer.
+     When the order's first name isn't the first word on the form ("Ryan Fox"
+     ordering, "Steven Ryan Fox" on the form), the reason says Ryan is a
+     middle name. The pairing is still strong; whether that Ryan counts is the
+     reviewer's call;
+   - the order number, or the order's email, typed into any form answer, with
+     the full name → strong. The buyer pointed at the order themselves;
+   - an email one or two characters off, a mistyped domain, or the same email
+     name (five characters or more) at another provider → possible;
    - a social handle equal to the order email's name (`pineapplemage`) →
      possible;
-   - "Ryan" alone on the form from the order's email → possible;
+   - the same email, or the quoted order, with "Ryan" alone on the form or a
+     different surname → possible. The reason names the form's surname, or
+     says it is spelled differently when it is one letter off;
+   - a surname one letter off together with a near email or matching handle →
+     possible. A near surname alone suggests nothing;
    - same full name, different email → weak.
 
-   **Gifts with the buyer's exact email can be suggested as possible.** When
-   the buyer's first name isn't on the form and the email differs (Jamie Perez
-   buying for Ryan Pêrez), the reviewer links the submission by hand — from
-   the order, or from **Unmatched submissions**.
+   **Gifts with the buyer's own email or a quoted order can be suggested as
+   possible.** When the buyer's first name isn't on the form and neither of
+   those ties it to the order (Jamie Perez buying for Ryan Pêrez), the reviewer
+   links the submission by hand — from the order, or from **Unmatched
+   submissions**. Within a confidence level, the buyer's own inbox or a quoted
+   order outranks a pairing that rests on names.
    Every order needs a person to press Verify, Needs more info, or Reject.
    Select orders in the queue to apply one decision together, then confirm.
    The confirmation flags missing evidence and skips orders already with

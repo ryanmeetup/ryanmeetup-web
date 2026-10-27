@@ -322,7 +322,136 @@ describe("matching", () => {
     ]);
     expect(
       scoreSubmitter(order("Example", "ryan.example@test.dev"), submitter),
+    ).toEqual({
+      email: "ryan.example@test.dev",
+      confidence: "possible",
+      reasons: ["Email matches", "Form gives the surname Smith"],
+    });
+  });
+
+  it("offers the buyer's own email as possible when the surname differs", () => {
+    expect(
+      scoreSubmitter(
+        order("Smith", "rs@test.dev"),
+        one({ legalName: "Ryan Smyth", email: "rs@test.dev" }),
+      ),
+    ).toEqual({
+      email: "rs@test.dev",
+      confidence: "possible",
+      reasons: ["Email matches", "Surname spelled Smyth on the form"],
+    });
+  });
+
+  it("treats one mailbox written differently as the same email", () => {
+    expect(
+      scoreSubmitter(
+        order("Fox", "ryan.fox+ryd@gmail.com"),
+        one({ legalName: "Ryan Fox", email: "ryanfox@googlemail.com" }),
+      ),
+    ).toEqual({
+      email: "ryanfox@googlemail.com",
+      confidence: "strong",
+      reasons: ["Same mailbox, written differently", "Full name matches"],
+    });
+    // Dots only collapse at Gmail.
+    expect(
+      scoreSubmitter(
+        order("Fox", "ryan.fox@test.dev"),
+        one({ legalName: "Ryan Fox", email: "ry.anfox@test.dev" }),
+      )?.reasons[0],
+    ).not.toBe("Same mailbox, written differently");
+  });
+
+  it("follows the order number or order email quoted on the form", () => {
+    const quoted = (answer: string) =>
+      one({
+        legalName: "Ryan Kidname",
+        email: "ryan.kid@test.dev",
+        otherAnswers: [{ question: "Anything else?", answer }],
+      });
+    expect(
+      scoreSubmitter(
+        order("Giftgiver", "pat@test.dev", "9372657", "Pat"),
+        quoted("My mom ordered it, order #9372657."),
+      ),
+    ).toEqual({
+      email: "ryan.kid@test.dev",
+      confidence: "possible",
+      reasons: [
+        "Form mentions order 9372657",
+        "A gift: the form names Ryan Kidname",
+      ],
+    });
+    expect(
+      scoreSubmitter(
+        order("Kidname", "other.inbox@test.dev"),
+        quoted("I bought it with other.inbox@test.dev"),
+      ),
+    ).toEqual({
+      email: "ryan.kid@test.dev",
+      confidence: "strong",
+      reasons: ["Form gives the order email", "Full name matches"],
+    });
+    // Part of a longer number or address is not a quote.
+    expect(
+      scoreSubmitter(
+        order("Giftgiver", "pat@test.dev", "93726", "Pat"),
+        quoted("Order 9372657, from not.pat@test.dev"),
+      ),
     ).toBeNull();
+  });
+
+  it("offers the same email name at another provider as possible", () => {
+    expect(
+      scoreSubmitter(
+        order("Guardiola", "rguardy2012@aol.com"),
+        one({ legalName: "Ryan Guardiola", email: "rguardy2012@gmail.com" }),
+      )?.reasons,
+    ).toEqual(["Same email name at another provider", "Full name matches"]);
+    // A short, common email name says too little on its own.
+    expect(
+      scoreSubmitter(
+        order("Guardiola", "ryan@aol.com"),
+        one({ legalName: "Ryan Guardiola", email: "ryan@gmail.com" }),
+      )?.confidence,
+    ).toBe("weak");
+  });
+
+  it("accepts a misspelled surname only alongside a near email", () => {
+    expect(
+      scoreSubmitter(
+        order("Burch", "rburch@test.dev"),
+        one({ legalName: "Ryan Burck", email: "rburch@test.dew" }),
+      )?.reasons,
+    ).toEqual([
+      "Email differs by one character",
+      "Surname spelled Burck on the form",
+    ]);
+    expect(
+      scoreSubmitter(
+        order("Burch", "rib673@test.dev"),
+        one({ legalName: "Ryan Burns", email: "ryanburns@test.dev" }),
+      ),
+    ).toBeNull();
+  });
+
+  it("prefers a quoted order over an equally confident name match", () => {
+    const submitters = groupSubmissions([
+      submission({
+        legalName: "Ryan Johnson",
+        email: "rj@test.dev",
+        otherAnswers: [{ question: "Order number", answer: "10002" }],
+      }),
+    ]);
+    const suggestions = suggestMatches(
+      [
+        order("Johnson", "a@test.dev", "10001"),
+        order("Johnson", "b@test.dev", "10002"),
+      ],
+      submitters,
+    );
+    expect(suggestions.get("10002")?.confidence).toBe("strong");
+    expect(suggestions.has("10001")).toBe(false);
   });
 
   it("keeps two same-name orders from sharing one submitter", () => {

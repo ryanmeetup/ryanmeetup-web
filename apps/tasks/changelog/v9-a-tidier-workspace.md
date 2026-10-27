@@ -98,6 +98,10 @@ Evidence thumbnails share brief form reads, so opening several uploads no longer
 
 Large order queues and fulfillment exports keep every order, and saved CSV cells survive changes to column capitalization or later files. Verification handles malformed social links and uploaded filenames with international characters, avoids combining names from different responses into a strong match, and keeps rejected orders out of reminder actions. RY-D access stays closed when its permission checks are unavailable.
 
+### More RY-D matches found for you
+
+Match suggestions now catch buyers the queue used to leave unmatched. An order number or order email typed anywhere on the form points straight at that order, including for gifts. One inbox written two ways, such as a Gmail address with or without dots or a `+tag`, counts as the same email. The same email name at another provider and a one-letter surname slip alongside a near email are offered as possible, and the buyer's own email is suggested even when the surname on the form differs. Every suggestion still says why and waits for a reviewer to verify.
+
 ### Give the workspace more room
 
 The desktop sidebar can now be hidden from its header and restored from the workspace header. Tasks remembers that choice between visits, so focused work keeps the extra room until the navigation is needed again.

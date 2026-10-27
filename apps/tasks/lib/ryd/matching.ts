@@ -80,6 +80,91 @@ function emailParts(email: string) {
     : { local: email.slice(0, at), domain: email.slice(at + 1) };
 }
 
+const GMAIL_DOMAINS = new Set(["gmail.com", "googlemail.com"]);
+
+/**
+ * The inbox an address delivers to: a `+tag` never changes it, and Gmail also
+ * ignores dots. `ryan.fox+ryd@gmail.com` and `ryanfox@gmail.com` are one person.
+ */
+function mailbox(email: string) {
+  const { local, domain } = emailParts(email);
+  const bare = local.split("+")[0];
+  return GMAIL_DOMAINS.has(domain)
+    ? `${bare.replaceAll(".", "")}@gmail.com`
+    : `${bare}@${domain}`;
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Where the buyer pointed at the order themselves: its number or the email it
+ * was placed under, typed into any answer. Deliberate evidence, unlike a name
+ * that happens to agree.
+ */
+function orderReference(order: OrderIdentity, submitter: RydSubmitter) {
+  const text = submitter.submissions
+    .flatMap((s) => [s.socialText, ...s.otherAnswers.map((a) => a.answer)])
+    .join("\n")
+    .toLowerCase();
+  if (!text) return null;
+  const orderId = order.orderId.trim().toLowerCase();
+  if (
+    orderId.length >= 5 &&
+    new RegExp(`(?<![a-z0-9])${escapeRegExp(orderId)}(?![a-z0-9])`).test(text)
+  )
+    return `Form mentions order ${order.orderId.trim()}`;
+  const orderEmail = normalizeEmail(order.email);
+  if (
+    isRydContactEmail(orderEmail) &&
+    orderEmail !== submitter.email &&
+    new RegExp(
+      `(?<![a-z0-9._%+-])${escapeRegExp(orderEmail)}(?![a-z0-9-])`,
+    ).test(text)
+  )
+    return "Form gives the order email";
+  return null;
+}
+
+/** A different address that still points at the buyer, or null. */
+function nearContact(orderEmail: string, submitter: RydSubmitter) {
+  const theirs = submitter.email;
+  const ordered = emailParts(orderEmail);
+  const submitted = emailParts(theirs);
+  if (orderEmail && theirs) {
+    const distance = editDistance(orderEmail, theirs);
+    if (distance <= 2)
+      return `Email differs by ${distance === 1 ? "one character" : "two characters"}`;
+    if (ordered.local === submitted.local) {
+      if (editDistance(ordered.domain, submitted.domain) <= 2)
+        return "Same email name, domain looks mistyped";
+      // `ry` at two providers says little; `rguardy2012` says a lot.
+      if (ordered.local.length >= 5)
+        return "Same email name at another provider";
+    }
+  }
+  const handles = submitter.submissions.flatMap((s) =>
+    s.socialLinks.map((link) => link.handle).filter(Boolean),
+  );
+  if (ordered.local && handles.includes(ordered.local))
+    return `Social handle @${ordered.local} matches the order email`;
+  return null;
+}
+
+/** The form's surname for the name that carries the order's first name. */
+function formSurname(names: string[], firstName: string) {
+  const name = names.find((n) => nameIncludes(n, firstName));
+  return name?.trim().split(/\s+/).at(-1) ?? "";
+}
+
+/** One slip in a surname of four letters or more: Smyth for Smith. */
+function surnameNearlyMatches(formLast: string, orderLast: string) {
+  const a = nameTokens(formLast).join("");
+  const b = nameTokens(orderLast).join("");
+  return a.length >= 4 && b.length >= 4 && editDistance(a, b) <= 1;
+}
+
 /** How one submitter relates to one order, or null when they don't. */
 export function scoreSubmitter(
   order: OrderIdentity,
@@ -89,21 +174,32 @@ export function scoreSubmitter(
   const names = submitter.submissions.map((s) => s.legalName);
   const orderEmail = normalizeEmail(order.email);
   const theirs = submitter.email;
+  // The same inbox, however it was written, is the buyer filling in the form.
+  const sameEmail = Boolean(orderEmail) && orderEmail === theirs;
+  const sameMailbox =
+    sameEmail ||
+    (isRydContactEmail(orderEmail) && mailbox(orderEmail) === mailbox(theirs));
+  const emailReason = sameEmail
+    ? "Email matches"
+    : "Same mailbox, written differently";
+  const reference = orderReference(order, submitter);
   const firstMatches = names.some((name) =>
     nameIncludes(name, order.firstName),
   );
   // The rule for gifts: when the buyer isn't the Ryan on the form, a shared
   // surname suggests nothing, since Jamie Perez may be any Ryan Pêrez's
-  // parent. The same email is different: the buyer filled in the form
-  // themselves, for the Ryan they bought it for. It's still only possible,
-  // so a reviewer reads the evidence before verifying.
+  // parent. The buyer's own inbox, or the order quoted on the form, is
+  // different: the buyer filled in the form themselves, for the Ryan they
+  // bought it for. It's still only possible, so a reviewer reads the evidence
+  // before verifying.
   if (!firstMatches) {
     const ryan = names.find((name) => nameTokens(name).length > 0);
-    return orderEmail && orderEmail === theirs && ryan
+    const proof = sameMailbox ? emailReason : reference;
+    return proof && ryan
       ? {
           email: theirs,
           confidence: "possible",
-          reasons: ["Email matches", `A gift: the form names ${ryan.trim()}`],
+          reasons: [proof, `A gift: the form names ${ryan.trim()}`],
         }
       : null;
   }
@@ -116,14 +212,24 @@ export function scoreSubmitter(
         nameIncludes(name, order.lastName),
     );
   if (!surnameMatches) {
-    // "Ryan" alone on the form, from the address on the order.
+    // "Ryan" alone on the form, or a surname that differs: a typo, a married
+    // name, or another Ryan in the household. Only the buyer's own inbox or
+    // the order quoted on the form makes that worth a reviewer's look; a near
+    // surname also accepts a near email, never a name alone.
     const firstNameOnly = names.every((name) => nameTokens(name).length <= 1);
-    return firstNameOnly && orderEmail === theirs
-      ? {
-          email: theirs,
-          confidence: "possible",
-          reasons: ["Email matches", "Form gives only a first name"],
-        }
+    const formLast = formSurname(names, order.firstName);
+    const near = surnameNearlyMatches(formLast, order.lastName);
+    const nameReason = firstNameOnly
+      ? "Form gives only a first name"
+      : near
+        ? `Surname spelled ${formLast} on the form`
+        : `Form gives the surname ${formLast}`;
+    const proof = sameMailbox
+      ? emailReason
+      : (reference ??
+        (near && !firstNameOnly ? nearContact(orderEmail, submitter) : null));
+    return proof
+      ? { email: theirs, confidence: "possible", reasons: [proof, nameReason] }
       : null;
   }
   // "Ryan Fox" on the order and "Steven Ryan Fox" on the form is the same
@@ -138,48 +244,21 @@ export function scoreSubmitter(
     ? "Full name matches"
     : `Full name matches, with ${order.firstName.trim()} as a middle name`;
 
-  if (orderEmail && orderEmail === theirs)
+  // Full name plus the buyer's inbox, or plus the order quoted on the form.
+  const proof = sameMailbox ? emailReason : reference;
+  if (proof)
     return {
       email: theirs,
       confidence: "strong",
-      reasons: ["Email matches", nameReason],
+      reasons: [proof, nameReason],
     };
 
-  const ordered = emailParts(orderEmail);
-  const submitted = emailParts(theirs);
-  if (orderEmail && theirs) {
-    const distance = editDistance(orderEmail, theirs);
-    if (distance <= 2)
-      return {
-        email: theirs,
-        confidence: "possible",
-        reasons: [
-          `Email differs by ${distance === 1 ? "one character" : "two characters"}`,
-          nameReason,
-        ],
-      };
-    if (
-      ordered.local === submitted.local &&
-      editDistance(ordered.domain, submitted.domain) <= 2
-    )
-      return {
-        email: theirs,
-        confidence: "possible",
-        reasons: ["Same email name, domain looks mistyped", nameReason],
-      };
-  }
-
-  const handles = submitter.submissions.flatMap((s) =>
-    s.socialLinks.map((link) => link.handle).filter(Boolean),
-  );
-  if (ordered.local && handles.includes(ordered.local))
+  const contact = nearContact(orderEmail, submitter);
+  if (contact)
     return {
       email: theirs,
       confidence: "possible",
-      reasons: [
-        `Social handle @${ordered.local} matches the order email`,
-        nameReason,
-      ],
+      reasons: [contact, nameReason],
     };
 
   return {
@@ -202,24 +281,30 @@ export function suggestMatches(
 ) {
   const candidates: (RydMatchSuggestion & {
     orderId: string;
-    exact: boolean;
+    direct: boolean;
   })[] = [];
   for (const order of orders)
     for (const submitter of submitters) {
       if (claimedEmails.has(submitter.email)) continue;
       const suggestion = scoreSubmitter(order, submitter);
-      if (suggestion)
-        candidates.push({
-          ...suggestion,
-          orderId: order.orderId,
-          exact: normalizeEmail(order.email) === submitter.email,
-        });
+      if (!suggestion) continue;
+      const orderEmail = normalizeEmail(order.email);
+      candidates.push({
+        ...suggestion,
+        orderId: order.orderId,
+        // The buyer's own inbox, or the order quoted on the form, outranks
+        // an equally confident pairing that rests on names.
+        direct:
+          (isRydContactEmail(orderEmail) &&
+            mailbox(orderEmail) === mailbox(submitter.email)) ||
+          orderReference(order, submitter) !== null,
+      });
     }
 
   candidates.sort(
     (a, b) =>
       CONFIDENCE_RANK[a.confidence] - CONFIDENCE_RANK[b.confidence] ||
-      Number(b.exact) - Number(a.exact),
+      Number(b.direct) - Number(a.direct),
   );
   const byOrder = new Map<string, RydMatchSuggestion>();
   const usedEmails = new Set<string>();
