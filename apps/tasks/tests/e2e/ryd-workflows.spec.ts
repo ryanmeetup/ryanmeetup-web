@@ -1063,7 +1063,7 @@ test("a partner pulls approved cards once and downloads them again", async ({
   const contents = async (file: typeof download) =>
     Buffer.concat(await (await file.createReadStream()).toArray()).toString("utf8");
   const printed =
-    "\uFEFFOrder Number,Name,Location,Ryan Since\r\n607227,Ryan Pérez,Cleveland Ohio,1976\r\n";
+    "\uFEFFOrder Number,Name,Location,Ryan Since\r\n607227,Ryan Pérez,\"Cleveland, OH\",1976\r\n";
   expect(await contents(download)).toBe(printed);
   const pulled = (await state(request)).orders[0];
   expect(pulled).toMatchObject({

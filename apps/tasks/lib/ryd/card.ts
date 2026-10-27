@@ -79,6 +79,59 @@ export function birthYear(birthday: string, today = new Date()) {
   return { year: null, suggestion: String(century + yy) };
 }
 
+const REGIONS: Record<string, string> = {
+  alabama: "AL", alaska: "AK", arizona: "AZ", arkansas: "AR",
+  california: "CA", colorado: "CO", connecticut: "CT", delaware: "DE",
+  "district of columbia": "DC", "d.c.": "DC", "d.c": "DC", florida: "FL",
+  georgia: "GA", hawaii: "HI", idaho: "ID", illinois: "IL", indiana: "IN",
+  iowa: "IA", kansas: "KS", kentucky: "KY", louisiana: "LA", maine: "ME",
+  maryland: "MD", massachusetts: "MA", michigan: "MI", minnesota: "MN",
+  mississippi: "MS", missouri: "MO", montana: "MT", nebraska: "NE",
+  nevada: "NV", "new hampshire": "NH", "new jersey": "NJ",
+  "new mexico": "NM", "new york": "NY", "north carolina": "NC",
+  "north dakota": "ND", ohio: "OH", oklahoma: "OK", oregon: "OR",
+  pennsylvania: "PA", "rhode island": "RI", "south carolina": "SC",
+  "south dakota": "SD", tennessee: "TN", texas: "TX", utah: "UT",
+  vermont: "VT", virginia: "VA", washington: "WA", "west virginia": "WV",
+  wisconsin: "WI", wyoming: "WY", "puerto rico": "PR",
+  alberta: "AB", "british columbia": "BC", manitoba: "MB",
+  "new brunswick": "NB", "newfoundland and labrador": "NL",
+  "nova scotia": "NS", ontario: "ON", "prince edward island": "PE",
+  quebec: "QC", saskatchewan: "SK",
+};
+const REGION_CODES = new Set(Object.values(REGIONS));
+const COUNTRY_SUFFIX =
+  /[,\s]\s*(?:u\.?s\.?a?\.?|united states(?: of america)?|canada)\.?$/i;
+
+function regionCode(text: string) {
+  const name = text.trim().replace(/\s+/g, " ").toLowerCase();
+  const code = name.replace(/\.$/, "").toUpperCase();
+  return REGIONS[name] ?? (REGION_CODES.has(code) ? code : null);
+}
+
+/**
+ * A card location as `City, ST`. Buyers write `Cleveland Ohio`, `Fresno Ca`,
+ * or `Williamsville, Illinois, U.S.A.`; anything without a recognisable city
+ * and state or province is left as typed for a person to finish.
+ */
+export function rydCardLocation(text: string) {
+  const trimmed = text.trim().replace(/\s+/g, " ");
+  const place = trimmed.replace(COUNTRY_SUFFIX, "").replace(/[.,\s]+$/, "");
+  const comma = place.lastIndexOf(",");
+  if (comma > 0) {
+    const city = place.slice(0, comma).replace(/[,\s]+$/, "").trim();
+    const code = regionCode(place.slice(comma + 1));
+    return city && code ? `${city}, ${code}` : trimmed;
+  }
+  // No comma: try the longest trailing run of words that names a region.
+  const words = place.split(" ");
+  for (let take = Math.min(4, words.length - 1); take >= 1; take -= 1) {
+    const code = regionCode(words.slice(-take).join(" "));
+    if (code) return `${words.slice(0, -take).join(" ")}, ${code}`;
+  }
+  return trimmed;
+}
+
 /**
  * The card as the export describes it, before anyone has saved one. Without
  * Options Detail the name falls back to billing and the other lines are blank.
@@ -100,7 +153,7 @@ export function rydCardDraft(
     card: {
       firstName: fromOptions ? firstName : billing.firstName.trim(),
       lastName: fromOptions ? lastName : billing.lastName.trim(),
-      location: option("location"),
+      location: rydCardLocation(option("location")),
       ryanSince: year ?? "",
     },
     hint: {

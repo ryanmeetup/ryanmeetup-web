@@ -35,7 +35,8 @@ In the task tag picker, each category heading now collapses its tags, so a long 
 Each RY-D order now carries its card: first name, last name, location, and
 Ryan since. The card starts from Chipply's Options Detail when the export has
 it. A birthday with a two-digit year offers its year for you to accept, and
-one with no year waits for you to add it. Verifying approves the card as
+one with no year waits for you to add it. Locations are written as city and
+state, such as "Brooklyn, NY", whenever both can be read. Verifying approves the card as
 shown and needs every line, so nothing prints with a blank.
 
 The Verified view's Card files panel downloads every approved card that

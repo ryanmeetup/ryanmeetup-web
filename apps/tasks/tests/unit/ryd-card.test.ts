@@ -5,6 +5,7 @@ import {
   normalizeRydCard,
   parseOptionsDetail,
   rydCardDraft,
+  rydCardLocation,
   rydCardProblems,
   savedRydCard,
 } from "@/lib/ryd/card";
@@ -73,7 +74,7 @@ describe("card drafts", () => {
       card: {
         firstName: "Ryan",
         lastName: "Pérez",
-        location: "Cleveland Ohio",
+        location: "Cleveland, OH",
         ryanSince: "",
       },
       hint: {
@@ -95,6 +96,29 @@ describe("card drafts", () => {
       hint: { birthday: "", yearSuggestion: null, nameFrom: "billing" },
     });
   });
+});
+
+describe("card locations", () => {
+  it.each([
+    ["Brooklyn, NY", "Brooklyn, NY"],
+    ["Cleveland Ohio", "Cleveland, OH"],
+    ["Fresno Ca", "Fresno, CA"],
+    ["Dallas, TX.", "Dallas, TX"],
+    ["Bronx, New York", "Bronx, NY"],
+    ["Port Saint Joe, Florida ", "Port Saint Joe, FL"],
+    ["Williamsville, Illinois, U.S.A.", "Williamsville, IL"],
+    ["Washington, D.C.", "Washington, DC"],
+    ["Coquitlam, BC", "Coquitlam, BC"],
+  ])("writes %s as %s", (typed, location) => {
+    expect(rydCardLocation(typed)).toBe(location);
+  });
+
+  it.each(["Chicago", "Minnesota", "Jersey", "Columbus", "Kansas City", "New York", ""])(
+    "leaves %j as typed when it has no city and state",
+    (typed) => {
+      expect(rydCardLocation(typed)).toBe(typed);
+    },
+  );
 });
 
 describe("card completeness", () => {
