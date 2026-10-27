@@ -98,6 +98,7 @@ import {
 } from "./RydDialogs";
 import { RYD_DECISIONS, RydOrderDialog } from "./RydOrderDialog";
 import { RydCancelDialog } from "./RydCancelDialog";
+import { RydCardBatches } from "./RydCardBatches";
 import { RydFulfillmentFilters } from "./RydFulfillmentFilters";
 import { RydOrderTable } from "./RydOrderTable";
 import { RydSelectionBar } from "./RydSelection";
@@ -1136,6 +1137,13 @@ export function RydPageClient({
                 </div>
                 {producing && (
                   <div className="space-y-3">
+                    <RydCardBatches
+                      orders={queue.orders}
+                      batches={queue.cardBatches}
+                      timeZone={queue.timeZone}
+                      disabled={searchPending || moving !== null}
+                      onPulled={refresh}
+                    />
                     <RydFulfillmentFilters
                       stage={production}
                       counts={productionCounts}

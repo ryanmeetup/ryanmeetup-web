@@ -220,7 +220,25 @@ uses, set in /admin/usage).
    Linking a person's responses uses one transaction: a conflicting claim leaves
    the whole group unlinked. Groups above 100 responses or the request budget
    open the order review for individual linking instead of partially saving.
-4. **Generate an email and CSV for selected orders.** Verified opens to
+4. **Pull the card file.** The Verified view's **Card files** panel is how
+   fulfillment gets cards without an email. **Download new cards (N)** takes
+   every verified order with an approved card that is still Ready to send,
+   oldest first, and downloads `ry-d-cards-<date>.csv` with exactly four
+   columns: Order Number, Name, Location, Ryan Since. In the same
+   transaction those orders are marked Sent to fulfillment with the batch
+   date, so nothing prints twice; an unfinished or unapproved card waits for
+   the next file. The file is UTF-8 with a byte-order mark so Excel shows
+   `Pérez` correctly, and a cell starting with `=`, `+`, `-`, or `@` gets a
+   leading apostrophe so free text can't run as a formula.
+
+   Each batch freezes the cards it printed (`ryd_card_batches`,
+   `ryd_card_batch_orders`). **Download again** on a past batch rebuilds the
+   same file from those frozen rows and never marks anything. A retried pull
+   with the same operation returns the same batch. Moving an order back to
+   Ready to send leaves batch history alone and lets it print in a later
+   file on purpose.
+
+   **Generate an email and CSV for selected orders.** Verified opens to
    **Ready to send** by default. Select individual orders or **Select all**,
    then **Generate email & CSV (N)**. Select all includes orders matching the
    current search and filters across every page. Other ready orders wait for

@@ -30,6 +30,7 @@ import {
 } from "./ryd-google";
 import { isMissingRelation } from "./supabase-errors";
 import { readRydLinks, readRydRows } from "./ryd-queries";
+import { listRydCardBatches } from "./ryd-card-batches";
 
 export type RydContext = {
   user: User;
@@ -250,6 +251,7 @@ const emptyQueue = (installed: boolean): RydQueue => ({
   },
   clearedCount: 0,
   lastBatch: null,
+  cardBatches: [],
   timeZone: digestDefaults.timeZone,
   uploadDueSince: null,
   installed,
@@ -308,13 +310,14 @@ export async function loadRydQueue(
     if (isMissingRelation(failure.code)) return emptyQueue(false);
     throw failure;
   }
-  const [settings, integration, dismissedKeys, contacts, digest] =
+  const [settings, integration, dismissedKeys, contacts, digest, cardBatches] =
     await Promise.all([
       loadRydSettings(admin),
       loadRydGoogleIntegration(),
       loadDismissedKeys(admin),
       loadSubmitterContacts(admin),
       readDigestSettings(admin),
+      listRydCardBatches(admin),
     ]);
   const { sheet, submissions: answered } = await loadSheet(
     integration,
@@ -382,6 +385,7 @@ export async function loadRydQueue(
           verifiedCount: batchResult.data.verified_count,
         }
       : null,
+    cardBatches,
     timeZone: digest.timeZone,
     uploadDueSince: rydUploadDueSince(
       settings.uploadReminder,

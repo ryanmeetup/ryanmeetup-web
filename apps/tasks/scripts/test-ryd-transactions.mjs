@@ -15,6 +15,7 @@ for (const file of [
   "ryd-import-reminders.sql",
   "ryd-bulk-operations.sql",
   "ryd-cards.sql",
+  "ryd-card-batches.sql",
 ]) {
   const tap = spawnSync(
     "supabase",

@@ -731,7 +731,7 @@ test("a partner guest lands on RY-D with only its navigation", async ({
   // client navigation that can supersede, and abort, the original load.
   for (const path of ["/", "/board"]) {
     await page.goto(path).catch(() => undefined);
-    await page.waitForURL(/\/ryd$/);
+    await expect(page).toHaveURL(/\/ryd$/);
   }
   if (testInfo.project.name.includes("mobile"))
     await page.getByRole("button", { name: "Open navigation" }).click();
@@ -755,6 +755,66 @@ test("a partner guest lands on RY-D with only its navigation", async ({
       })
     ).status(),
   ).toBe(403);
+});
+
+test("a partner pulls approved cards once and downloads them again", async ({
+  page,
+  request,
+}) => {
+  await reset(request, { role: "partner" });
+  await signIn(page);
+  // Signing in lands on the dashboard, which sends a partner to RY-D.
+  await expect(page).toHaveURL(/\/ryd$/);
+  await page.getByRole("button", { name: "Upload orders", exact: true }).click();
+  const upload = page.getByRole("dialog", { name: "Upload orders", exact: true });
+  // Chipply's export: Windows-1252 bytes, Excel text wrappers, and a gift.
+  const header = "OrderId,BillFirstName,BillLastName,BillEmail,Options Detail\r\n";
+  const row =
+    '="607227",Jamie,Perez,ryan.fixture@example.test,"[First Name : Ryan] [Last Name : P\u00e9rez] [Location : Cleveland Ohio] [Full Birthday : 07/14/76]"\r\n';
+  await upload.getByLabel("Order CSV", { exact: false }).setInputFiles({
+    name: "chipply.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(header + row, "latin1"),
+  });
+  await upload.getByRole("button", { name: "Upload", exact: true }).click();
+  await expect(upload).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Review Jamie Perez", exact: true }).click();
+  const review = page.getByRole("dialog");
+  await expect(review.getByLabel("Last name", { exact: false })).toHaveValue("Pérez");
+  await expect(review.getByText("Birthday as entered: 07/14/76")).toBeVisible();
+  await review.getByRole("button", { name: "Use 1976", exact: true }).click();
+  await review.getByRole("button", { name: "Verify", exact: true }).click();
+  await expect(review).toHaveCount(0);
+
+  await page.goto("/ryd?status=verified");
+  const pull = page.getByRole("button", { name: "Download new cards (1)", exact: true });
+  await pull.click();
+  const confirm = page.getByRole("dialog", { name: "Download 1 card?", exact: true });
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    confirm.getByRole("button", { name: "Download", exact: true }).click(),
+  ]);
+  expect(download.suggestedFilename()).toMatch(/^ry-d-cards-\d{4}-\d{2}-\d{2}\.csv$/);
+  const contents = async (file: typeof download) =>
+    Buffer.concat(await (await file.createReadStream()).toArray()).toString("utf8");
+  const printed =
+    "\uFEFFOrder Number,Name,Location,Ryan Since\r\n607227,Ryan Pérez,Cleveland Ohio,1976\r\n";
+  expect(await contents(download)).toBe(printed);
+  const pulled = (await state(request)).orders[0];
+  expect(pulled).toMatchObject({
+    order_id: "607227",
+    cleared_batch_id: expect.any(String),
+    production_sent_at: expect.any(String),
+  });
+  await expect(page.getByRole("button", { name: "Download new cards (0)", exact: true })).toBeDisabled();
+  const again = page.getByRole("link", { name: /card file again$/ });
+  const [repeat] = await Promise.all([page.waitForEvent("download"), again.click()]);
+  expect(await contents(repeat)).toBe(printed);
+  const calls = (await state(request)).calls.filter(
+    (call: { name: string }) => call.name === "ryd_create_card_batch",
+  );
+  expect(calls).toHaveLength(1);
 });
 
 for (const role of ["operator", "owner"])

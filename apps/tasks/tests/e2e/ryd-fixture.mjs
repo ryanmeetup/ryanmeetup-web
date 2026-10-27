@@ -55,6 +55,9 @@ export function createRydFixture(json, readBody, profile) {
       links: [],
       imports: [],
       batches: [],
+      cardBatches: [],
+      cardBatchOrders: [],
+      cardReceipts: {},
       snapshot: null,
       snapshotHistory: [],
       calls: [],
@@ -412,6 +415,47 @@ export function createRydFixture(json, readBody, profile) {
           ok: true,
           order: publicOrder(state.orders[index]),
         });
+      } else if (name === "ryd_create_card_batch") {
+        // As the database does: every verified order with an approved card,
+        // still ready to send, is frozen into one batch and marked sent.
+        const receipt = state.cardReceipts[body.requested_operation];
+        if (receipt) {
+          json(response, 200, receipt);
+          return true;
+        }
+        const printable = state.orders.filter(
+          (order) =>
+            eligible(order) &&
+            order.card_first_name &&
+            order.card_last_name &&
+            order.card_location &&
+            /^\d{4}$/.test(order.card_ryan_since ?? ""),
+        );
+        let result = { batchId: null, orderCount: 0 };
+        if (printable.length) {
+          const id = `40000000-0000-4000-8000-${String(state.cardBatches.length + 1).padStart(12, "0")}`;
+          state.cardBatches.unshift({
+            id,
+            order_count: printable.length,
+            created_at: NOW,
+            profiles: { full_name: "Fixture Partner" },
+          });
+          printable.forEach((order, position) => {
+            state.cardBatchOrders.push({
+              batch_id: id,
+              order_id: order.order_id,
+              position,
+              first_name: order.card_first_name,
+              last_name: order.card_last_name,
+              location: order.card_location,
+              ryan_since: order.card_ryan_since,
+            });
+            Object.assign(order, changedOrder({ ...order, cleared_batch_id: id, production_sent_at: NOW }));
+          });
+          result = { batchId: id, orderCount: printable.length };
+        }
+        state.cardReceipts[body.requested_operation] = result;
+        json(response, 200, result);
       } else if (name === "ryd_generate_fulfillment") {
         const ids = [...new Set(body.requested_orders)];
         if (ids.some((id) => !state.orders.some((order) => order.order_id === id && eligible(order)))) {
@@ -481,6 +525,8 @@ export function createRydFixture(json, readBody, profile) {
         ],
         ryd_dismissed_submissions: [],
         ryd_submitter_contacts: [],
+        ryd_card_batches: state.cardBatches,
+        ryd_card_batch_orders: state.cardBatchOrders,
       };
       if (!(table in collections)) {
         error(response, "FIXTURE_UNHANDLED", `Unhandled table ${table}`, 500);

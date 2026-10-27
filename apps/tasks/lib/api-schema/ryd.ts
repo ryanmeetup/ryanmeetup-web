@@ -243,6 +243,17 @@ export function rydOrderIdsSchema(value: unknown) {
 }
 
 /** Verified orders, and the production stage to move them to. */
+/** Pull every approved, ready card; the operation makes a retry safe. */
+export function rydCardBatchSchema(value: unknown) {
+  if (
+    !isJsonObject(value) ||
+    Object.keys(value).length !== 1 ||
+    !isUuid(value.operationId)
+  )
+    return null;
+  return { operationId: value.operationId };
+}
+
 export function rydProductionSchema(value: unknown) {
   if (
     !isJsonObject(value) ||

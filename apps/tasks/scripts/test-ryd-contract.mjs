@@ -8,7 +8,7 @@ const appRoot = fileURLToPath(new URL("../", import.meta.url));
 const migration = await readFile(
   path.join(
     appRoot,
-    "supabase/migrations/20261106000000_ryd_manual_fulfillment.sql",
+    "supabase/migrations/20261113000000_ryd_card_batches.sql",
   ),
   "utf8",
 );
