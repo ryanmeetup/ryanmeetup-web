@@ -5,6 +5,7 @@ import {
   Button,
   DropdownSelect,
   ErrorCallout,
+  FileDropField,
   Input,
   Modal,
   ModalActions,
@@ -111,26 +112,20 @@ export function RydUploadDialog({
       }
     >
       <div className="space-y-4">
-        <label className="block">
-          <span className="text-sm font-semibold">
-            Order CSV <span className="text-red-600 dark:text-red-400">*</span>
-          </span>
-          {/* No shared file field exists; the native control keeps the OS
-              picker and its keyboard behaviour. */}
-          <input
-            type="file"
-            name="file"
-            accept=".csv,text/csv"
-            required
-            aria-required="true"
-            disabled={saving}
-            onChange={(event) => {
-              setFile(event.target.files?.[0] ?? null);
-              setOperationId(crypto.randomUUID());
-            }}
-            className="mt-2 block w-full rounded-xl border border-black/15 bg-white p-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-black/[0.06] file:px-3 file:py-2 file:text-xs file:font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:border-white/15 dark:bg-white/[0.04] dark:file:bg-white/10 dark:file:text-white dark:focus-visible:ring-white/40"
-          />
-        </label>
+        <FileDropField
+          label="Order CSV"
+          name="file"
+          accept=".csv,text/csv"
+          required
+          disabled={saving}
+          file={file}
+          hint="CSV only"
+          rejectMessage="That isn't a CSV. Drop the order summary CSV from fulfillment."
+          onFileChange={(next) => {
+            setFile(next);
+            setOperationId(crypto.randomUUID());
+          }}
+        />
         <ErrorCallout>{error}</ErrorCallout>
       </div>
     </Modal>

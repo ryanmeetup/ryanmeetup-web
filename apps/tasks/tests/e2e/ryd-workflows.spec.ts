@@ -459,6 +459,40 @@ test("decides selected orders together after confirming missing evidence", async
   expect(saved.calls.filter((call: { name: string }) => call.name === "ryd_review_order")).toHaveLength(2);
 });
 
+test("imports an order CSV dropped onto the upload field and refuses other files", async ({ page, request }, testInfo) => {
+  await reset(request);
+  await signIn(page);
+  await page.goto("/ryd");
+  await page.getByRole("button", { name: "Upload orders", exact: true }).click();
+  const upload = page.getByRole("dialog", { name: "Upload orders", exact: true });
+  await expect(upload.getByText("Drag a file here or click to choose", { exact: true })).toBeVisible();
+  // The prompt text changes while dragging, so hold the zone by its input.
+  const zone = upload.locator("label:has(input[type=file])");
+  const drop = async (name: string, type: string, contents: string) => {
+    const dataTransfer = await page.evaluateHandle(
+      ([name, type, contents]) => {
+        const transfer = new DataTransfer();
+        transfer.items.add(new File([contents], name, { type }));
+        return transfer;
+      },
+      [name, type, contents],
+    );
+    await zone.dispatchEvent("dragenter", { dataTransfer });
+    await zone.dispatchEvent("drop", { dataTransfer });
+  };
+  await drop("orders.xlsx", "application/vnd.ms-excel", "nope");
+  await expect(upload.getByRole("alert")).toContainText("That isn't a CSV.");
+  await expect(upload.getByRole("button", { name: "Upload", exact: true })).toBeDisabled();
+  await drop("synthetic-dropped.csv", "text/csv", csv);
+  await expect(upload.getByText("synthetic-dropped.csv", { exact: true })).toBeVisible();
+  await expect(upload.getByRole("alert")).toHaveCount(0);
+  await page.screenshot({ path: testInfo.outputPath("dropped-upload.png") });
+  await upload.getByRole("button", { name: "Upload", exact: true }).click();
+  await expect(upload).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Review Ryan Fixture", exact: true })).toBeVisible();
+  expect((await state(request)).calls.map((call: { name: string }) => call.name)).toEqual(["ryd_import_orders"]);
+});
+
 test("emails every selected pending buyer in one Bcc draft and marks them contacted", async ({ page, request }) => {
   await reset(request);
   await signIn(page);

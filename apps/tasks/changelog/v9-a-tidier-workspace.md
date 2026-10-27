@@ -81,6 +81,8 @@ failed decisions stay selected for another try.
 RY-D can email the verification team to check for fulfillment's next order
 file, with a configurable day and hour in the workspace time zone. The page
 also flags when an upload is due and clears the reminder after an upload.
+The order file can be dragged straight onto the upload dialog, and anything
+other than a CSV is turned away before it's sent.
 
 ### Refresh RY-D without losing saved changes
 
