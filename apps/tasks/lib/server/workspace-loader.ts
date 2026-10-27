@@ -76,6 +76,7 @@ export type WorkspaceCollection = Exclude<
   | "projectTaskCounts"
   | "resourceAttachmentCounts"
   | "accessibleAreas"
+  | "isGuest"
 >;
 
 export const TASK_PAGE_SIZE = 50;
@@ -159,6 +160,20 @@ async function loadAccessibleAreas(
   );
 }
 
+/**
+ * Whether the member is in a guest tier, so the shell can offer only the pages
+ * granted to them. RLS already keeps open content from a guest; this decides
+ * navigation only. Before the guest migration nobody is a guest.
+ */
+async function loadIsGuest(supabase: SupabaseClient): Promise<boolean> {
+  const { data, error } = await supabase.rpc("is_guest");
+  if (error) {
+    if (isMissingFunction(error.code)) return false;
+    throw new WorkspaceLoadError("guest access", error);
+  }
+  return data === true;
+}
+
 export async function loadWorkspace(
   supabase: SupabaseClient,
   userId: string,
@@ -210,17 +225,23 @@ export async function loadWorkspace(
       supabase.from("task_categories").select(columns.taskCategories),
   };
 
-  const [profileResult, categoryManagerResult, accessibleAreas, ...results] =
-    await Promise.all([
-      supabase
-        .from("profiles")
-        .select(columns.currentProfile)
-        .eq("id", userId)
-        .maybeSingle(),
-      supabase.rpc("can_manage_categories"),
-      loadAccessibleAreas(supabase),
-      ...collections.map((collection) => queries[collection]()),
-    ]);
+  const [
+    profileResult,
+    categoryManagerResult,
+    accessibleAreas,
+    isGuest,
+    ...results
+  ] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select(columns.currentProfile)
+      .eq("id", userId)
+      .maybeSingle(),
+    supabase.rpc("can_manage_categories"),
+    loadAccessibleAreas(supabase),
+    loadIsGuest(supabase),
+    ...collections.map((collection) => queries[collection]()),
+  ]);
   if (profileResult.error) {
     throw new WorkspaceLoadError("current profile", profileResult.error);
   }
@@ -243,5 +264,6 @@ export async function loadWorkspace(
     currentProfile: profileResult.data,
     canManageCategories: Boolean(categoryManagerResult.data),
     accessibleAreas,
+    isGuest,
   } as WorkspaceData;
 }

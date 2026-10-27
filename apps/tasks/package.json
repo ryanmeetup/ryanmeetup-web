@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:database:ryd-contract": "node scripts/test-ryd-contract.mjs",
+    "test:database:guest": "supabase test db tests/database/guest-access.sql",
     "test:database:ryd": "node scripts/test-ryd-access.mjs",
     "test:database:ryd-transactions": "node scripts/test-ryd-transactions.mjs",
     "test:coverage": "vitest run --coverage",

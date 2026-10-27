@@ -33,7 +33,7 @@ export default async function ProfilePage({
   try {
     const result = await loadWorkspacePage(
       ["profiles", "statuses", "categories", "categoryOwners", "projects"],
-      { requireOnboarding: false },
+      { requireOnboarding: false, allowGuest: true },
     );
     data = result.data;
     email = result.user.email ?? "";

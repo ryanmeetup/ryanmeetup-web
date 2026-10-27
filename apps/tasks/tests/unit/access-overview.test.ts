@@ -24,6 +24,7 @@ const group = (
   hierarchy_rank: rank,
   grants_global_content: false,
   calendar_access: false,
+  guest: false,
   is_default: false,
   ...overrides,
 });
@@ -42,6 +43,53 @@ describe("access group explanations", () => {
       "base",
       "lead",
     ]);
+  });
+
+  it("keeps guest tiers out of tier inheritance in both directions", () => {
+    const base = group("base", 1);
+    const partner = group("partner", 5, { guest: true });
+    const lead = group("lead", 10);
+    const groups = [base, partner, lead];
+    expect(inheritedGroupIds(partner, groups)).toEqual(["partner"]);
+    expect(inheritedGroupIds(lead, groups)).toEqual(["base", "lead"]);
+    expect(effectiveMembershipGroupIds(["partner"], groups)).toEqual([
+      "partner",
+    ]);
+    expect(effectiveMembershipGroupIds(["lead"], groups)).toEqual([
+      "base",
+      "lead",
+    ]);
+  });
+
+  it("shows guests outside everything open to the workspace", () => {
+    const partner = group("partner", 5, { guest: true });
+    const overview = buildAccessGroupOverview({
+      group: partner,
+      groups: [group("base", 1), partner],
+      projects: [
+        { id: "open", name: "Open", access_mode: "open" },
+        { id: "granted", name: "Granted", access_mode: "restricted" },
+        { id: "lower", name: "Lower", access_mode: "restricted" },
+      ],
+      categories: [{ id: "open", name: "Open", access_mode: "open" }],
+      projectGrants: [
+        { resourceId: "granted", groupId: "partner" },
+        { resourceId: "lower", groupId: "base" },
+      ],
+      categoryGrants: [],
+      areaAccess: [{ area: "ryd", accessMode: "restricted" }],
+      areaGrants: [{ area: "ryd", groupId: "partner" }],
+    });
+    expect(overview.projects.map(({ id }) => id)).toEqual(["granted"]);
+    expect(overview.unavailableProjects.map(({ id }) => id)).toEqual([
+      "open",
+      "lower",
+    ]);
+    expect(overview.categories).toEqual([]);
+    expect(overview.pages.map(({ id }) => id)).toEqual(["ryd"]);
+    expect(overview.unavailablePages.map(({ reason }) => reason)).toContain(
+      "Open to the workspace, which guests skip",
+    );
   });
 
   it("names open, direct, inherited, and workspace-wide reasons", () => {

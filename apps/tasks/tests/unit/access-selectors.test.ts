@@ -17,6 +17,7 @@ const group = (id: string, rank: number): AccessGroup => ({
   hierarchy_rank: rank,
   grants_global_content: false,
   calendar_access: false,
+  guest: false,
   is_default: false,
 });
 describe("effective access selectors", () => {

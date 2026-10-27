@@ -68,6 +68,7 @@ export function AccessGroupPageClient({
     group.grants_global_content,
   );
   const [calendarAccess, setCalendarAccess] = useState(group.calendar_access);
+  const [guest, setGuest] = useState(group.guest);
   const [saving, setSaving] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -84,8 +85,9 @@ export function AccessGroupPageClient({
       color,
       kind,
       hierarchy_rank: kind === "tier" ? Number(hierarchyRank) : null,
-      grants_global_content: kind === "tier" && grantsGlobalContent,
+      grants_global_content: kind === "tier" && !guest && grantsGlobalContent,
       calendar_access: calendarAccess,
+      guest: kind === "tier" && guest,
     });
     setSaving(false);
     setGroup(updated);
@@ -225,7 +227,7 @@ export function AccessGroupPageClient({
                       This is the default tier assigned automatically to every
                       new member.
                     </p>
-                  ) : (
+                  ) : group.guest ? null : (
                     <Button
                       type="button"
                       variant="secondary"
@@ -240,11 +242,29 @@ export function AccessGroupPageClient({
                     <input
                       type="checkbox"
                       className="mt-0.5 h-4 w-4"
-                      checked={grantsGlobalContent}
+                      checked={guest}
+                      onChange={(event) => setGuest(event.target.checked)}
+                      disabled={saving || group.is_default}
+                    />
+                    <span>
+                      Guest tier
+                      <span className="mt-1 block text-black/60 dark:text-white/60">
+                        For people outside the organization. Members reach only
+                        what is granted to this tier or their teams, never work
+                        or pages open to the workspace, and inherit nothing from
+                        other tiers.
+                      </span>
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-3 text-sm">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 h-4 w-4"
+                      checked={grantsGlobalContent && !guest}
                       onChange={(event) =>
                         setGrantsGlobalContent(event.target.checked)
                       }
-                      disabled={saving}
+                      disabled={saving || guest}
                     />
                     <span>
                       Grant manager access to all current and future work

@@ -15,6 +15,7 @@ export function CreateAccessGroupModal({
   calendarAccess,
   description,
   grantsGlobalContent,
+  guest,
   hierarchyRank,
   kind,
   name,
@@ -25,6 +26,7 @@ export function CreateAccessGroupModal({
   setCalendarAccess,
   setDescription,
   setGrantsGlobalContent,
+  setGuest,
   setHierarchyRank,
   setKind,
   setName,
@@ -34,6 +36,7 @@ export function CreateAccessGroupModal({
   calendarAccess: boolean;
   description: string;
   grantsGlobalContent: boolean;
+  guest: boolean;
   hierarchyRank: string;
   kind: "tier" | "team";
   name: string;
@@ -44,6 +47,7 @@ export function CreateAccessGroupModal({
   setCalendarAccess: (value: boolean) => void;
   setDescription: (value: string) => void;
   setGrantsGlobalContent: (value: boolean) => void;
+  setGuest: (value: boolean) => void;
   setHierarchyRank: (value: string) => void;
   setKind: (value: "tier" | "team") => void;
   setName: (value: string) => void;
@@ -114,13 +118,30 @@ export function CreateAccessGroupModal({
               <input
                 type="checkbox"
                 className="mt-0.5 h-4 w-4"
-                checked={grantsGlobalContent}
+                checked={grantsGlobalContent && !guest}
                 onChange={(event) =>
                   setGrantsGlobalContent(event.target.checked)
                 }
-                disabled={saving}
+                disabled={saving || guest}
               />
               <span>Grant manager access to all current and future work</span>
+            </label>
+            <label className="flex items-start gap-3 text-sm">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4"
+                checked={guest}
+                onChange={(event) => setGuest(event.target.checked)}
+                disabled={saving}
+              />
+              <span>
+                Guest tier
+                <span className="mt-1 block text-black/60 dark:text-white/60">
+                  For people outside the organization. Members reach only what
+                  is granted to this tier or their teams, never work or pages
+                  open to the workspace, and inherit nothing from other tiers.
+                </span>
+              </span>
             </label>
           </>
         )}

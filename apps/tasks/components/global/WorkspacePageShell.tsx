@@ -150,18 +150,24 @@ function WorkspaceChrome({
             </IconButton>
           )}
           <TaskHeaderBrand />
-          <TaskSearch
-            tasks={data.tasks}
-            projects={data.projects}
-            categories={data.categories}
-            statuses={data.statuses}
-            profiles={data.profiles}
-            taskAssignees={data.taskAssignees}
-          />
+          {/* A guest has no tasks to search or create. */}
+          {data.isGuest ? (
+            <div className="flex-1" aria-hidden="true" />
+          ) : (
+            <TaskSearch
+              tasks={data.tasks}
+              projects={data.projects}
+              categories={data.categories}
+              statuses={data.statuses}
+              profiles={data.profiles}
+              taskAssignees={data.taskAssignees}
+            />
+          )}
           <TaskHeaderActions
             profile={data.currentProfile}
             previewing={previewing}
             demoMode={demoMode}
+            canCreateTasks={!data.isGuest}
             onNewTask={onNewTask ?? (() => setNewTaskOpen(true))}
           />
         </header>
@@ -300,9 +306,7 @@ export function PersistentWorkspaceShell({
     () => ({
       register: setRegistration,
       unregister: (id) =>
-        setRegistration((current) =>
-          current?.id === id ? null : current,
-        ),
+        setRegistration((current) => (current?.id === id ? null : current)),
     }),
     [],
   );

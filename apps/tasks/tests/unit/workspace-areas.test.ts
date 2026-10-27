@@ -6,6 +6,7 @@ import {
   workspaceAreaLabel,
   workspaceAreaRequiresAccessCheck,
   WORKSPACE_AREA_KEYS,
+  guestHome,
 } from "@/lib/access/workspace-areas";
 
 describe("workspace area registry", () => {
@@ -60,5 +61,18 @@ describe("workspace area registry", () => {
     } finally {
       warning.mockRestore();
     }
+  });
+});
+
+describe("guest landing page", () => {
+  it("is the first page this instance has that the guest can open", () => {
+    expect(guestHome(["ryd"], { rydEnabled: true })).toBe("/ryd");
+    expect(guestHome(["calendar", "ryd"], { rydEnabled: true })).toBe(
+      "/calendar",
+    );
+  });
+  it("falls back to the profile when no granted page exists here", () => {
+    expect(guestHome(["ryd"], { rydEnabled: false })).toBe("/profile");
+    expect(guestHome([], { rydEnabled: true })).toBe("/profile");
   });
 });

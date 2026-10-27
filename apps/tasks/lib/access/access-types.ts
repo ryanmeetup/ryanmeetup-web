@@ -10,6 +10,8 @@ export type AccessGroup = {
   hierarchy_rank: number | null;
   grants_global_content: boolean;
   calendar_access: boolean;
+  /** A tier whose members skip every open-to-the-workspace rule. */
+  guest: boolean;
   is_default: boolean;
 };
 

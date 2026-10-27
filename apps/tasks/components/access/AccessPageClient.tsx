@@ -162,6 +162,7 @@ export function AccessPageClient({
   const [groupKind, setGroupKind] = useState<"tier" | "team">("team");
   const [hierarchyRank, setHierarchyRank] = useState("0");
   const [grantsGlobalContent, setGrantsGlobalContent] = useState(false);
+  const [guest, setGuest] = useState(false);
   const [calendarAccess, setCalendarAccess] = useState(false);
   const [saving, setSaving] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -231,8 +232,10 @@ export function AccessPageClient({
       color,
       kind: groupKind,
       hierarchy_rank: groupKind === "tier" ? Number(hierarchyRank) : null,
-      grants_global_content: groupKind === "tier" && grantsGlobalContent,
+      grants_global_content:
+        groupKind === "tier" && !guest && grantsGlobalContent,
       calendar_access: calendarAccess,
+      guest: groupKind === "tier" && guest,
     });
     setSaving(false);
     setName("");
@@ -241,6 +244,7 @@ export function AccessPageClient({
     setGroupKind("team");
     setHierarchyRank("0");
     setGrantsGlobalContent(false);
+    setGuest(false);
     setCalendarAccess(false);
     setGroupCreateOpen(false);
     toast.success(`${data.name} created.`);
@@ -844,6 +848,7 @@ export function AccessPageClient({
         color={color}
         description={description}
         grantsGlobalContent={grantsGlobalContent}
+        guest={guest}
         hierarchyRank={hierarchyRank}
         kind={groupKind}
         name={name}
@@ -854,6 +859,7 @@ export function AccessPageClient({
         setCalendarAccess={setCalendarAccess}
         setDescription={setDescription}
         setGrantsGlobalContent={setGrantsGlobalContent}
+        setGuest={setGuest}
         setHierarchyRank={setHierarchyRank}
         setKind={setGroupKind}
         setName={setName}

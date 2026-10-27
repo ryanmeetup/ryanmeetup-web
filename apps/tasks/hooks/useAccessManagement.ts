@@ -29,6 +29,7 @@ export function useAccessManagement({
       hierarchyRank: input.hierarchy_rank,
       grantsGlobalContent: input.grants_global_content,
       calendarAccess: input.calendar_access,
+      guest: input.guest,
     });
     setGroups((current) =>
       [...current.filter((item) => item.id !== group.id), group].sort((a, b) =>
@@ -55,6 +56,7 @@ export function useAccessManagement({
       hierarchyRank: input.hierarchy_rank,
       grantsGlobalContent: input.grants_global_content,
       calendarAccess: input.calendar_access,
+      guest: input.guest,
     });
     setGroups((current) =>
       current.map((item) => (item.id === group.id ? group : item)),

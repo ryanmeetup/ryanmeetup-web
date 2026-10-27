@@ -41,6 +41,7 @@ type PreviewAreaGrant = { area: string; group_id: string };
  * The same rule `can_view_workspace_area` applies, projected for the preview:
  * unconfigured pages other than RY-D are open. RY-D needs an explicit row;
  * restricted pages need a selected group, and only app owners bypass them.
+ * A guest skips open and unconfigured pages alike.
  * Diagnostic only — it never authorizes a request.
  */
 export function accessibleAreasForPreview(
@@ -48,6 +49,7 @@ export function accessibleAreasForPreview(
   grants: PreviewAreaGrant[],
   groupIds: string[],
   isAppOwner: boolean,
+  guest = false,
 ): WorkspaceAreaKey[] {
   if (isAppOwner) return [...WORKSPACE_AREA_KEYS];
   const configured = new Set(areas.map((area) => area.area));
@@ -62,10 +64,10 @@ export function accessibleAreasForPreview(
       .filter((grant) => effectiveGroupIds.has(grant.group_id))
       .map((grant) => grant.area),
   );
-  return WORKSPACE_AREA_KEYS.filter(
-    (area) =>
-      (area !== "ryd" || configured.has(area)) &&
-      (!restricted.has(area) || grantedAreas.has(area)),
+  return WORKSPACE_AREA_KEYS.filter((area) =>
+    restricted.has(area)
+      ? grantedAreas.has(area)
+      : !guest && (area !== "ryd" || configured.has(area)),
   );
 }
 
@@ -73,6 +75,7 @@ async function resolveAreaAccess(
   supabase: SupabaseClient,
   groupIds: string[],
   isAppOwner: boolean,
+  guest = false,
 ): Promise<{ accessibleAreas: WorkspaceAreaKey[] }> {
   if (isAppOwner) return { accessibleAreas: [...WORKSPACE_AREA_KEYS] };
   const [areasResult, grantsResult] = await Promise.all([
@@ -86,7 +89,9 @@ async function resolveAreaAccess(
     isMissingRelation(grantsResult.error?.code)
   )
     return {
-      accessibleAreas: WORKSPACE_AREA_KEYS.filter((area) => area !== "ryd"),
+      accessibleAreas: guest
+        ? []
+        : WORKSPACE_AREA_KEYS.filter((area) => area !== "ryd"),
     };
   return {
     accessibleAreas: accessibleAreasForPreview(
@@ -94,6 +99,7 @@ async function resolveAreaAccess(
       requireQueryData("preview page grants", grantsResult),
       groupIds,
       false,
+      guest,
     ),
   };
 }
@@ -103,6 +109,7 @@ export function accessibleCategoryIdsForPreview(
   grants: PreviewCategoryGrant[],
   groupIds: string[],
   hasGlobalAccess: boolean,
+  guest = false,
 ) {
   if (hasGlobalAccess) return categories.map((category) => category.id);
   const grantedCategoryIds = new Set(
@@ -113,7 +120,8 @@ export function accessibleCategoryIdsForPreview(
   return categories
     .filter(
       (category) =>
-        category.access_mode === "open" || grantedCategoryIds.has(category.id),
+        (category.access_mode === "open" && !guest) ||
+        grantedCategoryIds.has(category.id),
     )
     .map((category) => category.id);
 }
@@ -122,6 +130,7 @@ async function resolveCategoryAccess(
   supabase: SupabaseClient,
   groupIds: string[],
   hasGlobalAccess: boolean,
+  guest = false,
 ) {
   const [categoriesResult, grantsResult, taskCategoriesResult] =
     await Promise.all([
@@ -140,6 +149,7 @@ async function resolveCategoryAccess(
     grants,
     groupIds,
     hasGlobalAccess,
+    guest,
   );
   const accessibleCategoryIdSet = new Set(accessibleCategoryIds);
   return {
@@ -166,7 +176,7 @@ export async function resolveAccessPreview(
     const groupLookup = supabase
       .from("access_groups")
       .select(
-        "id, name, kind, hierarchy_rank, grants_global_content, calendar_access",
+        "id, name, kind, hierarchy_rank, grants_global_content, calendar_access, guest",
       );
     const groupRequest =
       /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
@@ -178,12 +188,13 @@ export async function resolveAccessPreview(
       groupRequest.maybeSingle(),
       supabase
         .from("access_groups")
-        .select("id, kind, hierarchy_rank, calendar_access"),
+        .select("id, kind, hierarchy_rank, calendar_access, guest"),
     ]);
     const group = requireQueryResult("preview access group", groupResult);
     const groups = requireQueryData("preview access groups", groupsResult);
     if (!group) return null;
     const inheritedGroupIds = groupIdsWithInheritance(group, groups);
+    const guest = group.kind === "tier" && group.guest;
     const [grants, openProjects] = group.grants_global_content
       ? [[], []]
       : await Promise.all([
@@ -194,21 +205,24 @@ export async function resolveAccessPreview(
             .then((result) =>
               requireQueryData("preview project grants", result),
             ),
-          supabase
-            .from("projects")
-            .select("id")
-            .eq("access_mode", "open")
-            .then((result) =>
-              requireQueryData("preview open projects", result),
-            ),
+          guest
+            ? Promise.resolve([])
+            : supabase
+                .from("projects")
+                .select("id")
+                .eq("access_mode", "open")
+                .then((result) =>
+                  requireQueryData("preview open projects", result),
+                ),
         ]);
     const [categoryAccess, areaAccess] = await Promise.all([
       resolveCategoryAccess(
         supabase,
         inheritedGroupIds,
         group.grants_global_content,
+        guest,
       ),
-      resolveAreaAccess(supabase, inheritedGroupIds, false),
+      resolveAreaAccess(supabase, inheritedGroupIds, false, guest),
     ]);
     return {
       preview: {
@@ -271,7 +285,7 @@ export async function resolveAccessPreview(
     supabase
       .from("access_groups")
       .select(
-        "id, kind, hierarchy_rank, grants_global_content, calendar_access",
+        "id, kind, hierarchy_rank, grants_global_content, calendar_access, guest",
       ),
   ]);
   const membershipRows = requireQueryData(
@@ -306,6 +320,7 @@ export async function resolveAccessPreview(
       projectIds: options.allProjectIds,
     };
   }
+  const guest = memberTier?.guest === true;
   const [grants, openProjects, ownedProjects] = await Promise.all([
     groupIds.length > 0
       ? supabase
@@ -314,11 +329,13 @@ export async function resolveAccessPreview(
           .in("group_id", groupIds)
           .then((result) => requireQueryData("preview project grants", result))
       : Promise.resolve([]),
-    supabase
-      .from("projects")
-      .select("id")
-      .eq("access_mode", "open")
-      .then((result) => requireQueryData("preview open projects", result)),
+    guest
+      ? Promise.resolve([])
+      : supabase
+          .from("projects")
+          .select("id")
+          .eq("access_mode", "open")
+          .then((result) => requireQueryData("preview open projects", result)),
     supabase
       .from("project_owners")
       .select("project_id")
@@ -333,8 +350,8 @@ export async function resolveAccessPreview(
     ]),
   ];
   const [categoryAccess, areaAccess] = await Promise.all([
-    resolveCategoryAccess(supabase, groupIds, false),
-    resolveAreaAccess(supabase, groupIds, false),
+    resolveCategoryAccess(supabase, groupIds, false, guest),
+    resolveAreaAccess(supabase, groupIds, false, guest),
   ]);
   return {
     preview: {

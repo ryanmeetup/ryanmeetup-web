@@ -182,6 +182,9 @@ export function TasksSidebar({
   // RLS still refuse a member who types the path.
   const canView = (area: Parameters<typeof canViewWorkspaceArea>[1]) =>
     canViewWorkspaceArea(data.accessibleAreas, area);
+  // A guest's routes other than their granted pages redirect, and every
+  // project and category open to the workspace is closed to them.
+  const guest = Boolean(data.isGuest);
   const selectedProjectIsFavorite = favoriteProjects.some(
     (project) =>
       project.id === selectedProject || project.name === selectedProject,
@@ -360,22 +363,26 @@ export function TasksSidebar({
         )}
       </div>
       <nav className="mt-4 space-y-1" aria-label="Main navigation">
-        <Link
-          href={withAccessPreview("/", data.accessPreview)}
-          onClick={closeSidebar}
-          className={linkClass(pathname === "/")}
-        >
-          <FiHome />
-          Dashboard
-        </Link>
-        <Link
-          href={withAccessPreview("/board", data.accessPreview)}
-          onClick={closeSidebar}
-          className={linkClass(isTasksRoute)}
-        >
-          <FiGrid />
-          Tasks
-        </Link>
+        {!guest && (
+          <>
+            <Link
+              href={withAccessPreview("/", data.accessPreview)}
+              onClick={closeSidebar}
+              className={linkClass(pathname === "/")}
+            >
+              <FiHome />
+              Dashboard
+            </Link>
+            <Link
+              href={withAccessPreview("/board", data.accessPreview)}
+              onClick={closeSidebar}
+              className={linkClass(isTasksRoute)}
+            >
+              <FiGrid />
+              Tasks
+            </Link>
+          </>
+        )}
         {canView("notes") && (
           <Link
             href={withAccessPreview("/notes", data.accessPreview)}
@@ -396,14 +403,16 @@ export function TasksSidebar({
             Contacts
           </Link>
         )}
-        <Link
-          href={withAccessPreview("/activity", data.accessPreview)}
-          onClick={closeSidebar}
-          className={linkClass(pathname === "/activity")}
-        >
-          <FiClock />
-          Activity
-        </Link>
+        {!guest && (
+          <Link
+            href={withAccessPreview("/activity", data.accessPreview)}
+            onClick={closeSidebar}
+            className={linkClass(pathname === "/activity")}
+          >
+            <FiClock />
+            Activity
+          </Link>
+        )}
         {canView("calendar") && (
           <Link
             href={withAccessPreview("/calendar", data.accessPreview)}
@@ -502,23 +511,144 @@ export function TasksSidebar({
           rail owns its bottom rule. With no create menu, the rail supplies both
           edges itself. Child borders only divide Favorites, Categories, and
           Projects inside the shared scroller. */}
-      <div
-        data-sidebar-resource-scroll
-        className={`min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain border-b border-black/10 py-4 pr-1 [scrollbar-gutter:stable] dark:border-white/10 ${isOwner || canManageCategories ? "" : "mt-4 border-t"}`}
-      >
-        {favoriteProjects.length > 0 && (
-          <section className="shrink-0 border-b border-black/10 pb-4 dark:border-white/10">
+      {guest ? null : (
+        <div
+          data-sidebar-resource-scroll
+          className={`min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain border-b border-black/10 py-4 pr-1 [scrollbar-gutter:stable] dark:border-white/10 ${isOwner || canManageCategories ? "" : "mt-4 border-t"}`}
+        >
+          {favoriteProjects.length > 0 && (
+            <section className="shrink-0 border-b border-black/10 pb-4 dark:border-white/10">
+              <div className="flex items-center justify-between px-3">
+                <button
+                  type="button"
+                  aria-expanded={favoritesExpanded}
+                  onClick={() => setFavoritesExpanded((current) => !current)}
+                  className="-ml-1 inline-flex items-center gap-1 rounded px-1 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-black/45 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:text-white/45 dark:hover:text-white dark:focus-visible:ring-white/40"
+                >
+                  <FiChevronDown
+                    className={`transition-transform duration-200 motion-reduce:transition-none ${favoritesExpanded ? "" : "-rotate-90"}`}
+                  />
+                  Favorites
+                </button>
+                <Link
+                  href={withAccessPreview("/projects", data.accessPreview)}
+                  onClick={closeSidebar}
+                  className="text-[10px] font-semibold text-black/50 hover:text-black dark:text-white/50 dark:hover:text-white"
+                >
+                  Manage
+                </Link>
+              </div>
+              <AnimatedCollapse
+                animate={sectionsLoaded}
+                open={favoritesExpanded}
+                className={favoritesExpanded ? "mt-2" : ""}
+                contentClassName="space-y-1"
+              >
+                {favoriteProjects.map((project) =>
+                  projectSidebarRow(project, true),
+                )}
+              </AnimatedCollapse>
+            </section>
+          )}
+          <section
+            className={`border-b border-black/10 pb-4 dark:border-white/10`}
+          >
             <div className="flex items-center justify-between px-3">
               <button
                 type="button"
-                aria-expanded={favoritesExpanded}
-                onClick={() => setFavoritesExpanded((current) => !current)}
+                aria-expanded={categoriesExpanded}
+                onClick={() => setCategoriesExpanded((current) => !current)}
                 className="-ml-1 inline-flex items-center gap-1 rounded px-1 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-black/45 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:text-white/45 dark:hover:text-white dark:focus-visible:ring-white/40"
               >
                 <FiChevronDown
-                  className={`transition-transform duration-200 motion-reduce:transition-none ${favoritesExpanded ? "" : "-rotate-90"}`}
+                  className={`transition-transform duration-200 motion-reduce:transition-none ${categoriesExpanded ? "" : "-rotate-90"}`}
                 />
-                Favorites
+                Categories
+              </button>
+              <Link
+                href={withAccessPreview("/categories", data.accessPreview)}
+                onClick={closeSidebar}
+                className="text-[10px] font-semibold text-black/50 hover:text-black dark:text-white/50 dark:hover:text-white"
+              >
+                {canManageCategories ? "Manage" : "View all"}
+              </Link>
+            </div>
+            <AnimatedCollapse
+              animate={sectionsLoaded}
+              open={categoriesExpanded}
+              className={categoriesExpanded ? "mt-2" : ""}
+              contentClassName="space-y-1"
+            >
+              {activeCategories.length === 0 && (
+                <p className="px-3 py-2 text-xs text-black/50 dark:text-white/50">
+                  No categories yet.
+                </p>
+              )}
+              {activeCategories.map((category) => {
+                const accessible =
+                  !accessibleCategoryIds ||
+                  accessibleCategoryIds.has(category.id);
+                if (!accessible)
+                  return (
+                    <Tooltip
+                      key={category.id}
+                      content="You don't have permission to view this category."
+                      placement="right"
+                      triggerClassName="block w-full"
+                    >
+                      <span
+                        aria-disabled="true"
+                        tabIndex={0}
+                        className="sidebar-link cursor-not-allowed opacity-55"
+                      >
+                        <span
+                          aria-hidden
+                          className="h-2.5 w-2.5 shrink-0 rounded-full"
+                          style={{ backgroundColor: category.color }}
+                        />
+                        <span className="min-w-0 flex-1 truncate">
+                          {category.name}
+                        </span>
+                        <FiLock aria-hidden className="ml-auto shrink-0" />
+                      </span>
+                    </Tooltip>
+                  );
+                return (
+                  <Link
+                    key={category.id}
+                    href={boardHref(
+                      isCategorySelected(category.id, category.name)
+                        ? undefined
+                        : { category: category.name },
+                    )}
+                    onClick={closeSidebar}
+                    className={linkClass(
+                      isCategorySelected(category.id, category.name),
+                    )}
+                  >
+                    <span
+                      aria-hidden
+                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: category.color }}
+                    />
+                    <SidebarItemLabel>{category.name}</SidebarItemLabel>
+                  </Link>
+                );
+              })}
+            </AnimatedCollapse>
+          </section>
+          <section className="pb-2">
+            <div className="flex items-center justify-between px-3">
+              <button
+                type="button"
+                aria-expanded={projectsExpanded}
+                onClick={() => setProjectsExpanded((current) => !current)}
+                className="-ml-1 inline-flex items-center gap-1 rounded px-1 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-black/45 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:text-white/45 dark:hover:text-white dark:focus-visible:ring-white/40"
+              >
+                <FiChevronDown
+                  className={`transition-transform duration-200 motion-reduce:transition-none ${projectsExpanded ? "" : "-rotate-90"}`}
+                />
+                Projects
               </button>
               <Link
                 href={withAccessPreview("/projects", data.accessPreview)}
@@ -530,141 +660,22 @@ export function TasksSidebar({
             </div>
             <AnimatedCollapse
               animate={sectionsLoaded}
-              open={favoritesExpanded}
-              className={favoritesExpanded ? "mt-2" : ""}
+              open={projectsExpanded}
+              className={projectsExpanded ? "mt-2" : ""}
               contentClassName="space-y-1"
             >
-              {favoriteProjects.map((project) =>
-                projectSidebarRow(project, true),
+              {otherProjects.length === 0 && (
+                <p className="px-3 py-2 text-xs text-black/50 dark:text-white/50">
+                  {favoriteProjects.length > 0
+                    ? "All projects are favorited."
+                    : "No projects yet."}
+                </p>
               )}
+              {otherProjects.map((project) => projectSidebarRow(project))}
             </AnimatedCollapse>
           </section>
-        )}
-        <section
-          className={`border-b border-black/10 pb-4 dark:border-white/10`}
-        >
-          <div className="flex items-center justify-between px-3">
-            <button
-              type="button"
-              aria-expanded={categoriesExpanded}
-              onClick={() => setCategoriesExpanded((current) => !current)}
-              className="-ml-1 inline-flex items-center gap-1 rounded px-1 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-black/45 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:text-white/45 dark:hover:text-white dark:focus-visible:ring-white/40"
-            >
-              <FiChevronDown
-                className={`transition-transform duration-200 motion-reduce:transition-none ${categoriesExpanded ? "" : "-rotate-90"}`}
-              />
-              Categories
-            </button>
-            <Link
-              href={withAccessPreview("/categories", data.accessPreview)}
-              onClick={closeSidebar}
-              className="text-[10px] font-semibold text-black/50 hover:text-black dark:text-white/50 dark:hover:text-white"
-            >
-              {canManageCategories ? "Manage" : "View all"}
-            </Link>
-          </div>
-          <AnimatedCollapse
-            animate={sectionsLoaded}
-            open={categoriesExpanded}
-            className={categoriesExpanded ? "mt-2" : ""}
-            contentClassName="space-y-1"
-          >
-            {activeCategories.length === 0 && (
-              <p className="px-3 py-2 text-xs text-black/50 dark:text-white/50">
-                No categories yet.
-              </p>
-            )}
-            {activeCategories.map((category) => {
-              const accessible =
-                !accessibleCategoryIds ||
-                accessibleCategoryIds.has(category.id);
-              if (!accessible)
-                return (
-                  <Tooltip
-                    key={category.id}
-                    content="You don't have permission to view this category."
-                    placement="right"
-                    triggerClassName="block w-full"
-                  >
-                    <span
-                      aria-disabled="true"
-                      tabIndex={0}
-                      className="sidebar-link cursor-not-allowed opacity-55"
-                    >
-                      <span
-                        aria-hidden
-                        className="h-2.5 w-2.5 shrink-0 rounded-full"
-                        style={{ backgroundColor: category.color }}
-                      />
-                      <span className="min-w-0 flex-1 truncate">
-                        {category.name}
-                      </span>
-                      <FiLock aria-hidden className="ml-auto shrink-0" />
-                    </span>
-                  </Tooltip>
-                );
-              return (
-                <Link
-                  key={category.id}
-                  href={boardHref(
-                    isCategorySelected(category.id, category.name)
-                      ? undefined
-                      : { category: category.name },
-                  )}
-                  onClick={closeSidebar}
-                  className={linkClass(
-                    isCategorySelected(category.id, category.name),
-                  )}
-                >
-                  <span
-                    aria-hidden
-                    className="h-2.5 w-2.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: category.color }}
-                  />
-                  <SidebarItemLabel>{category.name}</SidebarItemLabel>
-                </Link>
-              );
-            })}
-          </AnimatedCollapse>
-        </section>
-        <section className="pb-2">
-          <div className="flex items-center justify-between px-3">
-            <button
-              type="button"
-              aria-expanded={projectsExpanded}
-              onClick={() => setProjectsExpanded((current) => !current)}
-              className="-ml-1 inline-flex items-center gap-1 rounded px-1 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-black/45 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:text-white/45 dark:hover:text-white dark:focus-visible:ring-white/40"
-            >
-              <FiChevronDown
-                className={`transition-transform duration-200 motion-reduce:transition-none ${projectsExpanded ? "" : "-rotate-90"}`}
-              />
-              Projects
-            </button>
-            <Link
-              href={withAccessPreview("/projects", data.accessPreview)}
-              onClick={closeSidebar}
-              className="text-[10px] font-semibold text-black/50 hover:text-black dark:text-white/50 dark:hover:text-white"
-            >
-              Manage
-            </Link>
-          </div>
-          <AnimatedCollapse
-            animate={sectionsLoaded}
-            open={projectsExpanded}
-            className={projectsExpanded ? "mt-2" : ""}
-            contentClassName="space-y-1"
-          >
-            {otherProjects.length === 0 && (
-              <p className="px-3 py-2 text-xs text-black/50 dark:text-white/50">
-                {favoriteProjects.length > 0
-                  ? "All projects are favorited."
-                  : "No projects yet."}
-              </p>
-            )}
-            {otherProjects.map((project) => projectSidebarRow(project))}
-          </AnimatedCollapse>
-        </section>
-      </div>
+        </div>
+      )}
     </>
   );
 

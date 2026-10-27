@@ -59,15 +59,24 @@ export type AccessGroupOverview = {
   calendarReason: string | null;
 };
 
+type InheritanceGroup = Pick<AccessGroup, "id" | "kind" | "hierarchy_rank"> &
+  Partial<Pick<AccessGroup, "guest">>;
+
+/**
+ * The groups whose grants a group's members receive. Tier inheritance never
+ * crosses the guest boundary: a guest tier receives only its own grants, and
+ * no other tier receives a guest tier's.
+ */
 export function inheritedGroupIds(
-  group: Pick<AccessGroup, "id" | "kind" | "hierarchy_rank">,
-  groups: Pick<AccessGroup, "id" | "kind" | "hierarchy_rank">[],
+  group: InheritanceGroup,
+  groups: InheritanceGroup[],
 ) {
-  if (group.kind === "team") return [group.id];
+  if (group.kind === "team" || group.guest) return [group.id];
   return groups
     .filter(
       (candidate) =>
         candidate.kind === "tier" &&
+        !candidate.guest &&
         (candidate.hierarchy_rank ?? 0) <= (group.hierarchy_rank ?? 0),
     )
     .map((candidate) => candidate.id);
@@ -75,7 +84,7 @@ export function inheritedGroupIds(
 
 export function effectiveMembershipGroupIds(
   directGroupIds: string[],
-  groups: Pick<AccessGroup, "id" | "kind" | "hierarchy_rank">[],
+  groups: InheritanceGroup[],
 ) {
   const memberTier = groups.find(
     (group) => group.kind === "tier" && directGroupIds.includes(group.id),
@@ -85,12 +94,16 @@ export function effectiveMembershipGroupIds(
       (group) =>
         directGroupIds.includes(group.id) ||
         (group.kind === "tier" &&
+          !group.guest &&
+          !memberTier?.guest &&
           memberTier?.hierarchy_rank !== null &&
           memberTier?.hierarchy_rank !== undefined &&
           (group.hierarchy_rank ?? 0) <= memberTier.hierarchy_rank),
     )
     .map((group) => group.id);
 }
+
+const GUEST_SKIPS_OPEN = "Open to the workspace, which guests skip";
 
 function grantReason(
   selectedGroupId: string,
@@ -115,6 +128,7 @@ function explainResources({
   effectiveGroupIds,
   groupsById,
   workspaceWide,
+  guest,
 }: {
   group: Pick<AccessGroup, "id">;
   resources: Resource[];
@@ -122,6 +136,7 @@ function explainResources({
   effectiveGroupIds: Set<string>;
   groupsById: Map<string, Pick<AccessGroup, "name">>;
   workspaceWide: boolean;
+  guest: boolean;
 }) {
   const grantedGroupIds = new Map<string, string[]>();
   for (const grant of grants)
@@ -138,7 +153,9 @@ function explainResources({
       continue;
     }
     if (resource.access_mode === "open") {
-      available.push({ id, name, reason: "Open to the workspace" });
+      // An open resource has no group set to add a guest tier to.
+      if (guest) unavailable.push({ id, name, reason: GUEST_SKIPS_OPEN });
+      else available.push({ id, name, reason: "Open to the workspace" });
       continue;
     }
     const groupIds = grantedGroupIds.get(id) ?? [];
@@ -219,6 +236,7 @@ export function buildAccessGroupOverview({
     groups.map((candidate) => [candidate.id, candidate]),
   );
   const workspaceWide = group.grants_global_content;
+  const guest = group.kind === "tier" && group.guest;
   const projectAccess = explainResources({
     group,
     resources: projects,
@@ -226,6 +244,7 @@ export function buildAccessGroupOverview({
     effectiveGroupIds,
     groupsById,
     workspaceWide,
+    guest,
   });
   const categoryAccess = explainResources({
     group,
@@ -234,6 +253,7 @@ export function buildAccessGroupOverview({
     effectiveGroupIds,
     groupsById,
     workspaceWide,
+    guest,
   });
   const areaMode = new Map(
     areaAccess.map((area) => [area.area, area.accessMode]),
@@ -243,7 +263,8 @@ export function buildAccessGroupOverview({
   for (const area of areas) {
     const page = { id: area.key, name: area.label };
     if ((areaMode.get(area.key) ?? "open") === "open") {
-      pages.push({ ...page, reason: "Open to the workspace" });
+      if (guest) unavailablePages.push({ ...page, reason: GUEST_SKIPS_OPEN });
+      else pages.push({ ...page, reason: "Open to the workspace" });
       continue;
     }
     const groupIds = areaGrants

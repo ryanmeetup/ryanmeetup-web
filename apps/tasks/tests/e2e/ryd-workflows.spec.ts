@@ -681,6 +681,30 @@ test("denied members cannot reach RY-D data or settings", async ({
   expect((await state(request)).tableRequests).toEqual([]);
 });
 
+test("a partner guest lands on RY-D with only its navigation", async ({
+  page,
+  request,
+}, testInfo) => {
+  await reset(request, { role: "partner" });
+  await signIn(page);
+  // The page streams behind its loading boundary, so the redirect arrives as a
+  // client navigation that can supersede, and abort, the original load.
+  for (const path of ["/", "/board"]) {
+    await page.goto(path).catch(() => undefined);
+    await page.waitForURL(/\/ryd$/);
+  }
+  if (testInfo.project.name.includes("mobile"))
+    await page.getByRole("button", { name: "Open navigation" }).click();
+  const nav = page
+    .getByRole("navigation", { name: "Main navigation" })
+    .filter({ visible: true });
+  await expect(nav.getByRole("link", { name: "RY-D Verification" })).toBeVisible();
+  for (const name of ["Dashboard", "Tasks", "Activity"])
+    await expect(nav.getByRole("link", { name, exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "New task" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "New task" })).toHaveCount(0);
+});
+
 for (const role of ["operator", "owner"])
   test(`${role} can save RY-D settings through the page authority`, async ({
     page,

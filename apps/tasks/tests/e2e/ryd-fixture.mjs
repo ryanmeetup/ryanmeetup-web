@@ -27,6 +27,8 @@ export function createRydFixture(json, readBody, profile) {
     state = {
       enabled: options.enabled !== false,
       denied: options.role === "denied",
+      // A fulfillment partner: a guest-tier member granted only RY-D.
+      guest: options.role === "partner",
       ambiguousForm: options.ambiguousForm === true,
       legalName: options.legalName ?? "Ryan Fixture",
       legacyBatch: options.legacyBatch === true,
@@ -263,6 +265,10 @@ export function createRydFixture(json, readBody, profile) {
       json(response, 200, profile.app_role === "owner");
       return true;
     }
+    if (path === "/rest/v1/rpc/is_guest") {
+      json(response, 200, state.guest === true);
+      return true;
+    }
     if (path === "/rest/v1/rpc/can_view_workspace_area") {
       json(response, 200, !state.denied);
       return true;
@@ -272,8 +278,8 @@ export function createRydFixture(json, readBody, profile) {
       json(
         response,
         200,
-        (body.requested_areas ?? []).filter(
-          (area) => area !== "ryd" || !state.denied,
+        (body.requested_areas ?? []).filter((area) =>
+          state.guest ? area === "ryd" : area !== "ryd" || !state.denied,
         ),
       );
       return true;

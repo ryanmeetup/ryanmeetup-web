@@ -146,4 +146,37 @@ describe("access preview page visibility", () => {
   it("retains app-owner access when RY-D metadata is missing", () => {
     expect(accessibleAreasForPreview([], [], [], true)).toContain("ryd");
   });
+
+  it("keeps guests to the pages restricted to their groups", () => {
+    const rows = [
+      { area: "notes", access_mode: "open" as const },
+      { area: "ryd", access_mode: "restricted" as const },
+    ];
+    const grants = [{ area: "ryd", group_id: "partners" }];
+    expect(
+      accessibleAreasForPreview(rows, grants, ["partners"], false, true),
+    ).toEqual(["ryd"]);
+    expect(
+      accessibleAreasForPreview(rows, grants, ["leads"], false, true),
+    ).toEqual([]);
+  });
+});
+
+describe("access preview guest categories", () => {
+  it("skips open categories for guests", () => {
+    const categories = [
+      { id: "open", access_mode: "open" as const },
+      { id: "granted", access_mode: "restricted" as const },
+    ];
+    const grants = [{ category_id: "granted", group_id: "partners" }];
+    expect(
+      accessibleCategoryIdsForPreview(
+        categories,
+        grants,
+        ["partners"],
+        false,
+        true,
+      ),
+    ).toEqual(["granted"]);
+  });
 });

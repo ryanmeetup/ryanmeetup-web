@@ -74,6 +74,11 @@ export type WorkspaceData = {
    * `lib/access/workspace-areas.ts`.
    */
   accessibleAreas?: WorkspaceAreaKey[];
+  /**
+   * In a guest tier: the shell offers only the pages granted to them, and
+   * work open to the workspace never reaches them.
+   */
+  isGuest?: boolean;
   subtasks: Subtask[];
   comments: TaskComment[];
   activity: TaskActivity[];

@@ -54,7 +54,7 @@ async function LoadedWorkspaceShell({
 }) {
   const initialData = demoMode
     ? demoData
-    : (await loadWorkspacePage(shellCollections)).data;
+    : (await loadWorkspacePage(shellCollections, { allowGuest: true })).data;
 
   return (
     <PersistentWorkspaceShell initialData={initialData} demoMode={demoMode}>

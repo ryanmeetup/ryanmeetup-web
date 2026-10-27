@@ -167,6 +167,12 @@ const server = createServer(async (request, response) => {
     return;
   }
 
+  /** Nobody is a guest in the workspace specs. */
+  if (url.pathname === "/rest/v1/rpc/is_guest") {
+    json(response, 200, false);
+    return;
+  }
+
   /** Page access is enforced in Postgres; the double locks nothing. */
   if (url.pathname === "/rest/v1/rpc/accessible_workspace_areas") {
     const payload = await readBody(request);

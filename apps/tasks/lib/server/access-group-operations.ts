@@ -11,6 +11,7 @@ export type AccessGroupOperation =
       hierarchyRank: number | null;
       grantsGlobalContent: boolean;
       calendarAccess: boolean;
+      guest: boolean;
     }
   | {
       action: "group.update";
@@ -22,6 +23,7 @@ export type AccessGroupOperation =
       hierarchyRank: number | null;
       grantsGlobalContent: boolean;
       calendarAccess: boolean;
+      guest: boolean;
     }
   | { action: "group.delete"; id: string }
   | {
@@ -40,14 +42,18 @@ export type AccessGroupOperation =
 
 const hexColor = (value: unknown): value is string =>
   typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value);
+// `guest` is optional so an older client's payload keeps meaning "not a guest".
 const groupShape = (body: Record<string, unknown>) =>
-  (body.kind === "team" &&
+  (body.guest === undefined || typeof body.guest === "boolean") &&
+  ((body.kind === "team" &&
     body.hierarchyRank === null &&
-    body.grantsGlobalContent === false) ||
-  (body.kind === "tier" &&
-    Number.isInteger(body.hierarchyRank) &&
-    Number(body.hierarchyRank) >= 0 &&
-    typeof body.grantsGlobalContent === "boolean");
+    body.grantsGlobalContent === false &&
+    body.guest !== true) ||
+    (body.kind === "tier" &&
+      Number.isInteger(body.hierarchyRank) &&
+      Number(body.hierarchyRank) >= 0 &&
+      typeof body.grantsGlobalContent === "boolean" &&
+      !(body.guest === true && body.grantsGlobalContent === true)));
 
 export function accessGroupOperationSchema(
   value: unknown,
@@ -74,6 +80,7 @@ export function accessGroupOperationSchema(
       hierarchyRank: body.hierarchyRank as number | null,
       grantsGlobalContent: body.grantsGlobalContent as boolean,
       calendarAccess: body.calendarAccess,
+      guest: body.guest === true,
       description: body.description
         ? String(body.description).trim().slice(0, 500)
         : null,

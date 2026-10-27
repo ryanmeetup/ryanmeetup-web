@@ -13,8 +13,10 @@ import {
 } from "@/lib/server/workspace-loader";
 import {
   canViewWorkspaceArea,
+  guestHome,
   type WorkspaceAreaKey,
 } from "@/lib/access/workspace-areas";
+import { getInstanceSettings } from "@/lib/server/instance-settings";
 import { isDemoBuild } from "@/lib/instance";
 import { DEMO_PREVIEW_COOKIE, DEMO_PREVIEW_VALUE } from "@/lib/demo-preview";
 import { seedDefaultStatusesIfEmpty } from "@/lib/server/default-statuses";
@@ -58,9 +60,16 @@ export async function loadWorkspacePage(
     owner = false,
     requireOnboarding = true,
     area,
+    allowGuest = false,
   }: {
     owner?: boolean;
     requireOnboarding?: boolean;
+    /**
+     * Whether a guest may open this route. Guests reach the lockable pages
+     * granted to them; every other route sends them to the first of those,
+     * since everything else on it is work open to the workspace.
+     */
+    allowGuest?: boolean;
     /**
      * The lockable page this route renders. A member who does not reach it
      * gets the same 404 an owner-only route gives, so a restricted page never
@@ -90,5 +99,7 @@ export async function loadWorkspacePage(
 
   if (!data) redirect("/account-error?reason=profile");
   if (area && !canViewWorkspaceArea(data.accessibleAreas, area)) notFound();
+  if (data.isGuest && !area && !allowGuest)
+    redirect(guestHome(data.accessibleAreas, await getInstanceSettings()));
   return { supabase, user, data };
 }

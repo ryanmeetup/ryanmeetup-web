@@ -21,11 +21,7 @@ import {
   FiUser,
 } from "react-icons/fi";
 import type { Profile } from "@/lib/workspace/workspace-types";
-import {
-  editorTriggers,
-  ThemeToggle,
-  useTheme,
-} from "@/components/global";
+import { editorTriggers, ThemeToggle, useTheme } from "@/components/global";
 import { ADMIN_ROOT } from "@/lib/admin/admin-routes";
 import { HeaderProfileControls } from "./HeaderProfileControls";
 import { createClient } from "@/lib/supabase/client";
@@ -43,11 +39,13 @@ export function TaskHeaderActions({
   profile,
   previewing,
   demoMode,
+  canCreateTasks = true,
   onNewTask,
 }: {
   profile: Profile;
   previewing: boolean;
   demoMode: boolean;
+  canCreateTasks?: boolean;
   onNewTask: () => void;
 }) {
   const router = useRouter();
@@ -164,7 +162,7 @@ export function TaskHeaderActions({
             </DropdownMenuItems>
           </DropdownMenu>
         </span>
-        {previewing ? (
+        {!canCreateTasks ? null : previewing ? (
           <Tooltip content="Exit access preview to create a new task">
             <Button
               size="sm"

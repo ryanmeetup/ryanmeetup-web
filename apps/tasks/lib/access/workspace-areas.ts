@@ -108,3 +108,19 @@ export function canViewWorkspaceArea(
 ) {
   return !accessibleAreas || accessibleAreas.includes(key);
 }
+
+/**
+ * Where a guest lands: the first page this instance has that they can open, or
+ * their profile when there is none. Every other route holds work open to the
+ * workspace, which a guest never reaches.
+ */
+export function guestHome(
+  accessibleAreas: readonly WorkspaceAreaKey[] | undefined,
+  flags: { rydEnabled: boolean },
+) {
+  return (
+    enabledWorkspaceAreas(flags).find((area) =>
+      canViewWorkspaceArea(accessibleAreas, area.key),
+    )?.href ?? "/profile"
+  );
+}

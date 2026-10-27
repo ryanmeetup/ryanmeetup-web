@@ -20,6 +20,18 @@ and access previews only explain or simulate them.
   partially saved form cannot leave contradictory access behind.
 - Higher organizational tiers inherit the selected-project and category grants
   of lower tiers. Teams do not inherit from other teams.
+- A tier may be a **guest tier**, for people outside the organization such as
+  a fulfillment partner. Its members reach only what is granted to that tier
+  or to a team they belong to. Every rule that opens content to "every
+  onboarded member" skips them: open projects, open categories, projectless
+  tasks, open and unconfigured pages, and the member directory (a guest reads
+  only their own profile). Tier inheritance does not cross the guest boundary
+  in either direction. A guest tier cannot carry workspace-wide content access
+  and cannot be the new-member default. `member_is_guest` (service role) and
+  `is_guest` (the caller only) answer the question; `can_view_open_content`
+  is the gate on every open-to-everyone rule. Outside its granted pages the
+  app redirects a guest to the first of them and hides navigation to work
+  open to the workspace; that is presentation, and RLS remains the boundary.
 - Group membership and category visibility are app-owner administrative data.
   Project visibility is available to app owners and that project's named
   owners. Every visibility change must be audited.
