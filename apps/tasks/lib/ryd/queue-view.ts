@@ -21,11 +21,13 @@ export const RYD_STATUS_PARAMS = {
   pending: "pending",
   "needs-info": "needs_info",
   verified: "verified",
-  rejected: "rejected",
+  cancelled: "rejected",
 } as const satisfies Record<string, RydOrderStatus | null>;
 export type RydStatusParam = keyof typeof RYD_STATUS_PARAMS;
 
 export function rydStatusParam(value: string): RydStatusParam {
+  // Cancelled was called Rejected; keep old bookmarks working.
+  if (value === "rejected") return "cancelled";
   return Object.hasOwn(RYD_STATUS_PARAMS, value)
     ? (value as RydStatusParam)
     : "pending";
@@ -126,14 +128,13 @@ export function claimedElsewhere(
 }
 
 /**
- * Orders someone has to chase: asked for more, turned down, or still waiting
- * with nothing on the form that could be theirs.
+ * Orders someone has to chase: asked for more, or still waiting with nothing
+ * on the form that could be theirs. A cancelled order is settled.
  */
 export function followUpOrders(queue: Pick<RydQueue, "orders">) {
   return queue.orders.filter(
     (order) =>
       order.status === "needs_info" ||
-      order.status === "rejected" ||
       (order.status === "pending" &&
         !order.linkedKeys.length &&
         !order.suggestion),

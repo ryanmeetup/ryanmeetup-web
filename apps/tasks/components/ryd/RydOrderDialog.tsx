@@ -48,6 +48,7 @@ import {
   RydStatusChip,
 } from "./RydStatusChip";
 import { rydReminderHasEvidence } from "@/lib/ryd/reminders";
+import { RydCancelDialog } from "./RydCancelDialog";
 import { RydRemindDialog } from "./RydRemindDialog";
 import { RydSubmissionCard } from "./RydSubmissionCard";
 
@@ -61,7 +62,7 @@ export const RYD_DECISIONS: {
   label: string;
   icon: IconType;
 }[] = [
-  { status: "rejected", label: "Reject", icon: FiX },
+  { status: "rejected", label: "Cancel order", icon: FiX },
   { status: "needs_info", label: "Needs more info", icon: FiHelpCircle },
   { status: "verified", label: "Verify", icon: FiCheck },
 ];
@@ -108,6 +109,7 @@ export function RydOrderDialog({
   order,
   submissions,
   claimedKeys,
+  fulfillmentEmail,
   onClose,
   onChanged,
   onApplied,
@@ -116,6 +118,8 @@ export function RydOrderDialog({
   submissions: RydSubmission[];
   /** Linked to another order; one submission vouches for one Ryan. */
   claimedKeys: ReadonlySet<string>;
+  /** Who the cancellation request is addressed to. */
+  fulfillmentEmail: string | null;
   onClose: () => void;
   onChanged: () => Promise<void>;
   onApplied: (change: RydQueueChange) => void;
@@ -124,6 +128,7 @@ export function RydOrderDialog({
   const [pending, setPending] = useState<string | null>(null);
   const [linkChoice, setLinkChoice] = useState("");
   const [emailOpen, setEmailOpen] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
   const [choosing, setChoosing] = useState(false);
   const shown = orderSubmissions(order, submissions);
 
@@ -180,7 +185,9 @@ export function RydOrderDialog({
       () => decideRydOrder(order, submissions, status, note),
       status === "verified"
         ? `${order.firstName} ${order.lastName} is verified.`
-        : "Decision saved.",
+        : status === "rejected"
+          ? "Order cancelled."
+          : "Decision saved.",
     );
     if (saved) onClose();
   }
@@ -206,6 +213,16 @@ export function RydOrderDialog({
         title={`Email ${order.firstName || "buyer"}`}
         onClose={() => setEmailOpen(false)}
         onChanged={onChanged}
+      />
+    );
+
+  if (cancelOpen)
+    return (
+      <RydCancelDialog
+        orders={[order]}
+        fulfillmentEmail={fulfillmentEmail}
+        onConfirm={() => decide("rejected")}
+        onClose={() => setCancelOpen(false)}
       />
     );
 
@@ -252,7 +269,9 @@ export function RydOrderDialog({
                   leftIcon={<Icon aria-hidden />}
                   disabled={busy}
                   loading={pending === status}
-                  onClick={() => decide(status)}
+                  onClick={() =>
+                    status === "rejected" ? setCancelOpen(true) : decide(status)
+                  }
                 >
                   {label}
                 </Button>

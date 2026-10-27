@@ -129,12 +129,13 @@ uses, set in /admin/usage).
    links the submission by hand — from the order, or from **Unmatched
    submissions**. Within a confidence level, the buyer's own inbox or a quoted
    order outranks a pairing that rests on names.
-   Every order needs a person to press Verify, Needs more info, or Reject.
+   Every order needs a person to press Verify, Needs more info, or Cancel
+   order.
    Select orders in the queue to apply one decision together, then confirm.
    The confirmation flags missing evidence and skips orders already with
    fulfillment or in production. Failed decisions remain selected to retry.
-3. **Follow up.** The Follow-up view lists orders asked for more, rejected,
-   or with nothing on the form. **Email** on a row and the review dialog's ask
+3. **Follow up.** The Follow-up view lists orders asked for more, or with
+   nothing on the form. **Email** on a row and the review dialog's ask
    action open the same draft workflow as **Email everyone** and **Email
    selected**. A single buyer gets a personal greeting; groups use Bcc.
    Evidence state is considered across each buyer's selected orders, so someone with a
@@ -150,13 +151,26 @@ uses, set in /admin/usage).
    since preparation requires review. A reload failure does not undo a saved
    confirmation or import.
 
-   **Email everyone** leaves out rejected/verified orders, invalid addresses,
+   **Email everyone** leaves out cancelled/verified orders, invalid addresses,
    and anyone emailed in the last 20 hours. Hand-picking rows can override the
    time window. All buyer follow-up goes by email.
 
    An order still pending with a suggested response isn't in Follow-up, since
    it is waiting on a reviewer rather than the buyer. Mark it **Needs more
    info** to chase it.
+
+   **Cancel orders** is for buyers who never verify. From the queue,
+   Follow-up, or one order's review, it drafts two kinds of email: a request
+   to fulfillment's saved address listing each order to cancel and refund, and
+   Bcc notices telling buyers their order was cancelled and refunded — split by
+   whether they sent nothing or sent something that didn't verify, so each
+   gets the right reason. Drafts are pinned when the dialog opens and opening
+   one records nothing; **Mark N orders cancelled** is the only step that
+   changes the orders. Cancelled is stored as the `rejected` status, so no
+   schema change was needed; `?status=cancelled` lists them and old
+   `?status=rejected` links still work. A cancelled order leaves Follow-up and
+   is never emailed again. Orders already with fulfillment or in production
+   can't be cancelled here.
 
    The Pending and Needs more info queues also offer **Email selected** beside
    the decisions, so a reviewer can select all pending orders and nudge every

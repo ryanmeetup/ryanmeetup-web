@@ -13,7 +13,8 @@ export const RYD_STATUS_LABELS: Record<RydOrderStatus, string> = {
   pending: "Pending",
   verified: "Verified",
   needs_info: "Needs more info",
-  rejected: "Rejected",
+  // Stored as `rejected`; the order was turned away and refunded.
+  rejected: "Cancelled",
 };
 
 export const VERIFIED_MARK = "✅";

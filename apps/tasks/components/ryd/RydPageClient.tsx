@@ -31,6 +31,7 @@ import {
   FiSettings,
   FiShoppingBag,
   FiUpload,
+  FiX,
 } from "react-icons/fi";
 import {
   CountBadge,
@@ -95,6 +96,7 @@ import {
   RydUploadDialog,
 } from "./RydDialogs";
 import { RYD_DECISIONS, RydOrderDialog } from "./RydOrderDialog";
+import { RydCancelDialog } from "./RydCancelDialog";
 import { RydFulfillmentFilters } from "./RydFulfillmentFilters";
 import { RydOrderTable } from "./RydOrderTable";
 import { RydSelectionBar } from "./RydSelection";
@@ -171,9 +173,9 @@ const STAT_CARDS: {
   },
   {
     status: "rejected",
-    param: "rejected",
+    param: "cancelled",
     label: RYD_STATUS_LABELS.rejected,
-    mobileLabel: "Rejected",
+    mobileLabel: "Cancelled",
   },
 ];
 
@@ -193,6 +195,7 @@ type Dialog =
   | "contacted-selected"
   | "unmatched-email"
   | "unmatched-email-selected"
+  | "cancel-selected"
   | "settings"
   | null;
 
@@ -393,6 +396,21 @@ export function RydPageClient({
         Mark contacted
       </Button>
     </>
+  );
+  const cancelSelectedButton = (
+    <Button
+      type="button"
+      size="sm"
+      variant="secondary"
+      className="w-full sm:w-auto"
+      leftIcon={<FiX aria-hidden />}
+      disabled={
+        searchPending || decisionPending || !decidable("rejected").length
+      }
+      onClick={() => setDialog("cancel-selected")}
+    >
+      Cancel orders
+    </Button>
   );
   const totalCount =
     view === "unmatched" ? sortedSubmitters.length : sorted.length;
@@ -1025,9 +1043,9 @@ export function RydPageClient({
                 {view === "follow-up" && followUp.length > 0 && (
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-sm text-black/70 dark:text-white/70">
-                      Orders asked for more, rejected, or with nothing on the
-                      form. Email opens a draft asking the buyer for their
-                      ry-dentification; rejected orders are never emailed.
+                      Orders asked for more, or with nothing on the form. Email
+                      opens a draft asking the buyer for their ry-dentification.
+                      Anyone who never verifies can be selected and cancelled.
                     </p>
                     <Button
                       type="button"
@@ -1204,8 +1222,11 @@ export function RydPageClient({
                     onToggleAll={toggleAllOrders}
                   >
                     {statusFilter !== "rejected" && emailSelectedButtons}
+                    {statusFilter !== "rejected" && cancelSelectedButton}
                     {RYD_DECISIONS.filter(
-                      (decision) => decision.status !== statusFilter,
+                      (decision) =>
+                        decision.status !== statusFilter &&
+                        decision.status !== "rejected",
                     ).map(({ status: target, label, icon: Icon }) => (
                       <Button
                         key={target}
@@ -1236,6 +1257,7 @@ export function RydPageClient({
                     onToggleAll={toggleAllOrders}
                   >
                     {emailSelectedButtons}
+                    {cancelSelectedButton}
                   </RydSelectionBar>
                 )}
                 <PendingResults pending={searchPending} label="Loading orders">
@@ -1293,6 +1315,7 @@ export function RydPageClient({
           order={openOrder}
           submissions={queue.submissions}
           claimedKeys={claimedElsewhere(queue.orders, openOrder.orderId)}
+          fulfillmentEmail={queue.settings.fulfillmentEmail}
           onApplied={applyChange}
           onClose={() => setOpenOrderId("")}
           onChanged={refresh}
@@ -1330,9 +1353,19 @@ export function RydPageClient({
         }
         pendingLabel="Saving..."
         pending={decisionPending}
-        destructive={deciding === "rejected"}
         onConfirm={() => deciding && decideSelected(deciding)}
       />
+      {dialog === "cancel-selected" && (
+        <RydCancelDialog
+          orders={decidable("rejected")}
+          fulfillmentEmail={queue.settings.fulfillmentEmail}
+          onConfirm={async () => {
+            await decideSelected("rejected");
+            setDialog(null);
+          }}
+          onClose={() => setDialog(null)}
+        />
+      )}
       <ConfirmationDialog
         open={removing !== null}
         setOpen={(open) => {

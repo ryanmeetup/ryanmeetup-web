@@ -86,6 +86,13 @@ other than a CSV is turned away before it's sent. It no longer needs a
 Verified? column: every new order starts pending and is matched to the form's
 responses as soon as it lands.
 
+### Cancel RY-D orders that never verify
+
+Rejected is now Cancelled. Select the orders, or open one, and Cancel orders
+drafts a request asking fulfillment to cancel and refund them, plus a Bcc
+notice telling each buyer their order was cancelled and refunded and why.
+Marking them cancelled takes them out of follow-up for good.
+
 ### Refresh RY-D without losing saved changes
 
 Refresh picks up new form responses without leaving the queue. Confirmed reviews, pairings, settings, and removed responses stay visible if reloading fails, with a clear retry action.

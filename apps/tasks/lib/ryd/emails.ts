@@ -105,6 +105,63 @@ export function rydFulfillmentEmail(
   };
 }
 
+/** Asks fulfillment to cancel and refund orders that won't be made. */
+export function rydCancellationRequestEmail(
+  orders: {
+    orderId: string;
+    firstName: string;
+    lastName: string;
+    displayEmail: string;
+  }[],
+): RydDraft {
+  const lines = orders.map((order) => {
+    const buyer = `${order.firstName} ${order.lastName}`
+      .replace(/\s+/g, " ")
+      .trim();
+    const contact = order.displayEmail.trim();
+    return [
+      order.orderId,
+      [buyer || "buyer name unavailable", contact && `(${contact})`]
+        .filter(Boolean)
+        .join(" "),
+    ].join(" · ");
+  });
+  const one = orders.length === 1;
+  return {
+    subject: `RY-D order${one ? "" : "s"} to cancel and refund: ${orders.length}`,
+    body: [
+      "Hi,",
+      `Please cancel and refund ${one ? "the RY-D order below" : `these ${orders.length} RY-D orders`}. ${one ? "The buyer" : "The buyers"} couldn't be verified as ${one ? "a Ryan" : "Ryans"}, so ${one ? "it won't" : "they won't"} go into production.`,
+      `Cancel and refund:\n${lines.join("\n")}`,
+      "Please reply once the refunds have gone through so we can let the buyers know.",
+      "Thanks,\nRyan Meetup",
+    ].join("\n\n"),
+  };
+}
+
+/** Tells a buyer their order was cancelled and refunded, and why. */
+export function rydCancelledBuyerEmail({
+  firstName = "",
+  hasSubmission,
+}: {
+  firstName?: string;
+  hasSubmission: boolean;
+}): RydDraft {
+  const why = hasSubmission
+    ? "We looked over the ry-dentification you sent, but couldn't confirm from it that you're a Ryan."
+    : "We never received ry-dentification for your order, so we couldn't confirm you're a Ryan.";
+  return {
+    subject: "Your RY-D order has been cancelled and refunded",
+    body: [
+      `Hi ${firstName.trim() || "there"},`,
+      "We've cancelled your RY-D order and refunded it.",
+      `RY-Ds are made only for Ryans, so every order needs a quick ry-dentification before we can make it. ${why}`,
+      "If you think we got this wrong, just reply to this email.",
+      "Thanks, Ryan\nRyan Meetup",
+    ].join("\n\n"),
+  };
+}
+
 /** A link that opens the draft in the reviewer's mail app. */
 export function rydMailtoHref({
   to = [],

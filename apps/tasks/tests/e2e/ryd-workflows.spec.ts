@@ -508,6 +508,39 @@ test("imports an order CSV dropped onto the upload field and refuses other files
   expect((await state(request)).calls.map((call: { name: string }) => call.name)).toEqual(["ryd_import_orders"]);
 });
 
+test("cancels selected orders after drafting fulfillment's refund request and the buyers' notice", async ({ page, request }, testInfo) => {
+  await reset(request);
+  await signIn(page);
+  expect((await page.request.post("/api/ryd/imports", { multipart: {
+    operationId: "00000000-0000-4000-8000-000000000851",
+    file: { name: "cancel.csv", mimeType: "text/csv", buffer: Buffer.from(
+      "OrderId,BillFirstName,BillLastName,BillEmail\r\n" +
+      "802,Ryan,Second,second@example.test\r\n" +
+      "803,Ryan,Third,third@example.test\r\n",
+    ) },
+  } })).ok()).toBeTruthy();
+  await page.goto("/ryd");
+  await page.getByRole("checkbox", { name: "Select all 2", exact: true }).check();
+  await page.getByRole("button", { name: "Cancel orders", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Cancel 2 orders", exact: true });
+  const request_ = dialog.getByRole("region", { name: "1. Ask fulfillment to cancel and refund", exact: true });
+  await expect(request_).toContainText("To fulfillment@example.test");
+  await expect(request_).toContainText("802 · Ryan Second (second@example.test)");
+  const fulfillmentDraft = decodeURIComponent((await request_.getByRole("link", { name: "Open draft", exact: true }).getAttribute("href"))!);
+  expect(fulfillmentDraft).toMatch(/^mailto:fulfillment@example\.test\?subject=RY-D orders to cancel and refund: 2/);
+  const buyers = dialog.getByRole("region", { name: "2. Tell the buyers: nothing sent", exact: true });
+  const buyerDraft = decodeURIComponent((await buyers.getByRole("link", { name: "Open draft", exact: true }).getAttribute("href"))!);
+  expect(buyerDraft).toMatch(/^mailto:\?bcc=second@example\.test,third@example\.test&subject=Your RY-D order has been cancelled and refunded/);
+  await page.screenshot({ path: testInfo.outputPath("cancel-orders.png"), fullPage: true });
+  expect((await state(request)).orders.map((order: { status: string }) => order.status)).toEqual(["pending", "pending"]);
+  await dialog.getByRole("button", { name: "Mark 2 orders cancelled", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  expect((await state(request)).orders.map((order: { status: string }) => order.status)).toEqual(["rejected", "rejected"]);
+  await page.goto("/ryd?status=rejected");
+  await expect(page.getByRole("button", { name: "Review Ryan Second", exact: true })).toBeVisible();
+  await expect(page.locator("tbody tr", { hasText: "Ryan Second" })).toContainText("Cancelled");
+});
+
 test("emails every selected pending buyer in one Bcc draft and marks them contacted", async ({ page, request }) => {
   await reset(request);
   await signIn(page);

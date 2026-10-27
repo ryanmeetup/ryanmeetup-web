@@ -58,7 +58,7 @@ const SORT_CHOICES: Record<
       { key: "ryan", descending: true, label: "Non-Ryans first" },
     ],
   ],
-  status: [both("status", "Pending first", "Rejected first")],
+  status: [both("status", "Pending first", "Cancelled first")],
   form: [both("form", "Surest match first", "No submission first")],
   ordered: [both("ordered", "Oldest first", "Newest first")],
   production: [
