@@ -36,9 +36,11 @@ Access setting, and every `/api/ryd` route answer as if they don't exist.
    on Ryan Meetup); higher tiers inherit those grants, and app owners retain
    access. On an empty database with no owner yet, create the RY-D team and
    select it alongside administrator tiers for the page from /admin/access.
-   Everyone with page access can operate the queue, change RY-D settings,
-   and connect or disconnect Google. Managing group membership and instance
-   features remains owner-only.
+   Everyone with page access can operate the queue. Changing RY-D settings
+   and connecting or disconnecting Google also needs the separately locked
+   **RY-D Settings** page, which starts with the same groups as RY-D; narrow
+   it from /admin/access to keep a partner on the queue alone. Managing group
+   membership and instance features remains owner-only.
 
 The form setting changes what reviewers read; it does not change the public
 `https://ryanmeetup.com/cards/verify` redirect used by buyers and reminder

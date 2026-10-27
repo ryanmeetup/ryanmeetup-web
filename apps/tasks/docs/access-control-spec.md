@@ -118,8 +118,14 @@ holds a row only for a page an app owner has configured.
 - RY-D starts restricted to the lateral RY-D team and explicitly selected
   administrator tiers with workspace-wide content access. Higher tiers inherit
   those selected tier grants; app owners retain their override. Page access
-  grants full RY-D operation, including settings and Google connection setup,
-  without granting workspace administration or access to other restricted pages.
+  grants RY-D operation without granting workspace administration or access
+  to other restricted pages.
+- RY-D Settings (`ryd-settings`) is locked separately and gates the review
+  form, fulfillment's address, the upload reminder, and the Google
+  connection. Like RY-D it needs an explicit access row, so unconfigured it is
+  owner-only. Its migration seeds it with the groups RY-D granted at the time;
+  the settings and Google routes require it in addition to RY-D, and the page
+  hides its settings entry points without it.
 
 ## RY-D Verification
 

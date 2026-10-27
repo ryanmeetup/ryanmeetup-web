@@ -11,7 +11,7 @@ import { rydSettingsFrom, rydContext } from "@/lib/server/ryd";
 export async function PATCH(request: Request) {
   const parsed = await readJson(request, rydSettingsSchema);
   if ("response" in parsed) return parsed.response;
-  const context = await rydContext();
+  const context = await rydContext({ settings: true });
   if ("response" in context) return context.response;
 
   const row: Record<string, unknown> = {

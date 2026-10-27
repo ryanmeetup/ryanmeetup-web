@@ -7,7 +7,7 @@ import {
 } from "@/lib/server/ryd-google";
 
 export async function GET(request: Request) {
-  const context = await rydContext();
+  const context = await rydContext({ settings: true });
   if ("response" in context) return context.response;
   if (!isRydGoogleConfigured())
     return NextResponse.redirect(

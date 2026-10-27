@@ -76,12 +76,15 @@ const json = (body: unknown, method = "PATCH") => ({
   body: JSON.stringify(body),
 });
 
-const member = { user: { id: "member-1" }, supabase: {} };
+// Granted RY-D Settings as well as the queue.
+const canViewSettings = vi.fn();
+const member = { user: { id: "member-1" }, supabase: { rpc: canViewSettings } };
 
 describe("RY-D routes", () => {
   beforeEach(() => {
     vi.resetModules();
     authorize.mockReset().mockResolvedValue(member);
+    canViewSettings.mockReset().mockResolvedValue({ data: true, error: null });
     getInstanceSettings.mockReset().mockResolvedValue({ rydEnabled: true });
     getAdminClient.mockReset();
     loadRydGoogleIntegration
@@ -128,6 +131,24 @@ describe("RY-D routes", () => {
     expect(authorize).toHaveBeenLastCalledWith({
       onboarded: true,
       area: "ryd",
+    });
+  });
+
+  it("refuses settings to a member with the queue but not RY-D Settings", async () => {
+    canViewSettings.mockResolvedValue({ data: false, error: null });
+    getAdminClient.mockReturnValue(admin({}));
+    const { PATCH } = await import("@/app/api/ryd/settings/route");
+
+    const response = await PATCH(
+      new Request(
+        "http://localhost/api/ryd/settings",
+        json({ fulfillmentEmail: "orders@example.com" }),
+      ),
+    );
+
+    expect(response.status).toBe(403);
+    expect(canViewSettings).toHaveBeenCalledWith("can_view_workspace_area", {
+      requested_area: "ryd-settings",
     });
   });
 

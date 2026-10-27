@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AccessPreview } from "@/lib/workspace/workspace-types";
 import {
   WORKSPACE_AREA_KEYS,
+  workspaceAreaRequiresAccessCheck,
   type WorkspaceAreaKey,
 } from "@/lib/access/workspace-areas";
 import {
@@ -39,8 +40,8 @@ type PreviewAreaGrant = { area: string; group_id: string };
 
 /**
  * The same rule `can_view_workspace_area` applies, projected for the preview:
- * unconfigured pages other than RY-D are open. RY-D needs an explicit row;
- * restricted pages need a selected group, and only app owners bypass them.
+ * unconfigured pages are open, except the RY-D pages, which need an explicit
+ * row; restricted pages need a selected group, and only app owners bypass them.
  * A guest skips open and unconfigured pages alike.
  * Diagnostic only — it never authorizes a request.
  */
@@ -67,7 +68,8 @@ export function accessibleAreasForPreview(
   return WORKSPACE_AREA_KEYS.filter((area) =>
     restricted.has(area)
       ? grantedAreas.has(area)
-      : !guest && (area !== "ryd" || configured.has(area)),
+      : !guest &&
+        (!workspaceAreaRequiresAccessCheck(area) || configured.has(area)),
   );
 }
 
@@ -91,7 +93,9 @@ async function resolveAreaAccess(
     return {
       accessibleAreas: guest
         ? []
-        : WORKSPACE_AREA_KEYS.filter((area) => area !== "ryd"),
+        : WORKSPACE_AREA_KEYS.filter(
+            (area) => !workspaceAreaRequiresAccessCheck(area),
+          ),
     };
   return {
     accessibleAreas: accessibleAreasForPreview(

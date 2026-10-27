@@ -17,7 +17,7 @@ import { withRydQueueMatches } from "@/lib/ryd/queue-reconciliation";
 import { csvRecordCell } from "@/lib/ryd/csv";
 import { type RydOrderStatus } from "@/lib/ryd/orders";
 import { getAdminClient } from "./admin-client";
-import { apiError, notFound } from "./api-response";
+import { apiError, forbidden, notFound } from "./api-response";
 import { authorize } from "./auth";
 import { readDigestSettings } from "./digest-settings";
 import { getInstanceSettings } from "./instance-settings";
@@ -40,9 +40,12 @@ export type RydContext = {
  * The gate every RY-D route passes. An instance with RY-D off answers 404, as
  * if the page never existed; a member without the page answers 403. Data is
  * then read with the service role, because the tables carry no user policies.
- * Page access grants full RY-D control, including settings and Google setup.
+ * Page access grants the queue. Changing settings or the Google connection
+ * also needs the separately locked RY-D Settings page: pass `settings`.
  */
-export async function rydContext(): Promise<
+export async function rydContext({
+  settings = false,
+}: { settings?: boolean } = {}): Promise<
   RydContext | { response: Response }
 > {
   if (!(await getInstanceSettings()).rydEnabled)
@@ -52,6 +55,14 @@ export async function rydContext(): Promise<
     area: "ryd",
   });
   if ("response" in authorization) return authorization;
+  if (settings) {
+    // Fails closed: an error is not permission.
+    const { data, error } = await authorization.supabase.rpc(
+      "can_view_workspace_area",
+      { requested_area: "ryd-settings" },
+    );
+    if (error || data !== true) return { response: forbidden() };
+  }
   const admin = getAdminClient();
   if (!admin)
     return {

@@ -107,6 +107,7 @@ describe("access preview page visibility", () => {
       "contacts",
       "calendar",
       "ryd",
+      "ryd-settings",
     ]);
   });
 

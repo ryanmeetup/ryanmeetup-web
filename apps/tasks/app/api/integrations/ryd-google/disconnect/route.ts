@@ -12,7 +12,7 @@ import {
 export async function POST(request: Request) {
   const parsed = await readJson(request, emptyObjectSchema);
   if ("response" in parsed) return parsed.response;
-  const context = await rydContext();
+  const context = await rydContext({ settings: true });
   if ("response" in context) return context.response;
   try {
     const connection = await loadRydGoogleIntegration();

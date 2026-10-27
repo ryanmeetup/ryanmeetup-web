@@ -270,7 +270,14 @@ export function createRydFixture(json, readBody, profile) {
       return true;
     }
     if (path === "/rest/v1/rpc/can_view_workspace_area") {
-      json(response, 200, !state.denied);
+      const body = await readBody(request);
+      // A partner works the queue without RY-D Settings.
+      json(
+        response,
+        200,
+        !state.denied &&
+          !(state.guest && body.requested_area === "ryd-settings"),
+      );
       return true;
     }
     if (path === "/rest/v1/rpc/accessible_workspace_areas") {

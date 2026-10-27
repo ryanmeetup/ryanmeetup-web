@@ -115,6 +115,21 @@ select throws_ok($$select public.set_default_access_tier('20000000-0000-4000-800
   '23514', 'A guest tier cannot be the default for new members', 'a guest tier cannot be the default');
 
 set local role postgres;
+-- RY-D Settings is never open by default, and is locked apart from the queue.
+delete from public.workspace_area_access where area = 'ryd-settings';
+select ok(not public.member_can_view_workspace_area('00000000-0000-4000-8000-000000000202', 'ryd-settings'),
+  'an unconfigured RY-D Settings page is closed to members');
+select ok(public.member_can_view_workspace_area('00000000-0000-4000-8000-000000000201', 'ryd-settings'),
+  'app owners keep RY-D Settings');
+insert into public.workspace_area_access (area, access_mode) values ('ryd-settings', 'restricted');
+select ok(not public.member_can_view_workspace_area('00000000-0000-4000-8000-000000000203', 'ryd-settings'),
+  'a partner granted the queue does not reach RY-D Settings');
+insert into public.workspace_area_group_grants (area, group_id) values
+  ('ryd-settings', '20000000-0000-4000-8000-000000000203');
+select ok(public.member_can_view_workspace_area('00000000-0000-4000-8000-000000000203', 'ryd-settings'),
+  'RY-D Settings opens to a group selected for it');
+
+set local role postgres;
 select ok('00000000-0000-4000-8000-000000000203' in (select public.workspace_area_members('ryd')),
   'page recipients include a guest granted the page');
 select ok('00000000-0000-4000-8000-000000000203' not in (select public.workspace_area_members('notes')),

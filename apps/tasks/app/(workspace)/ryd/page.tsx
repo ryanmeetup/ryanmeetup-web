@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { RydPageClient } from "@/components/ryd";
+import { canViewWorkspaceArea } from "@/lib/access/workspace-areas";
 import { getAdminClient } from "@/lib/server/admin-client";
 import { getInstanceSettings, pageTitle } from "@/lib/server/instance-settings";
 import { loadRydQueue } from "@/lib/server/ryd";
@@ -31,6 +32,10 @@ export default async function RydPage() {
       initialData={loaded.data}
       initialQueue={await loadRydQueue(admin)}
       googleConfigured={isRydGoogleConfigured()}
+      canManageSettings={canViewWorkspaceArea(
+        loaded.data.accessibleAreas,
+        "ryd-settings",
+      )}
     />
   );
 }

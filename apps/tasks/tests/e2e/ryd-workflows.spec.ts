@@ -703,6 +703,18 @@ test("a partner guest lands on RY-D with only its navigation", async ({
     await expect(nav.getByRole("link", { name, exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "New task" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "New task" })).toHaveCount(0);
+  // The queue is theirs; what it reads from and who it emails are not.
+  await page.keyboard.press("Escape");
+  await expect(
+    page.getByRole("button", { name: "Settings", exact: true }),
+  ).toHaveCount(0);
+  expect(
+    (
+      await page.request.patch("/api/ryd/settings", {
+        data: { fulfillmentEmail: "partner@example.test" },
+      })
+    ).status(),
+  ).toBe(403);
 });
 
 for (const role of ["operator", "owner"])

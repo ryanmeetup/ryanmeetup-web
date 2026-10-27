@@ -130,7 +130,7 @@ const GOOGLE_MESSAGES: Record<string, [ok: boolean, message: string]> = {
   ],
   unavailable: [false, "Google sign-in isn't configured on this instance."],
   invalid: [false, "That Google sign-in expired. Try connecting again."],
-  auth: [false, "You need RY-D access to connect Google."],
+  auth: [false, "You need RY-D Settings access to connect Google."],
   failed: [false, "Google couldn't be connected. Try again."],
 };
 
@@ -203,10 +203,13 @@ export function RydPageClient({
   initialData,
   initialQueue,
   googleConfigured,
+  canManageSettings,
 }: {
   initialData: WorkspaceData;
   initialQueue: RydQueue;
   googleConfigured: boolean;
+  /** RY-D Settings is locked separately from the queue. */
+  canManageSettings: boolean;
 }) {
   const [data, setData] = useState(initialData);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -695,17 +698,19 @@ export function RydPageClient({
               >
                 Upload orders
               </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                className="w-full 2xl:w-auto"
-                leftIcon={<FiSettings aria-hidden />}
-                onClick={() => setDialog("settings")}
-                disabled={!queue.installed}
-              >
-                Settings
-              </Button>
+              {canManageSettings && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="w-full 2xl:w-auto"
+                  leftIcon={<FiSettings aria-hidden />}
+                  onClick={() => setDialog("settings")}
+                  disabled={!queue.installed}
+                >
+                  Settings
+                </Button>
+              )}
             </div>
           }
         >
@@ -756,15 +761,17 @@ export function RydPageClient({
                   <FiAlertTriangle aria-hidden className="mt-0.5 shrink-0" />
                   {sheetNotice}
                 </p>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  className="w-full shrink-0 sm:w-auto"
-                  onClick={() => setDialog("settings")}
-                >
-                  Open settings
-                </Button>
+                {canManageSettings && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    className="w-full shrink-0 sm:w-auto"
+                    onClick={() => setDialog("settings")}
+                  >
+                    Open settings
+                  </Button>
+                )}
               </div>
             )}
 
@@ -1465,7 +1472,7 @@ export function RydPageClient({
           }}
         />
       )}
-      {dialog === "settings" && (
+      {dialog === "settings" && canManageSettings && (
         <RydSettingsDialog
           queue={queue}
           googleConfigured={googleConfigured}

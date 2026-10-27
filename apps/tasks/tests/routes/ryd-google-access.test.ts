@@ -30,7 +30,21 @@ vi.mock("@/lib/server/ryd-google", () => ({
   RYD_GOOGLE_INTEGRATION_ID: "ryd_google",
 }));
 
-const member = { user: { id: "ryd-member" }, supabase: {} };
+// Granted RY-D Settings as well as the queue; `queueOnly` has just the queue.
+const settingsRpc = (canManage: boolean) =>
+  vi.fn(async (name: string, args: { requested_area?: string }) =>
+    name === "can_view_workspace_area" && args.requested_area === "ryd-settings"
+      ? { data: canManage, error: null }
+      : { data: null, error: { code: "unexpected" } },
+  );
+const member = {
+  user: { id: "ryd-member" },
+  supabase: { rpc: settingsRpc(true) },
+};
+const queueOnly = {
+  user: { id: "ryd-partner" },
+  supabase: { rpc: settingsRpc(false) },
+};
 
 async function requestGoogle(action: "connect" | "callback" | "disconnect") {
   if (action === "connect") {
@@ -141,6 +155,14 @@ describe("RY-D Google access", () => {
       else expect(response.status).toBe(404);
       expect(authorize).not.toHaveBeenCalled();
       expect(getAdminClient).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["connect", "disconnect"] as const)(
+    "refuses %s to a member without RY-D Settings",
+    async (action) => {
+      authorize.mockResolvedValue(queueOnly);
+      expect((await requestGoogle(action)).status).toBe(403);
     },
   );
 });

@@ -1,5 +1,11 @@
 import type { IconType } from "react-icons";
-import { FiCalendar, FiCheckSquare, FiFileText, FiUsers } from "react-icons/fi";
+import {
+  FiCalendar,
+  FiCheckSquare,
+  FiFileText,
+  FiSettings,
+  FiUsers,
+} from "react-icons/fi";
 
 /**
  * The pages an app owner can lock behind access groups.
@@ -47,6 +53,19 @@ export const WORKSPACE_AREAS = [
     // Only an instance that sells RY-Ds has this page. See `rydEnabled`.
     instanceFlag: "rydEnabled",
     // Service-role-only customer data has no user RLS fallback.
+    requiresAccessCheck: true,
+  },
+  {
+    // Part of the RY-D page rather than a page of its own, locked separately
+    // so a fulfillment partner can work the queue without changing what it
+    // reads from or who it emails. Useful only alongside RY-D itself.
+    key: "ryd-settings",
+    label: "RY-D Settings",
+    href: "/ryd",
+    icon: FiSettings,
+    description:
+      "The review form, fulfillment's address, the upload reminder, and the Google connection behind RY-D.",
+    instanceFlag: "rydEnabled",
     requiresAccessCheck: true,
   },
 ] as const satisfies readonly {
