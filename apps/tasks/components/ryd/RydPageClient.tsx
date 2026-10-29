@@ -553,21 +553,25 @@ export function RydPageClient({
 
   /**
    * Decide each selected order the way its dialog would, one at a time so a
-   * refusal on one doesn't lose the rest. What failed stays selected.
+   * refusal on one doesn't lose the rest. What failed stays selected. Changes
+   * land together at the end: applying each as it saves would shrink the
+   * confirmation's count mid-batch.
    */
   async function decideSelected(target: RydOrderStatus) {
     const orders = decidable(target);
     const unfinished = unfinishedCards(target).map((order) => order.orderId);
     setDecisionPending(true);
+    const changes: RydQueueChange[] = [];
     const failed: string[] = [];
     let lastError: unknown;
     for (const order of orders)
       try {
-        applyChange(await decideRydOrder(order, queue.submissions, target));
+        changes.push(await decideRydOrder(order, queue.submissions, target));
       } catch (error) {
         failed.push(order.orderId);
         lastError = error;
       }
+    changes.forEach(applyChange);
     try {
       await refresh();
     } catch {
