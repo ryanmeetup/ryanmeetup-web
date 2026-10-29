@@ -119,38 +119,33 @@ export function AccessGroupGrid({
             <Card key={group.id} className="flex h-full flex-col p-5">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
-                  <h3 className="flex min-w-0 items-center gap-2 text-lg leading-tight font-semibold">
-                    <span
-                      aria-hidden
-                      className="h-2.5 w-2.5 shrink-0 rounded-full"
-                      style={{ backgroundColor: group.color }}
-                    />
-                    <span className="truncate">{group.name}</span>
-                  </h3>
-                  {/* Guest, workspace-wide, and default are tier-only flags. */}
-                  {group.kind === "tier" && (
-                    <p className="mt-2 flex flex-wrap items-center gap-1.5">
-                      <span className="rounded-full border border-black/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide tabular-nums text-black/70 dark:border-white/10 dark:text-white/70">
-                        Rank {group.hierarchy_rank ?? 0}
+                  {/* Wraps rather than squeezing the name when badges stack. */}
+                  <h3 className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-lg leading-tight font-semibold">
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span
+                        aria-hidden
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{ backgroundColor: group.color }}
+                      />
+                      <span className="truncate">{group.name}</span>
+                    </span>
+                    {group.guest && (
+                      <span className="shrink-0 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-900 dark:text-amber-100">
+                        Guest
                       </span>
-                      {group.guest && (
-                        <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-900 dark:text-amber-100">
-                          Guest
-                        </span>
-                      )}
-                      {group.grants_global_content && (
-                        <span className="rounded-full bg-violet-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-700 dark:text-violet-200">
-                          Workspace-wide
-                        </span>
-                      )}
-                      {group.is_default && (
-                        <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
-                          New-member default
-                        </span>
-                      )}
-                    </p>
-                  )}
-                  <p className="mt-2 pb-4 text-sm text-black/65 dark:text-white/65">
+                    )}
+                    {group.grants_global_content && (
+                      <span className="shrink-0 rounded-full bg-violet-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-700 dark:text-violet-200">
+                        Workspace-wide
+                      </span>
+                    )}
+                    {group.is_default && (
+                      <span className="shrink-0 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                        New-member default
+                      </span>
+                    )}
+                  </h3>
+                  <p className="mt-1 pb-4 text-sm text-black/65 dark:text-white/65">
                     {group.description || "No description yet."}
                   </p>
                 </div>

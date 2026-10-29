@@ -64,9 +64,9 @@ can be added to it.
 ### Tiers and teams, side by side
 
 The Access page lists organizational tiers and teams in their own sections,
-each with its own create button and a line on what it is for. Tier cards show
-their rank and whether they are a guest, workspace-wide, or new-member default
-tier.
+each with its own create button and a line on what it is for. Tiers list from
+highest to lowest, and their cards mark guest, workspace-wide, and new-member
+default tiers.
 
 Inviting a teammate sets their app role, tier, and teams in the same step, so
 a partner arrives in a guest tier with only the team they work with.
