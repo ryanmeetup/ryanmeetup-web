@@ -4,6 +4,7 @@ import { requireQueryData } from "@/lib/server/workspace-loader";
 import {
   isWorkspaceDemo,
   loadWorkspacePage,
+  redirectPreviewedGuest,
 } from "@/lib/server/workspace-page-loader";
 import {
   ACCESS_PREVIEW_PARAM,
@@ -63,6 +64,7 @@ export default async function ProjectsPage({
           resolvedPreview.preview,
           resolvedPreview.projectIds,
         );
+        await redirectPreviewedGuest(initialData);
       }
     }
   }

@@ -16,6 +16,8 @@ import {
   guestHome,
   type WorkspaceAreaKey,
 } from "@/lib/access/workspace-areas";
+import { withAccessPreview } from "@/lib/access/access-preview";
+import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import { getInstanceSettings } from "@/lib/server/instance-settings";
 import { isDemoBuild } from "@/lib/instance";
 import { DEMO_PREVIEW_COOKIE, DEMO_PREVIEW_VALUE } from "@/lib/demo-preview";
@@ -102,4 +104,20 @@ export async function loadWorkspacePage(
   if (data.isGuest && !area && !allowGuest)
     redirect(guestHome(data.accessibleAreas, await getInstanceSettings()));
   return { supabase, user, data };
+}
+
+/**
+ * The preview counterpart of the guest redirect in `loadWorkspacePage`. That
+ * check reads the signed-in owner, so a route open to the workspace calls this
+ * once a preview is applied, and an owner viewing as a guest lands where the
+ * guest would rather than on a page the guest never sees.
+ */
+export async function redirectPreviewedGuest(data: WorkspaceData) {
+  if (!data.accessPreview?.guest) return;
+  redirect(
+    withAccessPreview(
+      guestHome(data.accessibleAreas, await getInstanceSettings()),
+      data.accessPreview,
+    ),
+  );
 }

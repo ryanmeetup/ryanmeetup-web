@@ -57,6 +57,23 @@ describe("access preview", () => {
     expect(result.attachments).toHaveLength(0);
     expect(result.taskLabels).toHaveLength(0);
     expect(result.projectOwners).toHaveLength(1);
+    expect(result.isGuest).toBe(false);
+  });
+
+  it("previews a guest as a guest, without projectless tasks", () => {
+    const result = applyAccessPreview(
+      baseData,
+      {
+        kind: "group",
+        subjectId: "group-1",
+        subjectName: "Partners",
+        guest: true,
+      },
+      ["visible"],
+    );
+
+    expect(result.isGuest).toBe(true);
+    expect(result.tasks.map(({ id }) => id)).toEqual(["visible-task"]);
   });
 
   it("replaces an existing preview without dropping unrelated query state", () => {

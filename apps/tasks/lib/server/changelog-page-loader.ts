@@ -9,6 +9,7 @@ import { requireQueryData } from "@/lib/server/workspace-loader";
 import {
   isWorkspaceDemo,
   loadWorkspacePage,
+  redirectPreviewedGuest,
 } from "@/lib/server/workspace-page-loader";
 
 export async function loadChangelogPage(
@@ -50,6 +51,7 @@ export async function loadChangelogPage(
           resolvedPreview.preview,
           resolvedPreview.projectIds,
         );
+        await redirectPreviewedGuest(initialData);
       }
     }
   }

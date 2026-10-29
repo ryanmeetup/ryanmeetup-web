@@ -42,9 +42,13 @@ export function applyAccessPreview(
     visibleProjectIds.has(project.id),
   );
   const inaccessibleTaskIds = new Set(preview.inaccessibleTaskIds ?? []);
+  // A guest skips projectless tasks along with everything else open to the
+  // workspace.
   const tasks = data.tasks.filter(
     (task) =>
-      (task.project_id === null || visibleProjectIds.has(task.project_id)) &&
+      (task.project_id === null
+        ? !preview.guest
+        : visibleProjectIds.has(task.project_id)) &&
       !inaccessibleTaskIds.has(task.id),
   );
   const visibleTaskIds = new Set(tasks.map((task) => task.id));
@@ -53,6 +57,7 @@ export function applyAccessPreview(
     ...data,
     accessPreview: preview,
     accessibleAreas: preview.accessibleAreas ?? data.accessibleAreas,
+    isGuest: Boolean(preview.guest),
     currentProfile:
       preview.kind === "user" && preview.subjectProfile
         ? preview.subjectProfile

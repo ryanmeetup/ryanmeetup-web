@@ -14,6 +14,7 @@ import { loadResourceAttachmentCounts } from "@/lib/server/resource-attachment-p
 import {
   isWorkspaceDemo,
   loadWorkspacePage,
+  redirectPreviewedGuest,
 } from "@/lib/server/workspace-page-loader";
 import type { Metadata } from "next";
 import { parseTaskKey } from "@/lib/tasks/task-key";
@@ -122,6 +123,7 @@ export default async function BoardPage({
           resolvedPreview.preview,
           resolvedPreview.projectIds,
         );
+        await redirectPreviewedGuest(initialData);
       }
     }
   }

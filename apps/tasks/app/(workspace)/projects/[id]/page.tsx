@@ -25,6 +25,7 @@ import {
 import {
   isWorkspaceDemo,
   loadWorkspacePage,
+  redirectPreviewedGuest,
 } from "@/lib/server/workspace-page-loader";
 import { demoCalendarEvents, demoData } from "@/lib/workspace/demo-data";
 
@@ -194,6 +195,7 @@ export default async function ProjectOverviewPage({
           resolved.preview,
           resolved.projectIds,
         );
+        await redirectPreviewedGuest(initialData);
         events = calendarEventsForPreview(
           events,
           resolved.preview,

@@ -44,6 +44,8 @@ export type AccessPreview = {
   inaccessibleTaskIds?: string[];
   accessibleAreas?: WorkspaceAreaKey[];
   calendarAccess?: boolean;
+  /** Whether the subject is in a guest tier, so the preview walks their routes. */
+  guest?: boolean;
 };
 
 export type WorkspaceData = {

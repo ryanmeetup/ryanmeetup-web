@@ -9,10 +9,14 @@ import {
 import { resolveAccessPreview } from "@/lib/server/access-preview";
 import { demoData } from "@/lib/workspace/demo-data";
 import { parseTaskKey, taskKey } from "@/lib/tasks/task-key";
-import { requireQueryData, WORKSPACE_COLUMNS } from "@/lib/server/workspace-loader";
+import {
+  requireQueryData,
+  WORKSPACE_COLUMNS,
+} from "@/lib/server/workspace-loader";
 import {
   isWorkspaceDemo,
   loadWorkspacePage,
+  redirectPreviewedGuest,
 } from "@/lib/server/workspace-page-loader";
 import { pageTitle } from "@/lib/server/instance-settings";
 
@@ -139,6 +143,7 @@ export default async function SharedTaskPage({
           resolvedPreview.preview,
           resolvedPreview.projectIds,
         );
+        await redirectPreviewedGuest(initialData);
       }
     }
   }

@@ -246,6 +246,7 @@ export async function resolveAccessPreview(
         kind: "group",
         subjectId: group.id,
         subjectName: group.name,
+        guest,
         calendarAccess: grantsCalendarAccessForPreview(
           groups,
           inheritedGroupIds,
@@ -377,6 +378,7 @@ export async function resolveAccessPreview(
       subjectName: profile.full_name,
       subjectProfile: profile,
       calendarAccess,
+      guest,
       ...categoryAccess,
       ...areaAccess,
     },

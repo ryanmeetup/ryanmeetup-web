@@ -7,10 +7,14 @@ import {
 } from "@/lib/access/access-preview";
 import { resolveAccessPreview } from "@/lib/server/access-preview";
 import { demoData } from "@/lib/workspace/demo-data";
-import { requireQueryData, WORKSPACE_COLUMNS } from "@/lib/server/workspace-loader";
+import {
+  requireQueryData,
+  WORKSPACE_COLUMNS,
+} from "@/lib/server/workspace-loader";
 import {
   isWorkspaceDemo,
   loadWorkspacePage,
+  redirectPreviewedGuest,
 } from "@/lib/server/workspace-page-loader";
 import { latestChangelogRelease } from "@/lib/server/changelog";
 import { pageTitle } from "@/lib/server/instance-settings";
@@ -102,6 +106,7 @@ export default async function DashboardPage({
           resolvedPreview.preview,
           resolvedPreview.projectIds,
         );
+        await redirectPreviewedGuest(initialData);
       }
     }
   }

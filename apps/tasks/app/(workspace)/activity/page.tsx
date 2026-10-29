@@ -11,6 +11,7 @@ import { requireQueryData } from "@/lib/server/workspace-loader";
 import {
   isWorkspaceDemo,
   loadWorkspacePage,
+  redirectPreviewedGuest,
 } from "@/lib/server/workspace-page-loader";
 import { pageTitle } from "@/lib/server/instance-settings";
 
@@ -62,6 +63,7 @@ export default async function ActivityPage({
           resolvedPreview.preview,
           resolvedPreview.projectIds,
         );
+        await redirectPreviewedGuest(initialData);
       }
     }
   }
