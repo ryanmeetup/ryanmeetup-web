@@ -5,16 +5,38 @@ import {
   optionalTrimmedText,
   parseUuid,
   requiredTrimmedText,
+  uuidList,
 } from "./shared";
 
+/**
+ * `access` is optional so an invite without it keeps landing in the default
+ * tier. With it, the invitee's role, tier, and teams are set before they can
+ * accept, in the same shape `replace_profile_access` takes.
+ */
 export function inviteSchema(value: unknown) {
-  const body = objectWithKeys(value, ["email", "fullName"]);
+  const body = objectWithKeys(value, ["email", "fullName", "access"]);
   if (!body) return null;
   const email = requiredTrimmedText(body.email, 254);
   const fullName = optionalTrimmedText(body.fullName, 100);
   if (!email || fullName === null || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
     return null;
-  return { email: email.toLowerCase(), fullName };
+  if (body.access === undefined)
+    return { email: email.toLowerCase(), fullName, access: null };
+  const access = objectWithKeys(body.access, ["tierId", "teamIds", "appRole"]);
+  const tierId = access && parseUuid(access.tierId);
+  const teamIds = access && uuidList(access.teamIds);
+  if (
+    !access ||
+    !tierId ||
+    !teamIds ||
+    (access.appRole !== "owner" && access.appRole !== "member")
+  )
+    return null;
+  return {
+    email: email.toLowerCase(),
+    fullName,
+    access: { tierId, teamIds, appRole: access.appRole },
+  };
 }
 
 export function userDeleteSchema(value: unknown) {

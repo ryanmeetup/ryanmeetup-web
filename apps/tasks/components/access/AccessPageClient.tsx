@@ -168,6 +168,8 @@ export function AccessPageClient({
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteName, setInviteName] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<"owner" | "member">("member");
+  const [inviteSelections, setInviteSelections] = useState<string[]>([]);
   const [teamPending, setTeamPending] = useState(false);
   const [accessProfile, setAccessProfile] = useState<Profile | null>(null);
   const [accessSelections, setAccessSelections] = useState<string[]>([]);
@@ -267,14 +269,47 @@ export function AccessPageClient({
     toast.success(`${data.name} created.`);
   }
 
+  // Starts where the signup trigger would put them, so sending without
+  // touching access behaves exactly as an invite always has.
+  function openInvite() {
+    const defaultTier = groups.find(
+      (group) => group.kind === "tier" && group.is_default,
+    );
+    setInviteRole("member");
+    setInviteSelections(defaultTier ? [defaultTier.id] : []);
+    setInviteOpen(true);
+  }
+
   async function inviteTeammate(event: FormEvent) {
     event.preventDefault();
     if (!inviteEmail.trim() || teamPending) return;
+    const tierId = inviteSelections.find((groupId) =>
+      groups.some((group) => group.id === groupId && group.kind === "tier"),
+    );
+    if (!tierId) {
+      toast.error("Choose one organizational tier.");
+      return;
+    }
     setTeamPending(true);
     try {
-      const result = await mutate<{ profile: Profile }>("/api/team", {
+      const result = await mutate<{
+        profile: Profile;
+        members: GroupMember[];
+      }>("/api/team", {
         method: "POST",
-        body: JSON.stringify({ email: inviteEmail, fullName: inviteName }),
+        body: JSON.stringify({
+          email: inviteEmail,
+          fullName: inviteName,
+          access: {
+            tierId,
+            teamIds: inviteSelections.filter((groupId) =>
+              groups.some(
+                (group) => group.id === groupId && group.kind === "team",
+              ),
+            ),
+            appRole: inviteRole,
+          },
+        }),
       });
       setProfiles((current) =>
         [...current, result.profile!].sort((a, b) =>
@@ -285,23 +320,10 @@ export function AccessPageClient({
         ...current,
         profiles: [...current.profiles, result.profile!],
       }));
-      const defaultTier = groups.find(
-        (group) => group.kind === "tier" && group.is_default,
-      );
-      if (defaultTier) {
-        const invitedAt = new Date().toISOString();
-        setMembers((current) => [
-          ...current.filter(
-            (member) => member.profile_id !== result.profile.id,
-          ),
-          {
-            group_id: defaultTier.id,
-            profile_id: result.profile.id,
-            added_by: currentUserId,
-            created_at: invitedAt,
-          },
-        ]);
-      }
+      setMembers((current) => [
+        ...current.filter((member) => member.profile_id !== result.profile.id),
+        ...result.members,
+      ]);
       setTeamMetadata((current) => [
         ...current,
         {
@@ -588,7 +610,7 @@ export function AccessPageClient({
               size="sm"
               leftIcon={<FiPlus />}
               className="w-full sm:w-auto"
-              onClick={() => setInviteOpen(true)}
+              onClick={openInvite}
             >
               Invite Teammate
             </Button>
@@ -881,14 +903,19 @@ export function AccessPageClient({
         />
       )}
       <InviteTeammateModal
+        appRole={inviteRole}
         email={inviteEmail}
+        groups={groups}
         name={inviteName}
         onEmailChange={setInviteEmail}
         onNameChange={setInviteName}
         onSubmit={inviteTeammate}
         open={inviteOpen}
         pending={teamPending}
+        selections={inviteSelections}
+        setAppRole={setInviteRole}
         setOpen={setInviteOpen}
+        setSelections={setInviteSelections}
       />
       <ProfileAccessModal
         appRole={accessRole}

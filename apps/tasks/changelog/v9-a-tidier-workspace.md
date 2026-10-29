@@ -68,6 +68,9 @@ each with its own create button and a line on what it is for. Tier cards show
 their rank and whether they are a guest, workspace-wide, or new-member default
 tier.
 
+Inviting a teammate sets their app role, tier, and teams in the same step, so
+a partner arrives in a guest tier with only the team they work with.
+
 ### Chipply exports import as written
 
 Order files that aren't UTF-8 keep accented names like Pérez intact, and

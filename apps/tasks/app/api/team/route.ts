@@ -63,6 +63,43 @@ export async function POST(request: Request) {
       "The invitation was sent, but its audit record could not be saved.",
     );
   }
+  // The signup trigger has already put the invitee in the default tier. When
+  // the owner chose their access up front, it replaces that before they can
+  // accept. If it cannot be saved the invitation is withdrawn rather than left
+  // in a tier nobody chose: failing closed beats a partner who can read the
+  // whole workspace.
+  let access: { app_role: "owner" | "member"; members: unknown[] } | null =
+    null;
+  if (parsed.data.access) {
+    const replaced = await context.supabase.rpc("replace_profile_access", {
+      requested_profile_id: data.user.id,
+      requested_tier_id: parsed.data.access.tierId,
+      requested_team_ids: parsed.data.access.teamIds,
+      requested_app_role: parsed.data.access.appRole,
+    });
+    if (replaced.error) {
+      const withdrawn = await context.admin.auth.admin.deleteUser(data.user.id);
+      if (withdrawn.error)
+        return databaseFailure(request, "team.invite.access", replaced.error, {
+          error:
+            "The invitation was sent, but its access could not be saved. Set it with Manage, or remove them, before they accept.",
+          relatedFailures: { withdraw: withdrawn.error },
+        });
+      await auditPrivilegedAction(context.admin, context.user, {
+        action: "team.remove",
+        targetType: "profile",
+        targetId: data.user.id,
+      });
+      return databaseFailure(request, "team.invite.access", replaced.error, {
+        error:
+          "Their access could not be saved, so the invitation was withdrawn. Try again.",
+      });
+    }
+    access = {
+      app_role: replaced.data.profile.app_role,
+      members: replaced.data.members,
+    };
+  }
   // Someone appearing in or vanishing from every assignee dropdown had no
   // explanation anywhere in the product until this.
   await recordWorkspaceActivity(context.admin, context.user, {
@@ -81,8 +118,9 @@ export async function POST(request: Request) {
       assign_new_tasks_to_self: false,
       editor_surface: "auto",
       calendar_default_view: ["task", "away", "important", "google"],
-      app_role: "member",
+      app_role: access?.app_role ?? "member",
     },
+    ...(access ? { members: access.members } : {}),
   });
 }
 
