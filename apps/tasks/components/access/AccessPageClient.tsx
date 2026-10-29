@@ -56,6 +56,7 @@ import {
   TeamTaskStats,
 } from "./TeamMemberDetails";
 import { AccessGroupGrid } from "./AccessGroupGrid";
+import { CombinedAccessPreview } from "./CombinedAccessPreview";
 import {
   WorkspaceAreaAccessPanel,
   type WorkspaceAreaAccess,
@@ -565,6 +566,28 @@ export function AccessPageClient({
             profiles={profiles}
           />
         </section>
+
+        {tiers.length > 0 && (
+          <section
+            aria-labelledby="combined-preview-heading"
+            className="space-y-4 border-t border-black/10 pt-8 dark:border-white/10"
+          >
+            <div>
+              <h2
+                id="combined-preview-heading"
+                className="text-xl font-semibold"
+              >
+                Preview a combination
+              </h2>
+              <p className="mt-1 text-sm text-black/65 dark:text-white/65">
+                See the workspace as someone holding one tier and any teams,
+                before anyone actually does. A guest tier with a team reaches
+                only what that tier and team are granted.
+              </p>
+            </div>
+            <CombinedAccessPreview tiers={tiers} teams={teams} />
+          </section>
+        )}
 
         <section
           aria-labelledby="pages-heading"

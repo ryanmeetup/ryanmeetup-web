@@ -80,6 +80,10 @@ navigation, their buttons, and the pages a guest is sent to instead of the
 Dashboard. You can move around as they would, but nothing in the preview can
 be clicked, typed into, or dragged.
 
+To check a combination before anyone holds it, such as a guest tier with the
+RY-D team, pick a tier and any teams under Preview a combination on the Access
+page.
+
 ### Chipply exports import as written
 
 Order files that aren't UTF-8 keep accented names like Pérez intact, and

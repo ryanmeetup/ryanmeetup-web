@@ -14,6 +14,7 @@ export function AccessPreviewBanner({ preview }: { preview?: AccessPreview }) {
   const searchParams = useSearchParams();
 
   if (!preview) return null;
+  const groupNames = preview.groupNames ?? [preview.subjectName];
 
   function exitPreview() {
     const nextParams = new URLSearchParams(searchParams.toString());
@@ -43,10 +44,22 @@ export function AccessPreviewBanner({ preview }: { preview?: AccessPreview }) {
       }
     >
       <p>
-        Viewing app visibility as <strong>{preview.subjectName}</strong>
-        {preview.kind === "group" ? " access group" : ""}. You can move around
-        as they would, but nothing here can be changed; you are still signed in
-        with your own account.
+        Viewing app visibility as{" "}
+        {preview.kind === "group" ? (
+          <>
+            {groupNames.map((name, index) => (
+              <span key={name}>
+                {index > 0 && " + "}
+                <strong>{name}</strong>
+              </span>
+            ))}
+            {groupNames.length > 1 ? " combined" : " access group"}
+          </>
+        ) : (
+          <strong>{preview.subjectName}</strong>
+        )}
+        . You can move around as they would, but nothing here can be changed;
+        you are still signed in with your own account.
       </p>
     </Banner>
   );
