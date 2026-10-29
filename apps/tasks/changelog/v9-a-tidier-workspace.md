@@ -57,8 +57,9 @@ closed to them, and their sidebar shows only what they can open.
 
 RY-D Settings is locked separately from the queue, so someone can verify
 orders and pull card files without changing the review form, fulfillment's
-address, the upload reminder, or the Google connection. It starts with the
-same groups as RY-D, so nothing changes until an owner narrows it.
+address, the upload reminder, or the Google connection. Settings opens only to
+app owners and workspace-wide tiers such as R-Suite, and no team or guest tier
+can be added to it.
 
 ### Chipply exports import as written
 
@@ -101,8 +102,8 @@ link from the form reviewers read, so changing one does not imply both changed.
 
 ### Delegate RY-D operations
 
-The RY-D access team can manage verification and fulfillment, and settings
-and the Google connection with RY-D Settings access. Administrator tiers and app owners retain access, while
+The RY-D access team can manage verification and fulfillment. Settings and
+the Google connection stay with workspace-wide tiers and app owners, while
 other members need the RY-D team grant.
 
 If RY-D's page-access configuration is missing, access stays with app owners

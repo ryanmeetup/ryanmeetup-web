@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AccessPreview } from "@/lib/workspace/workspace-types";
 import {
   WORKSPACE_AREA_KEYS,
+  workspaceAreaIsWorkspaceWideOnly,
   workspaceAreaRequiresAccessCheck,
   type WorkspaceAreaKey,
 } from "@/lib/access/workspace-areas";
@@ -42,7 +43,8 @@ type PreviewAreaGrant = { area: string; group_id: string };
  * The same rule `can_view_workspace_area` applies, projected for the preview:
  * unconfigured pages are open, except the RY-D pages, which need an explicit
  * row; restricted pages need a selected group, and only app owners bypass them.
- * A guest skips open and unconfigured pages alike.
+ * A guest skips open and unconfigured pages alike. RY-D Settings ignores rows
+ * and grants: it opens to workspace-wide tiers and nobody else.
  * Diagnostic only — it never authorizes a request.
  */
 export function accessibleAreasForPreview(
@@ -51,6 +53,7 @@ export function accessibleAreasForPreview(
   groupIds: string[],
   isAppOwner: boolean,
   guest = false,
+  workspaceWide = false,
 ): WorkspaceAreaKey[] {
   if (isAppOwner) return [...WORKSPACE_AREA_KEYS];
   const configured = new Set(areas.map((area) => area.area));
@@ -66,10 +69,12 @@ export function accessibleAreasForPreview(
       .map((grant) => grant.area),
   );
   return WORKSPACE_AREA_KEYS.filter((area) =>
-    restricted.has(area)
-      ? grantedAreas.has(area)
-      : !guest &&
-        (!workspaceAreaRequiresAccessCheck(area) || configured.has(area)),
+    workspaceAreaIsWorkspaceWideOnly(area)
+      ? workspaceWide
+      : restricted.has(area)
+        ? grantedAreas.has(area)
+        : !guest &&
+          (!workspaceAreaRequiresAccessCheck(area) || configured.has(area)),
   );
 }
 
@@ -78,6 +83,7 @@ async function resolveAreaAccess(
   groupIds: string[],
   isAppOwner: boolean,
   guest = false,
+  workspaceWide = false,
 ): Promise<{ accessibleAreas: WorkspaceAreaKey[] }> {
   if (isAppOwner) return { accessibleAreas: [...WORKSPACE_AREA_KEYS] };
   const [areasResult, grantsResult] = await Promise.all([
@@ -104,6 +110,7 @@ async function resolveAreaAccess(
       groupIds,
       false,
       guest,
+      workspaceWide,
     ),
   };
 }
@@ -226,7 +233,13 @@ export async function resolveAccessPreview(
         group.grants_global_content,
         guest,
       ),
-      resolveAreaAccess(supabase, inheritedGroupIds, false, guest),
+      resolveAreaAccess(
+        supabase,
+        inheritedGroupIds,
+        false,
+        guest,
+        group.grants_global_content,
+      ),
     ]);
     return {
       preview: {
@@ -319,7 +332,7 @@ export async function resolveAccessPreview(
         subjectProfile: profile,
         calendarAccess,
         ...categoryAccess,
-        ...(await resolveAreaAccess(supabase, groupIds, false)),
+        ...(await resolveAreaAccess(supabase, groupIds, false, false, true)),
       },
       projectIds: options.allProjectIds,
     };

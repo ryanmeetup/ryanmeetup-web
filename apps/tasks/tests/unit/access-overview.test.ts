@@ -92,6 +92,34 @@ describe("access group explanations", () => {
     );
   });
 
+  it("keeps RY-D Settings to workspace-wide tiers whatever is granted", () => {
+    const team = group("ryd", 0, { kind: "team", hierarchy_rank: null });
+    const global = group("suite", 100, { grants_global_content: true });
+    const input = {
+      groups: [team, global],
+      projects: [],
+      categories: [],
+      projectGrants: [],
+      categoryGrants: [],
+      areaAccess: [{ area: "ryd-settings", accessMode: "restricted" as const }],
+      areaGrants: [{ area: "ryd-settings", groupId: "ryd" }],
+    };
+    const teamSettings = buildAccessGroupOverview({
+      ...input,
+      group: team,
+    }).unavailablePages.find(({ id }) => id === "ryd-settings");
+    expect(teamSettings).toEqual({
+      id: "ryd-settings",
+      name: "RY-D Settings",
+      reason: "Workspace-wide tiers and app owners only",
+    });
+    expect(
+      buildAccessGroupOverview({ ...input, group: global }).pages.map(
+        ({ id }) => id,
+      ),
+    ).toContain("ryd-settings");
+  });
+
   it("names open, direct, inherited, and workspace-wide reasons", () => {
     const base = group("base", 0, { name: "Members" });
     const lead = group("lead", 10, { name: "Leads", calendar_access: true });
@@ -187,7 +215,10 @@ describe("access group explanations", () => {
     ]);
     expect(
       overview.unavailablePages.map(({ id, reason }) => [id, reason]),
-    ).toEqual([["notes", "Restricted to other groups"]]);
+    ).toEqual([
+      ["notes", "Restricted to other groups"],
+      ["ryd-settings", "Workspace-wide tiers and app owners only"],
+    ]);
     expect(overview.projects.length + overview.unavailableProjects.length).toBe(
       overview.projectCount,
     );

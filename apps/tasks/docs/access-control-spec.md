@@ -120,12 +120,15 @@ holds a row only for a page an app owner has configured.
   those selected tier grants; app owners retain their override. Page access
   grants RY-D operation without granting workspace administration or access
   to other restricted pages.
-- RY-D Settings (`ryd-settings`) is locked separately and gates the review
-  form, fulfillment's address, the upload reminder, and the Google
-  connection. Like RY-D it needs an explicit access row, so unconfigured it is
-  owner-only. Its migration seeds it with the groups RY-D granted at the time;
-  the settings and Google routes require it in addition to RY-D, and the page
-  hides its settings entry points without it.
+- RY-D Settings (`ryd-settings`) gates the review form, fulfillment's
+  address, the upload reminder, and the Google connection. It is a fixed rule,
+  not a configurable page: it opens to app owners and members of a tier with
+  workspace-wide content access, and to nobody else. It takes no
+  `workspace_area_access` row or group grants, `set_workspace_area_access`
+  refuses it, and the registry marks it `workspaceWideOnly` so the access
+  screen, group explanations, and preview state the same rule. The settings
+  and Google routes require it in addition to RY-D, and the page hides its
+  settings entry points without it.
 
 ## RY-D Verification
 

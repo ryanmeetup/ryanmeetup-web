@@ -144,6 +144,17 @@ describe("access preview page visibility", () => {
     ).toContain("ryd");
   });
 
+  it("opens RY-D Settings to workspace-wide tiers and no grant", () => {
+    const rows = [{ area: "ryd-settings", access_mode: "restricted" as const }];
+    const grants = [{ area: "ryd-settings", group_id: "reviewers" }];
+    expect(
+      accessibleAreasForPreview(rows, grants, ["reviewers"], false),
+    ).not.toContain("ryd-settings");
+    expect(accessibleAreasForPreview([], [], [], false, false, true)).toContain(
+      "ryd-settings",
+    );
+  });
+
   it("retains app-owner access when RY-D metadata is missing", () => {
     expect(accessibleAreasForPreview([], [], [], true)).toContain("ryd");
   });

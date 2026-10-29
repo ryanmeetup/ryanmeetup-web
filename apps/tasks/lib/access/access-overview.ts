@@ -1,5 +1,6 @@
 import {
   WORKSPACE_AREAS,
+  workspaceAreaIsWorkspaceWideOnly,
   type WorkspaceArea,
   type WorkspaceAreaKey,
 } from "@/lib/access/workspace-areas";
@@ -104,6 +105,7 @@ export function effectiveMembershipGroupIds(
 }
 
 const GUEST_SKIPS_OPEN = "Open to the workspace, which guests skip";
+const WORKSPACE_WIDE_ONLY = "Workspace-wide tiers and app owners only";
 
 function grantReason(
   selectedGroupId: string,
@@ -262,6 +264,13 @@ export function buildAccessGroupOverview({
   const unavailablePages: ExplainedAccess[] = [];
   for (const area of areas) {
     const page = { id: area.key, name: area.label };
+    // A fixed rule, so there is no grant here for this group to add or drop.
+    if (workspaceAreaIsWorkspaceWideOnly(area.key)) {
+      if (workspaceWide)
+        pages.push({ ...page, reason: "Workspace-wide manager access" });
+      else unavailablePages.push({ ...page, reason: WORKSPACE_WIDE_ONLY });
+      continue;
+    }
     if ((areaMode.get(area.key) ?? "open") === "open") {
       if (guest) unavailablePages.push({ ...page, reason: GUEST_SKIPS_OPEN });
       else pages.push({ ...page, reason: "Open to the workspace" });

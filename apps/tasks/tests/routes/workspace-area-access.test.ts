@@ -45,6 +45,21 @@ describe("page access route contract", () => {
     expect(privilegedContext).not.toHaveBeenCalled();
   });
 
+  it("rejects RY-D Settings, whose access is a fixed rule", async () => {
+    const { POST } = await import("@/app/api/workspace-area-access/route");
+
+    const response = await POST(
+      request({
+        area: "ryd-settings",
+        accessMode: "restricted",
+        groupIds: [groupId],
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(privilegedContext).not.toHaveBeenCalled();
+  });
+
   it("rejects an unknown access mode", async () => {
     const { POST } = await import("@/app/api/workspace-area-access/route");
 

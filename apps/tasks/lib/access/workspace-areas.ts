@@ -67,6 +67,10 @@ export const WORKSPACE_AREAS = [
       "The review form, fulfillment's address, the upload reminder, and the Google connection behind RY-D.",
     instanceFlag: "rydEnabled",
     requiresAccessCheck: true,
+    // A rule rather than a selection: app owners and workspace-wide tiers
+    // only, so no team or partner tier can be added to it by mistake.
+    // `member_can_view_workspace_area` enforces it; there is nothing to edit.
+    workspaceWideOnly: true,
   },
 ] as const satisfies readonly {
   key: string;
@@ -76,6 +80,7 @@ export const WORKSPACE_AREAS = [
   description: string;
   instanceFlag?: "rydEnabled";
   requiresAccessCheck?: boolean;
+  workspaceWideOnly?: boolean;
 }[];
 
 export type WorkspaceArea = (typeof WORKSPACE_AREAS)[number];
@@ -111,6 +116,15 @@ export function workspaceAreaRequiresAccessCheck(key: WorkspaceAreaKey) {
   return Boolean(
     area && "requiresAccessCheck" in area && area.requiresAccessCheck,
   );
+}
+
+/**
+ * Pages whose access is fixed to app owners and tiers with workspace-wide
+ * content access. They take no page-access row and no group grants.
+ */
+export function workspaceAreaIsWorkspaceWideOnly(key: WorkspaceAreaKey) {
+  const area = WORKSPACE_AREAS.find((area) => area.key === key);
+  return Boolean(area && "workspaceWideOnly" in area && area.workspaceWideOnly);
 }
 
 /**

@@ -114,20 +114,26 @@ select set_config('request.jwt.claim.sub', '00000000-0000-4000-8000-000000000201
 select throws_ok($$select public.set_default_access_tier('20000000-0000-4000-8000-000000000202')$$,
   '23514', 'A guest tier cannot be the default for new members', 'a guest tier cannot be the default');
 
+-- RY-D Settings is a fixed rule: app owners and workspace-wide tiers only.
+select throws_ok($$select public.set_workspace_area_access('ryd-settings', 'restricted',
+    array['20000000-0000-4000-8000-000000000203'::uuid])$$,
+  'RS001', null, 'RY-D Settings access cannot be configured');
+
 set local role postgres;
--- RY-D Settings is never open by default, and is locked apart from the queue.
-delete from public.workspace_area_access where area = 'ryd-settings';
 select ok(not public.member_can_view_workspace_area('00000000-0000-4000-8000-000000000202', 'ryd-settings'),
-  'an unconfigured RY-D Settings page is closed to members');
+  'a member outside a workspace-wide tier cannot open RY-D Settings');
 select ok(public.member_can_view_workspace_area('00000000-0000-4000-8000-000000000201', 'ryd-settings'),
   'app owners keep RY-D Settings');
+-- Even a stray grant row written around the RPC opens nothing.
 insert into public.workspace_area_access (area, access_mode) values ('ryd-settings', 'restricted');
-select ok(not public.member_can_view_workspace_area('00000000-0000-4000-8000-000000000203', 'ryd-settings'),
-  'a partner granted the queue does not reach RY-D Settings');
 insert into public.workspace_area_group_grants (area, group_id) values
   ('ryd-settings', '20000000-0000-4000-8000-000000000203');
-select ok(public.member_can_view_workspace_area('00000000-0000-4000-8000-000000000203', 'ryd-settings'),
-  'RY-D Settings opens to a group selected for it');
+select ok(not public.member_can_view_workspace_area('00000000-0000-4000-8000-000000000203', 'ryd-settings'),
+  'a group grant does not open RY-D Settings');
+update public.access_groups set grants_global_content = true
+where id = '20000000-0000-4000-8000-000000000201';
+select ok(public.member_can_view_workspace_area('00000000-0000-4000-8000-000000000202', 'ryd-settings'),
+  'a workspace-wide tier opens RY-D Settings');
 
 set local role postgres;
 select ok('00000000-0000-4000-8000-000000000203' in (select public.workspace_area_members('ryd')),

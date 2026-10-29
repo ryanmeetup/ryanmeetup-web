@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { isJsonObject, isUuid } from "@/lib/api-schema/shared";
 import {
   isWorkspaceAreaKey,
+  workspaceAreaIsWorkspaceWideOnly,
   workspaceAreaLabel,
 } from "@/lib/access/workspace-areas";
 import { databaseFailure } from "@/lib/server/api-response";
@@ -29,6 +30,8 @@ export async function POST(request: Request) {
     const body = value;
     if (
       !isWorkspaceAreaKey(body.area) ||
+      // A fixed rule has no selection to save; the database refuses it too.
+      workspaceAreaIsWorkspaceWideOnly(body.area) ||
       (body.accessMode !== "open" && body.accessMode !== "restricted") ||
       !Array.isArray(body.groupIds) ||
       !body.groupIds.every(isUuid)
