@@ -30,8 +30,10 @@ and access previews only explain or simulate them.
   and cannot be the new-member default. `member_is_guest` (service role) and
   `is_guest` (the caller only) answer the question; `can_view_open_content`
   is the gate on every open-to-everyone rule. Outside its granted pages the
-  app redirects a guest to the first of them and hides navigation to work
-  open to the workspace; that is presentation, and RLS remains the boundary.
+  app redirects a guest to the first of them, or to a welcome on the
+  dashboard route that names the app owners to ask when there is none, and
+  hides navigation to work open to the workspace; that is presentation, and
+  RLS remains the boundary.
 - Group membership and category visibility are app-owner administrative data.
   Project visibility is available to app owners and that project's named
   owners. Every visibility change must be audited.

@@ -69,7 +69,9 @@ highest to lowest, and their cards mark guest, workspace-wide, and new-member
 default tiers.
 
 Inviting a teammate sets their app role, tier, and teams in the same step, so
-a partner arrives in a guest tier with only the team they work with.
+a partner arrives in a guest tier with only the team they work with. A guest
+with nothing shared yet is welcomed with what the workspace is and who to ask
+for access, instead of landing on an empty profile.
 
 ### View as shows what they see
 

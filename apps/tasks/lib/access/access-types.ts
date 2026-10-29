@@ -34,3 +34,10 @@ export type UserAccessMetadata = {
   created: number;
   reported: number;
 };
+
+/** An app owner a guest can ask for access, by name only. */
+export type AppOwnerContact = {
+  id: string;
+  name: string;
+  avatarUrl: string | null;
+};

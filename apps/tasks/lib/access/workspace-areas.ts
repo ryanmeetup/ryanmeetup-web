@@ -144,8 +144,9 @@ export function canViewWorkspaceArea(
 
 /**
  * Where a guest lands: the first page this instance has that they can open, or
- * their profile when there is none. Every other route holds work open to the
- * workspace, which a guest never reaches.
+ * the dashboard route — which welcomes a guest instead of showing work — when
+ * there is none. Every other route holds work open to the workspace, which a
+ * guest never reaches.
  */
 export function guestHome(
   accessibleAreas: readonly WorkspaceAreaKey[] | undefined,
@@ -154,6 +155,6 @@ export function guestHome(
   return (
     enabledWorkspaceAreas(flags).find((area) =>
       canViewWorkspaceArea(accessibleAreas, area.key),
-    )?.href ?? "/profile"
+    )?.href ?? "/"
   );
 }

@@ -118,11 +118,7 @@ export async function redirectPreviewedGuest(
 ): Promise<"no-pages" | undefined> {
   if (!data.accessPreview?.guest) return;
   const home = guestHome(data.accessibleAreas, await getInstanceSettings());
-  // A guest with no page lands on their own profile, which a preview cannot
-  // borrow — it would render the owner's. The dashboard route stands in.
-  if (home === "/profile") {
-    if (onDashboard) return "no-pages";
-    redirect(withAccessPreview("/", data.accessPreview));
-  }
+  // A guest with no page is welcomed on the dashboard route itself.
+  if (onDashboard && home === "/") return "no-pages";
   redirect(withAccessPreview(home, data.accessPreview));
 }

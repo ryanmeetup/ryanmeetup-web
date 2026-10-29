@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { DashboardPageClient } from "@/components/dashboard";
 import {
   ACCESS_PREVIEW_PARAM,
@@ -11,14 +12,16 @@ import {
   requireQueryData,
   WORKSPACE_COLUMNS,
 } from "@/lib/server/workspace-loader";
-import { GuestPreviewEmptyPage } from "@/components/access/GuestPreviewEmptyPage";
+import { GuestWelcomePage } from "@/components/access/GuestWelcomePage";
+import { guestHome } from "@/lib/access/workspace-areas";
+import { loadAppOwnerContacts } from "@/lib/server/app-owners";
+import { getInstanceSettings, pageTitle } from "@/lib/server/instance-settings";
 import {
   isWorkspaceDemo,
   loadWorkspacePage,
   redirectPreviewedGuest,
 } from "@/lib/server/workspace-page-loader";
 import { latestChangelogRelease } from "@/lib/server/changelog";
-import { pageTitle } from "@/lib/server/instance-settings";
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: { absolute: await pageTitle("Dashboard") } };
@@ -48,16 +51,34 @@ export default async function DashboardPage({
       />
     );
 
-  const loaded = await loadWorkspacePage([
-    "profiles",
-    "statuses",
-    "categories",
-    "categoryOwners",
-    "projects",
-    "projectOwners",
-  ]);
+  const loaded = await loadWorkspacePage(
+    [
+      "profiles",
+      "statuses",
+      "categories",
+      "categoryOwners",
+      "projects",
+      "projectOwners",
+    ],
+    { allowGuest: true },
+  );
   const { supabase } = loaded;
   let initialData = loaded.data;
+  // A guest has no dashboard: they go to their first page, or are welcomed
+  // here when nothing has been shared with them yet.
+  if (initialData.isGuest) {
+    const home = guestHome(
+      initialData.accessibleAreas,
+      await getInstanceSettings(),
+    );
+    if (home !== "/") redirect(home);
+    return (
+      <GuestWelcomePage
+        initialData={initialData}
+        owners={await loadAppOwnerContacts()}
+      />
+    );
+  }
   const taskResult = await supabase
     .from("tasks")
     .select(WORKSPACE_COLUMNS.tasks)
@@ -111,7 +132,12 @@ export default async function DashboardPage({
           (await redirectPreviewedGuest(initialData, { onDashboard: true })) ===
           "no-pages"
         )
-          return <GuestPreviewEmptyPage initialData={initialData} />;
+          return (
+            <GuestWelcomePage
+              initialData={initialData}
+              owners={await loadAppOwnerContacts()}
+            />
+          );
       }
     }
   }

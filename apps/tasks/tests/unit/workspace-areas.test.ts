@@ -71,8 +71,8 @@ describe("guest landing page", () => {
       "/calendar",
     );
   });
-  it("falls back to the profile when no granted page exists here", () => {
-    expect(guestHome(["ryd"], { rydEnabled: false })).toBe("/profile");
-    expect(guestHome([], { rydEnabled: true })).toBe("/profile");
+  it("falls back to the welcome when no granted page exists here", () => {
+    expect(guestHome(["ryd"], { rydEnabled: false })).toBe("/");
+    expect(guestHome([], { rydEnabled: true })).toBe("/");
   });
 });
