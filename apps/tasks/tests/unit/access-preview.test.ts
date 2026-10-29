@@ -39,6 +39,7 @@ describe("access preview", () => {
     expect(accessPreviewHref("Project Leads")).toBe(
       "/?viewAsGroup=Project%20Leads",
     );
+    expect(accessPreviewHref("Guest", "RY-D")).toBe("/?viewAsGroup=Guest,RY-D");
   });
 
   it("filters every task relation to the preview's visible projects", () => {

@@ -39,6 +39,11 @@ export type AccessPreview = {
   kind: "group" | "user";
   subjectId: string;
   subjectName: string;
+  /**
+   * The groups a group preview combines, one or more. `subjectName` joins them
+   * for the URL; this keeps names that contain a comma intact for display.
+   */
+  groupNames?: string[];
   subjectProfile?: Profile;
   accessibleCategoryIds?: string[];
   inaccessibleTaskIds?: string[];

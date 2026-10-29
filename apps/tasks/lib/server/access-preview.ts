@@ -6,12 +6,9 @@ import {
   workspaceAreaRequiresAccessCheck,
   type WorkspaceAreaKey,
 } from "@/lib/access/workspace-areas";
-import {
-  effectiveMembershipGroupIds,
-  inheritedGroupIds as groupIdsWithInheritance,
-} from "@/lib/access/access-overview";
+import { effectiveMembershipGroupIds } from "@/lib/access/access-overview";
 import { isMissingRelation } from "./supabase-errors";
-import { requireQueryData, requireQueryResult } from "./workspace-loader";
+import { requireQueryData } from "./workspace-loader";
 
 type PreviewCategory = {
   id: string;
@@ -175,94 +172,157 @@ async function resolveCategoryAccess(
   };
 }
 
+type PreviewGroup = {
+  id: string;
+  name: string;
+  kind: "tier" | "team";
+  hierarchy_rank: number | null;
+  grants_global_content: boolean;
+  calendar_access?: boolean | null;
+  guest?: boolean;
+};
+
+const PREVIEW_GROUP_COLUMNS =
+  "id, name, kind, hierarchy_rank, grants_global_content, calendar_access, guest";
+
+/**
+ * The groups a group preview names: one group by id or name, or a
+ * comma-separated combination such as `Guest,RY-D`. A whole-value match wins,
+ * so a name containing a comma still previews on its own. A combination stands
+ * in for one member, so like every member it holds at most one tier. Any name
+ * that matches nothing voids the preview rather than quietly narrowing it.
+ */
+export function previewGroupSelection<Group extends PreviewGroup>(
+  requested: string,
+  groups: Group[],
+): Group[] | null {
+  const find = (value: string) =>
+    groups.find((group) => group.id === value || group.name === value);
+  const whole = find(requested.trim());
+  if (whole) return [whole];
+  const selected: Group[] = [];
+  for (const part of requested.split(",")) {
+    const value = part.trim();
+    if (!value) continue;
+    const group = find(value);
+    if (!group) return null;
+    if (!selected.includes(group)) selected.push(group);
+  }
+  if (selected.length === 0) return null;
+  if (selected.filter((group) => group.kind === "tier").length > 1) return null;
+  return selected;
+}
+
+/**
+ * What a member holding exactly these groups reaches. A real person adds the
+ * projects they own by name; a group preview has no person to own anything.
+ */
+async function resolveMembershipAccess(
+  supabase: SupabaseClient,
+  options: {
+    directGroupIds: string[];
+    groups: PreviewGroup[];
+    allProjectIds: string[];
+    profileId?: string;
+  },
+): Promise<{
+  preview: Omit<
+    AccessPreview,
+    "kind" | "subjectId" | "subjectName" | "subjectProfile"
+  >;
+  projectIds: string[];
+}> {
+  const { directGroupIds, groups, profileId } = options;
+  const memberTier = groups.find(
+    (group) => group.kind === "tier" && directGroupIds.includes(group.id),
+  );
+  const groupIds = effectiveMembershipGroupIds(directGroupIds, groups);
+  const calendarAccess = grantsCalendarAccessForPreview(groups, groupIds);
+  if (memberTier?.grants_global_content) {
+    const [categoryAccess, areaAccess] = await Promise.all([
+      resolveCategoryAccess(supabase, groupIds, true),
+      resolveAreaAccess(supabase, groupIds, false, false, true),
+    ]);
+    return {
+      preview: {
+        canManageCategories: true,
+        calendarAccess,
+        ...categoryAccess,
+        ...areaAccess,
+      },
+      projectIds: options.allProjectIds,
+    };
+  }
+  const guest = memberTier?.guest === true;
+  const [grants, openProjects, ownedProjects] = await Promise.all([
+    groupIds.length > 0
+      ? supabase
+          .from("project_group_grants")
+          .select("project_id")
+          .in("group_id", groupIds)
+          .then((result) => requireQueryData("preview project grants", result))
+      : Promise.resolve([]),
+    guest
+      ? Promise.resolve([])
+      : supabase
+          .from("projects")
+          .select("id")
+          .eq("access_mode", "open")
+          .then((result) => requireQueryData("preview open projects", result)),
+    profileId
+      ? supabase
+          .from("project_owners")
+          .select("project_id")
+          .eq("profile_id", profileId)
+          .then((result) => requireQueryData("preview owned projects", result))
+      : Promise.resolve([]),
+  ]);
+  const [categoryAccess, areaAccess] = await Promise.all([
+    resolveCategoryAccess(supabase, groupIds, false, guest),
+    resolveAreaAccess(supabase, groupIds, false, guest),
+  ]);
+  return {
+    preview: { calendarAccess, guest, ...categoryAccess, ...areaAccess },
+    projectIds: [
+      ...new Set([
+        ...grants.map((grant) => grant.project_id),
+        ...openProjects.map((project) => project.id),
+        ...ownedProjects.map((owner) => owner.project_id),
+      ]),
+    ],
+  };
+}
+
 export async function resolveAccessPreview(
   supabase: SupabaseClient,
   options: {
+    /** One group's id or name, or a comma-separated combination of them. */
     groupId?: string;
     userName?: string;
     allProjectIds: string[];
   },
 ): Promise<{ preview: AccessPreview; projectIds: string[] } | null> {
   if (options.groupId) {
-    const groupLookup = supabase
-      .from("access_groups")
-      .select(
-        "id, name, kind, hierarchy_rank, grants_global_content, calendar_access, guest",
-      );
-    const groupRequest =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-        options.groupId,
-      )
-        ? groupLookup.eq("id", options.groupId)
-        : groupLookup.eq("name", options.groupId);
-    const [groupResult, groupsResult] = await Promise.all([
-      groupRequest.maybeSingle(),
-      supabase
-        .from("access_groups")
-        .select("id, kind, hierarchy_rank, calendar_access, guest"),
-    ]);
-    const group = requireQueryResult("preview access group", groupResult);
-    const groups = requireQueryData("preview access groups", groupsResult);
-    if (!group) return null;
-    const inheritedGroupIds = groupIdsWithInheritance(group, groups);
-    const guest = group.kind === "tier" && group.guest;
-    const [grants, openProjects] = group.grants_global_content
-      ? [[], []]
-      : await Promise.all([
-          supabase
-            .from("project_group_grants")
-            .select("project_id")
-            .in("group_id", inheritedGroupIds)
-            .then((result) =>
-              requireQueryData("preview project grants", result),
-            ),
-          guest
-            ? Promise.resolve([])
-            : supabase
-                .from("projects")
-                .select("id")
-                .eq("access_mode", "open")
-                .then((result) =>
-                  requireQueryData("preview open projects", result),
-                ),
-        ]);
-    const [categoryAccess, areaAccess] = await Promise.all([
-      resolveCategoryAccess(
-        supabase,
-        inheritedGroupIds,
-        group.grants_global_content,
-        guest,
-      ),
-      resolveAreaAccess(
-        supabase,
-        inheritedGroupIds,
-        false,
-        guest,
-        group.grants_global_content,
-      ),
-    ]);
+    const groups = requireQueryData(
+      "preview access groups",
+      await supabase.from("access_groups").select(PREVIEW_GROUP_COLUMNS),
+    ) as PreviewGroup[];
+    const selected = previewGroupSelection(options.groupId, groups);
+    if (!selected) return null;
+    const access = await resolveMembershipAccess(supabase, {
+      directGroupIds: selected.map((group) => group.id),
+      groups,
+      allProjectIds: options.allProjectIds,
+    });
     return {
       preview: {
         kind: "group",
-        subjectId: group.id,
-        subjectName: group.name,
-        guest,
-        canManageCategories: group.grants_global_content,
-        calendarAccess: grantsCalendarAccessForPreview(
-          groups,
-          inheritedGroupIds,
-        ),
-        ...categoryAccess,
-        ...areaAccess,
+        subjectId: selected.map((group) => group.id).join(","),
+        subjectName: selected.map((group) => group.name).join(","),
+        groupNames: selected.map((group) => group.name),
+        ...access.preview,
       },
-      projectIds: group.grants_global_content
-        ? options.allProjectIds
-        : [
-            ...new Set([
-              ...grants.map((grant) => grant.project_id),
-              ...openProjects.map((project) => project.id),
-            ]),
-          ],
+      projectIds: access.projectIds,
     };
   }
 
@@ -302,89 +362,25 @@ export async function resolveAccessPreview(
       .from("access_group_members")
       .select("group_id")
       .eq("profile_id", profile.id),
-    supabase
-      .from("access_groups")
-      .select(
-        "id, kind, hierarchy_rank, grants_global_content, calendar_access, guest",
-      ),
+    supabase.from("access_groups").select(PREVIEW_GROUP_COLUMNS),
   ]);
-  const membershipRows = requireQueryData(
-    "preview access memberships",
-    memberships,
-  );
-  const groupRows = requireQueryData("preview access groups", groups);
-  const directGroupIds = membershipRows.map(
-    (membership) => membership.group_id,
-  );
-  const memberTier = groupRows.find(
-    (group) => group.kind === "tier" && directGroupIds.includes(group.id),
-  );
-  const groupIds = effectiveMembershipGroupIds(directGroupIds, groupRows);
-  const calendarAccess = grantsCalendarAccessForPreview(groupRows, groupIds);
-  if (memberTier?.grants_global_content) {
-    const categoryAccess = await resolveCategoryAccess(
-      supabase,
-      directGroupIds,
-      true,
-    );
-    return {
-      preview: {
-        kind: "user",
-        subjectId: profile.id,
-        subjectName: profile.full_name,
-        subjectProfile: profile,
-        canManageCategories: true,
-        calendarAccess,
-        ...categoryAccess,
-        ...(await resolveAreaAccess(supabase, groupIds, false, false, true)),
-      },
-      projectIds: options.allProjectIds,
-    };
-  }
-  const guest = memberTier?.guest === true;
-  const [grants, openProjects, ownedProjects] = await Promise.all([
-    groupIds.length > 0
-      ? supabase
-          .from("project_group_grants")
-          .select("project_id")
-          .in("group_id", groupIds)
-          .then((result) => requireQueryData("preview project grants", result))
-      : Promise.resolve([]),
-    guest
-      ? Promise.resolve([])
-      : supabase
-          .from("projects")
-          .select("id")
-          .eq("access_mode", "open")
-          .then((result) => requireQueryData("preview open projects", result)),
-    supabase
-      .from("project_owners")
-      .select("project_id")
-      .eq("profile_id", profile.id)
-      .then((result) => requireQueryData("preview owned projects", result)),
-  ]);
-  const projectIds = [
-    ...new Set([
-      ...grants.map((grant) => grant.project_id),
-      ...openProjects.map((project) => project.id),
-      ...ownedProjects.map((owner) => owner.project_id),
-    ]),
-  ];
-  const [categoryAccess, areaAccess] = await Promise.all([
-    resolveCategoryAccess(supabase, groupIds, false, guest),
-    resolveAreaAccess(supabase, groupIds, false, guest),
-  ]);
+  const access = await resolveMembershipAccess(supabase, {
+    directGroupIds: requireQueryData(
+      "preview access memberships",
+      memberships,
+    ).map((membership) => membership.group_id),
+    groups: requireQueryData("preview access groups", groups) as PreviewGroup[],
+    allProjectIds: options.allProjectIds,
+    profileId: profile.id,
+  });
   return {
     preview: {
       kind: "user",
       subjectId: profile.id,
       subjectName: profile.full_name,
       subjectProfile: profile,
-      calendarAccess,
-      guest,
-      ...categoryAccess,
-      ...areaAccess,
+      ...access.preview,
     },
-    projectIds,
+    projectIds: access.projectIds,
   };
 }

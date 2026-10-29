@@ -3,6 +3,7 @@ import {
   accessibleAreasForPreview,
   accessibleCategoryIdsForPreview,
   grantsCalendarAccessForPreview,
+  previewGroupSelection,
 } from "@/lib/server/access-preview";
 
 const categories = [
@@ -190,5 +191,74 @@ describe("access preview guest categories", () => {
         true,
       ),
     ).toEqual(["granted"]);
+  });
+});
+
+const previewGroups = [
+  {
+    id: "g-member",
+    name: "Member",
+    kind: "tier" as const,
+    hierarchy_rank: 1,
+    grants_global_content: false,
+  },
+  {
+    id: "g-guest",
+    name: "Guest",
+    kind: "tier" as const,
+    hierarchy_rank: 0,
+    grants_global_content: false,
+    guest: true,
+  },
+  {
+    id: "g-ryd",
+    name: "RY-D",
+    kind: "team" as const,
+    hierarchy_rank: null,
+    grants_global_content: false,
+  },
+  {
+    id: "g-comma",
+    name: "Events, Ops",
+    kind: "team" as const,
+    hierarchy_rank: null,
+    grants_global_content: false,
+  },
+];
+
+describe("access preview group selection", () => {
+  it("selects one group by name or id", () => {
+    expect(
+      previewGroupSelection("RY-D", previewGroups)?.map(({ id }) => id),
+    ).toEqual(["g-ryd"]);
+    expect(
+      previewGroupSelection("g-guest", previewGroups)?.map(({ id }) => id),
+    ).toEqual(["g-guest"]);
+  });
+
+  it("combines a tier with teams", () => {
+    expect(
+      previewGroupSelection("Guest,RY-D", previewGroups)?.map(({ id }) => id),
+    ).toEqual(["g-guest", "g-ryd"]);
+    expect(
+      previewGroupSelection("g-guest, g-ryd", previewGroups)?.map(
+        ({ id }) => id,
+      ),
+    ).toEqual(["g-guest", "g-ryd"]);
+  });
+
+  it("previews a name containing a comma on its own", () => {
+    expect(
+      previewGroupSelection("Events, Ops", previewGroups)?.map(({ id }) => id),
+    ).toEqual(["g-comma"]);
+  });
+
+  it("refuses two tiers, since nobody holds two", () => {
+    expect(previewGroupSelection("Guest,Member", previewGroups)).toBeNull();
+  });
+
+  it("refuses a combination naming an unknown group", () => {
+    expect(previewGroupSelection("Guest,Nobody", previewGroups)).toBeNull();
+    expect(previewGroupSelection(" , ", previewGroups)).toBeNull();
   });
 });

@@ -228,7 +228,10 @@ overview. It must never be presented as another access group or project grant.
   subject's own request would.
 - A preview renders exactly what its subject sees: their role, guest status,
   category management, and project edit rights, never the owner's. A group
-  preview is a member of that group. Navigation stays live and keeps the
+  preview is a member of that group. A combined preview
+  (`viewAsGroup=Guest,RY-D`) is a member holding exactly those groups, so it
+  takes at most one tier and resolves through the same membership rules as
+  previewing a real person, minus named project ownership. Navigation stays live and keeps the
   preview; every other interaction is inert through one document-level guard
   (`useAccessPreviewGuard`), and action routes (`/new`, `/edit`, `/admin`,
   `/profile`) stay shut. Components do not hide controls because a preview is

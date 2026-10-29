@@ -8,8 +8,9 @@ import type {
 export const ACCESS_PREVIEW_PARAM = "viewAsGroup";
 export const USER_ACCESS_PREVIEW_PARAM = "viewAsUser";
 
-export function accessPreviewHref(groupName: string) {
-  return `/?${ACCESS_PREVIEW_PARAM}=${encodeURIComponent(groupName)}`;
+/** One group, or several viewed together as a single member holding them. */
+export function accessPreviewHref(...groupNames: string[]) {
+  return `/?${ACCESS_PREVIEW_PARAM}=${groupNames.map(encodeURIComponent).join(",")}`;
 }
 
 export function userAccessPreviewHref(profileName: string) {
