@@ -36,5 +36,8 @@ export async function importRydOrders(
     },
   });
   if (result.error) throw result.error;
-  return result.data as { ok: true } & RydImportSummary;
+  const summary = result.data as { ok: true } & RydImportSummary;
+  return parsed.multiCardOrderIds.length
+    ? { ...summary, multiCardOrderIds: parsed.multiCardOrderIds }
+    : summary;
 }

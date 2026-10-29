@@ -46,7 +46,11 @@ function importSummary(result: RydImportSummary) {
     parts.push(`${result.existingCount} already in the queue`);
   if (result.duplicateCount)
     parts.push(`${result.duplicateCount} repeated in the file`);
-  return `${parts.join(", ")}.`;
+  const multiCard = result.multiCardOrderIds ?? [];
+  const extra = multiCard.length
+    ? ` ${multiCard.length === 1 ? "Order" : "Orders"} ${multiCard.join(", ")} ${multiCard.length === 1 ? "has" : "have"} more than one RY-D; only the first card was imported, so print the rest from fulfillment's file.`
+    : "";
+  return `${parts.join(", ")}.${extra}`;
 }
 
 export function RydUploadDialog({
@@ -66,7 +70,7 @@ export function RydUploadDialog({
       open
       setIsOpen={(open) => !open && !saving && onClose()}
       title="Upload orders"
-      description="The order summary CSV fulfillment sends each week. New orders start pending and are matched to form responses right away; orders already in the queue keep their decisions."
+      description="Fulfillment's weekly export, either the full data export or the order summary. The full export fills in each card's name, location, and Ryan since year. New orders start pending and are matched to form responses right away; orders already in the queue keep their decisions."
       closable={!saving}
       formId={UPLOAD_FORM}
       onSubmit={async (event) => {
@@ -82,7 +86,10 @@ export function RydUploadDialog({
             method: "POST",
             body,
           });
-          toast.success(importSummary(result));
+          // Extra cards need someone to act, so that summary stays up longer.
+          if (result.multiCardOrderIds?.length)
+            toast(importSummary(result), { duration: 12000 });
+          else toast.success(importSummary(result));
           try {
             await onChanged();
           } catch {
@@ -118,7 +125,7 @@ export function RydUploadDialog({
           disabled={saving}
           file={file}
           hint="CSV only"
-          rejectMessage="That isn't a CSV. Drop the order summary CSV from fulfillment."
+          rejectMessage="That isn't a CSV. Drop fulfillment's order export."
           onFileChange={(next) => {
             setFile(next);
             setOperationId(crypto.randomUUID());

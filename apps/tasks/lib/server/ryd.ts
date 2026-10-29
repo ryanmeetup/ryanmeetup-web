@@ -14,9 +14,8 @@ import {
 } from "@/lib/ryd/upload-reminder";
 import { digestDefaults } from "@/lib/digest/digest-settings";
 import { withRydQueueMatches } from "@/lib/ryd/queue-reconciliation";
-import { csvRecordCell } from "@/lib/ryd/csv";
 import { rydCardDraft, savedRydCard } from "@/lib/ryd/card";
-import { type RydOrderStatus } from "@/lib/ryd/orders";
+import { rydOrderCell, type RydOrderStatus } from "@/lib/ryd/orders";
 import { getAdminClient } from "./admin-client";
 import { apiError, forbidden, notFound } from "./api-response";
 import { authorize } from "./auth";
@@ -356,9 +355,9 @@ export async function loadRydQueue(
       orderedAt: row.ordered_at,
       firstName: row.first_name,
       lastName: row.last_name,
-      displayEmail: csvRecordCell(row.raw, "BillEmail").trim() || row.email,
+      displayEmail: rydOrderCell(row.raw, "email").trim() || row.email,
       email: row.email,
-      total: csvRecordCell(row.raw, "OrderTotal"),
+      total: rydOrderCell(row.raw, "total"),
       status: row.status,
       note: row.note,
       decidedAt: row.decided_at,

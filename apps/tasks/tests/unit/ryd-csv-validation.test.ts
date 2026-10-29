@@ -36,7 +36,7 @@ describe("RY-D strict import parsing", () => {
     );
     expect(result).toMatchObject({
       ok: false,
-      error: expect.stringContaining("OrderId"),
+      error: expect.stringContaining("no order number"),
     });
   });
   it("surfaces quote errors through the import result", () => {

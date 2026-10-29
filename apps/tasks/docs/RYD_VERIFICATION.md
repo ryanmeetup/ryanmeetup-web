@@ -91,8 +91,16 @@ uses, set in /admin/usage).
    Files are limited to 2 MB before multipart parsing. Invalid quotes, uneven
    rows, repeated column names, and missing or overlong order IDs are reported
    before any writes.
-   The file needs `OrderId`, `BillFirstName`, `BillLastName`, and `BillEmail`;
-   a `Verified?` column is optional. Every new order imports as pending — a
+   Either of Chipply's exports works. The **full data export** has one row
+   per item, names its columns `Order Number`, `Bill First Name`,
+   `Bill Last Name`, and `Email`, and carries each card in `Options Detail`;
+   it is the one to prefer. The **order summary** has one row per order with
+   `OrderId`, `BillFirstName`, `BillLastName`, and `BillEmail`, and no card.
+   Each field is read under whichever name the file uses (`RYD_ORDER_COLUMNS`
+   in `lib/ryd/orders.ts`), and a `Verified?` column is optional. The queue
+   holds one card per order: when an order repeats in the file or has an item
+   quantity above one, the first row imports and the upload names the order
+   so its other cards can be printed from fulfillment's file. Every new order imports as pending — a
    ✅ already in the file is kept only as a cell, never as a decision. The
    queue reloads as soon as the import finishes, so each new order is matched
    against the form's existing responses straight away and arrives with its

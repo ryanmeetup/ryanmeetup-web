@@ -1,4 +1,10 @@
-import { csvColumn, CsvParseError, parseCsv, serializeCsv } from "./csv";
+import {
+  csvColumn,
+  CsvParseError,
+  csvRecordCell,
+  parseCsv,
+  serializeCsv,
+} from "./csv";
 import { normalizeEmail } from "./normalize";
 
 export const RYD_ORDER_STATUSES = [
@@ -34,13 +40,47 @@ export function formatRydOrderTotal(total: string) {
   return USD.format(Number(amount));
 }
 
-/** The columns an order export must carry for the app to read it. */
+/**
+ * Chipply sends two exports. The order summary has one row per order
+ * (`OrderId`, `BillEmail`, …); the full data export has one row per item
+ * (`Order Number`, `Email`, …) and carries the card in `Options Detail`. Each
+ * field is read from whichever name the file uses, first match wins.
+ */
+const RYD_ORDER_COLUMNS = {
+  orderId: ["OrderId", "Order Number"],
+  salesOrder: ["Sales Order"],
+  storeName: ["Store Name", "Name"],
+  organization: ["Organization", "Organization Name"],
+  orderedAt: ["OrderDate", "Order Date"],
+  firstName: ["BillFirstName", "Bill First Name"],
+  lastName: ["BillLastName", "Bill Last Name"],
+  email: ["BillEmail", "Email"],
+  total: ["OrderTotal", "Order Total"],
+  items: ["OrderItems", "Item Qty"],
+  delivery: ["Delivery", "Distribution"],
+} as const;
+
+export type RydOrderColumn = keyof typeof RYD_ORDER_COLUMNS;
+
+/** The fields an order export must carry for the app to read it. */
 const REQUIRED_COLUMNS = [
-  "OrderId",
-  "BillFirstName",
-  "BillLastName",
-  "BillEmail",
-] as const;
+  "orderId",
+  "firstName",
+  "lastName",
+  "email",
+] as const satisfies readonly RydOrderColumn[];
+
+/** A field from a stored order row, whichever export it came from. */
+export function rydOrderCell(
+  raw: Record<string, string>,
+  field: RydOrderColumn,
+) {
+  for (const name of RYD_ORDER_COLUMNS[field]) {
+    const value = csvRecordCell(raw, name);
+    if (value) return value;
+  }
+  return "";
+}
 
 export type ParsedRydOrder = {
   orderId: string;
@@ -64,6 +104,11 @@ export type RydImportSummary = {
   newCount: number;
   existingCount: number;
   duplicateCount: number;
+  /**
+   * Orders with more than one RY-D in the file. The queue holds one card per
+   * order, so only the first imported; the rest need a person.
+   */
+  multiCardOrderIds?: string[];
 };
 
 export type RydOrderImport =
@@ -72,6 +117,7 @@ export type RydOrderImport =
       headers: string[];
       orders: ParsedRydOrder[];
       duplicates: string[];
+      multiCardOrderIds: string[];
     }
   | { ok: false; error: string };
 
@@ -94,58 +140,75 @@ export function parseRydOrderCsv(text: string): RydOrderImport {
       error:
         "That file has repeated column names. Give each column a unique name, then upload it again.",
     };
-  const missing = REQUIRED_COLUMNS.filter(
-    (column) => csvColumn(headers, column) < 0,
-  );
+  const columns = Object.fromEntries(
+    Object.entries(RYD_ORDER_COLUMNS).map(([field, names]) => [
+      field,
+      names.map((name) => csvColumn(headers, name)).find((index) => index >= 0) ??
+        -1,
+    ]),
+  ) as Record<RydOrderColumn, number>;
+  const missing = REQUIRED_COLUMNS.filter((field) => columns[field] < 0);
   if (missing.length)
     return {
       ok: false,
-      error: `That file is missing ${missing.join(", ")}. Upload the order summary CSV from fulfillment.`,
+      error: `That file is missing ${missing
+        .map((field) => RYD_ORDER_COLUMNS[field].join(" or "))
+        .join(", ")}. Upload fulfillment's full data export or order summary CSV.`,
     };
 
-  const cell = (row: string[], name: string) => {
-    const column = csvColumn(headers, name);
-    return column < 0 ? "" : (row[column] ?? "").trim();
-  };
+  const cell = (row: string[], field: RydOrderColumn) =>
+    columns[field] < 0 ? "" : (row[columns[field]] ?? "").trim();
   const seen = new Set<string>();
   const duplicates: string[] = [];
+  const multiCard = new Set<string>();
   const orders: ParsedRydOrder[] = [];
   for (const [rowIndex, row] of rows.entries()) {
-    const orderId = cell(row, "OrderId");
+    const orderId = cell(row, "orderId");
     if (!orderId)
       return {
         ok: false,
-        error: `Order row ${rowIndex + 1} has no OrderId. Fill it in or remove that row before uploading.`,
+        error: `Order row ${rowIndex + 1} has no order number. Fill it in or remove that row before uploading.`,
       };
     if (orderId.length > 64)
       return {
         ok: false,
         error:
-          "An order number is longer than 64 characters. Check the OrderId column, then upload it again.",
+          "An order number is longer than 64 characters. Check the order number column, then upload it again.",
       };
+    // The full export repeats an order on every item it holds; the summary
+    // counts them in OrderItems. Either way, a second RY-D is a second card.
+    const quantity = Number(cell(row, "items"));
+    if (columns.items >= 0 && quantity > 1) multiCard.add(orderId);
     if (seen.has(orderId)) {
       duplicates.push(orderId);
+      multiCard.add(orderId);
       continue;
     }
     seen.add(orderId);
     orders.push({
       orderId,
-      salesOrder: cell(row, "Sales Order"),
-      storeName: cell(row, "Store Name"),
-      organization: cell(row, "Organization"),
-      orderedAt: cell(row, "OrderDate"),
-      firstName: cell(row, "BillFirstName"),
-      lastName: cell(row, "BillLastName"),
-      email: normalizeEmail(cell(row, "BillEmail")),
-      total: cell(row, "OrderTotal"),
-      items: cell(row, "OrderItems"),
-      delivery: cell(row, "Delivery"),
+      salesOrder: cell(row, "salesOrder"),
+      storeName: cell(row, "storeName"),
+      organization: cell(row, "organization"),
+      orderedAt: cell(row, "orderedAt"),
+      firstName: cell(row, "firstName"),
+      lastName: cell(row, "lastName"),
+      email: normalizeEmail(cell(row, "email")),
+      total: cell(row, "total"),
+      items: cell(row, "items"),
+      delivery: cell(row, "delivery"),
       raw: Object.fromEntries(
         headers.map((header, column) => [header, row[column] ?? ""]),
       ),
     });
   }
-  return { ok: true, headers, orders, duplicates };
+  return {
+    ok: true,
+    headers,
+    orders,
+    duplicates,
+    multiCardOrderIds: [...multiCard],
+  };
 }
 
 /**

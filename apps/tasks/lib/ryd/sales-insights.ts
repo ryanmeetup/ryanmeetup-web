@@ -1,12 +1,11 @@
 import type { RydSubmission } from "./matching";
-import { csvRecordCell } from "./csv";
 import {
   nameTokens,
   ryanPosition,
   type RyanPosition,
   type SocialLink,
 } from "./normalize";
-import type { RydOrderStatus } from "./orders";
+import { rydOrderCell, type RydOrderStatus } from "./orders";
 
 /**
  * Who is buying RY-Ds, for reading back in Claude through the MCP connector.
@@ -134,11 +133,11 @@ export function profileRydOrder(
     buyerLastName: order.last_name.trim(),
     emailDomain: domain,
     emailKind: emailKind(domain),
-    total: orderTotal(csvRecordCell(order.raw, "OrderTotal")),
-    items: csvRecordCell(order.raw, "OrderItems").trim(),
-    delivery: csvRecordCell(order.raw, "Delivery").trim(),
-    storeName: csvRecordCell(order.raw, "Store Name").trim(),
-    organization: csvRecordCell(order.raw, "Organization").trim(),
+    total: orderTotal(rydOrderCell(order.raw, "total")),
+    items: rydOrderCell(order.raw, "items").trim(),
+    delivery: rydOrderCell(order.raw, "delivery").trim(),
+    storeName: rydOrderCell(order.raw, "storeName").trim(),
+    organization: rydOrderCell(order.raw, "organization").trim(),
     note: order.note,
     formFirstName,
     ryanPosition: ryanPosition(legalName),

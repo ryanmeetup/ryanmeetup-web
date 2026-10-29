@@ -14,8 +14,10 @@ import {
 import {
   formatRydOrderTotal,
   parseRydOrderCsv,
+  rydOrderCell,
   rydOrderExportCsv,
 } from "@/lib/ryd/orders";
+import { rydCardDraft } from "@/lib/ryd/card";
 import {
   formIdFrom,
   parseRydFormResponses,
@@ -111,6 +113,57 @@ describe("parseRydOrderCsv", () => {
     if (!parsed.ok) throw new Error(parsed.error);
     expect(parsed.headers).not.toContain("Verified?");
     expect(parsed.orders.map((o) => o.orderId)).toEqual(["1001"]);
+  });
+
+  it("reads Chipply's full data export, one row per item", () => {
+    const parsed = parseRydOrderCsv(
+      [
+        "Name,Sales Order,Organization Name,Order Number,Order Date,Email,Bill First Name,Bill Last Name,Distribution,Product Name,Options Detail,Item Qty,Order Total",
+        '="RY-Ds - Batched 10/20/2026",="0012",Ryan Meet Up,1001,10/20/2026 10:12:33 AM,Jamie@Test.dev,Jamie,Perez,Shipping,Anodized Aluminum RY-D,"[First Name : Ryan] [Last Name : Pêrez] [Location : Fresno Ca] [Full Birthday : 04/07/1999]",1,$36.75',
+        "=\"RY-Ds\",=\"0013\",Ryan Meet Up,1002,10/20/2026 11:00:00 AM,ryan@test.dev,Ryan,Two,Shipping,Anodized Aluminum RY-D,[First Name : Ryan],1,$73.50",
+        "=\"RY-Ds\",=\"0013\",Ryan Meet Up,1002,10/20/2026 11:00:00 AM,ryan@test.dev,Ryan,Two,Shipping,Anodized Aluminum RY-D,[First Name : Ryann],1,$73.50",
+        "=\"RY-Ds\",=\"0014\",Ryan Meet Up,1003,10/20/2026 11:30:00 AM,ryan3@test.dev,Ryan,Three,Shipping,Anodized Aluminum RY-D,[First Name : Ryan],2,$73.50",
+      ].join("\n"),
+    );
+    if (!parsed.ok) throw new Error(parsed.error);
+    expect(parsed.orders.map((o) => o.orderId)).toEqual([
+      "1001",
+      "1002",
+      "1003",
+    ]);
+    expect(parsed.orders[0]).toMatchObject({
+      salesOrder: "0012",
+      storeName: "RY-Ds - Batched 10/20/2026",
+      organization: "Ryan Meet Up",
+      orderedAt: "10/20/2026 10:12:33 AM",
+      firstName: "Jamie",
+      lastName: "Perez",
+      email: "jamie@test.dev",
+      total: "$36.75",
+      items: "1",
+      delivery: "Shipping",
+    });
+    expect(rydOrderCell(parsed.orders[0].raw, "total")).toBe("$36.75");
+    expect(rydOrderCell(parsed.orders[0].raw, "email")).toBe("Jamie@Test.dev");
+    // The card comes from the options, not the buyer who paid.
+    expect(
+      rydCardDraft(parsed.orders[0].raw, parsed.orders[0]).card,
+    ).toEqual({
+      firstName: "Ryan",
+      lastName: "Pêrez",
+      location: "Fresno, CA",
+      ryanSince: "1999",
+    });
+    expect(parsed.duplicates).toEqual(["1002"]);
+    expect(parsed.multiCardOrderIds).toEqual(["1002", "1003"]);
+  });
+
+  it("names both exports when the order columns are missing", () => {
+    const parsed = parseRydOrderCsv("Order Number,Email\n1001,r@test.dev\n");
+    expect(parsed).toMatchObject({
+      ok: false,
+      error: expect.stringContaining("BillFirstName or Bill First Name"),
+    });
   });
 
   it("refuses a file that is not the order summary", () => {
