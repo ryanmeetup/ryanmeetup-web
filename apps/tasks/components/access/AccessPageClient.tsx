@@ -213,6 +213,18 @@ export function AccessPageClient({
     (teamPage - 1) * pageSize,
     teamPage * pageSize,
   );
+  // Highest rank first, so the list reads top-down the way inheritance flows.
+  const tiers = useMemo(
+    () =>
+      groups
+        .filter((group) => group.kind === "tier")
+        .sort((a, b) => (b.hierarchy_rank ?? 0) - (a.hierarchy_rank ?? 0)),
+    [groups],
+  );
+  const teams = useMemo(
+    () => groups.filter((group) => group.kind === "team"),
+    [groups],
+  );
   const groupsByProfile = useMemo(
     () => indexGroupsByProfile(groups, members),
     [groups, members],
@@ -221,6 +233,11 @@ export function AccessPageClient({
   useEffect(() => {
     if (page > totalTeamPages) setPage(totalTeamPages);
   }, [page, setPage, totalTeamPages]);
+
+  function openGroupCreate(kind: "tier" | "team") {
+    setGroupKind(kind);
+    setGroupCreateOpen(true);
+  }
 
   async function createGroup(event: FormEvent) {
     event.preventDefault();
@@ -464,22 +481,63 @@ export function AccessPageClient({
           </Card>
         </section>
 
-        <section aria-labelledby="groups-heading" className="space-y-4">
+        <section aria-labelledby="tiers-heading" className="space-y-4">
           <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <h2 id="groups-heading" className="text-xl font-semibold">
-              Organizational tiers and teams
-            </h2>
+            <div>
+              <h2 id="tiers-heading" className="text-xl font-semibold">
+                Organizational tiers
+              </h2>
+              <p className="mt-1 text-sm text-black/65 dark:text-white/65">
+                Who someone is in the organization. Everyone has exactly one,
+                and higher ranks inherit what lower ranks are granted. A guest
+                tier reaches nothing open to the workspace.
+              </p>
+            </div>
             <Button
               size="sm"
               leftIcon={<FiPlus />}
-              className="w-full sm:w-auto"
-              onClick={() => setGroupCreateOpen(true)}
+              className="w-full shrink-0 sm:w-auto"
+              onClick={() => openGroupCreate("tier")}
             >
-              New group
+              New tier
             </Button>
           </div>
           <AccessGroupGrid
-            groups={groups}
+            groups={tiers}
+            emptyLabel="No tiers yet."
+            members={members}
+            overviews={groupOverviews}
+            profiles={profiles}
+          />
+        </section>
+
+        <section
+          aria-labelledby="teams-heading"
+          className="space-y-4 border-t border-black/10 pt-8 dark:border-white/10"
+        >
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 id="teams-heading" className="text-xl font-semibold">
+                Teams
+              </h2>
+              <p className="mt-1 text-sm text-black/65 dark:text-white/65">
+                What someone works on. Teams are optional and only ever add
+                access, whatever a person&apos;s tier, and nothing is inherited
+                between them.
+              </p>
+            </div>
+            <Button
+              size="sm"
+              leftIcon={<FiPlus />}
+              className="w-full shrink-0 sm:w-auto"
+              onClick={() => openGroupCreate("team")}
+            >
+              New team
+            </Button>
+          </div>
+          <AccessGroupGrid
+            groups={teams}
+            emptyLabel="No teams yet."
             members={members}
             overviews={groupOverviews}
             profiles={profiles}
@@ -861,7 +919,6 @@ export function AccessPageClient({
         setGrantsGlobalContent={setGrantsGlobalContent}
         setGuest={setGuest}
         setHierarchyRank={setHierarchyRank}
-        setKind={setGroupKind}
         setName={setName}
         setOpen={setGroupCreateOpen}
       />

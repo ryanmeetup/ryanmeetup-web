@@ -13,7 +13,6 @@ import { accessPreviewHref } from "@/lib/access/access-preview";
 import type { AccessGroupOverview } from "@/lib/access/access-overview";
 import type { AccessGroup, GroupMember } from "@/lib/access/access-types";
 import type { Profile } from "@/lib/workspace/workspace-types";
-import { AccessGroupKindBadge } from "./AccessGroupKindBadge";
 import { adminAccessGroupPath } from "@/lib/admin/admin-routes";
 
 /**
@@ -81,13 +80,19 @@ function AccessSummary({ overview }: { overview: AccessGroupOverview }) {
   );
 }
 
+/**
+ * One section's cards: the tiers or the teams, never both. The section heading
+ * says which kind they are, so a card names only what sets it apart within it.
+ */
 export function AccessGroupGrid({
   groups,
+  emptyLabel,
   members,
   overviews,
   profiles,
 }: {
   groups: AccessGroup[];
+  emptyLabel: string;
   members: GroupMember[];
   /** Effective access per group id, from `buildAccessGroupOverviews`. */
   overviews: Map<string, AccessGroupOverview>;
@@ -101,7 +106,7 @@ export function AccessGroupGrid({
     <>
       {groups.length === 0 && (
         <Card className="p-5 text-sm text-black/65 dark:text-white/65">
-          No access groups yet.
+          {emptyLabel}
         </Card>
       )}
       <div className="grid auto-rows-fr gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -121,14 +126,31 @@ export function AccessGroupGrid({
                       style={{ backgroundColor: group.color }}
                     />
                     <span className="truncate">{group.name}</span>
-                    <AccessGroupKindBadge kind={group.kind} />
-                    {group.is_default && (
-                      <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
-                        New-member default
-                      </span>
-                    )}
                   </h3>
-                  <p className="mt-1 pb-4 text-sm text-black/65 dark:text-white/65">
+                  {/* Guest, workspace-wide, and default are tier-only flags. */}
+                  {group.kind === "tier" && (
+                    <p className="mt-2 flex flex-wrap items-center gap-1.5">
+                      <span className="rounded-full border border-black/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide tabular-nums text-black/70 dark:border-white/10 dark:text-white/70">
+                        Rank {group.hierarchy_rank ?? 0}
+                      </span>
+                      {group.guest && (
+                        <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-900 dark:text-amber-100">
+                          Guest
+                        </span>
+                      )}
+                      {group.grants_global_content && (
+                        <span className="rounded-full bg-violet-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-700 dark:text-violet-200">
+                          Workspace-wide
+                        </span>
+                      )}
+                      {group.is_default && (
+                        <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                          New-member default
+                        </span>
+                      )}
+                    </p>
+                  )}
+                  <p className="mt-2 pb-4 text-sm text-black/65 dark:text-white/65">
                     {group.description || "No description yet."}
                   </p>
                 </div>

@@ -61,6 +61,13 @@ address, the upload reminder, or the Google connection. Settings opens only to
 app owners and workspace-wide tiers such as R-Suite, and no team or guest tier
 can be added to it.
 
+### Tiers and teams, side by side
+
+The Access page lists organizational tiers and teams in their own sections,
+each with its own create button and a line on what it is for. Tier cards show
+their rank and whether they are a guest, workspace-wide, or new-member default
+tier.
+
 ### Chipply exports import as written
 
 Order files that aren't UTF-8 keep accented names like Pérez intact, and

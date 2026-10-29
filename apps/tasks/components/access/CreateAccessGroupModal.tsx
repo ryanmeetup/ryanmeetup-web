@@ -28,7 +28,6 @@ export function CreateAccessGroupModal({
   setGrantsGlobalContent,
   setGuest,
   setHierarchyRank,
-  setKind,
   setName,
   setOpen,
 }: {
@@ -49,7 +48,6 @@ export function CreateAccessGroupModal({
   setGrantsGlobalContent: (value: boolean) => void;
   setGuest: (value: boolean) => void;
   setHierarchyRank: (value: string) => void;
-  setKind: (value: "tier" | "team") => void;
   setName: (value: string) => void;
   setOpen: (open: boolean) => void;
 }) {
@@ -59,13 +57,18 @@ export function CreateAccessGroupModal({
       setIsOpen={(nextOpen) => {
         if (!saving) setOpen(nextOpen);
       }}
-      title="New Access Group"
+      title={kind === "tier" ? "New tier" : "New team"}
+      description={
+        kind === "tier"
+          ? "Everyone has exactly one tier. It sets what they reach by default."
+          : "Teams add access for work that cuts across tiers."
+      }
       size="md"
       actions={
         <ModalActions
           confirmDisabled={!name.trim() || !color}
           confirmForm="create-access-group-form"
-          confirmLabel="Create group"
+          confirmLabel={kind === "tier" ? "Create tier" : "Create team"}
           onCancel={() => setOpen(false)}
           pending={saving}
           pendingLabel="Creating..."
@@ -78,26 +81,14 @@ export function CreateAccessGroupModal({
         onSubmit={onSubmit}
       >
         <Input
-          label="Group name"
+          label={kind === "tier" ? "Tier name" : "Team name"}
           name="access-group-name"
           value={name}
           onChange={(event) => setName(event.target.value)}
-          placeholder="Documentary Team"
+          placeholder={kind === "tier" ? "Contributor" : "Documentary Team"}
           disabled={saving}
           autoFocus
           required
-        />
-        <DropdownSelect
-          label="Group type"
-          required
-          variant="field"
-          value={kind}
-          onChange={(value) => setKind(value as "tier" | "team")}
-          options={[
-            { label: "Team", value: "team" },
-            { label: "Organizational Tier", value: "tier" },
-          ]}
-          disabled={saving}
         />
         {kind === "tier" && (
           <>
