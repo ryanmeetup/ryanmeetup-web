@@ -11,6 +11,7 @@ import {
   requireQueryData,
   WORKSPACE_COLUMNS,
 } from "@/lib/server/workspace-loader";
+import { GuestPreviewEmptyPage } from "@/components/access/GuestPreviewEmptyPage";
 import {
   isWorkspaceDemo,
   loadWorkspacePage,
@@ -106,7 +107,11 @@ export default async function DashboardPage({
           resolvedPreview.preview,
           resolvedPreview.projectIds,
         );
-        await redirectPreviewedGuest(initialData);
+        if (
+          (await redirectPreviewedGuest(initialData, { onDashboard: true })) ===
+          "no-pages"
+        )
+          return <GuestPreviewEmptyPage initialData={initialData} />;
       }
     }
   }

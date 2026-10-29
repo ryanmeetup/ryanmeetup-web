@@ -112,12 +112,17 @@ export async function loadWorkspacePage(
  * once a preview is applied, and an owner viewing as a guest lands where the
  * guest would rather than on a page the guest never sees.
  */
-export async function redirectPreviewedGuest(data: WorkspaceData) {
+export async function redirectPreviewedGuest(
+  data: WorkspaceData,
+  { onDashboard = false }: { onDashboard?: boolean } = {},
+): Promise<"no-pages" | undefined> {
   if (!data.accessPreview?.guest) return;
-  redirect(
-    withAccessPreview(
-      guestHome(data.accessibleAreas, await getInstanceSettings()),
-      data.accessPreview,
-    ),
-  );
+  const home = guestHome(data.accessibleAreas, await getInstanceSettings());
+  // A guest with no page lands on their own profile, which a preview cannot
+  // borrow — it would render the owner's. The dashboard route stands in.
+  if (home === "/profile") {
+    if (onDashboard) return "no-pages";
+    redirect(withAccessPreview("/", data.accessPreview));
+  }
+  redirect(withAccessPreview(home, data.accessPreview));
 }
