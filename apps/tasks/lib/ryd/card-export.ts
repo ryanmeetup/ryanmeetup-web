@@ -17,11 +17,12 @@ export type RydCardBatch = {
   createdBy: string | null;
 };
 
+/** Fulfillment's own names for the columns their production reads. */
 export const RYD_CARD_CSV_HEADERS = [
-  "Order Number",
-  "Name",
+  "Order ID#",
+  "First & Last",
   "Location",
-  "Ryan Since",
+  "Date",
 ];
 
 /**

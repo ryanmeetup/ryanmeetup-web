@@ -43,8 +43,8 @@ state, such as "Brooklyn, NY", whenever both can be read. Verifying approves the
 shown and needs every line, so nothing prints with a blank.
 
 The Verified view's Card files panel downloads every approved card that
-hasn't printed as a four-column file (Order Number, Name, Location, Ryan
-Since) and marks those orders sent to fulfillment with the date, so no card
+hasn't printed as a four-column file in fulfillment's own wording (Order ID#,
+First & Last, Location, Date) and marks those orders sent to fulfillment with the date, so no card
 prints twice. Past files can be downloaded again without changing anything.
 
 ### Guest tiers for partners

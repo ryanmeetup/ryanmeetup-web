@@ -233,7 +233,8 @@ uses, set in /admin/usage).
    fulfillment gets cards without an email. **Download new cards (N)** takes
    every verified order with an approved card that is still Ready to send,
    oldest first, and downloads `ry-d-cards-<date>.csv` with exactly four
-   columns: Order Number, Name, Location, Ryan Since. In the same
+   columns, named the way fulfillment asked: Order ID#, First & Last,
+   Location, and Date (the Ryan since year). In the same
    transaction those orders are marked Sent to fulfillment with the batch
    date, so nothing prints twice; an unfinished or unapproved card waits for
    the next file. The file is UTF-8 with a byte-order mark so Excel shows

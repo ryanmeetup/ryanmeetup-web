@@ -15,7 +15,7 @@ describe("RY-D card file", () => {
     const csv = rydCardBatchCsv([row]);
     expect(csv.startsWith("﻿")).toBe(true);
     expect(parseCsv(csv)).toEqual({
-      headers: ["Order Number", "Name", "Location", "Ryan Since"],
+      headers: ["Order ID#", "First & Last", "Location", "Date"],
       rows: [["607227", "Ryan Pérez", "Brooklyn, NY", "1999"]],
     });
   });

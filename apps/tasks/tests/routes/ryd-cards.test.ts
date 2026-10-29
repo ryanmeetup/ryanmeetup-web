@@ -105,7 +105,7 @@ describe("RY-D card batches", () => {
     const body = new Uint8Array(await response.arrayBuffer());
     expect([...body.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf]);
     expect(new TextDecoder().decode(body)).toBe(
-      "Order Number,Name,Location,Ryan Since\r\n607227,Ryan Pérez,Cleveland Ohio,1976\r\n",
+      "Order ID#,First & Last,Location,Date\r\n607227,Ryan Pérez,Cleveland Ohio,1976\r\n",
     );
   });
 
