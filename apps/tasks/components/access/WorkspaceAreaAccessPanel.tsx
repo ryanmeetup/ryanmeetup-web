@@ -67,7 +67,14 @@ export function WorkspaceAreaAccessPanel({
   onSaved?: (entry: WorkspaceAreaAccess) => void;
 }) {
   const instance = useInstance();
-  const areas = useMemo(() => enabledWorkspaceAreas(instance), [instance]);
+  // A page with a fixed rule has nothing to configure, so it gets no card.
+  const areas = useMemo(
+    () =>
+      enabledWorkspaceAreas(instance).filter(
+        (area) => !workspaceAreaIsWorkspaceWideOnly(area.key),
+      ),
+    [instance],
+  );
   const [access, setAccess] = useState<WorkspaceAreaAccess[]>(() =>
     areas.map(
       (area) =>
@@ -166,18 +173,13 @@ export function WorkspaceAreaAccessPanel({
     queues.current.set(key, queued);
   }
 
-  const workspaceWideTiers = groups
-    .filter((group) => group.kind === "tier" && group.grants_global_content)
-    .map((group) => group.name);
-
   return (
     <div className="grid auto-rows-fr gap-4 md:grid-cols-2 xl:grid-cols-3">
       {areas.map((area) => {
-        const fixed = workspaceAreaIsWorkspaceWideOnly(area.key);
         const entry = entryFor(area.key);
-        const restricted = fixed || entry.accessMode === "restricted";
+        const restricted = entry.accessMode === "restricted";
         const Icon = area.icon;
-        const badge = badgeState[restricted ? "restricted" : "open"];
+        const badge = badgeState[entry.accessMode];
         const BadgeIcon = badge.icon;
         return (
           <Card key={area.key} className="flex h-full flex-col gap-4 p-5">
@@ -201,59 +203,48 @@ export function WorkspaceAreaAccessPanel({
                 {area.description}
               </p>
             </div>
-            {fixed ? (
-              <p className="text-sm text-black/65 dark:text-white/65">
-                Always limited to app owners and workspace-wide tiers
-                {workspaceWideTiers.length > 0 &&
-                  ` (${workspaceWideTiers.join(", ")})`}
-                . Teams and guest tiers cannot be added.
-              </p>
-            ) : (
+            <DropdownSelect
+              variant="field"
+              label={`Who can open ${area.label}?`}
+              value={entry.accessMode}
+              onChange={(value) =>
+                update(area.key, {
+                  accessMode: value as WorkspaceAreaAccess["accessMode"],
+                })
+              }
+              options={[
+                { label: "Everyone in the workspace", value: "open" },
+                { label: "Selected access groups", value: "restricted" },
+              ]}
+              disabled={!enforced}
+              required
+            />
+            {restricted && (
               <>
-                <DropdownSelect
-                  variant="field"
-                  label={`Who can open ${area.label}?`}
-                  value={entry.accessMode}
-                  onChange={(value) =>
-                    update(area.key, {
-                      accessMode: value as WorkspaceAreaAccess["accessMode"],
-                    })
-                  }
-                  options={[
-                    { label: "Everyone in the workspace", value: "open" },
-                    { label: "Selected access groups", value: "restricted" },
-                  ]}
+                <MultiSelect
+                  label="Access groups"
+                  options={groups.map((group) => ({
+                    label: group.grants_global_content
+                      ? `${group.name} (manager tier)`
+                      : group.name,
+                    value: group.id,
+                  }))}
+                  value={entry.groupIds}
+                  onChange={(groupIds) => update(area.key, { groupIds })}
+                  placeholder="Choose access groups"
+                  searchable
+                  searchPlaceholder="Search access groups"
                   disabled={!enforced}
-                  required
                 />
-                {restricted && (
-                  <>
-                    <MultiSelect
-                      label="Access groups"
-                      options={groups.map((group) => ({
-                        label: group.grants_global_content
-                          ? `${group.name} (manager tier)`
-                          : group.name,
-                        value: group.id,
-                      }))}
-                      value={entry.groupIds}
-                      onChange={(groupIds) => update(area.key, { groupIds })}
-                      placeholder="Choose access groups"
-                      searchable
-                      searchPlaceholder="Search access groups"
-                      disabled={!enforced}
-                    />
-                    {entry.groupIds.length === 0 && (
-                      <p className="text-sm text-black/65 dark:text-white/65">
-                        With no group selected, only app owners can open{" "}
-                        {area.label}.
-                      </p>
-                    )}
-                  </>
+                {entry.groupIds.length === 0 && (
+                  <p className="text-sm text-black/65 dark:text-white/65">
+                    With no group selected, only app owners can open{" "}
+                    {area.label}.
+                  </p>
                 )}
               </>
             )}
-            {enforced && !fixed && (
+            {enforced && (
               <p
                 role="status"
                 aria-hidden={!saving[area.key] && !saved[area.key]}

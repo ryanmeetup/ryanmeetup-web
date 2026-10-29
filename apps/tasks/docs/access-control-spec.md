@@ -125,8 +125,8 @@ holds a row only for a page an app owner has configured.
   not a configurable page: it opens to app owners and members of a tier with
   workspace-wide content access, and to nobody else. It takes no
   `workspace_area_access` row or group grants, `set_workspace_area_access`
-  refuses it, and the registry marks it `workspaceWideOnly` so the access
-  screen, group explanations, and preview state the same rule. The settings
+  refuses it, and the registry marks it `workspaceWideOnly`: Page access
+  leaves it out, and group explanations and the preview state the same rule. The settings
   and Google routes require it in addition to RY-D, and the page hides its
   settings entry points without it.
 
