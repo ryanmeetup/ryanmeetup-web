@@ -40,7 +40,10 @@ export async function generateMetadata({
       : {};
   }
 
-  const { supabase } = await loadWorkspacePage([]);
+  const { supabase } = await loadWorkspacePage([], {
+    // Only a title; RLS keeps the lookup to tasks the reader can see.
+    allowGuest: true,
+  });
   const task = requireQueryData(
     "task metadata",
     await supabase
@@ -76,15 +79,18 @@ export default async function SharedTaskPage({
     return <TaskPageClient initialData={demoData} taskId={task.id} demoMode />;
   }
 
-  const loaded = await loadWorkspacePage([
-    "profiles",
-    "statuses",
-    "categories",
-    "categoryOwners",
-    "projects",
-    "projectOwners",
-    "labels",
-  ]);
+  const loaded = await loadWorkspacePage(
+    [
+      "profiles",
+      "statuses",
+      "categories",
+      "categoryOwners",
+      "projects",
+      "projectOwners",
+      "labels",
+    ],
+    { guestProjectWork: true },
+  );
   const { supabase } = loaded;
   let initialData = loaded.data;
   const task = requireQueryData(
@@ -143,7 +149,7 @@ export default async function SharedTaskPage({
           resolvedPreview.preview,
           resolvedPreview.projectIds,
         );
-        await redirectPreviewedGuest(initialData);
+        await redirectPreviewedGuest(initialData, { projectWork: true });
       }
     }
   }

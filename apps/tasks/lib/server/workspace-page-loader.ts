@@ -63,6 +63,7 @@ export async function loadWorkspacePage(
     requireOnboarding = true,
     area,
     allowGuest = false,
+    guestProjectWork = false,
   }: {
     owner?: boolean;
     requireOnboarding?: boolean;
@@ -72,6 +73,12 @@ export async function loadWorkspacePage(
      * since everything else on it is work open to the workspace.
      */
     allowGuest?: boolean;
+    /**
+     * Whether this route shows project work: tasks, projects, and the
+     * dashboard over them. A guest opens it once a project is shared with
+     * them, and the projects RLS returns them are only those.
+     */
+    guestProjectWork?: boolean;
     /**
      * The lockable page this route renders. A member who does not reach it
      * gets the same 404 an owner-only route gives, so a restricted page never
@@ -101,8 +108,17 @@ export async function loadWorkspacePage(
 
   if (!data) redirect("/account-error?reason=profile");
   if (area && !canViewWorkspaceArea(data.accessibleAreas, area)) notFound();
-  if (data.isGuest && !area && !allowGuest)
-    redirect(guestHome(data.accessibleAreas, await getInstanceSettings()));
+  if (data.isGuest && !area && !allowGuest) {
+    const guestHasProjects = data.projects.length > 0;
+    if (!(guestProjectWork && guestHasProjects))
+      redirect(
+        guestHome(
+          data.accessibleAreas,
+          await getInstanceSettings(),
+          guestHasProjects,
+        ),
+      );
+  }
   return { supabase, user, data };
 }
 
@@ -114,11 +130,20 @@ export async function loadWorkspacePage(
  */
 export async function redirectPreviewedGuest(
   data: WorkspaceData,
-  { onDashboard = false }: { onDashboard?: boolean } = {},
+  {
+    onDashboard = false,
+    projectWork = false,
+  }: { onDashboard?: boolean; projectWork?: boolean } = {},
 ): Promise<"no-pages" | undefined> {
   if (!data.accessPreview?.guest) return;
-  const home = guestHome(data.accessibleAreas, await getInstanceSettings());
-  // A guest with no page is welcomed on the dashboard route itself.
-  if (onDashboard && home === "/") return "no-pages";
+  const hasProjects = data.projects.length > 0;
+  if (projectWork && hasProjects) return;
+  const home = guestHome(
+    data.accessibleAreas,
+    await getInstanceSettings(),
+    hasProjects,
+  );
+  // A guest with no project or page is welcomed on the dashboard route itself.
+  if (onDashboard && home === "/") return hasProjects ? undefined : "no-pages";
   redirect(withAccessPreview(home, data.accessPreview));
 }

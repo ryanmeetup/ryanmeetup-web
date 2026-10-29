@@ -36,14 +36,17 @@ export default async function ProjectsPage({
   const demoMode = await isWorkspaceDemo();
   if (demoMode) return <ProjectsPageClient initialData={demoData} demoMode />;
 
-  const loaded = await loadWorkspacePage([
-    "profiles",
-    "projects",
-    "projectOwners",
-    "categories",
-    "categoryOwners",
-    "statuses",
-  ]);
+  const loaded = await loadWorkspacePage(
+    [
+      "profiles",
+      "projects",
+      "projectOwners",
+      "categories",
+      "categoryOwners",
+      "statuses",
+    ],
+    { guestProjectWork: true },
+  );
   const { supabase } = loaded;
   let initialData = loaded.data;
 
@@ -64,7 +67,7 @@ export default async function ProjectsPage({
           resolvedPreview.preview,
           resolvedPreview.projectIds,
         );
-        await redirectPreviewedGuest(initialData);
+        await redirectPreviewedGuest(initialData, { projectWork: true });
       }
     }
   }

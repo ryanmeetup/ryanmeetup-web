@@ -41,7 +41,9 @@ export async function generateMetadata({
       ? { title: { absolute: await pageTitle(project.name) } }
       : {};
   }
-  const { data } = await loadWorkspacePage(["projects"]);
+  const { data } = await loadWorkspacePage(["projects"], {
+    allowGuest: true,
+  });
   const project = findProjectByRouteId(data.projects, id);
   return project ? { title: { absolute: await pageTitle(project.name) } } : {};
 }
@@ -72,13 +74,10 @@ export default async function ProjectOverviewPage({
     );
   }
 
-  const loaded = await loadWorkspacePage([
-    "profiles",
-    "statuses",
-    "categories",
-    "projects",
-    "projectOwners",
-  ]);
+  const loaded = await loadWorkspacePage(
+    ["profiles", "statuses", "categories", "projects", "projectOwners"],
+    { guestProjectWork: true },
+  );
   const project = findProjectByRouteId(loaded.data.projects, id);
   if (!project) notFound();
 
@@ -195,7 +194,7 @@ export default async function ProjectOverviewPage({
           resolved.preview,
           resolved.projectIds,
         );
-        await redirectPreviewedGuest(initialData);
+        await redirectPreviewedGuest(initialData, { projectWork: true });
         // The RPC answered for the owner. Every project a member can reach
         // makes them at least an editor, and an unreachable one 404s below.
         canEditProject = true;

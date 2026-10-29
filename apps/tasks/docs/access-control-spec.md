@@ -29,11 +29,15 @@ and access previews only explain or simulate them.
   in either direction. A guest tier cannot carry workspace-wide content access
   and cannot be the new-member default. `member_is_guest` (service role) and
   `is_guest` (the caller only) answer the question; `can_view_open_content`
-  is the gate on every open-to-everyone rule. Outside its granted pages the
-  app redirects a guest to the first of them, or to a welcome on the
-  dashboard route that names the app owners to ask when there is none, and
-  hides navigation to work open to the workspace; that is presentation, and
-  RLS remains the boundary.
+  is the gate on every open-to-everyone rule. A guest with a project granted
+  to their tier or a team works it like a member: the dashboard, the task
+  board, the project list, the project page, and its task pages open, holding
+  only the projects RLS returns them. Creating projects and tasks, activity,
+  and categories stay closed. Outside those and its granted pages the app
+  redirects a guest to the dashboard when a project is shared, otherwise to
+  the first granted page, or to a welcome on the dashboard route that names
+  the app owners to ask when there is none, and hides navigation to work open
+  to the workspace; that is presentation, and RLS remains the boundary.
 - Group membership and category visibility are app-owner administrative data.
   Project visibility is available to app owners and that project's named
   owners. Every visibility change must be audited.

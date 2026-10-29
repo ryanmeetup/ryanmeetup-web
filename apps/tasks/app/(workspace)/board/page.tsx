@@ -45,15 +45,18 @@ export default async function BoardPage({
       <TaskApp initialData={demoData} demoMode initialTaskId={initialTaskId} />
     );
 
-  const loaded = await loadWorkspacePage([
-    "profiles",
-    "statuses",
-    "categories",
-    "categoryOwners",
-    "projects",
-    "projectOwners",
-    "labels",
-  ]);
+  const loaded = await loadWorkspacePage(
+    [
+      "profiles",
+      "statuses",
+      "categories",
+      "categoryOwners",
+      "projects",
+      "projectOwners",
+      "labels",
+    ],
+    { guestProjectWork: true },
+  );
   const { supabase } = loaded;
   let initialData = loaded.data;
   const archiveBoundary = new Date().toISOString();
@@ -123,7 +126,7 @@ export default async function BoardPage({
           resolvedPreview.preview,
           resolvedPreview.projectIds,
         );
-        await redirectPreviewedGuest(initialData);
+        await redirectPreviewedGuest(initialData, { projectWork: true });
       }
     }
   }

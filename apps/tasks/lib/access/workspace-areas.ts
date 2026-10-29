@@ -143,15 +143,17 @@ export function canViewWorkspaceArea(
 }
 
 /**
- * Where a guest lands: the first page this instance has that they can open, or
- * the dashboard route — which welcomes a guest instead of showing work — when
- * there is none. Every other route holds work open to the workspace, which a
- * guest never reaches.
+ * Where a guest lands. A guest with a project shared with them, through their
+ * tier or a team, works it from the dashboard like any member. Otherwise it is
+ * the first page this instance has that they can open, or the dashboard route
+ * — which welcomes a guest instead of showing work — when there is none.
  */
 export function guestHome(
   accessibleAreas: readonly WorkspaceAreaKey[] | undefined,
   flags: { rydEnabled: boolean },
+  hasProjects = false,
 ) {
+  if (hasProjects) return "/";
   return (
     enabledWorkspaceAreas(flags).find((area) =>
       canViewWorkspaceArea(accessibleAreas, area.key),

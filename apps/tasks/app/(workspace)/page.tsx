@@ -64,9 +64,10 @@ export default async function DashboardPage({
   );
   const { supabase } = loaded;
   let initialData = loaded.data;
-  // A guest has no dashboard: they go to their first page, or are welcomed
-  // here when nothing has been shared with them yet.
-  if (initialData.isGuest) {
+  // A guest's dashboard covers only the projects shared with them. With none,
+  // they go to their first page, or are welcomed here when nothing has been
+  // shared with them yet.
+  if (initialData.isGuest && initialData.projects.length === 0) {
     const home = guestHome(
       initialData.accessibleAreas,
       await getInstanceSettings(),

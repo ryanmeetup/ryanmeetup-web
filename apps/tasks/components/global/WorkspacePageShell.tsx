@@ -153,8 +153,9 @@ function WorkspaceChrome({
             </IconButton>
           )}
           <TaskHeaderBrand />
-          {/* A guest has no tasks to search or create. */}
-          {data.isGuest ? (
+          {/* A guest searches only the projects shared with them, and has
+              nothing to search without one. Creating stays with members. */}
+          {data.isGuest && data.projects.length === 0 ? (
             <div className="flex-1" aria-hidden="true" />
           ) : (
             <TaskSearch

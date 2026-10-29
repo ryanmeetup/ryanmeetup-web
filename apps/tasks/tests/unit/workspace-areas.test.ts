@@ -75,4 +75,9 @@ describe("guest landing page", () => {
     expect(guestHome(["ryd"], { rydEnabled: false })).toBe("/");
     expect(guestHome([], { rydEnabled: true })).toBe("/");
   });
+
+  it("sends a guest with a shared project to the dashboard over their pages", () => {
+    expect(guestHome(["ryd"], { rydEnabled: true }, true)).toBe("/");
+    expect(guestHome([], { rydEnabled: true }, true)).toBe("/");
+  });
 });
