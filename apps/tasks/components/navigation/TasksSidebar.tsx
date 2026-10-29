@@ -182,6 +182,64 @@ export function TasksSidebar({
   // A guest's routes other than their granted pages redirect, and every
   // project and category open to the workspace is closed to them.
   const guest = Boolean(data.isGuest);
+  // A preview lists every page, so the owner sees what the subject is missing;
+  // the ones the subject cannot open stay listed but inert.
+  const previewing = Boolean(data.accessPreview);
+  const navItems = [
+    {
+      href: "/",
+      label: "Dashboard",
+      icon: FiHome,
+      active: pathname === "/",
+      available: !guest,
+    },
+    {
+      href: "/board",
+      label: "Tasks",
+      icon: FiGrid,
+      active: isTasksRoute,
+      available: !guest,
+    },
+    {
+      href: "/notes",
+      label: "Notes",
+      icon: FiFileText,
+      active: isNotes,
+      available: canView("notes"),
+    },
+    {
+      href: "/contacts",
+      label: "Contacts",
+      icon: FiUsers,
+      active: isContacts,
+      available: canView("contacts"),
+    },
+    {
+      href: "/activity",
+      label: "Activity",
+      icon: FiClock,
+      active: pathname === "/activity",
+      available: !guest,
+    },
+    {
+      href: "/calendar",
+      label: "Calendar",
+      icon: FiCalendar,
+      active: isCalendar,
+      available: canView("calendar"),
+    },
+    ...(rydEnabled
+      ? [
+          {
+            href: "/ryd",
+            label: "RY-D Verification",
+            icon: FiCheckSquare,
+            active: isRyd,
+            available: canView("ryd"),
+          },
+        ]
+      : []),
+  ];
   const selectedProjectIsFavorite = favoriteProjects.some(
     (project) =>
       project.id === selectedProject || project.name === selectedProject,
@@ -328,6 +386,7 @@ export function TasksSidebar({
           href={withAccessPreview("/", data.accessPreview)}
           aria-label="Task tracker home"
           onClick={closeSidebar}
+          {...(guest && previewing ? { "data-preview-block": "" } : {})}
           className="-ml-2 min-w-0 rounded-lg px-2 py-1 transition duration-300 ease-in-out hover:-translate-y-0.5 hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 motion-reduce:transform-none dark:hover:bg-white/10 dark:focus-visible:ring-white/40"
         >
           <p
@@ -362,75 +421,19 @@ export function TasksSidebar({
         )}
       </div>
       <nav className="mt-4 space-y-1" aria-label="Main navigation">
-        {!guest && (
-          <>
+        {navItems.map((item) =>
+          item.available || previewing ? (
             <Link
-              href={withAccessPreview("/", data.accessPreview)}
+              key={item.href}
+              href={withAccessPreview(item.href, data.accessPreview)}
               onClick={closeSidebar}
-              className={linkClass(pathname === "/")}
+              className={linkClass(item.active)}
+              {...(item.available ? {} : { "data-preview-block": "" })}
             >
-              <FiHome />
-              Dashboard
+              <item.icon />
+              {item.label}
             </Link>
-            <Link
-              href={withAccessPreview("/board", data.accessPreview)}
-              onClick={closeSidebar}
-              className={linkClass(isTasksRoute)}
-            >
-              <FiGrid />
-              Tasks
-            </Link>
-          </>
-        )}
-        {canView("notes") && (
-          <Link
-            href={withAccessPreview("/notes", data.accessPreview)}
-            onClick={closeSidebar}
-            className={linkClass(isNotes)}
-          >
-            <FiFileText />
-            Notes
-          </Link>
-        )}
-        {canView("contacts") && (
-          <Link
-            href={withAccessPreview("/contacts", data.accessPreview)}
-            onClick={closeSidebar}
-            className={linkClass(isContacts)}
-          >
-            <FiUsers />
-            Contacts
-          </Link>
-        )}
-        {!guest && (
-          <Link
-            href={withAccessPreview("/activity", data.accessPreview)}
-            onClick={closeSidebar}
-            className={linkClass(pathname === "/activity")}
-          >
-            <FiClock />
-            Activity
-          </Link>
-        )}
-        {canView("calendar") && (
-          <Link
-            href={withAccessPreview("/calendar", data.accessPreview)}
-            onClick={closeSidebar}
-            className={linkClass(isCalendar)}
-          >
-            <FiCalendar />
-            Calendar
-          </Link>
-        )}
-        {rydEnabled && canView("ryd") && (
-          <Link
-            href={withAccessPreview("/ryd", data.accessPreview)}
-            onClick={closeSidebar}
-            className={linkClass(isRyd)}
-          >
-            <FiCheckSquare />
-            RY-D Verification
-          </Link>
+          ) : null,
         )}
       </nav>
       {(isOwner || canManageCategories) && (
@@ -510,9 +513,10 @@ export function TasksSidebar({
           rail owns its bottom rule. With no create menu, the rail supplies both
           edges itself. Child borders only divide Favorites, Categories, and
           Projects inside the shared scroller. */}
-      {guest ? null : (
+      {guest && !previewing ? null : (
         <div
           data-sidebar-resource-scroll
+          {...(guest ? { "data-preview-block": "" } : {})}
           className={`min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain border-b border-black/10 py-4 pr-1 [scrollbar-gutter:stable] dark:border-white/10 ${isOwner || canManageCategories ? "" : "mt-4 border-t"}`}
         >
           {favoriteProjects.length > 0 && (

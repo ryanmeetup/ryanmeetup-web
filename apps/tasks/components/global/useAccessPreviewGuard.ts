@@ -14,6 +14,11 @@ import type { AccessPreview } from "@/lib/workspace/workspace-types";
 export const PREVIEW_ALLOW_ATTRIBUTE = "data-preview-allow";
 
 const allowSelector = `[${PREVIEW_ALLOW_ATTRIBUTE}]`;
+/**
+ * Marks navigation the subject cannot follow. It stays on screen so the owner
+ * sees what is missing, but its links are as inert as any other control.
+ */
+const blockSelector = "[data-preview-block]";
 const controlSelector = [
   "button",
   "input",
@@ -77,7 +82,11 @@ export function useAccessPreviewGuard(preview: AccessPreview | undefined) {
       const element = elementOf(event.target);
       if (allowed(element)) return;
       const anchor = element?.closest("a[href]");
-      if (anchor instanceof HTMLAnchorElement && !isControlInLink(element)) {
+      if (
+        anchor instanceof HTMLAnchorElement &&
+        !anchor.closest(blockSelector) &&
+        !isControlInLink(element)
+      ) {
         const url = new URL(anchor.href, window.location.href);
         if (url.origin !== window.location.origin) return;
         if (!isPreviewActionPath(url.pathname)) {
@@ -98,7 +107,11 @@ export function useAccessPreviewGuard(preview: AccessPreview | undefined) {
     // They are only stopped, never prevented, so text stays selectable.
     const onPress = (event: Event) => {
       const element = elementOf(event.target);
-      if (allowed(element) || element?.closest("a[href]")) return;
+      if (
+        allowed(element) ||
+        (element?.closest("a[href]") && !element.closest(blockSelector))
+      )
+        return;
       event.stopPropagation();
     };
 
@@ -109,7 +122,12 @@ export function useAccessPreviewGuard(preview: AccessPreview | undefined) {
       // Nothing focused: keep the page scrollable from the keyboard.
       if (element === document.body || element === document.documentElement)
         return;
-      if (element?.closest("a[href]") && !isControlInLink(element)) return;
+      if (
+        element?.closest("a[href]") &&
+        !element.closest(blockSelector) &&
+        !isControlInLink(element)
+      )
+        return;
       event.preventDefault();
       event.stopPropagation();
     };
@@ -124,6 +142,7 @@ export function useAccessPreviewGuard(preview: AccessPreview | undefined) {
       const actionLinks = [
         ...document.querySelectorAll<HTMLAnchorElement>("a[href]"),
       ].filter((anchor) => {
+        if (anchor.closest(blockSelector)) return true;
         const url = new URL(anchor.href, window.location.href);
         return (
           url.origin === window.location.origin &&

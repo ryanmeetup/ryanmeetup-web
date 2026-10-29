@@ -83,6 +83,11 @@ body:has([data-workspace-error]) .tasks-footer {
   [data-access-preview] [data-preview-disabled] {
     cursor: not-allowed;
   }
+  /* Pages the subject cannot open stay listed, visibly out of reach. */
+  [data-access-preview] [data-preview-block] a[data-preview-disabled],
+  [data-access-preview] nav a[data-preview-block][data-preview-disabled] {
+    opacity: 0.4;
+  }
   .tasks-app-header {
     @apply sticky top-0 z-40 flex min-h-16 flex-wrap items-center gap-2 border-b border-black/10 bg-[#f1f2ef]/90 px-4 py-2 backdrop-blur-xl dark:border-white/10 dark:bg-[#101010]/90 sm:h-16 sm:flex-nowrap sm:gap-3 sm:px-6 sm:py-0 lg:fixed lg:right-0 lg:px-8;
   }
