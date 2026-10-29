@@ -71,6 +71,13 @@ default tiers.
 Inviting a teammate sets their app role, tier, and teams in the same step, so
 a partner arrives in a guest tier with only the team they work with.
 
+### View as shows what they see
+
+Viewing as a tier or a teammate now shows their workspace exactly: their
+navigation, their buttons, and the pages a guest is sent to instead of the
+Dashboard. You can move around as they would, but nothing in the preview can
+be clicked, typed into, or dragged.
+
 ### Chipply exports import as written
 
 Order files that aren't UTF-8 keep accented names like Pérez intact, and

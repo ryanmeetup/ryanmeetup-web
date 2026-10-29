@@ -30,7 +30,6 @@ export function NoteComments({
   currentProfileId,
   profiles,
   demoMode,
-  previewing,
   onChange,
 }: {
   noteId: string;
@@ -38,7 +37,6 @@ export function NoteComments({
   currentProfileId: string;
   profiles: Profile[];
   demoMode: boolean;
-  previewing: boolean;
   onChange: (comments: NoteComment[]) => void;
 }) {
   const [body, setBody] = useState("");
@@ -220,8 +218,7 @@ export function NoteComments({
                         />
                       )}
                     </div>
-                    {!previewing &&
-                      comment.created_by === currentProfileId &&
+                    {comment.created_by === currentProfileId &&
                       editing?.id !== comment.id && (
                         <span className="flex gap-1">
                           <IconButton
@@ -254,62 +251,58 @@ export function NoteComments({
               <p className="text-sm font-semibold text-black/75 dark:text-white/75">
                 No comments yet
               </p>
-              {!previewing && (
-                <p className="mt-1 text-xs text-black/50 dark:text-white/50">
-                  Start the conversation with an update or question.
-                </p>
-              )}
+              <p className="mt-1 text-xs text-black/50 dark:text-white/50">
+                Start the conversation with an update or question.
+              </p>
             </div>
           )}
-          {!previewing && (
-            <form
-              className="mt-4 space-y-3 border-t border-black/10 pt-4 dark:border-white/10"
-              onSubmit={(event) => {
-                event.preventDefault();
-                void addComment();
+          <form
+            className="mt-4 space-y-3 border-t border-black/10 pt-4 dark:border-white/10"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void addComment();
+            }}
+          >
+            <Textarea
+              id={`note-comment-${noteId}`}
+              label="Comment"
+              hideLabel
+              name={`note-comment-${noteId}`}
+              value={body}
+              maxLength={5000}
+              rows={3}
+              placeholder="Share an update or ask a question…"
+              disabled={saving}
+              onChange={(event) => setBody(event.target.value)}
+              onKeyDown={(event) => {
+                if (
+                  event.key === "Enter" &&
+                  (event.metaKey || event.ctrlKey) &&
+                  body.trim() &&
+                  !saving
+                ) {
+                  event.preventDefault();
+                  void addComment();
+                }
               }}
-            >
-              <Textarea
-                id={`note-comment-${noteId}`}
-                label="Comment"
-                hideLabel
-                name={`note-comment-${noteId}`}
-                value={body}
-                maxLength={5000}
-                rows={3}
-                placeholder="Share an update or ask a question…"
-                disabled={saving}
-                onChange={(event) => setBody(event.target.value)}
-                onKeyDown={(event) => {
-                  if (
-                    event.key === "Enter" &&
-                    (event.metaKey || event.ctrlKey) &&
-                    body.trim() &&
-                    !saving
-                  ) {
-                    event.preventDefault();
-                    void addComment();
-                  }
-                }}
-              />
-              <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-xs text-black/45 dark:text-white/45">
-                  Press Ctrl/⌘ + Enter to post
-                </p>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  className="w-full sm:w-auto"
-                  leftIcon={<FiSend aria-hidden />}
-                  loading={saving && !editing}
-                  loadingText="Posting…"
-                  disabled={saving || !body.trim()}
-                >
-                  Post comment
-                </Button>
-              </div>
-            </form>
-          )}
+            />
+            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs text-black/45 dark:text-white/45">
+                Press Ctrl/⌘ + Enter to post
+              </p>
+              <Button
+                type="submit"
+                variant="primary"
+                className="w-full sm:w-auto"
+                leftIcon={<FiSend aria-hidden />}
+                loading={saving && !editing}
+                loadingText="Posting…"
+                disabled={saving || !body.trim()}
+              >
+                Post comment
+              </Button>
+            </div>
+          </form>
         </div>
       </AnimatedCollapse>
     </section>

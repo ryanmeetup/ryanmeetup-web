@@ -74,9 +74,8 @@ export function NotesPageClient({
   const [convertProjectTarget, setConvertProjectTarget] = useState<Note | null>(
     null,
   );
-  const previewing = Boolean(data.accessPreview);
   const canConvertToProject =
-    !previewing && (demoMode || data.currentProfile.app_role === "owner");
+    demoMode || data.currentProfile.app_role === "owner";
 
   async function createNote() {
     if (!title.trim() || !body.trim()) return;
@@ -299,78 +298,76 @@ export function NotesPageClient({
             </Button>
           }
         >
-          {!previewing && (
-            <section className="rounded-xl border border-black/15 bg-black/[0.035] p-4 shadow-sm shadow-black/5 dark:border-white/10 dark:bg-white/[0.025] dark:shadow-none sm:p-5">
-              <form
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void createNote();
-                }}
-              >
-                <div className="mb-4">
-                  <h2 className="text-sm font-semibold">Quick note</h2>
-                  <p className="mt-1 text-xs text-black/55 dark:text-white/55">
-                    Name the thought, then capture the useful detail.
-                  </p>
-                </div>
-                <div className="space-y-4">
-                  <Input
-                    id="quick-note-title"
-                    label="Note title"
-                    required
-                    name="quick-note-title"
-                    value={title}
-                    maxLength={200}
-                    placeholder="Give this note a clear title"
-                    disabled={creating}
-                    onChange={(event) => setTitle(event.target.value)}
-                  />
-                  <Textarea
-                    id="quick-note"
-                    label="Details"
-                    required
-                    name="quick-note"
-                    value={body}
-                    rows={4}
-                    maxLength={10000}
-                    placeholder="Add the context, idea, or decision…"
-                    disabled={creating}
-                    onChange={(event) => setBody(event.target.value)}
-                  />
-                </div>
-                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                  <DropdownSelect
-                    variant="field"
-                    label="Category"
-                    value={categoryId}
-                    onChange={setCategoryId}
-                    options={[
-                      { label: "Uncategorized", value: "" },
-                      ...data.categories
-                        .filter((category) => !category.archived_at)
-                        .map((category) => ({
-                          label: category.name,
-                          value: category.id,
-                          color: category.color,
-                        })),
-                    ]}
-                    disabled={creating}
-                  />
-                  <Button
-                    type="submit"
-                    size="field"
-                    className="w-full sm:w-auto"
-                    leftIcon={<FiPlus />}
-                    loading={creating}
-                    loadingText="Saving…"
-                    disabled={!title.trim() || !body.trim()}
-                  >
-                    Save note
-                  </Button>
-                </div>
-              </form>
-            </section>
-          )}
+          <section className="rounded-xl border border-black/15 bg-black/[0.035] p-4 shadow-sm shadow-black/5 dark:border-white/10 dark:bg-white/[0.025] dark:shadow-none sm:p-5">
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                void createNote();
+              }}
+            >
+              <div className="mb-4">
+                <h2 className="text-sm font-semibold">Quick note</h2>
+                <p className="mt-1 text-xs text-black/55 dark:text-white/55">
+                  Name the thought, then capture the useful detail.
+                </p>
+              </div>
+              <div className="space-y-4">
+                <Input
+                  id="quick-note-title"
+                  label="Note title"
+                  required
+                  name="quick-note-title"
+                  value={title}
+                  maxLength={200}
+                  placeholder="Give this note a clear title"
+                  disabled={creating}
+                  onChange={(event) => setTitle(event.target.value)}
+                />
+                <Textarea
+                  id="quick-note"
+                  label="Details"
+                  required
+                  name="quick-note"
+                  value={body}
+                  rows={4}
+                  maxLength={10000}
+                  placeholder="Add the context, idea, or decision…"
+                  disabled={creating}
+                  onChange={(event) => setBody(event.target.value)}
+                />
+              </div>
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <DropdownSelect
+                  variant="field"
+                  label="Category"
+                  value={categoryId}
+                  onChange={setCategoryId}
+                  options={[
+                    { label: "Uncategorized", value: "" },
+                    ...data.categories
+                      .filter((category) => !category.archived_at)
+                      .map((category) => ({
+                        label: category.name,
+                        value: category.id,
+                        color: category.color,
+                      })),
+                  ]}
+                  disabled={creating}
+                />
+                <Button
+                  type="submit"
+                  size="field"
+                  className="w-full sm:w-auto"
+                  leftIcon={<FiPlus />}
+                  loading={creating}
+                  loadingText="Saving…"
+                  disabled={!title.trim() || !body.trim()}
+                >
+                  Save note
+                </Button>
+              </div>
+            </form>
+          </section>
 
           <section className="mt-6 border-t border-black/10 pt-5 dark:border-white/10">
             <div className="mb-4 flex items-center gap-4">
@@ -453,7 +450,6 @@ export function NotesPageClient({
                             ) ?? null
                           }
                           profiles={data.profiles}
-                          previewing={previewing}
                           canConvertToProject={canConvertToProject}
                           commentCount={
                             comments.filter(
@@ -527,8 +523,7 @@ export function NotesPageClient({
           }
           profiles={data.profiles}
           demoMode={demoMode}
-          previewing={previewing}
-          editing={editingNote && !previewing && !openNote.archived_at}
+          editing={editingNote && !openNote.archived_at}
           setEditing={setEditingNote}
           convertedTask={data.tasks.find(
             (task) => task.id === openNote.converted_task_id,

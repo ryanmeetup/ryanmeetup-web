@@ -36,7 +36,6 @@ export function ProjectsPageClient({
           options={{
             embedded: true,
             showOwnerNames: true,
-            readOnly: Boolean(data.accessPreview),
           }}
           events={{ onCreate: () => setCreateOpen(true) }}
         />

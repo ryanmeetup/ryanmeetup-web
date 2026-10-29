@@ -231,8 +231,7 @@ export function ProjectOverviewPageClient({
   const status = projectStatusDetails(project.status);
   const timeline = projectTimeline(project);
   const isFavorite =
-    !isClosedProjectStatus(project.status) &&
-    favorites.isFavorite(project.id);
+    !isClosedProjectStatus(project.status) && favorites.isFavorite(project.id);
   const canOpenCalendar = canViewWorkspaceArea(
     data.accessibleAreas,
     "calendar",
@@ -321,7 +320,6 @@ export function ProjectOverviewPageClient({
               </span>
             }
             titleActions={
-              !data.accessPreview &&
               !isClosedProjectStatus(project.status) ? (
                 <ProjectFavoriteButton
                   projectName={project.name}
@@ -497,7 +495,7 @@ export function ProjectOverviewPageClient({
                           : "No tasks yet. Add the first piece of work when this project is ready."
                       }
                     />
-                    {!data.accessPreview && tasks.length === 0 && (
+                    {tasks.length === 0 && (
                       <div className="flex justify-center pb-8">
                         <Button
                           size="sm"
@@ -673,7 +671,7 @@ export function ProjectOverviewPageClient({
               <ProjectDetailsCard
                 project={project}
                 attachments={attachments}
-                canEdit={canEditProject && !data.accessPreview}
+                canEdit={canEditProject}
                 demoMode={demoMode}
                 currentUserId={data.currentProfile.id}
                 teamGroups={teamGroups}

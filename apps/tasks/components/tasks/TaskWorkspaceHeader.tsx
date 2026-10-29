@@ -48,7 +48,6 @@ export type TaskWorkspaceHeaderScope = {
   demoMode: boolean;
   isMyTasks: boolean;
   myTasksName: string;
-  previewing: boolean;
   projectFavorite: boolean;
   projectFavoritePending: boolean;
   projectDetailsHref: string | null;
@@ -259,7 +258,6 @@ export function TaskWorkspaceHeader({
     demoMode,
     isMyTasks,
     myTasksName,
-    previewing,
     projectFavorite,
     projectFavoritePending,
     projectDetailsHref,
@@ -284,20 +282,14 @@ export function TaskWorkspaceHeader({
     onSetVisibility,
     onToggleProjectFavorite,
   } = controls;
-  // Favorites belong to the viewer's own profile, so an access preview - which
-  // borrows someone else's view - has none to show.
   const showFavorite = Boolean(
-    selectedProject &&
-      !previewing &&
-      !isClosedProjectStatus(selectedProject.status),
+    selectedProject && !isClosedProjectStatus(selectedProject.status),
   );
   // Actions belonging to the selected project or category, as opposed to the
   // board/list switch, which changes how any scope renders. Below `sm` these
   // collapse into one menu beside the title; archived views of a personal or
   // team workspace have none of them.
-  const canEditScope = Boolean(
-    (selectedProject || selectedCategory) && !previewing,
-  );
+  const canEditScope = Boolean(selectedProject || selectedCategory);
   const hasScopeActions = Boolean(
     showFavorite || (selectedProject && projectDetailsHref) || canEditScope,
   );
@@ -441,12 +433,12 @@ export function TaskWorkspaceHeader({
                       <FiExternalLink aria-hidden /> Project details
                     </DropdownMenuItem.Link>
                   )}
-                  {selectedProject && !previewing && (
+                  {selectedProject && (
                     <DropdownMenuItem onClick={onEditProject}>
                       <FiEdit2 aria-hidden /> Edit project
                     </DropdownMenuItem>
                   )}
-                  {selectedCategory && !previewing && (
+                  {selectedCategory && (
                     <DropdownMenuItem onClick={onEditCategory}>
                       <FiEdit2 aria-hidden /> Edit category
                     </DropdownMenuItem>
@@ -494,7 +486,7 @@ export function TaskWorkspaceHeader({
                     <FiExternalLink aria-hidden />
                   </IconButton.Link>
                 )}
-                {selectedProject && !previewing && (
+                {selectedProject && (
                   <IconButton
                     label="Edit project"
                     size="md"
@@ -504,7 +496,7 @@ export function TaskWorkspaceHeader({
                     <FiEdit2 aria-hidden />
                   </IconButton>
                 )}
-                {selectedCategory && !previewing && (
+                {selectedCategory && (
                   <IconButton
                     label="Edit category"
                     size="md"
@@ -570,87 +562,79 @@ export function TaskWorkspaceHeader({
                     )}
                   </div>
                 </div>
-                {(!previewing ||
-                  selectedProject.links.length > 0 ||
-                  projectAttachmentsPending ||
-                  projectAttachments.notes.length > 0 ||
-                  projectAttachments.files.length > 0) && (
-                  <div className="min-w-0 flex-1">
-                    <div className="mb-1 flex min-h-8 items-center gap-1">
-                      <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-black/45 dark:text-white/45">
-                        Project context
-                      </p>
-                      {!previewing && (
-                        <IconButton
-                          label="Manage project context"
-                          size="sm"
-                          variant="plain"
-                          tooltipPlacement="bottom"
-                          onClick={() => setProjectContextOpen(true)}
-                        >
-                          <FiEdit2 aria-hidden />
-                        </IconButton>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap items-start gap-x-5 gap-y-3">
-                      {selectedProject.links.length > 0 && (
-                        <div className="flex min-w-0 flex-col gap-1.5">
-                          <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-black/40 dark:text-white/40">
-                            Links
-                          </p>
-                          <ResourceLinks links={selectedProject.links} />
-                        </div>
-                      )}
-                      {projectAttachmentsPending ? (
-                        <div className="flex min-w-0 flex-col gap-1.5">
-                          <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-black/40 dark:text-white/40">
-                            Notes &amp; files
-                          </p>
-                          <ResourceChipsSkeleton
-                            count={projectAttachmentCount}
-                            label="Loading project attachments"
-                          />
-                        </div>
-                      ) : (
-                        <>
-                          {projectAttachments.notes.length > 0 && (
-                            <div className="flex min-w-0 flex-col gap-1.5">
-                              <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-black/40 dark:text-white/40">
-                                Notes
-                              </p>
-                              <ResourceAttachmentsPreview
-                                notes={projectAttachments.notes}
-                                files={[]}
-                              />
-                            </div>
-                          )}
-                          {projectAttachments.files.length > 0 && (
-                            <div className="flex min-w-0 flex-col gap-1.5">
-                              <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-black/40 dark:text-white/40">
-                                Files
-                              </p>
-                              <ResourceAttachmentsPreview
-                                notes={[]}
-                                files={projectAttachments.files}
-                              />
-                            </div>
-                          )}
-                        </>
-                      )}
-                      {!projectAttachmentsPending &&
-                        selectedProject.links.length === 0 &&
-                        projectAttachments.notes.length === 0 &&
-                        projectAttachments.files.length === 0 && (
-                          <p className="text-xs text-black/45 dark:text-white/45">
-                            No links, notes, or files yet.
-                          </p>
-                        )}
-                    </div>
+                <div className="min-w-0 flex-1">
+                  <div className="mb-1 flex min-h-8 items-center gap-1">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-black/45 dark:text-white/45">
+                      Project context
+                    </p>
+                    <IconButton
+                      label="Manage project context"
+                      size="sm"
+                      variant="plain"
+                      tooltipPlacement="bottom"
+                      onClick={() => setProjectContextOpen(true)}
+                    >
+                      <FiEdit2 aria-hidden />
+                    </IconButton>
                   </div>
-                )}
+                  <div className="flex flex-wrap items-start gap-x-5 gap-y-3">
+                    {selectedProject.links.length > 0 && (
+                      <div className="flex min-w-0 flex-col gap-1.5">
+                        <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-black/40 dark:text-white/40">
+                          Links
+                        </p>
+                        <ResourceLinks links={selectedProject.links} />
+                      </div>
+                    )}
+                    {projectAttachmentsPending ? (
+                      <div className="flex min-w-0 flex-col gap-1.5">
+                        <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-black/40 dark:text-white/40">
+                          Notes &amp; files
+                        </p>
+                        <ResourceChipsSkeleton
+                          count={projectAttachmentCount}
+                          label="Loading project attachments"
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        {projectAttachments.notes.length > 0 && (
+                          <div className="flex min-w-0 flex-col gap-1.5">
+                            <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-black/40 dark:text-white/40">
+                              Notes
+                            </p>
+                            <ResourceAttachmentsPreview
+                              notes={projectAttachments.notes}
+                              files={[]}
+                            />
+                          </div>
+                        )}
+                        {projectAttachments.files.length > 0 && (
+                          <div className="flex min-w-0 flex-col gap-1.5">
+                            <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-black/40 dark:text-white/40">
+                              Files
+                            </p>
+                            <ResourceAttachmentsPreview
+                              notes={[]}
+                              files={projectAttachments.files}
+                            />
+                          </div>
+                        )}
+                      </>
+                    )}
+                    {!projectAttachmentsPending &&
+                      selectedProject.links.length === 0 &&
+                      projectAttachments.notes.length === 0 &&
+                      projectAttachments.files.length === 0 && (
+                        <p className="text-xs text-black/45 dark:text-white/45">
+                          No links, notes, or files yet.
+                        </p>
+                      )}
+                  </div>
+                </div>
               </WorkspaceHeaderDetails>
             )}
-            {selectedProject && !previewing && projectContextOpen && (
+            {selectedProject && projectContextOpen && (
               <ProjectContextDialog
                 project={selectedProject}
                 attachments={[

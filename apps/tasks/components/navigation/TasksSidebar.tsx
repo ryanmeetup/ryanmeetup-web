@@ -136,11 +136,8 @@ export function TasksSidebar({
   onCreateCategory: () => void;
   onCreateProject: () => void;
 }) {
-  const isOwner =
-    !data.accessPreview &&
-    (demoMode || data.currentProfile.app_role === "owner");
-  const canManageCategories =
-    !data.accessPreview && (demoMode || data.canManageCategories);
+  const isOwner = demoMode || data.currentProfile.app_role === "owner";
+  const canManageCategories = demoMode || data.canManageCategories;
   const triggers = editorTriggers(data.currentProfile.editor_surface);
   const currentProjects = data.projects.filter(isCurrentProject);
   const activeCategories = data.categories.filter(
@@ -343,6 +340,7 @@ export function TasksSidebar({
           <button
             type="button"
             aria-label="Close navigation"
+            data-preview-allow
             onClick={closeSidebar}
             className="absolute right-0 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg text-xl text-black/60 transition hover:bg-black/5 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white dark:focus-visible:ring-white/40"
           >
@@ -355,6 +353,7 @@ export function TasksSidebar({
             tooltipTriggerClassName="ml-auto"
             aria-controls="desktop-workspace-navigation"
             aria-expanded={desktopOpen}
+            data-preview-allow
             onClick={() => setDesktopOpen(false)}
             className="text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white"
           >
@@ -522,6 +521,7 @@ export function TasksSidebar({
                 <button
                   type="button"
                   aria-expanded={favoritesExpanded}
+                  data-preview-allow
                   onClick={() => setFavoritesExpanded((current) => !current)}
                   className="-ml-1 inline-flex items-center gap-1 rounded px-1 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-black/45 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:text-white/45 dark:hover:text-white dark:focus-visible:ring-white/40"
                 >
@@ -557,6 +557,7 @@ export function TasksSidebar({
               <button
                 type="button"
                 aria-expanded={categoriesExpanded}
+                data-preview-allow
                 onClick={() => setCategoriesExpanded((current) => !current)}
                 className="-ml-1 inline-flex items-center gap-1 rounded px-1 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-black/45 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:text-white/45 dark:hover:text-white dark:focus-visible:ring-white/40"
               >
@@ -642,6 +643,7 @@ export function TasksSidebar({
               <button
                 type="button"
                 aria-expanded={projectsExpanded}
+                data-preview-allow
                 onClick={() => setProjectsExpanded((current) => !current)}
                 className="-ml-1 inline-flex items-center gap-1 rounded px-1 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-black/45 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:text-white/45 dark:hover:text-white dark:focus-visible:ring-white/40"
               >
@@ -691,7 +693,10 @@ export function TasksSidebar({
         {sidebarContent()}
       </aside>
       <Dialog open={open} onClose={setOpen} className="relative z-50 lg:hidden">
-        <DialogBackdrop className="fixed inset-0 bg-black/40 transition-opacity data-closed:opacity-0" />
+        <DialogBackdrop
+          data-preview-allow
+          className="fixed inset-0 bg-black/40 transition-opacity data-closed:opacity-0"
+        />
         <div className="fixed inset-0 overflow-hidden">
           <DialogPanel
             id="mobile-workspace-navigation"

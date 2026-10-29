@@ -9,7 +9,6 @@ import {
   DropdownMenuItem,
   DropdownMenuItems,
   DropdownMenuSeparator,
-  Tooltip,
 } from "@ryanmeetup/ui";
 import {
   FiLogOut,
@@ -37,13 +36,11 @@ const newTaskClassName =
 
 export function TaskHeaderActions({
   profile,
-  previewing,
   demoMode,
   canCreateTasks = true,
   onNewTask,
 }: {
   profile: Profile;
-  previewing: boolean;
   demoMode: boolean;
   canCreateTasks?: boolean;
   onNewTask: () => void;
@@ -51,7 +48,7 @@ export function TaskHeaderActions({
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   // Demo builds hide /admin entirely, so the entry points go with it.
-  const isOwner = !previewing && !demoMode && profile.app_role === "owner";
+  const isOwner = !demoMode && profile.app_role === "owner";
   const profileName = profileDisplayName(profile);
   const triggers = editorTriggers(profile.editor_surface);
   return (
@@ -104,11 +101,9 @@ export function TaskHeaderActions({
                     role="group"
                     aria-labelledby="mobile-account-menu-account"
                   >
-                    {!previewing && (
-                      <DropdownMenuItem onClick={() => router.push("/profile")}>
-                        <FiUser aria-hidden /> View profile
-                      </DropdownMenuItem>
-                    )}
+                    <DropdownMenuItem onClick={() => router.push("/profile")}>
+                      <FiUser aria-hidden /> View profile
+                    </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={async () => {
                         await createClient().auth.signOut();
@@ -162,19 +157,7 @@ export function TaskHeaderActions({
             </DropdownMenuItems>
           </DropdownMenu>
         </span>
-        {!canCreateTasks ? null : previewing ? (
-          <Tooltip content="Exit access preview to create a new task">
-            <Button
-              size="sm"
-              leftIcon={<FiPlus />}
-              disabled
-              aria-label="New task"
-              className={newTaskClassName}
-            >
-              New task
-            </Button>
-          </Tooltip>
-        ) : (
+        {canCreateTasks && (
           <>
             {/*
               One control, two surfaces. The link goes to the dedicated create
@@ -207,15 +190,12 @@ export function TaskHeaderActions({
             )}
           </>
         )}
-        <span className="hidden sm:inline-flex">
+        {/* The theme is the viewer's own, so it stays usable in a preview. */}
+        <span className="hidden sm:inline-flex" data-preview-allow>
           <ThemeToggle />
         </span>
         <span className="hidden sm:inline-flex">
-          <HeaderProfileControls
-            profile={profile}
-            demoMode={demoMode}
-            previewing={previewing}
-          />
+          <HeaderProfileControls profile={profile} demoMode={demoMode} />
         </span>
       </div>
     </>

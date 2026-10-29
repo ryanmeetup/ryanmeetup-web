@@ -64,7 +64,6 @@ export function TaskCommentsPanel({
   onReplyChange,
   onReplySubmit,
   onStartReply,
-  previewing,
   profiles,
   reply,
   replyingTo,
@@ -91,7 +90,6 @@ export function TaskCommentsPanel({
   onReplyChange: (value: string) => void;
   onReplySubmit: () => void;
   onStartReply: (comment: TaskComment) => void;
-  previewing: boolean;
   profiles: Profile[];
   reply: string;
   replyingTo: TaskComment | null;
@@ -106,7 +104,7 @@ export function TaskCommentsPanel({
     const item = thread.comment;
     const profile = profiles.find((entry) => entry.id === item.created_by);
     const author = profileDisplayName(profile);
-    const canManage = !previewing && item.created_by === currentProfileId;
+    const canManage = item.created_by === currentProfileId;
     const isReplying = replyingTo?.id === item.id;
 
     return (
@@ -199,18 +197,16 @@ export function TaskCommentsPanel({
                     )
                   }
                 />
-                {!previewing && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="xs"
-                    className="-ml-3 mt-1 text-black/55 dark:text-white/55"
-                    leftIcon={<FiCornerUpLeft aria-hidden />}
-                    onClick={() => onStartReply(item)}
-                  >
-                    Reply
-                  </Button>
-                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="xs"
+                  className="-ml-3 mt-1 text-black/55 dark:text-white/55"
+                  leftIcon={<FiCornerUpLeft aria-hidden />}
+                  onClick={() => onStartReply(item)}
+                >
+                  Reply
+                </Button>
               </>
             )}
           </div>

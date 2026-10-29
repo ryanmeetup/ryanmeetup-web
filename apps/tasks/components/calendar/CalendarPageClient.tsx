@@ -2,14 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import {
-  Avatar,
-  Button,
-  ManagementSurface,
-  Modal,
-  Pill,
-  Tooltip,
-} from "@ryanmeetup/ui";
+import { Avatar, Button, ManagementSurface, Modal, Pill } from "@ryanmeetup/ui";
 import {
   FiClock,
   FiExternalLink,
@@ -346,9 +339,7 @@ export function CalendarPageClient({
             key={item.id}
             item={item}
             onOpen={() => openItem(item)}
-            editHref={
-              previewing ? undefined : calendarEventEditHref(item, returnPath)
-            }
+            editHref={calendarEventEditHref(item, returnPath)}
             triggers={triggers}
           />
         ))}
@@ -366,9 +357,7 @@ export function CalendarPageClient({
             key={item.id}
             item={item}
             onOpen={() => openItem(item)}
-            editHref={
-              previewing ? undefined : calendarEventEditHref(item, returnPath)
-            }
+            editHref={calendarEventEditHref(item, returnPath)}
             triggers={triggers}
           />
         ))}
@@ -441,45 +430,29 @@ export function CalendarPageClient({
                   />
                 </span>
               )}
-              {previewing ? (
-                <Tooltip
-                  content="Exit access preview to change the calendar"
-                  triggerClassName="w-full sm:w-auto"
-                >
+              <>
+                {/* Route or dialog, per the profile — see editor-routes.ts. */}
+                {triggers.route && (
+                  <Button.Link
+                    href={`/calendar/event/new?date=${today || `${month}-01`}&from=${encodeURIComponent(returnPath)}`}
+                    size="sm"
+                    className={`w-full sm:w-auto ${triggers.routeClassName}`}
+                    leftIcon={<FiPlus />}
+                  >
+                    Add to calendar
+                  </Button.Link>
+                )}
+                {triggers.dialog && (
                   <Button
                     size="sm"
-                    className="w-full sm:w-auto"
+                    className={`w-full sm:w-auto ${triggers.dialogClassName}`}
                     leftIcon={<FiPlus />}
-                    disabled
+                    onClick={() => openNew("important")}
                   >
                     Add to calendar
                   </Button>
-                </Tooltip>
-              ) : (
-                <>
-                  {/* Route or dialog, per the profile — see editor-routes.ts. */}
-                  {triggers.route && (
-                    <Button.Link
-                      href={`/calendar/event/new?date=${today || `${month}-01`}&from=${encodeURIComponent(returnPath)}`}
-                      size="sm"
-                      className={`w-full sm:w-auto ${triggers.routeClassName}`}
-                      leftIcon={<FiPlus />}
-                    >
-                      Add to calendar
-                    </Button.Link>
-                  )}
-                  {triggers.dialog && (
-                    <Button
-                      size="sm"
-                      className={`w-full sm:w-auto ${triggers.dialogClassName}`}
-                      leftIcon={<FiPlus />}
-                      onClick={() => openNew("important")}
-                    >
-                      Add to calendar
-                    </Button>
-                  )}
-                </>
-              )}
+                )}
+              </>
             </div>
           }
         >

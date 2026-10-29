@@ -27,6 +27,7 @@ import {
 import { TaskBanners } from "./TaskBanners";
 import { InstanceWordmark } from "./InstanceWordmark";
 import { NewTaskModal } from "@/components/tasks/NewTaskModal";
+import { useAccessPreviewGuard } from "./useAccessPreviewGuard";
 
 type WorkspaceShellRegistration = {
   id: symbol;
@@ -105,7 +106,7 @@ function WorkspaceChrome({
 }: WorkspacePageShellProps) {
   const [newTaskOpen, setNewTaskOpen] = useState(false);
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useDesktopSidebarOpen();
-  const previewing = Boolean(data.accessPreview);
+  useAccessPreviewGuard(data.accessPreview);
   return (
     <div
       data-workspace-shell
@@ -133,6 +134,7 @@ function WorkspaceChrome({
             tooltipTriggerClassName="lg:hidden"
             aria-controls="mobile-workspace-navigation"
             aria-expanded={sidebarOpen}
+            data-preview-allow
             onClick={() => setSidebarOpen(true)}
           >
             <FiSidebar />
@@ -144,6 +146,7 @@ function WorkspaceChrome({
               tooltipTriggerClassName="hidden lg:inline-flex"
               aria-controls="desktop-workspace-navigation"
               aria-expanded={false}
+              data-preview-allow
               onClick={() => setDesktopSidebarOpen(true)}
             >
               <FiSidebar />
@@ -165,7 +168,6 @@ function WorkspaceChrome({
           )}
           <TaskHeaderActions
             profile={data.currentProfile}
-            previewing={previewing}
             demoMode={demoMode}
             canCreateTasks={!data.isGuest}
             onNewTask={onNewTask ?? (() => setNewTaskOpen(true))}
@@ -182,7 +184,7 @@ function WorkspaceChrome({
         </div>
         <TasksFooter inShell />
       </main>
-      {!onNewTask && !previewing && (
+      {!onNewTask && !data.accessPreview && (
         <NewTaskModal
           data={data}
           demoMode={demoMode}

@@ -30,7 +30,6 @@ export function NoteModal({
   category,
   profiles,
   demoMode,
-  previewing,
   editing,
   setEditing,
   convertedTask,
@@ -45,7 +44,6 @@ export function NoteModal({
   category: Category | null;
   profiles: WorkspaceData["profiles"];
   demoMode: boolean;
-  previewing: boolean;
   editing: boolean;
   setEditing: (editing: boolean) => void;
   convertedTask?: Task;
@@ -103,7 +101,7 @@ export function NoteModal({
             pending={saving}
             pendingLabel="Saving…"
           />
-        ) : previewing || archived ? (
+        ) : archived ? (
           <Button type="button" variant="secondary" size="sm" onClick={onClose}>
             Close
           </Button>
@@ -210,7 +208,6 @@ export function NoteModal({
             currentProfileId={currentProfileId}
             profiles={profiles}
             demoMode={demoMode}
-            previewing={previewing}
             onChange={onCommentsChange}
           />
         </div>

@@ -13,7 +13,6 @@ import {
   PendingResults,
   SearchInput,
   toast,
-  Tooltip,
 } from "@ryanmeetup/ui";
 import {
   FiBriefcase,
@@ -67,7 +66,6 @@ export function ContactsPageClient({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [deleting, setDeleting] = useState<Contact | null>(null);
   const [deletingPending, setDeletingPending] = useState(false);
-  const previewing = Boolean(data.accessPreview);
   const [expandedPeopleIds, setExpandedPeopleIds] = useState<Set<string>>(
     () => new Set(),
   );
@@ -224,31 +222,14 @@ export function ContactsPageClient({
               >
                 {allExpanded ? "Collapse All" : "Expand All"}
               </Button>
-              {previewing ? (
-                <Tooltip
-                  content="Exit access preview to change contacts"
-                  triggerClassName="w-full sm:w-auto"
-                >
-                  <Button
-                    type="button"
-                    size="sm"
-                    className="w-full sm:w-auto"
-                    leftIcon={<FiPlus aria-hidden />}
-                    disabled
-                  >
-                    New Contact
-                  </Button>
-                </Tooltip>
-              ) : (
-                <Button.Link
-                  href="/contacts/new"
-                  size="sm"
-                  className="w-full sm:w-auto"
-                  leftIcon={<FiPlus aria-hidden />}
-                >
-                  New Contact
-                </Button.Link>
-              )}
+              <Button.Link
+                href="/contacts/new"
+                size="sm"
+                className="w-full sm:w-auto"
+                leftIcon={<FiPlus aria-hidden />}
+              >
+                New Contact
+              </Button.Link>
             </>
           }
         >
@@ -341,27 +322,25 @@ export function ContactsPageClient({
                                         </div>
                                       </div>
                                     </div>
-                                    {!previewing && (
-                                      <div className="flex shrink-0 gap-1">
-                                        <IconButton.Link
-                                          href={contactEditPath(
-                                            contact,
-                                            contacts,
-                                          )}
-                                          label={`Edit “${contact.display_name}”`}
-                                          variant="edit"
-                                        >
-                                          <FiEdit2 />
-                                        </IconButton.Link>
-                                        <IconButton
-                                          label={`Delete “${contact.display_name}”`}
-                                          variant="danger"
-                                          onClick={() => setDeleting(contact)}
-                                        >
-                                          <FiTrash2 />
-                                        </IconButton>
-                                      </div>
-                                    )}
+                                    <div className="flex shrink-0 gap-1">
+                                      <IconButton.Link
+                                        href={contactEditPath(
+                                          contact,
+                                          contacts,
+                                        )}
+                                        label={`Edit “${contact.display_name}”`}
+                                        variant="edit"
+                                      >
+                                        <FiEdit2 />
+                                      </IconButton.Link>
+                                      <IconButton
+                                        label={`Delete “${contact.display_name}”`}
+                                        variant="danger"
+                                        onClick={() => setDeleting(contact)}
+                                      >
+                                        <FiTrash2 />
+                                      </IconButton>
+                                    </div>
                                   </div>
                                   {contact.notes && (
                                     <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-black/65 dark:text-white/65">

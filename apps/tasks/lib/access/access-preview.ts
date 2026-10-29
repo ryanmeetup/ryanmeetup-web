@@ -29,6 +29,19 @@ export function withAccessPreview(href: string, preview?: AccessPreview) {
   return `${path}?${params.toString()}`;
 }
 
+/**
+ * Routes that do something rather than show something. A preview reads the
+ * workspace as its subject but writes as the owner, so these stay shut even
+ * though they are links: `/profile` would show the owner's own profile.
+ */
+export function isPreviewActionPath(pathname: string) {
+  return (
+    pathname === "/profile" ||
+    pathname.startsWith("/admin") ||
+    /\/(new|edit)(\/|$)/.test(pathname)
+  );
+}
+
 export function applyAccessPreview(
   data: WorkspaceData,
   preview: AccessPreview,
@@ -58,10 +71,17 @@ export function applyAccessPreview(
     accessPreview: preview,
     accessibleAreas: preview.accessibleAreas ?? data.accessibleAreas,
     isGuest: Boolean(preview.guest),
+    canManageCategories: Boolean(preview.canManageCategories),
+    // A group has no person of its own: it borrows the owner's name but never
+    // the owner's role, so nothing owner-only renders as if it were theirs.
     currentProfile:
       preview.kind === "user" && preview.subjectProfile
         ? preview.subjectProfile
-        : { ...data.currentProfile, favorite_project_ids: [] },
+        : {
+            ...data.currentProfile,
+            app_role: "member",
+            favorite_project_ids: [],
+          },
     projects,
     categories: data.categories,
     tasks,

@@ -138,7 +138,7 @@ export default async function ProjectOverviewPage({
     attachmentResult,
   ) as unknown as ProjectAttachment[];
   const activity = requireQueryData("project activity", activityResult);
-  const canEditProject = Boolean(
+  let canEditProject = Boolean(
     requireQueryData("project edit access", editResult),
   );
   const paths = projectAttachments.flatMap((attachment) =>
@@ -196,6 +196,9 @@ export default async function ProjectOverviewPage({
           resolved.projectIds,
         );
         await redirectPreviewedGuest(initialData);
+        // The RPC answered for the owner. Every project a member can reach
+        // makes them at least an editor, and an unreachable one 404s below.
+        canEditProject = true;
         events = calendarEventsForPreview(
           events,
           resolved.preview,
@@ -212,7 +215,7 @@ export default async function ProjectOverviewPage({
       projectId={project.id}
       initialEvents={events}
       attachments={attachments}
-      canEditProject={canEditProject && !initialData.accessPreview}
+      canEditProject={canEditProject}
       demoMode={false}
     />
   );

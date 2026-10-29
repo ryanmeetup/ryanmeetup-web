@@ -46,6 +46,8 @@ export type AccessPreview = {
   calendarAccess?: boolean;
   /** Whether the subject is in a guest tier, so the preview walks their routes. */
   guest?: boolean;
+  /** Whether the subject manages workspace-wide content, owners included. */
+  canManageCategories?: boolean;
 };
 
 export type WorkspaceData = {

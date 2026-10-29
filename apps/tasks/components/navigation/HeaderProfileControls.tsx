@@ -11,11 +11,9 @@ import { profileDisplayName } from "@/lib/presentation";
 export function HeaderProfileControls({
   demoMode,
   profile,
-  previewing = false,
 }: {
   demoMode: boolean;
   profile: Profile;
-  previewing?: boolean;
 }) {
   const router = useRouter();
   const name = profileDisplayName(profile);
@@ -36,7 +34,7 @@ export function HeaderProfileControls({
 
   return (
     <div className="flex shrink-0 items-center gap-1 border-l border-black/10 pl-1.5 dark:border-white/10 sm:gap-2 sm:pl-3">
-      {demoMode || previewing ? (
+      {demoMode ? (
         <div className="flex min-w-0 items-center gap-2">{summary}</div>
       ) : (
         <Tooltip content="View profile">

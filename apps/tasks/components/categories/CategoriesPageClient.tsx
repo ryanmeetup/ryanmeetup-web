@@ -35,7 +35,7 @@ export function CategoriesPageClient({
           controller={categoryController(data, setData, demoMode)}
           options={{
             embedded: true,
-            readOnly: Boolean(data.accessPreview) || !data.canManageCategories,
+            readOnly: !data.canManageCategories,
           }}
           events={{ onCreate: () => setCreateOpen(true) }}
         />

@@ -25,6 +25,7 @@ export function AccessPreviewBanner({ preview }: { preview?: AccessPreview }) {
 
   return (
     <Banner
+      data-preview-allow
       variant="warning"
       icon={<FiEye aria-hidden />}
       aria-label="Access-group visibility preview"
@@ -43,8 +44,9 @@ export function AccessPreviewBanner({ preview }: { preview?: AccessPreview }) {
     >
       <p>
         Viewing app visibility as <strong>{preview.subjectName}</strong>
-        {preview.kind === "group" ? " access group" : ""}. The preview is
-        read-only; you are still signed in with your own account.
+        {preview.kind === "group" ? " access group" : ""}. You can move around
+        as they would, but nothing here can be changed; you are still signed in
+        with your own account.
       </p>
     </Banner>
   );

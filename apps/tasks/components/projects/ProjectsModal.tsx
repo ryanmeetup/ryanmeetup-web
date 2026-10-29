@@ -69,7 +69,10 @@ import {
   useResourceAccessState,
   ResourceLinks,
 } from "@/components/resources";
-import { resourceSearchText, sameIds } from "@/lib/resources/resource-management";
+import {
+  resourceSearchText,
+  sameIds,
+} from "@/lib/resources/resource-management";
 import { useProjectFavorites } from "@/hooks/useProjectFavorites";
 import { type ProjectAccessGroup } from "./ProjectAccessFields";
 import { ProjectAccessSection } from "./ProjectAccessSection";
@@ -518,12 +521,11 @@ export function ProjectsModal({
           : current.projectOwners,
         currentProfile: {
           ...current.currentProfile,
-          favorite_project_ids:
-            isClosedProjectStatus(editingStatus)
-              ? (current.currentProfile.favorite_project_ids ?? []).filter(
-                  (id) => id !== project.id,
-                )
-              : current.currentProfile.favorite_project_ids,
+          favorite_project_ids: isClosedProjectStatus(editingStatus)
+            ? (current.currentProfile.favorite_project_ids ?? []).filter(
+                (id) => id !== project.id,
+              )
+            : current.currentProfile.favorite_project_ids,
         },
       }));
       toast.success(
@@ -628,10 +630,7 @@ export function ProjectsModal({
       ? "!border-amber-500/35 !bg-amber-400/15 !text-amber-700 hover:!bg-amber-400/25 dark:!border-amber-300/30 dark:!bg-amber-300/10 dark:!text-amber-200 dark:hover:!bg-amber-300/20"
       : undefined;
     const actions: ManagementCardAction[] = [];
-    if (
-      !data.accessPreview &&
-      !isClosedProjectStatus(project.status)
-    )
+    if (!isClosedProjectStatus(project.status))
       actions.push({
         key: "favorite",
         label: isFavorite ? "Favorited" : "Favorite",
@@ -1020,19 +1019,17 @@ export function ProjectsModal({
                   className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap"
                   aria-label="Filter projects"
                 >
-                  {(["current", "closed", "all"] as const).map(
-                    (filter) => (
-                      <FilterChip
-                        key={filter}
-                        active={projectFilter === filter}
-                        variant="soft"
-                        onClick={() => setProjectFilter(filter)}
-                        className="h-10 w-full justify-center px-2 py-0 sm:w-auto sm:px-4"
-                      >
-                        {projectFilterLabels[filter]}
-                      </FilterChip>
-                    ),
-                  )}
+                  {(["current", "closed", "all"] as const).map((filter) => (
+                    <FilterChip
+                      key={filter}
+                      active={projectFilter === filter}
+                      variant="soft"
+                      onClick={() => setProjectFilter(filter)}
+                      className="h-10 w-full justify-center px-2 py-0 sm:w-auto sm:px-4"
+                    >
+                      {projectFilterLabels[filter]}
+                    </FilterChip>
+                  ))}
                 </div>
               </div>
               <PendingResults pending={searchPending} label="Loading projects">

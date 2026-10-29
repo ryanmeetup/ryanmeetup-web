@@ -224,6 +224,13 @@ overview. It must never be presented as another access group or project grant.
   category restrictions, and page restrictions, but it never authorizes a
   request. Previewing a subject who cannot open a page answers the way that
   subject's own request would.
+- A preview renders exactly what its subject sees: their role, guest status,
+  category management, and project edit rights, never the owner's. A group
+  preview is a member of that group. Navigation stays live and keeps the
+  preview; every other interaction is inert through one document-level guard
+  (`useAccessPreviewGuard`), and action routes (`/new`, `/edit`, `/admin`,
+  `/profile`) stay shut. Components do not hide controls because a preview is
+  running.
 - Required authorization lookups fail closed. Missing rows, failed functions,
   or unavailable access metadata deny the operation rather than falling back
   to wider access.

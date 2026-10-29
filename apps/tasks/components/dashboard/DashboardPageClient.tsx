@@ -87,6 +87,8 @@ export function DashboardPageClient({
   // fixtures instead and a deletion only has to hold for the session.
   const discardedDemoDrafts = useRef(new Set<string>());
   const refreshDrafts = useCallback(() => {
+    // Drafts live in the browser that wrote them, so a preview has none of its
+    // subject's to show and must never show the owner's.
     if (data.accessPreview) return;
     setDrafts(
       demoMode
@@ -298,154 +300,146 @@ export function DashboardPageClient({
               </SectionCard>
             </div>
 
-            {data.accessPreview?.kind !== "group" && (
-              <div className="mb-6 break-inside-avoid">
-                <SectionCard
-                  title="Favorite projects"
-                  icon={<FiStar />}
-                  tone="gold"
-                  action={
-                    <CardAction.Link
-                      href={withAccessPreview("/projects", data.accessPreview)}
-                    >
-                      View all
-                    </CardAction.Link>
-                  }
-                >
-                  {favoriteProjects.length ? (
-                    <ul className="divide-y divide-black/10 dark:divide-white/10">
-                      {favoriteProjects
-                        .slice(
-                          visibleFavoriteProjectPage * widgetPageSize,
-                          (visibleFavoriteProjectPage + 1) * widgetPageSize,
-                        )
-                        .map((project) => (
-                          <li key={project.id}>
-                            <Link
-                              href={withAccessPreview(
-                                projectPath(project, data.projects),
-                                data.accessPreview,
-                              )}
-                              className="group flex items-center gap-3 px-4 py-4 transition hover:bg-black/[0.025] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/30 dark:hover:bg-white/[0.035] dark:focus-visible:ring-white/40"
-                            >
-                              <FiStar
-                                className="shrink-0 text-amber-600 dark:text-amber-300"
-                                fill="currentColor"
-                              />
-                              <span className="min-w-0 flex-1">
-                                <span className="block truncate text-sm font-semibold group-hover:underline">
-                                  {project.name}
-                                </span>
-                                {project.description && (
-                                  <span className="mt-1 block truncate text-xs text-black/55 dark:text-white/55">
-                                    {project.description}
-                                  </span>
-                                )}
-                              </span>
-                              <FiArrowRight className="shrink-0 text-black/35 transition-transform group-hover:translate-x-0.5 dark:text-white/35" />
-                            </Link>
-                          </li>
-                        ))}
-                    </ul>
-                  ) : (
-                    <div className="flex flex-col items-center px-6 py-10 text-center">
-                      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/10 text-xl text-amber-700 dark:bg-amber-400/15 dark:text-amber-200">
-                        <FiStar aria-hidden="true" />
-                      </span>
-                      <p className="mt-4 text-sm font-semibold">
-                        Your favorite projects will live here.
-                      </p>
-                      <p className="mt-1 max-w-sm text-sm text-black/60 dark:text-white/60">
-                        Favorite a few projects to keep your go-to work close at
-                        hand.
-                      </p>
-                      <Button.Link
-                        href={withAccessPreview(
-                          "/projects",
-                          data.accessPreview,
-                        )}
-                        variant="secondary"
-                        size="sm"
-                        leftIcon={<FiStar />}
-                        className="mt-5 w-full sm:w-auto"
-                      >
-                        Browse projects
-                      </Button.Link>
-                    </div>
-                  )}
-                  <WidgetPagination
-                    label="favorite projects"
-                    page={visibleFavoriteProjectPage}
-                    total={favoriteProjects.length}
-                    onPageChange={setFavoriteProjectPage}
-                  />
-                </SectionCard>
-              </div>
-            )}
-
-            {!data.accessPreview && (
-              <div
-                id="saved-drafts"
-                className="mb-6 break-inside-avoid scroll-mt-20"
+            <div className="mb-6 break-inside-avoid">
+              <SectionCard
+                title="Favorite projects"
+                icon={<FiStar />}
+                tone="gold"
+                action={
+                  <CardAction.Link
+                    href={withAccessPreview("/projects", data.accessPreview)}
+                  >
+                    View all
+                  </CardAction.Link>
+                }
               >
-                <SectionCard title="Drafts" icon={<FiFileText />} tone="violet">
-                  {drafts.length > 0 ? (
-                    <ul className="divide-y divide-black/10 dark:divide-white/10">
-                      {drafts
-                        .slice(
-                          visibleDraftPage * widgetPageSize,
-                          (visibleDraftPage + 1) * widgetPageSize,
-                        )
-                        .map((item) => (
-                          <li
-                            key={item.id}
-                            className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center"
+                {favoriteProjects.length ? (
+                  <ul className="divide-y divide-black/10 dark:divide-white/10">
+                    {favoriteProjects
+                      .slice(
+                        visibleFavoriteProjectPage * widgetPageSize,
+                        (visibleFavoriteProjectPage + 1) * widgetPageSize,
+                      )
+                      .map((project) => (
+                        <li key={project.id}>
+                          <Link
+                            href={withAccessPreview(
+                              projectPath(project, data.projects),
+                              data.accessPreview,
+                            )}
+                            className="group flex items-center gap-3 px-4 py-4 transition hover:bg-black/[0.025] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/30 dark:hover:bg-white/[0.035] dark:focus-visible:ring-white/40"
                           >
+                            <FiStar
+                              className="shrink-0 text-amber-600 dark:text-amber-300"
+                              fill="currentColor"
+                            />
                             <span className="min-w-0 flex-1">
-                              <span className="block truncate text-sm font-semibold">
-                                {item.draft.title.trim() || "Untitled task"}
+                              <span className="block truncate text-sm font-semibold group-hover:underline">
+                                {project.name}
                               </span>
-                              <span className="mt-1 block text-xs text-black/50 dark:text-white/50">
-                                Saved{" "}
-                                {new Date(item.updatedAt).toLocaleString()}
-                              </span>
+                              {project.description && (
+                                <span className="mt-1 block truncate text-xs text-black/55 dark:text-white/55">
+                                  {project.description}
+                                </span>
+                              )}
                             </span>
-                            <span className="flex items-center gap-2">
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                leftIcon={<FiEdit2 />}
-                                onClick={() => setSelectedDraft(item)}
-                              >
-                                Continue
-                              </Button>
-                              <IconButton
-                                label={`Delete “${item.draft.title || "untitled draft"}”`}
-                                size="sm"
-                                variant="danger"
-                                onClick={() => setDraftPendingDelete(item)}
-                              >
-                                <FiTrash2 />
-                              </IconButton>
+                            <FiArrowRight className="shrink-0 text-black/35 transition-transform group-hover:translate-x-0.5 dark:text-white/35" />
+                          </Link>
+                        </li>
+                      ))}
+                  </ul>
+                ) : (
+                  <div className="flex flex-col items-center px-6 py-10 text-center">
+                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/10 text-xl text-amber-700 dark:bg-amber-400/15 dark:text-amber-200">
+                      <FiStar aria-hidden="true" />
+                    </span>
+                    <p className="mt-4 text-sm font-semibold">
+                      Your favorite projects will live here.
+                    </p>
+                    <p className="mt-1 max-w-sm text-sm text-black/60 dark:text-white/60">
+                      Favorite a few projects to keep your go-to work close at
+                      hand.
+                    </p>
+                    <Button.Link
+                      href={withAccessPreview("/projects", data.accessPreview)}
+                      variant="secondary"
+                      size="sm"
+                      leftIcon={<FiStar />}
+                      className="mt-5 w-full sm:w-auto"
+                    >
+                      Browse projects
+                    </Button.Link>
+                  </div>
+                )}
+                <WidgetPagination
+                  label="favorite projects"
+                  page={visibleFavoriteProjectPage}
+                  total={favoriteProjects.length}
+                  onPageChange={setFavoriteProjectPage}
+                />
+              </SectionCard>
+            </div>
+
+            <div
+              id="saved-drafts"
+              className="mb-6 break-inside-avoid scroll-mt-20"
+            >
+              <SectionCard title="Drafts" icon={<FiFileText />} tone="violet">
+                {drafts.length > 0 ? (
+                  <ul className="divide-y divide-black/10 dark:divide-white/10">
+                    {drafts
+                      .slice(
+                        visibleDraftPage * widgetPageSize,
+                        (visibleDraftPage + 1) * widgetPageSize,
+                      )
+                      .map((item) => (
+                        <li
+                          key={item.id}
+                          className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center"
+                        >
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-semibold">
+                              {item.draft.title.trim() || "Untitled task"}
                             </span>
-                          </li>
-                        ))}
-                    </ul>
-                  ) : (
-                    <EmptyState
-                      variant="plain"
-                      message="No saved drafts right now."
-                    />
-                  )}
-                  <WidgetPagination
-                    label="drafts"
-                    page={visibleDraftPage}
-                    total={drafts.length}
-                    onPageChange={setDraftPage}
+                            <span className="mt-1 block text-xs text-black/50 dark:text-white/50">
+                              Saved {new Date(item.updatedAt).toLocaleString()}
+                            </span>
+                          </span>
+                          <span className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              leftIcon={<FiEdit2 />}
+                              onClick={() => setSelectedDraft(item)}
+                            >
+                              Continue
+                            </Button>
+                            <IconButton
+                              label={`Delete “${item.draft.title || "untitled draft"}”`}
+                              size="sm"
+                              variant="danger"
+                              onClick={() => setDraftPendingDelete(item)}
+                            >
+                              <FiTrash2 />
+                            </IconButton>
+                          </span>
+                        </li>
+                      ))}
+                  </ul>
+                ) : (
+                  <EmptyState
+                    variant="plain"
+                    message="No saved drafts right now."
                   />
-                </SectionCard>
-              </div>
-            )}
+                )}
+                <WidgetPagination
+                  label="drafts"
+                  page={visibleDraftPage}
+                  total={drafts.length}
+                  onPageChange={setDraftPage}
+                />
+              </SectionCard>
+            </div>
 
             <div className="mb-6 break-inside-avoid xl:[break-before:column]">
               <SectionCard

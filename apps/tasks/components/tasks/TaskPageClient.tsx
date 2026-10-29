@@ -283,53 +283,51 @@ export function TaskPageClient({
               {task.title}
             </h1>
             <div className="flex w-full shrink-0 flex-wrap items-center justify-end gap-2 sm:w-auto sm:justify-self-end xl:w-full xl:self-end">
-              {!data.accessPreview && (
-                <>
-                  {canComplete && (
-                    <Button
-                      size="sm"
-                      variant="success"
-                      fullWidth
-                      leftIcon={<FiCheck aria-hidden />}
-                      loading={
-                        Boolean(completeStatus) &&
-                        closingStatusId === completeStatus?.id
-                      }
-                      loadingText="Completing..."
-                      aria-label="Mark complete"
-                      onClick={() => requestClose(completeStatus)}
-                      className="flex-1 whitespace-nowrap sm:w-auto sm:flex-none"
-                    >
-                      {/* Two lines at phone width otherwise; the name stays whole. */}
-                      <span className="sm:hidden">Complete</span>
-                      <span className="hidden sm:inline">Mark complete</span>
-                    </Button>
-                  )}
-                  {/* Route or dialog, per the profile — see editor-routes.ts. */}
-                  {triggers.route && (
-                    <Button.Link
-                      href={taskEditPath(task)}
-                      size="sm"
-                      fullWidth
-                      leftIcon={<FiEdit3 />}
-                      className={`${triggers.routeClassName} flex-1 whitespace-nowrap sm:w-auto sm:flex-none`}
-                    >
-                      Edit task
-                    </Button.Link>
-                  )}
-                  {triggers.dialog && (
-                    <Button
-                      size="sm"
-                      fullWidth
-                      leftIcon={<FiEdit3 />}
-                      onClick={openEditor}
-                      className={`${triggers.dialogClassName} flex-1 whitespace-nowrap sm:w-auto sm:flex-none`}
-                    >
-                      Edit task
-                    </Button>
-                  )}
-                </>
-              )}
+              <>
+                {canComplete && (
+                  <Button
+                    size="sm"
+                    variant="success"
+                    fullWidth
+                    leftIcon={<FiCheck aria-hidden />}
+                    loading={
+                      Boolean(completeStatus) &&
+                      closingStatusId === completeStatus?.id
+                    }
+                    loadingText="Completing..."
+                    aria-label="Mark complete"
+                    onClick={() => requestClose(completeStatus)}
+                    className="flex-1 whitespace-nowrap sm:w-auto sm:flex-none"
+                  >
+                    {/* Two lines at phone width otherwise; the name stays whole. */}
+                    <span className="sm:hidden">Complete</span>
+                    <span className="hidden sm:inline">Mark complete</span>
+                  </Button>
+                )}
+                {/* Route or dialog, per the profile — see editor-routes.ts. */}
+                {triggers.route && (
+                  <Button.Link
+                    href={taskEditPath(task)}
+                    size="sm"
+                    fullWidth
+                    leftIcon={<FiEdit3 />}
+                    className={`${triggers.routeClassName} flex-1 whitespace-nowrap sm:w-auto sm:flex-none`}
+                  >
+                    Edit task
+                  </Button.Link>
+                )}
+                {triggers.dialog && (
+                  <Button
+                    size="sm"
+                    fullWidth
+                    leftIcon={<FiEdit3 />}
+                    onClick={openEditor}
+                    className={`${triggers.dialogClassName} flex-1 whitespace-nowrap sm:w-auto sm:flex-none`}
+                  >
+                    Edit task
+                  </Button>
+                )}
+              </>
               <DropdownMenu>
                 <DropdownMenuButton
                   unstyled
@@ -342,24 +340,22 @@ export function TaskPageClient({
                   <DropdownMenuItem onClick={copyLink}>
                     <FiLink aria-hidden /> Copy link
                   </DropdownMenuItem>
-                  {!data.accessPreview && (
-                    <>
-                      {canDecline && declineStatus && (
-                        <DropdownMenuItem
-                          onClick={() => requestClose(declineStatus)}
-                        >
-                          <FiSlash aria-hidden /> Mark as {declineStatus.name}
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuSeparator />
+                  <>
+                    {canDecline && declineStatus && (
                       <DropdownMenuItem
-                        destructive
-                        onClick={() => setTaskPendingDelete(task)}
+                        onClick={() => requestClose(declineStatus)}
                       >
-                        <FiTrash2 aria-hidden /> Delete task
+                        <FiSlash aria-hidden /> Mark as {declineStatus.name}
                       </DropdownMenuItem>
-                    </>
-                  )}
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      destructive
+                      onClick={() => setTaskPendingDelete(task)}
+                    >
+                      <FiTrash2 aria-hidden /> Delete task
+                    </DropdownMenuItem>
+                  </>
                 </DropdownMenuItems>
               </DropdownMenu>
             </div>
@@ -429,7 +425,9 @@ export function TaskPageClient({
                                     className="h-3 w-3 shrink-0"
                                     style={{ color: category.color }}
                                   />
-                                  <span className="min-w-0 break-words">{tag}</span>
+                                  <span className="min-w-0 break-words">
+                                    {tag}
+                                  </span>
                                 </li>
                               ))}
                             </ul>

@@ -33,7 +33,6 @@ export function NoteCard({
   note,
   category,
   profiles,
-  previewing,
   canConvertToProject,
   commentCount,
   convertedTask,
@@ -48,7 +47,6 @@ export function NoteCard({
   note: Note;
   category: Category | null;
   profiles: WorkspaceData["profiles"];
-  previewing: boolean;
   canConvertToProject: boolean;
   commentCount: number;
   convertedTask?: Task;
@@ -131,37 +129,34 @@ export function NoteCard({
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-black/10 pt-3 dark:border-white/10">
         <div className="relative flex items-center gap-2">
-          {!previewing && (
-            <>
-              {!archived && (
-                <IconButton
-                  label={`Edit “${title}”`}
-                  variant="edit"
-                  onClick={() => onEdit(note)}
-                >
-                  <FiEdit2 />
-                </IconButton>
-              )}
+          <>
+            {!archived && (
               <IconButton
-                label={archived ? `Restore “${title}”` : `Archive “${title}”`}
-                variant="archive"
-                onClick={() => onArchive(note)}
+                label={`Edit “${title}”`}
+                variant="edit"
+                onClick={() => onEdit(note)}
               >
-                {archived ? <FiRotateCcw /> : <FiArchive />}
+                <FiEdit2 />
               </IconButton>
-              <IconButton
-                label={`Delete “${title}”`}
-                variant="danger"
-                onClick={() => onDelete(note)}
-              >
-                <FiTrash2 />
-              </IconButton>
-            </>
-          )}
+            )}
+            <IconButton
+              label={archived ? `Restore “${title}”` : `Archive “${title}”`}
+              variant="archive"
+              onClick={() => onArchive(note)}
+            >
+              {archived ? <FiRotateCcw /> : <FiArchive />}
+            </IconButton>
+            <IconButton
+              label={`Delete “${title}”`}
+              variant="danger"
+              onClick={() => onDelete(note)}
+            >
+              <FiTrash2 />
+            </IconButton>
+          </>
         </div>
         <div className="relative ml-auto flex items-center gap-2">
-          {!previewing &&
-            !note.converted_task_id &&
+          {!note.converted_task_id &&
             !note.converted_project_id &&
             !archived &&
             (canConvertToProject ? (

@@ -134,7 +134,6 @@ describe("comment loading", () => {
         onReplyChange: () => {},
         onReplySubmit: () => {},
         onStartReply: () => {},
-        previewing: false,
         profiles: [],
         reply: "",
         replyingTo: null,

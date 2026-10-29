@@ -247,6 +247,7 @@ export async function resolveAccessPreview(
         subjectId: group.id,
         subjectName: group.name,
         guest,
+        canManageCategories: group.grants_global_content,
         calendarAccess: grantsCalendarAccessForPreview(
           groups,
           inheritedGroupIds,
@@ -288,6 +289,7 @@ export async function resolveAccessPreview(
         subjectName: profile.full_name,
         subjectProfile: profile,
         calendarAccess: true,
+        canManageCategories: true,
         ...categoryAccess,
         ...(await resolveAreaAccess(supabase, [], true)),
       },
@@ -331,6 +333,7 @@ export async function resolveAccessPreview(
         subjectId: profile.id,
         subjectName: profile.full_name,
         subjectProfile: profile,
+        canManageCategories: true,
         calendarAccess,
         ...categoryAccess,
         ...(await resolveAreaAccess(supabase, groupIds, false, false, true)),

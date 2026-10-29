@@ -298,7 +298,6 @@ export function TaskApp({
               demoMode,
               isMyTasks: scope.isMyTasks,
               myTasksName: scope.myTasksName,
-              previewing: Boolean(data.accessPreview),
               projectFavorite: selectedProject
                 ? favorites.isFavorite(selectedProject.id)
                 : false,

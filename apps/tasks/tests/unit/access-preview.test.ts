@@ -3,6 +3,7 @@ import {
   accessPreviewHref,
   applyAccessPreview,
   calendarEventsForPreview,
+  isPreviewActionPath,
   notesForPreview,
   withAccessPreview,
 } from "@/lib/access/access-preview";
@@ -74,6 +75,53 @@ describe("access preview", () => {
 
     expect(result.isGuest).toBe(true);
     expect(result.tasks.map(({ id }) => id)).toEqual(["visible-task"]);
+  });
+
+  it("never lends a group preview the owner's role or category rights", () => {
+    const owner = applyAccessPreview(
+      {
+        ...baseData,
+        canManageCategories: true,
+        currentProfile: { ...baseData.currentProfile, app_role: "owner" },
+      } as WorkspaceData,
+      { kind: "group", subjectId: "group-1", subjectName: "Reviewers" },
+      ["visible"],
+    );
+    expect(owner.currentProfile.app_role).toBe("member");
+    expect(owner.canManageCategories).toBe(false);
+
+    const managers = applyAccessPreview(
+      baseData,
+      {
+        kind: "group",
+        subjectId: "group-2",
+        subjectName: "Leads",
+        canManageCategories: true,
+      },
+      ["visible"],
+    );
+    expect(managers.canManageCategories).toBe(true);
+  });
+
+  it("keeps action routes shut while navigation stays open", () => {
+    for (const path of [
+      "/profile",
+      "/admin",
+      "/admin/access",
+      "/task/new",
+      "/projects/big-launch/edit",
+      "/contacts/ada/edit",
+    ])
+      expect(isPreviewActionPath(path), path).toBe(true);
+    for (const path of [
+      "/",
+      "/board",
+      "/notes",
+      "/projects/big-launch",
+      "/task/TASK-42",
+      "/news",
+    ])
+      expect(isPreviewActionPath(path), path).toBe(false);
   });
 
   it("replaces an existing preview without dropping unrelated query state", () => {

@@ -12,10 +12,7 @@ import { TaskAttachmentsPanel } from "./TaskAttachmentsPanel";
 import { useTaskAttachments } from "./useTaskAttachments";
 import { useTaskChecklist } from "./useTaskChecklist";
 import { useTaskComments } from "./useTaskComments";
-import {
-  useTaskDetailData,
-  type TaskDetailData,
-} from "./useTaskDetailData";
+import { useTaskDetailData, type TaskDetailData } from "./useTaskDetailData";
 
 type TaskDetailsProps = {
   task: Task;
@@ -187,7 +184,6 @@ export function TaskDetails({
               comments.setReply("");
               comments.setReplyingTo(item);
             }}
-            previewing={Boolean(data.accessPreview)}
             profiles={data.profiles}
             reply={comments.reply}
             replyingTo={comments.replyingTo}
