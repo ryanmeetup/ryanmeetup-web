@@ -6,6 +6,7 @@ import {
   workspaceAreaLabel,
   workspaceAreaRequiresAccessCheck,
   WORKSPACE_AREA_KEYS,
+  guestHasProjectWork,
   guestHome,
 } from "@/lib/access/workspace-areas";
 
@@ -61,6 +62,18 @@ describe("workspace area registry", () => {
     } finally {
       warning.mockRestore();
     }
+  });
+});
+
+describe("guest project work", () => {
+  it("opens only for a current shared project", () => {
+    expect(guestHasProjectWork([])).toBe(false);
+    expect(
+      guestHasProjectWork([{ status: "complete" }, { status: "dropped" }]),
+    ).toBe(false);
+    expect(
+      guestHasProjectWork([{ status: "complete" }, { status: "paused" }]),
+    ).toBe(true);
   });
 });
 

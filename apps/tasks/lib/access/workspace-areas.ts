@@ -6,6 +6,8 @@ import {
   FiSettings,
   FiUsers,
 } from "react-icons/fi";
+import { isCurrentProject } from "@/lib/resources/project-status";
+import type { Project } from "@/lib/resources/resource-types";
 
 /**
  * The pages an app owner can lock behind access groups.
@@ -140,6 +142,17 @@ export function canViewWorkspaceArea(
   key: WorkspaceAreaKey,
 ) {
   return !accessibleAreas || accessibleAreas.includes(key);
+}
+
+/**
+ * Whether a guest has project work to open: a current project shared with
+ * them through their tier or a team. A closed project leaves nothing to work,
+ * so it does not bring back the dashboard or the board on its own.
+ */
+export function guestHasProjectWork(
+  projects: readonly Pick<Project, "status">[],
+) {
+  return projects.some(isCurrentProject);
 }
 
 /**

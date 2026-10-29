@@ -72,8 +72,8 @@ Inviting a teammate sets their app role, tier, and teams in the same step, so
 a partner arrives in a guest tier with only the team they work with. A guest
 with nothing shared yet is welcomed with what the workspace is and who to ask
 for access, instead of landing on an empty profile. A guest whose team has a
-project, such as RY-D, gets the Dashboard, Tasks, and that project's page,
-showing only the projects shared with them.
+current project, such as RY-D, gets the Dashboard, Tasks, and that project's
+page, showing only the projects shared with them.
 
 ### View as shows what they see
 

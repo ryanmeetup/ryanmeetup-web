@@ -28,6 +28,7 @@ import { TaskBanners } from "./TaskBanners";
 import { InstanceWordmark } from "./InstanceWordmark";
 import { NewTaskModal } from "@/components/tasks/NewTaskModal";
 import { useAccessPreviewGuard } from "./useAccessPreviewGuard";
+import { guestHasProjectWork } from "@/lib/access/workspace-areas";
 
 type WorkspaceShellRegistration = {
   id: symbol;
@@ -154,8 +155,9 @@ function WorkspaceChrome({
           )}
           <TaskHeaderBrand />
           {/* A guest searches only the projects shared with them, and has
-              nothing to search without one. Creating stays with members. */}
-          {data.isGuest && data.projects.length === 0 ? (
+              nothing to search without a current one. Creating stays with
+              members. */}
+          {data.isGuest && !guestHasProjectWork(data.projects) ? (
             <div className="flex-1" aria-hidden="true" />
           ) : (
             <TaskSearch

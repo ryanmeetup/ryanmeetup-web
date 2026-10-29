@@ -37,7 +37,10 @@ import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import type { ProjectStatus } from "@/lib/resources/resource-types";
 import { useSidebarSections } from "@/hooks/useSidebarSections";
 import { withAccessPreview } from "@/lib/access/access-preview";
-import { canViewWorkspaceArea } from "@/lib/access/workspace-areas";
+import {
+  canViewWorkspaceArea,
+  guestHasProjectWork,
+} from "@/lib/access/workspace-areas";
 import {
   isCurrentProject,
   projectStatusDetails,
@@ -180,11 +183,11 @@ export function TasksSidebar({
   const canView = (area: Parameters<typeof canViewWorkspaceArea>[1]) =>
     canViewWorkspaceArea(data.accessibleAreas, area);
   // A guest's routes other than their granted pages redirect, and every
-  // project and category open to the workspace is closed to them. Projects
-  // shared with them through their tier or a team bring back the dashboard,
-  // the board, and the project list, scoped to those projects alone.
+  // project and category open to the workspace is closed to them. A current
+  // project shared with them through their tier or a team brings back the
+  // dashboard, the board, and the project list, scoped to what is shared.
   const guest = Boolean(data.isGuest);
-  const projectWork = !guest || data.projects.length > 0;
+  const projectWork = !guest || guestHasProjectWork(data.projects);
   // A preview lists every page, so the owner sees what the subject is missing;
   // the ones the subject cannot open stay listed but inert.
   const previewing = Boolean(data.accessPreview);

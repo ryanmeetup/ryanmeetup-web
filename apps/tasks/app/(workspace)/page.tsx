@@ -13,7 +13,7 @@ import {
   WORKSPACE_COLUMNS,
 } from "@/lib/server/workspace-loader";
 import { GuestWelcomePage } from "@/components/access/GuestWelcomePage";
-import { guestHome } from "@/lib/access/workspace-areas";
+import { guestHasProjectWork, guestHome } from "@/lib/access/workspace-areas";
 import { loadAppOwnerContacts } from "@/lib/server/app-owners";
 import { getInstanceSettings, pageTitle } from "@/lib/server/instance-settings";
 import {
@@ -64,10 +64,10 @@ export default async function DashboardPage({
   );
   const { supabase } = loaded;
   let initialData = loaded.data;
-  // A guest's dashboard covers only the projects shared with them. With none,
-  // they go to their first page, or are welcomed here when nothing has been
-  // shared with them yet.
-  if (initialData.isGuest && initialData.projects.length === 0) {
+  // A guest's dashboard covers only the projects shared with them. With no
+  // current one, they go to their first page, or are welcomed here when
+  // nothing has been shared with them yet.
+  if (initialData.isGuest && !guestHasProjectWork(initialData.projects)) {
     const home = guestHome(
       initialData.accessibleAreas,
       await getInstanceSettings(),

@@ -13,6 +13,7 @@ import {
 } from "@/lib/server/workspace-loader";
 import {
   canViewWorkspaceArea,
+  guestHasProjectWork,
   guestHome,
   type WorkspaceAreaKey,
 } from "@/lib/access/workspace-areas";
@@ -75,8 +76,8 @@ export async function loadWorkspacePage(
     allowGuest?: boolean;
     /**
      * Whether this route shows project work: tasks, projects, and the
-     * dashboard over them. A guest opens it once a project is shared with
-     * them, and the projects RLS returns them are only those.
+     * dashboard over them. A guest opens it once a current project is shared
+     * with them, and the projects RLS returns them are only those.
      */
     guestProjectWork?: boolean;
     /**
@@ -109,7 +110,7 @@ export async function loadWorkspacePage(
   if (!data) redirect("/account-error?reason=profile");
   if (area && !canViewWorkspaceArea(data.accessibleAreas, area)) notFound();
   if (data.isGuest && !area && !allowGuest) {
-    const guestHasProjects = data.projects.length > 0;
+    const guestHasProjects = guestHasProjectWork(data.projects);
     if (!(guestProjectWork && guestHasProjects))
       redirect(
         guestHome(
@@ -136,7 +137,7 @@ export async function redirectPreviewedGuest(
   }: { onDashboard?: boolean; projectWork?: boolean } = {},
 ): Promise<"no-pages" | undefined> {
   if (!data.accessPreview?.guest) return;
-  const hasProjects = data.projects.length > 0;
+  const hasProjects = guestHasProjectWork(data.projects);
   if (projectWork && hasProjects) return;
   const home = guestHome(
     data.accessibleAreas,
