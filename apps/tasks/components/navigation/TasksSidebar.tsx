@@ -422,17 +422,35 @@ export function TasksSidebar({
       </div>
       <nav className="mt-4 space-y-1" aria-label="Main navigation">
         {navItems.map((item) =>
-          item.available || previewing ? (
+          item.available ? (
             <Link
               key={item.href}
               href={withAccessPreview(item.href, data.accessPreview)}
               onClick={closeSidebar}
               className={linkClass(item.active)}
-              {...(item.available ? {} : { "data-preview-block": "" })}
             >
               <item.icon />
               {item.label}
             </Link>
+          ) : previewing ? (
+            // Locked the way an unreachable category is, so a preview shows
+            // what the subject is missing in the sidebar's one locked style.
+            <Tooltip
+              key={item.href}
+              content="You don't have permission to open this page."
+              placement="right"
+              triggerClassName="block w-full"
+            >
+              <span
+                aria-disabled="true"
+                tabIndex={0}
+                className="sidebar-link cursor-not-allowed opacity-55"
+              >
+                <item.icon aria-hidden />
+                <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                <FiLock aria-hidden className="ml-auto shrink-0" />
+              </span>
+            </Tooltip>
           ) : null,
         )}
       </nav>
