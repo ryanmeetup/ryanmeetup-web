@@ -946,7 +946,7 @@ test("anonymous visitors cannot read, export, confirm, or change settings", asyn
   await reset(request);
   await page.goto("/ryd");
   await expect(page).toHaveURL(/\/login$/);
-  for (const path of ["/api/ryd", `/api/ryd/export?batch=${snapshotId}`])
+  for (const path of ["/api/ryd", `/api/ryd/cards/${snapshotId}`])
     expect((await page.request.get(path)).status()).toBe(401);
   expect(
     (

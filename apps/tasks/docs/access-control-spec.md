@@ -167,8 +167,8 @@ send clears its handoff flag and send date without deleting historical
 events.
 Idempotent receipts keep retries from repeating stage changes. Generation,
 opening mail, downloading, and closing the dialog never move orders or update
-Google Sheets. Historical sent-file downloads retain the existing private
-boundary.
+Google Sheets. Historical fulfillment manifests remain private database
+records; the retired snapshot download route is no longer exposed.
 
 Imports and reminder confirmations use service-role-only `ryd_import_orders`
 and `ryd_record_reminders`. They recheck the actor and commit their effects,

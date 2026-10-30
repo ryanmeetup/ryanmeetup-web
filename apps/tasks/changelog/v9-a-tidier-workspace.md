@@ -180,6 +180,10 @@ Both submission layouts now offer complete response details, including every upl
 
 Evidence thumbnails share brief form reads, so opening several uploads no longer reloads every form answer for each file. Google requests time out and stop when their readers cancel, while each file still requires current RY-D access.
 
+RY-D's Google connection now requests read access to the form and uploaded
+files without spreadsheet write access. Existing connections keep working;
+disconnect and reconnect once to replace the previous grant.
+
 ### More reliable RY-D verification
 
 Large order queues and fulfillment exports keep every order, and saved CSV cells survive changes to column capitalization or later files. Verification handles malformed social links and uploaded filenames with international characters, avoids combining names from different responses into a strong match, and keeps rejected orders out of reminder actions. RY-D access stays closed when its permission checks are unavailable.

@@ -2,10 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { rydBatchSchema } from "@/lib/api-schema";
 import { parseCsv } from "@/lib/ryd/csv";
-import {
-  generateRydFulfillment,
-  rydFulfillmentCsv,
-} from "@/lib/server/ryd-fulfillment";
+import { generateRydFulfillment } from "@/lib/server/ryd-fulfillment";
 
 const google = vi.hoisted(() => ({ integration: vi.fn(), read: vi.fn() }));
 vi.mock("@/lib/server/ryd-google", () => ({
@@ -161,20 +158,5 @@ describe("RY-D on-demand fulfillment files", () => {
       { orderIds: Array(5001).fill("1") },
     ])
       expect(rydBatchSchema(value)).toBeNull();
-  });
-  it("preserves access to historical sent CSVs", async () => {
-    const csv = await rydFulfillmentCsv(
-      client({ ...data, state: "sent" }),
-      "00000000-0000-4000-8000-000000000301",
-    );
-    expect(parseCsv(csv).rows).toEqual([["1", "✅"]]);
-  });
-  it("refuses cancelled historical files", async () => {
-    await expect(
-      rydFulfillmentCsv(
-        client({ state: "cancelled" }),
-        "00000000-0000-4000-8000-000000000301",
-      ),
-    ).rejects.toMatchObject({ code: "RY409" });
   });
 });

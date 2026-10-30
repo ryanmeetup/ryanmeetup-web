@@ -1006,32 +1006,4 @@ describe("RY-D routes", () => {
     expect(rpc).toHaveBeenCalledTimes(1);
   });
 
-  it("refuses downloads without a manifest and never exports a live queue", async () => {
-    getAdminClient.mockReturnValue(admin({}));
-    const { GET } = await import("@/app/api/ryd/export/route");
-    expect(
-      (await GET(new Request("http://localhost/api/ryd/export"))).status,
-    ).toBe(400);
-    expect(
-      (await GET(new Request("http://localhost/api/ryd/export?batch=bad")))
-        .status,
-    ).toBe(400);
-    getAdminClient.mockReturnValue(
-      admin({
-        ryd_fulfillment_snapshots: table({
-          data: { state: "cancelled" },
-          error: null,
-        }),
-      }),
-    );
-    expect(
-      (
-        await GET(
-          new Request(
-            "http://localhost/api/ryd/export?batch=00000000-0000-4000-8000-000000000301",
-          ),
-        )
-      ).status,
-    ).toBe(409);
-  });
 });

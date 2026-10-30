@@ -1,6 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { parseCsv } from "@/lib/ryd/csv";
 import type { RydSubmission } from "@/lib/ryd/matching";
 
 const readRydSubmissions = vi.hoisted(() => vi.fn());
@@ -75,24 +74,6 @@ describe("RY-D complete collection reads", () => {
     const { readRydRows } = await import("@/lib/server/ryd-queries");
     await expect(readRydRows(async () => ({ data: null, error: null })))
       .rejects.toThrow("returned no data");
-  });
-
-  it("exports every immutable manifest row beyond the Data API cap", async () => {
-    const { rydFulfillmentCsv } = await import("@/lib/server/ryd-fulfillment");
-    const csv = await rydFulfillmentCsv(
-      database({
-        ryd_fulfillment_snapshots: [
-          {
-            state: "sent",
-            headers: ["OrderId", "Verified?"],
-            order_rows: orders(1005),
-          },
-        ],
-      }),
-      "00000000-0000-4000-8000-000000000301",
-    );
-    expect(parseCsv(csv).rows).toHaveLength(1005);
-    expect(parseCsv(csv).rows.at(-1)?.[0]).toBe("1005");
   });
 
   it("ignores historical saved drafts while loading the manual queue", async () => {

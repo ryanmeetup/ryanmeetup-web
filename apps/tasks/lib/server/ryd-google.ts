@@ -4,18 +4,10 @@ import { createHash } from "node:crypto";
 import {
   parseRydFormResponses,
   inspectRydForm,
-  rydFormQuestions,
   type GoogleForm,
   type GoogleFormResponse,
 } from "@/lib/ryd/form-responses";
 import type { RydSubmission } from "@/lib/ryd/matching";
-import {
-  planRydSheetReconciliation,
-  rydResponseSheetColumns,
-  rydUncheckedSheet,
-  type RydSheetIssue,
-  type RydSheetReport,
-} from "@/lib/ryd/sheet-reconciliation";
 import { getAdminClient } from "./admin-client";
 import {
   createGoogleOAuthRequest,
@@ -33,8 +25,7 @@ import { createRydGoogleReadCache } from "./ryd-google-read-cache";
  * The Google account that owns the RY-dentification form. It is a separate
  * connection from the workspace calendar: the form's owner is often not the
  * calendar's, and this one needs to read the form and its responses, open the
- * files people uploaded through it, and tick `Verified?` in the form's linked
- * response sheet.
+ * files people uploaded through it.
  *
  * `drive.readonly` is a restricted scope. Keep the OAuth client in Testing (or
  * Internal) with the form owner listed as a test user; publishing it would
@@ -45,7 +36,6 @@ const SCOPES = [
   "email",
   "https://www.googleapis.com/auth/forms.body.readonly",
   "https://www.googleapis.com/auth/forms.responses.readonly",
-  "https://www.googleapis.com/auth/spreadsheets",
   "https://www.googleapis.com/auth/drive.readonly",
 ] as const;
 
@@ -54,7 +44,6 @@ export const RYD_GOOGLE_COOKIE = "tasks_ryd_google_oauth";
 export const RYD_GOOGLE_INTEGRATION_ID = "ryd_google";
 const SERVICE = "Google Forms";
 const FORMS_URL = "https://forms.googleapis.com/v1/forms";
-const SHEETS_URL = "https://sheets.googleapis.com/v4/spreadsheets";
 const DRIVE_URL = "https://www.googleapis.com/drive/v3/files";
 
 export type RydGoogleIntegrationRow = {
@@ -187,8 +176,6 @@ async function readForm(accessToken: string, formId: string, signal: AbortSignal
 type RydFormRead = {
   submissions: RydSubmission[];
   title: string;
-  linkedSheetId: string | null;
-  questionTitles: string[];
   warnings: string[];
 };
 
@@ -214,173 +201,11 @@ export async function readRydSubmissions(
         submissions: parseRydFormResponses(form, responses),
         title:
           form.info?.title || form.info?.documentTitle || "RY-dentification form",
-        linkedSheetId: form.linkedSheetId ?? null,
-        questionTitles: rydFormQuestions(form).map((question) => question.title),
         warnings: inspectRydForm(form).warnings,
       };
     },
     options,
   );
-}
-
-type SpreadsheetMeta = {
-  properties?: { timeZone?: string };
-  sheets?: {
-    properties?: { sheetId?: number; title?: string; sheetType?: string };
-  }[];
-};
-
-type SheetValues = {
-  valueRanges?: {
-    dataFilters?: { gridRange?: { sheetId?: number } }[];
-    valueRange?: { values?: unknown[][] };
-  }[];
-};
-
-/** A best-effort sheet tick never changes the already committed batch decision. */
-export async function markRydSubmissionsVerified(
-  connection: RydGoogleIntegrationRow,
-  form: Pick<RydFormRead, "submissions" | "linkedSheetId" | "questionTitles">,
-  responseKeys: string[],
-  requestSignal?: AbortSignal,
-): Promise<RydSheetReport> {
-  const fallback = (issue: RydSheetIssue) =>
-    rydUncheckedSheet(
-      responseKeys,
-      form.submissions,
-      issue,
-      form.linkedSheetId,
-    );
-  if (!responseKeys.length) return fallback("not-required");
-  if (!form.linkedSheetId) return fallback("no-linked-sheet");
-  const signal = googleRequestSignal(requestSignal, 30_000);
-  const accessToken = await token(connection, signal);
-  const headers = {
-    Authorization: `Bearer ${accessToken}`,
-    "Content-Type": "application/json",
-  };
-  const sheetUrl = `${SHEETS_URL}/${encodeURIComponent(form.linkedSheetId)}`;
-  const meta = await googleJson<SpreadsheetMeta>(
-    `${sheetUrl}?fields=properties.timeZone,sheets.properties(sheetId,title,sheetType)`,
-    { headers, signal },
-    "Google Sheets",
-  );
-  // Never guess the time zone, a tab position, or a response schema.
-  if (!meta.properties?.timeZone) return fallback("tab-missing");
-  const tabs = (meta.sheets ?? []).flatMap(({ properties }) =>
-    properties &&
-    Number.isInteger(properties.sheetId) &&
-    properties.title &&
-    properties.sheetType === "GRID"
-      ? [{ id: properties.sheetId!, title: properties.title }]
-      : [],
-  );
-  if (!tabs.length) return fallback("tab-missing");
-  const readValues = (
-    dataFilters: {
-      gridRange: {
-        sheetId: number;
-        startRowIndex?: number;
-        endRowIndex?: number;
-      };
-    }[],
-  ) =>
-    googleJson<SheetValues>(
-      `${sheetUrl}/values:batchGetByDataFilter`,
-      {
-        method: "POST",
-        headers,
-        signal,
-        body: JSON.stringify({
-          dataFilters,
-          majorDimension: "ROWS",
-          valueRenderOption: "FORMULA",
-          dateTimeRenderOption: "SERIAL_NUMBER",
-        }),
-      },
-      "Google Sheets",
-    );
-  const headerValues = await readValues(
-    tabs.map((tab) => ({
-      gridRange: { sheetId: tab.id, startRowIndex: 0, endRowIndex: 1 },
-    })),
-  );
-  const valuesFor = (values: SheetValues, id: number) => {
-    const matches = (values.valueRanges ?? []).filter((range) =>
-      range.dataFilters?.some((filter) => filter.gridRange?.sheetId === id),
-    );
-    return matches.length === 1 ? matches[0].valueRange?.values : undefined;
-  };
-  const candidates = tabs.filter((tab) =>
-    rydResponseSheetColumns(
-      valuesFor(headerValues, tab.id)?.[0] ?? [],
-      form.questionTitles,
-    ),
-  );
-  if (candidates.length !== 1)
-    return fallback(candidates.length ? "tab-ambiguous" : "tab-missing");
-  const tab = candidates[0];
-  const values = await readValues([{ gridRange: { sheetId: tab.id } }]);
-  const [headerRow = [], ...rows] = valuesFor(values, tab.id) ?? [];
-  // Revalidate the headers from the full read: columns may have moved since selection.
-  const columns = rydResponseSheetColumns(headerRow, form.questionTitles);
-  if (!columns) return fallback("tab-missing");
-  const plan = planRydSheetReconciliation(
-    rows,
-    columns,
-    form.submissions,
-    responseKeys,
-    meta.properties.timeZone,
-  );
-  const report: RydSheetReport = {
-    spreadsheetId: form.linkedSheetId,
-    sheetId: tab.id,
-    sheetTitle: tab.title,
-    responses: plan.responses,
-  };
-  if (!plan.writes.length) return report;
-  try {
-    const result = await googleJson<{ totalUpdatedCells?: number }>(
-      `${sheetUrl}/values:batchUpdateByDataFilter`,
-      {
-        method: "POST",
-        signal,
-        headers,
-        body: JSON.stringify({
-          valueInputOption: "RAW",
-          data: plan.writes.map(({ row, column }) => ({
-            dataFilter: {
-              gridRange: {
-                sheetId: tab.id,
-                startRowIndex: row - 1,
-                endRowIndex: row,
-                startColumnIndex: column,
-                endColumnIndex: column + 1,
-              },
-            },
-            majorDimension: "ROWS",
-            values: [["✅"]],
-          })),
-        }),
-      },
-      "Google Sheets",
-    );
-    if (result.totalUpdatedCells !== plan.writes.length)
-      return { ...report, issue: "write-unconfirmed" };
-    const updated = new Set(plan.writes.map(({ key }) => key));
-    return {
-      ...report,
-      responses: report.responses.map((response) =>
-        updated.has(response.key)
-          ? { ...response, outcome: "updated" }
-          : response,
-      ),
-    };
-  } catch (error) {
-    console.error("RY-D response sheet write could not be confirmed", error);
-    // A timeout may follow a successful write. Report uncertainty; never retry it here.
-    return { ...report, issue: "write-unconfirmed" };
-  }
 }
 
 const INLINE_TYPES =

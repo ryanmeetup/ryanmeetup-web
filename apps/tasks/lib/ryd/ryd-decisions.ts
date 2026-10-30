@@ -15,8 +15,8 @@ export function rydDecisionLocked(order: RydQueueOrder) {
 
 /**
  * Record a decision on one order, with its note when one is given. Verifying
- * from a suggestion accepts it: the pairing is what lets the send step tick
- * the right rows in the response sheet. Verifying also approves the card as
+ * from a suggestion accepts it and saves the evidence pairing for the order.
+ * Verifying also approves the card as
  * shown, which is what fulfillment prints; pass `card` for edited lines.
  */
 export async function decideRydOrder(

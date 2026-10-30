@@ -91,6 +91,27 @@ describe("RY-D Google reads", () => {
     vi.restoreAllMocks();
   });
 
+  it("requests only the read scopes still used by RY-D", async () => {
+    const { createRydGoogleOAuthRequest, hasRydGoogleScopes } = await fixture();
+    const { url } = createRydGoogleOAuthRequest(new Request("http://localhost"));
+    const required = [
+      "https://www.googleapis.com/auth/forms.body.readonly",
+      "https://www.googleapis.com/auth/forms.responses.readonly",
+      "https://www.googleapis.com/auth/drive.readonly",
+    ];
+    expect(url.searchParams.get("scope")?.split(" ")).toEqual([
+      "openid", "email", ...required,
+    ]);
+    expect(hasRydGoogleScopes(required.join(" "))).toBe(true);
+    expect(hasRydGoogleScopes([
+      ...required, "https://www.googleapis.com/auth/spreadsheets",
+    ].join(" "))).toBe(true);
+    for (const missing of required)
+      expect(hasRydGoogleScopes(required.filter((scope) => scope !== missing).join(" ")))
+        .toBe(false);
+    expect(hasRydGoogleScopes(undefined)).toBe(false);
+  });
+
   it("measures a queue load followed by 24 evidence files", async () => {
     const { readRydSubmissions, fetchRydEvidence, connection, fetcher } = await fixture();
     const queue = readRydSubmissions(connection, formId);

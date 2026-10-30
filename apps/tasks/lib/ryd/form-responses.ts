@@ -33,7 +33,6 @@ export type GoogleForm = {
   formId?: string;
   info?: { title?: string; documentTitle?: string };
   items?: GoogleFormItem[];
-  linkedSheetId?: string;
 };
 
 type GoogleAnswer = {
@@ -209,37 +208,6 @@ export function parseRydFormResponses(
     });
   }
   return submissions;
-}
-
-/**
- * Days since 1899-12-30 as the response sheet counts them: wall-clock time in
- * the sheet's own zone. This is how a response is found in the linked sheet,
- * which has no response IDs, to tick its `Verified?` cell.
- */
-export function sheetSerial(iso: string, timeZone: string) {
-  const parts = Object.fromEntries(
-    new Intl.DateTimeFormat("en-US", {
-      timeZone,
-      hourCycle: "h23",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    })
-      .formatToParts(new Date(iso))
-      .map((part) => [part.type, Number(part.value)]),
-  );
-  const wallClock = Date.UTC(
-    parts.year,
-    parts.month - 1,
-    parts.day,
-    parts.hour,
-    parts.minute,
-    parts.second,
-  );
-  return wallClock / 86_400_000 + 25_569;
 }
 
 /** The ID in any link to the form's editor, or the ID itself. */

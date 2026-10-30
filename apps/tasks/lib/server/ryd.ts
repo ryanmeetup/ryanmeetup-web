@@ -7,7 +7,6 @@ import type {
   RydSheetState,
 } from "@/lib/ryd/queue-types";
 import { type RydSubmission } from "@/lib/ryd/matching";
-import type { RydProductionStage } from "@/lib/ryd/queue-view";
 import {
   rydUploadDueSince,
   rydUploadReminderFrom,
@@ -394,25 +393,4 @@ export async function loadRydQueue(
     ),
     installed: true,
   });
-}
-
-/**
- * Move verified orders to a production stage. Each step only stamps what is
- * missing, so re-marking keeps the first date: done fills in a sent date the
- * order skipped, back to in production clears only done, and not started
- * clears both. Returns how many orders actually moved.
- */
-export async function setRydProductionStage(
-  admin: SupabaseClient,
-  user: User,
-  orderIds: string[],
-  stage: RydProductionStage,
-) {
-  const result = await admin.rpc("ryd_set_production", {
-    requested_actor: user.id,
-    requested_orders: orderIds,
-    requested_stage: stage,
-  });
-  if (result.error) throw result.error;
-  return result.data as { movedCount: number; orderIds: string[] };
 }

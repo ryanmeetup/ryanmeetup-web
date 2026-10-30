@@ -6,9 +6,9 @@ import type { RydFulfillmentPreview } from "@/lib/ryd/fulfillment";
 import { rydOrderExportCsv, type RydOrderStatus } from "@/lib/ryd/orders";
 import { readRydLinks } from "./ryd-queries";
 import { loadRydGoogleIntegration, readRydSubmissions } from "./ryd-google";
-type SnapshotRow = {
-  id: string;
-  state: "prepared" | "sent" | "cancelled";
+
+type GeneratedFulfillment = {
+  generated_at: string;
   recipient: string;
   headers: string[];
   order_rows: {
@@ -17,14 +17,7 @@ type SnapshotRow = {
     status: RydOrderStatus;
     first_name: string;
     last_name: string;
-    updated_at: string;
   }[];
-  verified_ids: string[];
-  response_keys: string[];
-  form_id: string | null;
-  prepared_at: string;
-  requires_rebuild?: boolean;
-  selection_conflict?: boolean;
 };
 
 /** One read-only database snapshot; generation never advances order stages. */
@@ -38,10 +31,7 @@ export async function generateRydFulfillment(
     requested_orders: orderIds,
   });
   if (result.error) throw result.error;
-  const data = result.data as Pick<
-    SnapshotRow,
-    "recipient" | "headers" | "order_rows"
-  > & { generated_at: string };
+  const data = result.data as GeneratedFulfillment;
   const selected = new Set(data.order_rows.map((row) => row.order_id));
   const linksResult = await readRydLinks(admin);
   if (linksResult.error) throw linksResult.error;
@@ -99,39 +89,4 @@ export async function generateRydFulfillment(
       data.order_rows.length,
     ),
   };
-}
-
-/** GET never creates a fresh batch or falls back to a moving queue export. */
-export async function rydFulfillmentCsv(admin: SupabaseClient, id: string) {
-  const result = await admin
-    .from("ryd_fulfillment_snapshots")
-    .select("state, headers, order_rows")
-    .eq("id", id)
-    .maybeSingle();
-  if (result.error) throw result.error;
-  if (!result.data)
-    throw {
-      code: "RY404",
-      message: "That fulfillment batch no longer exists.",
-    };
-  const snapshot = result.data as SnapshotRow;
-  if (snapshot.state === "cancelled")
-    throw {
-      code: "RY409",
-      message:
-        "That batch was cancelled. Prepare or resume a batch before downloading.",
-    };
-  if (snapshot.state === "prepared") {
-    const ready = await admin.rpc("ryd_fulfillment_is_ready", {
-      requested_snapshot: id,
-    });
-    if (ready.error) throw ready.error;
-    if (ready.data !== true)
-      throw {
-        code: "RY409",
-        message:
-          "This batch includes orders still being checked or already sent for production. Cancel the unsent batch and prepare a new one.",
-      };
-  }
-  return rydOrderExportCsv(snapshot.headers, snapshot.order_rows);
 }

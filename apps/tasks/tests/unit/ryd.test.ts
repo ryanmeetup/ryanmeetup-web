@@ -21,9 +21,7 @@ import { rydCardDraft } from "@/lib/ryd/card";
 import {
   formIdFrom,
   parseRydFormResponses,
-  sheetSerial,
 } from "@/lib/ryd/form-responses";
-import { rydSheetColumns } from "@/lib/ryd/sheet-columns";
 
 // Synthetic rows shaped like the fulfillment export. No real customer appears.
 const ORDER_CSV = [
@@ -562,7 +560,6 @@ describe("matching", () => {
 
 describe("parseRydFormResponses", () => {
   const form = {
-    linkedSheetId: "sheet-id",
     items: [
       {
         title: "What is your legal name?",
@@ -640,29 +637,6 @@ describe("parseRydFormResponses", () => {
       [{ ...response, respondentEmail: "Signed.In@test.dev" }],
     );
     expect(submission.email).toBe("signed.in@test.dev");
-  });
-});
-
-describe("response sheet lookup", () => {
-  it("counts days as the sheet does, in the sheet's own zone", () => {
-    // 10/15/2026 0:03:30 in New York, as the sheet's Timestamp column holds it.
-    const expected = Date.UTC(2026, 9, 15, 0, 3, 30) / 86_400_000 + 25_569;
-    expect(sheetSerial("2026-10-15T04:03:30Z", "America/New_York")).toBeCloseTo(
-      expected,
-      8,
-    );
-  });
-
-  it("finds the columns it writes by header", () => {
-    expect(
-      rydSheetColumns([
-        "Timestamp",
-        "What is your legal name?",
-        "What is your email address?",
-        5,
-        "Verified?",
-      ]),
-    ).toEqual({ timestamp: 0, email: 2, verified: 4 });
   });
 });
 

@@ -20,14 +20,17 @@ even a malformed request returns 404 when RY-D is off.
 1. Apply every `supabase/migrations/2026102*_ryd_*.sql` migration, starting
    with `20261021000000_ryd_verification.sql`.
 2. In Google Cloud, on the same OAuth client the Calendar uses:
-   - enable the **Google Forms**, **Google Sheets**, and **Google Drive** APIs;
+   - enable the **Google Forms** and **Google Drive** APIs;
    - add the redirect URI
      `https://<instance>/api/integrations/ryd-google/callback`;
    - add the `forms.body.readonly`, `forms.responses.readonly`,
-     `spreadsheets`, and `drive.readonly` scopes to the consent screen.
+     and `drive.readonly` scopes to the consent screen.
 
    `drive.readonly` is a restricted scope: keep the client in Testing (or
    Internal) with the form owner as a test user.
+   An existing connection keeps working without the old `spreadsheets` scope.
+   After deploying this change, disconnect and reconnect RY-D Google once to
+   revoke the previous grant and authorize only the scopes still needed.
 3. Turn on **RY-D Verification** in /admin/settings → Features.
 4. On /ryd → Settings, connect Google **as the account that owns the form**,
    paste the form's **editor** link (`docs.google.com/forms/d/<id>/edit`, not
@@ -331,15 +334,14 @@ disconnect denies subsequent requests; changing forms or reconnecting cannot
 reuse the previous connection's answers. Requests already authorized may finish
 within their deadlines. A response or file reference removed in Google can
 remain visible in a completed form read for its remaining ten-second lifetime.
-Link/dismiss/review provenance checks and fulfillment sheet reconciliation bypass
+Link/dismiss/review provenance checks and fulfillment email generation bypass
 retained answers. `GET /api/ryd` with `Cache-Control: no-cache` also bypasses
 retained answers; concurrent fresh reads can still share in-flight work.
 
 Google JSON requests have ten-second deadlines, including their response bodies.
 One form read, including token refresh and all response pages, has a 25-second
-deadline. File fetching and streaming, and sheet reconciliation, each have
-30-second deadlines. Queue and file requests propagate browser cancellation;
-one cancelled reader does not interrupt other readers sharing the work, and
+deadline. File fetching and streaming have a 30-second deadline. Queue and file
+requests propagate browser cancellation; one cancelled reader does not interrupt other readers sharing the work, and
 the last cancelled reader stops the upstream request. Nothing uses Next's
 persistent cache or a public evidence manifest.
 
@@ -349,7 +351,8 @@ survives a respondent editing their answers), an audit trail (`ryd_order_events`
 attempts to unmatched submitters (`ryd_submitter_contacts`), the imports and
 minimal handoff records, historical fulfillment manifests
 (`ryd_fulfillment_snapshots`), the settings, and the Google connection. The
-historical manifests remain private; new email and CSV generation writes none.
+historical manifests remain private database records, with no download route;
+new email and CSV generation writes none.
 Every table is
 service-role only; routes check the instance switch and
 `can_view_workspace_area('ryd')` first.
