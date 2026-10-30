@@ -38,6 +38,18 @@ const HOUR_OPTIONS = Array.from({ length: 24 }, (_, hour) => ({
   label: rydHourLabel(hour),
 }));
 
+/**
+ * The CSV, gzipped so a file up to the 10 MB limit fits under Vercel's 4.5 MB
+ * request ceiling. A browser without CompressionStream sends it as is.
+ */
+async function compressedCsv(file: File) {
+  if (typeof CompressionStream === "undefined") return file;
+  const blob = await new Response(
+    file.stream().pipeThrough(new CompressionStream("gzip")),
+  ).blob();
+  return new File([blob], file.name, { type: "application/gzip" });
+}
+
 function importSummary(result: RydImportSummary) {
   const parts = [
     `${result.newCount} new order${result.newCount === 1 ? "" : "s"} added`,
@@ -80,7 +92,7 @@ export function RydUploadDialog({
         setError(null);
         try {
           const body = new FormData();
-          body.set("file", file);
+          body.set("file", await compressedCsv(file));
           body.set("operationId", operationId);
           const result = await mutate<RydImportSummary>("/api/ryd/imports", {
             method: "POST",
@@ -124,7 +136,7 @@ export function RydUploadDialog({
           required
           disabled={saving}
           file={file}
-          hint="CSV only"
+          hint="CSV up to 10 MB"
           rejectMessage="That isn't a CSV. Drop fulfillment's order export."
           onFileChange={(next) => {
             setFile(next);

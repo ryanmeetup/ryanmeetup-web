@@ -509,7 +509,7 @@ describe("RY-D routes", () => {
       const cancel = vi.fn();
       const body = new ReadableStream({
         start(controller) {
-          controller.enqueue(new Uint8Array(2 * 1024 * 1024 + 64 * 1024 + 1));
+          controller.enqueue(new Uint8Array(10 * 1024 * 1024 + 64 * 1024 + 1));
         },
         cancel,
       });
@@ -531,6 +531,64 @@ describe("RY-D routes", () => {
       expect(rpc).not.toHaveBeenCalled();
     },
   );
+
+  describe("gzipped uploads", () => {
+    const gzip = (bytes: Uint8Array<ArrayBuffer> | string) =>
+      new Response(
+        new Blob([bytes]).stream().pipeThrough(new CompressionStream("gzip")),
+      ).arrayBuffer();
+    const upload = async (body: ArrayBuffer | Uint8Array<ArrayBuffer>) => {
+      const { POST } = await import("@/app/api/ryd/imports/route");
+      const form = new FormData();
+      form.set("operationId", "30000000-0000-4000-8000-000000000402");
+      form.set("file", new File([body], "orders.csv"));
+      return POST(
+        new Request("http://localhost/api/ryd/imports", {
+          method: "POST",
+          headers: { origin: "http://localhost" },
+          body: form,
+        }),
+      );
+    };
+
+    it("imports the CSV the browser compressed", async () => {
+      getAdminClient.mockReturnValue(admin({}));
+      rpc.mockResolvedValue({
+        data: { ok: true, newCount: 1, rowCount: 1 },
+        error: null,
+      });
+      const response = await upload(
+        await gzip(
+          "OrderId,BillFirstName,BillLastName,BillEmail\n1001,Ryan,Pérez,ryan@example.test\n",
+        ),
+      );
+      expect(response.status).toBe(200);
+      expect(rpc).toHaveBeenCalledExactlyOnceWith(
+        "ryd_import_orders",
+        expect.objectContaining({
+          requested_payload: expect.objectContaining({
+            orders: [expect.objectContaining({ lastName: "Pérez" })],
+          }),
+        }),
+      );
+    });
+
+    it("refuses a file that unzips past the limit", async () => {
+      getAdminClient.mockReturnValue(admin({}));
+      const response = await upload(
+        await gzip(new Uint8Array(10 * 1024 * 1024 + 1)),
+      );
+      expect(response.status).toBe(413);
+      expect(rpc).not.toHaveBeenCalled();
+    });
+
+    it("refuses a damaged archive", async () => {
+      getAdminClient.mockReturnValue(admin({}));
+      const response = await upload(new Uint8Array([0x1f, 0x8b, 8, 0, 1, 2]));
+      expect(response.status).toBe(400);
+      expect(rpc).not.toHaveBeenCalled();
+    });
+  });
 
   it("rejects a damaged CSV before making any database writes", async () => {
     getAdminClient.mockReturnValue(admin({}));

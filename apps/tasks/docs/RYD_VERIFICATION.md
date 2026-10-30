@@ -44,7 +44,7 @@ Access setting, and every `/api/ryd` route answer as if they don't exist.
    group membership and instance features remains owner-only.
 
 The form setting changes what reviewers read; it does not change the public
-`https://ryanmeetup.com/cards/verify` redirect used by buyers and reminder
+`https://ryanmeetup.com/ryd/verify` redirect used by buyers and reminder
 drafts. Settings shows both the buyer link and the current review-form editor.
 Open both before saving and confirm they lead to the same Google form. Changing
 the buyer destination also requires updating the Ryan Meetup site's redirect.
@@ -88,7 +88,9 @@ uses, set in /admin/usage).
    Re-uploading the same file changes nothing; an order already in the queue
    keeps its decision. Import accounting, inserted orders, and their history
    save in one transaction; retrying the same upload returns its first result.
-   Files are limited to 2 MB before multipart parsing. Invalid quotes, uneven
+   Files are limited to 10 MB. The browser gzips the CSV before sending,
+   because Vercel refuses a function request body over 4.5 MB; the route
+   bounds the request before multipart parsing and the unzipped text after. Invalid quotes, uneven
    rows, repeated column names, and missing or overlong order IDs are reported
    before any writes.
    Either of Chipply's exports works. The **full data export** has one row

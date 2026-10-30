@@ -7,8 +7,35 @@ import { rydContext } from "@/lib/server/ryd";
 import { importRydOrders } from "@/lib/server/ryd-import";
 import { rydMutationFailure } from "@/lib/server/ryd-mutations";
 
-const MAX_CSV_BYTES = 2 * 1024 * 1024;
+const MAX_CSV_BYTES = 10 * 1024 * 1024;
 const MAX_BODY_BYTES = MAX_CSV_BYTES + 64 * 1024;
+
+/**
+ * Vercel refuses a function request body over 4.5 MB before it reaches this
+ * route, so the browser gzips the CSV. Its magic bytes never open a CSV; the
+ * unzipped text is held to the same limit as a plain upload.
+ */
+async function csvBytes(file: File) {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  if (bytes[0] !== 0x1f || bytes[1] !== 0x8b) return bytes;
+  const reader = new Blob([bytes])
+    .stream()
+    .pipeThrough(new DecompressionStream("gzip"))
+    .getReader();
+  const chunks: ArrayBuffer[] = [];
+  let size = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > MAX_CSV_BYTES) {
+      void reader.cancel().catch(() => {});
+      return null;
+    }
+    chunks.push(value.slice().buffer);
+  }
+  return new Uint8Array(await new Blob(chunks).arrayBuffer());
+}
 
 /** Bound bytes before multipart parsing, including untrusted chunked uploads. */
 export async function POST(request: Request) {
@@ -75,13 +102,24 @@ export async function POST(request: Request) {
       "Choose the order CSV and start a valid upload.",
     );
   if (file.size > MAX_CSV_BYTES) return tooLarge();
+  let bytes: Uint8Array | null;
+  try {
+    bytes = await csvBytes(file);
+  } catch {
+    return apiError(
+      400,
+      "INVALID_REQUEST",
+      "That upload could not be read. Choose the CSV and try again.",
+    );
+  }
+  if (!bytes) return tooLarge();
   try {
     const result = await importRydOrders(
       context.admin,
       context.user.id,
       operationId,
       file.name,
-      decodeCsvBytes(await file.arrayBuffer()),
+      decodeCsvBytes(bytes),
     );
     if (!result.ok) return apiError(400, "INVALID_REQUEST", result.error);
     return NextResponse.json(result);
