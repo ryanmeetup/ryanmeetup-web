@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 import { createRydQueueRefresh } from "@/lib/ryd/queue-refresh";
 import type { RydQueue } from "@/lib/ryd/queue-types";
 
-const queue = (clearedCount: number) =>
+const queue = (revision: number) =>
   ({
-    clearedCount,
+    uploadDueSince: String(revision),
     sheet: { status: "ok", accountEmail: "synthetic@example.com" },
   }) as RydQueue;
 function deferred() {
@@ -84,13 +84,13 @@ describe("RY-D queue refresh ordering", () => {
       report,
     );
     await expect(controller.refresh()).rejects.toThrow("Google unavailable");
-    expect(current.clearedCount).toBe(99);
+    expect(current.uploadDueSince).toBe("99");
     expect(report).toHaveBeenLastCalledWith({
       pending: false,
       error: expect.any(Error),
     });
     await controller.refresh();
-    expect(current.clearedCount).toBe(100);
+    expect(current.uploadDueSince).toBe("100");
     expect(report).toHaveBeenLastCalledWith({ pending: false, error: null });
   });
   it("does not let obsolete completion clear the current pending or error state", async () => {

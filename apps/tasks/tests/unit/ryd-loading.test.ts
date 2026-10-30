@@ -11,10 +11,11 @@ vi.mock("@/lib/server/ryd-google", () => ({
 type Row = Record<string, unknown>;
 
 /** Exercise the real PostgREST query builder against a capped, synthetic API. */
-function database(tables: Record<string, Row[]>, failAt?: number) {
+function database(tables: Record<string, Row[]>, failAt?: number, requests: URL[] = []) {
   const fetcher = vi.fn(
     async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = new URL(String(input));
+      requests.push(url);
       const name = url.pathname.split("/").at(-1)!;
       const offset = Number(url.searchParams.get("offset") ?? 0);
       if (name === "ryd_orders" && offset === failAt)
@@ -88,6 +89,18 @@ describe("RY-D complete collection reads", () => {
       }),
     );
     expect(queue).not.toHaveProperty("preparedBatch");
+    expect(queue.orders).toHaveLength(2);
+  });
+
+  it("does not load unused cleared counts or legacy fulfillment batches", async () => {
+    const { loadRydQueue } = await import("@/lib/server/ryd");
+    const requests: URL[] = [];
+    const queue = await loadRydQueue(database({ ryd_orders: orders(2) }, undefined, requests));
+
+    expect(requests.some((url) => url.pathname.endsWith("/ryd_fulfillment_batches"))).toBe(false);
+    expect(requests.filter((url) => url.pathname.endsWith("/ryd_orders"))).toHaveLength(1);
+    expect(queue).not.toHaveProperty("clearedCount");
+    expect(queue).not.toHaveProperty("lastBatch");
     expect(queue.orders).toHaveLength(2);
   });
 

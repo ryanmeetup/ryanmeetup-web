@@ -247,8 +247,6 @@ const emptyQueue = (installed: boolean): RydQueue => ({
     fulfillmentEmail: null,
     uploadReminder: rydUploadReminderFrom(null),
   },
-  clearedCount: 0,
-  lastBatch: null,
   cardBatches: [],
   timeZone: digestDefaults.timeZone,
   uploadDueSince: null,
@@ -264,13 +262,7 @@ export async function loadRydQueue(
   admin: SupabaseClient,
   options: RydGoogleReadOptions = {},
 ): Promise<RydQueue> {
-  const [
-    ordersResult,
-    linksResult,
-    clearedResult,
-    batchResult,
-    importResult,
-  ] = await Promise.all([
+  const [ordersResult, linksResult, importResult] = await Promise.all([
     readRydRows((from, to) =>
       admin
         .from("ryd_orders")
@@ -282,16 +274,6 @@ export async function loadRydQueue(
     ),
     readRydLinks(admin),
     admin
-      .from("ryd_orders")
-      .select("order_id", { count: "exact", head: true })
-      .not("cleared_batch_id", "is", null),
-    admin
-      .from("ryd_fulfillment_batches")
-      .select("sent_at, recipient, order_count, verified_count")
-      .order("sent_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    admin
       .from("ryd_imports")
       .select("uploaded_at")
       .order("uploaded_at", { ascending: false })
@@ -301,8 +283,6 @@ export async function loadRydQueue(
   const failure =
     ordersResult.error ??
     linksResult.error ??
-    clearedResult.error ??
-    batchResult.error ??
     importResult.error;
   if (failure) {
     if (isMissingRelation(failure.code)) return emptyQueue(false);
@@ -374,15 +354,6 @@ export async function loadRydQueue(
     contacts,
     sheet,
     settings,
-    clearedCount: clearedResult.count ?? 0,
-    lastBatch: batchResult.data
-      ? {
-          sentAt: batchResult.data.sent_at,
-          recipient: batchResult.data.recipient,
-          orderCount: batchResult.data.order_count,
-          verifiedCount: batchResult.data.verified_count,
-        }
-      : null,
     cardBatches,
     timeZone: digest.timeZone,
     uploadDueSince: rydUploadDueSince(

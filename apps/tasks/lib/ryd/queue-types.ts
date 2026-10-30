@@ -66,13 +66,6 @@ export type RydQueue = {
   contacts: Record<string, RydSubmitterContact>;
   sheet: RydSheetState;
   settings: RydSettings;
-  clearedCount: number;
-  lastBatch: {
-    sentAt: string;
-    recipient: string | null;
-    orderCount: number;
-    verifiedCount: number;
-  } | null;
   /** The latest card files pulled for fulfillment, newest first. */
   cardBatches: RydCardBatch[];
   /** The workspace's time zone, which the upload reminder's slot is in. */
