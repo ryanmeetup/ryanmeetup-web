@@ -123,10 +123,46 @@ export function createRydFixture(json, readBody, profile) {
       prepared_at: NOW,
     };
   }
+  function reviewOrder(orderId, patch, keys = [], knownKeys = null) {
+    const index = state.orders.findIndex((order) => order.order_id === orderId);
+    const order = state.orders[index];
+    const refuse = (code, message) => ({ error: { code, message } });
+    if (!order) return refuse("RY404", "Order missing");
+    if ((patch.expectedStatus && patch.expectedStatus !== order.status) ||
+        (patch.expectedUpdatedAt && patch.expectedUpdatedAt !== order.updated_at))
+      return refuse("RY409", "This order changed while you were reviewing it. Refresh and review it again.");
+    if (knownKeys && (order.cleared_batch_id || order.production_sent_at || order.done_at))
+      return refuse("RY409", "This order is already with fulfillment or done.");
+    if (knownKeys && keys.some((key) => !knownKeys.includes(key)))
+      return refuse("RY409", "A response is no longer in the configured form.");
+    if (keys.some((key) => state.links.some((link) => link.submission_key === key && link.order_id !== orderId)))
+      return refuse("RY409", "That response is already linked to an order.");
+    const card = patch.card;
+    const next = {
+      ...order,
+      ...(card ? { card_first_name: card.firstName, card_last_name: card.lastName,
+        card_location: card.location, card_ryan_since: card.ryanSince } : {}),
+    };
+    if (patch.status === "verified" && !(next.card_first_name && next.card_last_name &&
+        next.card_location && /^\d{4}$/.test(next.card_ryan_since ?? "")))
+      return refuse("RY400", "Fill in every line of the card, with a four-digit Ryan since year, before verifying.");
+    state.orders[index] = changedOrder({ ...next, status: patch.status ?? order.status,
+      note: patch.note ?? order.note, decided_at: NOW, decided_by: profile.id });
+    for (const key of keys)
+      if (!state.links.some((link) => link.submission_key === key && link.order_id === orderId))
+        state.links.push({ order_id: orderId, submission_key: key });
+    return { result: { ok: true, order: publicOrder(state.orders[index]) } };
+  }
   return async function handle(request, response, url, { single }) {
     const path = url.pathname;
     if (path === "/__ryd/reset") {
       reset(await readBody(request));
+      json(response, 200, { ok: true });
+      return true;
+    }
+    if (path === "/__ryd/order-revision") {
+      const { orderId } = await readBody(request);
+      state.orders = state.orders.map((order) => order.order_id === orderId ? changedOrder(order) : order);
       json(response, 200, { ok: true });
       return true;
     }
@@ -373,56 +409,19 @@ export function createRydFixture(json, readBody, profile) {
             submission_key: key,
           });
         json(response, 200, { ok: true, changed: true });
+      } else if (name === "ryd_review_orders") {
+        const reviews = [];
+        const failures = [];
+        for (const { orderId, submissionKeys = [], ...patch } of body.requested_decisions) {
+          const reviewed = reviewOrder(orderId, patch, submissionKeys, body.requested_known_keys);
+          if (reviewed.error) failures.push({ orderId, message: reviewed.error.message });
+          else reviews.push({ result: reviewed.result, linkedKeys: submissionKeys });
+        }
+        json(response, 200, { reviews, failures });
       } else if (name === "ryd_review_order") {
-        const index = state.orders.findIndex(
-          (order) => order.order_id === body.requested_order,
-        );
-        const order = state.orders[index];
-        if (!order) {
-          error(response, "RY404", "Order missing", 404);
-          return true;
-        }
-        // As the database does: verifying stores the card and needs every line.
-        const card = body.requested_patch.card;
-        const next = {
-          ...order,
-          ...(card
-            ? {
-                card_first_name: card.firstName,
-                card_last_name: card.lastName,
-                card_location: card.location,
-                card_ryan_since: card.ryanSince,
-              }
-            : {}),
-        };
-        if (
-          body.requested_patch.status === "verified" &&
-          !(
-            next.card_first_name &&
-            next.card_last_name &&
-            next.card_location &&
-            /^\d{4}$/.test(next.card_ryan_since ?? "")
-          )
-        ) {
-          error(
-            response,
-            "RY400",
-            "Fill in every line of the card, with a four-digit Ryan since year, before verifying.",
-            400,
-          );
-          return true;
-        }
-        state.orders[index] = changedOrder({
-          ...next,
-          status: body.requested_patch.status ?? order.status,
-          note: body.requested_patch.note ?? order.note,
-          decided_at: NOW,
-          decided_by: profile.id,
-        });
-        json(response, 200, {
-          ok: true,
-          order: publicOrder(state.orders[index]),
-        });
+        const reviewed = reviewOrder(body.requested_order, body.requested_patch, body.requested_keys);
+        if (reviewed.error) error(response, reviewed.error.code, reviewed.error.message);
+        else json(response, 200, reviewed.result);
       } else if (name === "ryd_create_card_batch") {
         // As the database does: every verified order with an approved card,
         // still ready to send, is frozen into one batch and marked sent.

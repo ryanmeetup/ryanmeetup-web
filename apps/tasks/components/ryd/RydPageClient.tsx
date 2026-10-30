@@ -51,7 +51,7 @@ import type { RydSubmission, RydSubmitter } from "@/lib/ryd/matching";
 import { isRydContactEmail } from "@/lib/ryd/normalize";
 import {
   changeRydLinks,
-  decideRydOrder,
+  decideRydOrders,
   rydDecisionLocked,
 } from "@/lib/ryd/ryd-decisions";
 import { rydCardComplete } from "@/lib/ryd/card";
@@ -552,10 +552,8 @@ export function RydPageClient({
   }
 
   /**
-   * Decide each selected order the way its dialog would, one at a time so a
-   * refusal on one doesn't lose the rest. What failed stays selected. Changes
-   * land together at the end: applying each as it saves would shrink the
-   * confirmation's count mid-batch.
+   * Share one provenance read per bounded group. Refused orders stay selected,
+   * and changes land together so the confirmation count stays steady.
    */
   async function decideSelected(target: RydOrderStatus) {
     const orders = decidable(target);
@@ -564,13 +562,21 @@ export function RydPageClient({
     const changes: RydQueueChange[] = [];
     const failed: string[] = [];
     let lastError: unknown;
-    for (const order of orders)
-      try {
-        changes.push(await decideRydOrder(order, queue.submissions, target));
-      } catch (error) {
-        failed.push(order.orderId);
-        lastError = error;
-      }
+    try {
+      const result = await decideRydOrders(orders, queue.submissions, target);
+      changes.push(
+        ...result.reviews.map((review): RydQueueChange => ({
+          type: "review",
+          ...review,
+        })),
+      );
+      failed.push(...result.failures.map((failure) => failure.orderId));
+      const failure = result.failures.at(-1);
+      if (failure) lastError = new Error(failure.message);
+    } catch (error) {
+      failed.push(...orders.map((order) => order.orderId));
+      lastError = error;
+    }
     changes.forEach(applyChange);
     try {
       await refresh();

@@ -761,8 +761,37 @@ test("decides selected orders together after confirming missing evidence", async
     ["803", "pending"],
   ]);
   expect(saved.orders[1]).toMatchObject({ card_location: "Chicago", card_ryan_since: "1988" });
-  expect(saved.calls.filter((call: { name: string }) => call.name === "ryd_review_order")).toHaveLength(2);
+  expect(saved.calls.filter((call: { name: string }) => call.name === "ryd_review_order")).toHaveLength(0);
+  expect(saved.calls.filter((call: { name: string }) => call.name === "ryd_review_orders")).toHaveLength(1);
   await expect(page.getByRole("checkbox", { name: "Select Jamie Perez", exact: true })).toBeChecked();
+});
+
+test("keeps stale bulk reviews selected while saving the remaining orders", async ({ page, request }) => {
+  await reset(request);
+  await signIn(page);
+  expect((await page.request.post("/api/ryd/imports", { multipart: {
+    operationId: "00000000-0000-4000-8000-000000000851",
+    file: { name: "stale-review.csv", mimeType: "text/csv", buffer: Buffer.from(
+      "OrderId,BillFirstName,BillLastName,BillEmail,Options Detail\r\n" +
+      '801,Ryan,Fixture,ryan.fixture@example.test,"[First Name : Ryan] [Last Name : Fixture] [Location : Brooklyn] [Full Birthday : 04/07/1999]"\r\n' +
+      '802,Ryan,Second,second@example.test,"[First Name : Ryan] [Last Name : Second] [Location : Chicago] [Full Birthday : 1988-01-02]"\r\n',
+    ) },
+  } })).ok()).toBeTruthy();
+  await page.goto("/ryd");
+  await page.getByRole("checkbox", { name: "Select all 2", exact: true }).check();
+  await page.getByRole("button", { name: "Verify", exact: true }).click();
+  const confirm = page.getByRole("dialog", { name: "Verify 2 orders?", exact: true });
+  await page.route("**/api/ryd/decisions", async (route) => {
+    await request.post(`${fixtureOrigin}/__ryd/order-revision`, { data: { orderId: "802" } });
+    await route.continue();
+  }, { times: 1 });
+  await confirm.getByRole("button", { name: "Verify", exact: true }).click();
+  await expect(confirm).toHaveCount(0);
+  const saved = await state(request);
+  expect(saved.orders.map((order: { status: string }) => order.status)).toEqual(["verified", "pending"]);
+  expect(saved.calls.filter((call: { name: string }) => call.name === "ryd_review_orders")).toHaveLength(1);
+  await expect(page.getByRole("checkbox", { name: "Select Ryan Second", exact: true })).toBeChecked();
+  await expect(page.getByText("This order changed while you were reviewing it. Refresh and review it again.", { exact: true })).toBeVisible();
 });
 
 test("imports an order CSV dropped onto the upload field and refuses other files", async ({ page, request }, testInfo) => {

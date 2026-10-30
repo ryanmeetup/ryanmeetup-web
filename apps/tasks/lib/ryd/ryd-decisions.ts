@@ -1,6 +1,8 @@
 "use client";
 
 import { mutate } from "@/lib/mutation-client";
+import { errorMessage } from "@/lib/presentation";
+import { rydDecisionGroups, type RydBulkReviewResult } from "./bulk-operations";
 import type { RydCard } from "./card";
 import type { RydSubmission } from "./matching";
 import type { RydOrderStatus } from "./orders";
@@ -16,8 +18,8 @@ export function rydDecisionLocked(order: RydQueueOrder) {
 /**
  * Record a decision on one order, with its note when one is given. Verifying
  * from a suggestion accepts it and saves the evidence pairing for the order.
- * Verifying also approves the card as
- * shown, which is what fulfillment prints; pass `card` for edited lines.
+ * Verifying also approves the card as shown, which is what fulfillment prints;
+ * pass `card` for edited lines.
  */
 export async function decideRydOrder(
   order: RydQueueOrder,
@@ -27,14 +29,29 @@ export async function decideRydOrder(
   card: RydCard = order.card,
 ): Promise<RydQueueChange> {
   const base = `/api/ryd/orders/${encodeURIComponent(order.orderId)}`;
+  const { linkedKeys, body } = decisionInput(order, submissions, status, note, card);
+  const result = await mutate<RydReviewResult>(base, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+  return { type: "review", result, linkedKeys };
+}
+
+function decisionInput(
+  order: RydQueueOrder,
+  submissions: RydSubmission[],
+  status: RydOrderStatus,
+  note?: string,
+  card: RydCard = order.card,
+) {
   const shown = orderSubmissions(order, submissions);
   const linkedKeys =
     status === "verified" && !shown.linked
       ? shown.submissions.map((submission) => submission.key)
       : [];
-  const result = await mutate<RydReviewResult>(base, {
-    method: "PATCH",
-    body: JSON.stringify({
+  return {
+    linkedKeys,
+    body: {
       status,
       ...(note !== undefined ? { note } : {}),
       expectedStatus: order.status,
@@ -45,9 +62,42 @@ export async function decideRydOrder(
             submissionKeys: linkedKeys,
           }
         : {}),
-    }),
-  });
-  return { type: "review", result, linkedKeys };
+    },
+  };
+}
+
+/** A failed group keeps its orders selected; acknowledged groups still apply. */
+export async function decideRydOrders(
+  orders: RydQueueOrder[],
+  submissions: RydSubmission[],
+  status: RydOrderStatus,
+): Promise<RydBulkReviewResult> {
+  const result: RydBulkReviewResult = { reviews: [], failures: [] };
+  const groups = rydDecisionGroups(
+    orders.map((order) => ({
+      orderId: order.orderId,
+      ...decisionInput(order, submissions, status).body,
+    })),
+  );
+  for (const decisions of groups) {
+    try {
+      const saved = await mutate<RydBulkReviewResult>("/api/ryd/decisions", {
+        method: "POST",
+        body: JSON.stringify({ decisions }),
+      });
+      result.reviews.push(...saved.reviews);
+      result.failures.push(...saved.failures);
+    } catch (failure) {
+      const message = errorMessage(
+        failure,
+        "Those decisions could not be saved. Try again.",
+      );
+      result.failures.push(
+        ...decisions.map(({ orderId }) => ({ orderId, message })),
+      );
+    }
+  }
+  return result;
 }
 
 export async function saveRydNote(

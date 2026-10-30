@@ -15,6 +15,7 @@ for (const file of [
   "ryd-import-reminders.sql",
   "ryd-bulk-operations.sql",
   "ryd-cards.sql",
+  "ryd-bulk-reviews.sql",
   "ryd-card-batches.sql",
 ]) {
   const tap = spawnSync(
@@ -304,6 +305,22 @@ try {
       "Concurrent contact retries duplicated the contact attempt",
     );
   console.log("PASS: concurrent contact retries retain one attempt");
+  sql(`insert into public.ryd_orders(order_id,raw,first_import_id) values
+    ('bulk-race-a','{}','20000000-0000-4000-8000-000000000291'),
+    ('bulk-race-b','{}','20000000-0000-4000-8000-000000000291');`);
+  const bulkDecisions = ["a", "b"].map((id) => ({
+    orderId: `bulk-race-${id}`, status: "verified", expectedStatus: "pending",
+    card: { firstName: "Ryan", lastName: "Test", location: "Brooklyn", ryanSince: "1999" },
+    submissionKeys: [`bulk-response-${id}`],
+  }));
+  const bulk = (decisions) => `select public.ryd_review_orders('${actor}','${JSON.stringify(decisions)}','${form}',array['bulk-response-a','bulk-response-b'])`;
+  await race(bulk(bulkDecisions), bulk([...bulkDecisions].reverse()), true);
+  if (sql("select count(*) from public.ryd_orders where order_id like 'bulk-race-%' and status='verified';") !== "2" ||
+      sql("select count(*) from public.ryd_order_events where order_id like 'bulk-race-%' and action='status';") !== "2" ||
+      sql("select count(*) from public.ryd_order_submissions where order_id like 'bulk-race-%';") !== "2")
+    throw new Error("Overlapping bulk reviews must serialize without repeating decisions or claims");
+  console.log("PASS: reversed bulk review groups serialize and retain one audited decision per order");
+
 } finally {
   run("docker", [
     "exec",

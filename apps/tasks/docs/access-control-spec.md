@@ -146,6 +146,15 @@ same transaction. A response belongs to one order; production requires a
 verified decision. Routes validate new response references against the configured
 Google form, and the transaction refuses a changed form or stale order revision.
 
+Bulk decisions use service-role-only `ryd_review_orders`, with the instance and
+page gate checked before parsing the request. The route validates the union of
+new response references against one fresh form read. The transaction locks
+settings, sorted response keys, and sorted orders, then delegates to
+`ryd_review_order`. Authored per-order refusals roll back that order's card,
+pairings, status, and audit events while allowing eligible orders to commit.
+Unexpected database failures abort the whole group. Bulk review never changes
+an order already sent to fulfillment or done, and responses omit raw CSV rows.
+
 Fulfillment generation uses service-role-only `ryd_generate_fulfillment`.
 It is read-only and rechecks the actor and every selected ID against one
 consistent database snapshot. Missing or ineligible orders reject the whole

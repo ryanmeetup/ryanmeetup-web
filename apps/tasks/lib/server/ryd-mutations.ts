@@ -2,6 +2,10 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { RydCard } from "@/lib/ryd/card";
+import type {
+  RydBulkDecision,
+  RydBulkReviewResult,
+} from "@/lib/ryd/bulk-operations";
 import { apiError, databaseFailure } from "./api-response";
 import { loadRydSettings } from "./ryd";
 import { loadRydGoogleIntegration, readRydSubmissions } from "./ryd-google";
@@ -30,8 +34,7 @@ export function rydMutationFailure(
   return databaseFailure(request, operation, failure, { error: message });
 }
 
-/** Check Google provenance before accepting new persisted response references. */
-export async function rydSubmissionForm(admin: SupabaseClient, keys: string[]) {
+async function readRydSubmissionSource(admin: SupabaseClient) {
   const [settings, integration] = await Promise.all([
     loadRydSettings(admin),
     loadRydGoogleIntegration(),
@@ -47,14 +50,42 @@ export async function rydSubmissionForm(admin: SupabaseClient, keys: string[]) {
     settings.formId,
     { fresh: true },
   );
-  const known = new Set(submissions.map((submission) => submission.key));
+  return {
+    formId: settings.formId,
+    known: new Set(submissions.map((submission) => submission.key)),
+  };
+}
+
+/** Check Google provenance before accepting new persisted response references. */
+export async function rydSubmissionForm(admin: SupabaseClient, keys: string[]) {
+  const { formId, known } = await readRydSubmissionSource(admin);
   if (keys.some((key) => !known.has(key)))
     throw {
       code: "RY409",
       message:
         "A response is no longer in the configured form. Refresh and choose it again.",
     };
-  return settings.formId;
+  return formId;
+}
+
+/** Read provenance once for the union, preserving per-order refusals in SQL. */
+export async function reviewRydOrders(
+  admin: SupabaseClient,
+  actor: string,
+  decisions: RydBulkDecision[],
+): Promise<RydBulkReviewResult> {
+  const keys = [
+    ...new Set(decisions.flatMap((decision) => decision.submissionKeys ?? [])),
+  ];
+  const source = keys.length ? await readRydSubmissionSource(admin) : null;
+  const result = await admin.rpc("ryd_review_orders", {
+    requested_actor: actor,
+    requested_decisions: decisions,
+    requested_form: source?.formId ?? null,
+    requested_known_keys: keys.filter((key) => source?.known.has(key)),
+  });
+  if (result.error) throw result.error;
+  return result.data;
 }
 
 export async function changeRydSubmission(

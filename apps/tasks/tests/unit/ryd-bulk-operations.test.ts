@@ -1,3 +1,4 @@
+import { rydBulkDecisionSchema } from "@/lib/api-schema";
 import { describe, expect, it } from "vitest";
 import {
   rydEmailsSchema,
@@ -6,6 +7,9 @@ import {
 } from "@/lib/api-schema/ryd";
 import {
   RYD_BULK_BODY_BYTES,
+  RYD_DECISION_BODY_BYTES,
+  rydDecisionGroups,
+  type RydBulkDecision,
   RYD_BULK_LIMIT,
   RYD_MAILTO_LIMIT,
   rydBodyBytes,
@@ -193,5 +197,23 @@ describe("RY-D bounded operation contracts", () => {
         source: "manual",
       }),
     ).toBeNull();
+  });
+});
+
+describe("bounded RY-D review groups", () => {
+  it("bounds Unicode cards and evidence by encoded bytes without losing orders", () => {
+    const decisions: RydBulkDecision[] = Array.from({ length: 77 }, (_, i) => ({
+      orderId: String(i), status: "verified", expectedStatus: "pending",
+      card: { firstName: "Ryan", lastName: "Pérez", location: "東京", ryanSince: "1999" },
+      submissionKeys: Array.from({ length: 100 }, (_, key) => `${key}${"界".repeat(125)}`),
+    }));
+    const groups = rydDecisionGroups(decisions);
+    expect(groups.length).toBeGreaterThan(1);
+    expect(groups.flat()).toEqual(decisions);
+    for (const group of groups) {
+      expect(group.length).toBeLessThanOrEqual(RYD_BULK_LIMIT);
+      expect(rydBodyBytes({ decisions: group })).toBeLessThanOrEqual(RYD_DECISION_BODY_BYTES);
+      expect(rydBulkDecisionSchema({ decisions: group })).toEqual({ decisions: group });
+    }
   });
 });

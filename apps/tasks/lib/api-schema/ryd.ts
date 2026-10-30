@@ -15,7 +15,9 @@ import { RYD_FULFILLMENT_LIMIT } from "@/lib/ryd/fulfillment";
 import {
   RYD_BULK_BODY_BYTES,
   RYD_BULK_LIMIT,
+  RYD_DECISION_BODY_BYTES,
   rydBodyBytes,
+  type RydBulkDecision,
   type RydProductionMove,
 } from "@/lib/ryd/bulk-operations";
 import {
@@ -119,6 +121,46 @@ export function rydDecisionSchema(value: unknown) {
     parsed.card = card;
   }
   return parsed;
+}
+
+/** One bounded group; every order retains its own stale-review checks. */
+export function rydBulkDecisionSchema(value: unknown) {
+  if (
+    !isJsonObject(value) ||
+    Object.keys(value).length !== 1 ||
+    !Array.isArray(value.decisions) ||
+    !value.decisions.length ||
+    value.decisions.length > RYD_BULK_LIMIT ||
+    rydBodyBytes(value) > RYD_DECISION_BODY_BYTES
+  )
+    return null;
+  const decisions: RydBulkDecision[] = [];
+  const seen = new Set<string>();
+  for (const decision of value.decisions) {
+    if (!isJsonObject(decision)) return null;
+    const { orderId, ...input } = decision;
+    const patch = rydDecisionSchema(input);
+    if (
+      typeof orderId !== "string" ||
+      !orderId.trim() ||
+      orderId.length > 64 ||
+      seen.has(orderId) ||
+      !patch?.status ||
+      !patch.expectedStatus ||
+      "note" in patch ||
+      (patch.status === "verified" && !patch.card) ||
+      (patch.status !== "verified" && "card" in patch)
+    )
+      return null;
+    seen.add(orderId);
+    decisions.push({
+      ...patch,
+      orderId,
+      status: patch.status,
+      expectedStatus: patch.expectedStatus,
+    });
+  }
+  return { decisions };
 }
 
 export function rydLinkSchema(value: unknown) {

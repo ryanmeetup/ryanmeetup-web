@@ -80,3 +80,17 @@ PRD keeps RY-D disabled: its normal preflight skips this contract while
 `ryd_enabled` is false or null. An unhealthy manual RY-D diagnostic is not a
 deployment blocker for PRD's enabled features. The SQL handoffs remain available
 for scheduled schema maintenance; they do not enable the feature.
+
+## Bulk review transactions
+
+`20261115000000_ryd_bulk_reviews.sql` adds `ryd_review_orders` and requires it
+in the production contract. `npm run test:database:ryd-transactions` includes
+`tests/database/ryd-bulk-reviews.sql` and a race with reversed, overlapping
+review groups. The tests cover private execution, per-order rollback, stale
+status and revision checks, locked orders, response conflicts, missing form
+responses, and full rollback when an unexpected failure interrupts audit.
+
+The route suite verifies that 77 suggested orders use one fresh Google Form
+read and one database call. Browser coverage checks successful bulk reviews,
+unfinished cards left selected, and a stale order staying selected while
+another order saves.

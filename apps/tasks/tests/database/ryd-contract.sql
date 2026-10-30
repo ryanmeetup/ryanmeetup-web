@@ -50,6 +50,8 @@ select is(pg_temp.health_after($$delete from public.workspace_area_access where 
 select is(pg_temp.health_after('alter function public.member_can_view_workspace_area(uuid,text) rename to missing_member_gate')->>'contractOk','false','missing shared page predicate fails');
 select is(pg_temp.health_after('grant execute on function public.member_can_view_workspace_area(uuid,text) to authenticated')->>'contractOk','false','member access to the private member predicate fails');
 select is(pg_temp.health_after('grant execute on function public.workspace_area_members(text) to authenticated')->>'contractOk','false','publicly readable recipient lists fail');
+select is(pg_temp.health_after('alter function public.ryd_review_orders(uuid,jsonb,text,text[]) rename to missing_bulk_reviews')->>'contractOk','false','missing bulk review RPC fails');
+select is(pg_temp.health_after('grant execute on function public.ryd_review_orders(uuid,jsonb,text,text[]) to authenticated')->>'contractOk','false','member bulk review execute fails');
 select is(public.ryd_contract_health()->>'contractOk','true','drift simulations leave the schema healthy');
 select * from finish();
 rollback;

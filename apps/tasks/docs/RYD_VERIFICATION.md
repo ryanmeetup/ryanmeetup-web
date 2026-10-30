@@ -173,6 +173,13 @@ uses, set in /admin/usage).
    Verify leaves them selected rather than verifying them. Orders verified
    before cards existed have no saved card; open and save one before
    they can be printed.
+
+   Bulk decisions save in groups of up to 100 orders within a 512 KiB request.
+   Suggested responses share one fresh Google Form read per group. Each group
+   commits its accepted decisions and audit events together; stale orders,
+   unavailable responses, and unfinished cards remain selected for review.
+   Orders already with fulfillment stay protected. An unexpected database
+   failure rolls back the entire group.
 3. **Follow up.** The Follow-up view lists orders asked for more, or with
    nothing on the form. **Email** on a row and the review dialog's ask
    action open the same draft workflow as **Email everyone** and **Email

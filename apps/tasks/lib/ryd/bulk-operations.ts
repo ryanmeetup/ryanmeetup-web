@@ -1,5 +1,8 @@
 import { rydMailtoHref, rydUnmatchedEmail } from "./emails";
 import type { RydQueue, RydQueueOrder } from "./queue-types";
+import type { RydReviewResult } from "./queue-reconciliation";
+import type { RydCard } from "./card";
+import type { RydOrderStatus } from "./orders";
 import { isRydContactEmail, normalizeEmail } from "./normalize";
 import {
   RYD_FULFILLMENT_STAGES,
@@ -9,6 +12,7 @@ import {
 
 export const RYD_BULK_LIMIT = 100;
 export const RYD_BULK_BODY_BYTES = 14_000;
+export const RYD_DECISION_BODY_BYTES = 512 * 1024;
 export const RYD_MAILTO_LIMIT = 1900;
 const OPERATION_PLACEHOLDER = "00000000-0000-4000-8000-000000000000";
 export type RydProductionAction = "fulfillment" | "done" | "back";
@@ -33,6 +37,18 @@ export type RydContactResult = {
   contactedAt: string;
   contacts: RydQueue["contacts"];
 };
+export type RydBulkDecision = {
+  orderId: string;
+  status: RydOrderStatus;
+  expectedStatus: RydOrderStatus;
+  expectedUpdatedAt?: string;
+  card?: RydCard;
+  submissionKeys?: string[];
+};
+export type RydBulkReviewResult = {
+  reviews: { result: RydReviewResult; linkedKeys: string[] }[];
+  failures: { orderId: string; message: string }[];
+};
 export const rydBodyBytes = (value: unknown) =>
   new TextEncoder().encode(JSON.stringify(value)).byteLength;
 
@@ -41,12 +57,13 @@ function boundedGroups<T>(
   items: T[],
   body: (group: T[]) => unknown,
   fits?: (group: T[]) => boolean,
+  maxBytes = RYD_BULK_BODY_BYTES,
 ) {
   const groups: T[][] = [];
   let group: T[] = [];
   const allowed = (rows: T[]) =>
     rows.length <= RYD_BULK_LIMIT &&
-    rydBodyBytes(body(rows)) <= RYD_BULK_BODY_BYTES &&
+    rydBodyBytes(body(rows)) <= maxBytes &&
     (fits?.(rows) ?? true);
   for (const item of items) {
     if (group.length && !allowed([...group, item])) {
@@ -61,6 +78,16 @@ function boundedGroups<T>(
   }
   if (group.length) groups.push(group);
   return groups;
+}
+
+/** Cards and suggested evidence need a larger envelope than stage changes. */
+export function rydDecisionGroups(decisions: RydBulkDecision[]) {
+  return boundedGroups(
+    decisions,
+    (group) => ({ decisions: group }),
+    undefined,
+    RYD_DECISION_BODY_BYTES,
+  );
 }
 
 export function rydProductionGroups(

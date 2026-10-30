@@ -16,6 +16,7 @@ export {
   rydCardBatchSchema,
   rydReminderSchema,
   rydDecisionSchema,
+  rydBulkDecisionSchema,
   rydLinkSchema,
   rydLinkCreateSchema,
   rydSettingsSchema,

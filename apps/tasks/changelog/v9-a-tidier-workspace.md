@@ -147,6 +147,10 @@ Select orders to verify, request more information, or reject them together.
 Confirm before saving; orders already with fulfillment stay protected, and
 failed decisions stay selected for another try.
 
+Bulk verification now shares a form read across each group of orders, so large
+selections save faster. Unfinished cards and refused decisions stay selected,
+and orders already with fulfillment stay protected.
+
 ### Remember the weekly RY-D upload
 
 RY-D can email the verification team to check for fulfillment's next order
