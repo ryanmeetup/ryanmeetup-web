@@ -10,10 +10,10 @@ import { moveRydProduction } from "@/lib/server/ryd-bulk";
  * same operation returns its receipt and the current canonical order state.
  */
 export async function POST(request: Request) {
-  const parsed = await readJson(request, rydProductionSchema);
-  if ("response" in parsed) return parsed.response;
   const context = await rydContext();
   if ("response" in context) return context.response;
+  const parsed = await readJson(request, rydProductionSchema);
+  if ("response" in parsed) return parsed.response;
   try {
     return NextResponse.json(
       await moveRydProduction(

@@ -11,10 +11,10 @@ import { rydMutationFailure } from "@/lib/server/ryd-mutations";
  * A retry with the same operation returns the same batch.
  */
 export async function POST(request: Request) {
-  const parsed = await readJson(request, rydCardBatchSchema);
-  if ("response" in parsed) return parsed.response;
   const context = await rydContext();
   if ("response" in context) return context.response;
+  const parsed = await readJson(request, rydCardBatchSchema);
+  if ("response" in parsed) return parsed.response;
   try {
     return NextResponse.json(
       await createRydCardBatch(

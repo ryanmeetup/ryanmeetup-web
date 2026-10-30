@@ -9,10 +9,10 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ orderId: string }> },
 ) {
-  const parsed = await readJson(request, rydDecisionSchema);
-  if ("response" in parsed) return parsed.response;
   const context = await rydContext();
   if ("response" in context) return context.response;
+  const parsed = await readJson(request, rydDecisionSchema);
+  if ("response" in parsed) return parsed.response;
   const { orderId } = await params;
   const { submissionKeys = [], ...patch } = parsed.data;
   try {

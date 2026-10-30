@@ -10,10 +10,10 @@ import { rydMutationFailure } from "@/lib/server/ryd-mutations";
  * mail app. Reusing an operation ID cannot record the attempt twice.
  */
 export async function POST(request: Request) {
-  const parsed = await readJson(request, rydEmailsSchema);
-  if ("response" in parsed) return parsed.response;
   const context = await rydContext();
   if ("response" in context) return context.response;
+  const parsed = await readJson(request, rydEmailsSchema);
+  if ("response" in parsed) return parsed.response;
 
   try {
     return NextResponse.json(

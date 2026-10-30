@@ -8,10 +8,10 @@ import {
 } from "@/lib/server/ryd-mutations";
 
 async function change(request: Request, action: "dismiss" | "restore") {
-  const parsed = await readJson(request, rydLinkSchema);
-  if ("response" in parsed) return parsed.response;
   const context = await rydContext();
   if ("response" in context) return context.response;
+  const parsed = await readJson(request, rydLinkSchema);
+  if ("response" in parsed) return parsed.response;
   try {
     return NextResponse.json(
       await changeRydSubmission(

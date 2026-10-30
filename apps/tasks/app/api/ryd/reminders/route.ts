@@ -6,10 +6,10 @@ import { rydMutationFailure } from "@/lib/server/ryd-mutations";
 
 /** Record one explicitly confirmed draft, with its audit and retry receipt. */
 export async function POST(request: Request) {
-  const parsed = await readJson(request, rydReminderSchema);
-  if ("response" in parsed) return parsed.response;
   const context = await rydContext();
   if ("response" in context) return context.response;
+  const parsed = await readJson(request, rydReminderSchema);
+  if ("response" in parsed) return parsed.response;
   try {
     const result = await context.admin.rpc("ryd_record_reminders", {
       requested_actor: context.user.id,

@@ -9,10 +9,10 @@ import { rydSettingsFrom, rydContext } from "@/lib/server/ryd";
  * everyone is reminded to upload fulfillment's orders.
  */
 export async function PATCH(request: Request) {
-  const parsed = await readJson(request, rydSettingsSchema);
-  if ("response" in parsed) return parsed.response;
   const context = await rydContext({ settings: true });
   if ("response" in context) return context.response;
+  const parsed = await readJson(request, rydSettingsSchema);
+  if ("response" in parsed) return parsed.response;
 
   const row: Record<string, unknown> = {
     id: true,

@@ -16,7 +16,6 @@ vi.mock("@/lib/server/ryd-google", () => ({
   loadRydGoogleIntegration,
   readRydSubmissions,
   fetchRydEvidence,
-  markRydSubmissionsVerified: vi.fn(),
 }));
 
 /** A query builder that answers every chain with the same result. */
@@ -86,7 +85,7 @@ describe("RY-D routes", () => {
     authorize.mockReset().mockResolvedValue(member);
     canViewSettings.mockReset().mockResolvedValue({ data: true, error: null });
     getInstanceSettings.mockReset().mockResolvedValue({ rydEnabled: true });
-    getAdminClient.mockReset();
+    getAdminClient.mockReset().mockReturnValue(admin({}));
     loadRydGoogleIntegration
       .mockReset()
       .mockResolvedValue({ account_email: "form@example.com" });
@@ -108,6 +107,59 @@ describe("RY-D routes", () => {
     expect(response.status).toBe(404);
     expect(authorize).not.toHaveBeenCalled();
   });
+
+  const mutations = [
+    ["batches", "POST", () => import("@/app/api/ryd/batches/route").then((route) => route.POST)],
+    ["cards", "POST", () => import("@/app/api/ryd/cards/route").then((route) => route.POST)],
+    ["dismissals", "POST", () => import("@/app/api/ryd/dismissals/route").then((route) => route.POST)],
+    ["dismissals", "DELETE", () => import("@/app/api/ryd/dismissals/route").then((route) => route.DELETE)],
+    ["production", "POST", () => import("@/app/api/ryd/production/route").then((route) => route.POST)],
+    ["reminders", "POST", () => import("@/app/api/ryd/reminders/route").then((route) => route.POST)],
+    ["settings", "PATCH", () => import("@/app/api/ryd/settings/route").then((route) => route.PATCH)],
+    ["submitter-contacts", "POST", () => import("@/app/api/ryd/submitter-contacts/route").then((route) => route.POST)],
+    ["orders/[orderId]", "PATCH", () => import("@/app/api/ryd/orders/[orderId]/route").then((route) => route.PATCH)],
+  ] as const;
+
+  it.each(mutations)(
+    "%s %s checks the instance before reading a malformed body",
+    async (path, method, load) => {
+      getInstanceSettings.mockResolvedValue({ rydEnabled: false });
+      const handle = await load();
+      const request = new Request(`http://localhost/api/ryd/${path}`, {
+        ...json(null, method),
+        body: "{",
+      });
+      const response = await handle(request, {
+        params: Promise.resolve({ orderId: "1001" }),
+      });
+
+      expect(response.status).toBe(404);
+      expect(request.bodyUsed).toBe(false);
+      expect(authorize).not.toHaveBeenCalled();
+      expect(getAdminClient).not.toHaveBeenCalled();
+      expect(rpc).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(mutations)(
+    "%s %s checks page access before reading a malformed body",
+    async (path, method, load) => {
+      authorize.mockResolvedValue({ response: new Response(null, { status: 403 }) });
+      const handle = await load();
+      const request = new Request(`http://localhost/api/ryd/${path}`, {
+        ...json(null, method),
+        body: "{",
+      });
+      const response = await handle(request, {
+        params: Promise.resolve({ orderId: "1001" }),
+      });
+
+      expect(response.status).toBe(403);
+      expect(request.bodyUsed).toBe(false);
+      expect(getAdminClient).not.toHaveBeenCalled();
+      expect(rpc).not.toHaveBeenCalled();
+    },
+  );
 
   it("requires RY-D page access for both the queue and settings", async () => {
     authorize.mockResolvedValue({
@@ -240,7 +292,8 @@ describe("RY-D routes", () => {
     );
 
     expect(response.status).toBe(400);
-    expect(authorize).not.toHaveBeenCalled();
+    expect(authorize).toHaveBeenCalledWith({ onboarded: true, area: "ryd" });
+    expect(rpc).not.toHaveBeenCalled();
   });
 
   it("validates every suggested response before dispatching one review transaction", async () => {

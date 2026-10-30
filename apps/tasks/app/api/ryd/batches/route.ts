@@ -7,12 +7,12 @@ import { rydMutationFailure } from "@/lib/server/ryd-mutations";
 import { RYD_FULFILLMENT_BODY_BYTES } from "@/lib/ryd/fulfillment";
 
 export async function POST(request: Request) {
+  const context = await rydContext();
+  if ("response" in context) return context.response;
   const parsed = await readJson(request, rydBatchSchema, {
     maxBytes: RYD_FULFILLMENT_BODY_BYTES,
   });
   if ("response" in parsed) return parsed.response;
-  const context = await rydContext();
-  if ("response" in context) return context.response;
   try {
     return NextResponse.json(
       await generateRydFulfillment(

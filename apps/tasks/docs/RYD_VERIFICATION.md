@@ -12,6 +12,8 @@ instance switch supports Ryan Meetup environments; it does not make this a
 generic feature for other workspaces. It is **off by default**, turned on from
 **/admin/settings → Features**. With it off the page, its sidebar entry, its
 Access setting, and every `/api/ryd` route answer as if they don't exist.
+Mutation routes check this switch and page access before reading the body, so
+even a malformed request returns 404 when RY-D is off.
 
 ## Setting it up on an instance
 
