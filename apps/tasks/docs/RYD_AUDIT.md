@@ -1,6 +1,6 @@
 # RY-D code audit
 
-Status: in progress (5 of 12 items completed). Audited 2026-10-30, after the
+Status: in progress (6 of 12 items implemented; PRD application for item 1 pending). Audited 2026-10-30, after the
 full-export import and the 10 MB upload limit landed (`e1c1d082`, `544b8982`, `eaaa9156`). Tick each item as it
 lands and note its commit.
 
@@ -23,7 +23,8 @@ Line numbers are as of the audit and will drift.
 
 ### 1. Bulk Verify reads the whole Google Form once per order
 
-- [ ] Done
+- [x] Done — `7492eb37`; RMT migration applied and verified. PRD SQL supplied;
+  dashboard application remains pending.
 
 `decideSelected` in `components/ryd/RydPageClient.tsx:560` sends one PATCH per
 order, one after another. For any order verified from a suggestion,
@@ -258,3 +259,42 @@ Validation for this pass:
 
 Existing staged and uncommitted work was preserved, including the public-site
 RY-D route rename and buyer verification URL updates.
+
+## Bulk verification pass — 2026-10-30
+
+`7492eb37` adds bounded `/api/ryd/decisions` requests and the private
+`ryd_review_orders` transaction. A group contains up to 100 orders within a
+512 KiB body. Its suggested response keys share one fresh form read; canonical
+single-order reviews still own card, revision, provenance, and audit rules.
+Authored refusals roll back only their order, while unexpected database errors
+roll back the entire group. Failed orders and unfinished cards stay selected.
+No fulfillment handoff behavior changes.
+
+Database rollout:
+
+- Migration `20261115000000_ryd_bulk_reviews.sql` applied from empty with
+  `supabase db reset --local`. The linked schema diff contained only the new
+  bulk function and the extended contract health definition.
+- RMT: committed migration pushed with `supabase db push`; remote and local
+  history both record `20261115000000`, with every version aligned. The real
+  database contract preflight and production build passed afterward.
+- PRD: apply the complete block in
+  [the PRD SQL handoff](PRD_RYD_BULK_REVIEWS_SQL.md) through its dashboard SQL
+  Editor, then run that document's verification query. Keep RY-D disabled.
+  Dashboard application has not been performed by the agent.
+
+Validation:
+
+- Unit and route tests: 1,081 passed across 139 files, including 77 suggested
+  orders sharing one fresh Google read and one RPC.
+- RY-D Playwright: 46 passed across desktop/dark and mobile/light, including
+  partial refusal selection and unfinished cards.
+- Local transaction tests and races passed, including reversed overlapping bulk
+  groups. The final bulk-review and database-contract checks passed all 59
+  assertions.
+- TypeScript, ESLint on changed source/test files, production build, and
+  `git diff --check` passed.
+
+Application code has not been pushed or deployed. Existing staged and
+uncommitted work remains untouched. Items 6, 8, 10, and 11 remain open;
+item 5 and its related item 12 stay deferred at Ryan's request.
