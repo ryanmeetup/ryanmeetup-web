@@ -31,7 +31,9 @@ even a malformed request returns 404 when RY-D is off.
    An existing connection keeps working without the old `spreadsheets` scope.
    After deploying this change, disconnect and reconnect RY-D Google once to
    revoke the previous grant and authorize only the scopes still needed.
-3. Turn on **RY-D Verification** in /admin/settings → Features.
+3. Turn on **RY-D Verification** in /admin/settings → Features. Saving is
+   refused until the database passes `ryd_contract_health()`, so apply step 1
+   first.
 4. On /ryd → Settings, connect Google **as the account that owns the form**,
    paste the form's **editor** link (`docs.google.com/forms/d/<id>/edit`, not
    the public `/forms/d/e/…` one), and enter fulfillment's email so their

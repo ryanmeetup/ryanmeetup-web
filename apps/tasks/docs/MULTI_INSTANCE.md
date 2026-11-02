@@ -300,8 +300,10 @@ Schema alignment and feature availability are separate checks. The normal
 deployment preflight calls `ryd_contract_health()` only when `ryd_enabled` is
 true. With it false or null, PRD can deploy without the RY-D tables or RPCs;
 calling that diagnostic manually may still report missing optional schema.
-That result is not a PRD deployment blocker. Keep RY-D off on PRD and do not
-connect its Google account or populate its customer tables.
+That result is not a PRD deployment blocker. Turning RY-D on is the other
+door, so /admin/settings refuses it with a 409 until `ryd_contract_health()`
+passes; the RY-D code has no fallback for missing tables. Keep RY-D off on PRD
+and do not connect its Google account or populate its customer tables.
 
 The repository still tracks one migration chain for both databases. Pending
 RY-D-only schema updates are maintenance catch-up for parity, rather than

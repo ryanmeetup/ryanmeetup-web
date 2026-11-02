@@ -27,6 +27,21 @@ export async function PATCH(request: Request) {
   const context = await privilegedContext({ owner: true });
   if ("response" in context) return context.response;
 
+  // The deploy preflight only checks the RY-D contract while RY-D is on, so
+  // turning it on here is the other door. Refuse it on a database without
+  // the RY-D tables, which the page has no fallback for.
+  if (parsed.data.rydEnabled === true) {
+    const { data: health, error } = await context.admin.rpc(
+      "ryd_contract_health",
+    );
+    if (error || health?.contractOk !== true)
+      return apiError(
+        409,
+        "CONFLICT",
+        "RY-D can't be turned on until this instance's database has every RY-D migration applied.",
+      );
+  }
+
   const row: InstanceSettingsRow = {};
   for (const [key, value] of Object.entries(parsed.data)) {
     row[instanceSettingsColumn(key as keyof InstanceSettings)] = value;
