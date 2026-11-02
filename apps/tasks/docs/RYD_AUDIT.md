@@ -1,6 +1,6 @@
 # RY-D code audit
 
-Status: in progress (6 of 12 items implemented; PRD application for item 1 pending). Audited 2026-10-30, after the
+Status: in progress (9 of 12 items implemented; PRD application for items 1 and 8 pending; item 11 open; items 5 and 12 deferred). Audited 2026-10-30, after the
 full-export import and the 10 MB upload limit landed (`e1c1d082`, `544b8982`, `eaaa9156`). Tick each item as it
 lands and note its commit.
 
@@ -114,7 +114,7 @@ Options:
 
 ### 6. The queue reloads every verified order ever, with raw rows
 
-- [ ] Done
+- [x] Done — `3bc53bc7`. Ryan chose a "Show older" control.
 
 `loadRydQueue` (`lib/server/ryd.ts:279`) selects `*`, raw CSV row included,
 for everything open plus every verified order, done or not. With the full
@@ -140,7 +140,9 @@ queries and both fields from `lib/ryd/queue-types.ts`.
 
 ### 8. Summary-imported orders never pick up card details
 
-- [ ] Done
+- [x] Done — `e765efb2`; RMT migration applied and verified. PRD SQL in
+  [PRD_RYD_IMPORT_CARD_DETAILS_SQL.md](PRD_RYD_IMPORT_CARD_DETAILS_SQL.md);
+  dashboard application pending.
 
 `ryd_import_orders` inserts with `on conflict (order_id) do nothing`. An order
 first imported from the order summary (no `Options Detail`) keeps a
@@ -177,7 +179,10 @@ change; it isn't needed for this item.
 
 ### 10. Remove fallbacks for migrations that are now guaranteed
 
-- [ ] Done
+- [x] Done — `68ae83bd`, `c95405ad`. The premise was incomplete: the preflight
+  only checks the contract while RY-D is on, and RY-D can be switched on at
+  runtime. `68ae83bd` makes /admin/settings refuse to enable RY-D until
+  `ryd_contract_health()` passes, and `c95405ad` then removes the fallbacks.
 
 `ryd_contract_health` (latest in
 `supabase/migrations/20261114000000_ryd_settings_workspace_wide_only.sql`) now
@@ -298,3 +303,31 @@ Validation:
 Application code has not been pushed or deployed. Existing staged and
 uncommitted work remains untouched. Items 6, 8, 10, and 11 remain open;
 item 5 and its related item 12 stay deferred at Ryan's request.
+
+## Second pass — 2026-11-02
+
+- `17af6784`: PRD reported 27 card-contract failures after the bulk-review
+  block. The idempotent repair migration `20261116000000` is applied to RMT;
+  PRD gets [PRD_RYD_CARD_CONTRACT_REPAIR_SQL.md](PRD_RYD_CARD_CONTRACT_REPAIR_SQL.md).
+- `68ae83bd`, `c95405ad` (item 10): enabling RY-D checks the contract; the
+  queue, contacts, dismissals, and card batches no longer tolerate missing
+  tables, `installed` and its notice are gone, and `RydOrderRow` types
+  `updated_at` and every card and production column. The upload reminder and
+  MCP read keep their missing-table fallbacks: both run outside the page gate.
+- `3bc53bc7` (item 6): the queue selects named columns and leaves orders done
+  more than `RYD_DONE_WINDOW_DAYS` (30) ago out, counting them instead.
+  **Show older** loads them through `GET /api/ryd?done=all` and keeps them for
+  the rest of the visit.
+- `e765efb2` (item 8): migration `20261117000000` fills `Options Detail` into
+  existing orders with no saved card and no detail; the upload toast counts
+  them. Applied to RMT; PRD gets
+  [PRD_RYD_IMPORT_CARD_DETAILS_SQL.md](PRD_RYD_IMPORT_CARD_DETAILS_SQL.md),
+  after the card-contract repair.
+
+Validation: 1,090 unit and route tests; 48 RY-D Playwright checks across
+desktop/dark and mobile/light; TypeScript; ESLint on changed files;
+`git diff --check`; production build with the RMT contract preflight;
+`supabase db reset --local`; the linked diff for
+`20261117000000` changed only `ryd_import_orders`; the merge was exercised on
+the local database in a rolled-back transaction; both PRD blocks rerun cleanly
+locally. Item 11 remains open.
