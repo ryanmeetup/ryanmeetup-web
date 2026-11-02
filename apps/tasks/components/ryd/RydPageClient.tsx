@@ -725,7 +725,6 @@ export function RydPageClient({
                 className="w-full 2xl:w-auto"
                 leftIcon={<FiUpload aria-hidden />}
                 onClick={() => setDialog("upload")}
-                disabled={!queue.installed}
               >
                 Upload orders
               </Button>
@@ -737,7 +736,6 @@ export function RydPageClient({
                   className="w-full 2xl:w-auto"
                   leftIcon={<FiSettings aria-hidden />}
                   onClick={() => setDialog("settings")}
-                  disabled={!queue.installed}
                 >
                   Settings
                 </Button>
@@ -776,14 +774,7 @@ export function RydPageClient({
                 </ErrorCallout>
               )}
             </div>
-            {!queue.installed && (
-              <p className="flex items-start gap-2 rounded-2xl border border-black/10 p-4 text-sm dark:border-white/10">
-                <FiAlertTriangle aria-hidden className="mt-0.5 shrink-0" />
-                This database doesn&apos;t have the RY-D tables yet. Apply the
-                pending migration, then reload.
-              </p>
-            )}
-            {queue.installed && sheetNotice && (
+            {sheetNotice && (
               <div
                 role="status"
                 className="flex flex-col gap-3 rounded-2xl border border-black/10 p-4 text-sm sm:flex-row sm:items-center sm:justify-between dark:border-white/10"
@@ -806,7 +797,7 @@ export function RydPageClient({
               </div>
             )}
 
-            {queue.installed && queue.uploadDueSince && (
+            {queue.uploadDueSince && (
               <RydUploadDueNotice
                 since={queue.uploadDueSince}
                 timeZone={queue.timeZone}

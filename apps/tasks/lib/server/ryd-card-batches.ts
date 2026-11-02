@@ -8,7 +8,6 @@ import {
   type RydCardBatchRow,
 } from "@/lib/ryd/card-export";
 import { readRydRows } from "./ryd-queries";
-import { isMissingRelation } from "./supabase-errors";
 
 /** How many past batches the page lists. */
 const LISTED_BATCHES = 20;
@@ -30,7 +29,7 @@ export async function createRydCardBatch(
   return result.data;
 }
 
-/** The latest batches, newest first; none before the batch migration. */
+/** The latest batches, newest first. */
 export async function listRydCardBatches(
   admin: SupabaseClient,
 ): Promise<RydCardBatch[]> {
@@ -40,10 +39,7 @@ export async function listRydCardBatches(
     .order("created_at", { ascending: false })
     .order("id")
     .limit(LISTED_BATCHES);
-  if (result.error) {
-    if (isMissingRelation(result.error.code)) return [];
-    throw result.error;
-  }
+  if (result.error) throw result.error;
   return (result.data ?? []).map((row) => {
     const profile = row.profiles as unknown as { full_name?: string } | null;
     return {

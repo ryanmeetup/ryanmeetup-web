@@ -61,7 +61,6 @@ function queue() {
     uploadDueSince: null,
     sheet: { status: "ok", accountEmail: "synthetic@example.com" },
     cardBatches: [],
-    installed: true,
   } as RydQueue);
 }
 

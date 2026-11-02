@@ -72,6 +72,4 @@ export type RydQueue = {
   timeZone: string;
   /** The reminder slot this week's file is overdue since, if not uploaded. */
   uploadDueSince: string | null;
-  /** False until the migration that creates the RY-D tables is applied. */
-  installed: boolean;
 };

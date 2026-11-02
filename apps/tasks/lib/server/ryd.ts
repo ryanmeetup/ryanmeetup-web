@@ -11,7 +11,6 @@ import {
   rydUploadDueSince,
   rydUploadReminderFrom,
 } from "@/lib/ryd/upload-reminder";
-import { digestDefaults } from "@/lib/digest/digest-settings";
 import { withRydQueueMatches } from "@/lib/ryd/queue-reconciliation";
 import { rydCardDraft, savedRydCard } from "@/lib/ryd/card";
 import { rydOrderCell, type RydOrderStatus } from "@/lib/ryd/orders";
@@ -26,7 +25,6 @@ import {
   type RydGoogleReadOptions,
   type RydGoogleIntegrationRow,
 } from "./ryd-google";
-import { isMissingRelation } from "./supabase-errors";
 import { readRydLinks, readRydRows } from "./ryd-queries";
 import { listRydCardBatches } from "./ryd-card-batches";
 
@@ -45,9 +43,7 @@ export type RydContext = {
  */
 export async function rydContext({
   settings = false,
-}: { settings?: boolean } = {}): Promise<
-  RydContext | { response: Response }
-> {
+}: { settings?: boolean } = {}): Promise<RydContext | { response: Response }> {
   if (!(await getInstanceSettings()).rydEnabled)
     return { response: notFound() };
   const authorization = await authorize({
@@ -89,15 +85,15 @@ export type RydOrderRow = {
   decided_by: string | null;
   cleared_batch_id: string | null;
   last_emailed_at: string | null;
-  /** Absent until the production migration is applied. */
-  production_sent_at?: string | null;
-  done_at?: string | null;
-  /** Absent until the card migration is applied; NULL until a card is saved. */
-  card_first_name?: string | null;
-  card_last_name?: string | null;
-  card_location?: string | null;
-  card_ryan_since?: string | null;
+  production_sent_at: string | null;
+  done_at: string | null;
+  /** NULL until a card is saved. */
+  card_first_name: string | null;
+  card_last_name: string | null;
+  card_location: string | null;
+  card_ryan_since: string | null;
   created_at: string;
+  updated_at: string;
 };
 
 /** The card an order shows: what was saved, else the export's draft. */
@@ -184,10 +180,7 @@ async function loadSheet(
   }
 }
 
-/**
- * Keys of the responses someone set aside. Until the migration that adds the
- * table is applied, nothing is.
- */
+/** Keys of the responses someone set aside. */
 async function loadDismissedKeys(admin: SupabaseClient) {
   const result = await readRydRows((from, to) =>
     admin
@@ -196,17 +189,11 @@ async function loadDismissedKeys(admin: SupabaseClient) {
       .order("submission_key")
       .range(from, to),
   );
-  if (result.error) {
-    if (isMissingRelation(result.error.code)) return new Set<string>();
-    throw result.error;
-  }
+  if (result.error) throw result.error;
   return new Set((result.data ?? []).map((row) => row.submission_key));
 }
 
-/**
- * Contact attempts per submitter email, folded from one row per attempt.
- * Until the migration that adds the table is applied, nobody has any.
- */
+/** Contact attempts per submitter email, folded from one row per attempt. */
 async function loadSubmitterContacts(admin: SupabaseClient) {
   const result = await readRydRows((from, to) =>
     admin
@@ -215,10 +202,7 @@ async function loadSubmitterContacts(admin: SupabaseClient) {
       .order("id")
       .range(from, to),
   );
-  if (result.error) {
-    if (isMissingRelation(result.error.code)) return {};
-    throw result.error;
-  }
+  if (result.error) throw result.error;
   const contacts: RydQueue["contacts"] = {};
   for (const row of (result.data ?? []) as {
     email: string;
@@ -235,23 +219,6 @@ async function loadSubmitterContacts(admin: SupabaseClient) {
   }
   return contacts;
 }
-
-const emptyQueue = (installed: boolean): RydQueue => ({
-  orders: [],
-  submissions: [],
-  dismissed: [],
-  contacts: {},
-  sheet: { status: "disconnected" },
-  settings: {
-    formId: null,
-    fulfillmentEmail: null,
-    uploadReminder: rydUploadReminderFrom(null),
-  },
-  cardBatches: [],
-  timeZone: digestDefaults.timeZone,
-  uploadDueSince: null,
-  installed,
-});
 
 /**
  * Everything still open, every verified order (sent to fulfillment or not, so
@@ -280,14 +247,8 @@ export async function loadRydQueue(
       .limit(1)
       .maybeSingle(),
   ]);
-  const failure =
-    ordersResult.error ??
-    linksResult.error ??
-    importResult.error;
-  if (failure) {
-    if (isMissingRelation(failure.code)) return emptyQueue(false);
-    throw failure;
-  }
+  const failure = ordersResult.error ?? linksResult.error ?? importResult.error;
+  if (failure) throw failure;
   const [settings, integration, dismissedKeys, contacts, digest, cardBatches] =
     await Promise.all([
       loadRydSettings(admin),
@@ -341,11 +302,11 @@ export async function loadRydQueue(
       note: row.note,
       decidedAt: row.decided_at,
       decidedBy: row.decided_by,
-      updatedAt: (row as RydOrderRow & { updated_at?: string }).updated_at,
+      updatedAt: row.updated_at,
       lastEmailedAt: row.last_emailed_at,
       sentToFulfillment: Boolean(row.cleared_batch_id),
-      productionSentAt: row.production_sent_at ?? null,
-      doneAt: row.done_at ?? null,
+      productionSentAt: row.production_sent_at,
+      doneAt: row.done_at,
       linkedKeys: linkedByOrder.get(row.order_id) ?? [],
       suggestion: null,
     })),
@@ -362,6 +323,5 @@ export async function loadRydQueue(
       importResult.data?.uploaded_at ?? null,
       new Date(),
     ),
-    installed: true,
   });
 }
