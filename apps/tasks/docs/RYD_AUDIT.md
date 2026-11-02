@@ -42,23 +42,7 @@ Options:
 - **Keep the email, attach the card file.** The draft lists the approved card
   names, and nothing is read from Google to write it.
 
-## Refactors
-
-### 11. Split `RydPageClient.tsx`
-
-- [ ] Done
-
-It holds every view's toolbar and all bulk actions in one component. Follow
-the shape `RydUnmatchedView` already has:
-
-- one component per view: Queue, Follow-up, Verified/production;
-- a `useRydSelectionActions` hook owning decide, contact, cancel, and move,
-  plus their dialog state;
-- small cleanups along the way, e.g. `contacting = contactOperation ? "*" :
-  null` and the `Dialog` union.
-
-No behavior change. The RY-D Playwright suite (`npm run test:e2e:ryd`) is the
-safety net.
+## Improvements
 
 ### 12. Fulfillment email generation reads every link
 
