@@ -7,6 +7,9 @@ export async function GET(request?: Request) {
   if ("response" in context) return context.response;
   return NextResponse.json(
     await loadRydQueue(context.admin, {
+      olderDone:
+        request != null &&
+        new URL(request.url).searchParams.get("done") === "all",
       signal: request?.signal,
       fresh: request?.headers.get("cache-control")?.includes("no-cache"),
     }),

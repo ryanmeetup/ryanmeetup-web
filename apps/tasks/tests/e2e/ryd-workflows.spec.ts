@@ -604,6 +604,35 @@ test("generates the linked Ryan recipient and rerolls a fresh gift email", async
   expect((await state(request)).snapshot).toBeNull();
 });
 
+test("tucks away long-done orders until someone asks for them", async ({ page, request }) => {
+  await reset(request);
+  await signIn(page);
+  const imported = await page.request.post("/api/ryd/imports", {
+    multipart: {
+      operationId: "00000000-0000-4000-8000-000000000831",
+      file: { name: "older-done.csv", mimeType: "text/csv", buffer: Buffer.from(csv) },
+    },
+  });
+  expect(imported.ok()).toBeTruthy();
+  await verifyOrders(page, ["801"]);
+  expect((await page.request.post("/api/ryd/production", {
+    data: {
+      operationId: "00000000-0000-4000-8000-000000000832",
+      moves: [{ orderId: "801", from: "not-started", to: "done" }],
+    },
+  })).ok()).toBeTruthy();
+  await request.post(`${fixtureOrigin}/__ryd/age-done`, { data: { orderId: "801" } });
+
+  await page.goto("/ryd?status=verified&production=done");
+  await expect(page.getByText(/Done counts cover the last 30 days\. .*older orders? (is|are) finished/)).toBeVisible();
+  const showOlder = page.getByRole("button", { name: "Show older", exact: true });
+  const loaded = page.waitForResponse((response) => response.url().endsWith("/api/ryd?done=all"));
+  await showOlder.click();
+  expect((await loaded).ok()).toBeTruthy();
+  await expect(showOlder).toBeHidden();
+  await expect(page.getByText(/Done counts cover the last 30 days/)).toBeHidden();
+});
+
 test("sorts the production column by stage and sent date", async ({ page, request }, testInfo) => {
   await reset(request);
   await signIn(page);

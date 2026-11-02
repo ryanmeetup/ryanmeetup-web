@@ -72,4 +72,12 @@ export type RydQueue = {
   timeZone: string;
   /** The reminder slot this week's file is overdue since, if not uploaded. */
   uploadDueSince: string | null;
+  /**
+   * Orders marked done before this were left out, and how many there are.
+   * Null when the queue includes every done order.
+   */
+  olderDone: { before: string; count: number } | null;
 };
+
+/** How long a done order stays in the live queue before "Show older". */
+export const RYD_DONE_WINDOW_DAYS = 30;

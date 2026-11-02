@@ -180,6 +180,10 @@ Refresh picks up new form responses without leaving the queue. Confirmed reviews
 
 Both submission layouts now offer complete response details, including every upload and answer. Shared uploads appear once, people stay together across pages, and search finds names, emails, and form answers. Bulk selections follow the filtered people across pages.
 
+### Finished RY-D orders step aside
+
+Orders marked done more than 30 days ago no longer load with the queue, so it stays quick as the weeks pile up. The Done filter says how many are tucked away, and Show older brings them back.
+
 ### Faster RY-D evidence loading
 
 Evidence thumbnails share brief form reads, so opening several uploads no longer reloads every form answer for each file. Google requests time out and stop when their readers cancel, while each file still requires current RY-D access.

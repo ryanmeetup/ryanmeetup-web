@@ -15,20 +15,30 @@ export function useRydQueueController(initialQueue: RydQueue) {
     pending: false,
     error: null,
   });
-  const [reloads] = useState(() =>
-    createRydQueueRefresh(
-      async (signal) => {
-        const response = await fetch("/api/ryd", {
-          cache: "no-store",
-          signal,
-          headers: { "cache-control": "no-cache" },
-        });
-        return parseMutationResponse<RydQueue>(response);
+  const [reloads] = useState(() => {
+    // Once someone asks for older done orders, later reloads keep them.
+    const scope = { olderDone: false };
+    return {
+      includeOlderDone: (value: boolean) => {
+        scope.olderDone = value;
       },
-      setQueue,
-      setRefreshState,
-    ),
-  );
+      ...createRydQueueRefresh(
+        async (signal) => {
+          const response = await fetch(
+            scope.olderDone ? "/api/ryd?done=all" : "/api/ryd",
+            {
+              cache: "no-store",
+              signal,
+              headers: { "cache-control": "no-cache" },
+            },
+          );
+          return parseMutationResponse<RydQueue>(response);
+        },
+        setQueue,
+        setRefreshState,
+      ),
+    };
+  });
   useEffect(() => () => reloads.invalidate(), [reloads]);
   const reconcile = useCallback(
     (apply: (current: RydQueue) => RydQueue) => {
@@ -37,5 +47,20 @@ export function useRydQueueController(initialQueue: RydQueue) {
     },
     [reloads],
   );
-  return { queue, refresh: reloads.refresh, refreshState, reconcile };
+  const showOlderDone = useCallback(async () => {
+    reloads.includeOlderDone(true);
+    try {
+      await reloads.refresh();
+    } catch (error) {
+      reloads.includeOlderDone(false);
+      throw error;
+    }
+  }, [reloads]);
+  return {
+    queue,
+    refresh: reloads.refresh,
+    refreshState,
+    reconcile,
+    showOlderDone,
+  };
 }

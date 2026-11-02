@@ -11,7 +11,11 @@ vi.mock("@/lib/server/ryd-google", () => ({
 type Row = Record<string, unknown>;
 
 /** Exercise the real PostgREST query builder against a capped, synthetic API. */
-function database(tables: Record<string, Row[]>, failAt?: number, requests: URL[] = []) {
+function database(
+  tables: Record<string, Row[]>,
+  failAt?: number,
+  requests: URL[] = [],
+) {
   const fetcher = vi.fn(
     async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = new URL(String(input));
@@ -73,8 +77,9 @@ describe("RY-D complete collection reads", () => {
 
   it("rejects a successful response that omits its required rows", async () => {
     const { readRydRows } = await import("@/lib/server/ryd-queries");
-    await expect(readRydRows(async () => ({ data: null, error: null })))
-      .rejects.toThrow("returned no data");
+    await expect(
+      readRydRows(async () => ({ data: null, error: null })),
+    ).rejects.toThrow("returned no data");
   });
 
   it("ignores historical saved drafts while loading the manual queue", async () => {
@@ -95,13 +100,63 @@ describe("RY-D complete collection reads", () => {
   it("does not load unused cleared counts or legacy fulfillment batches", async () => {
     const { loadRydQueue } = await import("@/lib/server/ryd");
     const requests: URL[] = [];
-    const queue = await loadRydQueue(database({ ryd_orders: orders(2) }, undefined, requests));
+    const queue = await loadRydQueue(
+      database({ ryd_orders: orders(2) }, undefined, requests),
+    );
 
-    expect(requests.some((url) => url.pathname.endsWith("/ryd_fulfillment_batches"))).toBe(false);
-    expect(requests.filter((url) => url.pathname.endsWith("/ryd_orders"))).toHaveLength(1);
+    expect(
+      requests.some((url) => url.pathname.endsWith("/ryd_fulfillment_batches")),
+    ).toBe(false);
+    // The queue read, then the count of older done orders.
+    expect(
+      requests.filter((url) => url.pathname.endsWith("/ryd_orders")),
+    ).toHaveLength(2);
     expect(queue).not.toHaveProperty("clearedCount");
     expect(queue).not.toHaveProperty("lastBatch");
     expect(queue.orders).toHaveLength(2);
+  });
+
+  it("counts orders done before the window instead of loading them", async () => {
+    const { loadRydQueue } = await import("@/lib/server/ryd");
+    const requests: URL[] = [];
+    const queue = await loadRydQueue(
+      database({ ryd_orders: orders(3) }, undefined, requests),
+    );
+
+    const [read, ...rest] = requests.filter((url) =>
+      url.pathname.endsWith("/ryd_orders"),
+    );
+    expect(read.searchParams.getAll("or")).toEqual([
+      "(cleared_batch_id.is.null,status.eq.verified)",
+      `(done_at.is.null,done_at.gte.${queue.olderDone?.before})`,
+    ]);
+    expect(read.searchParams.get("select")).not.toBe("*");
+    expect(rest.map((url) => url.searchParams.get("done_at"))).toEqual([
+      `lt.${queue.olderDone?.before}`,
+    ]);
+    expect(queue.olderDone).toEqual({ before: expect.any(String), count: 3 });
+    expect(
+      Date.now() - Date.parse(queue.olderDone!.before) - 30 * 86_400_000,
+    ).toBeLessThan(60_000);
+  });
+
+  it("loads every done order when asked for older ones", async () => {
+    const { loadRydQueue } = await import("@/lib/server/ryd");
+    const requests: URL[] = [];
+    const queue = await loadRydQueue(
+      database({ ryd_orders: orders(3) }, undefined, requests),
+      { olderDone: true },
+    );
+
+    const reads = requests.filter((url) =>
+      url.pathname.endsWith("/ryd_orders"),
+    );
+    expect(reads).toHaveLength(1);
+    expect(reads[0].searchParams.getAll("or")).toEqual([
+      "(cleared_batch_id.is.null,status.eq.verified)",
+    ]);
+    expect(queue.olderDone).toBeNull();
+    expect(queue.orders).toHaveLength(3);
   });
 
   it("keeps links, removed responses, and contact counts beyond the first page", async () => {

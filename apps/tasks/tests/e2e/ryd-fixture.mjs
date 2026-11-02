@@ -166,6 +166,14 @@ export function createRydFixture(json, readBody, profile) {
       json(response, 200, { ok: true });
       return true;
     }
+    if (path === "/__ryd/age-done") {
+      const { orderId } = await readBody(request);
+      state.orders = state.orders.map((order) => order.order_id === orderId
+        ? { ...order, production_sent_at: "2025-01-01T00:00:00.000Z", done_at: "2025-01-02T00:00:00.000Z" }
+        : order);
+      json(response, 200, { ok: true });
+      return true;
+    }
     if (path === "/__ryd/form-name") {
       state.legalName = (await readBody(request)).legalName;
       json(response, 200, { ok: true });
@@ -543,6 +551,8 @@ export function createRydFixture(json, readBody, profile) {
       for (const [key, value] of url.searchParams)
         if (value.startsWith("eq."))
           rows = rows.filter((row) => String(row[key]) === value.slice(3));
+        else if (value.startsWith("lt."))
+          rows = rows.filter((row) => row[key] != null && row[key] < value.slice(3));
       if (url.searchParams.get("cleared_batch_id") === "not.is.null")
         rows = rows.filter((row) => row.cleared_batch_id);
       if (request.method === "HEAD") {

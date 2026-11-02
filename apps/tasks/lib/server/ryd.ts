@@ -1,10 +1,11 @@
 import "server-only";
 
 import type { SupabaseClient, User } from "@supabase/supabase-js";
-import type {
-  RydQueue,
-  RydSettings,
-  RydSheetState,
+import {
+  RYD_DONE_WINDOW_DAYS,
+  type RydQueue,
+  type RydSettings,
+  type RydSheetState,
 } from "@/lib/ryd/queue-types";
 import { type RydSubmission } from "@/lib/ryd/matching";
 import {
@@ -95,6 +96,30 @@ export type RydOrderRow = {
   created_at: string;
   updated_at: string;
 };
+
+const ORDER_COLUMNS = [
+  "order_id",
+  "sales_order",
+  "ordered_at",
+  "first_name",
+  "last_name",
+  "email",
+  "raw",
+  "status",
+  "note",
+  "decided_at",
+  "decided_by",
+  "cleared_batch_id",
+  "last_emailed_at",
+  "production_sent_at",
+  "done_at",
+  "card_first_name",
+  "card_last_name",
+  "card_location",
+  "card_ryan_since",
+  "created_at",
+  "updated_at",
+].join(", ");
 
 /** The card an order shows: what was saved, else the export's draft. */
 export function rydQueueCard(row: RydOrderRow) {
@@ -223,31 +248,52 @@ async function loadSubmitterContacts(admin: SupabaseClient) {
 /**
  * Everything still open, every verified order (sent to fulfillment or not, so
  * its production can be tracked), the live form responses, and a suggested
- * pairing for every order nobody has paired yet.
+ * pairing for every order nobody has paired yet. Orders marked done more than
+ * `RYD_DONE_WINDOW_DAYS` ago are only counted unless `olderDone` asks for them.
  */
 export async function loadRydQueue(
   admin: SupabaseClient,
-  options: RydGoogleReadOptions = {},
+  {
+    olderDone = false,
+    ...options
+  }: RydGoogleReadOptions & { olderDone?: boolean } = {},
 ): Promise<RydQueue> {
-  const [ordersResult, linksResult, importResult] = await Promise.all([
-    readRydRows((from, to) =>
+  const before = olderDone
+    ? null
+    : new Date(Date.now() - RYD_DONE_WINDOW_DAYS * 86_400_000).toISOString();
+  const [ordersResult, linksResult, importResult, olderResult] =
+    await Promise.all([
+      readRydRows((from, to) => {
+        const query = admin
+          .from("ryd_orders")
+          .select(ORDER_COLUMNS)
+          .or("cleared_batch_id.is.null,status.eq.verified");
+        return (
+          before ? query.or(`done_at.is.null,done_at.gte.${before}`) : query
+        )
+          .order("created_at", { ascending: false })
+          .order("order_id")
+          .range(from, to);
+      }),
+      readRydLinks(admin),
       admin
-        .from("ryd_orders")
-        .select("*")
-        .or("cleared_batch_id.is.null,status.eq.verified")
-        .order("created_at", { ascending: false })
-        .order("order_id")
-        .range(from, to),
-    ),
-    readRydLinks(admin),
-    admin
-      .from("ryd_imports")
-      .select("uploaded_at")
-      .order("uploaded_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-  ]);
-  const failure = ordersResult.error ?? linksResult.error ?? importResult.error;
+        .from("ryd_imports")
+        .select("uploaded_at")
+        .order("uploaded_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      before
+        ? admin
+            .from("ryd_orders")
+            .select("order_id", { count: "exact", head: true })
+            .lt("done_at", before)
+        : null,
+    ]);
+  const failure =
+    ordersResult.error ??
+    linksResult.error ??
+    importResult.error ??
+    olderResult?.error;
   if (failure) throw failure;
   const [settings, integration, dismissedKeys, contacts, digest, cardBatches] =
     await Promise.all([
@@ -279,7 +325,7 @@ export async function loadRydQueue(
     keys.push(link.submission_key);
     linkedByOrder.set(link.order_id, keys);
   }
-  const rows = (ordersResult.data ?? []) as RydOrderRow[];
+  const rows = (ordersResult.data ?? []) as unknown as RydOrderRow[];
 
   return withRydQueueMatches({
     submissionClaims: Object.fromEntries(
@@ -323,5 +369,6 @@ export async function loadRydQueue(
       importResult.data?.uploaded_at ?? null,
       new Date(),
     ),
+    olderDone: before ? { before, count: olderResult?.count ?? 0 } : null,
   });
 }

@@ -30,6 +30,7 @@ function table(result: unknown, calls: unknown[] = []) {
     "order",
     "range",
     "or",
+    "lt",
     "limit",
     "update",
     "insert",
@@ -482,6 +483,20 @@ describe("RY-D routes", () => {
       "f".repeat(30),
       { signal: request.signal, fresh: true },
     );
+  });
+
+  it("loads older done orders only when the queue asks for them", async () => {
+    getAdminClient.mockReturnValue(admin({}));
+    readRydSubmissions.mockResolvedValue({ submissions: [] });
+    const { GET } = await import("@/app/api/ryd/route");
+
+    const recent = await (await GET(new Request("http://localhost/api/ryd"))).json();
+    const all = await (
+      await GET(new Request("http://localhost/api/ryd?done=all"))
+    ).json();
+
+    expect(recent.olderDone).toMatchObject({ before: expect.any(String) });
+    expect(all.olderDone).toBeNull();
   });
 
   it("ends a cancelled evidence request without downloading media", async () => {

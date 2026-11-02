@@ -305,6 +305,12 @@ uses, set in /admin/usage).
    choose **Done** to record `done_at`. Ready orders cannot skip the email
    handoff through these controls.
 
+   The queue loads orders marked done in the last 30 days
+   (`RYD_DONE_WINDOW_DAYS`); older ones are only counted, so the page doesn't
+   reread every finished order on each refresh. **Show older** under the
+   stage filters loads them for the rest of the visit. They stay in the
+   database and in their card batches either way.
+
    **Move back** takes an order one stage backward: Done → Sent to
    fulfillment → Ready to send. Moving back from Done keeps the send date;
    returning an order to Ready to send clears it and makes the order eligible

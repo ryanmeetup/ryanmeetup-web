@@ -1,21 +1,28 @@
-import { FilterChip } from "@ryanmeetup/ui";
+import { Button, FilterChip } from "@ryanmeetup/ui";
 import {
   RYD_FULFILLMENT_LABELS,
   RYD_FULFILLMENT_STAGES,
   type RydFulfillmentStage,
 } from "@/lib/ryd/fulfillment-view";
+import { RYD_DONE_WINDOW_DAYS, type RydQueue } from "@/lib/ryd/queue-types";
 import { RYD_FULFILLMENT_ICONS } from "./RydStatusChip";
 
 export function RydFulfillmentFilters({
   stage,
   counts,
   total,
+  olderDone,
+  loadingOlder,
   onChange,
+  onShowOlder,
 }: {
   stage: RydFulfillmentStage | null;
   counts: Record<RydFulfillmentStage, number>;
   total: number;
+  olderDone: RydQueue["olderDone"];
+  loadingOlder: boolean;
   onChange: (stage: RydFulfillmentStage | null) => void;
+  onShowOlder: () => void;
 }) {
   return (
     <>
@@ -51,6 +58,27 @@ export function RydFulfillmentFilters({
               ? "These orders are finished."
               : "Ready to send → Sent to fulfillment → Done. Move orders between stages manually; generating an email changes nothing."}
       </p>
+      {(!stage || stage === "done") && olderDone && olderDone.count > 0 && (
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-black/70 dark:text-white/70">
+            Done counts cover the last {RYD_DONE_WINDOW_DAYS} days.{" "}
+            {olderDone.count === 1
+              ? "1 older order is"
+              : `${olderDone.count.toLocaleString()} older orders are`}{" "}
+            finished and tucked away.
+          </p>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            className="w-full shrink-0 sm:w-auto"
+            loading={loadingOlder}
+            onClick={onShowOlder}
+          >
+            Show older
+          </Button>
+        </div>
+      )}
     </>
   );
 }

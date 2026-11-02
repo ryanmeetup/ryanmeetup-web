@@ -216,8 +216,9 @@ export function RydPageClient({
 }) {
   const [data, setData] = useState(initialData);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { queue, refresh, refreshState, reconcile } =
+  const { queue, refresh, refreshState, reconcile, showOlderDone } =
     useRydQueueController(initialQueue);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const [dialog, setDialog] = useState<Dialog>(null);
   const [fulfillmentOrderIds, setFulfillmentOrderIds] = useState<
     string[] | null
@@ -1127,9 +1128,17 @@ export function RydPageClient({
                       stage={production}
                       counts={productionCounts}
                       total={counts.verified}
+                      olderDone={queue.olderDone}
+                      loadingOlder={loadingOlder}
                       onChange={(stage) => {
                         setProductionParam(stage ?? "all");
                         setPage(1);
+                      }}
+                      onShowOlder={() => {
+                        setLoadingOlder(true);
+                        showOlderDone()
+                          .catch(() => {})
+                          .finally(() => setLoadingOlder(false));
                       }}
                     />
                     {selectable && sorted.length > 0 && (
