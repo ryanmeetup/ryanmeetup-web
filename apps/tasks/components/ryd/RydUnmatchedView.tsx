@@ -101,8 +101,8 @@ export function RydUnmatchedView({
   linking: string | null;
   /** A response being removed or restored; every control waits on it. */
   busy: string | null;
-  /** The submitter email being marked contacted. */
-  contacting: string | null;
+  /** Contact is being recorded; every contact control waits on it. */
+  contacting: boolean;
   onLink: (submitter: RydSubmitter, orderId: string) => void;
   onRemove: (submission: RydSubmission) => void;
   onRestore: (submission: RydSubmission) => void;
@@ -195,10 +195,7 @@ export function RydUnmatchedView({
         variant="danger"
         size="sm"
         disabled={
-          selection.disabled ||
-          busy !== null ||
-          linking !== null ||
-          contacting !== null
+          selection.disabled || busy !== null || linking !== null || contacting
         }
         onClick={() => onRemove(submission)}
       >
@@ -221,7 +218,7 @@ export function RydUnmatchedView({
           selection.disabled ||
           linking !== null ||
           busy !== null ||
-          contacting !== null ||
+          contacting ||
           !orderOptions.length
         }
       />
@@ -250,13 +247,12 @@ export function RydUnmatchedView({
         variant="secondary"
         leftIcon={<FiCheck aria-hidden />}
         aria-label={`Mark ${submitter.email} as contacted`}
-        loading={contacting === submitter.email}
         loadingText="Marking..."
         disabled={
           selection.disabled ||
           linking !== null ||
           busy !== null ||
-          contacting !== null ||
+          contacting ||
           !isRydContactEmail(submitter.email)
         }
         onClick={() => onMarkContacted(submitter.email)}

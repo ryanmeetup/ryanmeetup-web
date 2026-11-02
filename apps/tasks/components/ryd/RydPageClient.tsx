@@ -1,125 +1,57 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useQueryParamState, useSearchFilter } from "@ryanmeetup/hooks";
+import { useQueryParamState } from "@ryanmeetup/hooks";
 import {
   Button,
-  ClearFiltersButton,
-  ConfirmationDialog,
-  DropdownSelect,
-  EmptyState,
   ErrorCallout,
   FilterChip,
   ManagementSurface,
-  Pagination,
-  PendingResults,
-  SearchInput,
   toast,
 } from "@ryanmeetup/ui";
 import type { IconType } from "react-icons";
 import {
   FiAlertTriangle,
-  FiCalendar,
-  FiCheckSquare,
-  FiCornerUpLeft,
-  FiHash,
   FiInbox,
-  FiMail,
   FiPhoneOutgoing,
   FiRefreshCw,
-  FiSend,
   FiSettings,
   FiShoppingBag,
   FiUpload,
-  FiX,
 } from "react-icons/fi";
 import {
   CountBadge,
   MetricLinkCard,
   WorkspacePageShell,
 } from "@/components/global";
-import { derivePagination } from "@/lib/pagination";
-import {
-  rydSubmitterSearchText,
-  sortRydSubmitters,
-} from "@/lib/ryd/submission-view";
 import { usePagination } from "@/hooks/usePagination";
-import { mutate } from "@/lib/mutation-client";
 import { errorMessage } from "@/lib/presentation";
 import { RYD_STATUS_LABELS, type RydOrderStatus } from "@/lib/ryd/orders";
-import type { RydSubmission, RydSubmitter } from "@/lib/ryd/matching";
-import { isRydContactEmail } from "@/lib/ryd/normalize";
-import {
-  changeRydLinks,
-  decideRydOrders,
-  rydDecisionLocked,
-} from "@/lib/ryd/ryd-decisions";
-import { rydCardComplete } from "@/lib/ryd/card";
 import {
   reconcileRydQueue,
   type RydQueueChange,
 } from "@/lib/ryd/queue-reconciliation";
-import type { RydQueue, RydQueueOrder } from "@/lib/ryd/queue-types";
+import type { RydQueue } from "@/lib/ryd/queue-types";
 import {
-  followUpOrders,
   claimedElsewhere,
-  linkableOrders,
-  orderSearchText,
-  orderSubmissions,
-  RYD_STATUS_PARAMS,
+  followUpOrders,
   rydCounts,
-  orderRyanPositions,
   rydSortParam,
-  rydSortValue,
-  sortRydOrders,
-  type RydStatusParam,
   rydStatusParam,
   rydView,
-  canEmailRydOrder,
-  contactableSubmitters,
-  remindableOrders,
   unmatchedSubmitters,
+  type RydStatusParam,
   type RydView,
 } from "@/lib/ryd/queue-view";
-import {
-  RYD_FULFILLMENT_LABELS,
-  readyForRydFulfillment,
-  rydFulfillmentCounts,
-  rydFulfillmentParam,
-  rydFulfillmentStage,
-} from "@/lib/ryd/fulfillment-view";
-import { RYD_FULFILLMENT_LIMIT } from "@/lib/ryd/fulfillment";
+import { rydFulfillmentParam } from "@/lib/ryd/fulfillment-view";
 import type { WorkspaceData } from "@/lib/workspace/workspace-types";
-import {
-  RydRemindDialog,
-  RydSendDialog,
-  RydSettingsDialog,
-  RydUploadDialog,
-} from "./RydDialogs";
-import { RYD_DECISIONS, RydOrderDialog } from "./RydOrderDialog";
-import { RydCancelDialog } from "./RydCancelDialog";
-import { RydCardBatches } from "./RydCardBatches";
-import { RydFulfillmentFilters } from "./RydFulfillmentFilters";
-import { RydOrderTable } from "./RydOrderTable";
-import { RydSelectionBar } from "./RydSelection";
-import { RydContactDialog } from "./RydContactDialog";
-import { RydProductionDialog } from "./RydProductionDialog";
-import { useRydQueueController } from "./useRydQueueController";
-import {
-  RYD_BULK_LIMIT,
-  RYD_BULK_BODY_BYTES,
-  rydBodyBytes,
-  type RydProductionAction,
-  type RydProductionResult,
-  type RydContactResult,
-} from "@/lib/ryd/bulk-operations";
-import {
-  RYD_STATUS_ICONS,
-  RYD_STATUS_TEXT,
-  RYD_STATUS_TONES,
-} from "./RydStatusChip";
-import { RydUnmatchedLayoutToggle, RydUnmatchedView } from "./RydUnmatchedView";
+import { RydSettingsDialog, RydUploadDialog } from "./RydDialogs";
+import { RydOrderDialog } from "./RydOrderDialog";
+import { RydOrdersSection } from "./RydOrdersSection";
+import { RYD_STATUS_ICONS, RYD_STATUS_TONES } from "./RydStatusChip";
+import { RydUnmatchedSection } from "./RydUnmatchedSection";
 import { RydUploadDueNotice } from "./RydUploadDueNotice";
+import { useRydQueueController } from "./useRydQueueController";
 
 const GOOGLE_MESSAGES: Record<string, [ok: boolean, message: string]> = {
   connected: [true, "Google connected. The form's answers are in."],
@@ -182,26 +114,6 @@ const STAT_CARDS: {
   },
 ];
 
-const STATUS_OPTIONS = Object.keys(RYD_STATUS_PARAMS).map((value) => {
-  const status = RYD_STATUS_PARAMS[value as keyof typeof RYD_STATUS_PARAMS];
-  return {
-    value,
-    label: status ? RYD_STATUS_LABELS[status] : "All open orders",
-  };
-});
-
-type Dialog =
-  | "upload"
-  | "send"
-  | "remind"
-  | "remind-selected"
-  | "contacted-selected"
-  | "unmatched-email"
-  | "unmatched-email-selected"
-  | "cancel-selected"
-  | "settings"
-  | null;
-
 export function RydPageClient({
   initialData,
   initialQueue,
@@ -218,46 +130,23 @@ export function RydPageClient({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { queue, refresh, refreshState, reconcile, showOlderDone } =
     useRydQueueController(initialQueue);
-  const [loadingOlder, setLoadingOlder] = useState(false);
-  const [dialog, setDialog] = useState<Dialog>(null);
-  const [fulfillmentOrderIds, setFulfillmentOrderIds] = useState<
-    string[] | null
-  >(null);
+  const [dialog, setDialog] = useState<"upload" | "settings" | null>(null);
   const [viewParam, setViewParam] = useQueryParamState("view");
   const [statusParam, setStatusParam] = useQueryParamState("status");
-  const [sortParam, setSortParam] = useQueryParamState("sort");
-  const [layoutParam, setLayoutParam] = useQueryParamState("layout");
-  const [openOrderId, setOpenOrderId] = useQueryParamState("order");
-  const [googleParam, setGoogleParam] = useQueryParamState("google");
-  const [linking, setLinking] = useState<string | null>(null);
-  const [removing, setRemoving] = useState<RydSubmission | null>(null);
-  const [dismissing, setDismissing] = useState<string | null>(null);
-  const [contactOperation, setContactOperation] = useState<string[] | null>(
-    null,
-  );
-  const contacting = contactOperation ? "*" : null;
   const [productionParam, setProductionParam] =
     useQueryParamState("production");
+  const [sortParam, setSortParam] = useQueryParamState("sort");
+  const [openOrderId, setOpenOrderId] = useQueryParamState("order");
+  const [googleParam, setGoogleParam] = useQueryParamState("google");
+  // Kept here so a selection survives switching views.
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [selectedSubmitterKeys, setSelectedSubmitterKeys] = useState<
     ReadonlySet<string>
   >(new Set());
-  const [emailOrder, setEmailOrder] = useState<RydQueueOrder | null>(null);
-  const [productionOperation, setProductionOperation] = useState<{
-    action: RydProductionAction;
-    orders: RydQueueOrder[];
-  } | null>(null);
-  const moving = productionOperation?.action ?? null;
-  const [deciding, setDeciding] = useState<RydOrderStatus | null>(null);
-  const [decisionPending, setDecisionPending] = useState(false);
   const view = rydView(viewParam);
   const status = rydStatusParam(statusParam);
   const producing = view === "queue" && status === "verified";
-  const production = producing ? rydFulfillmentParam(productionParam) : null;
-  const selectable = view !== "unmatched";
-  const sort = rydSortParam(sortParam);
-  const unmatchedLayout = layoutParam === "table" ? "table" : "cards";
-  const { page, pageSize, setPage, setPageSize, syncPage } = usePagination();
+  const { setPage } = usePagination();
 
   // Clicking a card shows that status; clicking it again shows every order.
   function filterByStatus(param: RydStatusParam) {
@@ -278,417 +167,16 @@ export function RydPageClient({
   }, [googleParam, setGoogleParam]);
 
   const counts = useMemo(() => rydCounts(queue.orders), [queue.orders]);
-  const productionCounts = useMemo(
-    () => rydFulfillmentCounts(queue.orders),
-    [queue.orders],
-  );
   // Finished all round: fulfillment has been told and the RY-D is made.
   const activeCount = queue.orders.filter(
     (order) => !(order.doneAt && order.sentToFulfillment),
   ).length;
   const followUp = useMemo(() => followUpOrders(queue), [queue]);
   const unmatched = useMemo(() => unmatchedSubmitters(queue), [queue]);
-  const {
-    query: submissionQuery,
-    setQuery: setSubmissionQuery,
-    filtered: matchingSubmitters,
-    isPending: submissionSearchPending,
-  } = useSearchFilter({
-    data: unmatched,
-    buildHaystack: rydSubmitterSearchText,
-    queryParam: "submissionSearch",
-  });
-  const sortedSubmitters = useMemo(
-    () => sortRydSubmitters(matchingSubmitters),
-    [matchingSubmitters],
-  );
-  const selectableSubmitters = useMemo(
-    () =>
-      sortedSubmitters.filter((submitter) =>
-        isRydContactEmail(submitter.email),
-      ),
-    [sortedSubmitters],
-  );
-  const contactable = useMemo(
-    () => contactableSubmitters(sortedSubmitters, queue.contacts),
-    [sortedSubmitters, queue.contacts],
-  );
-  const remindable = useMemo(() => remindableOrders(followUp), [followUp]);
-  const statusFilter = RYD_STATUS_PARAMS[status];
-  const listed = useMemo(
-    () =>
-      view === "follow-up"
-        ? followUp
-        : statusFilter
-          ? queue.orders.filter(
-              (order) =>
-                order.status === statusFilter &&
-                (!production || rydFulfillmentStage(order) === production),
-            )
-          : queue.orders,
-    [view, followUp, queue.orders, statusFilter, production],
-  );
-  const {
-    query,
-    setQuery,
-    filtered,
-    isPending: orderSearchPending,
-  } = useSearchFilter({
-    data: listed,
-    buildHaystack: orderSearchText,
-    queryParam: "search",
-  });
-  const searchPending =
-    view === "unmatched" ? submissionSearchPending : orderSearchPending;
-  const ryanPositions = useMemo(
-    () => orderRyanPositions(queue.orders, queue.submissions),
-    [queue.orders, queue.submissions],
-  );
-  const sorted = useMemo(
-    () => sortRydOrders(filtered, sort, ryanPositions),
-    [filtered, sort, ryanPositions],
-  );
-  // Only what's listed counts as selected, so a filter change never acts on
-  // rows the reviewer can't see.
-  const selectedOrders = useMemo(
-    () =>
-      selectable ? sorted.filter((order) => selected.has(order.orderId)) : [],
-    [selectable, sorted, selected],
-  );
-  const selectedReady = readyForRydFulfillment(selectedOrders);
-  const canGenerate =
-    selectedOrders.length > 0 &&
-    selectedReady.length === selectedOrders.length &&
-    selectedReady.length <= RYD_FULFILLMENT_LIMIT;
-  const selectedSubmitters = useMemo(
-    () =>
-      view === "unmatched"
-        ? selectableSubmitters.filter((submitter) =>
-            selectedSubmitterKeys.has(submitter.key),
-          )
-        : [],
-    [view, selectableSubmitters, selectedSubmitterKeys],
-  );
-  // Ticked by hand overrides the day's pause, but only orders still waiting on
-  // the buyer are emailed.
-  const emailableSelected = selectedOrders.filter(canEmailRydOrder);
-  const emailSelectedButtons = (
-    <>
-      <Button
-        type="button"
-        size="sm"
-        variant="secondary"
-        className="w-full sm:w-auto"
-        leftIcon={<FiMail aria-hidden />}
-        disabled={searchPending || decisionPending || !emailableSelected.length}
-        title={
-          selectedOrders.length && !emailableSelected.length
-            ? "Only pending and needs-more-info orders with a valid email are emailed."
-            : undefined
-        }
-        onClick={() => setDialog("remind-selected")}
-      >
-        Email selected
-        {selectedOrders.length ? ` (${emailableSelected.length})` : ""}
-      </Button>
-      <Button
-        type="button"
-        size="sm"
-        variant="secondary"
-        className="w-full sm:w-auto"
-        leftIcon={<FiCheckSquare aria-hidden />}
-        disabled={searchPending || decisionPending || !emailableSelected.length}
-        onClick={() => setDialog("contacted-selected")}
-      >
-        Mark contacted
-      </Button>
-    </>
-  );
-  const cancelSelectedButton = (
-    <Button
-      type="button"
-      size="sm"
-      variant="secondary"
-      className="w-full sm:w-auto"
-      leftIcon={<FiX aria-hidden />}
-      disabled={
-        searchPending || decisionPending || !decidable("rejected").length
-      }
-      onClick={() => setDialog("cancel-selected")}
-    >
-      Cancel orders
-    </Button>
-  );
-  const totalCount =
-    view === "unmatched" ? sortedSubmitters.length : sorted.length;
-  const {
-    page: currentPage,
-    from,
-    to,
-  } = derivePagination(page, pageSize, totalCount);
-  const pageOrders = sorted.slice(from, to + 1);
-  const pageSubmitters = sortedSubmitters.slice(from, to + 1);
-
-  // Saved changes can empty the last page; land on the one that's left.
-  useEffect(() => {
-    if (page !== currentPage) syncPage(currentPage);
-  }, [currentPage, page, syncPage]);
-  const pagination = (
-    <Pagination
-      page={currentPage}
-      pageSize={pageSize}
-      totalCount={totalCount}
-      itemLabel={
-        view === "unmatched"
-          ? totalCount === 1
-            ? "person"
-            : "people"
-          : "orders"
-      }
-      disabled={searchPending}
-      onPageChange={setPage}
-      onPageSizeChange={setPageSize}
-    />
-  );
   const openOrder = queue.orders.find((order) => order.orderId === openOrderId);
-  const orderOptions = useMemo(
-    () =>
-      linkableOrders(queue.orders).map((order) => {
-        const StatusIcon = RYD_STATUS_ICONS[order.status];
-        return {
-          value: order.orderId,
-          label:
-            `${order.firstName} ${order.lastName}`.trim() || order.displayEmail,
-          group: {
-            icon: <StatusIcon aria-hidden className="h-3 w-3" />,
-            label: RYD_STATUS_LABELS[order.status],
-            textClassName: RYD_STATUS_TEXT[order.status],
-          },
-          details: [
-            { icon: <FiMail aria-hidden />, text: order.displayEmail },
-            { icon: <FiHash aria-hidden />, text: order.orderId },
-            ...(order.orderedAt
-              ? [{ icon: <FiCalendar aria-hidden />, text: order.orderedAt }]
-              : []),
-          ].filter((detail) => detail.text),
-        };
-      }),
-    [queue.orders],
-  );
-
-  function toggleIn(setter: typeof setSelected): (value: string) => void {
-    return (value) =>
-      setter((current) => {
-        const next = new Set(current);
-        if (next.has(value)) next.delete(value);
-        else next.add(value);
-        return next;
-      });
-  }
-  const toggleSelected = toggleIn(setSelected);
-  const toggleSubmitter = toggleIn(setSelectedSubmitterKeys);
-
-  function moveSelected(action: RydProductionAction) {
-    if (searchPending || moving !== null) return;
-    setProductionOperation({ action, orders: selectedOrders });
-  }
 
   function applyChange(change: RydQueueChange) {
     reconcile((current) => reconcileRydQueue(current, change));
-  }
-
-  function productionApplied(result: RydProductionResult) {
-    if (productionOperation?.action === "fulfillment")
-      setProductionParam("sent-to-fulfillment");
-    if (productionOperation?.action === "done") setProductionParam("done");
-    const saved = new Map(result.orders.map((order) => [order.orderId, order]));
-    reconcile((current) => ({
-      ...current,
-      orders: current.orders.map((order) => ({
-        ...order,
-        ...saved.get(order.orderId),
-      })),
-    }));
-    setSelected(
-      (current) => new Set([...current].filter((id) => !saved.has(id))),
-    );
-  }
-
-  function contactsRecorded(result: RydContactResult) {
-    reconcile((current) => ({
-      ...current,
-      contacts: { ...current.contacts, ...result.contacts },
-    }));
-    const saved = new Set(
-      Object.keys(result.contacts).map((email) => `email:${email}`),
-    );
-    setSelectedSubmitterKeys(
-      (current) => new Set([...current].filter((key) => !saved.has(key))),
-    );
-  }
-
-  const selectedStages = new Set(selectedOrders.map(rydFulfillmentStage));
-
-  /**
-   * The selected orders a decision would change. Final ones are left alone,
-   * and an unfinished card is never verified: it would print a blank line.
-   */
-  function decidable(target: RydOrderStatus) {
-    return selectedOrders.filter(
-      (order) =>
-        order.status !== target &&
-        !rydDecisionLocked(order) &&
-        (target !== "verified" || rydCardComplete(order.card)),
-    );
-  }
-  function unfinishedCards(target: RydOrderStatus) {
-    return target === "verified"
-      ? selectedOrders.filter(
-          (order) =>
-            order.status !== target &&
-            !rydDecisionLocked(order) &&
-            !rydCardComplete(order.card),
-        )
-      : [];
-  }
-
-  /**
-   * Share one provenance read per bounded group. Refused orders stay selected,
-   * and changes land together so the confirmation count stays steady.
-   */
-  async function decideSelected(target: RydOrderStatus) {
-    const orders = decidable(target);
-    const unfinished = unfinishedCards(target).map((order) => order.orderId);
-    setDecisionPending(true);
-    const changes: RydQueueChange[] = [];
-    const failed: string[] = [];
-    let lastError: unknown;
-    try {
-      const result = await decideRydOrders(orders, queue.submissions, target);
-      changes.push(
-        ...result.reviews.map((review): RydQueueChange => ({
-          type: "review",
-          ...review,
-        })),
-      );
-      failed.push(...result.failures.map((failure) => failure.orderId));
-      const failure = result.failures.at(-1);
-      if (failure) lastError = new Error(failure.message);
-    } catch (error) {
-      failed.push(...orders.map((order) => order.orderId));
-      lastError = error;
-    }
-    changes.forEach(applyChange);
-    try {
-      await refresh();
-    } catch {
-      // The decisions saved; a reload shows them.
-    }
-    setSelected(new Set([...failed, ...unfinished]));
-    setDeciding(null);
-    setDecisionPending(false);
-    const saved = orders.length - failed.length;
-    if (saved)
-      toast.success(
-        `${saved} order${saved === 1 ? "" : "s"} marked ${RYD_STATUS_LABELS[target].toLowerCase()}.`,
-      );
-    if (failed.length)
-      toast.error(
-        errorMessage(
-          lastError,
-          `${failed.length} order${failed.length === 1 ? "" : "s"} couldn't be decided.`,
-        ),
-      );
-  }
-
-  const decidingOrders = deciding ? decidable(deciding) : [];
-  const decidingUnfinished = deciding ? unfinishedCards(deciding).length : 0;
-  const decidingSkipped = deciding
-    ? selectedOrders.filter(rydDecisionLocked).length
-    : 0;
-  const decidingBare =
-    deciding === "verified"
-      ? decidingOrders.filter(
-          (order) =>
-            !orderSubmissions(order, queue.submissions).submissions.length,
-        ).length
-      : 0;
-
-  function toggleAllOrders() {
-    setSelected(
-      selectedOrders.length === sorted.length
-        ? new Set()
-        : new Set(sorted.map((order) => order.orderId)),
-    );
-  }
-
-  async function linkSubmitter(submitter: RydSubmitter, orderId: string) {
-    if (searchPending || linking !== null) return;
-    const submissionKeys = [
-      ...new Set(submitter.submissions.map((submission) => submission.key)),
-    ];
-    const payload = { submissionKeys, source: "manual" };
-    if (
-      submissionKeys.length > RYD_BULK_LIMIT ||
-      rydBodyBytes(payload) > RYD_BULK_BODY_BYTES
-    ) {
-      toast.error(
-        "This person has too many responses to link together. Link individual responses from the order review.",
-      );
-      setOpenOrderId(orderId);
-      return;
-    }
-    setLinking(submitter.key);
-    try {
-      applyChange(await changeRydLinks(orderId, submissionKeys, true));
-      toast.success("Linked. Review the order to decide.");
-      setOpenOrderId(orderId);
-      void refresh().catch(() => {});
-    } catch (error) {
-      toast.error(
-        errorMessage(
-          error,
-          "Those responses couldn't be linked. Nothing was partially linked.",
-        ),
-      );
-    } finally {
-      setLinking(null);
-    }
-  }
-
-  function markContacted(emails: string[]) {
-    if (searchPending || contacting !== null) return;
-    setContactOperation(emails);
-  }
-
-  /** Remove a response from the queue, or with `restore`, put it back. */
-  async function setDismissed(submission: RydSubmission, restore = false) {
-    setDismissing(submission.key);
-    try {
-      await mutate("/api/ryd/dismissals", {
-        method: restore ? "DELETE" : "POST",
-        body: JSON.stringify({ submissionKey: submission.key }),
-      });
-      applyChange({ type: "dismissal", submission, dismissed: !restore });
-      void refresh().catch(() => {});
-      setRemoving(null);
-      toast.success(
-        restore
-          ? "Response restored."
-          : "Response removed. It stays in the Google Form.",
-      );
-    } catch (error) {
-      toast.error(
-        errorMessage(
-          error,
-          restore
-            ? "That response couldn't be restored."
-            : "That response couldn't be removed.",
-        ),
-      );
-    } finally {
-      setDismissing(null);
-    }
   }
 
   const sheetNotice =
@@ -870,462 +358,39 @@ export function RydPageClient({
             </div>
 
             {view === "unmatched" ? (
-              <section
-                aria-busy={refreshState.pending}
-                aria-label="Unmatched submissions"
-                className="space-y-4"
-              >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-sm text-black/70 dark:text-white/70">
-                    Form answers no order has claimed: often a gift, a different
-                    email, or an order that hasn&apos;t arrived in a file yet.
-                  </p>
-                  {unmatched.length > 0 && (
-                    <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        className="w-full sm:w-auto"
-                        leftIcon={<FiMail aria-hidden />}
-                        onClick={() => setDialog("unmatched-email")}
-                        disabled={
-                          searchPending ||
-                          linking !== null ||
-                          dismissing !== null ||
-                          !contactable.length
-                        }
-                        title={
-                          contactable.length
-                            ? undefined
-                            : "Everyone here was contacted in the last day."
-                        }
-                      >
-                        Email everyone ({contactable.length})
-                      </Button>
-                      <RydUnmatchedLayoutToggle
-                        layout={unmatchedLayout}
-                        onChange={(next) =>
-                          setLayoutParam(next === "cards" ? "" : next)
-                        }
-                      />
-                    </div>
-                  )}
-                </div>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                  <div className="min-w-0 flex-1">
-                    <SearchInput
-                      label="Search submissions"
-                      hideLabel={false}
-                      name="submissionSearch"
-                      value={submissionQuery}
-                      onChange={(event) => {
-                        setSubmissionQuery(event.target.value);
-                        setPage(1);
-                      }}
-                      placeholder="Search by Ryan, email, or answer..."
-                      pending={submissionSearchPending}
-                      pendingLabel="Loading submission results"
-                    />
-                  </div>
-                  {submissionQuery && (
-                    <ClearFiltersButton
-                      className="self-start sm:self-center"
-                      onClick={() => {
-                        setSubmissionQuery("");
-                        setPage(1);
-                      }}
-                    />
-                  )}
-                </div>
-                {selectableSubmitters.length > 0 && (
-                  <RydSelectionBar
-                    total={selectableSubmitters.length}
-                    scope="All contactable people matching this search, across pages"
-                    selectedCount={selectedSubmitters.length}
-                    disabled={
-                      searchPending ||
-                      contacting !== null ||
-                      linking !== null ||
-                      dismissing !== null
-                    }
-                    onToggleAll={() =>
-                      setSelectedSubmitterKeys(
-                        selectedSubmitters.length ===
-                          selectableSubmitters.length
-                          ? new Set()
-                          : new Set(selectableSubmitters.map((s) => s.key)),
-                      )
-                    }
-                  >
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="secondary"
-                      className="w-full sm:w-auto"
-                      leftIcon={<FiMail aria-hidden />}
-                      disabled={
-                        searchPending ||
-                        linking !== null ||
-                        dismissing !== null ||
-                        contacting !== null ||
-                        !selectedSubmitters.length
-                      }
-                      onClick={() => setDialog("unmatched-email-selected")}
-                    >
-                      Email selected
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      className="w-full sm:w-auto"
-                      leftIcon={<FiCheckSquare aria-hidden />}
-                      disabled={
-                        searchPending ||
-                        linking !== null ||
-                        dismissing !== null ||
-                        contacting !== null ||
-                        !selectedSubmitters.length
-                      }
-                      loading={contacting === "*"}
-                      loadingText="Marking..."
-                      onClick={() =>
-                        markContacted(selectedSubmitters.map((s) => s.email))
-                      }
-                    >
-                      Mark contacted
-                    </Button>
-                  </RydSelectionBar>
-                )}
-                <PendingResults
-                  pending={submissionSearchPending}
-                  label="Loading submission results"
-                >
-                  {sortedSubmitters.length === 0 && (
-                    <EmptyState
-                      className="py-12"
-                      message={
-                        submissionQuery.trim()
-                          ? "No submissions match this search. Try another name, email, or answer."
-                          : queue.sheet.status === "ok"
-                            ? "Every form submission is paired with an order."
-                            : "No form submissions to show."
-                      }
-                    />
-                  )}
-                  <RydUnmatchedView
-                    submitters={pageSubmitters}
-                    footer={
-                      sortedSubmitters.length > 0 ? pagination : undefined
-                    }
-                    dismissed={queue.dismissed}
-                    contacts={queue.contacts}
-                    layout={unmatchedLayout}
-                    orderOptions={orderOptions}
-                    linking={linking}
-                    busy={dismissing}
-                    contacting={contacting}
-                    onLink={linkSubmitter}
-                    onMarkContacted={(email) => markContacted([email])}
-                    selection={{
-                      selected: selectedSubmitterKeys,
-                      onToggle: toggleSubmitter,
-                      disabled:
-                        searchPending ||
-                        contacting !== null ||
-                        linking !== null ||
-                        dismissing !== null,
-                    }}
-                    onRemove={setRemoving}
-                    onRestore={(submission) => setDismissed(submission, true)}
-                  />
-                </PendingResults>
-              </section>
+              <RydUnmatchedSection
+                queue={queue}
+                unmatched={unmatched}
+                selected={selectedSubmitterKeys}
+                setSelected={setSelectedSubmitterKeys}
+                refreshing={refreshState.pending}
+                refresh={refresh}
+                reconcile={reconcile}
+                onLinked={setOpenOrderId}
+              />
             ) : (
-              <section
-                aria-busy={refreshState.pending}
-                aria-label={VIEW_LABELS[view]}
-                className="space-y-4"
-              >
-                {view === "follow-up" && followUp.length > 0 && (
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="text-sm text-black/70 dark:text-white/70">
-                      Orders asked for more, or with nothing on the form. Email
-                      opens a draft asking the buyer for their ry-dentification.
-                      Anyone who never verifies can be selected and cancelled.
-                    </p>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="secondary"
-                      className="w-full shrink-0 sm:w-auto"
-                      leftIcon={<FiMail aria-hidden />}
-                      onClick={() => setDialog("remind")}
-                      disabled={searchPending || !remindable.length}
-                      title={
-                        remindable.length
-                          ? undefined
-                          : "Everyone here was emailed in the last day."
-                      }
-                    >
-                      Email everyone ({remindable.length})
-                    </Button>
-                  </div>
-                )}
-                <div className="sticky top-0 z-20 -mx-1 flex flex-col gap-3 bg-white px-1 pb-3 sm:flex-row sm:items-stretch dark:bg-[#181818]">
-                  <div className="min-w-0 flex-1">
-                    <SearchInput
-                      label="Search orders"
-                      name="search"
-                      value={query}
-                      onChange={(event) => {
-                        setQuery(event.target.value);
-                        setPage(1);
-                      }}
-                      placeholder="Search by Ryan, email, or order number..."
-                      pending={searchPending}
-                      pendingLabel="Loading order results"
-                    />
-                  </div>
-                  {view === "queue" && (
-                    <DropdownSelect
-                      variant="compact"
-                      label="Status"
-                      options={STATUS_OPTIONS}
-                      value={status}
-                      onChange={(value) => {
-                        setStatusParam(value === "pending" ? "" : value);
-                        setProductionParam("");
-                        setPage(1);
-                      }}
-                    />
-                  )}
-                  {(query ||
-                    sort ||
-                    (view === "queue" && status !== "pending")) && (
-                    <ClearFiltersButton
-                      className="self-start sm:self-center"
-                      onClick={() => {
-                        setQuery("");
-                        setStatusParam("");
-                        setProductionParam("");
-                        setSortParam("");
-                        setPage(1);
-                      }}
-                    />
-                  )}
-                </div>
-                {producing && (
-                  <div className="space-y-3">
-                    <RydCardBatches
-                      orders={queue.orders}
-                      batches={queue.cardBatches}
-                      timeZone={queue.timeZone}
-                      disabled={searchPending || moving !== null}
-                      onPulled={refresh}
-                    />
-                    <RydFulfillmentFilters
-                      stage={production}
-                      counts={productionCounts}
-                      total={counts.verified}
-                      olderDone={queue.olderDone}
-                      loadingOlder={loadingOlder}
-                      onChange={(stage) => {
-                        setProductionParam(stage ?? "all");
-                        setPage(1);
-                      }}
-                      onShowOlder={() => {
-                        setLoadingOlder(true);
-                        showOlderDone()
-                          .catch(() => {})
-                          .finally(() => setLoadingOlder(false));
-                      }}
-                    />
-                    {selectable && sorted.length > 0 && (
-                      <RydSelectionBar
-                        total={sorted.length}
-                        selectedCount={selectedOrders.length}
-                        disabled={searchPending || moving !== null}
-                        onToggleAll={toggleAllOrders}
-                      >
-                        {(!production || production === "ready-to-send") && (
-                          <Button
-                            type="button"
-                            size="sm"
-                            className="w-full sm:w-auto"
-                            leftIcon={<FiSend aria-hidden />}
-                            disabled={
-                              searchPending || moving !== null || !canGenerate
-                            }
-                            title={
-                              selectedReady.length > RYD_FULFILLMENT_LIMIT
-                                ? `Select up to ${RYD_FULFILLMENT_LIMIT} orders per batch.`
-                                : selectedOrders.length && !canGenerate
-                                  ? "Select only orders marked Ready to send."
-                                  : undefined
-                            }
-                            onClick={() => {
-                              setFulfillmentOrderIds(
-                                selectedReady.map((order) => order.orderId),
-                              );
-                              setDialog("send");
-                            }}
-                          >
-                            Generate email &amp; CSV ({selectedReady.length})
-                          </Button>
-                        )}
-                        {(!production || production === "ready-to-send") && (
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="secondary"
-                            className="w-full sm:w-auto"
-                            leftIcon={<FiMail aria-hidden />}
-                            disabled={
-                              searchPending ||
-                              moving !== null ||
-                              !selectedStages.has("ready-to-send")
-                            }
-                            onClick={() => moveSelected("fulfillment")}
-                          >
-                            Mark sent to fulfillment
-                          </Button>
-                        )}
-                        {(!production ||
-                          production === "sent-to-fulfillment") && (
-                          <Button
-                            type="button"
-                            size="sm"
-                            className="w-full sm:w-auto"
-                            leftIcon={<FiCheckSquare aria-hidden />}
-                            disabled={
-                              searchPending ||
-                              moving !== null ||
-                              !selectedStages.has("sent-to-fulfillment")
-                            }
-                            loading={moving === "done"}
-                            onClick={() => moveSelected("done")}
-                          >
-                            Done
-                          </Button>
-                        )}
-                        {(!production ||
-                          production === "sent-to-fulfillment" ||
-                          production === "done") && (
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            className="w-full sm:w-auto"
-                            leftIcon={<FiCornerUpLeft aria-hidden />}
-                            disabled={
-                              searchPending ||
-                              moving !== null ||
-                              !(
-                                selectedStages.has("sent-to-fulfillment") ||
-                                selectedStages.has("done")
-                              )
-                            }
-                            loading={moving === "back"}
-                            onClick={() => moveSelected("back")}
-                          >
-                            Move back
-                          </Button>
-                        )}
-                      </RydSelectionBar>
-                    )}
-                  </div>
-                )}
-                {view === "queue" && !producing && sorted.length > 0 && (
-                  <RydSelectionBar
-                    total={sorted.length}
-                    selectedCount={selectedOrders.length}
-                    disabled={searchPending || decisionPending}
-                    onToggleAll={toggleAllOrders}
-                  >
-                    {statusFilter !== "rejected" && emailSelectedButtons}
-                    {statusFilter !== "rejected" && cancelSelectedButton}
-                    {RYD_DECISIONS.filter(
-                      (decision) =>
-                        decision.status !== statusFilter &&
-                        decision.status !== "rejected",
-                    ).map(({ status: target, label, icon: Icon }) => (
-                      <Button
-                        key={target}
-                        type="button"
-                        size="sm"
-                        variant={
-                          target === "verified" ? "primary" : "secondary"
-                        }
-                        className="w-full sm:w-auto"
-                        leftIcon={<Icon aria-hidden />}
-                        disabled={
-                          searchPending ||
-                          decisionPending ||
-                          !decidable(target).length
-                        }
-                        onClick={() => setDeciding(target)}
-                      >
-                        {label}
-                      </Button>
-                    ))}
-                  </RydSelectionBar>
-                )}
-                {view === "follow-up" && sorted.length > 0 && (
-                  <RydSelectionBar
-                    total={sorted.length}
-                    selectedCount={selectedOrders.length}
-                    disabled={searchPending}
-                    onToggleAll={toggleAllOrders}
-                  >
-                    {emailSelectedButtons}
-                    {cancelSelectedButton}
-                  </RydSelectionBar>
-                )}
-                <PendingResults pending={searchPending} label="Loading orders">
-                  {filtered.length === 0 ? (
-                    <EmptyState
-                      className="py-12"
-                      message={
-                        !queue.orders.length
-                          ? "No orders yet. Upload this week's file from fulfillment to start."
-                          : query
-                            ? "No orders match that search."
-                            : view === "follow-up"
-                              ? "Nobody to chase right now."
-                              : production
-                                ? `No verified orders are ${RYD_FULFILLMENT_LABELS[production].toLowerCase()}.`
-                                : "No orders with that status."
-                      }
-                    />
-                  ) : (
-                    <RydOrderTable
-                      orders={pageOrders}
-                      ryanPositions={ryanPositions}
-                      label={VIEW_LABELS[view]}
-                      sort={sort}
-                      onSort={(next) => {
-                        setSortParam(rydSortValue(next));
-                        setPage(1);
-                      }}
-                      followUp={view === "follow-up"}
-                      onEmail={setEmailOrder}
-                      onReview={(order) => setOpenOrderId(order.orderId)}
-                      production={producing}
-                      selection={
-                        selectable
-                          ? {
-                              selected,
-                              onToggle: toggleSelected,
-                              disabled: searchPending || moving !== null,
-                            }
-                          : undefined
-                      }
-                      footer={pagination}
-                    />
-                  )}
-                </PendingResults>
-              </section>
+              <RydOrdersSection
+                view={view}
+                label={VIEW_LABELS[view]}
+                queue={queue}
+                followUp={followUp}
+                status={status}
+                production={
+                  producing ? rydFulfillmentParam(productionParam) : null
+                }
+                sort={rydSortParam(sortParam)}
+                verifiedCount={counts.verified}
+                selected={selected}
+                setSelected={setSelected}
+                refreshing={refreshState.pending}
+                refresh={refresh}
+                reconcile={reconcile}
+                showOlderDone={showOlderDone}
+                onStatusChange={setStatusParam}
+                onProductionChange={setProductionParam}
+                onSortChange={setSortParam}
+                onReview={(order) => setOpenOrderId(order.orderId)}
+              />
             )}
           </div>
         </ManagementSurface>
@@ -1343,152 +408,8 @@ export function RydPageClient({
           onChanged={refresh}
         />
       )}
-      <ConfirmationDialog
-        open={deciding !== null}
-        setOpen={(open) => {
-          if (!open && !decisionPending) setDeciding(null);
-        }}
-        title={
-          deciding
-            ? `${RYD_DECISIONS.find((d) => d.status === deciding)?.label} ${decidingOrders.length} order${decidingOrders.length === 1 ? "" : "s"}?`
-            : ""
-        }
-        description={
-          deciding
-            ? [
-                deciding === "verified"
-                  ? "Each one is cleared for fulfillment, and any suggested form response is linked to it."
-                  : `Each one is marked ${RYD_STATUS_LABELS[deciding].toLowerCase()}.`,
-                decidingBare
-                  ? `${decidingBare} ha${decidingBare === 1 ? "s" : "ve"} nothing on the form.`
-                  : "",
-                decidingUnfinished
-                  ? `${decidingUnfinished} with an unfinished card ${decidingUnfinished === 1 ? "stays" : "stay"} selected. Finish each card in its review to verify it.`
-                  : "",
-                decidingSkipped
-                  ? `${decidingSkipped} already with fulfillment or in production ${decidingSkipped === 1 ? "is" : "are"} left alone.`
-                  : "",
-              ]
-                .filter(Boolean)
-                .join(" ")
-            : undefined
-        }
-        confirmLabel={
-          RYD_DECISIONS.find((d) => d.status === deciding)?.label ?? "Confirm"
-        }
-        pendingLabel="Saving..."
-        pending={decisionPending}
-        onConfirm={() => deciding && decideSelected(deciding)}
-      />
-      {dialog === "cancel-selected" && (
-        <RydCancelDialog
-          orders={decidable("rejected")}
-          fulfillmentEmail={queue.settings.fulfillmentEmail}
-          onConfirm={async () => {
-            await decideSelected("rejected");
-            setDialog(null);
-          }}
-          onClose={() => setDialog(null)}
-        />
-      )}
-      <ConfirmationDialog
-        open={removing !== null}
-        setOpen={(open) => {
-          if (!open && dismissing === null) setRemoving(null);
-        }}
-        title="Remove this response?"
-        description={
-          removing
-            ? `The response from ${removing.legalName || removing.email}${removing.submittedAt ? `, sent ${removing.submittedAt},` : ""} stops showing here and in match suggestions. It stays in the Google Form, and you can restore it from Removed responses.`
-            : undefined
-        }
-        confirmLabel="Remove"
-        pendingLabel="Removing"
-        pending={dismissing !== null}
-        destructive
-        onConfirm={() => removing && setDismissed(removing)}
-      />
       {dialog === "upload" && (
         <RydUploadDialog onClose={() => setDialog(null)} onChanged={refresh} />
-      )}
-      {dialog === "send" && fulfillmentOrderIds && (
-        <RydSendDialog
-          orderIds={fulfillmentOrderIds}
-          onClose={() => setDialog(null)}
-        />
-      )}
-      {emailOrder && (
-        <RydRemindDialog
-          orders={[emailOrder]}
-          title={`Email ${emailOrder.firstName || "buyer"}`}
-          onClose={() => setEmailOrder(null)}
-          onChanged={refresh}
-        />
-      )}
-      {(dialog === "remind" ||
-        dialog === "remind-selected" ||
-        dialog === "contacted-selected") && (
-        <RydRemindDialog
-          {...(dialog === "contacted-selected"
-            ? {
-                orders: emailableSelected,
-                draft: false,
-                title: `Mark ${emailableSelected.length} contacted`,
-              }
-            : dialog === "remind-selected"
-              ? {
-                  orders: emailableSelected,
-                  title: `Email ${emailableSelected.length} selected`,
-                }
-              : { orders: remindable })}
-          onClose={() => setDialog(null)}
-          onChanged={async () => {
-            await refresh();
-            setSelected(new Set());
-          }}
-        />
-      )}
-      {(contactOperation ||
-        dialog === "unmatched-email" ||
-        dialog === "unmatched-email-selected") && (
-        <RydContactDialog
-          emails={
-            contactOperation ??
-            (dialog === "unmatched-email-selected"
-              ? selectedSubmitters
-              : contactable
-            ).map((submitter) => submitter.email)
-          }
-          draft={!contactOperation}
-          title={
-            contactOperation
-              ? "Record contact"
-              : dialog === "unmatched-email-selected"
-                ? `Email ${selectedSubmitters.length} selected`
-                : "Email unmatched submitters"
-          }
-          onClose={() => {
-            setContactOperation(null);
-            setDialog(null);
-          }}
-          onRecorded={contactsRecorded}
-          onChanged={refresh}
-        />
-      )}
-      {productionOperation && (
-        <RydProductionDialog
-          orders={productionOperation.orders}
-          action={productionOperation.action}
-          onApplied={productionApplied}
-          onClose={() => {
-            setProductionOperation(null);
-            void refresh().catch(() =>
-              toast.error(
-                "The queue could not reload. Confirmed production changes stay saved.",
-              ),
-            );
-          }}
-        />
       )}
       {dialog === "settings" && canManageSettings && (
         <RydSettingsDialog

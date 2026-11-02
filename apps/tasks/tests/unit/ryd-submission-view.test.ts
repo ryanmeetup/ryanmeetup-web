@@ -102,7 +102,7 @@ describe("RY-D submission views", () => {
         orderOptions: [],
         linking: null,
         busy: null,
-        contacting: null,
+        contacting: false,
         onLink: () => {},
         onRemove: () => {},
         onRestore: () => {},
