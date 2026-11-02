@@ -93,7 +93,11 @@ uses, set in /admin/usage).
 
 1. **Upload orders.** The CSV is added to a rolling queue keyed by `OrderId`.
    Re-uploading the same file changes nothing; an order already in the queue
-   keeps its decision. Import accounting, inserted orders, and their history
+   keeps its decision. One exception: an order first imported from the order
+   summary, with no `Options Detail`, takes it from a later full export so its
+   card drafts from what the buyer typed. A saved card is never touched. The
+   upload summary counts these, and each gets an `imported` event with
+   `cardDetails: true`. Import accounting, inserted orders, and their history
    save in one transaction; retrying the same upload returns its first result.
    Files are limited to 10 MB. The browser gzips the CSV before sending,
    because Vercel refuses a function request body over 4.5 MB; the route

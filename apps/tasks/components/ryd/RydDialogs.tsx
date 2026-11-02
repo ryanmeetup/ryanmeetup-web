@@ -15,7 +15,7 @@ import {
 import { FiLogOut, FiUpload } from "react-icons/fi";
 import { mutate } from "@/lib/mutation-client";
 import { errorMessage } from "@/lib/presentation";
-import type { RydImportSummary } from "@/lib/ryd/orders";
+import { rydImportSummaryText, type RydImportSummary } from "@/lib/ryd/orders";
 import type { RydQueueChange } from "@/lib/ryd/queue-reconciliation";
 import type { RydQueue, RydSettings } from "@/lib/ryd/queue-types";
 import { WEEKDAY_LABELS } from "@/lib/digest/digest-settings";
@@ -48,21 +48,6 @@ async function compressedCsv(file: File) {
     file.stream().pipeThrough(new CompressionStream("gzip")),
   ).blob();
   return new File([blob], file.name, { type: "application/gzip" });
-}
-
-function importSummary(result: RydImportSummary) {
-  const parts = [
-    `${result.newCount} new order${result.newCount === 1 ? "" : "s"} added`,
-  ];
-  if (result.existingCount)
-    parts.push(`${result.existingCount} already in the queue`);
-  if (result.duplicateCount)
-    parts.push(`${result.duplicateCount} repeated in the file`);
-  const multiCard = result.multiCardOrderIds ?? [];
-  const extra = multiCard.length
-    ? ` ${multiCard.length === 1 ? "Order" : "Orders"} ${multiCard.join(", ")} ${multiCard.length === 1 ? "has" : "have"} more than one RY-D; only the first card was imported, so print the rest from fulfillment's file.`
-    : "";
-  return `${parts.join(", ")}.${extra}`;
 }
 
 export function RydUploadDialog({
@@ -100,8 +85,8 @@ export function RydUploadDialog({
           });
           // Extra cards need someone to act, so that summary stays up longer.
           if (result.multiCardOrderIds?.length)
-            toast(importSummary(result), { duration: 12000 });
-          else toast.success(importSummary(result));
+            toast(rydImportSummaryText(result), { duration: 12000 });
+          else toast.success(rydImportSummaryText(result));
           try {
             await onChanged();
           } catch {

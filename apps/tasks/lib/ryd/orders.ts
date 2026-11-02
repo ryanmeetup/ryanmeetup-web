@@ -109,7 +109,30 @@ export type RydImportSummary = {
    * order, so only the first imported; the rest need a person.
    */
   multiCardOrderIds?: string[];
+  /**
+   * Orders already in the queue, first imported without Options Detail, that
+   * took it from this file. Absent before the migration that adds it.
+   */
+  cardDetailsCount?: number;
 };
+
+/** What an upload did, in one toast. */
+export function rydImportSummaryText(result: RydImportSummary) {
+  const parts = [
+    `${result.newCount} new order${result.newCount === 1 ? "" : "s"} added`,
+  ];
+  if (result.existingCount)
+    parts.push(`${result.existingCount} already in the queue`);
+  if (result.cardDetailsCount)
+    parts.push(`${result.cardDetailsCount} of those picked up card details`);
+  if (result.duplicateCount)
+    parts.push(`${result.duplicateCount} repeated in the file`);
+  const multiCard = result.multiCardOrderIds ?? [];
+  const extra = multiCard.length
+    ? ` ${multiCard.length === 1 ? "Order" : "Orders"} ${multiCard.join(", ")} ${multiCard.length === 1 ? "has" : "have"} more than one RY-D; only the first card was imported, so print the rest from fulfillment's file.`
+    : "";
+  return `${parts.join(", ")}.${extra}`;
+}
 
 export type RydOrderImport =
   | {
@@ -143,8 +166,9 @@ export function parseRydOrderCsv(text: string): RydOrderImport {
   const columns = Object.fromEntries(
     Object.entries(RYD_ORDER_COLUMNS).map(([field, names]) => [
       field,
-      names.map((name) => csvColumn(headers, name)).find((index) => index >= 0) ??
-        -1,
+      names
+        .map((name) => csvColumn(headers, name))
+        .find((index) => index >= 0) ?? -1,
     ]),
   ) as Record<RydOrderColumn, number>;
   const missing = REQUIRED_COLUMNS.filter((field) => columns[field] < 0);
@@ -153,7 +177,9 @@ export function parseRydOrderCsv(text: string): RydOrderImport {
       ok: false,
       error: `That file is missing ${missing
         .map((field) => RYD_ORDER_COLUMNS[field].join(" or "))
-        .join(", ")}. Upload fulfillment's full data export or order summary CSV.`,
+        .join(
+          ", ",
+        )}. Upload fulfillment's full data export or order summary CSV.`,
     };
 
   const cell = (row: string[], field: RydOrderColumn) =>

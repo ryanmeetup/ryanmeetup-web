@@ -14,6 +14,7 @@ import {
 import {
   formatRydOrderTotal,
   parseRydOrderCsv,
+  rydImportSummaryText,
   rydOrderCell,
   rydOrderExportCsv,
 } from "@/lib/ryd/orders";
@@ -202,6 +203,32 @@ describe("parseRydOrderCsv", () => {
     expect(table.rows[1].slice(0, -1)).toEqual(
       parsed.headers.slice(0, -1).map((h) => parsed.orders[1].raw[h]),
     );
+  });
+});
+
+describe("rydImportSummaryText", () => {
+  it("says how many queued orders picked up card details", () => {
+    expect(
+      rydImportSummaryText({
+        rowCount: 5,
+        newCount: 1,
+        existingCount: 4,
+        duplicateCount: 0,
+        cardDetailsCount: 3,
+      }),
+    ).toBe("1 new order added, 4 already in the queue, 3 of those picked up card details.");
+  });
+
+  it("leaves card details out when none were filled", () => {
+    expect(
+      rydImportSummaryText({
+        rowCount: 2,
+        newCount: 2,
+        existingCount: 0,
+        duplicateCount: 1,
+        cardDetailsCount: 0,
+      }),
+    ).toBe("2 new orders added, 1 repeated in the file.");
   });
 });
 
