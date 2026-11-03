@@ -33,6 +33,14 @@ test("cart hides the placeholder while preserving real options and stored mercha
   const main = page.getByRole("main");
   await expect(main.getByText("Default option product", { exact: true })).toBeVisible();
   await expect(main.getByText("Default Title", { exact: true })).toHaveCount(0);
-  await expect(main.getByText("S / Black", { exact: true })).toBeVisible();
+  await expect(main.getByText("Size: One size", { exact: true })).toBeVisible();
+  await expect(main.getByText("Size: S · Color: Black", { exact: true })).toBeVisible();
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("ryan-store-cart")!))).toEqual(cart);
+});
+
+test("one-size products say so where the size field would be", async ({ page }) => {
+  await page.goto("/products/ryan-society-cap");
+  const main = page.getByRole("main");
+  await expect(main.getByText("One size", { exact: true })).toBeVisible();
+  await expect(main.getByLabel("Size")).toHaveCount(0);
 });

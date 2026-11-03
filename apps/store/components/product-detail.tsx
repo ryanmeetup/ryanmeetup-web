@@ -1,13 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useEffectEvent, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { useRouter } from "next/navigation";
-import { Button, DropdownSelect, ErrorCallout, IconButton, Kicker } from "@ryanmeetup/ui";
+import { Button, DropdownSelect, ErrorCallout, IconButton, Kicker, getFieldLabelClasses } from "@ryanmeetup/ui";
 import { FiCheck, FiCheckCircle, FiChevronLeft, FiChevronRight, FiPackage, FiShield, FiShoppingBag } from "react-icons/fi";
 import { formatMoney } from "@/lib/money";
-import { isDefaultTitleOption } from "@/lib/product-options";
+import { findVariant, getOptionChoices, getSelections, isDefaultTitleOption, isSizeOption, oneSize } from "@/lib/product-options";
 import { getColorOption, getColorSlug, getVariantForColor } from "@/lib/product-colors";
 import { getProductGallery, getVariantForImage, groupProductGallery } from "@/lib/product-gallery";
 import type { ProductGalleryImage } from "@/lib/product-gallery";
@@ -15,23 +14,23 @@ import type { Product, StoreImage } from "@/lib/types";
 import { useCart } from "./cart-provider";
 import { ProductDescription } from "./product-description";
 
-export function ProductDetail({ product, title = product.title, designField, gallery, initialImage, initialColor, onSelectGalleryImage }: {
+export function ProductDetail({ product, title = product.title, designField, hideColorOption = false, gallery, initialImage, initialColor, onSelectGalleryImage }: {
   product: Product;
   title?: string;
-  designField?: ReactNode;
+  // Receives the live option state so a field outside the product can mirror it.
+  designField?: (state: { selections: Record<string, string>; selectOption: (name: string, value: string) => void }) => ReactNode;
+  // Set when designField already chooses the color across a listing.
+  hideColorOption?: boolean;
   gallery?: ProductGalleryImage[];
   initialImage?: StoreImage;
   initialColor?: string | null;
   onSelectGalleryImage?: (image: ProductGalleryImage) => void;
 }) {
-  const router = useRouter();
-  const { addItem, error, loading } = useCart();
+  const { addItem, error, loading, setDrawerOpen } = useCart();
   const initialVariant = getVariantForColor(product, initialColor)
     ?? getVariantForImage(product, initialImage ?? product.featuredImage)
     ?? product.variants.find((variant) => variant.availableForSale) ?? product.variants[0];
-  const [selections, setSelections] = useState<Record<string, string>>(
-    Object.fromEntries(initialVariant?.selectedOptions.map((option) => [option.name, option.value]) ?? []),
-  );
+  const [selections, setSelections] = useState(() => getSelections(initialVariant));
   const [quantity, setQuantity] = useState("1");
   const [added, setAdded] = useState(false);
   const [activeImage, setActiveImage] = useState(initialImage ?? initialVariant?.image ?? product.featuredImage ?? product.images[0] ?? null);
@@ -42,13 +41,7 @@ export function ProductDetail({ product, title = product.title, designField, gal
   const galleryHintId = useId();
   const hasMultipleImages = galleryImages.length > 1;
   const activeImageIndex = Math.max(0, galleryImages.findIndex((entry) => entry.productId === product.id && entry.image.url === activeImage?.url));
-  const variant = useMemo(
-    () =>
-      product.variants.find((item) =>
-        item.selectedOptions.every((option) => selections[option.name] === option.value),
-      ),
-    [product.variants, selections],
-  );
+  const variant = findVariant(product, selections);
 
   function rememberColor(color: string) {
     const url = new URL(window.location.href);
@@ -59,7 +52,7 @@ export function ProductDetail({ product, title = product.title, designField, gal
   function selectOption(name: string, value: string) {
     const nextSelections = { ...selections, [name]: value };
     setSelections(nextSelections);
-    const nextVariant = product.variants.find((item) => item.selectedOptions.every((option) => nextSelections[option.name] === option.value));
+    const nextVariant = findVariant(product, nextSelections);
     if (nextVariant?.image) setActiveImage(nextVariant.image);
     if (name === getColorOption(product)?.name) rememberColor(value);
     setAdded(false);
@@ -73,7 +66,7 @@ export function ProductDetail({ product, title = product.title, designField, gal
     setActiveImage(entry.image);
     const imageVariant = getVariantForImage(product, entry.image, selections);
     if (imageVariant) {
-      setSelections(Object.fromEntries(imageVariant.selectedOptions.map((option) => [option.name, option.value])));
+      setSelections(getSelections(imageVariant));
       const color = imageVariant.selectedOptions.find((option) => option.name === getColorOption(product)?.name)?.value;
       if (color) rememberColor(color);
     }
@@ -106,18 +99,20 @@ export function ProductDetail({ product, title = product.title, designField, gal
     const strip = thumbnailsRef.current;
     const selected = strip?.querySelector<HTMLButtonElement>('[aria-pressed="true"]');
     if (!strip || !selected) return;
-    // Reveal the design's frame first, then scroll its photos inside the fixed
-    // border. scrollIntoView would also move the page vertically.
+    // Reveal the design's frame, then the photo itself when the frame is wider
+    // than the strip. scrollIntoView would also move the page vertically.
+    // Clear the pinned edge rule and the gap after it.
+    const margin = 17;
     function reveal(container: HTMLElement, element: HTMLElement) {
-      const left = element.getBoundingClientRect().left - container.getBoundingClientRect().left + container.scrollLeft - 4;
-      const right = left + element.offsetWidth + 8;
+      const left = element.getBoundingClientRect().left - container.getBoundingClientRect().left + container.scrollLeft - margin;
+      const right = left + element.offsetWidth + margin * 2;
       if (left < container.scrollLeft) container.scrollLeft = left;
       else if (right > container.scrollLeft + container.clientWidth) container.scrollLeft = right - container.clientWidth;
     }
     const frame = selected.closest<HTMLElement>('[role="group"]');
     function revealSelected() {
       if (frame) reveal(strip!, frame);
-      if (selected!.parentElement) reveal(selected!.parentElement, selected!);
+      reveal(strip!, selected!);
     }
     revealSelected();
     const observer = new ResizeObserver(revealSelected);
@@ -160,14 +155,13 @@ export function ProductDetail({ product, title = product.title, designField, gal
           </div>
         )}
         {hasMultipleImages && (
-          <div ref={thumbnailsRef} role="group" aria-label="Product photos" className="relative flex gap-4 overflow-x-auto overscroll-x-contain p-1 pb-3 [scrollbar-width:thin]">
+          <div ref={thumbnailsRef} role="group" aria-label="Product photos" className="relative flex gap-4 overflow-x-auto overscroll-x-contain pb-3 [scrollbar-width:thin]">
+            {/* Pinned edge rules stretch to the frames' height, not the scrollbar's padding. */}
+            <span aria-hidden className="sticky left-0 z-10 w-px shrink-0 bg-black/10 dark:bg-white/10" />
             {galleryGroups.map((group) => (
-              <div key={`${group.productId}:${group.label}`} role="group" aria-label={`${group.label} photos`} className="w-max max-w-full shrink-0 overflow-hidden rounded-2xl border border-black/10 py-3 dark:border-white/10">
-                <div className="mb-2 flex items-baseline gap-3 px-3">
-                  <Kicker className="min-w-0 break-words">{group.label}</Kicker>
-                  <span className="shrink-0 whitespace-nowrap text-xs text-black/70 dark:text-white/70">{group.images.length} {group.images.length === 1 ? "photo" : "photos"}</span>
-                </div>
-                <div data-photo-scroll className="-my-1 flex gap-3 overflow-x-auto overscroll-x-contain px-3 py-1 [scrollbar-width:thin]">
+              <div key={`${group.productId}:${group.label}`} role="group" aria-label={`${group.label} photos`} className="w-max shrink-0 rounded-2xl border border-black/10 py-3 dark:border-white/10">
+                <Kicker className="mb-2 px-3">{group.label}</Kicker>
+                <div className="flex gap-3 px-3">
                   {group.images.map((entry) => (
                     <button key={entry.key} type="button" onClick={() => selectGalleryImage(entry)} aria-label={`View ${entry.label}`} aria-pressed={entry.productId === product.id && activeImage?.url === entry.image.url} className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 sm:h-20 sm:w-20 dark:focus-visible:ring-white/40 ${entry.productId === product.id && activeImage?.url === entry.image.url ? "border-black dark:border-white" : "border-black/10 dark:border-white/10"}`}>
                       <Image src={entry.image.url} alt="" fill sizes="120px" className="object-contain" />
@@ -176,6 +170,7 @@ export function ProductDetail({ product, title = product.title, designField, gal
                 </div>
               </div>
             ))}
+            <span aria-hidden className="sticky right-0 z-10 w-px shrink-0 bg-black/10 dark:bg-white/10" />
           </div>
         )}
       </div>
@@ -183,10 +178,13 @@ export function ProductDetail({ product, title = product.title, designField, gal
         <h1 className="font-cooper text-4xl leading-[1.05] tracking-wide text-black dark:text-white sm:text-5xl">{title}</h1>
         <p className="mt-5 text-xl font-semibold" aria-live="polite">{variant ? formatMoney(variant.price) : formatMoney(product.priceRange.minVariantPrice)}</p>
         <ProductDescription description={product.description} descriptionHtml={product.descriptionHtml} part="intro" />
-        {designField && <div className="mt-8">{designField}</div>}
+        {designField && <div className="mt-8">{designField({ selections, selectOption })}</div>}
 
         <div className="mt-8 space-y-5">
-          {product.options.filter((option) => !isDefaultTitleOption(option)).map((option) => (
+          {!product.options.some(isSizeOption) && <SizeDisplay value={oneSize} />}
+          {product.options.filter((option) => !isDefaultTitleOption(option) && !(hideColorOption && option === getColorOption(product))).map((option) => isSizeOption(option) && option.values.length === 1 ? (
+            <SizeDisplay key={option.id} value={option.values[0]} />
+          ) : (
             <DropdownSelect
               key={option.id}
               label={option.name}
@@ -194,10 +192,7 @@ export function ProductDetail({ product, title = product.title, designField, gal
               required
               value={selections[option.name] ?? option.values[0]}
               onChange={(value) => selectOption(option.name, value)}
-              options={option.values.map((value) => {
-                const available = product.variants.some((item) => item.availableForSale && item.selectedOptions.every((selected) => selected.value === (selected.name === option.name ? value : selections[selected.name])));
-                return { label: available ? value : `${value} — sold out`, value };
-              })}
+              options={getOptionChoices(product, option, selections)}
             />
           ))}
           <DropdownSelect
@@ -214,7 +209,7 @@ export function ProductDetail({ product, title = product.title, designField, gal
           <Button fullWidth size="lg" loading={loading} loadingText="Adding" disabled={!variant?.availableForSale} leftIcon={added ? <FiCheck /> : <FiShoppingBag />} onClick={handleAdd}>
             {!variant ? "Unavailable" : !variant.availableForSale ? "Sold out" : added ? "Added" : "Add to cart"}
           </Button>
-          <Button fullWidth size="lg" variant="secondary" onClick={() => router.push("/cart")}>View cart</Button>
+          <Button fullWidth size="lg" variant="secondary" onClick={() => setDrawerOpen(true)}>View cart</Button>
         </div>
         {error && <ErrorCallout className="mt-4">{error}</ErrorCallout>}
         <div className="mt-8 border-t border-black/10 dark:border-white/10">
@@ -233,6 +228,16 @@ export function ProductDetail({ product, title = product.title, designField, gal
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** A size with nothing to choose, shown where the Size field would be. */
+function SizeDisplay({ value }: { value: string }) {
+  return (
+    <div>
+      <p className={getFieldLabelClasses()}>Size</p>
+      <p className="mt-2 text-sm text-black/70 dark:text-white/70">{value}</p>
     </div>
   );
 }

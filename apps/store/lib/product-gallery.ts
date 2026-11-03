@@ -1,4 +1,4 @@
-import { getColorOption, getImageColor } from "./product-colors";
+import { getColorOption, getImageColor, getListingColors } from "./product-colors";
 import type { Product, ProductDesign, StoreImage } from "./types";
 
 export type ProductGalleryImage = {
@@ -12,6 +12,8 @@ export type ProductGalleryImage = {
 
 export function getProductGallery(product: Product, designs?: ProductDesign[]): ProductGalleryImage[] {
   const sources = designs ?? [{ product, label: product.title, value: undefined }];
+  // A listing chosen by color alone labels photos by color, as its Color field does.
+  const colorsOnly = Boolean(designs && getListingColors(designs));
   return sources.flatMap(({ product: source, label, value }) => {
     const images = new Map<string, StoreImage>();
     for (const image of [source.featuredImage, ...source.images, ...source.variants.map((variant) => variant.image)]) {
@@ -21,7 +23,7 @@ export function getProductGallery(product: Product, designs?: ProductDesign[]): 
     const counts = new Map<string, number>();
     return [...images.values()].map((image) => {
       const color = multipleColors ? getImageColor(source, image) : undefined;
-      const groupLabel = color ? value ? `${label} · ${color}` : color : label;
+      const groupLabel = color ? value && !colorsOnly ? `${label} · ${color}` : color : label;
       const count = (counts.get(groupLabel) ?? 0) + 1;
       counts.set(groupLabel, count);
       return {

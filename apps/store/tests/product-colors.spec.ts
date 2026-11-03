@@ -1,8 +1,8 @@
 import { expect, test } from "@playwright/test";
-import { getColorOption, getColorPreview, getColorPreviews, getColorSlug, getImageColor, getListingColorPreviews, getVariantForColor } from "../lib/product-colors";
+import { getColorOption, getColorPreview, getColorPreviews, getColorSlug, getListingColors, getImageColor, getListingColorPreviews, getVariantForColor } from "../lib/product-colors";
 import { groupProductListings } from "../lib/product-groups";
 import type { Product, StoreImage } from "../lib/types";
-import { superBlack, superBlue, superRed, tee } from "./fixtures/products";
+import { dad, ryan, superBlack, superBlue, superRed, tee } from "./fixtures/products";
 
 const greenImage: StoreImage = { ...tee.featuredImage!, url: "https://cdn.shopify.com/test/tee-military-green.jpg" };
 const plumImage: StoreImage = { ...tee.featuredImage!, url: "https://cdn.shopify.com/test/tee-plum.jpg" };
@@ -180,6 +180,28 @@ test("a mixed listing previews size-only styles and every native color from a la
     expect(preview.image).toEqual(getColorPreview(superBlue, preview.slug)?.image);
     expect(preview.swatch).toBeTruthy();
   }
+});
+
+test("a listing of color one-offs and multicolor members is chosen by color alone", () => {
+  const [listing] = groupProductListings([superBlack, { ...superBlue, title: "Super Ryan Shirt" }, superRed]);
+  expect(getListingColors(listing.designs!)?.map(({ color, design }) => [color, design])).toEqual([
+    ["Black", "super-ryan-shirt"],
+    ["Red", "super-ryan-red"],
+    ["Royal", "super-ryan-blue"],
+    ["Sapphire", "super-ryan-blue"],
+    ["White", "super-ryan-blue"],
+  ]);
+});
+
+test("a listing keeps its styles when a member is a design or a color repeats", () => {
+  const [designs] = groupProductListings([ryan, dad]);
+  expect(getListingColors(designs.designs!)).toBeUndefined();
+  const secondPrint = { ...superBlue, id: "second-print", handle: "second-print", title: "Super Ryan Shirt - Other print" };
+  const [repeated] = groupProductListings([superBlue, secondPrint]);
+  expect(getListingColors(repeated.designs!)).toBeUndefined();
+  // "Blue" names no color the member offers, so it reads as a design.
+  const [named] = groupProductListings([superBlack, superBlue, superRed]);
+  expect(getListingColors(named.designs!)).toBeUndefined();
 });
 
 test("a fabric color shared by different prints keeps separate, labelled previews", () => {

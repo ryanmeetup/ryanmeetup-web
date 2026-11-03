@@ -21,19 +21,8 @@ for (const viewport of [
     for (const label of ["Ryan", "Ryan’s Dad"]) {
       const group = strip.getByRole("group", { name: `${label} photos`, exact: true });
       await expect(group.getByText(label, { exact: true })).toHaveCount(1);
-      const count = await group.getByRole("button").count();
-      await expect(group.getByText(`${count} ${count === 1 ? "photo" : "photos"}`, { exact: true })).toHaveCount(1);
-      await expect(group).toHaveCSS("overflow-x", "hidden");
-      const scroll = group.locator("[data-photo-scroll]");
-      if (await scroll.evaluate((element) => element.scrollWidth > element.clientWidth)) {
-        const frameBefore = await group.boundingBox();
-        const labelBefore = await group.getByText(label, { exact: true }).boundingBox();
-        await scroll.evaluate((element) => { element.scrollLeft = element.scrollWidth; });
-        expect(await scroll.evaluate((element) => element.scrollLeft)).toBeGreaterThan(0);
-        expect(await group.boundingBox()).toEqual(frameBefore);
-        expect(await group.getByText(label, { exact: true }).boundingBox()).toEqual(labelBefore);
-        await scroll.evaluate((element) => { element.scrollLeft = 0; });
-      }
+      // Only the strip scrolls; a design's photos never scroll inside their frame.
+      expect(await group.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
     }
     const rows = await photos.evaluateAll((buttons) => new Set(buttons.map((button) => button.getBoundingClientRect().top)).size);
     expect(rows).toBe(1);

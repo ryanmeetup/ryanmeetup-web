@@ -1,4 +1,4 @@
-import type { Product, ProductListing, StoreImage } from "./types";
+import type { Product, ProductDesign, ProductListing, StoreImage } from "./types";
 
 export type ColorPreview = {
   value: string;
@@ -30,6 +30,10 @@ const fallbackSwatches: Record<string, string> = {
   "steel-grey": "#6e7378",
   white: "#ffffff",
 };
+
+export function isKnownColor(value: string) {
+  return Object.hasOwn(fallbackSwatches, getColorSlug(value));
+}
 
 export function getColorSlug(value: string) {
   return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -156,4 +160,36 @@ function getImageFilename(image: StoreImage) {
   } catch {
     return undefined;
   }
+}
+
+export type ListingColor = { color: string; slug: string; design: string; available: boolean };
+
+// A listing whose members are each just colors of one garment — say, one
+// product in Royal, Sapphire, and White beside one-offs in Black and Red —
+// is chosen by color alone. A member qualifies when its title adds nothing to
+// the listing name but a color: "Super Ryan Shirt" or "Super Ryan Shirt - Black".
+// Its colors come from its Shopify Color option, or for an older size-only
+// product, from that title color. Returns undefined when any member names a
+// design ("Ryan’s Dad") or two members offer the same color, so the listing
+// keeps its Style field.
+export function getListingColors(designs: ProductDesign[]): ListingColor[] | undefined {
+  const colors: ListingColor[] = [];
+  for (const { label, value, product } of designs) {
+    const option = getColorOption(product);
+    // A design's label falls back to the full title when the title is just the listing name.
+    const unlabelled = label === product.title;
+    const labelColor = getColorSlug(label);
+    if (option && (unlabelled || option.values.some((color) => getColorSlug(color) === labelColor))) {
+      for (const color of option.values) {
+        const available = product.variants.some((variant) => variant.availableForSale && variant.selectedOptions.some((selected) => selected.name === option.name && selected.value === color));
+        colors.push({ color, slug: getColorSlug(color), design: value, available });
+      }
+    } else if (Object.hasOwn(fallbackSwatches, getColorSlug(label))) {
+      colors.push({ color: label, slug: getColorSlug(label), design: value, available: product.availableForSale });
+    } else {
+      return undefined;
+    }
+  }
+  const unique = new Set(colors.map(({ slug }) => slug)).size === colors.length;
+  return colors.length > 1 && unique ? colors : undefined;
 }

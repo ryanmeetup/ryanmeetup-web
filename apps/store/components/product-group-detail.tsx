@@ -3,7 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { DropdownSelect } from "@ryanmeetup/ui";
-import { getColorPreview, getColorSlug, getColorValue, getImageColor } from "@/lib/product-colors";
+import { getColorOption, getColorPreview, getColorSlug, getColorValue, getImageColor, getListingColors } from "@/lib/product-colors";
 import { getProductGallery } from "@/lib/product-gallery";
 import type { ProductDesign, ReviewsData, StoreImage } from "@/lib/types";
 import { ProductDetail } from "./product-detail";
@@ -19,6 +19,7 @@ export function ProductGroupDetail({ title, handle, designs, reviewsByProduct }:
   const navigationFocus = useRef<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<{ design: string; image: StoreImage } | null>(null);
   const gallery = useMemo(() => designs.length ? getProductGallery(designs[0].product, designs) : [], [designs]);
+  const colors = useMemo(() => getListingColors(designs), [designs]);
   const selected = designs.find((design) => design.value === searchParams.get("design")) ?? designs[0];
 
   useLayoutEffect(() => {
@@ -31,13 +32,13 @@ export function ProductGroupDetail({ title, handle, designs, reviewsByProduct }:
 
   if (!selected) return null;
 
-  function selectDesign(value: string, image?: StoreImage) {
+  function selectDesign(value: string, image?: StoreImage, colorSlug?: string) {
     navigationFocus.current = document.activeElement?.getAttribute("data-photo-navigation") ?? null;
     setSelectedImage(image ? { design: value, image } : null);
     const query = new URLSearchParams(searchParams.toString());
     query.set("design", value);
     const product = designs.find((design) => design.value === value)?.product;
-    const color = product ? image ? getImageColor(product, image) : getColorValue(product, query.get("color")) : undefined;
+    const color = product ? image ? getImageColor(product, image) : getColorValue(product, colorSlug ?? query.get("color")) : undefined;
     if (color) query.set("color", getColorSlug(color));
     else query.delete("color");
     // Next.js syncs native history with useSearchParams, including back/forward navigation.
@@ -56,19 +57,44 @@ export function ProductGroupDetail({ title, handle, designs, reviewsByProduct }:
         onSelectGalleryImage={(entry) => {
           if (entry.design) selectDesign(entry.design, entry.image);
         }}
-        designField={
-          <DropdownSelect
-            label="Style"
-            variant="field"
-            required
-            value={selected.value}
-            onChange={selectDesign}
-            options={designs.map((design) => ({
-              label: design.product.availableForSale ? design.label : `${design.label} — sold out`,
-              value: design.value,
-            }))}
-          />
-        }
+        hideColorOption={Boolean(colors)}
+        designField={({ selections, selectOption }) => {
+          if (!colors) {
+            return (
+              <DropdownSelect
+                label="Style"
+                variant="field"
+                required
+                value={selected.value}
+                onChange={(value) => selectDesign(value)}
+                options={designs.map((design) => ({
+                  label: design.product.availableForSale ? design.label : `${design.label} — sold out`,
+                  value: design.value,
+                }))}
+              />
+            );
+          }
+          // Which Shopify product supplies a color is a printing detail; shoppers just pick the color.
+          const colorOption = getColorOption(selected.product);
+          const current = colorOption && selections[colorOption.name];
+          const own = colors.filter(({ design }) => design === selected.value);
+          return (
+            <DropdownSelect
+              label="Color"
+              variant="field"
+              required
+              value={(own.find(({ color }) => color === current) ?? own[0])?.slug ?? ""}
+              onChange={(slug) => {
+                const choice = colors.find((entry) => entry.slug === slug);
+                if (!choice) return;
+                // Another color of this product keeps the shopper's size; another product remounts.
+                if (choice.design === selected.value && colorOption) selectOption(colorOption.name, choice.color);
+                else selectDesign(choice.design, undefined, slug);
+              }}
+              options={colors.map(({ color, slug, available }) => ({ label: available ? color : `${color} — sold out`, value: slug }))}
+            />
+          );
+        }}
       />
       <Reviews key={`reviews-${selected.product.id}`} data={reviewsByProduct[selected.product.id]} productId={selected.product.id} />
     </>
