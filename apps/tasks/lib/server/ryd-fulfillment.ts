@@ -4,7 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { rydFulfillmentEmail } from "@/lib/ryd/emails";
 import type { RydFulfillmentPreview } from "@/lib/ryd/fulfillment";
 import { rydOrderExportCsv, type RydOrderStatus } from "@/lib/ryd/orders";
-import { readRydLinks } from "./ryd-queries";
+import { readRydLinksFor } from "./ryd-queries";
 import { loadRydGoogleIntegration, readRydSubmissions } from "./ryd-google";
 
 type GeneratedFulfillment = {
@@ -32,10 +32,12 @@ export async function generateRydFulfillment(
   });
   if (result.error) throw result.error;
   const data = result.data as GeneratedFulfillment;
-  const selected = new Set(data.order_rows.map((row) => row.order_id));
-  const linksResult = await readRydLinks(admin);
+  const linksResult = await readRydLinksFor(
+    admin,
+    data.order_rows.map((row) => row.order_id),
+  );
   if (linksResult.error) throw linksResult.error;
-  const links = linksResult.data.filter((link) => selected.has(link.order_id));
+  const links = linksResult.data;
   const names = new Map<string, string[]>();
   if (links.length) {
     const [settings, connection] = await Promise.all([

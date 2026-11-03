@@ -33,14 +33,21 @@ const data = {
 const client = (
   value: unknown,
   links: { order_id: string; submission_key: string }[] = [],
+  requests: URL[] = [],
 ) =>
   createClient("http://ryd.test", "synthetic-key", {
     global: {
       fetch: async (input) => {
         const url = String(input);
+        requests.push(new URL(url));
+        // Honor the order filter the way PostgREST would.
+        const ids = /^in\.\((.*)\)$/
+          .exec(new URL(url).searchParams.get("order_id") ?? "")?.[1]
+          .split(",")
+          .map((id) => id.replace(/^"|"$/g, ""));
         return Response.json(
           url.includes("ryd_order_submissions")
-            ? links
+            ? links.filter((link) => !ids || ids.includes(link.order_id))
             : url.includes("ryd_settings")
               ? { form_id: "verified-form" }
               : value,
@@ -138,6 +145,34 @@ describe("RY-D on-demand fulfillment files", () => {
       ),
     ).rejects.toMatchObject({ code: "RY409" });
   });
+  it("reads only the selected orders' links, a bounded group at a time", async () => {
+    const many = {
+      ...data,
+      order_rows: Array.from({ length: 450 }, (_, index) => ({
+        ...rows[0],
+        order_id: String(index + 1),
+        raw: { OrderId: String(index + 1) },
+      })),
+    };
+    const requests: URL[] = [];
+    await generateRydFulfillment(
+      client(
+        many,
+        [{ order_id: "9999", submission_key: "elsewhere" }],
+        requests,
+      ),
+      "actor",
+      many.order_rows.map((row) => row.order_id),
+    );
+    const linkReads = requests.filter((url) =>
+      url.pathname.endsWith("/ryd_order_submissions"),
+    );
+    expect(linkReads).toHaveLength(3);
+    for (const url of linkReads)
+      expect(url.searchParams.get("order_id")).toMatch(/^in\.\(/);
+    expect(google.read).not.toHaveBeenCalled();
+  });
+
   it("does not read Google for orders without linked responses", async () => {
     await generateRydFulfillment(client(data), "actor", ["1"]);
     expect(google.read).not.toHaveBeenCalled();
