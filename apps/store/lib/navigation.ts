@@ -8,6 +8,12 @@ export const StoreProductIcon = FiTag;
 
 export const storeNavigation = [
   {
+    href: "/about",
+    label: "About",
+    description: "Who makes the goods and where the money goes.",
+    icon: FiInfo,
+  },
+  {
     href: "/collections/all",
     label: "Collections",
     description: "Browse every Ryan-approved provision.",
@@ -24,12 +30,6 @@ export const storeNavigation = [
     label: "Accessories",
     description: "The finishing touches for a fully equipped Ryan.",
     icon: FiTag,
-  },
-  {
-    href: "/about",
-    label: "About",
-    description: "Who makes the goods and where the money goes.",
-    icon: FiInfo,
   },
   {
     href: "/contact",
