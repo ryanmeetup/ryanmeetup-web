@@ -8,6 +8,7 @@ import {
 } from "@ryanmeetup/ui";
 import { FiArrowRight, FiPackage, FiShield, FiTruck } from "react-icons/fi";
 import { ProductGrid } from "@/components/product-grid";
+import { collectionHeading } from "@/lib/catalog-collections";
 import { getHomeCatalog } from "@/lib/shopify";
 
 export const revalidate = 300;
@@ -89,16 +90,15 @@ export default async function HomePage() {
       </section>
 
       <section id="collections" className="store-container py-10 sm:py-14">
-        <SectionHeader title={featured.collection.title} description={featured.collection.description} meta="Featured goods" />
+        <SectionHeader title={collectionHeading(featured.collection.title)} description={featured.collection.description} meta="Featured goods" />
         <ProductGrid products={featured.products} className={gridColumns} />
       </section>
 
       {sections.map(({ collection, products, total }) => (
         <section key={collection.id} aria-labelledby={`collection-${collection.handle}`} className="store-container py-10 sm:py-14">
           <SectionHeader
-            title={<span id={`collection-${collection.handle}`}>{collection.title}</span>}
+            title={<span id={`collection-${collection.handle}`}>{collectionHeading(collection.title)}</span>}
             description={collection.description || undefined}
-            meta="Collection"
             actions={
               <Button.Link href={`/collections/${collection.handle}`} size="md" variant="secondary" className="!w-full sm:!w-auto" rightIcon={<FiArrowRight />}>
                 {total > products.length ? `See all ${total}` : "View collection"}

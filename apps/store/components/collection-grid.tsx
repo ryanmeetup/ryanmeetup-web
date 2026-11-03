@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Button, DropdownSelect, EmptyState, SectionHeader } from "@ryanmeetup/ui";
-import { FiArrowRight } from "react-icons/fi";
-import type { CatalogSections, ProductListing } from "@/lib/types";
+import { AnimatedCollapse, Button, DropdownSelect, EmptyState, SectionHeader } from "@ryanmeetup/ui";
+import { FiArrowRight, FiChevronDown } from "react-icons/fi";
+import type { CatalogSections, CollectionSummary, ProductListing } from "@/lib/types";
+import { collectionHeading } from "@/lib/catalog-collections";
 import { ProductGrid } from "./product-grid";
 
 // With sections, the filters apply within each collection and an emptied section is hidden.
@@ -63,28 +64,48 @@ export function CollectionGrid({ products, sections, more = [] }: { products: Pr
         <EmptyState message="No Ryan gear found. Try another size or product type." />
       ) : visibleSections.length ? (
         <div className="space-y-12">
-          {visibleSections.map(({ collection, products: sectionProducts }, index) => {
-            const headingId = `collection-${collection?.handle ?? "more"}`;
-            return (
-              <section key={collection?.id ?? "more"} aria-labelledby={headingId} className="space-y-6">
-                <SectionHeader
-                  title={<span id={headingId}>{collection?.title ?? "More Ryan goods"}</span>}
-                  description={collection ? collection.description || undefined : "Everything else on the shelf."}
-                  meta={`${sectionProducts.length} item${sectionProducts.length === 1 ? "" : "s"}`}
-                  actions={collection && (
-                    <Button.Link href={`/collections/${collection.handle}`} size="md" variant="secondary" className="!w-full sm:!w-auto" rightIcon={<FiArrowRight />}>
-                      View collection
-                    </Button.Link>
-                  )}
-                />
-                <ProductGrid products={sectionProducts} eagerCount={index === 0 ? 4 : 0} />
-              </section>
-            );
-          })}
+          {visibleSections.map(({ collection, products: sectionProducts }, index) => (
+            <CollapsibleCollection key={collection?.id ?? "more"} collection={collection} products={sectionProducts} eagerCount={index === 0 ? 4 : 0} />
+          ))}
         </div>
       ) : (
         <ProductGrid products={visible} />
       )}
     </div>
+  );
+}
+
+// Sections start open; the heading toggles one closed so a shopper can skip past it.
+function CollapsibleCollection({ collection, products, eagerCount }: { collection: CollectionSummary | null; products: ProductListing[]; eagerCount: number }) {
+  const [open, setOpen] = useState(true);
+  const id = `collection-${collection?.handle ?? "more"}`;
+  return (
+    <section aria-labelledby={id}>
+      <SectionHeader
+        title={
+          <button
+            type="button"
+            aria-expanded={open}
+            aria-controls={`${id}-panel`}
+            onClick={() => setOpen((current) => !current)}
+            className="inline-flex cursor-pointer items-center gap-3 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40 dark:focus-visible:ring-white/40"
+          >
+            <span id={id}>{collection ? collectionHeading(collection.title) : "More Ryan goods"}</span>
+            <FiChevronDown aria-hidden className={`h-5 w-5 shrink-0 text-black/55 transition-transform duration-200 motion-reduce:transition-none dark:text-white/55 ${open ? "-rotate-180" : ""}`} />
+          </button>
+        }
+        description={collection ? collection.description || undefined : "Everything else on the shelf."}
+        meta={`${products.length} item${products.length === 1 ? "" : "s"}`}
+        actions={collection && (
+          <Button.Link href={`/collections/${collection.handle}`} size="md" variant="secondary" className="!w-full sm:!w-auto" rightIcon={<FiArrowRight />}>
+            View collection
+          </Button.Link>
+        )}
+      />
+      {/* The gap under the header lives inside the collapse so a closed section is no taller than its header. */}
+      <AnimatedCollapse id={`${id}-panel`} open={open} contentClassName="pt-6">
+        <ProductGrid products={products} eagerCount={eagerCount} />
+      </AnimatedCollapse>
+    </section>
   );
 }

@@ -50,3 +50,8 @@ export function getCatalogProductQuery(collection: CatalogCollection) {
 export function isInCatalogCollection(collection: CatalogCollection, product: Pick<Product, "productType">) {
   return collection.productType === null || product.productType === collection.productType;
 }
+
+/** A collection's title as a section heading, so "I ❤️ RY" reads as "I ❤️ RY Collection". */
+export function collectionHeading(title: string) {
+  return /\bcollection$/i.test(title.trim()) ? title : `${title} Collection`;
+}
