@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/react";
 import { Banner, RyanMeetupFooter } from "@ryanmeetup/ui";
 import { ThemeProvider } from "next-themes";
+import { CartDrawer } from "@/components/cart-drawer";
 import { CartProvider } from "@/components/cart-provider";
 import { Header } from "@/components/header";
 import { isShopifyConfigured } from "@/lib/shopify";
@@ -50,6 +51,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               homeHref="https://ryanmeetup.com"
               className="store-container"
             />
+            <CartDrawer />
             <Analytics />
           </CartProvider>
         </ThemeProvider>

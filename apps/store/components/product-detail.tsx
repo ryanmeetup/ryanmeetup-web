@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useEffect, useEffectEvent, useId, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Button, DropdownSelect, ErrorCallout, FormStatus, IconButton, Kicker } from "@ryanmeetup/ui";
+import { Button, DropdownSelect, ErrorCallout, IconButton, Kicker } from "@ryanmeetup/ui";
 import { FiCheck, FiCheckCircle, FiChevronLeft, FiChevronRight, FiPackage, FiShield, FiShoppingBag } from "react-icons/fi";
 import { formatMoney } from "@/lib/money";
 import { isDefaultTitleOption } from "@/lib/product-options";
@@ -217,7 +217,6 @@ export function ProductDetail({ product, title = product.title, designField, gal
           <Button fullWidth size="lg" variant="secondary" onClick={() => router.push("/cart")}>View cart</Button>
         </div>
         {error && <ErrorCallout className="mt-4">{error}</ErrorCallout>}
-        {added && <FormStatus className="mt-4" title="Added to cart" icon={<FiCheck aria-hidden />}>Excellent choice, Ryan. It’s in your cart.</FormStatus>}
         <div className="mt-8 border-t border-black/10 dark:border-white/10">
           <ProductDescription description={product.description} descriptionHtml={product.descriptionHtml} part="details" />
           <div className="grid gap-6 pt-6 text-sm text-black/70 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3 dark:text-white/70">

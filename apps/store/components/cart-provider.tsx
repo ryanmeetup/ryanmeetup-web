@@ -9,9 +9,13 @@ type CartContextValue = {
   addItem: (product: Product, variant: ProductVariant, quantity: number) => Promise<void>;
   cart: Cart | null;
   commerceConfigured: boolean;
+  drawerOpen: boolean;
   error: string;
+  /** The variant id of the most recent addition, while the drawer shows it. */
+  justAdded: string | null;
   loading: boolean;
   removeItem: (lineId: string) => Promise<void>;
+  setDrawerOpen: (open: boolean) => void;
   updateItem: (lineId: string, quantity: number) => Promise<void>;
 };
 
@@ -45,6 +49,8 @@ export function CartProvider({
   const [cart, setCart] = useState<Cart | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [drawerOpen, setDrawerOpenState] = useState(false);
+  const [justAdded, setJustAdded] = useState<string | null>(null);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(storageKey);
@@ -62,6 +68,11 @@ export function CartProvider({
     setCart(nextCart);
     if (nextCart) window.localStorage.setItem(storageKey, JSON.stringify(nextCart));
     else window.localStorage.removeItem(storageKey);
+  }, []);
+
+  const setDrawerOpen = useCallback((open: boolean) => {
+    setDrawerOpenState(open);
+    if (!open) setJustAdded(null);
   }, []);
 
   const request = useCallback(async (payload: Record<string, unknown>) => {
@@ -83,25 +94,27 @@ export function CartProvider({
         if (commerceConfigured) {
           const cartId = cart?.id.startsWith("demo-") ? undefined : cart?.id;
           saveCart(await request({ action: "add", cartId, merchandiseId: variant.id, quantity }));
-          return;
-        }
-        const existing = cart?.lines.find((line) => line.merchandise.id === variant.id);
-        const lines = existing
-          ? (cart?.lines ?? []).map((line) =>
-              line.id === existing.id ? { ...line, quantity: line.quantity + quantity } : line,
-            )
-          : [
-              ...(cart?.lines ?? []),
-              {
-                id: `demo-line-${variant.id}`,
-                quantity,
-                merchandise: {
-                  ...variant,
-                  product: { handle: product.handle, title: product.title, tags: product.tags },
+        } else {
+          const existing = cart?.lines.find((line) => line.merchandise.id === variant.id);
+          const lines = existing
+            ? (cart?.lines ?? []).map((line) =>
+                line.id === existing.id ? { ...line, quantity: line.quantity + quantity } : line,
+              )
+            : [
+                ...(cart?.lines ?? []),
+                {
+                  id: `demo-line-${variant.id}`,
+                  quantity,
+                  merchandise: {
+                    ...variant,
+                    product: { handle: product.handle, title: product.title, tags: product.tags },
+                  },
                 },
-              },
-            ];
-        saveCart(demoCart(lines));
+              ];
+          saveCart(demoCart(lines));
+        }
+        setJustAdded(variant.id);
+        setDrawerOpenState(true);
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : "Cart update failed.");
         throw caught;
@@ -153,8 +166,8 @@ export function CartProvider({
   );
 
   const value = useMemo(
-    () => ({ addItem, cart, commerceConfigured, error, loading, removeItem, updateItem }),
-    [addItem, cart, commerceConfigured, error, loading, removeItem, updateItem],
+    () => ({ addItem, cart, commerceConfigured, drawerOpen, error, justAdded, loading, removeItem, setDrawerOpen, updateItem }),
+    [addItem, cart, commerceConfigured, drawerOpen, error, justAdded, loading, removeItem, setDrawerOpen, updateItem],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
