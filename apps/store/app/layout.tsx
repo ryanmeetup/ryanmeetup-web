@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/react";
-import { RyanMeetupFooter } from "@ryanmeetup/ui";
+import { Banner, RyanMeetupFooter } from "@ryanmeetup/ui";
 import { ThemeProvider } from "next-themes";
 import { CartProvider } from "@/components/cart-provider";
 import { Header } from "@/components/header";
@@ -19,6 +19,8 @@ export const metadata: Metadata = {
     title: "Ryan Meetup Store",
     description: "Official goods for Ryans and the Ryan-curious.",
   },
+  // Beta: keep search engines from listing the test store.
+  robots: { index: false, follow: false },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -28,11 +30,20 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className="antialiased">
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           <CartProvider commerceConfigured={commerceConfigured}>
-            {!commerceConfigured && (
-              <div className="store-container border-b border-[#f6c500]/40 bg-nametag py-2 text-center font-cooper text-xs tracking-wide text-white sm:text-sm">
-                Store preview · Connect Shopify to enable live checkout
-              </div>
-            )}
+            {/* Remove before launch, along with the noindex robots metadata above. */}
+            <Banner
+              role="region"
+              aria-label="Beta notice"
+              mobileInline
+              className="!border-b-4 !border-black !bg-[#ffcc00] !text-black"
+              contentClassName="store-container !justify-center"
+              icon={<span className="rounded-md bg-black px-2.5 py-1 font-cooper text-base tracking-[0.2em] text-[#ffcc00] sm:text-lg">BETA</span>}
+            >
+              <span className="font-semibold">
+                This store is a test drive, not the real thing yet. Please don&apos;t place real orders.
+                {!commerceConfigured && " Shopify isn't connected, so checkout is off."}
+              </span>
+            </Banner>
             <Header />
             {children}
             <RyanMeetupFooter
