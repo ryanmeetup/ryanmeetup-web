@@ -33,7 +33,7 @@ export const siteBanners: SiteBanner[] = [
     id: "ryd-sales-2026",
     message:
       "RY-Ds are back! Order your own anodized membership card, Ryan Pre-Check included.",
-    href: "/cards",
+    href: "/ryd",
     actionLabel: "Order",
     actionIcon: <MembershipCard aria-hidden />,
     ariaLabel: "RY-D membership cards are on sale again",

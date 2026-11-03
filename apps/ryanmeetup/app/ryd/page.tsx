@@ -5,7 +5,7 @@ import { Backdrop } from "@/components/global";
 import { Button, Card, Heading, IconBadge, Pill, Text } from "@ryanmeetup/ui";
 import { HiOutlineMail as Envelope } from "react-icons/hi";
 import { FiCheck as Check } from "react-icons/fi";
-import { CardInfo } from "@/components/cards";
+import { RydInfo } from "@/components/ryd";
 import { layoutPaddingX } from "@/lib/constants";
 
 // Types
@@ -16,7 +16,7 @@ export const metadata = buildPageMetadata({
   title: "Buy Membership Card",
   description:
     "You've always been a member, and now you have the card to prove it.",
-  canonical: "https://ryanmeetup.com/cards",
+  canonical: "https://ryanmeetup.com/ryd",
   image: {
     url: "https://ryanmeetup.com/meta/cards.png",
     width: 4032,
@@ -37,7 +37,7 @@ const orderHelpTopics = [
   "Bulk or group orders",
 ];
 
-const BuyCardsPage = () => {
+const RydPage = () => {
   return (
     <Layout fullscreen>
       <Backdrop imageSrc="/backdrop.png">
@@ -76,7 +76,7 @@ const BuyCardsPage = () => {
           </div>
 
           <div className="space-y-6">
-            <CardInfo />
+            <RydInfo />
           </div>
         </section>
       </Backdrop>
@@ -115,7 +115,7 @@ const BuyCardsPage = () => {
               Have your order number handy if you&apos;ve already ordered.
             </Text>
             <Button.Link
-              href={contactHrefs.cardsSupport}
+              href={contactHrefs.rydSupport}
               newTab={false}
               leftIcon={<Envelope aria-hidden />}
               variant="primary"
@@ -131,4 +131,4 @@ const BuyCardsPage = () => {
   );
 };
 
-export default BuyCardsPage;
+export default RydPage;

@@ -8,7 +8,7 @@ import {
 const DEFAULT_INBOX = "ryan@ryanmeetup.com";
 const CHAPTERS_INBOX = "chapters@ryanmeetup.com";
 /** P&M Apparel produces and fulfils RY-Ds, so order help goes straight to them. */
-const CARDS_SUPPORT_INBOX = "Ryan@pmapparel.com";
+const RYD_SUPPORT_INBOX = "Ryan@pmapparel.com";
 
 const greeting = "Hi Ryan Meetup,\n\n";
 
@@ -232,7 +232,7 @@ const contactHrefs = {
     source: "partnerships",
   }),
   press: buildContactHref("press", { source: "press" }),
-  cardsSupport: `mailto:${CARDS_SUPPORT_INBOX}?${new URLSearchParams({
+  rydSupport: `mailto:${RYD_SUPPORT_INBOX}?${new URLSearchParams({
     subject: "RY-D Order Support",
     body: "Hi Ryan,\n\nOrder number:\nWhat I need help with:\n",
   })

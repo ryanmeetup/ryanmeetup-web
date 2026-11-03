@@ -4,7 +4,7 @@ const contentRoutes = [
   { path: "/" },
   { path: "/about" },
   { path: "/awards" },
-  { path: "/cards" },
+  { path: "/ryd" },
   { path: "/charity" },
   { path: "/chapters" },
   { path: "/contact" },
@@ -23,7 +23,9 @@ const contentRoutes = [
 ];
 
 const redirectRoutes = [
-  { path: "/cards/verify", location: "https://forms.gle/Zyv93AV4okJ6jsUo6" },
+  { path: "/ryd/verify", location: "https://forms.gle/Zyv93AV4okJ6jsUo6" },
+  { path: "/cards", location: "/ryd" },
+  { path: "/cards/verify", location: "/ryd/verify" },
   { path: "/partnerships", location: "/sponsors/partnerships" },
   {
     path: "/chapters/pilot",
@@ -67,7 +69,7 @@ test.describe("content pages", () => {
       const response = await page.goto(route.path);
       expect(response?.ok()).toBeTruthy();
 
-      if (route.path !== "/cards")
+      if (route.path !== "/ryd")
         await expect(page).toHaveTitle(/Ryan Meetup/);
 
       if (route.expectText) {

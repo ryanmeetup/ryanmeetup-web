@@ -7,7 +7,7 @@
 # Test info
 
 - Name: pages.spec.ts >> redirect pages >> /guidelines redirects
-- Location: tests/pages.spec.ts:73:9
+- Location: tests/pages.spec.ts:87:9
 
 # Error details
 
@@ -22,12 +22,12 @@ Received: "https://docs.google.com/document/d/1P6fcP5mrHKMhzQ5lckbxo94JMEoHIogvL
 
 ```ts
   1  | import { test, expect } from "@playwright/test";
-  2  |
+  2  | 
   3  | const contentRoutes = [
   4  |   { path: "/" },
   5  |   { path: "/about" },
   6  |   { path: "/awards" },
-  7  |   { path: "/cards" },
+  7  |   { path: "/ryd" },
   8  |   { path: "/charity" },
   9  |   { path: "/chapters" },
   10 |   { path: "/contact" },
@@ -40,66 +40,80 @@ Received: "https://docs.google.com/document/d/1P6fcP5mrHKMhzQ5lckbxo94JMEoHIogvL
   17 |   { path: "/map" },
   18 |   { path: "/press" },
   19 |   { path: "/rsvp", expectText: "Ryan Meetup returns to California" },
-  20 |   { path: "/sponsors" },
-  21 |   { path: "/sponsors/partnerships" },
-  22 | ];
-  23 |
-  24 | const redirectRoutes = [
-  25 |   { path: "/partnerships", location: "/sponsors/partnerships" },
-  26 |   { path: "/discord", location: "https://discord.gg/8rPPQMtZCp" },
-  27 |   {
-  28 |     path: "/guidelines",
-  29 |     location:
-  30 |       "https://docs.google.com/document/d/1DfDD3iyrQMUHTt4EzbfPytfOOh-de1vk9pHRqqM8obs/edit?tab=t.0",
-  31 |   },
-  32 |   { path: "/chapter-lead", location: "https://form.typeform.com/to/TZkv7rua" },
-  33 |   { path: "/join", location: "https://partiful.com/u/sJG4HpH0wS3ZA3YkzaL5" },
-  34 |   { path: "/merch", location: "https://ryanmeetup.etsy.com" },
-  35 |   {
-  36 |     path: "/newsletter",
-  37 |     location:
-  38 |       "https://docs.google.com/forms/d/e/1FAIpQLSdS8O47kdOcmjXglOt_aGTs2q9qK6CrN4zGFdx62H10a-8kDg/viewform",
-  39 |   },
-  40 |   {
-  41 |     path: "/qa",
-  42 |     location:
-  43 |       "https://docs.google.com/forms/d/e/1FAIpQLScP5a5ynWxQU6f1G9hvprObZQSp9QtLs_97Uf82JQJYHj4L4Q/viewform?usp=dialog",
-  44 |   },
-  45 |   { path: "/rcf", location: "https://us.givergy.com/rytoberfest" },
-  46 |   {
-  47 |     path: "/whatsapp",
-  48 |     location: "https://chat.whatsapp.com/LeI37a2AlMk0OmMfhXPNvq",
-  49 |   },
-  50 | ];
-  51 |
-  52 | test.describe("content pages", () => {
-  53 |   for (const route of contentRoutes) {
-  54 |     test(`${route.path} loads`, async ({ page }) => {
-  55 |       const response = await page.goto(route.path);
-  56 |       expect(response?.ok()).toBeTruthy();
-  57 |
-  58 |       if (route.path !== "/cards")
-  59 |         await expect(page).toHaveTitle(/Ryan Meetup/);
-  60 |
-  61 |       if (route.expectText) {
-  62 |         await expect(page.getByText(route.expectText)).toBeVisible();
-  63 |         return;
-  64 |       }
-  65 |
-  66 |       await expect(page.getByRole("main")).toBeVisible();
-  67 |     });
-  68 |   }
-  69 | });
-  70 |
-  71 | test.describe("redirect pages", () => {
-  72 |   for (const route of redirectRoutes) {
-  73 |     test(`${route.path} redirects`, async ({ request }) => {
-  74 |       const response = await request.get(route.path, { maxRedirects: 0 });
-  75 |       expect([301, 302, 307, 308]).toContain(response.status());
-> 76 |       expect(response.headers().location).toBe(route.location);
+  20 |   { path: "/rytoberfest" },
+  21 |   { path: "/sponsors" },
+  22 |   { path: "/sponsors/partnerships" },
+  23 | ];
+  24 | 
+  25 | const redirectRoutes = [
+  26 |   { path: "/ryd/verify", location: "https://forms.gle/Zyv93AV4okJ6jsUo6" },
+  27 |   { path: "/cards", location: "/ryd" },
+  28 |   { path: "/cards/verify", location: "/ryd/verify" },
+  29 |   { path: "/partnerships", location: "/sponsors/partnerships" },
+  30 |   {
+  31 |     path: "/chapters/pilot",
+  32 |     location:
+  33 |       "https://docs.google.com/document/d/1iJb9DYWPmT8mWeUMw3Da9qCpyPRtDPkfP5w6F4HapqA/edit?tab=t.0",
+  34 |   },
+  35 |   { path: "/discord", location: "https://discord.gg/8rPPQMtZCp" },
+  36 |   {
+  37 |     path: "/guidelines",
+  38 |     location:
+  39 |       "https://docs.google.com/document/d/1DfDD3iyrQMUHTt4EzbfPytfOOh-de1vk9pHRqqM8obs/edit?tab=t.0",
+  40 |   },
+  41 |   { path: "/chapter-lead", location: "https://form.typeform.com/to/TZkv7rua" },
+  42 |   { path: "/join", location: "https://partiful.com/u/sJG4HpH0wS3ZA3YkzaL5" },
+  43 |   { path: "/merch", location: "https://ryanmeetup.etsy.com" },
+  44 |   {
+  45 |     path: "/newsletter",
+  46 |     location:
+  47 |       "https://docs.google.com/forms/d/e/1FAIpQLSdS8O47kdOcmjXglOt_aGTs2q9qK6CrN4zGFdx62H10a-8kDg/viewform",
+  48 |   },
+  49 |   {
+  50 |     path: "/qa",
+  51 |     location:
+  52 |       "https://docs.google.com/forms/d/e/1FAIpQLScP5a5ynWxQU6f1G9hvprObZQSp9QtLs_97Uf82JQJYHj4L4Q/viewform?usp=dialog",
+  53 |   },
+  54 |   { path: "/rcf", location: "https://us.givergy.com/rytoberfest" },
+  55 |   {
+  56 |     path: "/ryanday",
+  57 |     location: "https://partiful.com/e/52AEebHoL4MkLoQbPKaE?c=oV8JR0Ko",
+  58 |   },
+  59 |   { path: "/ryanday/join", location: "https://meet.google.com/smt-ubsk-aeo" },
+  60 |   {
+  61 |     path: "/whatsapp",
+  62 |     location: "https://chat.whatsapp.com/LeI37a2AlMk0OmMfhXPNvq",
+  63 |   },
+  64 | ];
+  65 | 
+  66 | test.describe("content pages", () => {
+  67 |   for (const route of contentRoutes) {
+  68 |     test(`${route.path} loads`, async ({ page }) => {
+  69 |       const response = await page.goto(route.path);
+  70 |       expect(response?.ok()).toBeTruthy();
+  71 | 
+  72 |       if (route.path !== "/ryd")
+  73 |         await expect(page).toHaveTitle(/Ryan Meetup/);
+  74 | 
+  75 |       if (route.expectText) {
+  76 |         await expect(page.getByText(route.expectText)).toBeVisible();
+  77 |         return;
+  78 |       }
+  79 | 
+  80 |       await expect(page.getByRole("main")).toBeVisible();
+  81 |     });
+  82 |   }
+  83 | });
+  84 | 
+  85 | test.describe("redirect pages", () => {
+  86 |   for (const route of redirectRoutes) {
+  87 |     test(`${route.path} redirects`, async ({ request }) => {
+  88 |       const response = await request.get(route.path, { maxRedirects: 0 });
+  89 |       expect([301, 302, 307, 308]).toContain(response.status());
+> 90 |       expect(response.headers().location).toBe(route.location);
      |                                           ^ Error: expect(received).toBe(expected) // Object.is equality
-  77 |     });
-  78 |   }
-  79 | });
-  80 |
+  91 |     });
+  92 |   }
+  93 | });
+  94 | 
 ```

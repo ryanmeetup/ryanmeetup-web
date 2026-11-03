@@ -3,7 +3,7 @@ import { Button, Card, Heading, Text } from "@ryanmeetup/ui";
 import NextLink from "next/link";
 import { FaDollarSign as Dollar } from "react-icons/fa";
 
-const CardInfo = () => {
+const RydInfo = () => {
   const hrefStyles =
     "font-semibold text-black/80 underline decoration-black/30 underline-offset-4 hover:decoration-black/60 dark:text-white/80 dark:decoration-white/30 dark:hover:decoration-white/60";
 
@@ -78,4 +78,4 @@ const CardInfo = () => {
   );
 };
 
-export { CardInfo };
+export { RydInfo };

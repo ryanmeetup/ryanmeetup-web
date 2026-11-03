@@ -4,6 +4,14 @@ const nextConfig = {
   // `.next` a dev server is using.
   distDir: process.env.NEXT_DIST_DIR || ".next",
   transpilePackages: ["@ryanmeetup/hooks", "@ryanmeetup/ui"],
+  // Membership cards moved to /ryd; keep printed and shared /cards links
+  // working.
+  async redirects() {
+    return [
+      { source: "/cards", destination: "/ryd", permanent: true },
+      { source: "/cards/:path*", destination: "/ryd/:path*", permanent: true },
+    ];
+  },
   images: {
     remotePatterns: [
       {

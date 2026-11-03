@@ -21,6 +21,7 @@ const staticRoutes = [
   "/sponsors/partnerships",
   "/charity",
   "/donate",
+  "/ryd",
   "/contact",
   "/map",
   "/name-change",

@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("sends card order help straight to P&M Apparel", async ({ page }) => {
-  await page.goto("/cards");
+  await page.goto("/ryd");
 
   const support = page.getByRole("link", { name: "Email P&M" });
   await expect(support).toHaveAttribute(
@@ -11,7 +11,7 @@ test("sends card order help straight to P&M Apparel", async ({ page }) => {
 });
 
 test("links the order button to the P&M store", async ({ page }) => {
-  await page.goto("/cards");
+  await page.goto("/ryd");
 
   const order = page.getByRole("link", { name: "Buy now" });
   await expect(order).toHaveAttribute(

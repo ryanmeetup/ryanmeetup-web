@@ -181,7 +181,7 @@ export const routes = [
       {
         icon: <MembershipCard />,
         text: "Membership Cards",
-        href: "/cards",
+        href: "/ryd",
         description: "Order your own RY-D, complete with Ryan Pre-Check.",
       },
       {

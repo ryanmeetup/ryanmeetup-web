@@ -16,7 +16,7 @@ const COMMUNITY_PATHS = [
 const GET_INVOLVED_PATHS = [
   "/flyers",
   "/contribute",
-  "/cards",
+  "/ryd",
   "/charity",
   "/sponsors",
   "/donate",

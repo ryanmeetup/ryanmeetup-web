@@ -6,7 +6,7 @@ const { metadata, RedirectPage } = createRedirectPage({
   metadata: {
     title: "Ryan Meetup - Card verification",
     description: "Verify your Ryan Meetup card.",
-    canonical: `${SITE_URL}/cards/verify`,
+    canonical: `${SITE_URL}/ryd/verify`,
     image: {
       url: `${SITE_URL}/group-photos/ryankickoff.png`,
       width: 1600,
