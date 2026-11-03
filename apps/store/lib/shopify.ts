@@ -1,6 +1,6 @@
 import { catalogCollections, getCatalogCollection, getCatalogCollectionSummary, getCatalogProductQuery, isInCatalogCollection } from "./catalog-collections";
 import { demoCollections, demoProducts } from "./demo-data";
-import { createProductGroup, getListingHandles, getProductGroupForMember, groupProductListings, resolveProductHandle } from "./product-groups";
+import { createProductGroup, getListingHandles, getProductGroupForMember, groupProductListings, resolveListingHandle, resolveProductHandle } from "./product-groups";
 import type {
   Cart,
   CollectionSummary,
@@ -242,7 +242,7 @@ async function getCatalogProducts(query: string | null): Promise<Product[]> {
 }
 
 // Members are found by slug across the whole catalog rather than by Shopify's exact tag
-// search, so `listing:Nametag Shirt` and `listing: nametag shirt` share one listing.
+// search, so `listing:Name Tag Shirt` and `listing: name tag shirt` share one listing.
 async function getListingProducts(handles: string[]): Promise<Product[]> {
   if (!handles.length) return [];
   const isMember = (product: Pick<Product, "handle" | "tags">) => handles.includes(getProductGroupForMember(product)?.handle ?? "");
@@ -340,7 +340,7 @@ export async function getCollection(
 }
 
 export async function getProduct(handle: string): Promise<ProductListing | null> {
-  const members = await getListingProducts([handle]);
+  const members = await getListingProducts([resolveListingHandle(handle)]);
   const group = members[0] && getProductGroupForMember(members[0]);
   if (group) return createProductGroup(group, members);
   return getShopifyProduct(resolveProductHandle(handle));

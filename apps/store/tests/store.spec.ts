@@ -15,11 +15,11 @@ test("cart links discover a new design through its Shopify tags", async ({ page 
     lines: [{ id: "demo-dad-line", quantity: 1, merchandise: { ...dad.variants[0], product: { handle: dad.handle, title: dad.title, tags: dad.tags } } }],
   });
   await page.goto("/cart");
-  await expect(page.getByText(dad.title, { exact: true })).toHaveAttribute("href", "/products/nametag-shirt?design=ryans-dad-name-tag-shirt");
+  await expect(page.getByText(dad.title, { exact: true })).toHaveAttribute("href", "/products/name-tag-shirt?design=ryans-dad-name-tag-shirt");
 });
 
-test("nametag gallery shows every design and thumbnails choose the matching cart item", async ({ page }) => {
-  await page.goto("/products/nametag-shirt");
+test("name tag gallery shows every design and thumbnails choose the matching cart item", async ({ page }) => {
+  await page.goto("/products/name-tag-shirt");
   const gallery = page.getByRole("group", { name: "Product photos" });
   await expect(gallery.getByRole("button")).toHaveCount(2);
   const ryanPhoto = gallery.getByRole("button", { name: "View Ryan image 1", exact: true });
@@ -41,20 +41,20 @@ test("nametag gallery shows every design and thumbnails choose the matching cart
   await expect(ryanPhoto).toHaveAttribute("aria-pressed", "true");
 });
 
-test("nametag designs share one listing and add their own merchandise to the cart", async ({ page }) => {
+test("name tag designs share one listing and add their own merchandise to the cart", async ({ page }) => {
   const renderingErrors: string[] = [];
   page.on("pageerror", (error) => renderingErrors.push(error.message));
   page.on("console", (message) => {
     if (message.type() === "error" && message.text().includes("same key")) renderingErrors.push(message.text());
   });
   await page.goto("/collections/all");
-  const listing = page.locator('main a[href="/products/nametag-shirt"]');
+  const listing = page.locator('main a[href="/products/name-tag-shirt"]');
   await expect(listing).toHaveCount(1);
-  await expect(listing).toContainText("Nametag Shirt");
+  await expect(listing).toContainText("Name Tag Shirt");
   await expect(listing).toContainText("From $12.00");
   await expect(page.locator('main a[href="/products/ryan-name-tag-shirt"], main a[href="/products/ryans-mom-name-tag-shirt"]')).toHaveCount(0);
   await listing.click();
-  await expect(page.getByRole("heading", { name: "Nametag Shirt", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Name Tag Shirt", exact: true })).toBeVisible();
   await expect(page.getByLabel("Style")).toHaveAttribute("aria-required", "true");
   await expect(page.getByLabel("Color")).toContainText("White");
   await expect(page.getByText("$12.00", { exact: true })).toBeVisible();
@@ -64,8 +64,8 @@ test("nametag designs share one listing and add their own merchandise to the car
   await expect(page.getByText("Added to cart", { exact: true })).toBeVisible();
   await page.getByLabel("Style").click();
   await page.getByRole("option", { name: "Ryan’s Dad", exact: true }).click();
-  await expect(page).toHaveURL(/\/products\/nametag-shirt\?design=ryans-dad-name-tag-shirt$/);
-  await expect(page.getByRole("heading", { name: "Nametag Shirt", exact: true })).toHaveCount(1);
+  await expect(page).toHaveURL(/\/products\/name-tag-shirt\?design=ryans-dad-name-tag-shirt$/);
+  await expect(page.getByRole("heading", { name: "Name Tag Shirt", exact: true })).toHaveCount(1);
   await expect(page.getByLabel("Color")).toContainText("Natural");
   await expect(page.getByText("$30.00", { exact: true })).toBeVisible();
   await expect(page.locator('main img').first()).not.toHaveAttribute("src", firstImage!);
@@ -79,15 +79,15 @@ test("nametag designs share one listing and add their own merchandise to the car
     "gid://shopify/ProductVariant/demo-ryan-name-tag-shirt-0",
     "gid://shopify/ProductVariant/demo-ryans-dad-name-tag-shirt-0",
   ]);
-  await expect(page.getByText("Ryan Name Tag shirt", { exact: true })).toHaveAttribute("href", "/products/nametag-shirt?design=ryan");
-  await expect(page.getByText("Ryan's Dad Name Tag shirt", { exact: true })).toHaveAttribute("href", "/products/nametag-shirt?design=ryans-dad-name-tag-shirt");
+  await expect(page.getByText("Ryan Name Tag shirt", { exact: true })).toHaveAttribute("href", "/products/name-tag-shirt?design=ryan");
+  await expect(page.getByText("Ryan's Dad Name Tag shirt", { exact: true })).toHaveAttribute("href", "/products/name-tag-shirt?design=ryans-dad-name-tag-shirt");
   await expect(page.getByText("$42.00", { exact: true })).toBeVisible();
   expect(renderingErrors).toEqual([]);
 });
 
-test("nametag design URLs survive redirects, reloads, and browser history", async ({ page }) => {
+test("name tag design URLs survive redirects, reloads, and browser history", async ({ page }) => {
   await page.goto("/products/ryans-mom-name-tag-shirt");
-  await expect(page).toHaveURL(/\/products\/nametag-shirt\?design=ryans-dad-name-tag-shirt$/);
+  await expect(page).toHaveURL(/\/products\/name-tag-shirt\?design=ryans-dad-name-tag-shirt$/);
   await expect(page.getByLabel("Style")).toContainText("Ryan’s Dad");
   await expect(page.getByLabel("Color")).toContainText("Natural");
   await page.getByLabel("Style").click();
@@ -100,7 +100,7 @@ test("nametag design URLs survive redirects, reloads, and browser history", asyn
   await expect(page.getByLabel("Style")).toContainText("Ryan’s Dad");
   await expect(page.getByLabel("Color")).toContainText("Natural");
   await page.goto("/products/ryan-name-tag-shirt");
-  await expect(page).toHaveURL(/\/products\/nametag-shirt\?design=ryan$/);
+  await expect(page).toHaveURL(/\/products\/name-tag-shirt\?design=ryan$/);
 });
 
 test("customer can browse a product and manage the preview cart", async ({

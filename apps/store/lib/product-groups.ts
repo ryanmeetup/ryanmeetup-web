@@ -17,7 +17,7 @@ const listingTagPattern = /^\s*listing\s*:\s*(.+?)\s*$/i;
 // variant IDs stay separate. Code keeps only a listing's default design and the
 // links that predate its tag.
 const listingRedirects: Record<string, Omit<ProductGroup, "handle" | "title">> = {
-  "nametag-shirt": {
+  "name-tag-shirt": {
     defaultDesign: "ryan",
     legacyDesignValues: {
       "ryan-name-tag-shirt": "ryan",
@@ -28,6 +28,15 @@ const listingRedirects: Record<string, Omit<ProductGroup, "handle" | "title">> =
     },
   },
 };
+
+// Listing URLs that changed when the listing was renamed.
+const legacyListingHandles: Record<string, string> = {
+  "nametag-shirt": "name-tag-shirt",
+};
+
+export function resolveListingHandle(handle: string) {
+  return legacyListingHandles[handle] ?? handle;
+}
 
 export function slugifyListingName(name: string) {
   return name.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -96,7 +105,7 @@ export function getListingHandles(products: GroupableProduct[]) {
 
 // The member's label is its title minus the listing name, so "I Heart RY Hoodie - White"
 // in `listing:I Heart RY Hoodie` reads "White". Spacing, hyphens, and apostrophes may
-// differ: "Ryan's Dad Name Tag shirt" in `listing:Nametag Shirt` reads "Ryan’s Dad".
+// differ: "Ryan's Dad Name Tag shirt" in `listing:Name Tag Shirt` reads "Ryan’s Dad".
 function getDesignLabel(group: ProductGroup, title: string) {
   // Only letters and digits survive, so the characters need no RegExp escaping.
   const characters = [...group.title.replace(/[^\p{L}\p{N}]/gu, "")];

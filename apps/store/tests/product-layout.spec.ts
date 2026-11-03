@@ -9,7 +9,7 @@ for (const viewport of [
 ]) {
   test(`product gallery stays compact and reachable at ${viewport.width}×${viewport.height}`, async ({ page }) => {
     await page.setViewportSize(viewport);
-    await page.goto("/products/nametag-shirt");
+    await page.goto("/products/name-tag-shirt");
     await expect(page.getByRole("button", { name: "Change to Light Mode" })).toHaveCSS("pointer-events", "auto");
     const gallery = page.getByRole("region", { name: "Product gallery" });
     const strip = gallery.getByRole("group", { name: "Product photos" });
@@ -43,7 +43,7 @@ for (const viewport of [
       await expect(gallery).toHaveCSS("position", "sticky");
       const bounds = await gallery.boundingBox();
       expect(bounds!.height + 112).toBeLessThan(viewport.height);
-      const details = await page.getByRole("heading", { name: "Nametag Shirt", exact: true }).locator("..").boundingBox();
+      const details = await page.getByRole("heading", { name: "Name Tag Shirt", exact: true }).locator("..").boundingBox();
       if (details!.height > bounds!.height + 2) {
         // Scroll within the available right-column content, keeping the gallery
         // clear of the site header. Short descriptions need no sticky interval.

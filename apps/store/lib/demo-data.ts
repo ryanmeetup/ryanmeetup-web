@@ -95,17 +95,17 @@ export const demoProducts: Product[] = [
     imageUrl: "https://cdn.shopify.com/s/files/1/0718/7005/4511/files/unisex-classic-tee-white-front-6acd5a66edb8c.jpg?v=1791842937",
     color: "White",
     type: "Apparel",
-    tags: ["listing:Nametag Shirt"],
+    tags: ["listing:Name Tag Shirt"],
   }),
   makeProduct({
     handle: "ryans-dad-name-tag-shirt",
     title: "Ryan's Dad Name Tag shirt",
-    description: "A nametag shirt for Ryan’s dad.",
+    description: "A name tag shirt for Ryan’s dad.",
     price: "30.00",
     imageUrl: "https://cdn.shopify.com/s/files/1/0718/7005/4511/files/unisex-classic-tee-white-front-6acd5bf343e98.jpg?v=1791843327",
     color: "Natural",
     type: "Apparel",
-    tags: ["listing:Nametag Shirt"],
+    tags: ["listing:Name Tag Shirt"],
   }),
 ];
 

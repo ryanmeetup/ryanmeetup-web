@@ -34,8 +34,13 @@ export default async function ProductPage({ params, searchParams }: Props) {
   const { handle } = await params;
   const product = await getProduct(handle);
   if (!product) notFound();
-  if (getProductGroupForMember(product) || product.handle !== handle) permanentRedirect(getProductHref(product));
   const query = await searchParams;
+  if (getProductGroupForMember(product)) permanentRedirect(getProductHref(product));
+  if (product.handle !== handle) {
+    // A renamed listing keeps the requested design and color.
+    const search = product.designs ? new URLSearchParams(Object.entries(query).filter((entry): entry is [string, string] => typeof entry[1] === "string")).toString() : "";
+    permanentRedirect(`${getProductHref(product)}${search ? `?${search}` : ""}`);
+  }
   const originalDesign = product.designs ? query.design : undefined;
   const requestedDesign = originalDesign ? resolveProductDesignValue(product.handle, originalDesign) : undefined;
   if (requestedDesign && requestedDesign !== originalDesign) {

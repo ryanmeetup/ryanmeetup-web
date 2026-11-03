@@ -52,7 +52,7 @@ function mockCatalog(failDiscovery = false) {
 
 test("group discovery follows every tag search page and includes a third design's photos and merchandise", async () => {
   const requests = mockCatalog();
-  const listing = await getProduct("nametag-shirt");
+  const listing = await getProduct("name-tag-shirt");
   expect(listing?.designs?.map((design) => design.label)).toEqual(["Ryan", "Ryan’s Dad", "Ryan’s Mom"]);
   expect(listing?.variants.map((variant) => variant.id)).toEqual([...ryan.variants, ...dad.variants, ...mom.variants].map((variant) => variant.id));
   expect(getProductGallery(listing!, listing!.designs).map((entry) => entry.image.url)).toEqual([ryan.featuredImage!.url, dad.featuredImage!.url, mom.featuredImage!.url]);
@@ -63,20 +63,20 @@ test("featured and collection listings include tagged designs outside their curr
   mockCatalog();
   const featured = await getFeaturedProducts();
   const collection = await getCollection("shirts");
-  expect(featured.map((product) => product.handle)).toEqual(["nametag-shirt"]);
+  expect(featured.map((product) => product.handle)).toEqual(["name-tag-shirt"]);
   expect(featured[0].designs).toHaveLength(3);
-  expect(collection?.products.map((product) => product.handle)).toEqual(["nametag-shirt"]);
+  expect(collection?.products.map((product) => product.handle)).toEqual(["name-tag-shirt"]);
   expect(collection?.products[0].designs).toHaveLength(3);
 });
 
 test("sitemap discovery includes every catalog page and lists the group once", async () => {
   mockCatalog();
-  expect(await getProductHandles()).toEqual(["nametag-shirt", tee.handle]);
+  expect(await getProductHandles()).toEqual(["name-tag-shirt", tee.handle]);
 });
 
 test("catalog discovery failures propagate instead of returning only previously known designs", async () => {
   mockCatalog(true);
-  await expect(getProduct("nametag-shirt")).rejects.toThrow("Catalog unavailable");
+  await expect(getProduct("name-tag-shirt")).rejects.toThrow("Catalog unavailable");
 });
 
 test("the old Mom handle fetches Shopify's corrected Dad product", async () => {
@@ -91,7 +91,7 @@ test("type pages list every product of that Shopify type with each group once", 
   const requests = mockCatalog();
   const apparel = await getCollection("apparel");
   expect(apparel?.collection.title).toBe("Apparel");
-  expect(apparel?.products.map((product) => product.handle)).toEqual(["nametag-shirt", tee.handle]);
+  expect(apparel?.products.map((product) => product.handle)).toEqual(["name-tag-shirt", tee.handle]);
   expect(apparel?.products[0].designs).toHaveLength(3);
   expect(apparel?.pageInfo.hasNextPage).toBe(false);
   const typeRequests = requests.filter((request) => request.query.includes("CatalogCollectionProducts"));

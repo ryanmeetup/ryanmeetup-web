@@ -27,7 +27,7 @@ The storefront can present several separate Shopify products as one **listing**:
 one card and one product page with a **Style** selector for choosing a member.
 Each product keeps its own variants, prices, images, description, reviews, and
 Printful sync. Use a listing when customers think of the products as versions of
-the same item: nametag designs, or the same print on two hoodie colors.
+the same item: name tag designs, or the same print on two hoodie colors.
 
 Listings are defined entirely by Shopify tags; no code change or deployment is
 needed to create one. Shopify and Printful continue to manage the individual
@@ -38,11 +38,11 @@ original variant ID to Shopify's cart and checkout.
 
 | Concept | What it controls | Example |
 | --- | --- | --- |
-| `listing:` tag | Products sharing it become one listing, titled by the text after `listing:`. | `listing:Nametag Shirt` → `/products/nametag-shirt` |
+| `listing:` tag | Products sharing it become one listing, titled by the text after `listing:`. | `listing:Name Tag Shirt` → `/products/name-tag-shirt` |
 | `collection:` tag | Membership in a Shopify smart collection whose condition is *Tag is equal to* that tag. The storefront itself does not read it. | `collection:I Heart RY` |
-| Product Type | Which type page lists the product: `Apparel` appears on `/collections/apparel`, `Accessory` on `/collections/accessories`, and every product on `/collections/all`. | Every nametag shirt is `Apparel`. |
+| Product Type | Which type page lists the product: `Apparel` appears on `/collections/apparel`, `Accessory` on `/collections/accessories`, and every product on `/collections/all`. | Every name tag shirt is `Apparel`. |
 | Shopify collection | Any other browsing page, served at `/collections/<handle>` once the collection is published to the storefront channel. | A design collection such as I ♥ RY. |
-| Product title | The member's Style label: the title with the listing name removed. | `Ryan's Dad Name Tag shirt` in `listing:Nametag Shirt` reads `Ryan’s Dad`. |
+| Product title | The member's Style label: the title with the listing name removed. | `Ryan's Dad Name Tag shirt` in `listing:Name Tag Shirt` reads `Ryan’s Dad`. |
 | Product handle | The member's URL identifier, normally also used in the `design` query parameter. | `ryans-dad-name-tag-shirt` |
 
 **The tag controls inclusion; the title controls the label.** Putting "Name Tag"
@@ -65,16 +65,16 @@ Shopify. Each one searches the catalog by the exact Product type (`Apparel` or
 listing gets one card and the page has no "Next page". A Shopify collection with
 one of these handles is ignored in favor of the definition here.
 
-### Example: nametag shirts
+### Example: name tag shirts
 
-Products tagged `listing:Nametag Shirt` share the listing `Nametag Shirt` at
-`/products/nametag-shirt`. Separate products such as `Ryan Name Tag shirt` and
+Products tagged `listing:Name Tag Shirt` share the listing `Name Tag Shirt` at
+`/products/name-tag-shirt`. Separate products such as `Ryan Name Tag shirt` and
 `Ryan's Dad Name Tag shirt` join it when tagged and published to the
 storefront's sales channel.
 
 ```mermaid
 flowchart TD
-  listing["Shared page: Nametag Shirt"] --> ryan["Shopify product: Ryan"]
+  listing["Shared page: Name Tag Shirt"] --> ryan["Shopify product: Ryan"]
   listing --> dad["Shopify product: Ryan's Dad"]
   ryan --> ryanVariant["Ryan product's color and size variants"]
   dad --> dadVariant["Dad product's color and size variants"]
@@ -98,7 +98,7 @@ This is a Shopify catalog task:
    Ensure every variant offered for sale has the correct fulfillment mapping.
 2. Title it so that removing the listing name leaves the member's label:
    `I Heart RY Hoodie - White` in `listing:I Heart RY Hoodie` reads `White`, and
-   `Ryan's Dad Name Tag shirt` in `listing:Nametag Shirt` reads `Ryan’s Dad`.
+   `Ryan's Dad Name Tag shirt` in `listing:Name Tag Shirt` reads `Ryan’s Dad`.
    Matching ignores capitalization, spaces, hyphens, and apostrophes. A title
    that does not contain the listing name is shown whole.
 3. In Shopify **Products → the product → Product organization → Tags**, add
@@ -161,10 +161,11 @@ individually, use a collection and keep their standalone pages.
 - Listing metadata uses one canonical shared URL, and the sitemap lists the
   listing once. Catalog discovery follows Shopify pagination to find every published
   member; product detail requests also load every image and variant.
-- Existing compatibility mappings keep `?design=ryan` working. The Dad shirt was
+- Existing compatibility mappings keep `?design=ryan` and the listing's former
+  `/products/nametag-shirt` URL working. The Dad shirt was
   previously mislabeled as Mom; `/products/ryans-mom-name-tag-shirt` and
   `?design=ryans-mom` resolve to the corrected Dad design. These mappings, and
-  Ryan as the default nametag design, are the only listing details kept in
+  Ryan as the default name tag design, are the only listing details kept in
   [lib/product-groups.ts](lib/product-groups.ts).
 
 ### Troubleshooting

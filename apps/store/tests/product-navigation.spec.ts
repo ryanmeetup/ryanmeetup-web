@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("floating photo controls wrap across designs and keep keyboard focus", async ({ page }) => {
-  await page.goto("/products/nametag-shirt");
+  await page.goto("/products/name-tag-shirt");
   const gallery = page.getByRole("region", { name: "Product gallery" });
   const next = gallery.getByRole("button", { name: "Next photo", exact: true });
   const previous = gallery.getByRole("button", { name: "Previous photo", exact: true });
@@ -29,7 +29,7 @@ test("floating photo controls wrap across designs and keep keyboard focus", asyn
 });
 
 test("arrow shortcuts browse photos without taking over product fields or modified keys", async ({ page }) => {
-  await page.goto("/products/nametag-shirt");
+  await page.goto("/products/name-tag-shirt");
   await expect(page.getByRole("button", { name: "Change to Light Mode" })).toHaveCSS("pointer-events", "auto");
   const gallery = page.getByRole("region", { name: "Product gallery" });
   const status = gallery.getByRole("status");
@@ -83,7 +83,7 @@ test("old Mom design links reopen the corrected Dad shirt", async ({ page }) => 
     "/products/nametag-shirt?design=ryans-mom-name-tag-shirt",
   ]) {
     await page.goto(url);
-    await expect(page).toHaveURL(/\/products\/nametag-shirt\?design=ryans-dad-name-tag-shirt$/);
+    await expect(page).toHaveURL(/\/products\/name-tag-shirt\?design=ryans-dad-name-tag-shirt$/);
     await expect(page.getByLabel("Style")).toContainText("Ryan’s Dad");
     await expect(page.getByRole("region", { name: "Product gallery" }).getByRole("button", { name: "View Ryan’s Dad image 1", exact: true })).toHaveAttribute("aria-pressed", "true");
   }
