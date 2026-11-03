@@ -6,7 +6,7 @@
 import { isRydContactEmail, normalizeEmail } from "./normalize";
 
 /** Where buyers send their evidence. The page on ryanmeetup.com redirects to the form. */
-export const RYD_FORM_URL = "https://ryanmeetup.com/cards/verify";
+export const RYD_FORM_URL = "https://ryanmeetup.com/ryd/verify";
 
 export type RydDraft = { subject: string; body: string };
 

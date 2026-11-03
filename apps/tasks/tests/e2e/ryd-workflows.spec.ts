@@ -732,7 +732,7 @@ test("shows ambiguous identity mapping and distinguishes buyer and review form l
   const settings = page.getByRole("dialog", { name: "RY-D settings", exact: true });
   const buyer = settings.getByRole("link", { name: "buyer verification link", exact: true });
   const editor = settings.getByRole("link", { name: "Open review form editor", exact: true });
-  await expect(buyer).toHaveAttribute("href", "https://ryanmeetup.com/cards/verify");
+  await expect(buyer).toHaveAttribute("href", "https://ryanmeetup.com/ryd/verify");
   await expect(editor).toHaveAttribute("href", `https://docs.google.com/forms/d/${"f".repeat(30)}/edit`);
   await expect(settings.getByText("This setting changes only", { exact: false })).toBeVisible();
   const form = settings.getByLabel("RY-dentification form", { exact: false });
