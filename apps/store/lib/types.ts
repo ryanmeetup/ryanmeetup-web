@@ -71,10 +71,15 @@ export type CollectionSummary = {
   title: string;
 };
 
+export type CollectionSection = { collection: CollectionSummary; products: ProductListing[]; total: number };
+
+/** Listings broken up by Shopify collection, with `more` holding those in none. */
+export type CatalogSections = { sections: CollectionSection[]; more: ProductListing[] };
+
 export type ProductPage = {
   collection: CollectionSummary;
   products: ProductListing[];
-};
+} & Partial<CatalogSections>;
 
 export type CartLine = {
   id: string;

@@ -90,6 +90,11 @@ Shopify. Each one searches the catalog by the exact Product type (`Apparel` or
 listing gets one card. A Shopify collection with
 one of these handles is ignored in favor of the definition here.
 
+*All* is broken up into the same collection sections as the home page, each
+showing every listing in that collection and linking to its page, followed by
+**More Ryan goods** for products in no collection. The type and size filters
+apply within every section.
+
 ### Example: name tag shirts
 
 Products tagged `listing:Name Tag Shirt` share the listing `Name Tag Shirt` at

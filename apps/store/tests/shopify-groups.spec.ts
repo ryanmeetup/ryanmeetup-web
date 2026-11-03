@@ -86,6 +86,16 @@ test("the home page features the home page collection and gives every other coll
   expect(home.more.map((product) => product.handle)).toEqual([tee.handle]);
 });
 
+test("shop all lists every product once and breaks it up into the home page's collection sections", async () => {
+  mockCatalog();
+  const all = await getCollection("all");
+  expect(all?.products.map((product) => product.handle)).toEqual(["name-tag-shirt", tee.handle]);
+  expect(all?.sections?.map(({ collection, products, total }) => [collection.title, products.map((product) => product.handle), total])).toEqual([["Shirts", ["name-tag-shirt"], 1]]);
+  expect(all?.sections?.[0].products[0].designs).toHaveLength(3);
+  expect(all?.more?.map((product) => product.handle)).toEqual([tee.handle]);
+  expect((await getCollection("apparel"))?.sections).toBeUndefined();
+});
+
 test("sitemap discovery includes every catalog page and lists the group once", async () => {
   mockCatalog();
   expect(await getProductHandles()).toEqual(["name-tag-shirt", tee.handle]);

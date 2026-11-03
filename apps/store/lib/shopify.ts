@@ -4,6 +4,8 @@ import { normalizeHandle } from "./handles";
 import { createProductGroup, getListingHandles, getProductGroupForMember, groupProductListings, resolveListingHandle, resolveProductHandle } from "./product-groups";
 import type {
   Cart,
+  CatalogSections,
+  CollectionSection,
   CollectionSummary,
   Product,
   ProductListing,
@@ -27,8 +29,7 @@ type ProductNode = Omit<Product, "images" | "variants"> & {
 };
 type CollectionMembership = CollectionSummary & { products: Connection<{ handle: string }> };
 
-export type HomeSection = { collection: CollectionSummary; products: ProductListing[]; total: number };
-export type HomeCatalog = { featured: HomeSection; sections: HomeSection[]; more: ProductListing[] };
+export type HomeCatalog = CatalogSections & { featured: CollectionSection };
 
 // Shopify's built-in home page collection (named Best Sellers in Shopify) holds
 // hand-picked favorites rather than a browsing department.
@@ -302,27 +303,31 @@ async function getCollectionMemberships(): Promise<CollectionMembership[]> {
   }));
 }
 
+// Every browsing collection with its listings, plus the listings in none of them. A
+// listing in several collections appears in each one's section.
+function sectionListings(listings: ProductListing[], memberships: CollectionMembership[]): CatalogSections {
+  const sectioned = new Set<string>();
+  const sections = memberships.filter(isBrowsingCollection).flatMap(({ products: members, ...collection }) => {
+    const sectionListings = getListingsInCollection(listings, members.edges.map(({ node }) => node.handle));
+    for (const listing of sectionListings) sectioned.add(listing.id);
+    return sectionListings.length ? [{ collection, products: sectionListings, total: sectionListings.length }] : [];
+  });
+  return { sections, more: sections.length ? listings.filter((listing) => !sectioned.has(listing.id)) : [] };
+}
+
 export async function getHomeCatalog(): Promise<HomeCatalog> {
   const configured = isShopifyConfigured();
   const [products, memberships] = configured
     ? await Promise.all([getCatalogProducts(null), getCollectionMemberships()])
     : [demoProducts, []];
   const listings = groupProductListings(products);
-  const handlesOf = (collection: CollectionMembership) => collection.products.edges.map(({ node }) => node.handle);
 
   const favorites = memberships.find((collection) => collection.handle === featuredCollectionHandle);
-  const picks = favorites ? getListingsInCollection(listings, handlesOf(favorites)) : [];
+  const picks = favorites ? getListingsInCollection(listings, favorites.products.edges.map(({ node }) => node.handle)) : [];
   const curated = picks.length ? favorites : undefined;
   // Without hand-picked favorites, fall back to the actual best sellers.
   const featured = curated ? picks : listings;
-
-  const sectioned = new Set<string>();
-  const sections = memberships.filter(isBrowsingCollection).flatMap(({ products: members, ...collection }) => {
-    const handles = members.edges.map(({ node }) => node.handle);
-    const sectionListings = getListingsInCollection(listings, handles);
-    for (const listing of sectionListings) sectioned.add(listing.id);
-    return sectionListings.length ? [{ collection, products: sectionListings.slice(0, sectionLimit), total: sectionListings.length }] : [];
-  });
+  const { sections, more } = sectionListings(listings, memberships);
 
   return {
     featured: {
@@ -336,8 +341,8 @@ export async function getHomeCatalog(): Promise<HomeCatalog> {
       products: featured.slice(0, featuredLimit),
       total: featured.length,
     },
-    sections,
-    more: sections.length ? listings.filter((listing) => !sectioned.has(listing.id)) : [],
+    sections: sections.map((section) => ({ ...section, products: section.products.slice(0, sectionLimit) })),
+    more,
   };
 }
 
@@ -360,10 +365,14 @@ export async function getCollection(handle: string): Promise<ProductPage | null>
   // Load every product before grouping so a listing gets exactly one card instead of
   // reappearing on every result page that contains a member.
   if (catalogCollection) {
-    return {
-      collection: getCatalogCollectionSummary(catalogCollection),
-      products: await getGroupedListings(await getCatalogProducts(getCatalogProductQuery(catalogCollection))),
-    };
+    const collection = getCatalogCollectionSummary(catalogCollection);
+    // Shop all is broken up into the same collection sections as the home page.
+    if (catalogCollection.productType === null) {
+      const [products, memberships] = await Promise.all([getCatalogProducts(null), getCollectionMemberships()]);
+      const listings = await getGroupedListings(products);
+      return { collection, products: listings, ...sectionListings(listings, memberships) };
+    }
+    return { collection, products: await getGroupedListings(await getCatalogProducts(getCatalogProductQuery(catalogCollection))) };
   }
   if (handle === featuredCollectionHandle) return null;
 
