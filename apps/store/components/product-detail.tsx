@@ -176,7 +176,7 @@ export function ProductDetail({ product, title = product.title, designField, hid
       </div>
       <div className="min-w-0">
         <h1 className="font-cooper text-4xl leading-[1.05] tracking-wide text-black dark:text-white sm:text-5xl">{title}</h1>
-        <p className="mt-5 text-xl font-semibold" aria-live="polite">{variant ? formatMoney(variant.price) : formatMoney(product.priceRange.minVariantPrice)}</p>
+        <p className="mt-5 text-3xl font-bold tabular-nums text-black dark:text-white sm:text-4xl" aria-live="polite">{variant ? formatMoney(variant.price) : formatMoney(product.priceRange.minVariantPrice)}</p>
         <ProductDescription description={product.description} descriptionHtml={product.descriptionHtml} part="intro" />
         {designField && <div className="mt-8">{designField({ selections, selectOption })}</div>}
 

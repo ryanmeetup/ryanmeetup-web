@@ -40,10 +40,13 @@ export function ProductCard({ product, eager = false, from }: { product: Product
             <div className="grid h-full place-items-center font-cooper text-5xl text-black/10 dark:text-white/10">R</div>
           )}
           {!product.availableForSale && <span className="absolute left-3 top-3 rounded-full bg-black px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white">Sold out</span>}
+          <p className="absolute bottom-3 left-3 rounded-full bg-price px-3 py-1 text-sm font-bold tabular-nums text-white shadow-sm sm:text-base">
+            {product.priceVaries && <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/85">From </span>}
+            {formatMoney(product.priceRange.minVariantPrice)}
+          </p>
         </div>
-        <div className="flex items-start justify-between gap-3 p-4 sm:p-5">
+        <div className="p-4 sm:p-5">
           <h3 className="font-cooper text-lg leading-tight tracking-wide text-black dark:text-white sm:text-xl">{product.title}{product.externalUrl && <span className="sr-only"> (opens in a new tab)</span>}</h3>
-          <span className="shrink-0 text-sm font-semibold">{product.priceVaries ? "From " : ""}{formatMoney(product.priceRange.minVariantPrice)}</span>
         </div>
       </Link>
       {colors.length > 0 && (

@@ -3,6 +3,11 @@
 
 @source "../../../packages/ui/src";
 
+@theme {
+  /* Price badges sit on product photos, so they need a color no photo uses. */
+  --color-price: #17803d;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #000000;
