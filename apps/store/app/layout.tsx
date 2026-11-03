@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/react";
-import { Banner, RyanMeetupFooter } from "@ryanmeetup/ui";
+import { Banner, RyanMeetupFooter, ToastHost } from "@ryanmeetup/ui";
 import { ThemeProvider } from "next-themes";
 import { CartDrawer } from "@/components/cart-drawer";
 import { CartProvider } from "@/components/cart-provider";
@@ -52,6 +52,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               className="store-container"
             />
             <CartDrawer />
+            <ToastHost />
             <Analytics />
           </CartProvider>
         </ThemeProvider>

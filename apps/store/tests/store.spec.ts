@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { dad } from "./fixtures/products";
+import type { Page } from "@playwright/test";
+import { dad, superBlack } from "./fixtures/products";
 
 test("cart links discover a new design through its Shopify tags", async ({ page }) => {
   await page.route("**/_next/image?**", (route) => route.fulfill({
@@ -15,7 +16,39 @@ test("cart links discover a new design through its Shopify tags", async ({ page 
     lines: [{ id: "demo-dad-line", quantity: 1, merchandise: { ...dad.variants[0], product: { handle: dad.handle, title: dad.title, tags: dad.tags } } }],
   });
   await page.goto("/cart");
-  await expect(page.getByText(dad.title, { exact: true })).toHaveAttribute("href", "/products/name-tag-shirt?design=ryans-dad-name-tag-shirt");
+  const main = page.getByRole("main");
+  await expect(main.getByText("Name Tag Shirt", { exact: true })).toHaveAttribute("href", "/products/name-tag-shirt?design=ryans-dad-name-tag-shirt");
+  await expect(main.getByText(dad.title, { exact: true })).toHaveCount(0);
+  await expect(main).toContainText("Style: Ryan’s Dad");
+});
+
+test("cart lines move a listing member's title color into the options", async ({ page }) => {
+  const variant = superBlack.variants[0];
+  await page.addInitScript((cart) => localStorage.setItem("ryan-store-cart", JSON.stringify(cart)), {
+    id: "demo-cart",
+    checkoutUrl: "",
+    totalQuantity: 1,
+    cost: { subtotalAmount: variant.price, totalAmount: variant.price },
+    lines: [{ id: "super-line", quantity: 1, merchandise: { ...variant, product: { handle: superBlack.handle, title: superBlack.title, tags: superBlack.tags } } }],
+  });
+  await page.goto("/cart");
+  const main = page.getByRole("main");
+  await expect(main.getByText("Super Ryan Shirt", { exact: true })).toBeVisible();
+  await expect(main.getByText(superBlack.title, { exact: true })).toHaveCount(0);
+  await expect(main.getByText(`Size: ${variant.selectedOptions[0].value} · Color: Black`, { exact: true })).toBeVisible();
+});
+
+// Adding to the cart opens the drawer over the page; close it before going on.
+async function keepShopping(page: Page) {
+  await page.getByRole("button", { name: "Keep shopping" }).click();
+  await expect(page.getByRole("button", { name: "Keep shopping" })).toHaveCount(0);
+}
+
+test("the header cart button opens the cart drawer instead of the cart page", async ({ page }) => {
+  await page.goto("/collections/all");
+  await page.getByRole("button", { name: /^Cart with \d+ items$/ }).click();
+  await expect(page.getByRole("dialog", { name: "Your cart" }).getByText("Your cart is remarkably Ryan-free.")).toBeVisible();
+  await expect(page).toHaveURL(/\/collections\/all$/);
 });
 
 test("name tag gallery shows every design and thumbnails choose the matching cart item", async ({ page }) => {
@@ -33,6 +66,7 @@ test("name tag gallery shows every design and thumbnails choose the matching car
   await expect(gallery.getByRole("button")).toHaveCount(2);
   await page.getByRole("button", { name: "Add to cart", exact: true }).click();
   await expect(page.getByText("Added to cart", { exact: true })).toBeVisible();
+  await keepShopping(page);
   const cart = await page.evaluate(() => JSON.parse(localStorage.getItem("ryan-store-cart")!));
   expect(cart.lines[0].merchandise.id).toBe("gid://shopify/ProductVariant/demo-ryans-dad-name-tag-shirt-0");
   await ryanPhoto.click();
@@ -62,6 +96,7 @@ test("name tag designs share one listing and add their own merchandise to the ca
 
   await page.getByRole("button", { name: "Add to cart" }).click();
   await expect(page.getByText("Added to cart", { exact: true })).toBeVisible();
+  await keepShopping(page);
   await page.getByLabel("Style").click();
   await page.getByRole("option", { name: "Ryan’s Dad", exact: true }).click();
   await expect(page).toHaveURL(/\/products\/name-tag-shirt\?design=ryans-dad-name-tag-shirt$/);
@@ -72,6 +107,7 @@ test("name tag designs share one listing and add their own merchandise to the ca
   await expect(page.getByRole("button", { name: "Add to cart" })).toBeVisible();
   await page.getByRole("button", { name: "Add to cart" }).click();
   await expect(page.getByText("Added to cart", { exact: true })).toBeVisible();
+  await keepShopping(page);
 
   await page.goto("/cart");
   const cart = await page.evaluate(() => JSON.parse(localStorage.getItem("ryan-store-cart")!));
@@ -79,10 +115,30 @@ test("name tag designs share one listing and add their own merchandise to the ca
     "gid://shopify/ProductVariant/demo-ryan-name-tag-shirt-0",
     "gid://shopify/ProductVariant/demo-ryans-dad-name-tag-shirt-0",
   ]);
-  await expect(page.getByText("Ryan Name Tag shirt", { exact: true })).toHaveAttribute("href", "/products/name-tag-shirt?design=ryan");
-  await expect(page.getByText("Ryan's Dad Name Tag shirt", { exact: true })).toHaveAttribute("href", "/products/name-tag-shirt?design=ryans-dad-name-tag-shirt");
+  const main = page.getByRole("main");
+  await expect(main.locator('a[href="/products/name-tag-shirt?design=ryan"]', { hasText: "Name Tag Shirt" })).toHaveCount(1);
+  await expect(main.locator('a[href="/products/name-tag-shirt?design=ryans-dad-name-tag-shirt"]', { hasText: "Name Tag Shirt" })).toHaveCount(1);
+  await expect(main).toContainText("Style: Ryan’s Dad");
   await expect(page.getByText("$42.00", { exact: true })).toBeVisible();
   expect(renderingErrors).toEqual([]);
+});
+
+test("customer can quick add a size from the product grid in the previewed color", async ({ page }) => {
+  await page.goto("/collections/all");
+  await page.getByRole("button", { name: /^Preview .*Natural$/ }).first().click();
+  await page.getByRole("button", { name: "Quick add Name Tag Shirt", exact: true }).click();
+  const menu = page.getByRole("menu");
+  await expect(menu).toContainText("Natural");
+  await menu.getByRole("menuitem", { name: "S", exact: true }).click();
+
+  // The dialog root has no box of its own, so assert on what it contains.
+  const drawer = page.getByRole("dialog", { name: "Added to cart" });
+  await expect(drawer.getByText("Just added")).toBeVisible();
+  await expect(drawer.getByRole("link", { name: "View cart" })).toHaveCount(0);
+  const cart = await page.evaluate(() => JSON.parse(localStorage.getItem("ryan-store-cart")!));
+  expect(cart.lines.map((line: { merchandise: { id: string } }) => line.merchandise.id)).toEqual([
+    "gid://shopify/ProductVariant/demo-ryans-dad-name-tag-shirt-0",
+  ]);
 });
 
 test("name tag design URLs survive redirects, reloads, and browser history", async ({ page }) => {

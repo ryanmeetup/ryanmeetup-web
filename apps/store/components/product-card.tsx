@@ -7,6 +7,7 @@ import { Card, Tooltip } from "@ryanmeetup/ui";
 import { formatMoney } from "@/lib/money";
 import { getListingColorPreviews } from "@/lib/product-colors";
 import type { ProductListing } from "@/lib/types";
+import { QuickAdd } from "./quick-add";
 
 const visibleSwatches = 5;
 
@@ -20,7 +21,7 @@ export function ProductCard({ product, eager = false }: { product: ProductListin
   const hiddenColors = colors.length - swatches.length;
 
   return (
-    <Card size="none" hover className="flex h-full flex-col overflow-hidden bg-white/65 dark:bg-white/5">
+    <Card size="none" hover className="relative flex h-full flex-col overflow-hidden bg-white/65 dark:bg-white/5">
       <Link href={href} className="rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/40 dark:focus-visible:ring-white/40">
         <div className="relative aspect-square overflow-hidden bg-black/5 dark:bg-white/5">
           {image ? (
@@ -70,6 +71,12 @@ export function ProductCard({ product, eager = false }: { product: ProductListin
             </Link>
           )}
           <span className="sr-only" aria-live="polite">{color ? `Showing ${color.label ?? color.value}` : ""}</span>
+        </div>
+      )}
+      {product.availableForSale && (
+        // A sibling of the card link, not inside it, so it stays its own control.
+        <div className="absolute right-3 top-3">
+          <QuickAdd product={product} href={href} />
         </div>
       )}
     </Card>
