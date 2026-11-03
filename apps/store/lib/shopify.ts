@@ -24,11 +24,16 @@ type ProductNode = Omit<Product, "images" | "variants"> & {
   images: PaginatedConnection<StoreImage>;
   variants: PaginatedConnection<ProductVariant>;
 };
-type CollectionNode = CollectionSummary & {
-  products?: Connection<ProductNode> & {
-    pageInfo: ProductPage["pageInfo"];
-  };
-};
+type CollectionMembership = CollectionSummary & { products: Connection<{ handle: string }> };
+
+export type HomeSection = { collection: CollectionSummary; products: ProductListing[]; total: number };
+export type HomeCatalog = { featured: HomeSection; sections: HomeSection[]; more: ProductListing[] };
+
+// Shopify's built-in home page collection (named Best Sellers in Shopify) holds
+// hand-picked favorites rather than a browsing department.
+const featuredCollectionHandle = "frontpage";
+const featuredLimit = 8;
+const sectionLimit = 4;
 
 const imageFields = "url altText width height";
 const variantFields = `
@@ -188,57 +193,62 @@ export async function getCollections(): Promise<CollectionSummary[]> {
   );
   return [
     ...catalogCollections.map(getCatalogCollectionSummary),
-    ...data.collections.edges.map(({ node }) => node).filter((collection) => !getCatalogCollection(collection.handle)),
+    ...data.collections.edges.map(({ node }) => node).filter(isBrowsingCollection),
   ];
 }
 
-async function getProductSummaries(): Promise<ProductSummary[]> {
-  const products: ProductSummary[] = [];
+function isBrowsingCollection(collection: Pick<CollectionSummary, "handle">) {
+  return collection.handle !== featuredCollectionHandle && !getCatalogCollection(collection.handle);
+}
+
+// Follows Shopify's cursors to the last page and fails rather than returning a partial
+// list. Returns null when the first page reports that its parent does not exist.
+async function loadAllPages<T>(loadPage: (after: string | null) => Promise<PaginatedConnection<T> | null>): Promise<T[] | null> {
+  const nodes: T[] = [];
   const cursors = new Set<string>();
   let after: string | null = null;
   while (true) {
-    const data: ProductSummariesPayload = await storefrontRequest<ProductSummariesPayload>(
-      `query CatalogProductSummaries($after: String) {
-        products(first: 250, after: $after, sortKey: TITLE) {
-          edges { node { handle title tags } }
-          pageInfo { endCursor hasNextPage }
-        }
-      }`,
-      { after },
-      { revalidate: 300 },
-    );
-    products.push(...data.products.edges.map(({ node }) => node));
-    const { endCursor, hasNextPage } = data.products.pageInfo;
-    if (!hasNextPage) return products;
+    const connection = await loadPage(after);
+    if (!connection) {
+      if (after === null) return null;
+      throw new Error("Shopify stopped returning catalog pages.");
+    }
+    nodes.push(...connection.edges.map(({ node }) => node));
+    const { endCursor, hasNextPage } = connection.pageInfo;
+    if (!hasNextPage) return nodes;
     if (!endCursor || cursors.has(endCursor)) throw new Error("Could not load the complete Shopify product catalog.");
     cursors.add(endCursor);
     after = endCursor;
   }
 }
 
+async function getProductSummaries(): Promise<ProductSummary[]> {
+  const products = await loadAllPages(async (after) => (await storefrontRequest<ProductSummariesPayload>(
+    `query CatalogProductSummaries($after: String) {
+      products(first: 250, after: $after, sortKey: TITLE) {
+        edges { node { handle title tags } }
+        pageInfo { endCursor hasNextPage }
+      }
+    }`,
+    { after },
+    { revalidate: 300 },
+  )).products);
+  return products ?? [];
+}
+
 async function getCatalogProducts(query: string | null): Promise<Product[]> {
-  const products: Product[] = [];
-  const cursors = new Set<string>();
-  let after: string | null = null;
-  while (true) {
-    const data: { products: PaginatedConnection<ProductNode> } = await storefrontRequest<{ products: PaginatedConnection<ProductNode> }>(
-      `${productFragment}
-        query CatalogCollectionProducts($after: String, $query: String) {
-          products(first: 50, after: $after, query: $query, sortKey: BEST_SELLING) {
-            edges { node { ...ProductFields } }
-            pageInfo { endCursor hasNextPage }
-          }
-        }`,
-      { after, query },
-      { revalidate: 300 },
-    );
-    products.push(...data.products.edges.map(({ node }) => reshapeProduct(node)));
-    const { endCursor, hasNextPage } = data.products.pageInfo;
-    if (!hasNextPage) return products;
-    if (!endCursor || cursors.has(endCursor)) throw new Error("Could not load the complete Shopify product catalog.");
-    cursors.add(endCursor);
-    after = endCursor;
-  }
+  const products = await loadAllPages(async (after) => (await storefrontRequest<{ products: PaginatedConnection<ProductNode> }>(
+    `${productFragment}
+      query CatalogCollectionProducts($after: String, $query: String) {
+        products(first: 50, after: $after, query: $query, sortKey: BEST_SELLING) {
+          edges { node { ...ProductFields } }
+          pageInfo { endCursor hasNextPage }
+        }
+      }`,
+    { after, query },
+    { revalidate: 300 },
+  )).products);
+  return (products ?? []).map(reshapeProduct);
 }
 
 // Members are found by slug across the whole catalog rather than by Shopify's exact tag
@@ -257,30 +267,79 @@ async function getGroupedListings(products: Product[]): Promise<ProductListing[]
   return groupProductListings(products, await getListingProducts(handles));
 }
 
-export async function getFeaturedProducts(): Promise<ProductListing[]> {
-  if (!isShopifyConfigured()) return groupProductListings(demoProducts);
+function getMemberHandles(listing: ProductListing) {
+  return listing.designs?.map((design) => design.product.handle) ?? [listing.handle];
+}
 
-  const data = await storefrontRequest<{ products: Connection<ProductNode> }>(
-    `${productFragment}
-      query FeaturedProducts {
-        products(first: 8, sortKey: BEST_SELLING) {
-          edges { node { ...ProductFields } }
-        }
-      }`,
+// Orders listings by their earliest member in a collection, so Shopify's manual
+// collection order carries through to grouped listings.
+function getListingsInCollection(listings: ProductListing[], handles: string[]) {
+  const positions = new Map(handles.map((handle, index) => [handle, index]));
+  return listings
+    .map((listing) => ({ listing, position: Math.min(...getMemberHandles(listing).map((handle) => positions.get(handle) ?? Infinity)) }))
+    .filter(({ position }) => position !== Infinity)
+    .sort((a, b) => a.position - b.position)
+    .map(({ listing }) => listing);
+}
+
+// Membership handles only; a collection's first 250 products count toward its section.
+async function getCollectionMemberships(): Promise<CollectionMembership[]> {
+  const data = await storefrontRequest<{ collections: Connection<CollectionMembership> }>(
+    `query CollectionMemberships {
+      collections(first: 50, sortKey: TITLE) {
+        edges { node { id handle title description image { url altText width height } products(first: 250) { edges { node { handle } } } } }
+      }
+    }`,
     {},
     { revalidate: 300 },
   );
-  return getGroupedListings(data.products.edges.map(({ node }) => reshapeProduct(node)));
+  return data.collections.edges.map(({ node }) => node);
+}
+
+export async function getHomeCatalog(): Promise<HomeCatalog> {
+  const configured = isShopifyConfigured();
+  const [products, memberships] = configured
+    ? await Promise.all([getCatalogProducts(null), getCollectionMemberships()])
+    : [demoProducts, []];
+  const listings = groupProductListings(products);
+  const handlesOf = (collection: CollectionMembership) => collection.products.edges.map(({ node }) => node.handle);
+
+  const favorites = memberships.find((collection) => collection.handle === featuredCollectionHandle);
+  const picks = favorites ? getListingsInCollection(listings, handlesOf(favorites)) : [];
+  const curated = picks.length ? favorites : undefined;
+  // Without hand-picked favorites, fall back to the actual best sellers.
+  const featured = curated ? picks : listings;
+
+  const sectioned = new Set<string>();
+  const sections = memberships.filter(isBrowsingCollection).flatMap(({ products: members, ...collection }) => {
+    const handles = members.edges.map(({ node }) => node.handle);
+    const sectionListings = getListingsInCollection(listings, handles);
+    for (const listing of sectionListings) sectioned.add(listing.id);
+    return sectionListings.length ? [{ collection, products: sectionListings.slice(0, sectionLimit), total: sectionListings.length }] : [];
+  });
+
+  return {
+    featured: {
+      collection: {
+        id: curated?.id ?? "featured",
+        handle: featuredCollectionHandle,
+        title: curated?.title || "Best Sellers",
+        description: curated?.description || "Popular picks, pulled straight from the official catalog.",
+        image: null,
+      },
+      products: featured.slice(0, featuredLimit),
+      total: featured.length,
+    },
+    sections,
+    more: sections.length ? listings.filter((listing) => !sectioned.has(listing.id)) : [],
+  };
 }
 
 export async function getProductHandles(): Promise<string[]> {
   return getListingHandles(isShopifyConfigured() ? await getProductSummaries() : demoProducts);
 }
 
-export async function getCollection(
-  handle: string,
-  after?: string,
-): Promise<ProductPage | null> {
+export async function getCollection(handle: string): Promise<ProductPage | null> {
   const catalogCollection = getCatalogCollection(handle);
 
   if (!isShopifyConfigured()) {
@@ -288,55 +347,46 @@ export async function getCollection(
     return {
       collection: getCatalogCollectionSummary(catalogCollection),
       products: groupProductListings(demoProducts.filter((product) => isInCatalogCollection(catalogCollection, product))),
-      pageInfo: {
-        endCursor: null,
-        hasNextPage: false,
-        hasPreviousPage: false,
-        startCursor: null,
-      },
     };
   }
 
+  // Load every product before grouping so a listing gets exactly one card instead of
+  // reappearing on every result page that contains a member.
   if (catalogCollection) {
-    // Load the whole type in one listing so a product group gets exactly one card
-    // instead of reappearing on every result page that contains a member.
-    const products = await getCatalogProducts(getCatalogProductQuery(catalogCollection));
     return {
       collection: getCatalogCollectionSummary(catalogCollection),
-      products: await getGroupedListings(products),
-      pageInfo: {
-        endCursor: null,
-        hasNextPage: false,
-        hasPreviousPage: false,
-        startCursor: null,
-      },
+      products: await getGroupedListings(await getCatalogProducts(getCatalogProductQuery(catalogCollection))),
     };
   }
+  if (handle === featuredCollectionHandle) return null;
 
-  const data = await storefrontRequest<{
-    collection: CollectionNode | null;
-  }>(
-    `${productFragment}
-      query Collection($handle: String!, $after: String) {
-        collection(handle: $handle) {
-          id handle title description image { url altText width height }
-          products(first: 12, after: $after, sortKey: COLLECTION_DEFAULT) {
-            pageInfo { endCursor hasNextPage hasPreviousPage startCursor }
-            edges { node { ...ProductFields } }
+  return getShopifyCollection(handle);
+}
+
+async function getShopifyCollection(handle: string): Promise<ProductPage | null> {
+  const found: { collection?: CollectionSummary } = {};
+  const products = await loadAllPages(async (after) => {
+    const data = await storefrontRequest<{ collection: (CollectionSummary & { products: PaginatedConnection<ProductNode> }) | null }>(
+      `${productFragment}
+        query Collection($handle: String!, $after: String) {
+          collection(handle: $handle) {
+            id handle title description image { url altText width height }
+            products(first: 50, after: $after, sortKey: COLLECTION_DEFAULT) {
+              edges { node { ...ProductFields } }
+              pageInfo { endCursor hasNextPage }
+            }
           }
-        }
-      }`,
-    { handle, after: after || null },
-    { revalidate: 300 },
-  );
-
-  if (!data.collection?.products) return null;
-  const { products, ...collection } = data.collection;
-  return {
-    collection,
-    products: await getGroupedListings(products.edges.map(({ node }) => reshapeProduct(node))),
-    pageInfo: products.pageInfo,
-  };
+        }`,
+      { handle, after },
+      { revalidate: 300 },
+    );
+    if (!data.collection) return null;
+    const { products: page, ...collection } = data.collection;
+    found.collection = collection;
+    return page;
+  });
+  if (!products || !found.collection) return null;
+  return { collection: found.collection, products: await getGroupedListings(products.map(reshapeProduct)) };
 }
 
 export async function getProduct(handle: string): Promise<ProductListing | null> {

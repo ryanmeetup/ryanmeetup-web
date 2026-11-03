@@ -71,16 +71,8 @@ export type CollectionSummary = {
   title: string;
 };
 
-export type PageInfo = {
-  endCursor: string | null;
-  hasNextPage: boolean;
-  hasPreviousPage: boolean;
-  startCursor: string | null;
-};
-
 export type ProductPage = {
   collection: CollectionSummary;
-  pageInfo: PageInfo;
   products: ProductListing[];
 };
 

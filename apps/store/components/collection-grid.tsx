@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { DropdownSelect, EmptyState } from "@ryanmeetup/ui";
 import type { ProductListing } from "@/lib/types";
-import { ProductCard } from "./product-card";
+import { ProductGrid } from "./product-grid";
 
 export function CollectionGrid({ products }: { products: ProductListing[] }) {
   const [type, setType] = useState("all");
@@ -59,9 +59,7 @@ export function CollectionGrid({ products }: { products: ProductListing[] }) {
         </div>
       )}
       {visible.length ? (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {visible.map((product, index) => <ProductCard key={product.id} product={product} eager={index < 4} />)}
-        </div>
+        <ProductGrid products={visible} />
       ) : (
         <EmptyState message="No Ryan gear found. Try another size or product type." />
       )}

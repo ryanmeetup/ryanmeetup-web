@@ -39,9 +39,8 @@ original variant ID to Shopify's cart and checkout.
 | Concept | What it controls | Example |
 | --- | --- | --- |
 | `listing:` tag | Products sharing it become one listing, titled by the text after `listing:`. | `listing:Name Tag Shirt` → `/products/name-tag-shirt` |
-| `collection:` tag | Membership in a Shopify smart collection whose condition is *Tag is equal to* that tag. The storefront itself does not read it. | `collection:I Heart RY` |
 | Product Type | Which type page lists the product: `Apparel` appears on `/collections/apparel`, `Accessory` on `/collections/accessories`, and every product on `/collections/all`. | Every name tag shirt is `Apparel`. |
-| Shopify collection | Any other browsing page, served at `/collections/<handle>` once the collection is published to the storefront channel. | A design collection such as I ♥ RY. |
+| Shopify collection | A manual collection of products, chosen in Shopify. Each one published to the storefront channel gets a home page section and a page at `/collections/<handle>`. | I Heart RY, Name Tag |
 | Product title | The member's Style label: the title with the listing name removed. | `Ryan's Dad Name Tag shirt` in `listing:Name Tag Shirt` reads `Ryan’s Dad`. |
 | Product handle | The member's URL identifier, normally also used in the `design` query parameter. | `ryans-dad-name-tag-shirt` |
 
@@ -50,11 +49,29 @@ in a product title alone does not add it to a listing, and neither does its Type
 The storefront ignores every tag other than `listing:`; they have no SEO effect.
 Search metadata comes from product titles, descriptions, and images.
 
-A collection can contain many listings and standalone products. When the
-storefront encounters a listing member in a collection's results, it replaces
-the members in that result page with one listing card and loads the listing's
-other published members too. A listing does not create a Shopify collection or
-add products to one.
+A collection can contain many listings and standalone products. A collection page
+loads every product in the collection, replaces a listing's members with one
+listing card, and loads the listing's other published members too, so the page
+has no "Next page". A listing does not create a Shopify collection or add
+products to one.
+
+### Home page
+
+The home page is built from Shopify collections, in this order:
+
+1. The featured section shows up to eight listings from Shopify's built-in home
+   page collection (handle `frontpage`, currently titled **Best Sellers**), in
+   that collection's order and under its title and description. Keep it to
+   hand-picked products. While it is empty or unpublished, the section shows the
+   actual best sellers instead. This collection has no page or department card of
+   its own.
+2. Every other published collection gets a section with up to four listings and
+   a link to its page. Sections are ordered by collection title, and listings by
+   the collection's order in Shopify.
+3. **More Ryan goods** lists every product that is in none of those collections,
+   so a product never disappears from the home page. Add a product to a
+   collection to move it out of this section.
+4. **Choose your department** links to the three type pages.
 
 ### Type pages
 
@@ -62,7 +79,7 @@ add products to one.
 defined in [lib/catalog-collections.ts](lib/catalog-collections.ts), not in
 Shopify. Each one searches the catalog by the exact Product type (`Apparel` or
 `Accessory`; *all* has no filter) and loads every match before grouping, so a
-listing gets one card and the page has no "Next page". A Shopify collection with
+listing gets one card. A Shopify collection with
 one of these handles is ignored in favor of the definition here.
 
 ### Example: name tag shirts
@@ -105,7 +122,7 @@ This is a Shopify catalog task:
    `listing:` followed by the listing name, such as **`listing:I Heart RY
    Hoodie`**. Give a product only one `listing:` tag.
 4. Set its Type to `Apparel` or `Accessory` so it appears on the matching type
-   page, and add any `collection:` tags.
+   page, and add it to its Shopify collection.
 5. Make the product active and publish it to the storefront's sales channel.
    The current channel is **Ryan Meetup Store Headless**.
 6. Allow the catalog cache to refresh, then open the shared page and check the
@@ -173,7 +190,7 @@ individually, use a collection and keep their standalone pages.
 | --- | --- |
 | Product remains standalone | The product has a `listing:` tag with a name after the colon. A similar title or Type does not establish membership. |
 | Product is missing from a listing | Active status, publication to the correct storefront channel, a `listing:` name that matches the others apart from capitalization and spacing, and cache refresh. |
-| Listing is missing from a collection | On a type page, at least one member has that exact Type. On a Shopify collection, at least one member belongs to it and is present in the requested result page. Listing membership alone does not add a listing to every collection. |
+| Listing is missing from a collection | On a type page, at least one member has that exact Type. On a Shopify collection, at least one member belongs to it. Listing membership alone does not add a listing to every collection. |
 | Style label is unexpected | The product title should contain the listing name; the label is whatever remains. Identical remainders produce identical labels. |
 | Type filter or card category is unexpected | Member Types should match; the listing inherits its Type from the first member. |
 | Cart item or fulfillment is wrong | Confirm the selected underlying product and variant, then its Shopify/Printful sync. The listing tag only controls presentation. |

@@ -9,8 +9,9 @@ import {
   Text,
 } from "@ryanmeetup/ui";
 import { FiArrowRight, FiPackage, FiShield, FiTruck } from "react-icons/fi";
-import { CollectionGrid } from "@/components/collection-grid";
-import { getCollections, getFeaturedProducts } from "@/lib/shopify";
+import { ProductGrid } from "@/components/product-grid";
+import { catalogCollections } from "@/lib/catalog-collections";
+import { getHomeCatalog } from "@/lib/shopify";
 
 export const revalidate = 300;
 
@@ -37,8 +38,12 @@ const heroPhotos = [
   },
 ];
 
+// Four columns at xl and two below keep the four-listing sections and eight favorites
+// in full rows.
+const gridColumns = "mt-8 sm:grid-cols-2 xl:grid-cols-4";
+
 export default async function HomePage() {
-  const [collections, products] = await Promise.all([getCollections(), getFeaturedProducts()]);
+  const { featured, sections, more } = await getHomeCatalog();
   return (
     <main>
       <section className="store-container py-8 sm:py-12 lg:py-16">
@@ -87,19 +92,42 @@ export default async function HomePage() {
       </section>
 
       <section className="store-container py-10 sm:py-14">
-        <SectionHeader title="Ryan favorites" description="Popular picks, pulled straight from the official catalog." meta="Featured goods" />
-        <div className="mt-8"><CollectionGrid products={products.slice(0, 8)} /></div>
+        <SectionHeader title={featured.collection.title} description={featured.collection.description} meta="Featured goods" />
+        <ProductGrid products={featured.products} className={gridColumns} />
       </section>
 
+      {sections.map(({ collection, products, total }) => (
+        <section key={collection.id} aria-labelledby={`collection-${collection.handle}`} className="store-container py-10 sm:py-14">
+          <SectionHeader
+            title={<span id={`collection-${collection.handle}`}>{collection.title}</span>}
+            description={collection.description || undefined}
+            meta="Collection"
+            actions={
+              <Button.Link href={`/collections/${collection.handle}`} size="md" variant="secondary" className="!w-full sm:!w-auto" rightIcon={<FiArrowRight />}>
+                {total > products.length ? `See all ${total}` : "View collection"}
+              </Button.Link>
+            }
+          />
+          <ProductGrid products={products} eagerCount={0} className={gridColumns} />
+        </section>
+      ))}
+
+      {more.length > 0 && (
+        <section className="store-container py-10 sm:py-14">
+          <SectionHeader title="More Ryan goods" description="Everything else on the shelf." meta="Also available" />
+          <ProductGrid products={more} eagerCount={0} className={gridColumns} />
+        </section>
+      )}
+
       <section id="collections" className="store-container py-12 sm:py-20">
-        <SectionHeader title="Choose your department" description="There is no wrong aisle. There are only varying levels of Ryan." meta="Collections" />
+        <SectionHeader title="Choose your department" description="There is no wrong aisle. There are only varying levels of Ryan." meta="Departments" />
         <div className="mt-8 grid gap-4 md:grid-cols-3">
-          {collections.slice(0, 6).map((collection, index) => (
+          {catalogCollections.map((collection, index) => (
             <Link key={collection.id} href={`/collections/${collection.handle}`} className="group rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/40">
-              <Card hover size="lg" className={`relative min-h-64 overflow-hidden ${index % 3 === 0 ? "!bg-nametag text-white" : "!bg-white/70 dark:!bg-white/5"}`}>
-                <span className={`text-[10px] font-bold uppercase tracking-[0.25em] ${index % 3 === 0 ? "text-white/70" : "text-black/50 dark:text-white/50"}`}>Department {String(index + 1).padStart(2, "0")}</span>
-                <Heading ignoreColorMode size="h3" className={`mt-14 text-3xl ${index % 3 === 0 ? "text-white" : "text-black dark:text-white"}`}>{collection.title}</Heading>
-                <p className={`mt-3 text-sm leading-relaxed ${index % 3 === 0 ? "text-white/75" : "text-black/65 dark:text-white/65"}`}>{collection.description}</p>
+              <Card hover size="lg" className={`relative min-h-64 overflow-hidden ${index === 0 ? "!bg-nametag text-white" : "!bg-white/70 dark:!bg-white/5"}`}>
+                <span className={`text-[10px] font-bold uppercase tracking-[0.25em] ${index === 0 ? "text-white/70" : "text-black/50 dark:text-white/50"}`}>Department {String(index + 1).padStart(2, "0")}</span>
+                <Heading ignoreColorMode size="h3" className={`mt-14 text-3xl ${index === 0 ? "text-white" : "text-black dark:text-white"}`}>{collection.title}</Heading>
+                <p className={`mt-3 text-sm leading-relaxed ${index === 0 ? "text-white/75" : "text-black/65 dark:text-white/65"}`}>{collection.description}</p>
                 <FiArrowRight aria-hidden className="absolute bottom-6 right-6 text-2xl transition group-hover:translate-x-1" />
               </Card>
             </Link>
