@@ -53,7 +53,7 @@ export function ProductGroupDetail({ title, handle, designs, reviewsByProduct }:
         }}
         designField={
           <DropdownSelect
-            label="Nametag design"
+            label="Style"
             variant="field"
             required
             value={selected.value}

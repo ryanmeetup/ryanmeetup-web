@@ -60,6 +60,9 @@ test("product details fetch all image and variant pages", async () => {
     const request = JSON.parse(String(init?.body));
     requests.push(request);
     const connection = (nodes: unknown[], endCursor: string, hasNextPage: boolean) => ({ edges: nodes.map((node) => ({ node })), pageInfo: { endCursor, hasNextPage } });
+    if (request.query.includes("CatalogProductSummaries")) {
+      return new Response(JSON.stringify({ data: { products: connection([], "", false) } }), { headers: { "Content-Type": "application/json" } });
+    }
     let product;
     if (request.query.includes("items: images")) {
       product = { items: connection([extraImage], "last-image", false) };
@@ -76,7 +79,7 @@ test("product details fetch all image and variant pages", async () => {
     const product = await getProduct(ryan.handle);
     expect(product?.images.map((image) => image.url)).toEqual([ryan.featuredImage!.url, extraImage.url]);
     expect(product?.variants.map((variant) => variant.id)).toEqual([ryan.variants[0].id, ryan.variants[1].id]);
-    expect(requests).toHaveLength(3);
+    expect(requests.filter((request) => !request.query.includes("CatalogProductSummaries"))).toHaveLength(3);
   } finally {
     globalThis.fetch = originalFetch;
     if (originalDomain === undefined) delete process.env.SHOPIFY_STORE_DOMAIN;

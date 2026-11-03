@@ -3,8 +3,6 @@ import type { Product, ProductDesign, ProductListing } from "./types";
 export type ProductGroup = {
   handle: string;
   title: string;
-  description: string;
-  tag: string;
   defaultDesign?: string;
   legacyDesignValues: Record<string, string>;
   legacyProductHandles: Record<string, string>;
@@ -12,15 +10,15 @@ export type ProductGroup = {
 
 type GroupableProduct = Pick<Product, "handle"> & { id?: string; tags?: string[] };
 
-// These are storefront groupings. Shopify/Printful products and variant IDs stay separate.
-export const productGroups: ProductGroup[] = [
-  {
-    handle: "nametag-shirt",
-    title: "Nametag Shirt",
-    description: "A familiar introduction, now in shirt form. Choose your nametag design, color, and size.",
-    tag: "name tag",
+const listingTagPattern = /^\s*listing\s*:\s*(.+?)\s*$/i;
+
+// Storefront listings come from Shopify tags: every product tagged `listing:Name` shares
+// one listing titled "Name" at /products/<slug of Name>. Shopify/Printful products and
+// variant IDs stay separate. Code keeps only a listing's default design and the
+// links that predate its tag.
+const listingRedirects: Record<string, Omit<ProductGroup, "handle" | "title">> = {
+  "nametag-shirt": {
     defaultDesign: "ryan",
-    // Keep existing bookmarks and pre-tag cart data working. Membership comes from tags.
     legacyDesignValues: {
       "ryan-name-tag-shirt": "ryan",
       "ryans-mom-name-tag-shirt": "ryans-mom",
@@ -29,25 +27,48 @@ export const productGroups: ProductGroup[] = [
       "ryans-mom-name-tag-shirt": "ryans-dad-name-tag-shirt",
     },
   },
-];
+};
 
-export function getProductGroup(handle: string) {
-  return productGroups.find((group) => group.handle === handle);
+export function slugifyListingName(name: string) {
+  return name.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+export function getListingTagName(tags: string[]) {
+  for (const tag of tags) {
+    const name = listingTagPattern.exec(tag)?.[1];
+    if (name && slugifyListingName(name)) return name;
+  }
+  return undefined;
+}
+
+function createGroup(handle: string, title: string): ProductGroup {
+  return { handle, title, ...(listingRedirects[handle] ?? { legacyDesignValues: {}, legacyProductHandles: {} }) };
+}
+
+function getLegacyGroup(handle: string) {
+  return Object.hasOwn(listingRedirects, handle) ? createGroup(handle, handle) : undefined;
 }
 
 export function resolveProductHandle(handle: string) {
-  const group = productGroups.find((group) => Object.hasOwn(group.legacyProductHandles, handle));
-  return group?.legacyProductHandles[handle] ?? handle;
+  for (const redirects of Object.values(listingRedirects)) {
+    if (Object.hasOwn(redirects.legacyProductHandles, handle)) return redirects.legacyProductHandles[handle];
+  }
+  return handle;
 }
 
 export function getProductGroupForMember(product: GroupableProduct) {
-  return productGroups.find((group) => product.id !== `group:${group.handle}` && (
-    product.tags
-      ? product.tags.some((tag) => tag.trim().toLowerCase() === group.tag.toLowerCase())
-      : Object.hasOwn(group.legacyDesignValues, product.handle)
-        || Object.hasOwn(group.legacyProductHandles, product.handle)
-        || Object.values(group.legacyProductHandles).includes(product.handle)
-  ));
+  if (product.tags) {
+    const name = getListingTagName(product.tags);
+    if (!name) return undefined;
+    const handle = slugifyListingName(name);
+    return product.id === `group:${handle}` ? undefined : createGroup(handle, name);
+  }
+  // Cart lines saved before tags were stored carry only a handle.
+  const legacy = Object.entries(listingRedirects).find(([, redirects]) =>
+    Object.hasOwn(redirects.legacyDesignValues, product.handle)
+      || Object.hasOwn(redirects.legacyProductHandles, product.handle)
+      || Object.values(redirects.legacyProductHandles).includes(product.handle));
+  return legacy ? createGroup(legacy[0], legacy[0]) : undefined;
 }
 
 export function getProductHref(product: GroupableProduct) {
@@ -63,7 +84,7 @@ function getDesignValue(group: ProductGroup, handle: string) {
 }
 
 export function resolveProductDesignValue(handle: string, value: string) {
-  const group = getProductGroup(handle);
+  const group = getLegacyGroup(handle);
   if (!group) return value;
   const legacyHandle = Object.entries(group.legacyDesignValues).find(([, legacyValue]) => legacyValue === value)?.[0];
   return getDesignValue(group, legacyHandle ?? value);
@@ -73,16 +94,25 @@ export function getListingHandles(products: GroupableProduct[]) {
   return [...new Set(products.map((product) => getProductGroupForMember(product)?.handle ?? product.handle))];
 }
 
-function getProductDesign(group: ProductGroup, product: Product): ProductDesign {
-  const label = product.title
-    .replace(/\bname[\s-]*tag\b/gi, "")
-    .replace(/\b(?:t[\s-]?shirts?|shirts?|tees?)\b/gi, "")
+// The member's label is its title minus the listing name, so "I Heart RY Hoodie - White"
+// in `listing:I Heart RY Hoodie` reads "White". Spacing, hyphens, and apostrophes may
+// differ: "Ryan's Dad Name Tag shirt" in `listing:Nametag Shirt` reads "Ryan’s Dad".
+function getDesignLabel(group: ProductGroup, title: string) {
+  // Only letters and digits survive, so the characters need no RegExp escaping.
+  const characters = [...group.title.replace(/[^\p{L}\p{N}]/gu, "")];
+  const name = new RegExp(characters.join("[\\s'’-]*"), "iu");
+  return title
+    .replace(name, "")
     .replace(/^[\s:|–—-]+|[\s:|–—-]+$/g, "")
     .replace(/\s+/g, " ")
     .replace(/'/g, "’")
-    .trim();
+    .trim()
+    .replace(/^\p{Ll}/u, (letter) => letter.toUpperCase());
+}
+
+function getProductDesign(group: ProductGroup, product: Product): ProductDesign {
   return {
-    label: label || product.title,
+    label: getDesignLabel(group, product.title) || product.title,
     value: getDesignValue(group, product.handle),
     product,
   };
@@ -110,9 +140,8 @@ export function createProductGroup(group: ProductGroup, products: Product[]): Pr
     ...first,
     id: `group:${group.handle}`,
     handle: group.handle,
-    title: group.title,
-    description: group.description,
-    descriptionHtml: `<p>${group.description}</p>`,
+    // Members may spell the tag differently; the first design's spelling names the listing.
+    title: getListingTagName(first.tags) ?? group.title,
     availableForSale: designs.some(({ product }) => product.availableForSale),
     images: designs.flatMap(({ product }) => product.images),
     options: [...new Set(designs.flatMap(({ product }) => product.options.map((option) => option.name)))].map((name) => ({

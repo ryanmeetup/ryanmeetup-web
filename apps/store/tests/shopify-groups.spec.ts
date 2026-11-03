@@ -28,8 +28,7 @@ function mockCatalog(failDiscovery = false) {
     let data;
     if (request.query.includes("CatalogProductSummaries")) {
       if (failDiscovery) return new Response(JSON.stringify({ errors: [{ message: "Catalog unavailable" }] }));
-      const products = request.variables.query ? [ryan, mom, dad] : [ryan, tee, mom, dad];
-      if (request.variables.query) expect(request.variables.query).toBe('tag:"name tag"');
+      const products = [ryan, tee, mom, dad];
       const page = request.variables.after ? products.slice(2) : products.slice(0, 2);
       data = { products: { edges: page.map(({ handle, title, tags }) => ({ node: { handle, title, tags } })), pageInfo: { endCursor: "catalog-page-1", hasNextPage: !request.variables.after } } };
     } else if (request.query.includes("CatalogCollectionProducts")) {
@@ -75,7 +74,7 @@ test("sitemap discovery includes every catalog page and lists the group once", a
   expect(await getProductHandles()).toEqual(["nametag-shirt", tee.handle]);
 });
 
-test("tag search failures propagate instead of returning only previously known designs", async () => {
+test("catalog discovery failures propagate instead of returning only previously known designs", async () => {
   mockCatalog(true);
   await expect(getProduct("nametag-shirt")).rejects.toThrow("Catalog unavailable");
 });
@@ -85,7 +84,7 @@ test("the old Mom handle fetches Shopify's corrected Dad product", async () => {
   const product = await getProduct("ryans-mom-name-tag-shirt");
   expect(product?.handle).toBe(dad.handle);
   expect(product?.title).toBe(dad.title);
-  expect(requests.map((request) => request.variables.handle)).toEqual([dad.handle]);
+  expect(requests.flatMap((request) => request.variables.handle ?? [])).toEqual([dad.handle]);
 });
 
 test("type pages list every product of that Shopify type with each group once", async () => {

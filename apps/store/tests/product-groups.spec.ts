@@ -1,8 +1,8 @@
 import { expect, test } from "@playwright/test";
-import { createProductGroup, getListingHandles, getProductGroup, getProductGroupForMember, getProductHref, groupProductListings, resolveProductDesignValue, resolveProductHandle } from "../lib/product-groups";
+import { createProductGroup, getListingHandles, getProductGroupForMember, getProductHref, groupProductListings, resolveProductDesignValue, resolveProductHandle } from "../lib/product-groups";
 import { dad, mom, ryan, tee } from "./fixtures/products";
 
-const nametagGroup = getProductGroup("nametag-shirt")!;
+const nametagGroup = getProductGroupForMember(ryan)!;
 
 test("nametag listing keeps both designs' original Shopify merchandise and options", () => {
   const listings = groupProductListings([mom, tee, ryan]);
@@ -55,7 +55,7 @@ test("new tagged designs join the group with labels derived from their titles", 
 });
 
 test("membership follows tags even when handles and titles do not resemble the original designs", () => {
-  const renamed = { ...dad, handle: "family-reunion-special", title: "Limited edition", tags: [" Name Tag "] };
+  const renamed = { ...dad, handle: "family-reunion-special", title: "Limited edition", tags: [" Listing:  Nametag Shirt "] };
   expect(getProductGroupForMember(renamed)?.handle).toBe("nametag-shirt");
   expect(createProductGroup(nametagGroup, [renamed])?.designs?.[0]).toMatchObject({ label: "Limited edition", value: renamed.handle });
   expect(getProductHref(renamed)).toBe("/products/nametag-shirt?design=family-reunion-special");
@@ -84,10 +84,25 @@ test("the corrected Dad design resolves old Mom product, cart, and design links"
   expect(resolveProductDesignValue(nametagGroup.handle, "ryans-mom-name-tag-shirt")).toBe(dad.handle);
   expect(resolveProductDesignValue(nametagGroup.handle, dad.handle)).toBe(dad.handle);
   expect(resolveProductDesignValue(nametagGroup.handle, "ryan")).toBe("ryan");
-  expect(getProductHref({ handle: "ryans-mom-name-tag-shirt", tags: ["name tag"] })).toBe(`/products/nametag-shirt?design=${dad.handle}`);
+  expect(getProductHref({ handle: "ryans-mom-name-tag-shirt", tags: ["listing:Nametag Shirt"] })).toBe(`/products/nametag-shirt?design=${dad.handle}`);
 
   const corrected = { ...dad, handle: "ryans-mom-name-tag-shirt" };
   const listing = createProductGroup(nametagGroup, [ryan, corrected])!;
   expect(listing.designs?.[1]).toMatchObject({ label: "Ryan’s Dad", value: dad.handle });
   expect(listing.designs?.[1].product.variants).toBe(dad.variants);
+});
+
+test("any listing tag joins products into one listing labelled by the rest of each title", () => {
+  const black = { ...tee, id: "hoodie-black", handle: "i-heart-ry-hoodie", title: "I Heart RY Hoodie - Black", tags: ["Heart", "listing:I Heart RY Hoodie"] };
+  const white = { ...tee, id: "hoodie-white", handle: "i-heart-ry-hoodie-white", title: "I heart RY hoodie – white", tags: ["LISTING: i heart ry hoodie"] };
+  const listings = groupProductListings([white, ryan, black]);
+  expect(listings.map((listing) => listing.handle)).toEqual(["i-heart-ry-hoodie", "nametag-shirt"]);
+  expect(listings[0].title).toBe("I Heart RY Hoodie");
+  expect(listings[0].description).toBe(black.description);
+  expect(listings[0].designs?.map((design) => [design.label, design.value])).toEqual([["Black", black.handle], ["White", white.handle]]);
+  expect(getProductHref(white)).toBe(`/products/i-heart-ry-hoodie?design=${white.handle}`);
+});
+
+test("a listing tag without a name is ignored", () => {
+  expect(getProductGroupForMember({ ...tee, tags: ["listing:", "listing: ---"] })).toBeUndefined();
 });

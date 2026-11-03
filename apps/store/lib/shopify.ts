@@ -1,7 +1,6 @@
 import { catalogCollections, getCatalogCollection, getCatalogCollectionSummary, getCatalogProductQuery, isInCatalogCollection } from "./catalog-collections";
 import { demoCollections, demoProducts } from "./demo-data";
-import { createProductGroup, getListingHandles, getProductGroup, getProductGroupForMember, groupProductListings, productGroups, resolveProductHandle } from "./product-groups";
-import type { ProductGroup } from "./product-groups";
+import { createProductGroup, getListingHandles, getProductGroupForMember, groupProductListings, resolveProductHandle } from "./product-groups";
 import type {
   Cart,
   CollectionSummary,
@@ -193,19 +192,19 @@ export async function getCollections(): Promise<CollectionSummary[]> {
   ];
 }
 
-async function getProductSummaries(query?: string): Promise<ProductSummary[]> {
+async function getProductSummaries(): Promise<ProductSummary[]> {
   const products: ProductSummary[] = [];
   const cursors = new Set<string>();
   let after: string | null = null;
   while (true) {
     const data: ProductSummariesPayload = await storefrontRequest<ProductSummariesPayload>(
-      `query CatalogProductSummaries($after: String, $query: String) {
-        products(first: 250, after: $after, query: $query, sortKey: TITLE) {
+      `query CatalogProductSummaries($after: String) {
+        products(first: 250, after: $after, sortKey: TITLE) {
           edges { node { handle title tags } }
           pageInfo { endCursor hasNextPage }
         }
       }`,
-      { after, query: query ?? null },
+      { after },
       { revalidate: 300 },
     );
     products.push(...data.products.edges.map(({ node }) => node));
@@ -242,18 +241,20 @@ async function getCatalogProducts(query: string | null): Promise<Product[]> {
   }
 }
 
-async function getProductGroupProducts(group: ProductGroup): Promise<Product[]> {
-  if (!isShopifyConfigured()) return demoProducts.filter((product) => getProductGroupForMember(product)?.handle === group.handle);
-  const summaries = await getProductSummaries(`tag:${JSON.stringify(group.tag)}`);
-  const members = summaries.filter((product) => getProductGroupForMember(product)?.handle === group.handle);
+// Members are found by slug across the whole catalog rather than by Shopify's exact tag
+// search, so `listing:Nametag Shirt` and `listing: nametag shirt` share one listing.
+async function getListingProducts(handles: string[]): Promise<Product[]> {
+  if (!handles.length) return [];
+  const isMember = (product: Pick<Product, "handle" | "tags">) => handles.includes(getProductGroupForMember(product)?.handle ?? "");
+  if (!isShopifyConfigured()) return demoProducts.filter(isMember);
+  const members = (await getProductSummaries()).filter(isMember);
   const products = await Promise.all(members.map((product) => getShopifyProduct(product.handle)));
   return products.filter((product) => product !== null);
 }
 
 async function getGroupedListings(products: Product[]): Promise<ProductListing[]> {
-  const groups = productGroups.filter((group) => products.some((product) => getProductGroupForMember(product)?.handle === group.handle));
-  const relatedProducts = (await Promise.all(groups.map(getProductGroupProducts))).flat();
-  return groupProductListings(products, relatedProducts);
+  const handles = [...new Set(products.flatMap((product) => getProductGroupForMember(product)?.handle ?? []))];
+  return groupProductListings(products, await getListingProducts(handles));
 }
 
 export async function getFeaturedProducts(): Promise<ProductListing[]> {
@@ -339,8 +340,9 @@ export async function getCollection(
 }
 
 export async function getProduct(handle: string): Promise<ProductListing | null> {
-  const group = getProductGroup(handle);
-  if (group) return createProductGroup(group, await getProductGroupProducts(group));
+  const members = await getListingProducts([handle]);
+  const group = members[0] && getProductGroupForMember(members[0]);
+  if (group) return createProductGroup(group, members);
   return getShopifyProduct(resolveProductHandle(handle));
 }
 

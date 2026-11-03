@@ -12,7 +12,7 @@ test("floating photo controls wrap across designs and keep keyboard focus", asyn
 
   await next.click();
   await expect(status).toHaveText("Photo 2 of 2");
-  await expect(page.getByLabel("Nametag design")).toContainText("Ryan’s Dad");
+  await expect(page.getByLabel("Style")).toContainText("Ryan’s Dad");
   await expect(page.getByLabel("Color")).toContainText("Natural");
   await expect(next).toBeFocused();
   await page.keyboard.press("Enter");
@@ -43,7 +43,7 @@ test("arrow shortcuts browse photos without taking over product fields or modifi
   await page.keyboard.press("Shift+ArrowRight");
   await expect(status).toHaveText("Photo 2 of 2");
 
-  const design = page.getByLabel("Nametag design");
+  const design = page.getByLabel("Style");
   await design.focus();
   await page.keyboard.press("ArrowLeft");
   await expect(status).toHaveText("Photo 2 of 2");
@@ -84,7 +84,7 @@ test("old Mom design links reopen the corrected Dad shirt", async ({ page }) => 
   ]) {
     await page.goto(url);
     await expect(page).toHaveURL(/\/products\/nametag-shirt\?design=ryans-dad-name-tag-shirt$/);
-    await expect(page.getByLabel("Nametag design")).toContainText("Ryan’s Dad");
+    await expect(page.getByLabel("Style")).toContainText("Ryan’s Dad");
     await expect(page.getByRole("region", { name: "Product gallery" }).getByRole("button", { name: "View Ryan’s Dad image 1", exact: true })).toHaveAttribute("aria-pressed", "true");
   }
 });

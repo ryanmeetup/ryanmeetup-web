@@ -26,7 +26,7 @@ test("nametag gallery shows every design and thumbnails choose the matching cart
   const momPhoto = gallery.getByRole("button", { name: "View Ryan’s Dad image 1", exact: true });
   await expect(ryanPhoto).toHaveAttribute("aria-pressed", "true");
   await momPhoto.click();
-  await expect(page.getByLabel("Nametag design")).toContainText("Ryan’s Dad");
+  await expect(page.getByLabel("Style")).toContainText("Ryan’s Dad");
   await expect(page.getByLabel("Color")).toContainText("Natural");
   await expect(momPhoto).toHaveAttribute("aria-pressed", "true");
   await expect(ryanPhoto).toHaveAttribute("aria-pressed", "false");
@@ -36,7 +36,7 @@ test("nametag gallery shows every design and thumbnails choose the matching cart
   const cart = await page.evaluate(() => JSON.parse(localStorage.getItem("ryan-store-cart")!));
   expect(cart.lines[0].merchandise.id).toBe("gid://shopify/ProductVariant/demo-ryans-dad-name-tag-shirt-0");
   await ryanPhoto.click();
-  await expect(page.getByLabel("Nametag design")).toContainText("Ryan");
+  await expect(page.getByLabel("Style")).toContainText("Ryan");
   await expect(page.getByLabel("Color")).toContainText("White");
   await expect(ryanPhoto).toHaveAttribute("aria-pressed", "true");
 });
@@ -55,14 +55,14 @@ test("nametag designs share one listing and add their own merchandise to the car
   await expect(page.locator('main a[href="/products/ryan-name-tag-shirt"], main a[href="/products/ryans-mom-name-tag-shirt"]')).toHaveCount(0);
   await listing.click();
   await expect(page.getByRole("heading", { name: "Nametag Shirt", exact: true })).toBeVisible();
-  await expect(page.getByLabel("Nametag design")).toHaveAttribute("aria-required", "true");
+  await expect(page.getByLabel("Style")).toHaveAttribute("aria-required", "true");
   await expect(page.getByLabel("Color")).toContainText("White");
   await expect(page.getByText("$12.00", { exact: true })).toBeVisible();
   const firstImage = await page.locator('main img').first().getAttribute("src");
 
   await page.getByRole("button", { name: "Add to cart" }).click();
   await expect(page.getByText("Added to cart", { exact: true })).toBeVisible();
-  await page.getByLabel("Nametag design").click();
+  await page.getByLabel("Style").click();
   await page.getByRole("option", { name: "Ryan’s Dad", exact: true }).click();
   await expect(page).toHaveURL(/\/products\/nametag-shirt\?design=ryans-dad-name-tag-shirt$/);
   await expect(page.getByRole("heading", { name: "Nametag Shirt", exact: true })).toHaveCount(1);
@@ -88,16 +88,16 @@ test("nametag designs share one listing and add their own merchandise to the car
 test("nametag design URLs survive redirects, reloads, and browser history", async ({ page }) => {
   await page.goto("/products/ryans-mom-name-tag-shirt");
   await expect(page).toHaveURL(/\/products\/nametag-shirt\?design=ryans-dad-name-tag-shirt$/);
-  await expect(page.getByLabel("Nametag design")).toContainText("Ryan’s Dad");
+  await expect(page.getByLabel("Style")).toContainText("Ryan’s Dad");
   await expect(page.getByLabel("Color")).toContainText("Natural");
-  await page.getByLabel("Nametag design").click();
+  await page.getByLabel("Style").click();
   await page.getByRole("option", { name: "Ryan", exact: true }).click();
   await expect(page.getByLabel("Color")).toContainText("White");
   await page.reload();
-  await expect(page.getByLabel("Nametag design")).toContainText("Ryan");
+  await expect(page.getByLabel("Style")).toContainText("Ryan");
   await expect(page.getByLabel("Color")).toContainText("White");
   await page.goBack();
-  await expect(page.getByLabel("Nametag design")).toContainText("Ryan’s Dad");
+  await expect(page.getByLabel("Style")).toContainText("Ryan’s Dad");
   await expect(page.getByLabel("Color")).toContainText("Natural");
   await page.goto("/products/ryan-name-tag-shirt");
   await expect(page).toHaveURL(/\/products\/nametag-shirt\?design=ryan$/);

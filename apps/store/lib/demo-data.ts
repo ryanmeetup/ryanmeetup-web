@@ -95,7 +95,7 @@ export const demoProducts: Product[] = [
     imageUrl: "https://cdn.shopify.com/s/files/1/0718/7005/4511/files/unisex-classic-tee-white-front-6acd5a66edb8c.jpg?v=1791842937",
     color: "White",
     type: "Apparel",
-    tags: ["name tag"],
+    tags: ["listing:Nametag Shirt"],
   }),
   makeProduct({
     handle: "ryans-dad-name-tag-shirt",
@@ -105,7 +105,7 @@ export const demoProducts: Product[] = [
     imageUrl: "https://cdn.shopify.com/s/files/1/0718/7005/4511/files/unisex-classic-tee-white-front-6acd5bf343e98.jpg?v=1791843327",
     color: "Natural",
     type: "Apparel",
-    tags: ["name tag"],
+    tags: ["listing:Nametag Shirt"],
   }),
 ];
 
