@@ -7,12 +7,10 @@ numbers drift.
 
 ## Pending rollout
 
-Committed and applied to RMT; PRD still needs its dashboard SQL, in this order:
+Both migrations (`20261116000000`, `20261117000000`) are applied to RMT and,
+through the dashboard SQL, to PRD (2026-11-03).
 
-- [ ] [Card-contract repair](PRD_RYD_CARD_CONTRACT_REPAIR_SQL.md)
-  (`20261116000000`)
-- [ ] [Import card details](PRD_RYD_IMPORT_CARD_DETAILS_SQL.md)
-  (`20261117000000`)
+- [ ] Push `main` and deploy both instances.
 
 Optional hardening: after deploying, disconnect and reconnect the RMT RY-D
 Google connection once. Until then the stored grant still includes the unused
