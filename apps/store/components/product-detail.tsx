@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Button, DropdownSelect, ErrorCallout, FormStatus, IconButton, Kicker } from "@ryanmeetup/ui";
 import { FiCheck, FiCheckCircle, FiChevronLeft, FiChevronRight, FiPackage, FiShield, FiShoppingBag } from "react-icons/fi";
 import { formatMoney } from "@/lib/money";
+import { isDefaultTitleOption } from "@/lib/product-options";
 import { getProductGallery, getVariantForImage, groupProductGallery } from "@/lib/product-gallery";
 import type { ProductGalleryImage } from "@/lib/product-gallery";
 import type { Product, StoreImage } from "@/lib/types";
@@ -164,7 +165,7 @@ export function ProductDetail({ product, title = product.title, designField, gal
         {designField && <div className="mt-8">{designField}</div>}
 
         <div className="mt-8 space-y-5">
-          {product.options.map((option) => (
+          {product.options.filter((option) => !isDefaultTitleOption(option)).map((option) => (
             <DropdownSelect
               key={option.id}
               label={option.name}

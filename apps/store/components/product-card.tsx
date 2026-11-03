@@ -5,18 +5,17 @@ import Link from "next/link";
 import { useState } from "react";
 import { Card, Tooltip } from "@ryanmeetup/ui";
 import { formatMoney } from "@/lib/money";
-import { getColorPreviews } from "@/lib/product-colors";
+import { getListingColorPreviews } from "@/lib/product-colors";
 import type { ProductListing } from "@/lib/types";
 
 const visibleSwatches = 5;
 
 export function ProductCard({ product, eager = false }: { product: ProductListing; eager?: boolean }) {
-  // A grouped listing shows its first design, so preview that design's colors.
-  const colors = getColorPreviews(product.designs?.[0]?.product ?? product);
+  const colors = getListingColorPreviews(product);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
-  const color = colors.find((preview) => preview.slug === selectedColor);
+  const color = colors.find((preview) => preview.href === selectedColor);
   const image = color?.image ?? product.featuredImage;
-  const href = `/products/${product.handle}${color ? `?color=${encodeURIComponent(color.slug)}` : ""}`;
+  const href = color?.href ?? `/products/${product.handle}`;
   const hiddenColors = colors.length - visibleSwatches;
 
   return (
@@ -45,14 +44,14 @@ export function ProductCard({ product, eager = false }: { product: ProductListin
       {colors.length > 0 && (
         <div role="group" aria-label={`${product.title} colors`} className="-mt-2 flex flex-wrap items-center gap-1 px-3 pb-3 sm:-mt-3 sm:px-4 sm:pb-4">
           {colors.slice(0, visibleSwatches).map((preview) => {
-            const pressed = preview.slug === color?.slug;
+            const pressed = preview.href === color?.href;
             return (
-              <Tooltip key={preview.slug} content={preview.value} placement="bottom">
+              <Tooltip key={preview.href} content={preview.value} placement="bottom">
                 <button
                   type="button"
                   aria-label={`Preview ${preview.value}`}
                   aria-pressed={pressed}
-                  onClick={() => setSelectedColor(pressed ? null : preview.slug)}
+                  onClick={() => setSelectedColor(pressed ? null : preview.href)}
                   className={`grid h-8 w-8 place-items-center rounded-full transition hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40 dark:hover:bg-white/10 dark:focus-visible:ring-white/40 ${pressed ? "ring-2 ring-black dark:ring-white" : ""}`}
                 >
                   <span

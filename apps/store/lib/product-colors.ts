@@ -1,4 +1,4 @@
-import type { Product, StoreImage } from "./types";
+import type { Product, ProductListing, StoreImage } from "./types";
 
 export type ColorPreview = {
   value: string;
@@ -6,6 +6,8 @@ export type ColorPreview = {
   image: StoreImage;
   swatch: string | null;
 };
+
+export type ListingColorPreview = ColorPreview & { href: string };
 
 // Shopify swatches win when they are set in Admin. These cover the Printful
 // colors the catalog uses today; an unlisted color still gets a labelled chip.
@@ -48,4 +50,34 @@ export function getColorPreviews(product: Pick<Product, "options" | "variants">)
 export function getColorPreview(product: Pick<Product, "options" | "variants">, slug: string | null | undefined) {
   if (!slug) return undefined;
   return getColorPreviews(product).find((preview) => preview.slug === getColorSlug(slug));
+}
+
+export function getListingColorPreviews(product: ProductListing): ListingColorPreview[] {
+  const designs = product.designs;
+  // Printful may split colors into separate products with only a Size option.
+  // Only treat styles as colors when all their labels name a known swatch.
+  if (designs?.length && designs.every((design) => Object.hasOwn(fallbackSwatches, getColorSlug(design.label)))) {
+    const previews = designs.flatMap((design) => {
+      const image = design.product.featuredImage ?? design.product.images[0] ?? design.product.variants.find((variant) => variant.image)?.image;
+      if (!image) return [];
+      const slug = getColorSlug(design.label);
+      const option = getColorOption(design.product);
+      const swatch = option?.optionValues?.find((entry) => getColorSlug(entry.name) === slug)?.swatch?.color ?? fallbackSwatches[slug];
+      return [{
+        value: design.label,
+        slug,
+        image,
+        swatch,
+        href: `/products/${product.handle}?design=${encodeURIComponent(design.value)}`,
+      }];
+    });
+    return new Set(previews.map((preview) => preview.image.url)).size > 1 ? previews : [];
+  }
+
+  // Other grouped listings still preview the first design's variant colors.
+  const design = designs?.[0];
+  return getColorPreviews(design?.product ?? product).map((preview) => ({
+    ...preview,
+    href: `/products/${product.handle}?${design ? `design=${encodeURIComponent(design.value)}&` : ""}color=${encodeURIComponent(preview.slug)}`,
+  }));
 }

@@ -23,6 +23,9 @@ Copy `.env.example` to `.env.local` and add the development-store credentials. W
 
 ## Storefront listings
 
+For the Shopify-side steps when listing a new product, without the code
+details, see [docs/ADDING_PRODUCTS.md](docs/ADDING_PRODUCTS.md).
+
 The storefront can present several separate Shopify products as one **listing**:
 one card and one product page with a **Style** selector for choosing a member.
 Each product keeps its own variants, prices, images, description, reviews, and

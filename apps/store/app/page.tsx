@@ -48,14 +48,14 @@ const featuredGridColumns: Record<number, string> = {
   2: "sm:grid-cols-2",
   3: "sm:grid-cols-2 lg:grid-cols-3",
   4: "sm:grid-cols-2 xl:grid-cols-4",
-  5: "sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5",
 };
 
-// Up to five columns, choosing the count that leaves the fewest empty slots in the
-// last row (widest wins a tie): five favorites sit in one row, six in two rows of three.
+// Up to four columns (five leaves card titles cramped against their prices), choosing
+// the count that leaves the fewest empty slots in the last row, widest winning a tie:
+// five or six favorites sit in rows of three.
 function getFeaturedColumns(count: number) {
   const emptySlots = (columns: number) => (columns - (count % columns)) % columns;
-  let best = Math.min(Math.max(count, 1), 5);
+  let best = Math.min(Math.max(count, 1), 4);
   for (let columns = best - 1; columns >= 2; columns--) {
     if (emptySlots(columns) < emptySlots(best)) best = columns;
   }
@@ -113,7 +113,7 @@ export default async function HomePage() {
 
       <section className="store-container py-10 sm:py-14">
         <SectionHeader title={featured.collection.title} description={featured.collection.description} meta="Featured goods" />
-        <ProductGrid products={featured.products} eagerCount={5} className={`mt-8 ${featuredGridColumns[getFeaturedColumns(featured.products.length)]}`} />
+        <ProductGrid products={featured.products} eagerCount={4} className={`mt-8 ${featuredGridColumns[getFeaturedColumns(featured.products.length)]}`} />
       </section>
 
       {sections.map(({ collection, products, total }) => (
