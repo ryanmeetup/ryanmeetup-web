@@ -38,9 +38,29 @@ const heroPhotos = [
   },
 ];
 
-// Four columns at xl and two below keep the four-listing sections and eight favorites
-// in full rows.
+// Four columns at xl and two below keep the four-listing sections in full rows.
 const gridColumns = "mt-8 sm:grid-cols-2 xl:grid-cols-4";
+
+// Class names stay literal so Tailwind can see them; each steps up to its widest
+// count without squeezing cards at intermediate widths.
+const featuredGridColumns: Record<number, string> = {
+  1: "",
+  2: "sm:grid-cols-2",
+  3: "sm:grid-cols-2 lg:grid-cols-3",
+  4: "sm:grid-cols-2 xl:grid-cols-4",
+  5: "sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5",
+};
+
+// Up to five columns, choosing the count that leaves the fewest empty slots in the
+// last row (widest wins a tie): five favorites sit in one row, six in two rows of three.
+function getFeaturedColumns(count: number) {
+  const emptySlots = (columns: number) => (columns - (count % columns)) % columns;
+  let best = Math.min(Math.max(count, 1), 5);
+  for (let columns = best - 1; columns >= 2; columns--) {
+    if (emptySlots(columns) < emptySlots(best)) best = columns;
+  }
+  return best;
+}
 
 export default async function HomePage() {
   const { featured, sections, more } = await getHomeCatalog();
@@ -93,7 +113,7 @@ export default async function HomePage() {
 
       <section className="store-container py-10 sm:py-14">
         <SectionHeader title={featured.collection.title} description={featured.collection.description} meta="Featured goods" />
-        <ProductGrid products={featured.products} className={gridColumns} />
+        <ProductGrid products={featured.products} eagerCount={5} className={`mt-8 ${featuredGridColumns[getFeaturedColumns(featured.products.length)]}`} />
       </section>
 
       {sections.map(({ collection, products, total }) => (
