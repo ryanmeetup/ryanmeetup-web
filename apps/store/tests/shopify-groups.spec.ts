@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { getProductGallery } from "../lib/product-gallery";
-import { getCollection, getFeaturedProducts, getProduct, getProductHandles } from "../lib/shopify";
+import { getCollection, getCollections, getFeaturedProducts, getProduct, getProductHandles } from "../lib/shopify";
 import { dad, mom, productNode, ryan, tee } from "./fixtures/products";
 
 const originalFetch = globalThis.fetch;
@@ -32,6 +32,12 @@ function mockCatalog(failDiscovery = false) {
       if (request.variables.query) expect(request.variables.query).toBe('tag:"name tag"');
       const page = request.variables.after ? products.slice(2) : products.slice(0, 2);
       data = { products: { edges: page.map(({ handle, title, tags }) => ({ node: { handle, title, tags } })), pageInfo: { endCursor: "catalog-page-1", hasNextPage: !request.variables.after } } };
+    } else if (request.query.includes("CatalogCollectionProducts")) {
+      const catalog = [ryan, tee, mom, dad].filter((product) => !request.variables.query || request.variables.query === `product_type:${JSON.stringify(product.productType)}`);
+      const page = request.variables.after ? catalog.slice(2) : catalog.slice(0, 2);
+      data = { products: { edges: page.map((product) => ({ node: productNode(product) })), pageInfo: { endCursor: "type-page-1", hasNextPage: !request.variables.after && catalog.length > 2 } } };
+    } else if (request.query.includes("query Collections")) {
+      data = { collections: { edges: [{ node: { id: "shopify-apparel", handle: "apparel", title: "Shopify Apparel", description: "", image: null } }, { node: { id: "shirts", handle: "shirts", title: "Shirts", description: "", image: null } }] } };
     } else if (request.query.includes("FeaturedProducts")) {
       data = { products: { edges: [{ node: productNode(mom) }] } };
     } else if (request.query.includes("query Collection(")) {
@@ -80,4 +86,21 @@ test("the old Mom handle fetches Shopify's corrected Dad product", async () => {
   expect(product?.handle).toBe(dad.handle);
   expect(product?.title).toBe(dad.title);
   expect(requests.map((request) => request.variables.handle)).toEqual([dad.handle]);
+});
+
+test("type pages list every product of that Shopify type with each group once", async () => {
+  const requests = mockCatalog();
+  const apparel = await getCollection("apparel");
+  expect(apparel?.collection.title).toBe("Apparel");
+  expect(apparel?.products.map((product) => product.handle)).toEqual(["nametag-shirt", tee.handle]);
+  expect(apparel?.products[0].designs).toHaveLength(3);
+  expect(apparel?.pageInfo.hasNextPage).toBe(false);
+  const typeRequests = requests.filter((request) => request.query.includes("CatalogCollectionProducts"));
+  expect(typeRequests.map((request) => [request.variables.query, request.variables.after])).toEqual([['product_type:"Apparel"', null], ['product_type:"Apparel"', "type-page-1"]]);
+  expect((await getCollection("accessories"))?.products).toEqual([]);
+});
+
+test("the type pages lead the collection list and shadow same-handle Shopify collections", async () => {
+  mockCatalog();
+  expect((await getCollections()).map((collection) => collection.title)).toEqual(["All Ryan Goods", "Apparel", "Accessories", "Shirts"]);
 });

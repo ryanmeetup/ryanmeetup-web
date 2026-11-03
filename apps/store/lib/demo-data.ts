@@ -1,3 +1,4 @@
+import { catalogCollections, getCatalogCollectionSummary } from "./catalog-collections";
 import type { CollectionSummary, Product } from "./types";
 
 const image = (url: string, altText: string) => ({
@@ -18,7 +19,7 @@ const makeProduct = (input: {
   tags?: string[];
 }): Product => {
   const productImage = image(input.imageUrl, input.title);
-  const sizes = input.type === "Accessories" ? ["One size"] : ["S", "M", "L", "XL", "2XL"];
+  const sizes = input.type === "Accessory" ? ["One size"] : ["S", "M", "L", "XL", "2XL"];
   return {
     id: `gid://shopify/Product/demo-${input.handle}`,
     handle: input.handle,
@@ -57,7 +58,7 @@ export const demoProducts: Product[] = [
     price: "29.00",
     imageUrl: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=1200&q=85",
     color: "Black",
-    type: "Shirts",
+    type: "Apparel",
   }),
   makeProduct({
     handle: "hello-my-name-is-ryan-sweatshirt",
@@ -66,7 +67,7 @@ export const demoProducts: Product[] = [
     price: "54.00",
     imageUrl: "https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=1200&q=85",
     color: "Cream",
-    type: "Sweatshirts",
+    type: "Apparel",
   }),
   makeProduct({
     handle: "ryan-society-cap",
@@ -75,7 +76,7 @@ export const demoProducts: Product[] = [
     price: "26.00",
     imageUrl: "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&w=1200&q=85",
     color: "Navy",
-    type: "Accessories",
+    type: "Accessory",
   }),
   makeProduct({
     handle: "certified-ryan-tote",
@@ -84,7 +85,7 @@ export const demoProducts: Product[] = [
     price: "24.00",
     imageUrl: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=1200&q=85",
     color: "Natural",
-    type: "Accessories",
+    type: "Accessory",
   }),
   makeProduct({
     handle: "ryan-name-tag-shirt",
@@ -93,7 +94,7 @@ export const demoProducts: Product[] = [
     price: "12.00",
     imageUrl: "https://cdn.shopify.com/s/files/1/0718/7005/4511/files/unisex-classic-tee-white-front-6acd5a66edb8c.jpg?v=1791842937",
     color: "White",
-    type: "Shirts",
+    type: "Apparel",
     tags: ["name tag"],
   }),
   makeProduct({
@@ -103,31 +104,9 @@ export const demoProducts: Product[] = [
     price: "30.00",
     imageUrl: "https://cdn.shopify.com/s/files/1/0718/7005/4511/files/unisex-classic-tee-white-front-6acd5bf343e98.jpg?v=1791843327",
     color: "Natural",
-    type: "Shirts",
+    type: "Apparel",
     tags: ["name tag"],
   }),
 ];
 
-export const demoCollections: CollectionSummary[] = [
-  {
-    id: "gid://shopify/Collection/demo-all",
-    handle: "all",
-    title: "All Ryan Goods",
-    description: "Official issue for Ryans, friends of Ryans, and the Ryan-curious.",
-    image: demoProducts[0].featuredImage,
-  },
-  {
-    id: "gid://shopify/Collection/demo-apparel",
-    handle: "apparel",
-    title: "Apparel",
-    description: "Wear your first name on your sleeve. Sometimes literally.",
-    image: demoProducts[1].featuredImage,
-  },
-  {
-    id: "gid://shopify/Collection/demo-accessories",
-    handle: "accessories",
-    title: "Accessories",
-    description: "Useful objects with excellent name recognition.",
-    image: demoProducts[2].featuredImage,
-  },
-];
+export const demoCollections: CollectionSummary[] = catalogCollections.map(getCatalogCollectionSummary);

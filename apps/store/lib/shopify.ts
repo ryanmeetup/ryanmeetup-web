@@ -1,3 +1,4 @@
+import { catalogCollections, getCatalogCollection, getCatalogCollectionSummary, getCatalogProductQuery, isInCatalogCollection } from "./catalog-collections";
 import { demoCollections, demoProducts } from "./demo-data";
 import { createProductGroup, getListingHandles, getProductGroup, getProductGroupForMember, groupProductListings, productGroups, resolveProductHandle } from "./product-groups";
 import type { ProductGroup } from "./product-groups";
@@ -186,7 +187,10 @@ export async function getCollections(): Promise<CollectionSummary[]> {
     {},
     { revalidate: 300 },
   );
-  return data.collections.edges.map(({ node }) => node);
+  return [
+    ...catalogCollections.map(getCatalogCollectionSummary),
+    ...data.collections.edges.map(({ node }) => node).filter((collection) => !getCatalogCollection(collection.handle)),
+  ];
 }
 
 async function getProductSummaries(query?: string): Promise<ProductSummary[]> {
@@ -205,6 +209,31 @@ async function getProductSummaries(query?: string): Promise<ProductSummary[]> {
       { revalidate: 300 },
     );
     products.push(...data.products.edges.map(({ node }) => node));
+    const { endCursor, hasNextPage } = data.products.pageInfo;
+    if (!hasNextPage) return products;
+    if (!endCursor || cursors.has(endCursor)) throw new Error("Could not load the complete Shopify product catalog.");
+    cursors.add(endCursor);
+    after = endCursor;
+  }
+}
+
+async function getCatalogProducts(query: string | null): Promise<Product[]> {
+  const products: Product[] = [];
+  const cursors = new Set<string>();
+  let after: string | null = null;
+  while (true) {
+    const data: { products: PaginatedConnection<ProductNode> } = await storefrontRequest<{ products: PaginatedConnection<ProductNode> }>(
+      `${productFragment}
+        query CatalogCollectionProducts($after: String, $query: String) {
+          products(first: 50, after: $after, query: $query, sortKey: BEST_SELLING) {
+            edges { node { ...ProductFields } }
+            pageInfo { endCursor hasNextPage }
+          }
+        }`,
+      { after, query },
+      { revalidate: 300 },
+    );
+    products.push(...data.products.edges.map(({ node }) => reshapeProduct(node)));
     const { endCursor, hasNextPage } = data.products.pageInfo;
     if (!hasNextPage) return products;
     if (!endCursor || cursors.has(endCursor)) throw new Error("Could not load the complete Shopify product catalog.");
@@ -251,20 +280,29 @@ export async function getCollection(
   handle: string,
   after?: string,
 ): Promise<ProductPage | null> {
+  const catalogCollection = getCatalogCollection(handle);
+
   if (!isShopifyConfigured()) {
-    const collection = demoCollections.find((item) => item.handle === handle);
-    if (!collection) return null;
-    const products =
-      handle === "all"
-        ? demoProducts
-        : demoProducts.filter((product) =>
-            handle === "apparel"
-              ? product.productType !== "Accessories"
-              : product.productType === "Accessories",
-          );
+    if (!catalogCollection) return null;
     return {
-      collection,
-      products: groupProductListings(products),
+      collection: getCatalogCollectionSummary(catalogCollection),
+      products: groupProductListings(demoProducts.filter((product) => isInCatalogCollection(catalogCollection, product))),
+      pageInfo: {
+        endCursor: null,
+        hasNextPage: false,
+        hasPreviousPage: false,
+        startCursor: null,
+      },
+    };
+  }
+
+  if (catalogCollection) {
+    // Load the whole type in one listing so a product group gets exactly one card
+    // instead of reappearing on every result page that contains a member.
+    const products = await getCatalogProducts(getCatalogProductQuery(catalogCollection));
+    return {
+      collection: getCatalogCollectionSummary(catalogCollection),
+      products: await getGroupedListings(products),
       pageInfo: {
         endCursor: null,
         hasNextPage: false,

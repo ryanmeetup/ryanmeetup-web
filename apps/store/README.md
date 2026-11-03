@@ -37,16 +37,16 @@ selected product's original variant ID to Shopify's cart and checkout.
 
 | Concept | What it controls | Nametag example |
 | --- | --- | --- |
-| Shopify collection | A browsing page containing products, such as apparel or accessories. | A shirt belongs to an apparel collection. |
+| Product Type | Which type page lists the product: `Apparel` appears on `/collections/apparel`, `Accessory` on `/collections/accessories`, and every product on `/collections/all`. | Every nametag shirt is `Apparel`. |
+| Shopify collection | Any other browsing page, served at `/collections/<handle>` once the collection is published to the storefront channel. | A design collection such as I ♥ RY. |
 | Storefront product group | One shared product listing and detail page for a family of products. Defined in this app's code. | `/products/nametag-shirt` |
 | Product tag | Membership in a configured group. Products can have multiple tags. | The exact tag `name tag` joins the nametag group. |
-| Product Type | One custom classification used for the storefront's type filter and small category labels. | `T-shirts` |
 | Product title | The source of the member's label in the design selector. | `Ryan's Dad Name Tag shirt` becomes `Ryan’s Dad`. |
 | Product handle | The member's URL identifier, normally also used in the `design` query parameter. | `ryans-dad-name-tag-shirt` |
 
 **The tag controls inclusion; the title controls the design label.** Putting
 "Name Tag" in a product title alone does not add it to the group. Setting its Type
-to `T-shirts` does not add it either. Other tags can remain on the product.
+to `Apparel` does not add it either. Other tags can remain on the product.
 
 Product tags support organization, collections, and Shopify's store search;
 they are separate from SEO metadata. Adding keywords to product tags does not
@@ -62,6 +62,15 @@ the storefront encounters a group member in a collection's results, it replaces
 the members in that result page with one family card and loads the family's other
 published members too. A group does not automatically create a Shopify
 collection or add products to one; manage collection membership in Shopify.
+
+### Type pages
+
+`/collections/all`, `/collections/apparel`, and `/collections/accessories` are
+defined in [lib/catalog-collections.ts](lib/catalog-collections.ts), not in
+Shopify. Each one searches the catalog by the exact Product type (`Apparel` or
+`Accessory`; *all* has no filter) and loads every match before grouping, so a
+family gets one card and the page has no "Next page". A Shopify collection with
+one of these handles is ignored in favor of the definition here.
 
 ### Example: nametag shirts
 
@@ -98,8 +107,8 @@ Once the group's storefront code is deployed, this is a Shopify catalog task:
 3. In Shopify **Products → the product → Product organization → Tags**, add the
    configured membership tag and save. For nametag shirts, use the single tag
    **`name tag`**, including the space. Keep other useful tags.
-4. Set a consistent Type for the family if it should appear under the same type
-   filter, and add the product to the intended Shopify collections.
+4. Set its Type to `Apparel` or `Accessory` so it appears on the matching type
+   page, and add the product to any intended Shopify collections.
 5. Make the product active and publish it to the storefront's sales channel.
    The current channel is **Ryan Meetup Store Headless**.
 6. Allow the catalog cache to refresh, then open the shared page and check the
@@ -211,7 +220,7 @@ browse individually, use a Shopify collection and keep their standalone pages.
 | --- | --- |
 | Product remains a standalone listing | The group definition is deployed and the product has its configured membership tag. A similar title or Type does not establish membership. |
 | Product is missing from the group | Active status, publication to the correct storefront channel, exact membership tag, and cache refresh. |
-| Family is missing from a collection | At least one member belongs to that Shopify collection and is present in the requested result page. Group membership alone does not add a family to every collection. |
+| Family is missing from a collection | On a type page, at least one member has that exact Type. On a Shopify collection, at least one member belongs to it and is present in the requested result page. Group membership alone does not add a family to every collection. |
 | Selector label is unexpected | The Shopify product title and `getProductDesign` title cleanup. The tag is not the display label. |
 | Type filter or card category is unexpected | Member Types should match; the group inherits its Type from the first member. |
 | Cart item or fulfillment is wrong | Confirm the selected underlying product and variant, then its Shopify/Printful sync. The grouping tag only controls presentation. |
