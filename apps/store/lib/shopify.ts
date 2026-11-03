@@ -1,5 +1,6 @@
 import { catalogCollections, getCatalogCollection, getCatalogCollectionSummary, getCatalogProductQuery, isInCatalogCollection } from "./catalog-collections";
 import { demoCollections, demoProducts } from "./demo-data";
+import { withExternalListings } from "./external-listings";
 import { normalizeHandle } from "./handles";
 import { createProductGroup, getListingHandles, getProductGroupForMember, groupProductListings, resolveListingHandle, resolveProductHandle } from "./product-groups";
 import { sortOptionValues } from "./product-options";
@@ -310,7 +311,7 @@ async function getCollectionMemberships(): Promise<CollectionMembership[]> {
 function sectionListings(listings: ProductListing[], memberships: CollectionMembership[]): CatalogSections {
   const sectioned = new Set<string>();
   const sections = memberships.filter(isBrowsingCollection).flatMap(({ products: members, ...collection }) => {
-    const sectionListings = getListingsInCollection(listings, members.edges.map(({ node }) => node.handle));
+    const sectionListings = withExternalListings(collection.handle, getListingsInCollection(listings, members.edges.map(({ node }) => node.handle)));
     for (const listing of sectionListings) sectioned.add(listing.id);
     return sectionListings.length ? [{ collection, products: sectionListings, total: sectionListings.length }] : [];
   });
@@ -374,7 +375,7 @@ export async function getCollection(handle: string): Promise<ProductPage | null>
       const listings = await getGroupedListings(products);
       return { collection, products: listings, ...sectionListings(listings, memberships) };
     }
-    return { collection, products: await getGroupedListings(await getCatalogProducts(getCatalogProductQuery(catalogCollection))) };
+    return { collection, products: withExternalListings(handle, await getGroupedListings(await getCatalogProducts(getCatalogProductQuery(catalogCollection)))) };
   }
   if (handle === featuredCollectionHandle) return null;
 
@@ -417,7 +418,7 @@ async function getShopifyCollection(handle: string): Promise<ProductPage | null>
     return page;
   });
   if (!products || !found.collection) return null;
-  return { collection: found.collection, products: await getGroupedListings(products.map(reshapeProduct)) };
+  return { collection: found.collection, products: withExternalListings(found.collection.handle, await getGroupedListings(products.map(reshapeProduct))) };
 }
 
 export async function getProduct(handle: string): Promise<ProductListing | null> {

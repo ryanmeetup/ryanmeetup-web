@@ -61,6 +61,8 @@ export type ProductDesign = {
 export type ProductListing = Product & {
   designs?: ProductDesign[];
   priceVaries?: boolean;
+  /** Sold off Shopify; the card links here instead of a product page and can't be quick added. */
+  externalUrl?: string;
 };
 
 export type CollectionSummary = {
