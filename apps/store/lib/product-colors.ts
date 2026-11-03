@@ -35,6 +35,10 @@ export function isKnownColor(value: string) {
   return Object.hasOwn(fallbackSwatches, getColorSlug(value));
 }
 
+export function getKnownSwatch(value: string) {
+  return isKnownColor(value) ? fallbackSwatches[getColorSlug(value)] : null;
+}
+
 export function getColorSlug(value: string) {
   return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }

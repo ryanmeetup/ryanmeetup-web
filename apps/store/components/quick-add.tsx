@@ -3,7 +3,7 @@
 import { DropdownMenu, DropdownMenuButton, DropdownMenuItem, DropdownMenuItems, DropdownMenuSeparator, IconButton, Spinner, getIconButtonClasses, toast } from "@ryanmeetup/ui";
 import { useState } from "react";
 import { FiPlus } from "react-icons/fi";
-import { getColorOption, getColorPreview, getColorSlug, getVariantForColor } from "@/lib/product-colors";
+import { getColorOption, getColorPreview, getColorSlug, getKnownSwatch, getListingColors, getVariantForColor } from "@/lib/product-colors";
 import { getVariantForImage } from "@/lib/product-gallery";
 import { findVariant, getSelections, isDefaultTitleOption } from "@/lib/product-options";
 import type { ProductListing, ProductVariant } from "@/lib/types";
@@ -27,10 +27,13 @@ export function QuickAdd({ product, href }: { product: ProductListing; href: str
   const selections = getSelections(base);
   const colorOption = getColorOption(target);
   const remaining = target.options.filter((option) => option !== colorOption && !isDefaultTitleOption(option));
-  const color = colorOption && selections[colorOption.name];
+  // Members of a colors-only listing are colors, not designs; a size-only
+  // member like "I Heart RY Shirt - Black" names its color in its title.
+  const colorsOnly = Boolean(product.designs && getListingColors(product.designs));
+  const color = (colorOption && selections[colorOption.name]) || (colorsOnly ? design?.label : undefined);
   const details = [
-    (product.designs?.length ?? 0) > 1 && design ? { name: "Design", value: design.label, swatch: null } : null,
-    color ? { name: "Color", value: color, swatch: getColorPreview(target, getColorSlug(color))?.swatch ?? null } : null,
+    !colorsOnly && (product.designs?.length ?? 0) > 1 && design ? { name: "Design", value: design.label, swatch: null } : null,
+    color ? { name: "Color", value: color, swatch: getColorPreview(target, getColorSlug(color))?.swatch ?? getKnownSwatch(color) } : null,
   ].filter((detail) => detail !== null);
   const label = `Quick add ${product.title}`;
   const triggerClasses = getIconButtonClasses("md", "overlay");
