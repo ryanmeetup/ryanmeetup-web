@@ -23,9 +23,7 @@ const listingRedirects: Record<string, Omit<ProductGroup, "handle" | "title">> =
       "ryan-name-tag-shirt": "ryan",
       "ryans-mom-name-tag-shirt": "ryans-mom",
     },
-    legacyProductHandles: {
-      "ryans-mom-name-tag-shirt": "ryans-dad-name-tag-shirt",
-    },
+    legacyProductHandles: {},
   },
 };
 

@@ -79,14 +79,6 @@ test("catalog discovery failures propagate instead of returning only previously 
   await expect(getProduct("name-tag-shirt")).rejects.toThrow("Catalog unavailable");
 });
 
-test("the old Mom handle fetches Shopify's corrected Dad product", async () => {
-  const requests = mockCatalog();
-  const product = await getProduct("ryans-mom-name-tag-shirt");
-  expect(product?.handle).toBe(dad.handle);
-  expect(product?.title).toBe(dad.title);
-  expect(requests.flatMap((request) => request.variables.handle ?? [])).toEqual([dad.handle]);
-});
-
 test("type pages list every product of that Shopify type with each group once", async () => {
   const requests = mockCatalog();
   const apparel = await getCollection("apparel");

@@ -162,10 +162,9 @@ individually, use a collection and keep their standalone pages.
   listing once. Catalog discovery follows Shopify pagination to find every published
   member; product detail requests also load every image and variant.
 - Existing compatibility mappings keep `?design=ryan` and the listing's former
-  `/products/nametag-shirt` URL working. The Dad shirt was
-  previously mislabeled as Mom; `/products/ryans-mom-name-tag-shirt` and
-  `?design=ryans-mom` resolve to the corrected Dad design. These mappings, and
-  Ryan as the default name tag design, are the only listing details kept in
+  `/products/nametag-shirt` URL working; `?design=ryans-mom` names the Mom
+  shirt. These mappings, and Ryan as the default name tag design, are the only
+  listing details kept in
   [lib/product-groups.ts](lib/product-groups.ts).
 
 ### Troubleshooting

@@ -86,7 +86,7 @@ test("name tag designs share one listing and add their own merchandise to the ca
 });
 
 test("name tag design URLs survive redirects, reloads, and browser history", async ({ page }) => {
-  await page.goto("/products/ryans-mom-name-tag-shirt");
+  await page.goto("/products/ryans-dad-name-tag-shirt");
   await expect(page).toHaveURL(/\/products\/name-tag-shirt\?design=ryans-dad-name-tag-shirt$/);
   await expect(page.getByLabel("Style")).toContainText("Ryan’s Dad");
   await expect(page.getByLabel("Color")).toContainText("Natural");

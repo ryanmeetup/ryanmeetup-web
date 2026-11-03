@@ -76,11 +76,10 @@ test("single-photo products omit navigation and leave arrow keys alone", async (
   expect(errors).toEqual([]);
 });
 
-test("old Mom design links reopen the corrected Dad shirt", async ({ page }) => {
+test("old Dad design links reopen the Dad shirt", async ({ page }) => {
   for (const url of [
-    "/products/ryans-mom-name-tag-shirt",
-    "/products/nametag-shirt?design=ryans-mom",
-    "/products/nametag-shirt?design=ryans-mom-name-tag-shirt",
+    "/products/ryans-dad-name-tag-shirt",
+    "/products/nametag-shirt?design=ryans-dad-name-tag-shirt",
   ]) {
     await page.goto(url);
     await expect(page).toHaveURL(/\/products\/name-tag-shirt\?design=ryans-dad-name-tag-shirt$/);
