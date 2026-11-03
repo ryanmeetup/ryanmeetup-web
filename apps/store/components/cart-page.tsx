@@ -33,7 +33,6 @@ export function CartPage() {
           <div className="mt-6 flex justify-between border-b border-black/10 pb-5 dark:border-white/10"><Text>Subtotal</Text><strong>{formatMoney(cart.cost.subtotalAmount)}</strong></div>
           <Text className="mt-4 text-sm">Shipping, discounts, and taxes are calculated securely at checkout.</Text>
           <CheckoutButton className="mt-6" />
-          <p className="mt-4 text-center text-[11px] uppercase tracking-[0.16em] text-black/50 dark:text-white/50">Secure checkout hosted by Shopify</p>
         </Card>
       </div>
     </main>
