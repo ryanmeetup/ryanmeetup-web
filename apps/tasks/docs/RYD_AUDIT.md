@@ -42,16 +42,6 @@ Options:
 - **Keep the email, attach the card file.** The draft lists the approved card
   names, and nothing is read from Google to write it.
 
-## Improvements
-
-### 12. Fulfillment email generation reads every link
-
-- [ ] Done (or obsolete after Decision 5)
-
-`generateRydFulfillment` (`lib/server/ryd-fulfillment.ts:46`) reads every row
-of `ryd_order_submissions`, then filters in code to the selected orders.
-Filter with `.in("order_id", …)` in the query instead.
-
 ## Notes for whoever picks these up
 
 - Every change to user-visible RY-D behavior also updates
