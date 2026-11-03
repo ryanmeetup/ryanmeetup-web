@@ -61,6 +61,8 @@ export type ProductDesign = {
 export type ProductListing = Product & {
   designs?: ProductDesign[];
   priceVaries?: boolean;
+  /** Color slug shown when a link names no color or design. */
+  defaultColor?: string;
   /** Sold off Shopify; the card links here instead of a product page and can't be quick added. */
   externalUrl?: string;
 };

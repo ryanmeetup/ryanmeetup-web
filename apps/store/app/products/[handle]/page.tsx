@@ -78,7 +78,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema).replace(/</g, "\\u003c") }} />
       <Breadcrumbs variant="compact" crumbs={[{ href: "/", title: "Store", icon: <StoreHomeIcon aria-hidden className="shrink-0" /> }, ...(originCrumb ? [originCrumb] : []), { href: `/products/${product.handle}`, title: product.title, current: true, icon: <StoreProductIcon aria-hidden className="shrink-0" /> }]} />
       {product.designs ? (
-        <div className="mt-8"><ProductGroupDetail title={product.title} handle={product.handle} designs={product.designs} reviewsByProduct={reviewsByProduct} /></div>
+        <div className="mt-8"><ProductGroupDetail title={product.title} handle={product.handle} designs={product.designs} defaultColor={product.defaultColor} reviewsByProduct={reviewsByProduct} /></div>
       ) : (
         <>
           <div className="mt-8"><ProductDetail product={product} initialColor={query.color} initialImage={getColorPreview(product, query.color)?.image} /></div>

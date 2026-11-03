@@ -21,7 +21,7 @@ export function QuickAdd({ product, href }: { product: ProductListing; href: str
   const params = new URLSearchParams(href.split("?")[1] ?? "");
   const design = product.designs?.find((entry) => entry.value === params.get("design")) ?? product.designs?.[0];
   const target = design?.product ?? product;
-  const base = getVariantForColor(target, params.get("color"))
+  const base = getVariantForColor(target, params.get("color") ?? (params.has("design") ? null : product.defaultColor))
     ?? getVariantForImage(target, target.featuredImage)
     ?? target.variants.find((variant) => variant.availableForSale) ?? target.variants[0];
   const selections = getSelections(base);

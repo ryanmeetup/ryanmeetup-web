@@ -9,10 +9,11 @@ import type { ProductDesign, ReviewsData, StoreImage } from "@/lib/types";
 import { ProductDetail } from "./product-detail";
 import { Reviews } from "./reviews";
 
-export function ProductGroupDetail({ title, handle, designs, reviewsByProduct }: {
+export function ProductGroupDetail({ title, handle, designs, defaultColor, reviewsByProduct }: {
   title: string;
   handle: string;
   designs: ProductDesign[];
+  defaultColor?: string;
   reviewsByProduct: Record<string, ReviewsData>;
 }) {
   const searchParams = useSearchParams();
@@ -21,6 +22,8 @@ export function ProductGroupDetail({ title, handle, designs, reviewsByProduct }:
   const gallery = useMemo(() => designs.length ? getProductGallery(designs[0].product, designs) : [], [designs]);
   const colors = useMemo(() => getListingColors(designs), [designs]);
   const selected = designs.find((design) => design.value === searchParams.get("design")) ?? designs[0];
+  // The listing's default color applies only to a bare link; a chosen design keeps its own colors.
+  const color = searchParams.get("color") ?? (searchParams.has("design") ? null : defaultColor ?? null);
 
   useLayoutEffect(() => {
     const direction = navigationFocus.current;
@@ -52,8 +55,8 @@ export function ProductGroupDetail({ title, handle, designs, reviewsByProduct }:
         product={selected.product}
         title={title}
         gallery={gallery}
-        initialColor={searchParams.get("color")}
-        initialImage={selectedImage?.design === selected.value ? selectedImage.image : getColorPreview(selected.product, searchParams.get("color"))?.image}
+        initialColor={color}
+        initialImage={selectedImage?.design === selected.value ? selectedImage.image : getColorPreview(selected.product, color)?.image}
         onSelectGalleryImage={(entry) => {
           if (entry.design) selectDesign(entry.design, entry.image);
         }}

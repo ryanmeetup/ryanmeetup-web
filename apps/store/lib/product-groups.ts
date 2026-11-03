@@ -1,5 +1,5 @@
 import { replaceHeartEmoji } from "./handles";
-import { isKnownColor } from "./product-colors";
+import { getColorPreview, getColorSlug, getColorValue, isKnownColor } from "./product-colors";
 import { sortOptionValues } from "./product-options";
 import type { Product, ProductDesign, ProductListing, SelectedOption } from "./types";
 
@@ -7,6 +7,8 @@ export type ProductGroup = {
   handle: string;
   title: string;
   defaultDesign?: string;
+  /** Color slug the card and product page open on when the link names none. */
+  defaultColor?: string;
   legacyDesignValues: Record<string, string>;
   legacyProductHandles: Record<string, string>;
 };
@@ -17,9 +19,14 @@ const listingTagPattern = /^\s*listing\s*:\s*(.+?)\s*$/i;
 
 // Storefront listings come from Shopify tags: every product tagged `listing:Name` shares
 // one listing titled "Name" at /products/<slug of Name>. Shopify/Printful products and
-// variant IDs stay separate. Code keeps only a listing's default design and the
-// links that predate its tag.
+// variant IDs stay separate. Code keeps only a listing's default design or color
+// and the links that predate its tag.
 const listingRedirects: Record<string, Omit<ProductGroup, "handle" | "title">> = {
+  "super-ryan-shirt": {
+    defaultColor: "royal",
+    legacyDesignValues: {},
+    legacyProductHandles: {},
+  },
   "name-tag-shirt": {
     defaultDesign: "ryan",
     legacyDesignValues: {
@@ -133,12 +140,17 @@ export function createProductGroup(group: ProductGroup, products: Product[]): Pr
   for (const product of products) {
     if (getProductGroupForMember(product)?.handle === group.handle && !members.has(product.handle)) members.set(product.handle, product);
   }
+  // A member offers the default color through its Color option or, when size-only, its title.
+  const offersDefaultColor = (design: ProductDesign) => Boolean(group.defaultColor)
+    && (Boolean(getColorValue(design.product, group.defaultColor)) || getColorSlug(design.label) === group.defaultColor);
   const designs = [...members.values()].map((product) => getProductDesign(group, product)).sort((a, b) =>
     Number(b.value === group.defaultDesign) - Number(a.value === group.defaultDesign)
+      || Number(offersDefaultColor(b)) - Number(offersDefaultColor(a))
       || a.label.localeCompare(b.label) || a.value.localeCompare(b.value),
   );
   const first = designs[0]?.product;
   if (!first) return null;
+  const defaultColor = offersDefaultColor(designs[0]) ? group.defaultColor : undefined;
 
   const variants = designs.flatMap(({ product }) => product.variants);
   const minimumPrice = variants.reduce(
@@ -153,6 +165,7 @@ export function createProductGroup(group: ProductGroup, products: Product[]): Pr
     // Members may spell the tag differently; the first design's spelling names the listing.
     title: getListingTagName(first.tags) ?? group.title,
     availableForSale: designs.some(({ product }) => product.availableForSale),
+    featuredImage: getColorPreview(first, defaultColor)?.image ?? first.featuredImage,
     images: designs.flatMap(({ product }) => product.images),
     options: [...new Set(designs.flatMap(({ product }) => product.options.map((option) => option.name)))].map((name) => sortOptionValues({
       id: `${group.handle}-${name}`,
@@ -164,6 +177,7 @@ export function createProductGroup(group: ProductGroup, products: Product[]): Pr
     tags: [...new Set(designs.flatMap(({ product }) => product.tags))],
     variants,
     designs,
+    defaultColor,
   };
 }
 
