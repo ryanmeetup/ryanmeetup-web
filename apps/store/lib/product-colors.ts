@@ -56,7 +56,9 @@ export function getListingColorPreviews(product: ProductListing): ListingColorPr
   const designs = product.designs;
   // Printful may split colors into separate products with only a Size option.
   // Only treat styles as colors when all their labels name a known swatch.
-  if (designs?.length && designs.every((design) => Object.hasOwn(fallbackSwatches, getColorSlug(design.label)))) {
+  if (designs && designs.length > 1 && designs.every((design) =>
+    Object.hasOwn(fallbackSwatches, getColorSlug(design.label)) && (getColorOption(design.product)?.values.length ?? 0) <= 1,
+  )) {
     const previews = designs.flatMap((design) => {
       const image = design.product.featuredImage ?? design.product.images[0] ?? design.product.variants.find((variant) => variant.image)?.image;
       if (!image) return [];

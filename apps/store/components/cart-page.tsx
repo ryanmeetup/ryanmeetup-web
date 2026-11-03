@@ -30,26 +30,26 @@ export function CartPage() {
           {cart.lines.map((line) => {
             const options = line.merchandise.selectedOptions.filter((option) => !isDefaultTitleOption(option));
             return (
-            <Card key={line.id} className="flex gap-4 sm:gap-6" size="sm">
-              <Link href={getProductHref(line.merchandise.product)} className="relative h-28 w-24 shrink-0 overflow-hidden rounded-xl bg-black/5 sm:h-36 sm:w-30 dark:bg-white/5">
-                {line.merchandise.image ? <Image src={line.merchandise.image.url} alt={line.merchandise.image.altText || line.merchandise.product.title} fill sizes="120px" className="object-contain" /> : null}
-              </Link>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <Link href={getProductHref(line.merchandise.product)} className="font-cooper text-lg tracking-wide hover:underline sm:text-xl">{line.merchandise.product.title}</Link>
-                    {options.length > 0 && <p className="mt-1 text-xs text-black/55 dark:text-white/55">{options.map((option) => option.value).join(" / ")}</p>}
+              <Card key={line.id} className="flex gap-4 sm:gap-6" size="sm">
+                <Link href={getProductHref(line.merchandise.product)} className="relative h-28 w-24 shrink-0 overflow-hidden rounded-xl bg-black/5 sm:h-36 sm:w-30 dark:bg-white/5">
+                  {line.merchandise.image ? <Image src={line.merchandise.image.url} alt={line.merchandise.image.altText || line.merchandise.product.title} fill sizes="120px" className="object-contain" /> : null}
+                </Link>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <Link href={getProductHref(line.merchandise.product)} className="font-cooper text-lg tracking-wide hover:underline sm:text-xl">{line.merchandise.product.title}</Link>
+                      {options.length > 0 && <p className="mt-1 text-xs text-black/55 dark:text-white/55">{options.map((option) => option.value).join(" / ")}</p>}
+                    </div>
+                    <span className="shrink-0 text-sm font-semibold">{formatMoney({ ...line.merchandise.price, amount: (Number(line.merchandise.price.amount) * line.quantity).toFixed(2) })}</span>
                   </div>
-                  <span className="shrink-0 text-sm font-semibold">{formatMoney({ ...line.merchandise.price, amount: (Number(line.merchandise.price.amount) * line.quantity).toFixed(2) })}</span>
+                  <div className="mt-5 flex flex-wrap items-center gap-2">
+                    <button type="button" disabled={loading || line.quantity <= 1} onClick={() => updateItem(line.id, line.quantity - 1)} aria-label={`Decrease ${line.merchandise.product.title} quantity`} className="quantity-button"><FiMinus aria-hidden /></button>
+                    <span className="min-w-8 text-center text-sm font-semibold" aria-label={`Quantity ${line.quantity}`}>{line.quantity}</span>
+                    <button type="button" disabled={loading} onClick={() => updateItem(line.id, line.quantity + 1)} aria-label={`Increase ${line.merchandise.product.title} quantity`} className="quantity-button"><FiPlus aria-hidden /></button>
+                    <button type="button" disabled={loading} onClick={() => removeItem(line.id)} className="ml-auto inline-flex items-center gap-2 rounded-lg px-2 py-2 text-xs font-semibold uppercase tracking-wider text-black/55 hover:bg-black/5 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:text-white/55 dark:hover:bg-white/10 dark:hover:text-white"><FiTrash2 aria-hidden /> Remove</button>
+                  </div>
                 </div>
-                <div className="mt-5 flex flex-wrap items-center gap-2">
-                  <button type="button" disabled={loading || line.quantity <= 1} onClick={() => updateItem(line.id, line.quantity - 1)} aria-label={`Decrease ${line.merchandise.product.title} quantity`} className="quantity-button"><FiMinus aria-hidden /></button>
-                  <span className="min-w-8 text-center text-sm font-semibold" aria-label={`Quantity ${line.quantity}`}>{line.quantity}</span>
-                  <button type="button" disabled={loading} onClick={() => updateItem(line.id, line.quantity + 1)} aria-label={`Increase ${line.merchandise.product.title} quantity`} className="quantity-button"><FiPlus aria-hidden /></button>
-                  <button type="button" disabled={loading} onClick={() => removeItem(line.id)} className="ml-auto inline-flex items-center gap-2 rounded-lg px-2 py-2 text-xs font-semibold uppercase tracking-wider text-black/55 hover:bg-black/5 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:text-white/55 dark:hover:bg-white/10 dark:hover:text-white"><FiTrash2 aria-hidden /> Remove</button>
-                </div>
-              </div>
-            </Card>
+              </Card>
             );
           })}
           {error && <ErrorCallout>{error}</ErrorCallout>}

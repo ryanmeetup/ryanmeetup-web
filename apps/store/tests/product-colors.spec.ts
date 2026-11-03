@@ -111,3 +111,14 @@ test("other style groups keep the first design's colors and include its design i
     href: `/products/${multicolor.handle}?color=${preview.slug}`,
   })));
 });
+
+test("a color-named style with multiple variant colors keeps its variant previews", () => {
+  const black = { ...multicolor, handle: blackStyle.handle, title: blackStyle.title, tags: blackStyle.tags };
+  for (const products of [[black], [black, whiteStyle]]) {
+    const [listing] = groupProductListings(products);
+    expect(getListingColorPreviews(listing)).toEqual(getColorPreviews(multicolor).map((preview) => ({
+      ...preview,
+      href: `/products/i-heart-ry-shirt?design=i-heart-ry-shirt&color=${preview.slug}`,
+    })));
+  }
+});
