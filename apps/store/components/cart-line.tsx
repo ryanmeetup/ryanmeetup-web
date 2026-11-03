@@ -19,7 +19,7 @@ export function CartLineItem({ line, compact = false, highlighted = false, from 
 
   return (
     <Card className={`flex gap-4 ${compact ? "" : "sm:gap-6"} ${highlighted ? "ring-2 ring-emerald-500/70 dark:ring-emerald-400/70" : ""}`} size="sm">
-      <Link href={href} className={`relative h-28 w-24 shrink-0 overflow-hidden rounded-xl bg-black/5 dark:bg-white/5 ${compact ? "" : "sm:h-36 sm:w-30"}`}>
+      <Link href={href} className={`relative aspect-square w-24 shrink-0 self-start overflow-hidden rounded-xl bg-black/5 dark:bg-white/5 ${compact ? "" : "sm:w-30"}`}>
         {line.merchandise.image ? <Image src={line.merchandise.image.url} alt={line.merchandise.image.altText || line.merchandise.product.title} fill sizes="120px" className="object-contain" /> : null}
       </Link>
       <div className="min-w-0 flex-1">
