@@ -38,15 +38,14 @@ const Drawer = ({
   panelClassName,
   bodyClassName,
 }: DrawerProps) => (
+  // The slide-in is a plain CSS animation and closing is instant. Headless
+  // UI's tracked transitions (both `transition` props and `Transition`) left
+  // the panel stuck on screen when it was closed mid-slide.
   <Dialog open={open} onClose={setIsOpen} className="relative z-50">
-    <DialogBackdrop
-      transition
-      className="fixed inset-0 bg-black/65 backdrop-blur-sm transition-opacity duration-200 ease-out data-closed:opacity-0 motion-reduce:transition-none dark:bg-black/80"
-    />
+    <DialogBackdrop className="fixed inset-0 bg-black/65 backdrop-blur-sm motion-safe:animate-fade-in dark:bg-black/80" />
     <div className="fixed inset-0 flex justify-end overflow-hidden">
       <DialogPanel
-        transition
-        className={`flex h-full w-full max-w-md flex-col border-l border-black/15 bg-white pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] shadow-[0_24px_80px_rgba(0,0,0,0.35)] transition-transform duration-200 ease-out data-closed:translate-x-full motion-reduce:transition-none dark:border-white/20 dark:bg-[#181818] ${panelClassName ?? ""}`}
+        className={`flex h-full w-full max-w-md flex-col border-l border-black/15 bg-white pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] shadow-[0_24px_80px_rgba(0,0,0,0.35)] motion-safe:animate-drawer-in dark:border-white/20 dark:bg-[#181818] ${panelClassName ?? ""}`}
       >
         <EditorHeader
           title={title}
