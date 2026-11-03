@@ -71,15 +71,13 @@ The home page is built from Shopify collections, in this order:
    page collection (handle `frontpage`, currently titled **Best Sellers**), in
    that collection's order and under its title and description. Keep it to
    hand-picked products. While it is empty or unpublished, the section shows the
-   actual best sellers instead. This collection has no page or department card of
-   its own.
+   actual best sellers instead. This collection has no standalone page of its own.
 2. Every other published collection gets a section with up to four listings and
    a link to its page. Sections are ordered by collection title, and listings by
    the collection's order in Shopify.
 3. **More Ryan goods** lists every product that is in none of those collections,
    so a product never disappears from the home page. Add a product to a
    collection to move it out of this section.
-4. **Choose your department** links to the three type pages.
 
 ### Type pages
 
