@@ -11,6 +11,7 @@ import { MdClose as Close } from "react-icons/md";
 import type { ReactNode } from "react";
 import { EditorHeader } from "./editorChrome";
 import { IconButton } from "./IconButton";
+import { ScrollRegion } from "./scrollRegion";
 
 export type DrawerProps = {
   open: boolean;
@@ -58,11 +59,7 @@ const Drawer = ({
             </IconButton>
           }
         />
-        <div
-          className={`min-h-0 flex-1 overflow-y-auto overscroll-contain p-6 ${bodyClassName ?? ""}`}
-        >
-          {children}
-        </div>
+        <ScrollRegion contentClassName={bodyClassName}>{children}</ScrollRegion>
         {footer && (
           <div className="shrink-0 border-t border-black/10 px-6 py-4 dark:border-white/10">
             {footer}
