@@ -1,5 +1,6 @@
 import { replaceHeartEmoji } from "./handles";
-import type { Product, ProductDesign, ProductListing } from "./types";
+import { isKnownColor } from "./product-colors";
+import type { Product, ProductDesign, ProductListing, SelectedOption } from "./types";
 
 export type ProductGroup = {
   handle: string;
@@ -175,4 +176,18 @@ export function groupProductListings(products: Product[], relatedProducts: Produ
     const listing = createProductGroup(group, [...relatedProducts, ...products]);
     return listing ? [listing] : [];
   });
+}
+
+// A cart line titled by its listing, with the member's distinguishing title
+// moved into its options: "Super Ryan Shirt - Black" reads "Super Ryan Shirt"
+// with Color: Black, and "Ryan's Dad Name Tag shirt" reads "Name Tag Shirt"
+// with Style: Ryan's Dad.
+export function getCartLineDisplay(product: GroupableProduct & Pick<Product, "title">, options: SelectedOption[]) {
+  const name = product.tags && getListingTagName(product.tags);
+  if (!name) return { title: product.title, options };
+  const label = getDesignLabel(createGroup(slugifyListingName(name), name), product.title);
+  if (!label) return { title: name, options };
+  const hasColor = options.some((option) => /^colou?r$/i.test(option.name.trim()));
+  if (isKnownColor(label)) return { title: name, options: hasColor ? options : [...options, { name: "Color", value: label }] };
+  return { title: name, options: [...options, { name: "Style", value: label }] };
 }

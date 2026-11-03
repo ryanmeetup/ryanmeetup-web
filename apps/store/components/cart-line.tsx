@@ -5,15 +5,15 @@ import Link from "next/link";
 import { Card, Pill } from "@ryanmeetup/ui";
 import { FiCheck, FiMinus, FiPlus, FiTrash2 } from "react-icons/fi";
 import { formatMoney } from "@/lib/money";
-import { getProductHref } from "@/lib/product-groups";
-import { isDefaultTitleOption } from "@/lib/product-options";
+import { getCartLineDisplay, getProductHref } from "@/lib/product-groups";
+import { isDefaultTitleOption, withOneSize } from "@/lib/product-options";
 import type { CartLine } from "@/lib/types";
 import { useCart } from "./cart-provider";
 
 /** One cart line with its quantity controls, shared by the cart page and drawer. */
 export function CartLineItem({ line, compact = false, highlighted = false }: { line: CartLine; compact?: boolean; highlighted?: boolean }) {
   const { loading, removeItem, updateItem } = useCart();
-  const options = line.merchandise.selectedOptions.filter((option) => !isDefaultTitleOption(option));
+  const { title, options } = getCartLineDisplay(line.merchandise.product, withOneSize(line.merchandise.selectedOptions.filter((option) => !isDefaultTitleOption(option))));
   const href = getProductHref(line.merchandise.product);
 
   return (
@@ -25,8 +25,8 @@ export function CartLineItem({ line, compact = false, highlighted = false }: { l
         {highlighted && <Pill variant="success" size="md" className="mb-2 whitespace-nowrap"><FiCheck aria-hidden /> Just added</Pill>}
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <Link href={href} className={`block font-cooper tracking-wide hover:underline ${compact ? "text-lg" : "text-lg sm:text-xl"}`}>{line.merchandise.product.title}</Link>
-            {options.length > 0 && <p className="mt-1 text-xs text-black/55 dark:text-white/55">{options.map((option) => option.value).join(" / ")}</p>}
+            <Link href={href} className={`block font-cooper tracking-wide hover:underline ${compact ? "text-lg" : "text-lg sm:text-xl"}`}>{title}</Link>
+            {options.length > 0 && <p className="mt-1 text-xs text-black/70 dark:text-white/70">{options.map((option) => `${option.name}: ${option.value}`).join(" · ")}</p>}
           </div>
           <div className="shrink-0 text-right">
             <span className="block text-sm font-semibold">{formatMoney({ ...line.merchandise.price, amount: (Number(line.merchandise.price.amount) * line.quantity).toFixed(2) })}</span>
