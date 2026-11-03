@@ -94,3 +94,12 @@ The route suite verifies that 77 suggested orders use one fresh Google Form
 read and one database call. Browser coverage checks successful bulk reviews,
 unfinished cards left selected, and a stale order staying selected while
 another order saves.
+
+## Card-contract recovery
+
+`node scripts/test-ryd-card-contract-repair.mjs` clones the local Docker schema
+into a disposable database, reproduces the 27 contract failures PRD reported on
+2026-11-02, and applies `20261116000000_ryd_card_contract_repair.sql`. It also
+checks repeat application with existing card data, repairs unsafe function grants,
+and confirms the newer bulk-review, access, and contract definitions and disabled
+feature switch remain intact. It never connects to a hosted database.

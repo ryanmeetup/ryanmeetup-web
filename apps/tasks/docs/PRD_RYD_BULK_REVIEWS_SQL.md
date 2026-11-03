@@ -10,6 +10,11 @@ Source: `supabase/migrations/20261115000000_ryd_bulk_reviews.sql`, with the
 migration-history insert added before commit. It is safe to run again.
 RMT is applied separately through the CLI by the agent.
 
+If the verification says the bulk RPC is installed but reports missing card
+columns, card-batch tables, or the fulfillment readiness/generation RPCs, apply
+[the card-contract repair](PRD_RYD_CARD_CONTRACT_REPAIR_SQL.md). That block repairs
+the reported earlier schema gaps while retaining the newer bulk and access rules.
+
 ```sql
 -- One provenance read and one transaction per bounded review group. Authored
 -- per-order refusals roll back only that order; unexpected failures roll back
