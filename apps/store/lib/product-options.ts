@@ -37,3 +37,19 @@ export function isSizeOption(option: Pick<ProductOption, "name">) {
 export function withOneSize(options: SelectedOption[]): SelectedOption[] {
   return options.some(isSizeOption) ? options : [{ name: "Size", value: oneSize }, ...options];
 }
+
+const sizeRanks = ["xxs", "xs", "s", "m", "l", "xl", "2xl", "3xl", "4xl", "5xl", "6xl"];
+const sizeAliases: Record<string, string> = { xxl: "2xl", xxxl: "3xl", small: "s", medium: "m", large: "l" };
+
+function getSizeRank(value: string) {
+  const key = value.trim().toLowerCase().replace(/\s+/g, "");
+  return sizeRanks.indexOf(sizeAliases[key] ?? key);
+}
+
+// Shopify lists sizes in the order they were added, and merging a listing's
+// designs appends whatever one design adds, so S can land after 5XL. Put
+// recognized sizes smallest first; anything unrecognized keeps its place.
+export function sortOptionValues<T extends Pick<ProductOption, "name" | "values">>(option: T): T {
+  if (!isSizeOption(option) || option.values.some((value) => getSizeRank(value) < 0)) return option;
+  return { ...option, values: [...option.values].sort((a, b) => getSizeRank(a) - getSizeRank(b)) };
+}

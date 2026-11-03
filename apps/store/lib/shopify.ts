@@ -2,6 +2,7 @@ import { catalogCollections, getCatalogCollection, getCatalogCollectionSummary, 
 import { demoCollections, demoProducts } from "./demo-data";
 import { normalizeHandle } from "./handles";
 import { createProductGroup, getListingHandles, getProductGroupForMember, groupProductListings, resolveListingHandle, resolveProductHandle } from "./product-groups";
+import { sortOptionValues } from "./product-options";
 import type {
   Cart,
   CatalogSections,
@@ -154,6 +155,7 @@ function reshapeProduct(product: ProductNode): Product {
     ...product,
     handle: normalizeHandle(product.handle),
     images: product.images.edges.map(({ node }) => node),
+    options: product.options.map(sortOptionValues),
     variants: product.variants.edges.map(({ node }) => node),
   };
 }

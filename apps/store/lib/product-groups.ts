@@ -1,5 +1,6 @@
 import { replaceHeartEmoji } from "./handles";
 import { isKnownColor } from "./product-colors";
+import { sortOptionValues } from "./product-options";
 import type { Product, ProductDesign, ProductListing, SelectedOption } from "./types";
 
 export type ProductGroup = {
@@ -153,7 +154,7 @@ export function createProductGroup(group: ProductGroup, products: Product[]): Pr
     title: getListingTagName(first.tags) ?? group.title,
     availableForSale: designs.some(({ product }) => product.availableForSale),
     images: designs.flatMap(({ product }) => product.images),
-    options: [...new Set(designs.flatMap(({ product }) => product.options.map((option) => option.name)))].map((name) => ({
+    options: [...new Set(designs.flatMap(({ product }) => product.options.map((option) => option.name)))].map((name) => sortOptionValues({
       id: `${group.handle}-${name}`,
       name,
       values: [...new Set(designs.flatMap(({ product }) => product.options.find((option) => option.name === name)?.values ?? []))],
