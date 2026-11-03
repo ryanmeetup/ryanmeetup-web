@@ -17,7 +17,7 @@ test("cart links discover a new design through its Shopify tags", async ({ page 
   });
   await page.goto("/cart");
   const main = page.getByRole("main");
-  await expect(main.getByText("Name Tag Shirt", { exact: true })).toHaveAttribute("href", "/products/name-tag-shirt?design=ryans-dad-name-tag-shirt");
+  await expect(main.getByText("Name Tag Shirt", { exact: true })).toHaveAttribute("href", "/products/name-tag-shirt?design=ryans-dad-name-tag-shirt&from=cart");
   await expect(main.getByText(dad.title, { exact: true })).toHaveCount(0);
   await expect(main).toContainText("Style: Ryan’s Dad");
 });
@@ -82,11 +82,11 @@ test("name tag designs share one listing and add their own merchandise to the ca
     if (message.type() === "error" && message.text().includes("same key")) renderingErrors.push(message.text());
   });
   await page.goto("/collections/all");
-  const listing = page.locator('main a[href="/products/name-tag-shirt"]');
+  const listing = page.locator('main a[href="/products/name-tag-shirt?from=all"]');
   await expect(listing).toHaveCount(1);
   await expect(listing).toContainText("Name Tag Shirt");
   await expect(listing).toContainText("From $12.00");
-  await expect(page.locator('main a[href="/products/ryan-name-tag-shirt"], main a[href="/products/ryans-mom-name-tag-shirt"]')).toHaveCount(0);
+  await expect(page.locator('main a[href^="/products/ryan-name-tag-shirt"], main a[href^="/products/ryans-mom-name-tag-shirt"]')).toHaveCount(0);
   await listing.click();
   await expect(page.getByRole("heading", { name: "Name Tag Shirt", exact: true })).toBeVisible();
   await expect(page.getByLabel("Style")).toHaveAttribute("aria-required", "true");
@@ -99,7 +99,8 @@ test("name tag designs share one listing and add their own merchandise to the ca
   await keepShopping(page);
   await page.getByLabel("Style").click();
   await page.getByRole("option", { name: "Ryan’s Dad", exact: true }).click();
-  await expect(page).toHaveURL(/\/products\/name-tag-shirt\?design=ryans-dad-name-tag-shirt$/);
+  // Switching styles keeps the breadcrumb's origin.
+  await expect(page).toHaveURL(/\/products\/name-tag-shirt\?from=all&design=ryans-dad-name-tag-shirt$/);
   await expect(page.getByRole("heading", { name: "Name Tag Shirt", exact: true })).toHaveCount(1);
   await expect(page.getByLabel("Color")).toContainText("Natural");
   await expect(page.getByText("$30.00", { exact: true })).toBeVisible();
@@ -275,6 +276,25 @@ test("customer can read about the store and get back to shopping", async ({ page
   await expect(page).toHaveURL(/\/collections\/all$/);
 });
 
+test("product breadcrumbs name the page the customer came from", async ({ page }) => {
+  const breadcrumb = page.getByRole("navigation", { name: "Breadcrumb" });
+  await page.goto("/collections/apparel");
+  await page.getByRole("main").getByRole("link", { name: /Ryan Meetup Tee/ }).first().click();
+  await expect(page).toHaveURL(/\/products\/ryan-meetup-tee\?(.+&)?from=apparel/);
+  await expect(breadcrumb.getByRole("listitem")).toHaveText([/^Store/, /^Apparel/, "Official Ryan Meetup Tee"]);
+  await breadcrumb.getByRole("link", { name: "Apparel" }).click();
+  await expect(page).toHaveURL(/\/collections\/apparel$/);
+
+  await page.goto("/");
+  await page.getByRole("main").getByRole("link", { name: /Ryan Meetup Tee/ }).first().click();
+  await expect(page).toHaveURL(/\/products\/ryan-meetup-tee(\?|$)/);
+  await expect(breadcrumb.getByRole("listitem")).toHaveText([/^Store/, "Official Ryan Meetup Tee"]);
+
+  // A made-up origin is ignored rather than shown as a crumb.
+  await page.goto("/products/ryan-meetup-tee?from=not-a-collection");
+  await expect(breadcrumb.getByRole("listitem")).toHaveText([/^Store/, "Official Ryan Meetup Tee"]);
+});
+
 test("store navigation and breadcrumbs use icons", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/products/ryan-meetup-tee");
@@ -283,7 +303,7 @@ test("store navigation and breadcrumbs use icons", async ({ page }) => {
   ).toHaveCount(5);
   await expect(
     page.getByRole("navigation", { name: "Breadcrumb" }).locator("li svg"),
-  ).toHaveCount(3);
+  ).toHaveCount(2);
   await page.screenshot({
     path: "/private/tmp/store-product-breadcrumbs.png",
     fullPage: false,

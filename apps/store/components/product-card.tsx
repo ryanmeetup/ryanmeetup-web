@@ -6,18 +6,20 @@ import { useState } from "react";
 import { Card, Tooltip } from "@ryanmeetup/ui";
 import { formatMoney } from "@/lib/money";
 import { getListingColorPreviews } from "@/lib/product-colors";
+import { withProductOrigin } from "@/lib/product-origin";
 import type { ProductListing } from "@/lib/types";
 import { QuickAdd } from "./quick-add";
 
 const visibleSwatches = 5;
 
-export function ProductCard({ product, eager = false }: { product: ProductListing; eager?: boolean }) {
+/** `from` is the collection the card is listed on, named in the product page's breadcrumb. */
+export function ProductCard({ product, eager = false, from }: { product: ProductListing; eager?: boolean; from?: string }) {
   const colors = getListingColorPreviews(product);
   const swatches = colors.filter((preview) => preview.swatch && preview.image).slice(0, visibleSwatches);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const color = colors.find((preview) => preview.href === selectedColor);
   const image = color?.image ?? product.featuredImage;
-  const href = color?.href ?? `/products/${product.handle}`;
+  const href = withProductOrigin(color?.href ?? `/products/${product.handle}`, from);
   const hiddenColors = colors.length - swatches.length;
 
   return (
@@ -66,7 +68,7 @@ export function ProductCard({ product, eager = false }: { product: ProductListin
             );
           })}
           {hiddenColors > 0 && (
-            <Link href={`/products/${product.handle}`} className="rounded-sm px-1 text-xs font-semibold text-black/70 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40 dark:text-white/70 dark:hover:text-white dark:focus-visible:ring-white/40">
+            <Link href={withProductOrigin(`/products/${product.handle}`, from)} className="rounded-sm px-1 text-xs font-semibold text-black/70 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40 dark:text-white/70 dark:hover:text-white dark:focus-visible:ring-white/40">
               +{hiddenColors}<span className="sr-only"> more colors</span>
             </Link>
           )}

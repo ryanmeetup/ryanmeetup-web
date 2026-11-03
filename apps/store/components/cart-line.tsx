@@ -7,14 +7,15 @@ import { FiCheck, FiMinus, FiPlus, FiTrash2 } from "react-icons/fi";
 import { formatMoney } from "@/lib/money";
 import { getCartLineDisplay, getProductHref } from "@/lib/product-groups";
 import { isDefaultTitleOption, withOneSize } from "@/lib/product-options";
+import { withProductOrigin } from "@/lib/product-origin";
 import type { CartLine } from "@/lib/types";
 import { useCart } from "./cart-provider";
 
 /** One cart line with its quantity controls, shared by the cart page and drawer. */
-export function CartLineItem({ line, compact = false, highlighted = false }: { line: CartLine; compact?: boolean; highlighted?: boolean }) {
+export function CartLineItem({ line, compact = false, highlighted = false, from }: { line: CartLine; compact?: boolean; highlighted?: boolean; from?: string }) {
   const { loading, removeItem, updateItem } = useCart();
   const { title, options } = getCartLineDisplay(line.merchandise.product, withOneSize(line.merchandise.selectedOptions.filter((option) => !isDefaultTitleOption(option))));
-  const href = getProductHref(line.merchandise.product);
+  const href = withProductOrigin(getProductHref(line.merchandise.product), from);
 
   return (
     <Card className={`flex gap-4 ${compact ? "" : "sm:gap-6"} ${highlighted ? "ring-2 ring-emerald-500/70 dark:ring-emerald-400/70" : ""}`} size="sm">

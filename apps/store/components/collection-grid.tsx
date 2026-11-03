@@ -8,7 +8,7 @@ import { collectionHeading } from "@/lib/catalog-collections";
 import { ProductGrid } from "./product-grid";
 
 // With sections, the filters apply within each collection and an emptied section is hidden.
-export function CollectionGrid({ products, sections, more = [] }: { products: ProductListing[] } & Partial<CatalogSections>) {
+export function CollectionGrid({ handle, products, sections, more = [] }: { handle: string; products: ProductListing[] } & Partial<CatalogSections>) {
   const [type, setType] = useState("all");
   const [size, setSize] = useState("all");
   const types = [...new Set(products.map((product) => product.productType).filter(Boolean))];
@@ -65,18 +65,18 @@ export function CollectionGrid({ products, sections, more = [] }: { products: Pr
       ) : visibleSections.length ? (
         <div className="space-y-12">
           {visibleSections.map(({ collection, products: sectionProducts }, index) => (
-            <CollapsibleCollection key={collection?.id ?? "more"} collection={collection} products={sectionProducts} eagerCount={index === 0 ? 4 : 0} />
+            <CollapsibleCollection key={collection?.id ?? "more"} from={handle} collection={collection} products={sectionProducts} eagerCount={index === 0 ? 4 : 0} />
           ))}
         </div>
       ) : (
-        <ProductGrid products={visible} />
+        <ProductGrid products={visible} from={handle} />
       )}
     </div>
   );
 }
 
 // Sections start open; the heading toggles one closed so a shopper can skip past it.
-function CollapsibleCollection({ collection, products, eagerCount }: { collection: CollectionSummary | null; products: ProductListing[]; eagerCount: number }) {
+function CollapsibleCollection({ from, collection, products, eagerCount }: { from: string; collection: CollectionSummary | null; products: ProductListing[]; eagerCount: number }) {
   const [open, setOpen] = useState(true);
   const id = `collection-${collection?.handle ?? "more"}`;
   return (
@@ -104,7 +104,7 @@ function CollapsibleCollection({ collection, products, eagerCount }: { collectio
       />
       {/* The gap under the header lives inside the collapse so a closed section is no taller than its header. */}
       <AnimatedCollapse id={`${id}-panel`} open={open} contentClassName="pt-6">
-        <ProductGrid products={products} eagerCount={eagerCount} />
+        <ProductGrid products={products} eagerCount={eagerCount} from={from} />
       </AnimatedCollapse>
     </section>
   );

@@ -2,6 +2,7 @@
 
 import { Button, Card, EmptyState, ErrorCallout, Heading, Kicker, Text } from "@ryanmeetup/ui";
 import { formatMoney } from "@/lib/money";
+import { cartOrigin } from "@/lib/product-origin";
 import { CartLineItem } from "./cart-line";
 import { useCart } from "./cart-provider";
 import { CheckoutButton } from "./checkout-button";
@@ -24,7 +25,7 @@ export function CartPage() {
       <Heading size="h1" className="mt-2 text-4xl sm:text-5xl">Your cart</Heading>
       <div className="mt-10 grid gap-8 xl:grid-cols-[minmax(0,1fr)_24rem]">
         <div className="space-y-4" aria-busy={loading}>
-          {cart.lines.map((line) => <CartLineItem key={line.id} line={line} />)}
+          {cart.lines.map((line) => <CartLineItem key={line.id} line={line} from={cartOrigin} />)}
           {error && <ErrorCallout>{error}</ErrorCallout>}
         </div>
         <Card size="lg" className="h-fit xl:sticky xl:top-28">
