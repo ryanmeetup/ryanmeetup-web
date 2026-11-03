@@ -226,3 +226,10 @@ individually, use a collection and keep their standalone pages.
 ## Judge.me setup
 
 Install Judge.me in the same Shopify store and provide its private API token server-side. Published reviews are read during product-page rendering; new reviews post through the server route and follow Judge.me moderation settings.
+
+1. In Shopify Admin, install **Judge.me Product Reviews** from the Shopify App Store.
+2. In Judge.me, open **Settings → Integrations → View API token** (under Developers) and copy the **Private API token**.
+3. Set it as `JUDGEME_PRIVATE_API_TOKEN` in `.env.local` and in the Vercel project's Production and Preview environments. It must stay server-only; never prefix it with `NEXT_PUBLIC_`.
+4. Redeploy. Reviews refresh every five minutes.
+
+Until the token is set, product pages show no reviews and submissions return a “will open when Judge.me is connected” message. `JUDGEME_PUBLIC_API_TOKEN` in `.env.example` is not read by the app.
