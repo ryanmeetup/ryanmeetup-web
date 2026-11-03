@@ -3,7 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { DropdownSelect } from "@ryanmeetup/ui";
-import { getColorPreview } from "@/lib/product-colors";
+import { getColorPreview, getColorSlug, getColorValue, getImageColor } from "@/lib/product-colors";
 import { getProductGallery } from "@/lib/product-gallery";
 import type { ProductDesign, ReviewsData, StoreImage } from "@/lib/types";
 import { ProductDetail } from "./product-detail";
@@ -36,6 +36,10 @@ export function ProductGroupDetail({ title, handle, designs, reviewsByProduct }:
     setSelectedImage(image ? { design: value, image } : null);
     const query = new URLSearchParams(searchParams.toString());
     query.set("design", value);
+    const product = designs.find((design) => design.value === value)?.product;
+    const color = product ? image ? getImageColor(product, image) : getColorValue(product, query.get("color")) : undefined;
+    if (color) query.set("color", getColorSlug(color));
+    else query.delete("color");
     // Next.js syncs native history with useSearchParams, including back/forward navigation.
     window.history.pushState(null, "", `/products/${handle}?${query.toString()}`);
   }
@@ -47,6 +51,7 @@ export function ProductGroupDetail({ title, handle, designs, reviewsByProduct }:
         product={selected.product}
         title={title}
         gallery={gallery}
+        initialColor={searchParams.get("color")}
         initialImage={selectedImage?.design === selected.value ? selectedImage.image : getColorPreview(selected.product, searchParams.get("color"))?.image}
         onSelectGalleryImage={(entry) => {
           if (entry.design) selectDesign(entry.design, entry.image);

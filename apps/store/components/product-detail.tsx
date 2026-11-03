@@ -8,23 +8,26 @@ import { Button, DropdownSelect, ErrorCallout, FormStatus, IconButton, Kicker } 
 import { FiCheck, FiCheckCircle, FiChevronLeft, FiChevronRight, FiPackage, FiShield, FiShoppingBag } from "react-icons/fi";
 import { formatMoney } from "@/lib/money";
 import { isDefaultTitleOption } from "@/lib/product-options";
+import { getColorOption, getColorSlug, getVariantForColor } from "@/lib/product-colors";
 import { getProductGallery, getVariantForImage, groupProductGallery } from "@/lib/product-gallery";
 import type { ProductGalleryImage } from "@/lib/product-gallery";
 import type { Product, StoreImage } from "@/lib/types";
 import { useCart } from "./cart-provider";
 import { ProductDescription } from "./product-description";
 
-export function ProductDetail({ product, title = product.title, designField, gallery, initialImage, onSelectGalleryImage }: {
+export function ProductDetail({ product, title = product.title, designField, gallery, initialImage, initialColor, onSelectGalleryImage }: {
   product: Product;
   title?: string;
   designField?: ReactNode;
   gallery?: ProductGalleryImage[];
   initialImage?: StoreImage;
+  initialColor?: string | null;
   onSelectGalleryImage?: (image: ProductGalleryImage) => void;
 }) {
   const router = useRouter();
   const { addItem, error, loading } = useCart();
-  const initialVariant = getVariantForImage(product, initialImage ?? product.featuredImage)
+  const initialVariant = getVariantForColor(product, initialColor)
+    ?? getVariantForImage(product, initialImage ?? product.featuredImage)
     ?? product.variants.find((variant) => variant.availableForSale) ?? product.variants[0];
   const [selections, setSelections] = useState<Record<string, string>>(
     Object.fromEntries(initialVariant?.selectedOptions.map((option) => [option.name, option.value]) ?? []),
@@ -47,11 +50,18 @@ export function ProductDetail({ product, title = product.title, designField, gal
     [product.variants, selections],
   );
 
+  function rememberColor(color: string) {
+    const url = new URL(window.location.href);
+    url.searchParams.set("color", getColorSlug(color));
+    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+  }
+
   function selectOption(name: string, value: string) {
     const nextSelections = { ...selections, [name]: value };
     setSelections(nextSelections);
     const nextVariant = product.variants.find((item) => item.selectedOptions.every((option) => nextSelections[option.name] === option.value));
     if (nextVariant?.image) setActiveImage(nextVariant.image);
+    if (name === getColorOption(product)?.name) rememberColor(value);
     setAdded(false);
   }
 
@@ -62,7 +72,11 @@ export function ProductDetail({ product, title = product.title, designField, gal
     }
     setActiveImage(entry.image);
     const imageVariant = getVariantForImage(product, entry.image, selections);
-    if (imageVariant) setSelections(Object.fromEntries(imageVariant.selectedOptions.map((option) => [option.name, option.value])));
+    if (imageVariant) {
+      setSelections(Object.fromEntries(imageVariant.selectedOptions.map((option) => [option.name, option.value])));
+      const color = imageVariant.selectedOptions.find((option) => option.name === getColorOption(product)?.name)?.value;
+      if (color) rememberColor(color);
+    }
     setAdded(false);
   }
 
@@ -101,8 +115,15 @@ export function ProductDetail({ product, title = product.title, designField, gal
       else if (right > container.scrollLeft + container.clientWidth) container.scrollLeft = right - container.clientWidth;
     }
     const frame = selected.closest<HTMLElement>('[role="group"]');
-    if (frame) reveal(strip, frame);
-    if (selected.parentElement) reveal(selected.parentElement, selected);
+    function revealSelected() {
+      if (frame) reveal(strip!, frame);
+      if (selected!.parentElement) reveal(selected!.parentElement, selected!);
+    }
+    revealSelected();
+    const observer = new ResizeObserver(revealSelected);
+    observer.observe(strip);
+    if (frame) observer.observe(frame);
+    return () => observer.disconnect();
   }, [activeImageIndex]);
 
   async function handleAdd() {
@@ -141,10 +162,10 @@ export function ProductDetail({ product, title = product.title, designField, gal
         {hasMultipleImages && (
           <div ref={thumbnailsRef} role="group" aria-label="Product photos" className="relative flex gap-4 overflow-x-auto overscroll-x-contain p-1 pb-3 [scrollbar-width:thin]">
             {galleryGroups.map((group) => (
-              <div key={group.productId} role="group" aria-label={`${group.label} photos`} className="w-max max-w-full shrink-0 overflow-hidden rounded-2xl border border-black/10 py-3 dark:border-white/10">
-                <div className="mb-2 flex items-baseline gap-3 whitespace-nowrap px-3">
-                  <Kicker>{group.label}</Kicker>
-                  <span className="text-xs text-black/70 dark:text-white/70">{group.images.length} {group.images.length === 1 ? "photo" : "photos"}</span>
+              <div key={`${group.productId}:${group.label}`} role="group" aria-label={`${group.label} photos`} className="w-max max-w-full shrink-0 overflow-hidden rounded-2xl border border-black/10 py-3 dark:border-white/10">
+                <div className="mb-2 flex items-baseline gap-3 px-3">
+                  <Kicker className="min-w-0 break-words">{group.label}</Kicker>
+                  <span className="shrink-0 whitespace-nowrap text-xs text-black/70 dark:text-white/70">{group.images.length} {group.images.length === 1 ? "photo" : "photos"}</span>
                 </div>
                 <div data-photo-scroll className="-my-1 flex gap-3 overflow-x-auto overscroll-x-contain px-3 py-1 [scrollbar-width:thin]">
                   {group.images.map((entry) => (

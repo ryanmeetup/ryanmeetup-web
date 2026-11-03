@@ -165,6 +165,22 @@ individually, use a collection and keep their standalone pages.
 - The shared gallery combines every member's product and variant images,
   removing duplicate image URLs within each member. Selecting a photo selects
   its member and, when assigned to a variant, updates the variant selection.
+  A member's native **Color** options take precedence over its style label:
+  a style named “Blue” can contain Royal, Sapphire, and White. Cards show all
+  photographed colors across the members and link with both `design` and
+  `color` when needed. Gallery frames split multicolor members by their actual
+  color. Variant photo assignments identify colors first; Printful's named
+  companion mockups are matched against the naming patterns of that product's
+  assigned variant photos, including alternate views. Unmatched and ambiguous
+  photos stay in the general gallery rather than selecting a guessed color.
+  Selecting a color or its photo updates the readable `color` query parameter,
+  so reloading preserves the selected color.
+  This logic applies to every listing and member; it contains no product-handle
+  checks. New shades use Shopify's swatch metadata, including swatch-bearing
+  options with a custom name. The fallback palette only supports older catalog
+  data. A missing swatch or preview photo counts toward the card's **more colors**
+  link instead of disappearing or producing a letter chip. Shared photos never
+  override an explicitly requested color's variant.
   Floating previous/next buttons and Left/Right arrow keys cycle through the
   gallery and wrap at either end. Keyboard shortcuts apply while the gallery is
   visible and the page or gallery has focus; other controls keep their behavior.

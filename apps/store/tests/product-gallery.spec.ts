@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { getProductGallery, getVariantForImage, groupProductGallery } from "../lib/product-gallery";
 import { getProduct } from "../lib/shopify";
 import type { Product, StoreImage } from "../lib/types";
-import { mom, ryan } from "./fixtures/products";
+import { mom, ryan, superBlack, superBlue, superRed } from "./fixtures/products";
 
 const extraImage: StoreImage = { ...ryan.featuredImage!, url: "https://cdn.shopify.com/extra.jpg" };
 
@@ -47,6 +47,36 @@ test("selecting a color photo preserves the chosen size and its actual availabil
   expect(variant?.selectedOptions).toContainEqual({ name: "Color", value: "Blue" });
   expect(variant?.availableForSale).toBe(false);
   expect(getVariantForImage(product, { ...extraImage, url: "https://cdn.shopify.com/back.jpg" })).toBeUndefined();
+});
+
+test("a style with multiple colors gets separate front and back photo groups", () => {
+  const gallery = getProductGallery(superBlack, [
+    { product: superBlack, label: "Black", value: superBlack.handle },
+    { product: superBlue, label: "Blue", value: superBlue.handle },
+    { product: superRed, label: "Red", value: superRed.handle },
+  ]);
+  const groups = groupProductGallery(gallery);
+  expect(groups.map((group) => [group.label, group.images.length])).toEqual([
+    ["Black", 2], ["Blue · Royal", 2], ["Blue · Sapphire", 2], ["Blue · White", 2], ["Red", 2],
+  ]);
+  expect(gallery).toHaveLength(10);
+  expect(groups[3].images.map((entry) => entry.label)).toEqual(["Blue · White image 1", "Blue · White image 2"]);
+  expect(groups[3].images.every((entry) => entry.design === superBlue.handle && entry.productId === superBlue.id)).toBe(true);
+});
+
+test("a companion back photo selects its own color while preserving size and availability", () => {
+  const back = superBlue.images.find((image) => image.url.includes("sapphire-back"))!;
+  const variant = getVariantForImage(superBlue, back, { Size: "M", Color: "Royal" });
+  expect(variant?.selectedOptions).toEqual([{ name: "Size", value: "M" }, { name: "Color", value: "Sapphire" }]);
+  expect(variant?.availableForSale).toBe(false);
+});
+
+test("a photo shared by several colors preserves the current color and size", () => {
+  const image = superBlue.images[0];
+  const product = { ...superBlue, variants: superBlue.variants.map((variant) => ({ ...variant, image })) };
+  const variant = getVariantForImage(product, image, { Size: "M", Color: "Sapphire" });
+  expect(variant?.selectedOptions).toEqual([{ name: "Size", value: "M" }, { name: "Color", value: "Sapphire" }]);
+  expect(variant?.availableForSale).toBe(false);
 });
 
 test("product details fetch all image and variant pages", async () => {

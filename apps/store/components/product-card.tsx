@@ -12,11 +12,12 @@ const visibleSwatches = 5;
 
 export function ProductCard({ product, eager = false }: { product: ProductListing; eager?: boolean }) {
   const colors = getListingColorPreviews(product);
+  const swatches = colors.filter((preview) => preview.swatch && preview.image).slice(0, visibleSwatches);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const color = colors.find((preview) => preview.href === selectedColor);
   const image = color?.image ?? product.featuredImage;
   const href = color?.href ?? `/products/${product.handle}`;
-  const hiddenColors = colors.length - visibleSwatches;
+  const hiddenColors = colors.length - swatches.length;
 
   return (
     <Card size="none" hover className="flex h-full flex-col overflow-hidden bg-white/65 dark:bg-white/5">
@@ -25,7 +26,7 @@ export function ProductCard({ product, eager = false }: { product: ProductListin
           {image ? (
             <Image
               src={image.url}
-              alt={color ? `${product.title} in ${color.value}` : image.altText || product.title}
+              alt={color ? `${product.title} in ${color.label ?? color.value}` : image.altText || product.title}
               fill
               loading={eager ? "eager" : "lazy"}
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
@@ -43,24 +44,22 @@ export function ProductCard({ product, eager = false }: { product: ProductListin
       </Link>
       {colors.length > 0 && (
         <div role="group" aria-label={`${product.title} colors`} className="-mt-2 flex flex-wrap items-center gap-1 px-3 pb-3 sm:-mt-3 sm:px-4 sm:pb-4">
-          {colors.slice(0, visibleSwatches).map((preview) => {
+          {swatches.map((preview) => {
             const pressed = preview.href === color?.href;
             return (
-              <Tooltip key={preview.href} content={preview.value} placement="bottom">
+              <Tooltip key={preview.href} content={preview.label ?? preview.value} placement="bottom">
                 <button
                   type="button"
-                  aria-label={`Preview ${preview.value}`}
+                  aria-label={`Preview ${preview.label ?? preview.value}`}
                   aria-pressed={pressed}
                   onClick={() => setSelectedColor(pressed ? null : preview.href)}
                   className={`grid h-8 w-8 place-items-center rounded-full transition hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40 dark:hover:bg-white/10 dark:focus-visible:ring-white/40 ${pressed ? "ring-2 ring-black dark:ring-white" : ""}`}
                 >
                   <span
                     aria-hidden
-                    style={preview.swatch ? { backgroundColor: preview.swatch } : undefined}
-                    className={`grid h-5 w-5 place-items-center rounded-full border border-black/20 text-[9px] font-bold uppercase text-black/70 dark:border-white/40 dark:text-white/70 ${preview.swatch ? "" : "bg-black/5 dark:bg-white/10"}`}
-                  >
-                    {preview.swatch ? null : preview.value.charAt(0)}
-                  </span>
+                    style={{ backgroundColor: preview.swatch ?? undefined }}
+                    className="block h-5 w-5 rounded-full border border-black/20 dark:border-white/40"
+                  />
                 </button>
               </Tooltip>
             );
@@ -70,7 +69,7 @@ export function ProductCard({ product, eager = false }: { product: ProductListin
               +{hiddenColors}<span className="sr-only"> more colors</span>
             </Link>
           )}
-          <span className="sr-only" aria-live="polite">{color ? `Showing ${color.value}` : ""}</span>
+          <span className="sr-only" aria-live="polite">{color ? `Showing ${color.label ?? color.value}` : ""}</span>
         </div>
       )}
     </Card>

@@ -78,7 +78,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
         <div className="mt-8"><ProductGroupDetail title={product.title} handle={product.handle} designs={product.designs} reviewsByProduct={reviewsByProduct} /></div>
       ) : (
         <>
-          <div className="mt-8"><ProductDetail product={product} initialImage={getColorPreview(product, query.color)?.image} /></div>
+          <div className="mt-8"><ProductDetail product={product} initialColor={query.color} initialImage={getColorPreview(product, query.color)?.image} /></div>
           <Reviews data={reviewsByProduct[product.id]} productId={product.id} />
         </>
       )}
