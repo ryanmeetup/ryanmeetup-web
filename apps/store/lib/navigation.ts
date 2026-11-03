@@ -9,7 +9,7 @@ export const StoreProductIcon = FiTag;
 export const storeNavigation = [
   {
     href: "/collections/all",
-    label: "Shop all",
+    label: "Collections",
     description: "Browse every Ryan-approved provision.",
     icon: FaBoxesStacked,
   },

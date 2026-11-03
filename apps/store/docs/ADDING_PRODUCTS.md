@@ -35,7 +35,7 @@ Create and sync the product through Printful as usual, then open it in Shopify
    - **Accessory** is everything else: mugs, totes, doormats.
 
    Any other spelling leaves the product off both pages; it only appears under
-   Shop all.
+   Collections.
 5. **Category.** Pick the closest Shopify category (T-Shirts, Hoodies, Mugs, Door
    Mats, …). Shopify uses it for its own organization and tax rules; the store
    does not use it today, but keep it filled in.
@@ -138,7 +138,7 @@ Classics**. Each one gets its own section on the home page (showing its first
 four listings, with a link to see all) and its own page.
 
 - Add **every** product to a design collection. A product in none of them still
-  appears on the Apparel/Accessories pages, but on the home page and Shop all it
+  appears on the Apparel/Accessories pages, but on the home page and Collections it
   falls into a catch-all "More Ryan goods" section at the bottom.
 - Add products from the product page (**Product organization → Collections**),
   or select several in the **Products** list and use **More actions → Add to
@@ -162,7 +162,7 @@ the actual best-selling products there instead.
 
 Its home page section appears automatically; sections are ordered alphabetically
 by title. Don't give a collection the handle `all`, `apparel`, or `accessories`;
-those addresses belong to the store's own Shop all, Apparel, and Accessories
+those addresses belong to the store's own Collections, Apparel, and Accessories
 pages.
 
 ## Tags
@@ -175,7 +175,7 @@ if they help you; they can also be left off entirely.
 
 | Place on the store | What puts a product there |
 | --- | --- |
-| Shop all | Active and on the Ryan Meetup Store Headless channel; grouped under each design collection it is in |
+| Collections | Active and on the Ryan Meetup Store Headless channel; grouped under each design collection it is in |
 | Apparel page | Product type `Apparel` |
 | Accessories page | Product type `Accessory` |
 | Home page, top section | In the Best Sellers collection (up to eight shown) |
