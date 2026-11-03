@@ -6,6 +6,7 @@ import { ProductGroupDetail } from "@/components/product-group-detail";
 import { Reviews } from "@/components/reviews";
 import { formatMoney } from "@/lib/money";
 import { StoreCollectionIcon, StoreHomeIcon, StoreProductIcon } from "@/lib/navigation";
+import { decodeRouteHandle } from "@/lib/handles";
 import { getColorPreview } from "@/lib/product-colors";
 import { getProductGroupForMember, getProductHref, resolveProductDesignValue } from "@/lib/product-groups";
 import { getReviews } from "@/lib/reviews";
@@ -18,7 +19,7 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { handle } = await params;
+  const handle = decodeRouteHandle((await params).handle);
   const product = await getProduct(handle);
   if (!product) return { title: "Product not found" };
   if (getProductGroupForMember(product)) return {};
@@ -31,7 +32,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ProductPage({ params, searchParams }: Props) {
-  const { handle } = await params;
+  const handle = decodeRouteHandle((await params).handle);
   const product = await getProduct(handle);
   if (!product) notFound();
   const query = await searchParams;

@@ -40,6 +40,10 @@ function mockCatalog(failDiscovery = false) {
     } else if (request.query.includes("CollectionMemberships")) {
       const collection = (id: string, title: string, products: { handle: string }[]) => ({ node: { id, handle: id, title, description: "", image: null, products: { edges: products.map(({ handle }) => ({ node: { handle } })) } } });
       data = { collections: { edges: [collection("apparel", "Shopify Apparel", [tee]), collection("frontpage", "Home page", [tee, dad]), collection("shirts", "Shirts", [mom]), collection("empty", "Empty", [])] } };
+    } else if (request.query.includes("CollectionHandles")) {
+      data = { collections: { edges: [{ node: { handle: "shirts" } }, { node: { handle: "i-❤️-ry" } }] } };
+    } else if (request.query.includes("query Collection(") && request.variables.handle === "i-❤️-ry") {
+      data = { collection: { id: "heart", handle: "i-❤️-ry", title: "I ❤️ RY", description: "", image: null, products: { edges: [{ node: productNode(tee) }], pageInfo: { endCursor: null, hasNextPage: false } } } };
     } else if (request.query.includes("query Collection(")) {
       const page = request.variables.after ? [tee] : [mom];
       data = { collection: request.variables.handle === "shirts" ? { id: "shirts", handle: "shirts", title: "Shirts", description: "", image: mom.featuredImage, products: { edges: page.map((product) => ({ node: productNode(product) })), pageInfo: { endCursor: "collection-page-1", hasNextPage: !request.variables.after } } } : null };
@@ -106,4 +110,13 @@ test("type pages list every product of that Shopify type with each group once", 
 test("the type pages lead the collection list, shadow same-handle Shopify collections, and omit the home page collection", async () => {
   mockCatalog();
   expect((await getCollections()).map((collection) => collection.title)).toEqual(["All Ryan Goods", "Apparel", "Accessories", "Shirts"]);
+});
+
+test("a collection whose Shopify handle has a heart emoji is served at its heart URL", async () => {
+  const requests = mockCatalog();
+  const collection = await getCollection("i-heart-ry");
+  expect(collection?.collection).toMatchObject({ handle: "i-heart-ry", title: "I ❤️ RY" });
+  expect(collection?.products.map((product) => product.handle)).toEqual([tee.handle]);
+  expect(requests.filter((request) => request.query.includes("query Collection(")).map((request) => request.variables.handle)).toEqual(["i-heart-ry", "i-❤️-ry"]);
+  expect(await getCollection("i-heart-nothing")).toBeNull();
 });

@@ -47,6 +47,11 @@ original variant ID to Shopify's cart and checkout.
 **The tag controls inclusion; the title controls the label.** Putting "Name Tag"
 in a product title alone does not add it to a listing, and neither does its Type.
 The storefront ignores every tag other than `listing:`; they have no SEO effect.
+
+Shopify copies a heart emoji from a title into the handle it generates, so
+"I ❤️ RY" gets the handle `i-❤️-ry`. The storefront spells ❤️ and ♥ as `heart` in
+every URL it builds — `/collections/i-heart-ry` — and redirects the emoji form
+there. Titles keep the emoji. See [lib/handles.ts](lib/handles.ts).
 Search metadata comes from product titles, descriptions, and images.
 
 A collection can contain many listings and standalone products. A collection page

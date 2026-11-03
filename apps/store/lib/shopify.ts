@@ -1,5 +1,6 @@
 import { catalogCollections, getCatalogCollection, getCatalogCollectionSummary, getCatalogProductQuery, isInCatalogCollection } from "./catalog-collections";
 import { demoCollections, demoProducts } from "./demo-data";
+import { normalizeHandle } from "./handles";
 import { createProductGroup, getListingHandles, getProductGroupForMember, groupProductListings, resolveListingHandle, resolveProductHandle } from "./product-groups";
 import type {
   Cart,
@@ -150,6 +151,7 @@ async function storefrontRequest<T>(
 function reshapeProduct(product: ProductNode): Product {
   return {
     ...product,
+    handle: normalizeHandle(product.handle),
     images: product.images.edges.map(({ node }) => node),
     variants: product.variants.edges.map(({ node }) => node),
   };
@@ -193,7 +195,7 @@ export async function getCollections(): Promise<CollectionSummary[]> {
   );
   return [
     ...catalogCollections.map(getCatalogCollectionSummary),
-    ...data.collections.edges.map(({ node }) => node).filter(isBrowsingCollection),
+    ...data.collections.edges.map(({ node }) => ({ ...node, handle: normalizeHandle(node.handle) })).filter(isBrowsingCollection),
   ];
 }
 
@@ -293,7 +295,11 @@ async function getCollectionMemberships(): Promise<CollectionMembership[]> {
     {},
     { revalidate: 300 },
   );
-  return data.collections.edges.map(({ node }) => node);
+  return data.collections.edges.map(({ node }) => ({
+    ...node,
+    handle: normalizeHandle(node.handle),
+    products: { edges: node.products.edges.map(({ node: product }) => ({ node: { handle: normalizeHandle(product.handle) } })) },
+  }));
 }
 
 export async function getHomeCatalog(): Promise<HomeCatalog> {
@@ -336,7 +342,8 @@ export async function getHomeCatalog(): Promise<HomeCatalog> {
 }
 
 export async function getProductHandles(): Promise<string[]> {
-  return getListingHandles(isShopifyConfigured() ? await getProductSummaries() : demoProducts);
+  const products = isShopifyConfigured() ? await getProductSummaries() : demoProducts;
+  return getListingHandles(products.map((product) => ({ ...product, handle: normalizeHandle(product.handle) })));
 }
 
 export async function getCollection(handle: string): Promise<ProductPage | null> {
@@ -360,7 +367,20 @@ export async function getCollection(handle: string): Promise<ProductPage | null>
   }
   if (handle === featuredCollectionHandle) return null;
 
-  return getShopifyCollection(handle);
+  const page = await getShopifyCollection(handle);
+  if (page) return page;
+  // A storefront URL spells Shopify's emoji handle with "heart"; look up the original.
+  const original = (await getShopifyCollectionHandles()).find((shopifyHandle) => shopifyHandle !== handle && normalizeHandle(shopifyHandle) === handle);
+  return original ? getShopifyCollection(original) : null;
+}
+
+async function getShopifyCollectionHandles() {
+  const data = await storefrontRequest<{ collections: Connection<{ handle: string }> }>(
+    `query CollectionHandles { collections(first: 250) { edges { node { handle } } } }`,
+    {},
+    { revalidate: 300 },
+  );
+  return data.collections.edges.map(({ node }) => node.handle);
 }
 
 async function getShopifyCollection(handle: string): Promise<ProductPage | null> {
@@ -382,7 +402,7 @@ async function getShopifyCollection(handle: string): Promise<ProductPage | null>
     );
     if (!data.collection) return null;
     const { products: page, ...collection } = data.collection;
-    found.collection = collection;
+    found.collection = { ...collection, handle: normalizeHandle(collection.handle) };
     return page;
   });
   if (!products || !found.collection) return null;
@@ -409,7 +429,11 @@ async function getShopifyProduct(handle: string): Promise<Product | null> {
     { handle },
     { revalidate: 300 },
   );
-  if (!data.product) return null;
+  if (!data.product) {
+    // A storefront URL spells Shopify's emoji handle with "heart"; look up the original.
+    const original = (await getProductSummaries()).find((product) => product.handle !== handle && normalizeHandle(product.handle) === handle);
+    return original ? getShopifyProduct(original.handle) : null;
+  }
   const [images, variants] = await Promise.all([
     completeProductConnection(handle, "images", data.product.images, imageFields),
     completeProductConnection(handle, "variants", data.product.variants, variantFields),
@@ -418,7 +442,13 @@ async function getShopifyProduct(handle: string): Promise<Product | null> {
 }
 
 function reshapeCart(raw: Omit<Cart, "lines"> & { lines: Connection<Cart["lines"][number]> }): Cart {
-  return { ...raw, lines: raw.lines.edges.map(({ node }) => node) };
+  return {
+    ...raw,
+    lines: raw.lines.edges.map(({ node }) => ({
+      ...node,
+      merchandise: { ...node.merchandise, product: { ...node.merchandise.product, handle: normalizeHandle(node.merchandise.product.handle) } },
+    })),
+  };
 }
 
 type CartPayload = {

@@ -1,3 +1,4 @@
+import { replaceHeartEmoji } from "./handles";
 import type { Product, ProductDesign, ProductListing } from "./types";
 
 export type ProductGroup = {
@@ -37,7 +38,7 @@ export function resolveListingHandle(handle: string) {
 }
 
 export function slugifyListingName(name: string) {
-  return name.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return replaceHeartEmoji(name, " heart ").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
 export function getListingTagName(tags: string[]) {

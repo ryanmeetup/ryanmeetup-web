@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { normalizeHandle } from "../lib/handles";
 import { createProductGroup, getListingHandles, getProductGroupForMember, getProductHref, groupProductListings, resolveListingHandle, resolveProductDesignValue, resolveProductHandle } from "../lib/product-groups";
 import { dad, mom, ryan, tee } from "./fixtures/products";
 
@@ -109,4 +110,12 @@ test("a listing tag without a name is ignored", () => {
 test("the former nametag-shirt URL resolves to the Name Tag Shirt listing", () => {
   expect(resolveListingHandle("nametag-shirt")).toBe("name-tag-shirt");
   expect(resolveListingHandle("name-tag-shirt")).toBe("name-tag-shirt");
+});
+
+test("heart emoji in handles and listing names become the word heart", () => {
+  expect(normalizeHandle("i-❤️-ry")).toBe("i-heart-ry");
+  expect(normalizeHandle("i-♥-ry-mug")).toBe("i-heart-ry-mug");
+  expect(normalizeHandle("name-tag")).toBe("name-tag");
+  expect(getProductGroupForMember({ ...tee, tags: ["listing:I ❤️ RY Hoodie"] })?.handle).toBe("i-heart-ry-hoodie");
+  expect(getProductGroupForMember({ ...tee, tags: ["listing:I❤️RY Hoodie"] })?.handle).toBe("i-heart-ry-hoodie");
 });

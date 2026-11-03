@@ -1,36 +1,28 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { Breadcrumbs, SectionHeader } from "@ryanmeetup/ui";
 import { CollectionGrid } from "@/components/collection-grid";
+import { decodeRouteHandle, normalizeHandle } from "@/lib/handles";
 import { getStoreCollectionIcon, StoreHomeIcon } from "@/lib/navigation";
 import { getCollection, getCollections } from "@/lib/shopify";
 
 type Props = { params: Promise<{ handle: string }> };
-
-// Shopify handles can contain non-ASCII characters such as emoji, which reach the
-// route still percent-encoded.
-async function getHandle(params: Props["params"]) {
-  const { handle } = await params;
-  try {
-    return decodeURIComponent(handle);
-  } catch {
-    return handle;
-  }
-}
 
 export async function generateStaticParams() {
   return (await getCollections()).map((collection) => ({ handle: collection.handle }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const handle = await getHandle(params);
+  const handle = normalizeHandle(decodeRouteHandle((await params).handle));
   const result = await getCollection(handle);
   if (!result) return { title: "Collection not found" };
   return { title: result.collection.title, description: result.collection.description };
 }
 
 export default async function CollectionPage({ params }: Props) {
-  const handle = await getHandle(params);
+  const requested = decodeRouteHandle((await params).handle);
+  const handle = normalizeHandle(requested);
+  if (handle !== requested) permanentRedirect(`/collections/${handle}`);
   const result = await getCollection(handle);
   if (!result) notFound();
   return (
