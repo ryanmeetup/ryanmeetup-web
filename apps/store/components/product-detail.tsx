@@ -38,6 +38,9 @@ export function ProductDetail({ product, title = product.title, designField, hid
   const galleryGroups = groupProductGallery(galleryImages);
   const galleryRef = useRef<HTMLDivElement>(null);
   const thumbnailsRef = useRef<HTMLDivElement>(null);
+  // Whether thumbnails are hidden past each edge of the strip.
+  const [clippedStart, setClippedStart] = useState(false);
+  const [clippedEnd, setClippedEnd] = useState(false);
   const galleryHintId = useId();
   const hasMultipleImages = galleryImages.length > 1;
   const activeImageIndex = Math.max(0, galleryImages.findIndex((entry) => entry.productId === product.id && entry.image.url === activeImage?.url));
@@ -121,6 +124,23 @@ export function ProductDetail({ product, title = product.title, designField, hid
     return () => observer.disconnect();
   }, [activeImageIndex]);
 
+  useEffect(() => {
+    const strip = thumbnailsRef.current;
+    if (!strip) return;
+    function update() {
+      setClippedStart(strip!.scrollLeft > 1);
+      setClippedEnd(strip!.scrollLeft < strip!.scrollWidth - strip!.clientWidth - 1);
+    }
+    update();
+    strip.addEventListener("scroll", update, { passive: true });
+    const observer = new ResizeObserver(update);
+    observer.observe(strip);
+    return () => {
+      strip.removeEventListener("scroll", update);
+      observer.disconnect();
+    };
+  }, [hasMultipleImages]);
+
   async function handleAdd() {
     if (!variant?.availableForSale) return;
     await addItem(product, variant, Number(quantity));
@@ -156,8 +176,9 @@ export function ProductDetail({ product, title = product.title, designField, hid
         )}
         {hasMultipleImages && (
           <div ref={thumbnailsRef} role="group" aria-label="Product photos" className="relative flex gap-4 overflow-x-auto overscroll-x-contain pb-3 [scrollbar-width:thin]">
-            {/* Pinned edge rules stretch to the frames' height, not the scrollbar's padding. */}
-            <span aria-hidden className="sticky left-0 z-10 w-px shrink-0 bg-black/10 dark:bg-white/10" />
+            {/* Pinned edge rules stretch to the frames' height, not the scrollbar's padding,
+                and appear only while thumbnails are hidden past that edge. */}
+            <span aria-hidden className={`sticky left-0 z-10 w-px shrink-0 bg-black/10 transition-opacity dark:bg-white/10 ${clippedStart ? "" : "opacity-0"}`} />
             {galleryGroups.map((group) => (
               <div key={`${group.productId}:${group.label}`} role="group" aria-label={`${group.label} photos`} className="w-max shrink-0 rounded-2xl border border-black/10 py-3 dark:border-white/10">
                 <Kicker className="mb-2 px-3">{group.label}</Kicker>
@@ -170,7 +191,7 @@ export function ProductDetail({ product, title = product.title, designField, hid
                 </div>
               </div>
             ))}
-            <span aria-hidden className="sticky right-0 z-10 w-px shrink-0 bg-black/10 dark:bg-white/10" />
+            <span aria-hidden className={`sticky right-0 z-10 w-px shrink-0 bg-black/10 transition-opacity dark:bg-white/10 ${clippedEnd ? "" : "opacity-0"}`} />
           </div>
         )}
       </div>
