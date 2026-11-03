@@ -31,6 +31,7 @@ import {
   RydRyanPositionChip,
   RydStatusChip,
 } from "./RydStatusChip";
+import { RydEmailLink } from "./RydEmailLink";
 import { RydSelectCheckbox } from "./RydSelection";
 
 type SortChoice = { key: RydSortKey; descending: boolean; label: string };
@@ -314,12 +315,10 @@ export function RydOrderTable({
                         position={ryanPositions.get(order.orderId)}
                       />
                     </div>
-                    <span
+                    <RydEmailLink
+                      email={order.displayEmail}
                       className="block truncate text-xs text-black/70 dark:text-white/70"
-                      title={order.displayEmail}
-                    >
-                      {order.displayEmail}
-                    </span>
+                    />
                   </td>
                   <td className="px-3 py-2.5">
                     <RydStatusChip status={order.status} />

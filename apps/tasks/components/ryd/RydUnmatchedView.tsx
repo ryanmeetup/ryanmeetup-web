@@ -21,6 +21,7 @@ import {
 import type { RydSubmission, RydSubmitter } from "@/lib/ryd/matching";
 import type { RydQueue } from "@/lib/ryd/queue-types";
 import { rydSubmissionFileIds } from "@/lib/ryd/submission-view";
+import { RydEmailLink } from "./RydEmailLink";
 import { RydResponseCards, RydSubmissionDetails } from "./RydSubmissionDetails";
 import { isRydContactEmail } from "@/lib/ryd/normalize";
 import { RydSelectCheckbox } from "./RydSelection";
@@ -413,12 +414,10 @@ function UnmatchedTable({
                     <span className="block truncate font-semibold" title={name}>
                       {name}
                     </span>
-                    <span
+                    <RydEmailLink
+                      email={submitter.email}
                       className="block truncate text-xs text-black/70 dark:text-white/70"
-                      title={submitter.email}
-                    >
-                      {submitter.email || "No email given"}
-                    </span>
+                    />
                     {contacts[submitter.email] && (
                       <span className="mt-1 block">
                         <RydContactedChip contact={contacts[submitter.email]} />

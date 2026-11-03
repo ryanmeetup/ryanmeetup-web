@@ -17,6 +17,7 @@ import type { RydSubmission } from "@/lib/ryd/matching";
 import type { SocialLink } from "@/lib/ryd/normalize";
 import { rydSubmissionFileIds } from "@/lib/ryd/submission-view";
 import { RydEvidencePreview } from "./RydEvidencePreview";
+import { RydEmailLink } from "./RydEmailLink";
 
 export const PLATFORM_ICONS: Record<SocialLink["platform"], ReactNode> = {
   instagram: <FiInstagram aria-hidden />,
@@ -199,7 +200,7 @@ export function RydSubmissionCard({
             <span className="inline-flex min-w-0 items-center gap-1.5 break-all">
               <FiMail aria-hidden className="shrink-0" />
               <span className="sr-only">Email</span>
-              {submission.email || "No email given"}
+              <RydEmailLink email={submission.email} />
             </span>
             <span className="inline-flex items-center gap-1.5">
               <FiClock aria-hidden className="shrink-0" />

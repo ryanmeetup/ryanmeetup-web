@@ -16,6 +16,7 @@ import type { RydCard } from "@/lib/ryd/card";
 import { formatRydOrderTotal } from "@/lib/ryd/orders";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 import { RydCardFields } from "./RydCardFields";
+import { RydEmailLink } from "./RydEmailLink";
 import { rydProductionSummary } from "./RydStatusChip";
 
 function ReviewSection({
@@ -105,7 +106,7 @@ export function RydOrderSidebar({
             </Detail>
           )}
           <Detail icon={FiMail} label="Email">
-            <span className="break-all">{order.displayEmail}</span>
+            <RydEmailLink email={order.displayEmail} className="break-all" />
           </Detail>
           <Detail icon={FiCalendar} label="Ordered">
             {order.orderedAt || "Not given"}
