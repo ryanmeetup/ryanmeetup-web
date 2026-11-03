@@ -20,7 +20,7 @@ export function CartDrawer() {
       title={
         <span className="inline-flex flex-wrap items-center gap-3">
           {justAdded ? "Added to cart" : "Your cart"}
-          {itemCount > 0 && <Pill variant="neutral" size="sm">{itemCount} {itemCount === 1 ? "item" : "items"}</Pill>}
+          {itemCount > 0 && <Pill variant="neutral" className="![font-family:Arial,Helvetica,sans-serif] !tracking-[0.12em]">{itemCount} {itemCount === 1 ? "item" : "items"}</Pill>}
         </span>
       }
       description={justAdded ? "Excellent choice, Ryan." : undefined}
