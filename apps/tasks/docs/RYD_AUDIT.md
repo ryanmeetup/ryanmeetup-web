@@ -14,15 +14,16 @@ Committed and applied to RMT; PRD still needs its dashboard SQL, in this order:
 - [ ] [Import card details](PRD_RYD_IMPORT_CARD_DETAILS_SQL.md)
   (`20261117000000`)
 
-After deploying, disconnect and reconnect the RMT RY-D Google connection once,
-so Google drops the old `spreadsheets` grant.
+Optional hardening: after deploying, disconnect and reconnect the RMT RY-D
+Google connection once. Until then the stored grant still includes the unused
+`spreadsheets` scope (edit access to every sheet that account can reach).
 
-## Decision needed
+## Parked
 
 ### 5. Two overlapping fulfillment handoffs
 
-Deferred by Ryan on 2026-10-30: leave both handoffs unchanged for now, and
-explain the tradeoffs before revisiting.
+Decided by Ryan on 2026-11-03: keep both handoffs as they are, as manual as
+possible, until he automates the flow himself. No code change.
 
 The Verified view offers both:
 
