@@ -1,9 +1,9 @@
 "use client";
 
-import { DropdownMenu, DropdownMenuButton, DropdownMenuItem, DropdownMenuItems, IconButton, Spinner, getIconButtonClasses, toast } from "@ryanmeetup/ui";
+import { DropdownMenu, DropdownMenuButton, DropdownMenuItem, DropdownMenuItems, DropdownMenuSeparator, IconButton, Spinner, getIconButtonClasses, toast } from "@ryanmeetup/ui";
 import { useState } from "react";
 import { FiPlus } from "react-icons/fi";
-import { getColorOption, getVariantForColor } from "@/lib/product-colors";
+import { getColorOption, getColorPreview, getColorSlug, getVariantForColor } from "@/lib/product-colors";
 import { getVariantForImage } from "@/lib/product-gallery";
 import { findVariant, getSelections, isDefaultTitleOption } from "@/lib/product-options";
 import type { ProductListing, ProductVariant } from "@/lib/types";
@@ -28,7 +28,10 @@ export function QuickAdd({ product, href }: { product: ProductListing; href: str
   const colorOption = getColorOption(target);
   const remaining = target.options.filter((option) => option !== colorOption && !isDefaultTitleOption(option));
   const color = colorOption && selections[colorOption.name];
-  const chosen = [...new Set([(product.designs?.length ?? 0) > 1 ? design?.label : undefined, color].filter(Boolean))].join(" · ");
+  const details = [
+    (product.designs?.length ?? 0) > 1 && design ? { name: "Design", value: design.label, swatch: null } : null,
+    color ? { name: "Color", value: color, swatch: getColorPreview(target, getColorSlug(color))?.swatch ?? null } : null,
+  ].filter((detail) => detail !== null);
   const label = `Quick add ${product.title}`;
   const triggerClasses = getIconButtonClasses("md", "overlay");
 
@@ -66,21 +69,37 @@ export function QuickAdd({ product, href }: { product: ProductListing; href: str
       <DropdownMenuButton unstyled aria-label={label} disabled={loading} className={triggerClasses}>
         {loading ? <Spinner aria-hidden /> : <FiPlus aria-hidden className="h-5 w-5" />}
       </DropdownMenuButton>
-      <DropdownMenuItems className="!w-48">
-        <div className="px-3 pb-1 pt-2">
+      <DropdownMenuItems className="!w-52">
+        <div className="px-2 pb-1 pt-1.5">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/70 dark:text-white/70">Add to cart</p>
-          {chosen && <p className="mt-0.5 truncate text-sm font-semibold">{chosen}</p>}
+          {details.length > 0 && (
+            <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-sm">
+              {details.map(({ name, value, swatch }) => (
+                <div key={name} className="contents">
+                  <dt className="text-black/70 dark:text-white/70">{name}</dt>
+                  <dd className="flex min-w-0 items-center gap-1.5 font-semibold">
+                    {swatch && <span aria-hidden style={{ backgroundColor: swatch }} className="h-3 w-3 shrink-0 rounded-full border border-black/20 dark:border-white/40" />}
+                    <span className="truncate">{value}</span>
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          )}
         </div>
-        {option.values.map((value) => {
-          const variant = findVariant(target, { ...selections, [option.name]: value });
-          const available = Boolean(variant?.availableForSale);
-          return (
-            <DropdownMenuItem key={value} disabled={!available} onClick={() => variant && add(variant)} className="justify-between">
-              <span>{value}</span>
-              {!available && <span className="text-xs text-black/70 dark:text-white/70">Sold out</span>}
-            </DropdownMenuItem>
-          );
-        })}
+        <DropdownMenuSeparator />
+        <p className="px-2 pt-0.5 text-xs font-semibold uppercase tracking-[0.16em] text-black/70 dark:text-white/70">{option.name}</p>
+        <div className="grid grid-cols-4 gap-1">
+          {option.values.map((value) => {
+            const variant = findVariant(target, { ...selections, [option.name]: value });
+            const available = Boolean(variant?.availableForSale);
+            return (
+              <DropdownMenuItem key={value} disabled={!available} onClick={() => variant && add(variant)} className="justify-center border border-black/10 px-1 font-semibold dark:border-white/10">
+                <span className={available ? undefined : "line-through"}>{value}</span>
+                {!available && <span className="sr-only">, sold out</span>}
+              </DropdownMenuItem>
+            );
+          })}
+        </div>
       </DropdownMenuItems>
     </DropdownMenu>
   );
