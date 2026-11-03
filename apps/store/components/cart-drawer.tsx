@@ -23,10 +23,7 @@ export function CartDrawer() {
           <div className="flex justify-between"><Text>Subtotal</Text><strong>{formatMoney(cart.cost.subtotalAmount)}</strong></div>
           <Text className="mt-1 text-sm">Shipping and taxes are calculated at checkout.</Text>
           <CheckoutButton className="mt-4" />
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <Button.Link href="/cart" variant="secondary" size="md" fullWidth onClick={close}>View cart</Button.Link>
-            <Button variant="secondary" size="md" fullWidth onClick={close}>Keep shopping</Button>
-          </div>
+          <Button className="mt-3" variant="secondary" size="md" fullWidth onClick={close}>Keep shopping</Button>
         </>
       ) : undefined}
     >

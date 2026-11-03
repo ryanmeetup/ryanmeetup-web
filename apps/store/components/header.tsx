@@ -11,7 +11,7 @@ import { ThemeToggle } from "./theme-toggle";
 
 export function Header() {
   const [open, setOpen] = useState(false);
-  const { cart } = useCart();
+  const { cart, drawerOpen, setDrawerOpen } = useCart();
   const pathname = usePathname();
 
   return (
@@ -51,9 +51,14 @@ export function Header() {
           </div>
         </nav>
         <div className="ml-auto flex flex-none items-center gap-2 sm:gap-4">
-          <Link
-            href="/cart"
+          {/* Opens the drawer rather than /cart: the page still works but stays
+              unlinked while we hear which of the two shoppers prefer. */}
+          <button
+            type="button"
             aria-label={`Cart with ${cart?.totalQuantity ?? 0} items`}
+            aria-haspopup="dialog"
+            aria-expanded={drawerOpen}
+            onClick={() => setDrawerOpen(true)}
             className="relative inline-flex h-10 items-center justify-center gap-2 rounded-full bg-black px-3 text-xs font-semibold tracking-wide text-white shadow-sm transition hover:scale-[1.02] hover:bg-black/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 sm:px-4 dark:bg-white dark:text-black dark:hover:bg-white/90 dark:focus-visible:ring-white/40"
           >
             <FiShoppingBag aria-hidden className="text-base" />
@@ -63,7 +68,7 @@ export function Header() {
                 {cart?.totalQuantity}
               </span>
             )}
-          </Link>
+          </button>
           <button
             type="button"
             aria-label={open ? "Close navigation" : "Open navigation"}
