@@ -4,7 +4,7 @@ import type { CSSProperties, ReactNode } from "react";
 export type PillProps = {
   children: ReactNode;
   className?: string;
-  variant?: "default" | "subtle" | "overlay" | "neutral" | "code";
+  variant?: "default" | "subtle" | "overlay" | "neutral" | "code" | "success";
   size?: "sm" | "md";
   style?: CSSProperties;
 };
@@ -28,6 +28,9 @@ const Pill = (props: PillProps) => {
     overlay: "border-white/30 bg-black/60 text-white",
     neutral:
       "border-black/10 bg-white/80 text-black/70 dark:border-white/10 dark:bg-white/10 dark:text-white/70",
+    // Green for a status that just went right, like a cart's newest line.
+    success:
+      "gap-1.5 border-emerald-600 bg-emerald-50 font-semibold text-emerald-800 shadow-sm dark:border-emerald-400 dark:bg-emerald-400/15 dark:text-emerald-200",
     code: "rounded-md border-black/10 bg-black/[0.045] font-mono font-medium !normal-case !tracking-normal text-black/75 shadow-none dark:border-white/10 dark:bg-white/[0.07] dark:text-white/75",
   };
   const sizeStyles = {
