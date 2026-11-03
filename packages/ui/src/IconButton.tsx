@@ -47,7 +47,8 @@ const variantStyles = {
     "rounded-full border border-red-500/20 text-red-600 hover:-translate-y-0.5 hover:border-red-500/40 hover:bg-red-50 hover:shadow-sm focus-visible:ring-red-500/30 active:translate-y-0 motion-reduce:transform-none dark:border-red-400/25 dark:text-red-400 dark:hover:border-red-400/50 dark:hover:bg-red-950/40 dark:focus-visible:ring-red-400/30",
 };
 
-const getClasses = (
+/** IconButton's classes, for triggers another component renders, such as a menu button. */
+export const getIconButtonClasses = (
   size: NonNullable<IconButtonProps["size"]>,
   variant: NonNullable<IconButtonProps["variant"]>,
   className?: string,
@@ -95,7 +96,7 @@ const IconButton = ({
       {...buttonProps}
       type={type}
       aria-label={label}
-      className={getClasses(size, variant, className)}
+      className={getIconButtonClasses(size, variant, className)}
     >
       {children}
     </button>
@@ -126,7 +127,7 @@ const IconButtonLink = ({
       {...linkProps}
       href={href}
       aria-label={label}
-      className={getClasses(size, variant, className)}
+      className={getIconButtonClasses(size, variant, className)}
     >
       {children}
     </NextLink>
