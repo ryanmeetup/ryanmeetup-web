@@ -119,7 +119,7 @@ test("type pages list every product of that Shopify type with each group once", 
 
 test("the type pages lead the collection list, shadow same-handle Shopify collections, and omit the home page collection", async () => {
   mockCatalog();
-  expect((await getCollections()).map((collection) => collection.title)).toEqual(["All Ryan Goods", "Apparel", "Accessories", "Shirts"]);
+  expect((await getCollections()).map((collection) => collection.title)).toEqual(["Collections", "Apparel", "Accessories", "Shirts"]);
 });
 
 test("a collection whose Shopify handle has a heart emoji is served at its heart URL", async () => {
