@@ -7,6 +7,7 @@ import { useCart } from "./cart-provider";
 import { CheckoutButton } from "./checkout-button";
 import { EmptyCartButton } from "./empty-cart-button";
 import { EmptyCartPrompt } from "./empty-cart-prompt";
+import { FinalSaleNote } from "./final-sale-note";
 
 /** Slides in after an item is added, so shoppers see the cart without leaving the page. */
 export function CartDrawer() {
@@ -30,7 +31,7 @@ export function CartDrawer() {
       footer={cart?.lines.length ? (
         <>
           <div className="flex justify-between"><Text>Subtotal</Text><strong>{formatMoney(cart.cost.subtotalAmount)}</strong></div>
-          <Text className="mt-1 text-sm">Shipping and taxes are calculated at checkout.</Text>
+          <Text className="mt-1 text-sm">Shipping and taxes are calculated at checkout. <FinalSaleNote onNavigate={close} /></Text>
           <Button className="mt-4" variant="secondary" size="md" fullWidth onClick={close}>Keep shopping</Button>
           <CheckoutButton className="mt-3" />
         </>

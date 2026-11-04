@@ -39,7 +39,7 @@ const topics = [
   { label: "Order status", value: "order-status" },
   { label: "Change or cancel an order", value: "change-order" },
   { label: "Damaged or incorrect item", value: "item-problem" },
-  { label: "Return or refund", value: "return-refund" },
+  { label: "Refund question", value: "return-refund" },
   { label: "Product or sizing question", value: "product-question" },
   { label: "Something else", value: "other" },
 ];
@@ -48,7 +48,7 @@ const resolutions = [
   { label: "Information or an update", value: "information" },
   { label: "Change my order", value: "change" },
   { label: "Replacement item", value: "replacement" },
-  { label: "Return or refund help", value: "return-refund" },
+  { label: "A refund", value: "return-refund" },
   { label: "Not sure yet", value: "unsure" },
 ];
 

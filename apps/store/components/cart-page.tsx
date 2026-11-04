@@ -8,6 +8,7 @@ import { useCart } from "./cart-provider";
 import { CheckoutButton } from "./checkout-button";
 import { EmptyCartButton } from "./empty-cart-button";
 import { EmptyCartPrompt } from "./empty-cart-prompt";
+import { FinalSaleNote } from "./final-sale-note";
 
 export function CartPage() {
   const { cart, error, loading } = useCart();
@@ -33,7 +34,7 @@ export function CartPage() {
         <Card size="lg" className="h-fit xl:sticky xl:top-28">
           <Heading size="h2" className="text-2xl">Order summary</Heading>
           <div className="mt-6 flex justify-between border-b border-black/10 pb-5 dark:border-white/10"><Text>Subtotal</Text><strong>{formatMoney(cart.cost.subtotalAmount)}</strong></div>
-          <Text className="mt-4 text-sm">Shipping, discounts, and taxes are calculated securely at checkout.</Text>
+          <Text className="mt-4 text-sm">Shipping, discounts, and taxes are calculated securely at checkout. <FinalSaleNote /></Text>
           <CheckoutButton className="mt-6" />
         </Card>
       </div>

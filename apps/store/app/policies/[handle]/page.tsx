@@ -38,8 +38,9 @@ export default async function PolicyPage({ params }: Props) {
         <Breadcrumbs variant="compact" crumbs={[{ href: "/", title: "Store", icon: <StoreHomeIcon aria-hidden className="shrink-0" /> }, { href: `/policies/${policy.handle}`, title: policy.title, current: true, icon: <FiFileText aria-hidden className="shrink-0" /> }]} />
         <article className="mt-8 space-y-8">
           <Heading size="h1" className="text-4xl leading-[1.05] sm:text-5xl">{policy.title}</Heading>
-          {/* Written in Shopify Admin → Settings → Policies and supplied by the Storefront API. */}
-          <div className="rich-text" dangerouslySetInnerHTML={{ __html: policy.body }} />
+          {/* Written in Shopify Admin → Settings → Policies and supplied by the Storefront API.
+              Links to the store itself become relative, so they stay on previews and local runs. */}
+          <div className="rich-text" dangerouslySetInnerHTML={{ __html: policy.body.replace(/href="https:\/\/store\.ryanmeetup\.com(?=\/)/g, 'href="') }} />
         </article>
         {otherPolicies.length > 0 && (
           <nav aria-label="Other policies" className="mt-12 space-y-3 border-t border-black/10 pt-8 dark:border-white/10">

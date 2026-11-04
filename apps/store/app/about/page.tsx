@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Button, Card, Heading, Kicker, Pill, Text } from "@ryanmeetup/ui";
 import type { IconType } from "react-icons";
 import { FiArrowRight, FiGlobe, FiHeart, FiPenTool, FiTruck, FiUsers, FiXCircle } from "react-icons/fi";
+import { getPolicies } from "@/lib/shopify";
 
 export const metadata: Metadata = {
   title: "About the store",
@@ -46,7 +47,17 @@ function SectionTitle({ id, children }: { id: (typeof sections)[number]["id"]; c
   );
 }
 
-export default function AboutPage() {
+// The fine print points at the full policy only when it's written in Shopify Admin.
+async function getPolicyHandles() {
+  const policies = await getPolicies().catch((error: unknown) => {
+    console.error("Could not load policies for the About page.", error);
+    return [];
+  });
+  return new Set(policies.map(({ handle }) => handle));
+}
+
+export default async function AboutPage() {
+  const policyHandles = await getPolicyHandles();
   return (
     <main className="store-container py-8 sm:py-12 lg:py-16">
       <div className="grid gap-12 xl:grid-cols-[20rem_minmax(0,1fr)] xl:gap-16">
@@ -98,10 +109,20 @@ export default function AboutPage() {
             <SectionTitle id="shipping">The fine print.</SectionTitle>
             <Text className="max-w-3xl">
               We ship to most of the world. Shipping options and costs for your address appear at checkout, and tracking details arrive by email once your order is on its way.
+              {policyHandles.has("shipping-policy") && (
+                <>
+                  {" "}Production times, customs, and the rest are in our <Link href="/policies/shipping-policy" className={linkClassName}>shipping policy</Link>.
+                </>
+              )}
             </Text>
             <Text className="max-w-3xl">
-              We can’t accept returns. If something about your order looks wrong,{" "}
-              <Link href="/contact" className={linkClassName}>contact store support</Link> and we’ll take a look.
+              <strong className="font-semibold text-black dark:text-white">All sales are final.</strong> We can’t accept returns or exchanges: orders ship from our fulfillment partner, and we have nowhere to receive a return or swap it from. If something arrives damaged, defective, or not what you ordered,{" "}
+              <Link href="/contact" className={linkClassName}>contact store support</Link> and we’ll make it right.
+              {policyHandles.has("refund-policy") && (
+                <>
+                  {" "}The details are in our <Link href="/policies/refund-policy" className={linkClassName}>return and refund policy</Link>.
+                </>
+              )}
             </Text>
           </section>
         </article>
