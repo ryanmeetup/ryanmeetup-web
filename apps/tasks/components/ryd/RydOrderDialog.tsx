@@ -96,6 +96,7 @@ export function RydOrderDialog({
   const [note, setNote] = useState(order.note ?? "");
   const [card, setCard] = useState<RydCard>(order.card);
   const [pending, setPending] = useState<string | null>(null);
+  const [cardUnlocked, setCardUnlocked] = useState(false);
   const [linkChoice, setLinkChoice] = useState("");
   const [emailOpen, setEmailOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -175,10 +176,12 @@ export function RydOrderDialog({
   async function saveCard() {
     await run(
       "card",
-      () => saveRydCard(order, card),
-      order.status === "verified"
-        ? "Card saved. That's what fulfillment will print."
-        : "Card saved.",
+      () => saveRydCard(order, card, cardUnlocked),
+      cardUnlocked
+        ? "Card saved. It's still sent to fulfillment, so send them the updated cards CSV."
+        : order.status === "verified"
+          ? "Card saved. That's what fulfillment will print."
+          : "Card saved.",
     );
   }
 
@@ -192,6 +195,8 @@ export function RydOrderDialog({
   // Fulfillment was told, or it's being made: the decision is settled. The
   // routes refuse a change; the buttons just don't offer one.
   const locked = rydDecisionLocked(order);
+  // Unlocking frees only the card, and only until the order is done.
+  const cardLocked = locked && !cardUnlocked;
   const name =
     `${order.firstName} ${order.lastName}`.trim() || order.displayEmail;
 
@@ -285,7 +290,7 @@ export function RydOrderDialog({
                 </RydReviewAction>
               ),
             )}
-          {!locked && order.status !== "rejected" && cardChanged && (
+          {!cardLocked && order.status !== "rejected" && cardChanged && (
             <RydReviewAction
               tooltip={
                 busy
@@ -333,7 +338,8 @@ export function RydOrderDialog({
           card={card}
           note={note}
           busy={busy}
-          locked={locked}
+          locked={cardLocked}
+          onUnlockCard={order.doneAt ? undefined : () => setCardUnlocked(true)}
           onCardChange={setCard}
           onNoteChange={setNote}
         />

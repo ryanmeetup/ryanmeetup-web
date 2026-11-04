@@ -113,12 +113,17 @@ describe("card locations", () => {
     expect(rydCardLocation(typed)).toBe(location);
   });
 
-  it.each(["Chicago", "Minnesota", "Jersey", "Columbus", "Kansas City", "New York", ""])(
-    "leaves %j as typed when it has no city and state",
-    (typed) => {
-      expect(rydCardLocation(typed)).toBe(typed);
-    },
-  );
+  it.each([
+    "Chicago",
+    "Minnesota",
+    "Jersey",
+    "Columbus",
+    "Kansas City",
+    "New York",
+    "",
+  ])("leaves %j as typed when it has no city and state", (typed) => {
+    expect(rydCardLocation(typed)).toBe(typed);
+  });
 });
 
 describe("card completeness", () => {
@@ -177,6 +182,14 @@ describe("card decisions", () => {
       status: "verified",
       card: { firstName: "Ryan" },
     });
+  });
+
+  it("accepts an unlock only as a boolean alongside a card", () => {
+    expect(rydDecisionSchema({ card, unlockCard: true })).toMatchObject({
+      unlockCard: true,
+    });
+    expect(rydDecisionSchema({ note: "x", unlockCard: true })).toBeNull();
+    expect(rydDecisionSchema({ card, unlockCard: "yes" })).toBeNull();
   });
 
   it("refuses a partial card, a long line, or a year that isn't four digits", () => {

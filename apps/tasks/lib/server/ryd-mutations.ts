@@ -143,6 +143,7 @@ export async function reviewRydOrder(
     expectedStatus?: string;
     expectedUpdatedAt?: string;
     card?: RydCard;
+    unlockCard?: boolean;
   },
   keys: string[],
 ) {

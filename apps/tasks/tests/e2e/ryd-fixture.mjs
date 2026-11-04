@@ -135,6 +135,15 @@ export function createRydFixture(json, readBody, profile) {
     if (keys.some((key) => state.links.some((link) => link.submission_key === key && link.order_id !== orderId)))
       return refuse("RY409", "That response is already linked to an order.");
     const card = patch.card;
+    // As the database does: a sent card changes only when unlocked, a done
+    // card never.
+    const cardChanged = card && (card.firstName !== order.card_first_name ||
+      card.lastName !== order.card_last_name || card.location !== order.card_location ||
+      card.ryanSince !== order.card_ryan_since);
+    if (cardChanged && order.done_at)
+      return refuse("RY409", "This order is done. Its card cannot be changed.");
+    if (cardChanged && !patch.unlockCard && (order.cleared_batch_id || order.production_sent_at))
+      return refuse("RY409", "This card has already gone to fulfillment. Unlock it to change it.");
     const next = {
       ...order,
       ...(card ? { card_first_name: card.firstName, card_last_name: card.lastName,

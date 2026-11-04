@@ -62,6 +62,7 @@ export function rydDecisionSchema(value: unknown) {
           "status",
           "note",
           "card",
+          "unlockCard",
           "expectedStatus",
           "expectedUpdatedAt",
           "submissionKeys",
@@ -76,6 +77,8 @@ export function rydDecisionSchema(value: unknown) {
     expectedUpdatedAt?: string;
     submissionKeys?: string[];
     card?: RydCard;
+    /** Change a card that has gone to fulfillment, on purpose. */
+    unlockCard?: boolean;
   } = {};
   if ("expectedStatus" in value) {
     if (!RYD_ORDER_STATUSES.includes(value.expectedStatus as RydOrderStatus))
@@ -120,6 +123,10 @@ export function rydDecisionSchema(value: unknown) {
     if (!card) return null;
     parsed.card = card;
   }
+  if ("unlockCard" in value) {
+    if (typeof value.unlockCard !== "boolean" || !parsed.card) return null;
+    parsed.unlockCard = value.unlockCard;
+  }
   return parsed;
 }
 
@@ -148,6 +155,8 @@ export function rydBulkDecisionSchema(value: unknown) {
       !patch?.status ||
       !patch.expectedStatus ||
       "note" in patch ||
+      // Unlocking is one order at a time, from its review.
+      "unlockCard" in patch ||
       (patch.status === "verified" && !patch.card) ||
       (patch.status !== "verified" && "card" in patch)
     )

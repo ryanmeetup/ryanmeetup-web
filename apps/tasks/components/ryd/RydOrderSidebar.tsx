@@ -38,7 +38,10 @@ function ReviewSection({
       summary={
         <span className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em]">
           <span className="shrink-0">{title}</span>
-          <span aria-hidden className="h-px flex-1 bg-black/10 dark:bg-white/10" />
+          <span
+            aria-hidden
+            className="h-px flex-1 bg-black/10 dark:bg-white/10"
+          />
         </span>
       }
     >
@@ -74,6 +77,7 @@ export function RydOrderSidebar({
   note,
   busy,
   locked,
+  onUnlockCard,
   onCardChange,
   onNoteChange,
 }: {
@@ -82,6 +86,7 @@ export function RydOrderSidebar({
   note: string;
   busy: boolean;
   locked: boolean;
+  onUnlockCard?: () => void;
   onCardChange: (card: RydCard) => void;
   onNoteChange: (note: string) => void;
 }) {
@@ -136,6 +141,7 @@ export function RydOrderSidebar({
             saved={order.cardSaved}
             disabled={busy}
             locked={locked}
+            onUnlock={onUnlockCard}
             onChange={onCardChange}
           />
         </ReviewSection>

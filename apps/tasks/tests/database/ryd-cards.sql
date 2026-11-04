@@ -65,8 +65,25 @@ select lives_ok($$select pg_temp.review('card-1', '{"card":{"firstName":"Ryan","
   'a verified card can be corrected before it goes to fulfillment');
 
 select throws_ok($$select pg_temp.review('card-sent', '{"card":{"firstName":"Ryan","lastName":"Le","location":"Queens","ryanSince":"1999"}}')$$,
-  'RY409', 'This card has already gone to fulfillment. It cannot be changed.',
-  'a card already with fulfillment is frozen');
+  'RY409', 'This card has already gone to fulfillment. Unlock it to change it.',
+  'a card already with fulfillment is frozen unless unlocked');
+select throws_ok($$select pg_temp.review('card-sent', '{"unlockCard":true}')$$,
+  'RY400', null, 'unlocking needs a card');
+select throws_ok($$select pg_temp.review('card-sent', '{"unlockCard":"yes","card":{"firstName":"Ryan","lastName":"Le","location":"Queens","ryanSince":"1999"}}')$$,
+  'RY400', null, 'unlocking is a boolean');
+select throws_ok($$select pg_temp.review('card-sent', '{"unlockCard":true,"card":{"firstName":"Ryan","lastName":"Le","location":"","ryanSince":"1999"}}')$$,
+  'RY400', null, 'an unlocked verified card still needs every line');
+select lives_ok($$select pg_temp.review('card-sent', '{"unlockCard":true,"card":{"firstName":"Ryan","lastName":"Le","location":"Queens, NY","ryanSince":"1999"}}')$$,
+  'an unlocked sent card can be corrected');
+select ok((select card_location = 'Queens, NY' and status = 'verified' and production_sent_at is not null
+  from public.ryd_orders where order_id = 'card-sent'), 'the correction keeps the stage and send date');
+select ok((select (detail->>'unlocked')::boolean from public.ryd_order_events
+  where order_id = 'card-sent' and action = 'card'), 'the audit records the unlock');
+select throws_ok($$select pg_temp.review('card-sent', '{"unlockCard":true,"status":"pending","card":{"firstName":"Ryan","lastName":"Le","location":"Queens, NY","ryanSince":"1999"}}')$$,
+  'RY409', null, 'unlocking the card never unlocks the decision');
+update public.ryd_orders set done_at = now() where order_id = 'card-sent';
+select throws_ok($$select pg_temp.review('card-sent', '{"unlockCard":true,"card":{"firstName":"Ryan","lastName":"Le","location":"Bronx, NY","ryanSince":"1999"}}')$$,
+  'RY409', 'This order is done. Its card cannot be changed.', 'a done card never changes');
 select lives_ok($$select pg_temp.review('card-2', '{"status":"rejected"}')$$, 'cancels an order');
 select throws_ok($$select pg_temp.review('card-2', '{"card":{"firstName":"Ryan","lastName":"Le","location":"Queens","ryanSince":"1999"}}')$$,
   'RY409', 'A cancelled order has no card to change.', 'a cancelled order has no card');

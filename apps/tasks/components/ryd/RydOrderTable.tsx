@@ -290,7 +290,7 @@ export function RydOrderTable({
               const cardProblems = rydCardGaps(order);
               // Sent cards are read-only until the order moves back.
               const cardWarning = cardProblems.length
-                ? `Card needs ${cardProblems.join(", ")}, so it's left out of card CSVs.${rydDecisionLocked(order) ? " Move it back to Ready to send to finish the card." : " Open the review to finish it."}`
+                ? `Card needs ${cardProblems.join(", ")}, so it's left out of card CSVs.${rydDecisionLocked(order) ? " Open the review and unlock the card to finish it." : " Open the review to finish it."}`
                 : null;
               return (
                 <tr

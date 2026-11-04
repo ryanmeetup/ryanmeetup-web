@@ -29,7 +29,13 @@ export async function decideRydOrder(
   card: RydCard = order.card,
 ): Promise<RydQueueChange> {
   const base = `/api/ryd/orders/${encodeURIComponent(order.orderId)}`;
-  const { linkedKeys, body } = decisionInput(order, submissions, status, note, card);
+  const { linkedKeys, body } = decisionInput(
+    order,
+    submissions,
+    status,
+    note,
+    card,
+  );
   const result = await mutate<RydReviewResult>(base, {
     method: "PATCH",
     body: JSON.stringify(body),
@@ -118,12 +124,18 @@ export async function saveRydNote(
 export async function saveRydCard(
   order: RydQueueOrder,
   card: RydCard,
+  /** The reviewer unlocked a card that has gone to fulfillment. */
+  unlockCard = false,
 ): Promise<RydQueueChange> {
   const result = await mutate<RydReviewResult>(
     `/api/ryd/orders/${encodeURIComponent(order.orderId)}`,
     {
       method: "PATCH",
-      body: JSON.stringify({ card, expectedUpdatedAt: order.updatedAt }),
+      body: JSON.stringify({
+        card,
+        expectedUpdatedAt: order.updatedAt,
+        ...(unlockCard ? { unlockCard: true } : {}),
+      }),
     },
   );
   return { type: "review", result, linkedKeys: [] };
