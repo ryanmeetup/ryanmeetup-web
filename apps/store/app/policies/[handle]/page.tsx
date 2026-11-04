@@ -32,29 +32,33 @@ export default async function PolicyPage({ params }: Props) {
   const otherPolicies = policies.filter((item) => item.handle !== policy.handle);
   return (
     <main className="store-container py-10 sm:py-14">
-      <Breadcrumbs variant="compact" crumbs={[{ href: "/", title: "Store", icon: <StoreHomeIcon aria-hidden className="shrink-0" /> }, { href: `/policies/${policy.handle}`, title: policy.title, current: true, icon: <FiFileText aria-hidden className="shrink-0" /> }]} />
-      <article className="mt-8 max-w-3xl space-y-8">
-        <Heading size="h1" className="text-4xl leading-[1.05] sm:text-5xl">{policy.title}</Heading>
-        {/* Written in Shopify Admin → Settings → Policies and supplied by the Storefront API. */}
-        <div className="rich-text" dangerouslySetInnerHTML={{ __html: policy.body }} />
-      </article>
-      {otherPolicies.length > 0 && (
-        <nav aria-label="Other policies" className="mt-12 max-w-3xl space-y-3 border-t border-black/10 pt-8 dark:border-white/10">
-          <Kicker>Other policies</Kicker>
-          <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-            {otherPolicies.map((item) => (
-              <li key={item.handle}>
-                <Link
-                  href={`/policies/${item.handle}`}
-                  className="rounded-sm font-semibold underline decoration-black/30 underline-offset-4 transition hover:decoration-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:decoration-white/30 dark:hover:decoration-white dark:focus-visible:ring-white/40"
-                >
-                  {item.title}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      )}
+      {/* One centred reading column: legal copy keeps a readable measure
+          without hugging the left edge of the wide store container. */}
+      <div className="mx-auto max-w-3xl">
+        <Breadcrumbs variant="compact" crumbs={[{ href: "/", title: "Store", icon: <StoreHomeIcon aria-hidden className="shrink-0" /> }, { href: `/policies/${policy.handle}`, title: policy.title, current: true, icon: <FiFileText aria-hidden className="shrink-0" /> }]} />
+        <article className="mt-8 space-y-8">
+          <Heading size="h1" className="text-4xl leading-[1.05] sm:text-5xl">{policy.title}</Heading>
+          {/* Written in Shopify Admin → Settings → Policies and supplied by the Storefront API. */}
+          <div className="rich-text" dangerouslySetInnerHTML={{ __html: policy.body }} />
+        </article>
+        {otherPolicies.length > 0 && (
+          <nav aria-label="Other policies" className="mt-12 space-y-3 border-t border-black/10 pt-8 dark:border-white/10">
+            <Kicker>Other policies</Kicker>
+            <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+              {otherPolicies.map((item) => (
+                <li key={item.handle}>
+                  <Link
+                    href={`/policies/${item.handle}`}
+                    className="rounded-sm font-semibold underline decoration-black/30 underline-offset-4 transition hover:decoration-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:decoration-white/30 dark:hover:decoration-white dark:focus-visible:ring-white/40"
+                  >
+                    {item.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )}
+      </div>
     </main>
   );
 }
