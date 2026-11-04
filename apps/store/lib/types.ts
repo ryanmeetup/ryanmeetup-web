@@ -20,6 +20,8 @@ export type ProductVariant = {
   id: string;
   image: StoreImage | null;
   price: Money;
+  /** Set in Shopify to mark a markdown; only a value above `price` counts as a sale. */
+  compareAtPrice?: Money | null;
   selectedOptions: SelectedOption[];
   title: string;
 };

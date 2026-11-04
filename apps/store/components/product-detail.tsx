@@ -5,7 +5,7 @@ import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Button, DropdownSelect, ErrorCallout, IconButton, Kicker, getFieldLabelClasses } from "@ryanmeetup/ui";
 import { FiCheck, FiCheckCircle, FiChevronLeft, FiChevronRight, FiPackage, FiShield, FiShoppingBag } from "react-icons/fi";
-import { formatMoney } from "@/lib/money";
+import { formatMoney, getCompareAtPrice, getListingSale } from "@/lib/money";
 import { findVariant, getOptionChoices, getSelections, isDefaultTitleOption, isSizeOption, oneSize } from "@/lib/product-options";
 import { getColorOption, getColorSlug, getVariantForColor } from "@/lib/product-colors";
 import { getProductGallery, getVariantForImage, groupProductGallery } from "@/lib/product-gallery";
@@ -13,6 +13,7 @@ import type { ProductGalleryImage } from "@/lib/product-gallery";
 import type { Product, StoreImage } from "@/lib/types";
 import { useCart } from "./cart-provider";
 import { ProductDescription } from "./product-description";
+import { SaleBadge } from "./sale-badge";
 
 export function ProductDetail({ product, title = product.title, breadcrumbs, designField, hideColorOption = false, gallery, initialImage, initialColor, onSelectGalleryImage }: {
   product: Product;
@@ -47,6 +48,8 @@ export function ProductDetail({ product, title = product.title, breadcrumbs, des
   const hasMultipleImages = galleryImages.length > 1;
   const activeImageIndex = Math.max(0, galleryImages.findIndex((entry) => entry.productId === product.id && entry.image.url === activeImage?.url));
   const variant = findVariant(product, selections);
+  // Until a size is chosen, the struck price belongs to the lowest price shown.
+  const compareAtPrice = variant ? getCompareAtPrice(variant) : getListingSale(product).compareAt;
 
   function rememberColor(color: string) {
     const url = new URL(window.location.href);
@@ -202,7 +205,15 @@ export function ProductDetail({ product, title = product.title, breadcrumbs, des
       </div>
       <div className="min-w-0">
         <h1 className="font-cooper text-4xl leading-[1.05] tracking-wide text-black dark:text-white sm:text-5xl">{title}</h1>
-        <p className="mt-5 text-3xl font-bold tabular-nums text-black dark:text-white sm:text-4xl" aria-live="polite">{variant ? formatMoney(variant.price) : formatMoney(product.priceRange.minVariantPrice)}</p>
+        <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2" aria-live="polite">
+          <p className="text-3xl font-bold tabular-nums text-black dark:text-white sm:text-4xl">{formatMoney(variant ? variant.price : product.priceRange.minVariantPrice)}</p>
+          {compareAtPrice && (
+            <>
+              <s className="text-lg font-semibold tabular-nums text-black/70 dark:text-white/70 sm:text-xl"><span className="sr-only">Originally </span>{formatMoney(compareAtPrice)}</s>
+              <SaleBadge />
+            </>
+          )}
+        </div>
         <ProductDescription description={product.description} descriptionHtml={product.descriptionHtml} part="intro" />
         {designField && <div className="mt-8">{designField({ selections, selectOption })}</div>}
 

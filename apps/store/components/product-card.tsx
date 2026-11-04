@@ -4,11 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { Card, Tooltip } from "@ryanmeetup/ui";
-import { formatMoney } from "@/lib/money";
+import { formatMoney, getListingSale } from "@/lib/money";
 import { getListingColorPreviews } from "@/lib/product-colors";
 import { withProductOrigin } from "@/lib/product-origin";
 import type { ProductListing } from "@/lib/types";
 import { QuickAdd } from "./quick-add";
+import { SaleBadge } from "./sale-badge";
 
 const visibleSwatches = 5;
 
@@ -21,6 +22,7 @@ export function ProductCard({ product, eager = false, from }: { product: Product
   const image = color?.image ?? product.featuredImage;
   const href = product.externalUrl ?? withProductOrigin(color?.href ?? `/products/${product.handle}`, from);
   const hiddenColors = colors.length - swatches.length;
+  const sale = getListingSale(product);
 
   return (
     <Card size="none" hover className="relative flex h-full flex-col overflow-hidden bg-white/65 dark:bg-white/5">
@@ -39,10 +41,11 @@ export function ProductCard({ product, eager = false, from }: { product: Product
           ) : (
             <div className="grid h-full place-items-center font-cooper text-5xl text-black/10 dark:text-white/10">R</div>
           )}
-          {!product.availableForSale && <span className="absolute left-3 top-3 rounded-full bg-black px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white">Sold out</span>}
+          {product.availableForSale ? sale.onSale && <SaleBadge className="absolute left-3 top-3" /> : <span className="absolute left-3 top-3 rounded-full bg-black px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white">Sold out</span>}
           <p className="absolute bottom-3 left-3 rounded-full bg-price px-3 py-1 text-sm font-bold tabular-nums text-white shadow-sm sm:text-base">
             {product.priceVaries && <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/85">From </span>}
             {formatMoney(product.priceRange.minVariantPrice)}
+            {sale.compareAt && <s className="ml-1.5 text-xs font-semibold sm:text-sm"><span className="sr-only">, originally </span>{formatMoney(sale.compareAt)}</s>}
           </p>
         </div>
         <div className="p-4 sm:p-5">

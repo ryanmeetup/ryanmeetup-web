@@ -13,6 +13,7 @@ const makeProduct = (input: {
   title: string;
   description: string;
   price: string;
+  compareAtPrice?: string;
   imageUrl: string;
   color: string;
   type: string;
@@ -42,6 +43,7 @@ const makeProduct = (input: {
       availableForSale: size !== "2XL" || input.handle !== "ryan-meetup-tee",
       image: productImage,
       price: { amount: input.price, currencyCode: "USD" },
+      compareAtPrice: input.compareAtPrice ? { amount: input.compareAtPrice, currencyCode: "USD" } : null,
       selectedOptions: [
         { name: "Size", value: size },
         { name: "Color", value: input.color },
@@ -74,6 +76,8 @@ export const demoProducts: Product[] = [
     title: "Ryan Society Cap",
     description: "A low-profile cap for high-profile Ryans and their approved non-Ryan guests.",
     price: "26.00",
+    // Marked down so preview mode shows how a sale looks.
+    compareAtPrice: "32.00",
     imageUrl: "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&w=1200&q=85",
     color: "Navy",
     type: "Accessory",

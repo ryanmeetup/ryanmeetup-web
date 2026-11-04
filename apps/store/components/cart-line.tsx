@@ -4,18 +4,21 @@ import Image from "next/image";
 import Link from "next/link";
 import { Card, Pill } from "@ryanmeetup/ui";
 import { FiCheck, FiMinus, FiPlus, FiTrash2 } from "react-icons/fi";
-import { formatMoney } from "@/lib/money";
+import { formatMoney, getCompareAtPrice } from "@/lib/money";
 import { getCartLineDisplay, getProductHref } from "@/lib/product-groups";
 import { isDefaultTitleOption, withOneSize } from "@/lib/product-options";
 import { withProductOrigin } from "@/lib/product-origin";
-import type { CartLine } from "@/lib/types";
+import type { CartLine, Money } from "@/lib/types";
 import { useCart } from "./cart-provider";
+import { SaleBadge } from "./sale-badge";
 
 /** One cart line with its quantity controls, shared by the cart page and drawer. */
 export function CartLineItem({ line, compact = false, highlighted = false, from }: { line: CartLine; compact?: boolean; highlighted?: boolean; from?: string }) {
   const { loading, removeItem, updateItem } = useCart();
   const { title, options } = getCartLineDisplay(line.merchandise.product, withOneSize(line.merchandise.selectedOptions.filter((option) => !isDefaultTitleOption(option))));
   const href = withProductOrigin(getProductHref(line.merchandise.product), from);
+  const compareAtPrice = getCompareAtPrice(line.merchandise);
+  const lineTotal = (money: Money) => formatMoney({ ...money, amount: (Number(money.amount) * line.quantity).toFixed(2) });
 
   return (
     <Card className={`flex gap-4 ${compact ? "" : "sm:gap-6"} ${highlighted ? "ring-2 ring-emerald-500/70 dark:ring-emerald-400/70" : ""}`} size="sm">
@@ -30,7 +33,9 @@ export function CartLineItem({ line, compact = false, highlighted = false, from 
             {options.length > 0 && <p className="mt-1 text-xs text-black/70 dark:text-white/70">{options.map((option) => `${option.name}: ${option.value}`).join(" · ")}</p>}
           </div>
           <div className="shrink-0 text-right">
-            <span className="block text-sm font-semibold">{formatMoney({ ...line.merchandise.price, amount: (Number(line.merchandise.price.amount) * line.quantity).toFixed(2) })}</span>
+            {compareAtPrice && <SaleBadge className="mb-1.5" />}
+            <span className="block text-sm font-semibold">{lineTotal(line.merchandise.price)}</span>
+            {compareAtPrice && <s className="mt-0.5 block text-xs text-black/70 dark:text-white/70"><span className="sr-only">Originally </span>{lineTotal(compareAtPrice)}</s>}
             {line.quantity > 1 && <span className="mt-1 block text-xs text-black/70 dark:text-white/70">{formatMoney(line.merchandise.price)} each</span>}
           </div>
         </div>

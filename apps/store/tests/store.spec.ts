@@ -85,6 +85,23 @@ test("the cart drawer can be emptied without closing it", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Cart with 0 items" })).toBeAttached();
 });
 
+test("a markdown shows on the card, the product page, and the cart line", async ({ page }) => {
+  await page.goto("/collections/accessories");
+  const card = page.getByRole("link", { name: /Ryan Society Cap/ });
+  await expect(card).toContainText("Sale");
+  await expect(card).toContainText("$26.00, originally $32.00");
+
+  await card.click();
+  const main = page.getByRole("main");
+  await expect(main.getByText("Originally $32.00")).toBeVisible();
+  await expect(main.getByText("Sale", { exact: true })).toBeVisible();
+
+  await main.getByRole("button", { name: "Add to cart" }).click();
+  const drawer = page.getByRole("dialog", { name: /^Added to cart/ });
+  await expect(drawer.getByText("Originally $32.00")).toBeVisible();
+  await expect(drawer.getByText("Sale", { exact: true })).toBeVisible();
+});
+
 // Adding to the cart opens the drawer over the page; close it before going on.
 async function keepShopping(page: Page) {
   await page.getByRole("button", { name: "Keep shopping" }).click();

@@ -27,13 +27,16 @@ Last reviewed: 2026-11-04.
   linked from the footer and listed in the sitemap.
 - **Your orders** links to Shopify's customer account (order status and
   tracking) in the header, mobile menu, thank-you page, and Contact hints.
+- Sale prices: a compare-at price above the price in Shopify adds a **Sale**
+  label and the struck-through original on cards, the product page, and cart
+  lines.
 
 ## Status
 
 | # | Item | Priority | Status |
 | --- | --- | --- | --- |
+| 2026-11-04 | 5 | Variants read `compareAtPrice`; a value above the price shows a **Sale** label and the struck-through original on cards (beside the lowest price), the product page, and cart lines. Sale state is worked out from the variants, so grouped listings need no `compareAtPriceRange`. The demo cap is marked down to show it in preview mode. | — |
 | 4 | [Launch switches and Shopify Admin setup](#4-launch-switches-and-shopify-admin-setup) | Blocker | Not started |
-| 5 | [Sale prices](#5-sale-prices) | Etsy parity | Not started |
 | 6 | [Product search](#6-product-search) | Etsy parity | Not started |
 | 7 | [Sorting](#7-sorting) | Etsy parity | Not started |
 | 8 | [Note to seller and personalization](#8-note-to-seller-and-personalization) | Etsy parity | Not started |
@@ -86,22 +89,6 @@ Shopify Admin and environment (no code):
 Printful, and confirmed by email.
 
 ## Etsy parity
-
-### 5. Sale prices
-
-- [ ] Done
-
-**Problem.** The store never requests `compareAtPrice`, so a markdown in Shopify
-shows no struck-through original price or sale badge.
-
-**Approach.** Add `compareAtPrice` to the variant fields and
-`priceRange`/`compareAtPriceRange` to products in
-[lib/shopify.ts](../lib/shopify.ts) and [lib/types.ts](../lib/types.ts); show the
-original price and a sale label on cards, the product page, and cart lines. Do not
-rely on color alone for the sale state.
-
-**Done when.** Setting a compare-at price in Shopify shows the sale on the card,
-product page, and cart.
 
 ### 6. Product search
 

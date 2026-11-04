@@ -44,6 +44,7 @@ const imageFields = "url altText width height";
 const variantFields = `
   id title availableForSale
   price { amount currencyCode }
+  compareAtPrice { amount currencyCode }
   image { ${imageFields} }
   selectedOptions { name value }
 `;
@@ -89,6 +90,7 @@ const cartFragment = `
               title
               availableForSale
               price { amount currencyCode }
+              compareAtPrice { amount currencyCode }
               image { url altText width height }
               selectedOptions { name value }
               product { handle title tags }
