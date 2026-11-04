@@ -1,5 +1,18 @@
 import { test, expect } from "@playwright/test";
 
+test("missing pages offer a way back to meetups", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("bryanCheck", "true"));
+  const response = await page.goto("/missing-ryan-page");
+  expect(response?.status()).toBe(404);
+  const main = page.getByRole("main");
+  await expect(main.getByRole("heading", { level: 1 })).toHaveText("Wrong turn.Right Ryans.");
+  await expect(main.getByRole("link", { name: "Meetup home", exact: true })).toHaveAttribute("href", "/");
+  await expect(main.getByRole("link", { name: "Contact Ryan Meetup", exact: true })).toHaveAttribute("href", "/contact");
+  await main.getByRole("link", { name: "Find a meetup", exact: true }).click();
+  await expect(page).toHaveURL(/\/events$/);
+  await expect(page.getByRole("heading", { name: /Wrong turn\.\s*Right Ryans\./ })).toHaveCount(0);
+});
+
 const contentRoutes = [
   { path: "/" },
   { path: "/about" },
