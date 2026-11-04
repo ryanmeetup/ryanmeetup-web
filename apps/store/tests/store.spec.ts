@@ -99,11 +99,13 @@ test("a markdown shows on the card, the product page, and the cart line", async 
   await page.goto("/collections/accessories");
   const card = page.getByRole("link", { name: /Ryan Society Cap/ });
   await expect(card).toContainText("Sale");
-  await expect(card).toContainText("$26.00, originally $32.00");
+  await expect(card.locator("..").locator("p.bg-price")).toContainText("$26.00 USD, originally $32.00");
 
   await card.click();
   const main = page.getByRole("main");
-  await expect(main.getByText("Originally $32.00")).toBeVisible();
+  const price = main.locator('[aria-live="polite"] > p');
+  await expect(price).toContainText("$26.00 USD, originally $32.00");
+  await expect(price.locator("s")).toHaveText(", originally $32.00");
   await expect(main.getByText("Sale", { exact: true })).toBeVisible();
 
   await main.getByRole("button", { name: "Add to cart" }).click();
@@ -177,7 +179,7 @@ test("name tag designs share one listing and add their own merchandise to the ca
   const listing = page.locator('main a[href="/products/name-tag-shirt?from=all"]');
   await expect(listing).toHaveCount(1);
   await expect(listing).toContainText("Name Tag Shirt");
-  await expect(listing).toContainText("From $12.00");
+  await expect(listing.locator("..").locator("p.bg-price")).toContainText("From $12.00");
   await expect(page.locator('main a[href^="/products/ryan-name-tag-shirt"], main a[href^="/products/ryans-mom-name-tag-shirt"]')).toHaveCount(0);
   await listing.click();
   await expect(page.getByRole("heading", { name: "Name Tag Shirt", exact: true })).toBeVisible();

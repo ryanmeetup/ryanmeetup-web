@@ -4,6 +4,7 @@ import { Banner, RyanMeetupFooter, ToastHost } from "@ryanmeetup/ui";
 import { ThemeProvider } from "next-themes";
 import { CartDrawer } from "@/components/cart-drawer";
 import { CartProvider } from "@/components/cart-provider";
+import { CurrencyProvider } from "@/components/currency-provider";
 import { Header } from "@/components/header";
 import { NavSectionProvider } from "@/components/nav-section";
 import { getCollections, getCustomerAccountUrl, getPolicies, isShopifyConfigured } from "@/lib/shopify";
@@ -74,10 +75,12 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
                 {!commerceConfigured && " Shopify isn't connected, so checkout is off."}
               </span>
             </Banner>
-            <NavSectionProvider>
-              <Header collections={collections} accountUrl={accountUrl} />
-              {children}
-            </NavSectionProvider>
+            <CurrencyProvider>
+              <NavSectionProvider>
+                <Header collections={collections} accountUrl={accountUrl} />
+                {children}
+              </NavSectionProvider>
+            </CurrencyProvider>
             <RyanMeetupFooter
               homeHref="https://ryanmeetup.com"
               sections={policyLinks.length ? [{ title: "Policies", links: policyLinks }] : []}
