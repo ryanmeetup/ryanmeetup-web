@@ -51,6 +51,11 @@ export function isInCatalogCollection(collection: CatalogCollection, product: Pi
   return collection.productType === null || product.productType === collection.productType;
 }
 
+/** The typed catalog page a product belongs under, such as Apparel for a shirt. */
+export function getProductTypeCollection(product: Pick<Product, "productType">) {
+  return catalogCollections.find((collection) => collection.productType !== null && isInCatalogCollection(collection, product));
+}
+
 /** A collection's title as a section heading, so "I ❤️ RY" reads as "I ❤️ RY Collection". */
 export function collectionHeading(title: string) {
   return /\bcollection$/i.test(title.trim()) ? title : `${title} Collection`;

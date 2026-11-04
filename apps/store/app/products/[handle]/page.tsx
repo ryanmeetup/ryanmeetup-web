@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { Breadcrumbs, type Breadcrumb } from "@ryanmeetup/ui";
 import { FiShoppingBag } from "react-icons/fi";
+import { NavSection } from "@/components/nav-section";
 import { ProductDetail } from "@/components/product-detail";
 import { ProductGroupDetail } from "@/components/product-group-detail";
 import { Reviews } from "@/components/reviews";
+import { getProductTypeCollection } from "@/lib/catalog-collections";
 import { formatMoney } from "@/lib/money";
 import { getStoreCollectionIcon, StoreHomeIcon, StoreProductIcon } from "@/lib/navigation";
 import { decodeRouteHandle } from "@/lib/handles";
@@ -56,6 +58,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
   const reviewCount = Object.values(reviewsByProduct).reduce((count, reviews) => count + reviews.count, 0);
   const totalRating = Object.values(reviewsByProduct).reduce((total, reviews) => total + reviews.averageRating * reviews.count, 0);
   const originCrumb = await getOriginCrumb(query.from);
+  const typeCollection = getProductTypeCollection(product);
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://store.ryanmeetup.com";
   const productSchema = {
     "@context": "https://schema.org",
@@ -75,6 +78,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
   };
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+      <NavSection href={typeCollection ? `/collections/${typeCollection.handle}` : null} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema).replace(/</g, "\\u003c") }} />
       <Breadcrumbs variant="compact" crumbs={[{ href: "/", title: "Store", icon: <StoreHomeIcon aria-hidden className="shrink-0" /> }, ...(originCrumb ? [originCrumb] : []), { href: `/products/${product.handle}`, title: product.title, current: true, icon: <StoreProductIcon aria-hidden className="shrink-0" /> }]} />
       {product.designs ? (

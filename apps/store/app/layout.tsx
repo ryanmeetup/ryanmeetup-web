@@ -5,6 +5,7 @@ import { ThemeProvider } from "next-themes";
 import { CartDrawer } from "@/components/cart-drawer";
 import { CartProvider } from "@/components/cart-provider";
 import { Header } from "@/components/header";
+import { NavSectionProvider } from "@/components/nav-section";
 import { getCollections, isShopifyConfigured } from "@/lib/shopify";
 import "./globals.css";
 
@@ -56,8 +57,10 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
                 {!commerceConfigured && " Shopify isn't connected, so checkout is off."}
               </span>
             </Banner>
-            <Header collections={collections} />
-            {children}
+            <NavSectionProvider>
+              <Header collections={collections} />
+              {children}
+            </NavSectionProvider>
             <RyanMeetupFooter
               homeHref="https://ryanmeetup.com"
               className="store-container"

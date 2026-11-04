@@ -8,11 +8,15 @@ import { AnimatedCollapse, NavMenu, Wordmark } from "@ryanmeetup/ui";
 import { getCollectionMenuRoutes, storeNavigation } from "@/lib/navigation";
 import type { StoreMenuCollection } from "@/lib/navigation";
 import { useCart } from "./cart-provider";
+import { useNavSection } from "./nav-section";
 import { ThemeToggle } from "./theme-toggle";
 
 export function Header({ collections }: { collections: StoreMenuCollection[] }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const section = useNavSection();
+  // A product page sits under its type's link even though its path doesn't match it.
+  const isCurrent = (href: string) => pathname === href || section === href;
   const collectionRoutes = useMemo(() => getCollectionMenuRoutes(collections), [collections]);
   // Starts expanded on a page in the menu so the mobile menu shows where you are.
   const [collectionsOpen, setCollectionsOpen] = useState(() =>
@@ -51,8 +55,8 @@ export function Header({ collections }: { collections: StoreMenuCollection[] }) 
                 <Link
                   key={item.href}
                   href={item.href}
-                  aria-current={pathname === item.href ? "page" : undefined}
-                  className={`flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold tracking-wide transition hover:bg-black/5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:hover:bg-white/10 dark:focus-visible:ring-white/40 2xl:px-4 2xl:text-sm ${pathname === item.href ? "bg-black/15 shadow-sm ring-1 ring-black/10 dark:bg-white/25 dark:ring-white/20" : ""}`}
+                  aria-current={isCurrent(item.href) ? "page" : undefined}
+                  className={`flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold tracking-wide transition hover:bg-black/5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:hover:bg-white/10 dark:focus-visible:ring-white/40 2xl:px-4 2xl:text-sm ${isCurrent(item.href) ? "bg-black/15 shadow-sm ring-1 ring-black/10 dark:bg-white/25 dark:ring-white/20" : ""}`}
                 >
                   <Icon aria-hidden className="shrink-0" />
                   {label}
@@ -150,9 +154,9 @@ export function Header({ collections }: { collections: StoreMenuCollection[] }) 
               <Link
                 key={item.href}
                 href={item.href}
-                aria-current={pathname === item.href ? "page" : undefined}
+                aria-current={isCurrent(item.href) ? "page" : undefined}
                 onClick={() => setOpen(false)}
-                className={`grid grid-cols-[auto_1fr] items-start gap-3 rounded-xl border px-3 py-3 text-sm shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/40 ${pathname === item.href ? "border-black/30 bg-black/5 dark:border-white/40 dark:bg-white/10" : "border-black/10 bg-white/70 hover:border-black/20 hover:bg-black/5 dark:border-white/15 dark:bg-white/5 dark:hover:border-white/30 dark:hover:bg-white/10"}`}
+                className={`grid grid-cols-[auto_1fr] items-start gap-3 rounded-xl border px-3 py-3 text-sm shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/40 ${isCurrent(item.href) ? "border-black/30 bg-black/5 dark:border-white/40 dark:bg-white/10" : "border-black/10 bg-white/70 hover:border-black/20 hover:bg-black/5 dark:border-white/15 dark:bg-white/5 dark:hover:border-white/30 dark:hover:bg-white/10"}`}
               >
                 <Icon aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>
