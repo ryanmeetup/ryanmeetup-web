@@ -39,7 +39,7 @@ Last reviewed: 2026-11-04.
 
 | # | Item | Priority | Status |
 | --- | --- | --- | --- |
-| 4 | [Launch switches and Shopify Admin setup](#4-launch-switches-and-shopify-admin-setup) | Blocker | Not started |
+| 4 | [Launch switches and Shopify Admin setup](#4-launch-switches-and-shopify-admin-setup) | Blocker | In progress |
 | 8 | [Note to seller and personalization](#8-note-to-seller-and-personalization) | Etsy parity | Not started |
 | 9 | [Shipping cost and delivery estimates before checkout](#9-shipping-cost-and-delivery-estimates-before-checkout) | Etsy parity | Not started |
 | 10 | [Favorites](#10-favorites) | Etsy parity | Not started |
@@ -72,7 +72,7 @@ Shopify Admin and environment (no code):
 - [ ] Shipping rates match Printful's for every region on the About page.
 - [ ] Every published variant mapped to a Printful SKU.
 - [ ] Checkout return URL set to `https://store.ryanmeetup.com/thank-you`.
-- [ ] Checkout and customer accounts branded to match the store (Sidekick
+- [x] Checkout and customer accounts branded to match the store (Sidekick
       prompt and logo files in [SHOPIFY_HOSTED_PAGES.md](SHOPIFY_HOSTED_PAGES.md#3-brand-checkout-and-customer-accounts)).
 - [ ] Theme redirect pasted into `layout/theme.liquid` and
       `layout/password.liquid`, so the Shopify theme sends shoppers here
@@ -83,7 +83,7 @@ Shopify Admin and environment (no code):
 - [ ] Refund policy, shipping policy, and terms of service written in Settings →
       Policies. Only the privacy policy exists today; each one appears on the
       site as soon as it has text.
-- [ ] Privacy policy rewritten to match what the store actually does (no ads,
+- [x] Privacy policy rewritten to match what the store actually does (no ads,
       no data sales, Vercel Analytics, the services that receive data). The
       Shopify template it replaces describes accounts, wishlists, ad partners,
       and SMS marketing the store doesn't have.
