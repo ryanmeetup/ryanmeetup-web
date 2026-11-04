@@ -112,7 +112,6 @@ describe("RY-D routes", () => {
   const mutations = [
     ["batches", "POST", () => import("@/app/api/ryd/batches/route").then((route) => route.POST)],
     ["decisions", "POST", () => import("@/app/api/ryd/decisions/route").then((route) => route.POST)],
-    ["cards", "POST", () => import("@/app/api/ryd/cards/route").then((route) => route.POST)],
     ["dismissals", "POST", () => import("@/app/api/ryd/dismissals/route").then((route) => route.POST)],
     ["dismissals", "DELETE", () => import("@/app/api/ryd/dismissals/route").then((route) => route.DELETE)],
     ["production", "POST", () => import("@/app/api/ryd/production/route").then((route) => route.POST)],

@@ -60,7 +60,6 @@ function queue() {
     timeZone: "America/New_York",
     uploadDueSince: null,
     sheet: { status: "ok", accountEmail: "synthetic@example.com" },
-    cardBatches: [],
     olderDone: null,
   } as RydQueue);
 }

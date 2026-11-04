@@ -2,21 +2,13 @@ import { rydCardComplete } from "./card";
 import { serializeCsv } from "./csv";
 import type { RydQueueOrder } from "./queue-types";
 
-/** One printed card, as frozen in its batch. */
-export type RydCardBatchRow = {
+/** One printed card. */
+export type RydCardRow = {
   order_id: string;
   first_name: string;
   last_name: string;
   location: string;
   ryan_since: string;
-};
-
-/** A batch as the page lists it. */
-export type RydCardBatch = {
-  id: string;
-  orderCount: number;
-  createdAt: string;
-  createdBy: string | null;
 };
 
 /** Fulfillment's own names for the columns their production reads. */
@@ -39,7 +31,7 @@ function spreadsheetText(value: string) {
  * Exactly what fulfillment prints. The byte-order mark tells Excel the file is
  * UTF-8, so `Pérez` opens as `Pérez`.
  */
-export function rydCardBatchCsv(rows: RydCardBatchRow[]) {
+export function rydCardCsv(rows: RydCardRow[]) {
   return `﻿${serializeCsv({
     headers: RYD_CARD_CSV_HEADERS,
     rows: rows.map((row) =>
@@ -53,10 +45,10 @@ export function rydCardBatchCsv(rows: RydCardBatchRow[]) {
   })}`;
 }
 
-/** `ry-d-cards-2026-10-27.csv`, dated by the batch rather than the download. */
-export function rydCardBatchFilename(createdAt: string) {
-  const day = createdAt.slice(0, 10);
-  return `ry-d-cards-${/^\d{4}-\d{2}-\d{2}$/.test(day) ? day : "batch"}.csv`;
+/** `ry-d-cards-2026-10-27.csv`, dated by the workspace's day. */
+export function rydCardFilename(now: Date, timeZone: string) {
+  // en-CA formats as YYYY-MM-DD.
+  return `ry-d-cards-${now.toLocaleDateString("en-CA", { timeZone })}.csv`;
 }
 
 /**
@@ -75,7 +67,7 @@ export function rydSelectedCardsFile(
   return {
     printable,
     skipped: orders.length - printable.length,
-    csv: rydCardBatchCsv(
+    csv: rydCardCsv(
       printable.map((order) => ({
         order_id: order.orderId,
         first_name: order.card.firstName.trim(),
@@ -84,9 +76,6 @@ export function rydSelectedCardsFile(
         ryan_since: order.card.ryanSince.trim(),
       })),
     ),
-    // en-CA formats as YYYY-MM-DD, in the workspace's day rather than UTC's.
-    filename: rydCardBatchFilename(
-      now.toLocaleDateString("en-CA", { timeZone }),
-    ),
+    filename: rydCardFilename(now, timeZone),
   };
 }

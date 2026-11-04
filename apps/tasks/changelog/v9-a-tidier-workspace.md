@@ -44,14 +44,10 @@ one with no year waits for you to add it. Locations are written as city and
 state, such as "Brooklyn, NY", whenever both can be read. Verifying approves the card as
 shown and needs every line, so nothing prints with a blank.
 
-The Verified view's Card files panel downloads every approved card that
-hasn't printed as a four-column file in fulfillment's own wording (Order ID#,
-First & Last, Location, Date) and marks those orders sent to fulfillment with the date, so no card
-prints twice. Past files can be downloaded again without changing anything.
-When verified orders are left out, the panel counts how many still need their
-card approved and how many are missing a line, so an empty file explains itself.
-To send specific orders, select them in the Ready to send or Sent to fulfillment
-stage and choose Download cards CSV: the same four columns, and no stage moves.
+In the Verified view, select orders in Ready to send or Sent to fulfillment,
+or Select all, and choose Download cards CSV for a four-column file in
+fulfillment's own wording (Order ID#, First & Last, Location, Date).
+Downloading moves no stage, so the same cards can be downloaded again any time.
 
 ### Guest tiers for partners
 
@@ -65,7 +61,7 @@ closed to them, and their sidebar shows only what they can open.
 ### RY-D settings have their own access
 
 RY-D Settings is locked separately from the queue, so someone can verify
-orders and pull card files without changing the review form, fulfillment's
+orders and download card files without changing the review form, fulfillment's
 address, the upload reminder, or the Google connection. Settings opens only to
 app owners and workspace-wide tiers such as R-Suite, and no team or guest tier
 can be added to it.

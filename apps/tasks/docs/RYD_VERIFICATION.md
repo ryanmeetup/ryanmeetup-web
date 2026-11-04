@@ -249,24 +249,23 @@ uses, set in /admin/usage).
    Linking a person's responses uses one transaction: a conflicting claim leaves
    the whole group unlinked. Groups above 100 responses or the request budget
    open the order review for individual linking instead of partially saving.
-4. **Pull the card file.** The Verified view's **Card files** panel is how
-   fulfillment gets cards without an email. **Download new cards (N)** takes
-   every verified order with an approved card that is still Ready to send,
-   oldest first, and downloads `ry-d-cards-<date>.csv` with exactly four
-   columns, named the way fulfillment asked: Order ID#, First & Last,
-   Location, and Date (the Ryan since year). In the same
-   transaction those orders are marked Sent to fulfillment with the batch
-   date, so nothing prints twice; an unfinished or unapproved card waits for
-   the next file. The file is UTF-8 with a byte-order mark so Excel shows
-   `Pérez` correctly, and a cell starting with `=`, `+`, `-`, or `@` gets a
-   leading apostrophe so free text can't run as a formula.
+4. **Download a card file.** In the Verified view, select orders (or
+   **Select all**) in Ready to send or Sent to fulfillment and choose
+   **Download cards CSV (N)**. The browser builds `ry-d-cards-<date>.csv`,
+   dated by the workspace's day, with exactly four columns named the way
+   fulfillment asked: Order ID#, First & Last, Location, and Date (the Ryan
+   since year). Each card is the one the page shows; a selected card missing
+   a line is left out and counted in a notice. Downloading saves nothing and
+   moves no stage, so a file can be downloaded as often as needed; mark the
+   orders Sent to fulfillment yourself. The file is UTF-8 with a byte-order
+   mark so Excel shows `Pérez` correctly, and a cell starting with `=`, `+`,
+   `-`, or `@` gets a leading apostrophe so free text can't run as a formula.
 
-   Each batch freezes the cards it printed (`ryd_card_batches`,
-   `ryd_card_batch_orders`). **Download again** on a past batch rebuilds the
-   same file from those frozen rows and never marks anything. A retried pull
-   with the same operation returns the same batch. Moving an order back to
-   Ready to send leaves batch history alone and lets it print in a later
-   file on purpose.
+   The earlier **Card files** pull, which marked orders sent as it
+   downloaded, was removed from the app. Its tables (`ryd_card_batches`,
+   `ryd_card_batch_orders`) and `ryd_create_card_batch` stay in the database
+   contract with the batches already pulled; nothing in the app reads or
+   writes them.
 
    **Generate an email and CSV for selected orders.** Verified opens to
    **Ready to send** by default. Select individual orders or **Select all**,
@@ -313,7 +312,7 @@ uses, set in /admin/usage).
    (`RYD_DONE_WINDOW_DAYS`); older ones are only counted, so the page doesn't
    reread every finished order on each refresh. **Show older** under the
    stage filters loads them for the rest of the visit. They stay in the
-   database and in their card batches either way.
+   database either way.
 
    **Move back** takes an order one stage backward: Done → Sent to
    fulfillment → Ready to send. Moving back from Done keeps the send date;

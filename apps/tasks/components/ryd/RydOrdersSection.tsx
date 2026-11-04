@@ -352,7 +352,6 @@ export function RydOrdersSection({
                 .finally(() => setLoadingOlder(false));
             }}
             onToggleAll={toggleAll}
-            onPulled={refresh}
           />
         )}
         {view === "queue" && !producing && sorted.length > 0 && (

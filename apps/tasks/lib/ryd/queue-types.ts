@@ -1,5 +1,4 @@
 import type { RydCard, RydCardHint } from "./card";
-import type { RydCardBatch } from "./card-export";
 import type { RydMatchSuggestion, RydSubmission } from "./matching";
 import type { RydOrderStatus } from "./orders";
 import type { RydUploadReminder } from "./upload-reminder";
@@ -66,8 +65,6 @@ export type RydQueue = {
   contacts: Record<string, RydSubmitterContact>;
   sheet: RydSheetState;
   settings: RydSettings;
-  /** The latest card files pulled for fulfillment, newest first. */
-  cardBatches: RydCardBatch[];
   /** The workspace's time zone, which the upload reminder's slot is in. */
   timeZone: string;
   /** The reminder slot this week's file is overdue since, if not uploaded. */

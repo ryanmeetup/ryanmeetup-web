@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseCsv } from "@/lib/ryd/csv";
-import {
-  rydCardBatchCsv,
-  rydCardBatchFilename,
-  rydSelectedCardsFile,
-} from "@/lib/ryd/card-export";
+import { rydCardCsv, rydSelectedCardsFile } from "@/lib/ryd/card-export";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 
 const row = {
@@ -17,7 +13,7 @@ const row = {
 
 describe("RY-D card file", () => {
   it("has the four columns fulfillment asked for, in order", () => {
-    const csv = rydCardBatchCsv([row]);
+    const csv = rydCardCsv([row]);
     expect(csv.startsWith("﻿")).toBe(true);
     expect(parseCsv(csv)).toEqual({
       headers: ["Order ID#", "First & Last", "Location", "Date"],
@@ -27,18 +23,9 @@ describe("RY-D card file", () => {
 
   it("keeps free text from running as a spreadsheet formula", () => {
     const [cells] = parseCsv(
-      rydCardBatchCsv([
-        { ...row, location: "=HYPERLINK(1)", last_name: "-Le" },
-      ]),
+      rydCardCsv([{ ...row, location: "=HYPERLINK(1)", last_name: "-Le" }]),
     ).rows;
     expect(cells).toEqual(["607227", "Ryan -Le", "'=HYPERLINK(1)", "1999"]);
-  });
-
-  it("names the file by the batch date", () => {
-    expect(rydCardBatchFilename("2026-10-27T15:00:00.000Z")).toBe(
-      "ry-d-cards-2026-10-27.csv",
-    );
-    expect(rydCardBatchFilename("not a date")).toBe("ry-d-cards-batch.csv");
   });
 });
 

@@ -27,7 +27,6 @@ import {
   type RydGoogleIntegrationRow,
 } from "./ryd-google";
 import { readRydLinks, readRydRows } from "./ryd-queries";
-import { listRydCardBatches } from "./ryd-card-batches";
 
 export type RydContext = {
   user: User;
@@ -295,14 +294,13 @@ export async function loadRydQueue(
     importResult.error ??
     olderResult?.error;
   if (failure) throw failure;
-  const [settings, integration, dismissedKeys, contacts, digest, cardBatches] =
+  const [settings, integration, dismissedKeys, contacts, digest] =
     await Promise.all([
       loadRydSettings(admin),
       loadRydGoogleIntegration(),
       loadDismissedKeys(admin),
       loadSubmitterContacts(admin),
       readDigestSettings(admin),
-      listRydCardBatches(admin),
     ]);
   const { sheet, submissions: answered } = await loadSheet(
     integration,
@@ -361,7 +359,6 @@ export async function loadRydQueue(
     contacts,
     sheet,
     settings,
-    cardBatches,
     timeZone: digest.timeZone,
     uploadDueSince: rydUploadDueSince(
       settings.uploadReminder,

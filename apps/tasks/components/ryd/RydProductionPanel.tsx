@@ -16,12 +16,11 @@ import {
 } from "@/lib/ryd/fulfillment-view";
 import { RYD_FULFILLMENT_LIMIT } from "@/lib/ryd/fulfillment";
 import type { RydQueue, RydQueueOrder } from "@/lib/ryd/queue-types";
-import { RydCardBatches } from "./RydCardBatches";
 import { RydFulfillmentFilters } from "./RydFulfillmentFilters";
 import { RydSelectionBar } from "./RydSelection";
 import type { RydSelectionActions } from "./useRydSelectionActions";
 
-/** The Verified view's handoff tools: card files, stage filters, and moves. */
+/** The Verified view's handoff tools: stage filters, card CSVs, and moves. */
 export function RydProductionPanel({
   queue,
   stage,
@@ -34,7 +33,6 @@ export function RydProductionPanel({
   onStageChange,
   onShowOlder,
   onToggleAll,
-  onPulled,
 }: {
   queue: RydQueue;
   stage: RydFulfillmentStage | null;
@@ -49,7 +47,6 @@ export function RydProductionPanel({
   onStageChange: (stage: RydFulfillmentStage | null) => void;
   onShowOlder: () => void;
   onToggleAll: () => void;
-  onPulled: () => Promise<void>;
 }) {
   const { moving, moveSelected, selectedReady } = actions;
   const busy = disabled || moving !== null;
@@ -86,13 +83,6 @@ export function RydProductionPanel({
 
   return (
     <div className="space-y-3">
-      <RydCardBatches
-        orders={queue.orders}
-        batches={queue.cardBatches}
-        timeZone={queue.timeZone}
-        disabled={busy}
-        onPulled={onPulled}
-      />
       <RydFulfillmentFilters
         stage={stage}
         counts={rydFulfillmentCounts(queue.orders)}

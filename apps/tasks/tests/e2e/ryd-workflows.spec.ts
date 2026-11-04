@@ -24,7 +24,6 @@ test.beforeEach(async ({ page }, testInfo) => {
 const fixtureOrigin = `http://127.0.0.1:${process.env.PLAYWRIGHT_RYD_SUPABASE_PORT ?? 54339}`;
 const csv =
   "OrderId,BillFirstName,BillLastName,BillEmail,OrderTotal\r\n801,Ryan,Fixture,ryan.fixture@example.test,36\r\n";
-const snapshotId = "00000000-0000-4000-8000-000000000801";
 const state = async (request: APIRequestContext) =>
   (await request.get(`${fixtureOrigin}/__ryd/state`)).json();
 async function reset(
@@ -1004,8 +1003,7 @@ test("anonymous visitors cannot read, export, confirm, or change settings", asyn
   await reset(request);
   await page.goto("/ryd");
   await expect(page).toHaveURL(/\/login$/);
-  for (const path of ["/api/ryd", `/api/ryd/cards/${snapshotId}`])
-    expect((await page.request.get(path)).status()).toBe(401);
+  expect((await page.request.get("/api/ryd")).status()).toBe(401);
   expect(
     (
       await page.request.post("/api/ryd/batches", {
@@ -1079,7 +1077,7 @@ test("a partner guest lands on RY-D with only its navigation", async ({
   ).toBe(403);
 });
 
-test("a partner pulls approved cards once and downloads them again", async ({
+test("a partner downloads selected cards without moving them", async ({
   page,
   request,
 }) => {
@@ -1110,44 +1108,23 @@ test("a partner pulls approved cards once and downloads them again", async ({
   await expect(review).toHaveCount(0);
 
   await page.goto("/ryd?status=verified");
-  const pull = page.getByRole("button", { name: "Download new cards (1)", exact: true });
-  await pull.click();
-  const confirm = page.getByRole("dialog", { name: "Download 1 card?", exact: true });
-  const [download] = await Promise.all([
-    page.waitForEvent("download"),
-    confirm.getByRole("button", { name: "Download", exact: true }).click(),
-  ]);
-  expect(download.suggestedFilename()).toMatch(/^ry-d-cards-\d{4}-\d{2}-\d{2}\.csv$/);
-  const contents = async (file: typeof download) =>
-    Buffer.concat(await (await file.createReadStream()).toArray()).toString("utf8");
-  const printed =
-    "\uFEFFOrder ID#,First & Last,Location,Date\r\n607227,Ryan Pérez,\"Cleveland, OH\",1976\r\n";
-  expect(await contents(download)).toBe(printed);
-  const pulled = (await state(request)).orders[0];
-  expect(pulled).toMatchObject({
-    order_id: "607227",
-    cleared_batch_id: expect.any(String),
-    production_sent_at: expect.any(String),
-  });
-  await expect(page.getByRole("button", { name: "Download new cards (0)", exact: true })).toBeDisabled();
-  await expect(page.getByText(/None are waiting/)).toBeVisible();
-  const again = page.getByRole("link", { name: /card file again$/ });
-  const [repeat] = await Promise.all([page.waitForEvent("download"), again.click()]);
-  expect(await contents(repeat)).toBe(printed);
-
-  // Picking orders by hand downloads the same file and moves nothing.
-  await page.getByRole("button", { name: "Sent to fulfillment 1", exact: true }).click();
   await page.getByRole("checkbox", { name: "Select Jamie Perez", exact: true }).check();
-  const [picked] = await Promise.all([
+  const [download] = await Promise.all([
     page.waitForEvent("download"),
     page.getByRole("button", { name: "Download cards CSV (1)", exact: true }).click(),
   ]);
-  expect(picked.suggestedFilename()).toMatch(/^ry-d-cards-\d{4}-\d{2}-\d{2}\.csv$/);
-  expect(await contents(picked)).toBe(printed);
-  const calls = (await state(request)).calls.filter(
-    (call: { name: string }) => call.name === "ryd_create_card_batch",
+  expect(download.suggestedFilename()).toMatch(/^ry-d-cards-\d{4}-\d{2}-\d{2}\.csv$/);
+  const contents = Buffer.concat(await (await download.createReadStream()).toArray()).toString("utf8");
+  expect(contents).toBe(
+    "\uFEFFOrder ID#,First & Last,Location,Date\r\n607227,Ryan Pérez,\"Cleveland, OH\",1976\r\n",
   );
-  expect(calls).toHaveLength(1);
+  // Downloading is read-only: the order stays ready to send.
+  expect((await state(request)).orders[0]).toMatchObject({
+    order_id: "607227",
+    cleared_batch_id: null,
+    production_sent_at: null,
+  });
+  await expect(page.getByRole("button", { name: "Ready to send 1", exact: true })).toBeVisible();
 });
 
 for (const role of ["operator", "owner"])
