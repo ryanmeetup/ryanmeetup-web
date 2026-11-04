@@ -43,6 +43,7 @@ export * from "./Modal";
 export * from "./ModalActions";
 export * from "./MultiSelect";
 export * from "./NavControls";
+export * from "./NotFoundCard";
 export * from "./Pill";
 export * from "./RotatingGallery";
 export * from "./ThemedImage";
