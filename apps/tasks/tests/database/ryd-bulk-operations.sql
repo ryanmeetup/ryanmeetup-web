@@ -21,15 +21,15 @@ insert into public.ryd_orders(order_id,raw,first_import_id,status,production_sen
  ('bulk-c','{}','20000000-0000-4000-8000-000000000601','verified',null,null),
  ('bulk-d','{}','20000000-0000-4000-8000-000000000601','pending',null,null);
 
-create function pg_temp.back_moves() returns jsonb language sql as $$select '[{"orderId":"bulk-a","from":"done","to":"in-production"},{"orderId":"bulk-b","from":"in-production","to":"not-started"}]'::jsonb$$;
+create function pg_temp.back_moves() returns jsonb language sql as $$select '[{"orderId":"bulk-a","from":"done","to":"in-production"},{"orderId":"bulk-b","from":"sent-to-fulfillment","to":"not-started"}]'::jsonb$$;
 set local role service_role;
 select is(public.ryd_move_production('00000000-0000-4000-8000-000000000601','60000000-0000-4000-8000-000000000601',pg_temp.back_moves())->>'movedCount','2','service role moves a mixed backward selection together');
 set local role postgres;
-select ok((select production_sent_at is not null and done_at is null from public.ryd_orders where order_id='bulk-a'),'done order moves back exactly one step');
-select ok((select production_sent_at is null and done_at is null from public.ryd_orders where order_id='bulk-b'),'in-production order moves back exactly one step');
+select ok((select production_sent_at is not null and production_started_at is not null and done_at is null from public.ryd_orders where order_id='bulk-a'),'done order moves back exactly one step');
+select ok((select production_sent_at is null and done_at is null from public.ryd_orders where order_id='bulk-b'),'sent order moves back exactly one step');
 select is(public.ryd_move_production('00000000-0000-4000-8000-000000000601','60000000-0000-4000-8000-000000000601',pg_temp.back_moves())->>'movedCount','2','retry returns the original moved count');
 select ok((select production_sent_at is not null from public.ryd_orders where order_id='bulk-a'),'retry cannot move back a second time');
--- One event each for leaving done and for leaving production, plus the return to Ready to send.
+-- One event for returning to In production, and two for the return to Ready to send.
 select is((select count(*) from public.ryd_order_events where action='production'),3::bigint,'production retry adds no duplicate history');
 select throws_ok($$select public.ryd_move_production('00000000-0000-4000-8000-000000000603','60000000-0000-4000-8000-000000000601',pg_temp.back_moves())$$,'RY409',null,'receipt cannot be replayed by a different owner');
 select throws_ok($$select public.ryd_move_production('00000000-0000-4000-8000-000000000601','60000000-0000-4000-8000-000000000601','[{"orderId":"bulk-c","from":"not-started","to":"done"}]')$$,'RY409',null,'receipt cannot be reused for another selection');
@@ -41,7 +41,7 @@ select throws_ok($$select public.ryd_move_production('00000000-0000-4000-8000-00
 select throws_ok($$select public.ryd_move_production('00000000-0000-4000-8000-000000000601','60000000-0000-4000-8000-000000000602',(select jsonb_agg(jsonb_build_object('orderId',i::text,'from','not-started','to','done')) from generate_series(1,101) i))$$,'RY400',null,'SQL also limits each production group to 100');
 create function pg_temp.fail_bulk_audit() returns trigger language plpgsql as $$begin if new.order_id='bulk-c' then raise exception 'audit unavailable'; end if; return new; end$$;
 create trigger fail_bulk_audit before insert on public.ryd_order_events for each row execute function pg_temp.fail_bulk_audit();
-select throws_ok($$select public.ryd_move_production('00000000-0000-4000-8000-000000000601','60000000-0000-4000-8000-000000000602','[{"orderId":"bulk-a","from":"in-production","to":"done"},{"orderId":"bulk-c","from":"not-started","to":"in-production"}]')$$,'P0001','audit unavailable','second-stage audit failure rolls back every stage');
+select throws_ok($$select public.ryd_move_production('00000000-0000-4000-8000-000000000601','60000000-0000-4000-8000-000000000602','[{"orderId":"bulk-a","from":"in-production","to":"done"},{"orderId":"bulk-c","from":"not-started","to":"sent-to-fulfillment"}]')$$,'P0001','audit unavailable','second-stage audit failure rolls back every stage');
 select ok((select done_at is null from public.ryd_orders where order_id='bulk-a'),'earlier stage rolls back with the later audit');
 select is((select count(*) from public.ryd_write_receipts where operation_id='60000000-0000-4000-8000-000000000602'),0::bigint,'failed production leaves no receipt');
 drop trigger fail_bulk_audit on public.ryd_order_events;

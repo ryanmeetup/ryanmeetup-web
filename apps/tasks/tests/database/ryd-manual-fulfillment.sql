@@ -57,12 +57,14 @@ select throws_ok($$select public.ryd_generate_fulfillment('00000000-0000-4000-80
 select public.ryd_move_production('00000000-0000-4000-8000-000000000301','40000000-0000-4000-8000-000000000301','[{"orderId":"snapshot-1","from":"ready-to-send","to":"sent-to-fulfillment"}]');
 select is((select count(*) from public.ryd_fulfillment_batches),1::bigint,'retry records the manual handoff once');
 select throws_ok($$select public.ryd_move_production('00000000-0000-4000-8000-000000000301','40000000-0000-4000-8000-000000000302','[{"orderId":"snapshot-1","from":"ready-to-send","to":"done"}]')$$,'RY409',null,'a stale stage cannot be moved');
-select throws_ok($$select public.ryd_move_production('00000000-0000-4000-8000-000000000301','40000000-0000-4000-8000-000000000303','[{"orderId":"snapshot-1","from":"sent-to-fulfillment","to":"in-production"}]')$$,'RY400',null,'production is no longer a separate stage');
-select ok((select production_sent_at <= now() from public.ryd_orders where order_id='snapshot-production'),'a legacy production record counts as sent');
+select throws_ok($$select public.ryd_move_production('00000000-0000-4000-8000-000000000301','40000000-0000-4000-8000-000000000306','[{"orderId":"snapshot-2","from":"ready-to-send","to":"in-production"}]')$$,'RY400',null,'production cannot skip the handoff');
+select public.ryd_move_production('00000000-0000-4000-8000-000000000301','40000000-0000-4000-8000-000000000303','[{"orderId":"snapshot-1","from":"sent-to-fulfillment","to":"in-production"}]');
+select ok((select production_started_at >= production_sent_at and production_started_by is not null and done_at is null from public.ryd_orders where order_id='snapshot-1'),'confirming production records its start beside the send date');
+select ok((select production_sent_at <= now() and production_started_at is null from public.ryd_orders where order_id='snapshot-production'),'a legacy production record counts as sent');
 select public.ryd_move_production('00000000-0000-4000-8000-000000000301','40000000-0000-4000-8000-000000000304','[{"orderId":"snapshot-1","from":"in-production","to":"done"}]');
-select ok((select done_at is not null from public.ryd_orders where order_id='snapshot-1'),'completion is manual and accepts the retired stage name');
+select ok((select done_at is not null and production_started_at is not null from public.ryd_orders where order_id='snapshot-1'),'completion is manual and keeps the production start');
 select public.ryd_move_production('00000000-0000-4000-8000-000000000301','40000000-0000-4000-8000-000000000305','[{"orderId":"snapshot-1","from":"done","to":"sent-to-fulfillment"}]');
-select ok((select done_at is null and production_sent_at is not null from public.ryd_orders where order_id='snapshot-1'),'moving back from done keeps the send date');
+select ok((select done_at is null and production_started_at is null and production_sent_at is not null from public.ryd_orders where order_id='snapshot-1'),'moving back to sent clears production but keeps the send date');
 select is((select count(*) from public.ryd_fulfillment_batches),1::bigint,'moving back preserves the existing handoff record');
 select public.ryd_move_production('00000000-0000-4000-8000-000000000301','40000000-0000-4000-8000-000000000307','[{"orderId":"snapshot-1","from":"sent-to-fulfillment","to":"ready-to-send"}]');
 select ok((select cleared_batch_id is null and production_sent_at is null and done_at is null from public.ryd_orders where order_id='snapshot-1'),'manual move back makes an order ready again');
