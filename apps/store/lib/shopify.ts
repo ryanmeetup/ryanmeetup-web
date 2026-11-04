@@ -13,6 +13,7 @@ import type {
   ProductListing,
   ProductPage,
   ProductVariant,
+  ShopPolicy,
   StoreImage,
 } from "./types";
 
@@ -451,6 +452,21 @@ async function getShopifyProduct(handle: string): Promise<Product | null> {
     completeProductConnection(handle, "variants", data.product.variants, variantFields),
   ]);
   return reshapeProduct({ ...data.product, images, variants });
+}
+
+// Footer and sitemap order. A policy left blank in Shopify Admin comes back null and
+// gets no page.
+const policyFields = ["refundPolicy", "shippingPolicy", "privacyPolicy", "termsOfService"] as const;
+
+export async function getPolicies(): Promise<ShopPolicy[]> {
+  // The policy text is the shop's own legal copy, so demo mode has none to show.
+  if (!isShopifyConfigured()) return [];
+  const data = await storefrontRequest<{ shop: Record<(typeof policyFields)[number], ShopPolicy | null> }>(
+    `query Policies { shop { ${policyFields.map((field) => `${field} { handle title body }`).join(" ")} } }`,
+    {},
+    { revalidate: 300 },
+  );
+  return policyFields.flatMap((field) => data.shop[field] ?? []).filter((policy) => policy.body.trim());
 }
 
 function reshapeCart(raw: Omit<Cart, "lines"> & { lines: Connection<Cart["lines"][number]> }): Cart {

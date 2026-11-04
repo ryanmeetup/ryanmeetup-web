@@ -23,12 +23,13 @@ Last reviewed: 2026-11-03.
 - Shopify hosted checkout and a thank-you page.
 - Judge.me product reviews, read and submitted server-side.
 - About (including shipping and returns), Contact, and the sitemap.
+- Policy pages at `/policies/<handle>` for each policy written in Shopify Admin,
+  linked from the footer and listed in the sitemap.
 
 ## Status
 
 | # | Item | Priority | Status |
 | --- | --- | --- | --- |
-| 2 | [Policy pages](#2-policy-pages) | Blocker | Not started |
 | 3 | [Order lookup and customer accounts](#3-order-lookup-and-customer-accounts) | Blocker | Not started |
 | 4 | [Launch switches and Shopify Admin setup](#4-launch-switches-and-shopify-admin-setup) | Blocker | Not started |
 | 5 | [Sale prices](#5-sale-prices) | Etsy parity | Not started |
@@ -48,27 +49,6 @@ Status values: Not started, In progress, Dropped (with reason). Finished items
 leave the roadmap.
 
 ## Blockers
-
-### 2. Policy pages
-
-- [ ] Done
-
-**Problem.** Etsy supplies shop policies. Here, the About page's "fine print" is
-the only policy content; there is no privacy policy, terms of service, or refund
-policy, and the footer links to none.
-
-**Approach.**
-- Write the policies in Shopify Admin → Settings → Policies so they also appear in
-  checkout.
-- Read them with the Storefront API
-  (`shop { privacyPolicy refundPolicy shippingPolicy termsOfService { title body handle url } }`)
-  and render them at `/policies/<handle>`.
-- Link them from the footer (`RyanMeetupFooter` accepts links; keep it generic per
-  the shared-footer rule) and add them to the sitemap.
-- Do not invent policy terms in code; the copy comes from Shopify.
-
-**Done when.** Each policy page renders Shopify's text, is linked from the footer,
-and appears in the sitemap.
 
 ### 3. Order lookup and customer accounts
 
@@ -105,6 +85,9 @@ Shopify Admin and environment (no code):
 - [ ] Every published variant mapped to a Printful SKU.
 - [ ] Checkout return URL set to `https://store.ryanmeetup.com/thank-you`.
 - [ ] Checkout branding customized.
+- [ ] Refund policy, shipping policy, and terms of service written in Settings →
+      Policies. Only the privacy policy exists today; each one appears on the
+      site as soon as it has text.
 - [ ] `JUDGEME_PRIVATE_API_TOKEN` set in Production and Preview.
 - [ ] Etsy listings retired or redirected, and `ryanmeetup.com/merch` (currently
       pointing at Etsy in `apps/ryanmeetup`) switched to the store.
@@ -184,7 +167,7 @@ fields. The store supports neither.
 The store says only "calculated at checkout".
 
 **Approach.** Show a short shipping and processing summary on the product page
-(sourced from the shipping policy in item 2 or a Shopify metafield rather than
+(sourced from the Shopify shipping policy or a metafield rather than
 hard-coded claims), and, if wanted, a free-shipping threshold in the cart.
 
 **Done when.** A shopper can see roughly what shipping costs and how long it takes
@@ -277,5 +260,6 @@ Record each finished or changed item here, newest first.
 
 | Date | Item | Change | Commit |
 | --- | --- | --- | --- |
+| 2026-11-03 | 2 | Policies written in Shopify Admin render at `/policies/<handle>`, appear in a footer Policies column (`RyanMeetupFooter` now takes `sections`), and are in the sitemap. Writing the missing refund, shipping, and terms policies moved to item 4. | — |
 | 2026-11-03 | 1 | Cart refreshes from Shopify on load and Back, starts fresh when a checked-out or expired cart rejects a change, clears on `/thank-you`, and has a confirmed **Empty cart** action on the cart page and drawer. | — |
 | 2026-11-03 | — | Roadmap created. | — |

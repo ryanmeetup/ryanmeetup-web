@@ -6,7 +6,7 @@ import { CartDrawer } from "@/components/cart-drawer";
 import { CartProvider } from "@/components/cart-provider";
 import { Header } from "@/components/header";
 import { NavSectionProvider } from "@/components/nav-section";
-import { getCollections, isShopifyConfigured } from "@/lib/shopify";
+import { getCollections, getPolicies, isShopifyConfigured } from "@/lib/shopify";
 import "./globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://store.ryanmeetup.com";
@@ -35,9 +35,18 @@ async function getMenuCollections() {
   return collections.map(({ handle, title, description }) => ({ handle, title, description }));
 }
 
+// Only the policies written in Shopify Admin get a footer link.
+async function getPolicyLinks() {
+  const policies = await getPolicies().catch((error: unknown) => {
+    console.error("Could not load policies for the footer.", error);
+    return [];
+  });
+  return policies.map(({ handle, title }) => ({ href: `/policies/${handle}`, label: title }));
+}
+
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const commerceConfigured = isShopifyConfigured();
-  const collections = await getMenuCollections();
+  const [collections, policyLinks] = await Promise.all([getMenuCollections(), getPolicyLinks()]);
   return (
     <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
       <body className="antialiased">
@@ -63,6 +72,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             </NavSectionProvider>
             <RyanMeetupFooter
               homeHref="https://ryanmeetup.com"
+              sections={policyLinks.length ? [{ title: "Policies", links: policyLinks }] : []}
               className="store-container"
             />
             <CartDrawer />

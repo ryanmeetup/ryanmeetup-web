@@ -116,3 +116,10 @@ export type ReviewsData = {
   count: number;
   reviews: Review[];
 };
+
+/** A policy written in Shopify Admin → Settings → Policies. `body` is HTML. */
+export type ShopPolicy = {
+  body: string;
+  handle: string;
+  title: string;
+};
