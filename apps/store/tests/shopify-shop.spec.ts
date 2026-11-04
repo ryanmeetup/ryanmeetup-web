@@ -38,15 +38,15 @@ test("demo mode has no policies to show", async () => {
   expect(await getPolicies()).toEqual([]);
 });
 
-test("the customer account link appears once Shopify reports one", async () => {
+test("the customer account link prefers Shopify's URL and falls back to the shop's account address", async () => {
   process.env.SHOPIFY_STORE_DOMAIN = "catalog.test";
   process.env.SHOPIFY_STOREFRONT_API_TOKEN = "test-token";
   let customerAccountUrl: string | null = null;
-  globalThis.fetch = async () => new Response(JSON.stringify({ data: { shop: { customerAccountUrl } } }));
+  globalThis.fetch = async () => new Response(JSON.stringify({ data: { shop: { id: "gid://shopify/Shop/71870054511", customerAccountUrl } } }));
 
-  expect(await getCustomerAccountUrl()).toBeNull();
-  customerAccountUrl = "https://shopify.com/1/account";
-  expect(await getCustomerAccountUrl()).toBe("https://shopify.com/1/account");
+  expect(await getCustomerAccountUrl()).toBe("https://shopify.com/71870054511/account");
+  customerAccountUrl = "https://account.example.com";
+  expect(await getCustomerAccountUrl()).toBe("https://account.example.com");
 });
 
 test("demo mode has no customer account", async () => {

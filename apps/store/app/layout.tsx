@@ -44,7 +44,7 @@ async function getPolicyLinks() {
   return policies.map(({ handle, title }) => ({ href: `/policies/${handle}`, label: title }));
 }
 
-// Shown once customer accounts are turned on in Shopify Admin.
+// The header's Your orders link; a Shopify outage just leaves it out.
 async function getHeaderAccountUrl() {
   return getCustomerAccountUrl().catch((error: unknown) => {
     console.error("Could not load the customer account link.", error);

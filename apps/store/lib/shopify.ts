@@ -469,15 +469,19 @@ export async function getPolicies(): Promise<ShopPolicy[]> {
   return policyFields.flatMap((field) => data.shop[field] ?? []).filter((policy) => policy.body.trim());
 }
 
-/** Shopify's customer account (order status and tracking), or null until customer accounts are turned on. */
+/** Shopify's customer account, where a shopper signs in for order status and tracking. */
 export async function getCustomerAccountUrl(): Promise<string | null> {
   if (!isShopifyConfigured()) return null;
-  const data = await storefrontRequest<{ shop: { customerAccountUrl: string | null } }>(
-    `query CustomerAccount { shop { customerAccountUrl } }`,
+  const data = await storefrontRequest<{ shop: { id: string; customerAccountUrl: string | null } }>(
+    `query CustomerAccount { shop { id customerAccountUrl } }`,
     {},
     { revalidate: 300 },
   );
-  return data.shop.customerAccountUrl || null;
+  if (data.shop.customerAccountUrl) return data.shop.customerAccountUrl;
+  // A headless shop gets null here even with customer accounts on, so fall back to the
+  // address Shopify Admin shows under Settings → Customer accounts → URL.
+  const shopId = data.shop.id.split("/").pop();
+  return shopId ? `https://shopify.com/${shopId}/account` : null;
 }
 
 function reshapeCart(raw: Omit<Cart, "lines"> & { lines: Connection<Cart["lines"][number]> }): Cart {
