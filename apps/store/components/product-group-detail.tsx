@@ -2,6 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { DropdownSelect } from "@ryanmeetup/ui";
 import { getColorOption, getColorPreview, getColorSlug, getColorValue, getImageColor, getListingColors } from "@/lib/product-colors";
 import { getProductGallery } from "@/lib/product-gallery";
@@ -9,8 +10,9 @@ import type { ProductDesign, ReviewsData, StoreImage } from "@/lib/types";
 import { ProductDetail } from "./product-detail";
 import { Reviews } from "./reviews";
 
-export function ProductGroupDetail({ title, handle, designs, defaultColor, reviewsByProduct }: {
+export function ProductGroupDetail({ title, handle, breadcrumbs, designs, defaultColor, reviewsByProduct }: {
   title: string;
+  breadcrumbs?: ReactNode;
   handle: string;
   designs: ProductDesign[];
   defaultColor?: string;
@@ -54,6 +56,7 @@ export function ProductGroupDetail({ title, handle, designs, defaultColor, revie
         key={`product-${selected.product.id}`}
         product={selected.product}
         title={title}
+        breadcrumbs={breadcrumbs}
         gallery={gallery}
         initialColor={color}
         initialImage={selectedImage?.design === selected.value ? selectedImage.image : getColorPreview(selected.product, color)?.image}

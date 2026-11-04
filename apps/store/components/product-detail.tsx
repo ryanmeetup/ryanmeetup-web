@@ -14,9 +14,11 @@ import type { Product, StoreImage } from "@/lib/types";
 import { useCart } from "./cart-provider";
 import { ProductDescription } from "./product-description";
 
-export function ProductDetail({ product, title = product.title, designField, hideColorOption = false, gallery, initialImage, initialColor, onSelectGalleryImage }: {
+export function ProductDetail({ product, title = product.title, breadcrumbs, designField, hideColorOption = false, gallery, initialImage, initialColor, onSelectGalleryImage }: {
   product: Product;
   title?: string;
+  // Rides along above the gallery so the trail stays in view while it sticks.
+  breadcrumbs?: ReactNode;
   // Receives the live option state so a field outside the product can mirror it.
   designField?: (state: { selections: Record<string, string>; selectOption: (name: string, value: string) => void }) => ReactNode;
   // Set when designField already chooses the color across a listing.
@@ -150,50 +152,53 @@ export function ProductDetail({ product, title = product.title, designField, hid
 
   return (
     <div className="grid gap-8 pb-8 sm:pb-12 lg:grid-cols-2 lg:gap-12">
-      <div ref={galleryRef} role="region" aria-label="Product gallery" aria-describedby={hasMultipleImages ? galleryHintId : undefined} className="mx-auto w-full min-w-0 max-w-xl space-y-4 lg:sticky lg:top-28 lg:self-start">
-        <div className="relative mx-auto aspect-square w-full overflow-hidden rounded-3xl border border-black/10 bg-white/60 lg:max-w-[max(12rem,calc(100svh-20rem))] dark:border-white/10 dark:bg-white/5">
-          {activeImage ? <Image src={activeImage.url} alt={activeImage.altText || product.title} fill preload sizes="(min-width: 1152px) 528px, (min-width: 1024px) calc(50vw - 48px), (min-width: 608px) 576px, calc(100vw - 32px)" className="object-contain" /> : <div className="grid h-full place-items-center font-cooper text-8xl text-black/10 dark:text-white/10">R</div>}
+      <div className="min-w-0 space-y-8 lg:sticky lg:top-28 lg:self-start">
+        {breadcrumbs}
+        <div ref={galleryRef} role="region" aria-label="Product gallery" aria-describedby={hasMultipleImages ? galleryHintId : undefined} className="mx-auto w-full min-w-0 max-w-xl space-y-4">
+          <div className={`relative mx-auto aspect-square w-full overflow-hidden rounded-3xl border border-black/10 bg-white/60 dark:border-white/10 dark:bg-white/5 ${breadcrumbs ? "lg:max-w-[max(12rem,calc(100svh-24rem))]" : "lg:max-w-[max(12rem,calc(100svh-20rem))]"}`}>
+            {activeImage ? <Image src={activeImage.url} alt={activeImage.altText || product.title} fill preload sizes="(min-width: 1152px) 528px, (min-width: 1024px) calc(50vw - 48px), (min-width: 608px) 576px, calc(100vw - 32px)" className="object-contain" /> : <div className="grid h-full place-items-center font-cooper text-8xl text-black/10 dark:text-white/10">R</div>}
+            {hasMultipleImages && (
+              <>
+                <div className="absolute left-3 top-1/2 -translate-y-1/2">
+                  <IconButton label="Previous photo" tooltip="Previous photo (←)" variant="overlay" size="md" aria-keyshortcuts="ArrowLeft" data-photo-navigation="previous" onClick={() => navigateGallery(-1)}>
+                    <FiChevronLeft aria-hidden className="h-5 w-5" />
+                  </IconButton>
+                </div>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <IconButton label="Next photo" tooltip="Next photo (→)" variant="overlay" size="md" aria-keyshortcuts="ArrowRight" data-photo-navigation="next" onClick={() => navigateGallery(1)}>
+                    <FiChevronRight aria-hidden className="h-5 w-5" />
+                  </IconButton>
+                </div>
+              </>
+            )}
+          </div>
           {hasMultipleImages && (
-            <>
-              <div className="absolute left-3 top-1/2 -translate-y-1/2">
-                <IconButton label="Previous photo" tooltip="Previous photo (←)" variant="overlay" size="md" aria-keyshortcuts="ArrowLeft" data-photo-navigation="previous" onClick={() => navigateGallery(-1)}>
-                  <FiChevronLeft aria-hidden className="h-5 w-5" />
-                </IconButton>
-              </div>
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                <IconButton label="Next photo" tooltip="Next photo (→)" variant="overlay" size="md" aria-keyshortcuts="ArrowRight" data-photo-navigation="next" onClick={() => navigateGallery(1)}>
-                  <FiChevronRight aria-hidden className="h-5 w-5" />
-                </IconButton>
-              </div>
-            </>
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-black/70 dark:text-white/70">
+              <p id={galleryHintId}>Scroll photos or use ← and →</p>
+              <p role="status" aria-live="polite" aria-atomic="true">Photo {activeImageIndex + 1} of {galleryImages.length}</p>
+            </div>
+          )}
+          {hasMultipleImages && (
+            <div ref={thumbnailsRef} role="group" aria-label="Product photos" className="relative flex gap-4 overflow-x-auto overscroll-x-contain pb-3 [scrollbar-width:thin]">
+              {/* Pinned edge rules stretch to the frames' height, not the scrollbar's padding,
+                  and appear only while thumbnails are hidden past that edge. */}
+              <span aria-hidden className={`sticky left-0 z-10 w-px shrink-0 bg-black/10 transition-opacity dark:bg-white/10 ${clippedStart ? "" : "opacity-0"}`} />
+              {galleryGroups.map((group) => (
+                <div key={`${group.productId}:${group.label}`} role="group" aria-label={`${group.label} photos`} className="w-max shrink-0 rounded-2xl border border-black/10 py-3 dark:border-white/10">
+                  <Kicker className="mb-2 px-3">{group.label}</Kicker>
+                  <div className="flex gap-3 px-3">
+                    {group.images.map((entry) => (
+                      <button key={entry.key} type="button" onClick={() => selectGalleryImage(entry)} aria-label={`View ${entry.label}`} aria-pressed={entry.productId === product.id && activeImage?.url === entry.image.url} className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 sm:h-20 sm:w-20 dark:focus-visible:ring-white/40 ${entry.productId === product.id && activeImage?.url === entry.image.url ? "border-black dark:border-white" : "border-black/10 dark:border-white/10"}`}>
+                        <Image src={entry.image.url} alt="" fill sizes="120px" className="object-contain" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              <span aria-hidden className={`sticky right-0 z-10 w-px shrink-0 bg-black/10 transition-opacity dark:bg-white/10 ${clippedEnd ? "" : "opacity-0"}`} />
+            </div>
           )}
         </div>
-        {hasMultipleImages && (
-          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-black/70 dark:text-white/70">
-            <p id={galleryHintId}>Scroll photos or use ← and →</p>
-            <p role="status" aria-live="polite" aria-atomic="true">Photo {activeImageIndex + 1} of {galleryImages.length}</p>
-          </div>
-        )}
-        {hasMultipleImages && (
-          <div ref={thumbnailsRef} role="group" aria-label="Product photos" className="relative flex gap-4 overflow-x-auto overscroll-x-contain pb-3 [scrollbar-width:thin]">
-            {/* Pinned edge rules stretch to the frames' height, not the scrollbar's padding,
-                and appear only while thumbnails are hidden past that edge. */}
-            <span aria-hidden className={`sticky left-0 z-10 w-px shrink-0 bg-black/10 transition-opacity dark:bg-white/10 ${clippedStart ? "" : "opacity-0"}`} />
-            {galleryGroups.map((group) => (
-              <div key={`${group.productId}:${group.label}`} role="group" aria-label={`${group.label} photos`} className="w-max shrink-0 rounded-2xl border border-black/10 py-3 dark:border-white/10">
-                <Kicker className="mb-2 px-3">{group.label}</Kicker>
-                <div className="flex gap-3 px-3">
-                  {group.images.map((entry) => (
-                    <button key={entry.key} type="button" onClick={() => selectGalleryImage(entry)} aria-label={`View ${entry.label}`} aria-pressed={entry.productId === product.id && activeImage?.url === entry.image.url} className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 sm:h-20 sm:w-20 dark:focus-visible:ring-white/40 ${entry.productId === product.id && activeImage?.url === entry.image.url ? "border-black dark:border-white" : "border-black/10 dark:border-white/10"}`}>
-                      <Image src={entry.image.url} alt="" fill sizes="120px" className="object-contain" />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-            <span aria-hidden className={`sticky right-0 z-10 w-px shrink-0 bg-black/10 transition-opacity dark:bg-white/10 ${clippedEnd ? "" : "opacity-0"}`} />
-          </div>
-        )}
       </div>
       <div className="min-w-0">
         <h1 className="font-cooper text-4xl leading-[1.05] tracking-wide text-black dark:text-white sm:text-5xl">{title}</h1>

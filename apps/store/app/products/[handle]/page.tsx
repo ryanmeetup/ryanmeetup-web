@@ -76,16 +76,16 @@ export default async function ProductPage({ params, searchParams }: Props) {
     },
     ...(reviewCount ? { aggregateRating: { "@type": "AggregateRating", ratingValue: (totalRating / reviewCount).toFixed(1), reviewCount } } : {}),
   };
+  const breadcrumbs = <Breadcrumbs variant="compact" crumbs={[{ href: "/", title: "Store", icon: <StoreHomeIcon aria-hidden className="shrink-0" /> }, ...(originCrumb ? [originCrumb] : []), { href: `/products/${product.handle}`, title: product.title, current: true, icon: <StoreProductIcon aria-hidden className="shrink-0" /> }]} />;
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
       <NavSection href={typeCollection ? `/collections/${typeCollection.handle}` : null} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema).replace(/</g, "\\u003c") }} />
-      <Breadcrumbs variant="compact" crumbs={[{ href: "/", title: "Store", icon: <StoreHomeIcon aria-hidden className="shrink-0" /> }, ...(originCrumb ? [originCrumb] : []), { href: `/products/${product.handle}`, title: product.title, current: true, icon: <StoreProductIcon aria-hidden className="shrink-0" /> }]} />
       {product.designs ? (
-        <div className="mt-8"><ProductGroupDetail title={product.title} handle={product.handle} designs={product.designs} defaultColor={product.defaultColor} reviewsByProduct={reviewsByProduct} /></div>
+        <ProductGroupDetail title={product.title} handle={product.handle} breadcrumbs={breadcrumbs} designs={product.designs} defaultColor={product.defaultColor} reviewsByProduct={reviewsByProduct} />
       ) : (
         <>
-          <div className="mt-8"><ProductDetail product={product} initialColor={query.color} initialImage={getColorPreview(product, query.color)?.image} /></div>
+          <ProductDetail product={product} breadcrumbs={breadcrumbs} initialColor={query.color} initialImage={getColorPreview(product, query.color)?.image} />
           <Reviews data={reviewsByProduct[product.id]} productId={product.id} />
         </>
       )}
