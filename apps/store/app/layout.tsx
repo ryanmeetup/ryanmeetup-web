@@ -84,6 +84,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             <RyanMeetupFooter
               homeHref="https://ryanmeetup.com"
               sections={policyLinks.length ? [{ title: "Policies", links: policyLinks }] : []}
+              followColumn={false}
               className="store-container"
             />
             <CartDrawer />

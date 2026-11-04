@@ -13,6 +13,8 @@ export type RyanMeetupFooterProps = {
   homeHref?: string;
   /** Site-specific link columns, shown before the shared Ryan Meetup ones. */
   sections?: SiteFooterSection[];
+  /** Repeat the social links as a text column. Off where the labelled icon row is enough. */
+  followColumn?: boolean;
 };
 
 const socialLinks = [
@@ -52,6 +54,7 @@ export function RyanMeetupFooter({
   className,
   homeHref = "/",
   sections = [],
+  followColumn = true,
 }: RyanMeetupFooterProps) {
   return (
     <SiteFooter
@@ -61,10 +64,9 @@ export function RyanMeetupFooter({
       className={className}
       sections={[
         ...sections,
-        {
-          title: "Follow us",
-          links: socialLinks.map(({ href, label }) => ({ href, label })),
-        },
+        ...(followColumn
+          ? [{ title: "Follow us", links: socialLinks.map(({ href, label }) => ({ href, label })) }]
+          : []),
         {
           title: "Built with",
           columns: 2,
@@ -80,6 +82,7 @@ export function RyanMeetupFooter({
         },
       ]}
       socialLinks={socialLinks}
+      socialLabel="Follow us"
       credit={{ href: "https://ryanle.dev/", label: "Ryan Le" }}
     />
   );

@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Divider } from "./Divider";
 import { Heading } from "./Heading";
+import { Tooltip, type TooltipProps } from "./Tooltip";
 
 export type SiteFooterLink = {
   href: string;
@@ -29,6 +30,8 @@ export type SiteFooterProps = {
   subtitle?: string;
   sections?: SiteFooterSection[];
   socialLinks?: SiteFooterLink[];
+  /** A short heading above the social icons, such as "Follow us". */
+  socialLabel?: string;
   homeHref?: string;
   credit?: SiteFooterCredit;
   className?: string;
@@ -65,12 +68,18 @@ function FooterCredit({ credit }: { credit: SiteFooterCredit }) {
   );
 }
 
+/** Names an icon-only social link on hover and focus; a text link already says it. */
+function SocialTooltip({ link, children }: { link: SiteFooterLink; children: TooltipProps["children"] }) {
+  return link.icon ? <Tooltip content={link.label}>{children}</Tooltip> : children;
+}
+
 export function SiteFooter({
   title,
   wordmark,
   subtitle = "",
   sections = [],
   socialLinks = [],
+  socialLabel,
   homeHref = "/",
   credit,
   className = "",
@@ -119,19 +128,31 @@ export function SiteFooter({
           )}
 
           {socialLinks.length > 0 && (
-            <ul className="flex flex-wrap justify-center gap-1">
-              {socialLinks.map((link) => (
-                <li key={`${link.href}-${link.label}`}>
-                  <Link
-                    href={link.href}
-                    aria-label={link.label}
-                    className={`inline-flex rounded-full p-2 transition hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white ${focusRing}`}
-                  >
-                    {link.icon ?? link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <div className="flex flex-col items-center gap-1 sm:items-end">
+              {socialLabel && (
+                <h2 id="footer-social" className="text-[11px] font-semibold uppercase tracking-[0.28em]">
+                  {socialLabel}
+                </h2>
+              )}
+              <ul
+                aria-labelledby={socialLabel ? "footer-social" : undefined}
+                className="flex flex-wrap justify-center gap-1"
+              >
+                {socialLinks.map((link) => (
+                  <li key={`${link.href}-${link.label}`}>
+                    <SocialTooltip link={link}>
+                      <Link
+                        href={link.href}
+                        aria-label={link.label}
+                        className={`inline-flex rounded-full p-2 transition hover:bg-black/5 hover:text-black dark:hover:bg-white/10 dark:hover:text-white ${focusRing}`}
+                      >
+                        {link.icon ?? link.label}
+                      </Link>
+                    </SocialTooltip>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </div>
 
@@ -209,7 +230,7 @@ export function SiteFooter({
 
       <Divider margins="lg" />
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         {credit && (
           <span className="text-sm text-black/70 dark:text-white/70 sm:text-center">
             <FooterCredit credit={credit} />
@@ -217,19 +238,34 @@ export function SiteFooter({
         )}
 
         {socialLinks.length > 0 && (
-          <ul className="flex flex-wrap gap-6">
-            {socialLinks.map((link) => (
-              <li key={`${link.href}-${link.label}`}>
-                <Link
-                  href={link.href}
-                  aria-label={link.label}
-                  className={`inline-flex rounded-sm ${focusRing}`}
-                >
-                  {link.icon ?? link.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <div className="space-y-3 sm:text-right">
+            {socialLabel && (
+              <h2
+                id="footer-social"
+                className="text-xs font-semibold uppercase tracking-[0.3em] text-black/70 dark:text-white/70"
+              >
+                {socialLabel}
+              </h2>
+            )}
+            <ul
+              aria-labelledby={socialLabel ? "footer-social" : undefined}
+              className="flex flex-wrap gap-6 sm:justify-end"
+            >
+              {socialLinks.map((link) => (
+                <li key={`${link.href}-${link.label}`}>
+                  <SocialTooltip link={link}>
+                    <Link
+                      href={link.href}
+                      aria-label={link.label}
+                      className={`inline-flex rounded-sm ${focusRing}`}
+                    >
+                      {link.icon ?? link.label}
+                    </Link>
+                  </SocialTooltip>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </div>
     </footer>
