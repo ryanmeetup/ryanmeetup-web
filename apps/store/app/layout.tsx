@@ -5,7 +5,7 @@ import { ThemeProvider } from "next-themes";
 import { CartDrawer } from "@/components/cart-drawer";
 import { CartProvider } from "@/components/cart-provider";
 import { Header } from "@/components/header";
-import { isShopifyConfigured } from "@/lib/shopify";
+import { getCollections, isShopifyConfigured } from "@/lib/shopify";
 import "./globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://store.ryanmeetup.com";
@@ -24,8 +24,19 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+// The header menu is on every page, including the error pages, so a Shopify outage
+// leaves the Collections menu with only Shop all instead of failing the layout.
+async function getMenuCollections() {
+  const collections = await getCollections().catch((error: unknown) => {
+    console.error("Could not load collections for the header menu.", error);
+    return [];
+  });
+  return collections.map(({ handle, title, description }) => ({ handle, title, description }));
+}
+
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const commerceConfigured = isShopifyConfigured();
+  const collections = await getMenuCollections();
   return (
     <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
       <body className="antialiased">
@@ -45,7 +56,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 {!commerceConfigured && " Shopify isn't connected, so checkout is off."}
               </span>
             </Banner>
-            <Header />
+            <Header collections={collections} />
             {children}
             <RyanMeetupFooter
               homeHref="https://ryanmeetup.com"

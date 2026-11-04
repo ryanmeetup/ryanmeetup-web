@@ -1,18 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
-import { FiMenu, FiShoppingBag, FiX } from "react-icons/fi";
-import { Heading } from "@ryanmeetup/ui";
-import { storeNavigation } from "@/lib/navigation";
+import { FiChevronDown, FiMenu, FiShoppingBag, FiX } from "react-icons/fi";
+import { AnimatedCollapse, NavMenu, Wordmark } from "@ryanmeetup/ui";
+import { getCollectionMenuRoutes, storeNavigation } from "@/lib/navigation";
+import type { StoreMenuCollection } from "@/lib/navigation";
 import { useCart } from "./cart-provider";
 import { ThemeToggle } from "./theme-toggle";
 
-export function Header() {
+export function Header({ collections }: { collections: StoreMenuCollection[] }) {
   const [open, setOpen] = useState(false);
-  const { cart, drawerOpen, setDrawerOpen } = useCart();
   const pathname = usePathname();
+  const collectionRoutes = useMemo(() => getCollectionMenuRoutes(collections), [collections]);
+  // Starts expanded on a page in the menu so the mobile menu shows where you are.
+  const [collectionsOpen, setCollectionsOpen] = useState(() =>
+    collectionRoutes.some((route) => route.href === pathname),
+  );
+  const { cart, drawerOpen, setDrawerOpen } = useCart();
 
   return (
     <header className="sticky top-0 z-40 border-b border-black/10 bg-white/80 backdrop-blur dark:border-white/10 dark:bg-black/70">
@@ -23,31 +29,36 @@ export function Header() {
       <div className="store-container relative flex min-h-16 items-center gap-4 py-3">
         <Link
           href="/"
-          className="group w-fit rounded-sm tracking-[0.2em] transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/40"
+          className="w-fit rounded-sm transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/40"
         >
-          <Heading size="h1" className="text-2xl leading-none sm:text-3xl">
-            RYAN
-          </Heading>
-          <span className="mt-0.5 block text-[8px] font-bold uppercase tracking-[0.34em] text-black/55 dark:text-white/55 sm:text-[9px]">
-            General Store
-          </span>
+          <Wordmark name="RYAN MEETUP" tagline="Official Merch Store" compact />
         </Link>
         <nav
           aria-label="Main navigation"
           className="hidden min-w-0 flex-1 items-center justify-center xl:flex"
         >
           <div className="flex max-w-full items-center gap-1 overflow-x-auto rounded-full border border-black/10 bg-white/70 p-1 shadow-sm backdrop-blur dark:border-white/20 dark:bg-white/10 dark:ring-1 dark:ring-white/10 2xl:gap-2 2xl:p-1.5">
-            {storeNavigation.map(({ href, icon: Icon, label }) => (
-              <Link
-                key={href}
-                href={href}
-                aria-current={pathname === href ? "page" : undefined}
-                className={`flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold tracking-wide transition hover:bg-black/5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:hover:bg-white/10 dark:focus-visible:ring-white/40 2xl:px-4 2xl:text-sm ${pathname === href ? "bg-black/15 shadow-sm ring-1 ring-black/10 dark:bg-white/25 dark:ring-white/20" : ""}`}
-              >
-                <Icon aria-hidden className="shrink-0" />
-                {label}
-              </Link>
-            ))}
+            {storeNavigation.map(({ icon: Icon, label, ...item }) =>
+              "menu" in item ? (
+                <NavMenu
+                  key={label}
+                  icon={<Icon aria-hidden className="shrink-0" />}
+                  title={label}
+                  routes={collectionRoutes}
+                  pathname={pathname}
+                />
+              ) : (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={pathname === item.href ? "page" : undefined}
+                  className={`flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold tracking-wide transition hover:bg-black/5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:hover:bg-white/10 dark:focus-visible:ring-white/40 2xl:px-4 2xl:text-sm ${pathname === item.href ? "bg-black/15 shadow-sm ring-1 ring-black/10 dark:bg-white/25 dark:ring-white/20" : ""}`}
+                >
+                  <Icon aria-hidden className="shrink-0" />
+                  {label}
+                </Link>
+              ),
+            )}
           </div>
         </nav>
         <div className="ml-auto flex flex-none items-center gap-2 sm:gap-4">
@@ -91,25 +102,70 @@ export function Header() {
           aria-label="Mobile navigation"
           className="store-container relative grid gap-1 border-t border-black/10 py-3 xl:hidden dark:border-white/10"
         >
-          {storeNavigation.map(({ description, href, icon: Icon, label }) => (
-            <Link
-              key={href}
-              href={href}
-              aria-current={pathname === href ? "page" : undefined}
-              onClick={() => setOpen(false)}
-              className={`grid grid-cols-[auto_1fr] items-start gap-3 rounded-xl border px-3 py-3 text-sm shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/40 ${pathname === href ? "border-black/30 bg-black/5 dark:border-white/40 dark:bg-white/10" : "border-black/10 bg-white/70 hover:border-black/20 hover:bg-black/5 dark:border-white/15 dark:bg-white/5 dark:hover:border-white/30 dark:hover:bg-white/10"}`}
-            >
-              <Icon aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>
-                <span className="block font-semibold tracking-wide">
-                  {label}
+          {storeNavigation.map(({ description, icon: Icon, label, ...item }) =>
+            "menu" in item ? (
+              <div
+                key={label}
+                className="rounded-2xl border border-black/10 bg-black/[0.02] p-1.5 dark:border-white/10 dark:bg-white/[0.04]"
+              >
+                <button
+                  type="button"
+                  aria-expanded={collectionsOpen}
+                  aria-controls="mobile-collections"
+                  onClick={() => setCollectionsOpen((value) => !value)}
+                  className="grid w-full grid-cols-[auto_1fr_auto] items-start gap-3 rounded-xl border border-black/10 bg-white/70 px-3 py-3 text-left text-sm shadow-sm transition hover:border-black/20 hover:bg-black/5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:border-white/15 dark:bg-white/5 dark:hover:border-white/30 dark:hover:bg-white/10 dark:focus-visible:ring-white/40"
+                >
+                  <Icon aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>
+                    <span className="block font-semibold tracking-wide">
+                      {label}
+                    </span>
+                    <span className="mt-1 block text-xs font-normal leading-relaxed text-black/70 dark:text-white/70">
+                      {description}
+                    </span>
+                  </span>
+                  <FiChevronDown
+                    aria-hidden
+                    className={`mt-0.5 h-4 w-4 transition motion-reduce:transition-none ${collectionsOpen ? "-rotate-180" : ""}`}
+                  />
+                </button>
+                <AnimatedCollapse id="mobile-collections" open={collectionsOpen}>
+                  <div className="flex flex-wrap gap-2 px-1.5 pb-1.5 pt-3">
+                    {collectionRoutes.map((route) => (
+                      <Link
+                        key={route.href}
+                        href={route.href}
+                        aria-current={pathname === route.href ? "page" : undefined}
+                        onClick={() => setOpen(false)}
+                        className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[13px] font-semibold tracking-wide shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/40 ${pathname === route.href ? "border-black/30 bg-black/5 dark:border-white/40 dark:bg-white/10" : "border-black/10 bg-white hover:border-black/20 hover:bg-black/5 dark:border-white/15 dark:bg-white/5 dark:hover:border-white/30 dark:hover:bg-white/10"}`}
+                      >
+                        {route.icon}
+                        {route.text}
+                      </Link>
+                    ))}
+                  </div>
+                </AnimatedCollapse>
+              </div>
+            ) : (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={pathname === item.href ? "page" : undefined}
+                onClick={() => setOpen(false)}
+                className={`grid grid-cols-[auto_1fr] items-start gap-3 rounded-xl border px-3 py-3 text-sm shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/40 ${pathname === item.href ? "border-black/30 bg-black/5 dark:border-white/40 dark:bg-white/10" : "border-black/10 bg-white/70 hover:border-black/20 hover:bg-black/5 dark:border-white/15 dark:bg-white/5 dark:hover:border-white/30 dark:hover:bg-white/10"}`}
+              >
+                <Icon aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>
+                  <span className="block font-semibold tracking-wide">
+                    {label}
+                  </span>
+                  <span className="mt-1 block text-xs font-normal leading-relaxed text-black/70 dark:text-white/70">
+                    {description}
+                  </span>
                 </span>
-                <span className="mt-1 block text-xs font-normal leading-relaxed text-black/70 dark:text-white/70">
-                  {description}
-                </span>
-              </span>
-            </Link>
-          ))}
+              </Link>
+            ),
+          )}
         </nav>
       )}
     </header>

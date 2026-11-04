@@ -277,6 +277,34 @@ test("customer can read about the store and get back to shopping", async ({ page
   await expect(page).toHaveURL(/\/collections\/all$/);
 });
 
+test("apparel and accessories are header links, and shop all sits in the collections menu", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/about");
+  const mainNavigation = page.getByRole("navigation", { name: "Main navigation" });
+  await expect(mainNavigation.getByRole("link", { name: "Shop all" })).toHaveCount(0);
+  // The shared NavMenu opens on hover, as it does on ryanmeetup.com.
+  await mainNavigation.getByRole("button", { name: "Collections" }).hover();
+  await expect(page.getByRole("link", { name: "Shop all" })).toHaveAttribute("href", "/collections/all");
+  await mainNavigation.getByRole("link", { name: "Apparel" }).click();
+  await expect(page).toHaveURL(/\/collections\/apparel$/);
+  await expect(mainNavigation.getByRole("link", { name: "Apparel" })).toHaveAttribute("aria-current", "page");
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("button", { name: "Open navigation" }).click();
+  const mobileNavigation = page.getByRole("navigation", { name: "Mobile navigation" });
+  const toggle = mobileNavigation.getByRole("button", { name: /^Collections/ });
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(mobileNavigation.getByRole("link", { name: "Shop all" })).toBeHidden();
+  await toggle.click();
+  await mobileNavigation.getByRole("link", { name: "Shop all" }).click();
+  await expect(page).toHaveURL(/\/collections\/all$/);
+  await expect(mobileNavigation).toBeHidden();
+
+  // On a page from the menu, the group opens already expanded.
+  await page.getByRole("button", { name: "Open navigation" }).click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+});
+
 test("product breadcrumbs name the page the customer came from", async ({ page }) => {
   const breadcrumb = page.getByRole("navigation", { name: "Breadcrumb" });
   await page.goto("/collections/apparel");
@@ -301,7 +329,7 @@ test("store navigation and breadcrumbs use icons", async ({ page }) => {
   await page.goto("/products/ryan-meetup-tee");
   await expect(
     page.getByRole("navigation", { name: "Main navigation" }).locator("a svg"),
-  ).toHaveCount(5);
+  ).toHaveCount(4);
   await expect(
     page.getByRole("navigation", { name: "Breadcrumb" }).locator("li svg"),
   ).toHaveCount(2);
@@ -316,7 +344,7 @@ test("store navigation and breadcrumbs use icons", async ({ page }) => {
     page
       .getByRole("navigation", { name: "Mobile navigation" })
       .locator("a svg"),
-  ).toHaveCount(5);
+  ).toHaveCount(5); // four links and the collapsed Shop all chip
   await page.screenshot({
     path: "/private/tmp/store-mobile-navigation.png",
     fullPage: false,

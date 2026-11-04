@@ -93,6 +93,12 @@ showing every listing in that collection and linking to its page, followed by
 **More Ryan goods** for products in no collection. The type and size filters
 apply within every section.
 
+Apparel and Accessories are links in the header. The header's **Collections**
+menu lists the Shopify collections being featured right now (every Shopify
+collection except the type pages and the home page favorites), then Shop all
+(*all*). A new collection appears there on its own within five minutes. Give it its own icon in `collectionIcons` in
+[lib/navigation.ts](lib/navigation.ts); without one it shows stacked boxes.
+
 ### Example: name tag shirts
 
 Products tagged `listing:Name Tag Shirt` share the listing `Name Tag Shirt` at
