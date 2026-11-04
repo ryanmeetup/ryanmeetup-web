@@ -4,12 +4,13 @@ import Image from "next/image";
 import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Button, DropdownSelect, ErrorCallout, IconButton, Kicker, getFieldLabelClasses } from "@ryanmeetup/ui";
-import { FiCheck, FiCheckCircle, FiChevronLeft, FiChevronRight, FiPackage, FiShield, FiShoppingBag } from "react-icons/fi";
+import { FiCheck, FiChevronLeft, FiChevronRight, FiHeart, FiPenTool, FiShield, FiShoppingBag } from "react-icons/fi";
 import { formatMoney, getCompareAtPrice, getListingSale } from "@/lib/money";
 import { findVariant, getOptionChoices, getSelections, isDefaultTitleOption, isSizeOption, oneSize } from "@/lib/product-options";
 import { getColorOption, getColorSlug, getVariantForColor } from "@/lib/product-colors";
 import { getProductGallery, getVariantForImage, groupProductGallery } from "@/lib/product-gallery";
 import type { ProductGalleryImage } from "@/lib/product-gallery";
+import { getProductDesignerCredit } from "@/lib/product-designers";
 import type { Product, StoreImage } from "@/lib/types";
 import { useCart } from "./cart-provider";
 import { ProductDescription } from "./product-description";
@@ -251,11 +252,11 @@ export function ProductDetail({ product, title = product.title, breadcrumbs, des
         {error && <ErrorCallout className="mt-4">{error}</ErrorCallout>}
         <div className="mt-8 border-t border-black/10 dark:border-white/10">
           <ProductDescription description={product.description} descriptionHtml={product.descriptionHtml} part="details" />
-          <div className="grid gap-6 pt-6 text-sm text-black/70 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3 dark:text-white/70">
+          <div className="grid gap-6 pt-6 text-sm text-black/70 sm:grid-cols-2 dark:text-white/70">
             {[
-              { icon: FiPackage, title: "Made to order", text: "Printed when you order" },
+              { icon: FiPenTool, title: "Designed by Ryan", text: getProductDesignerCredit(product) || "Designed in-house by one of our Ryans." },
               { icon: FiShield, title: "Secure checkout", text: "Hosted by Shopify" },
-              { icon: FiCheckCircle, title: "Ryan approved", text: "Obviously" },
+              { icon: FiHeart, title: "Supports Ryan Meetup", text: "Helps fund Ryan gatherings" },
             ].map(({ icon: Icon, title: label, text }) => (
               <div key={label} className="space-y-2">
                 <Icon aria-hidden className="text-xl text-black dark:text-white" />

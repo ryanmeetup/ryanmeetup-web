@@ -357,7 +357,7 @@ test("customer can read about the store and get back to shopping", async ({ page
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "About" }).click();
   await expect(page).toHaveURL(/\/about$/);
-  await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toHaveText("Official provisions for the Ryan people.");
+  await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toHaveText("Official goods. Unmistakably Ryan.");
   await expect(page.getByText("We can’t accept returns.", { exact: false })).toBeVisible();
   await expect(page.getByText("We ship to most of the world.", { exact: false })).toBeVisible();
   await expect(page.getByText(/printful/i)).toHaveCount(0);

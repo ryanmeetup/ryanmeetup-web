@@ -6,7 +6,7 @@ or developer help are needed for everyday listing work.
 
 ## How the store reads Shopify
 
-The store pulls everything from Shopify. Five settings on each product decide
+The store pulls everything from Shopify. These settings on each product decide
 what customers see:
 
 | Shopify setting | What it controls on the store |
@@ -16,6 +16,7 @@ what customers see:
 | **Collections** | Which section of the home page it appears in, and which collection page lists it. |
 | **`listing:` tag** | Whether it is combined with similar products into one listing with a **Style** dropdown. |
 | **Title** | The product name, and the option name in that Style dropdown. |
+| **`designer:` tags** | The names credited under **Designed by Ryan** on the product page. |
 
 Changes show up on the store within about **5 minutes**. If something looks
 wrong right after a change, wait and refresh before troubleshooting.
@@ -43,8 +44,24 @@ Create and sync the product through Printful as usual, then open it in Shopify
    [Collections](#collections).
 7. **`listing:` tag, only if the product is a version of something else.** See
    [Listings](#listings-combining-similar-products).
-8. **Check the store** after about 5 minutes: the product's page, its collection
+8. **Designer credits.** Add a `designer:Ryan Name` tag for each contributor you
+   want to credit. See [Designer credits](#designer-credits).
+9. **Check the store** after about 5 minutes: the product's page, its collection
    section on the home page, and the Apparel or Accessories page.
+
+## Designer credits
+
+In Shopify Admin, open **Products → the product → Product organization → Tags**
+and add a separate tag for each designer, for example `designer:Ryan Le`.
+For a collaboration, add each contributor's tag. The store shows their names
+under **Designed by Ryan**, alongside **Secure checkout** and **Supports Ryan Meetup**.
+Use the names you want customers to see; these credits are plain text.
+
+For grouped listings, put credits on each underlying Shopify product. The credit
+follows the selected style or color, so different designs can credit different
+Ryans. If the same designer created every version, add the same tag to each
+product. A product without designer tags shows **Designed in-house by one of our Ryans.** instead.
+Blank credits are ignored, and repeated names appear once.
 
 ## Listings: combining similar products
 

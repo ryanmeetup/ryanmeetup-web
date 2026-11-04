@@ -13,7 +13,7 @@ const externalListings: ExternalListing[] = [
       id: "external:ryd",
       handle: "ryd",
       title: "RY-D Membership Card",
-      description: "A customized anodized aluminum membership card, made to order by Ryan at P&M Apparel.",
+      description: "A customized anodized aluminum membership card by Ryan at P&M Apparel.",
       descriptionHtml: "",
       availableForSale: true,
       productType: "Accessory",

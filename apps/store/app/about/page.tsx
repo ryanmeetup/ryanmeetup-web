@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button, Card, Heading, Kicker, Pill, Text } from "@ryanmeetup/ui";
 import type { IconType } from "react-icons";
-import { FiArrowRight, FiGlobe, FiHeart, FiPrinter, FiTruck, FiUsers, FiXCircle } from "react-icons/fi";
+import { FiArrowRight, FiGlobe, FiHeart, FiPenTool, FiTruck, FiUsers, FiXCircle } from "react-icons/fi";
 
 export const metadata: Metadata = {
   title: "About the store",
@@ -12,14 +12,14 @@ export const metadata: Metadata = {
 
 const sections = [
   { id: "money", label: "Where your money goes", icon: FiHeart },
-  { id: "made", label: "How it’s made", icon: FiPrinter },
+  { id: "made", label: "Behind the designs", icon: FiPenTool },
   { id: "for", label: "Who it’s for", icon: FiUsers },
   { id: "shipping", label: "Shipping and returns", icon: FiTruck },
 ] as const satisfies readonly { id: string; label: string; icon: IconType }[];
 
 const glance = [
   { icon: FiHeart, term: "Proceeds", detail: "Ryan Meetup events and activities" },
-  { icon: FiPrinter, term: "Made", detail: "To order, just for you" },
+  { icon: FiPenTool, term: "Designed", detail: "By Ryan. Naturally." },
   { icon: FiGlobe, term: "Ships", detail: "Most of the world" },
   { icon: FiXCircle, term: "Returns", detail: "Not accepted" },
 ];
@@ -54,7 +54,7 @@ export default function AboutPage() {
           <header className="space-y-5">
             <Pill>About the store</Pill>
             <Heading size="h1" className="text-4xl leading-[1.05] sm:text-5xl lg:text-6xl">
-              Official provisions for the Ryan people.
+              Official goods. Unmistakably Ryan.
             </Heading>
             <Text className="max-w-3xl text-lg text-black/80 dark:text-white/80">
               Ryan General Store is the official shop of Ryan Meetup, the gathering of people named Ryan. New to the Ryanverse?{" "}
@@ -81,9 +81,9 @@ export default function AboutPage() {
           </section>
 
           <section id="made" className={sectionClassName}>
-            <SectionTitle id="made">Printed when you order it.</SectionTitle>
+            <SectionTitle id="made">Designed by Ryan. Naturally.</SectionTitle>
             <Text className="max-w-3xl">
-              Each item is printed when you order it, so give yours a little time to be made before it heads your way.
+              Our designs come from Ryans. Look for designer credits on product pages to meet the Ryan behind a design.
             </Text>
           </section>
 
@@ -100,7 +100,7 @@ export default function AboutPage() {
               We ship to most of the world. Shipping options and costs for your address appear at checkout, and tracking details arrive by email once your order is on its way.
             </Text>
             <Text className="max-w-3xl">
-              We can’t accept returns. Every item is printed for its order, and we don’t have a back room to send it to. If something about your order looks wrong,{" "}
+              We can’t accept returns. If something about your order looks wrong,{" "}
               <Link href="/contact" className={linkClassName}>contact store support</Link> and we’ll take a look.
             </Text>
           </section>

@@ -6,7 +6,7 @@ import {
   SectionHeader,
   Text,
 } from "@ryanmeetup/ui";
-import { FiArrowRight, FiPackage, FiShield, FiTruck } from "react-icons/fi";
+import { FiArrowRight, FiPenTool, FiShield, FiTruck } from "react-icons/fi";
 import { ProductGrid } from "@/components/product-grid";
 import { collectionHeading } from "@/lib/catalog-collections";
 import { getHomeCatalog } from "@/lib/shopify";
@@ -119,7 +119,7 @@ export default async function HomePage() {
       <section className="border-y border-black/10 bg-white/45 dark:border-white/10 dark:bg-white/[0.025]">
         <div className="store-container grid gap-8 py-12 sm:grid-cols-3 sm:py-16">
           {[
-            { icon: <FiPackage />, title: "Made for you", text: "Each order is printed just for you." },
+            { icon: <FiPenTool />, title: "Designed by Ryan", text: "Original Ryan Meetup designs." },
             { icon: <FiShield />, title: "Secure checkout", text: "Payment and tax are handled by Shopify." },
             { icon: <FiTruck />, title: "Tracked delivery", text: "Shipping updates arrive right in your inbox." },
           ].map((item) => (
