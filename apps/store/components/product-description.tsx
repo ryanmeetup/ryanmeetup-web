@@ -6,7 +6,7 @@ import type { Product } from "@/lib/types";
 export function ProductDescription({ description, descriptionHtml, part }: Pick<Product, "description" | "descriptionHtml"> & { part?: "intro" | "details" }) {
   const content = splitProductDescription({ description, descriptionHtml });
 
-  function renderContent(value: string, className = "product-description") {
+  function renderContent(value: string, className = "rich-text") {
     return content.html ? (
       // Rich HTML is authored in Shopify Admin and supplied by the Storefront API.
       <div className={className} dangerouslySetInnerHTML={{ __html: value }} />
@@ -15,7 +15,7 @@ export function ProductDescription({ description, descriptionHtml, part }: Pick<
 
   return (
     <>
-      {part !== "details" && content.intro && <div className="mt-6">{renderContent(content.intro, "product-description product-description-lead")}</div>}
+      {part !== "details" && content.intro && <div className="mt-6">{renderContent(content.intro, "rich-text product-description-lead")}</div>}
       {part !== "intro" && content.details && (
         <DisclosureCard
           summary="Product details"
