@@ -11,7 +11,7 @@ comparison is against Etsy's standard shop features; the live shop could not be
 read automatically (Etsy returns 403), so confirm items marked **check Etsy**
 against the real listings.
 
-Last reviewed: 2026-11-03.
+Last reviewed: 2026-11-04.
 
 ## Already in place
 
@@ -63,6 +63,7 @@ has no way back to an order except the Shopify email.
   shop's customer account URL. Full in-site login via the Customer Account API is
   optional and can come later.
 - Update the Contact page's "Order email" guidance if the flow changes.
+- Add customer accounts to the privacy policy in Shopify Admin.
 
 **Done when.** A customer can get from the store to their order status without
 searching their inbox.
@@ -88,6 +89,10 @@ Shopify Admin and environment (no code):
 - [ ] Refund policy, shipping policy, and terms of service written in Settings →
       Policies. Only the privacy policy exists today; each one appears on the
       site as soon as it has text.
+- [ ] Privacy policy rewritten to match what the store actually does (no ads,
+      no data sales, Vercel Analytics, the services that receive data). The
+      Shopify template it replaces describes accounts, wishlists, ad partners,
+      and SMS marketing the store doesn't have.
 - [ ] `JUDGEME_PRIVATE_API_TOKEN` set in Production and Preview.
 - [ ] Etsy listings retired or redirected, and `ryanmeetup.com/merch` (currently
       pointing at Etsy in `apps/ryanmeetup`) switched to the store.
@@ -181,7 +186,8 @@ before checkout.
 
 **Approach.** Start with a per-browser favorites list (`localStorage`, wrapped in
 try/catch) with a heart button on cards and product pages and a `/favorites` page.
-Move it to customer accounts after item 3 if wanted.
+Move it to customer accounts after item 3 if wanted, and add that to the
+privacy policy when it happens.
 
 **Done when.** Favorites persist across visits in the same browser.
 
