@@ -61,7 +61,7 @@ const NavMenu = ({
         >
           <PopoverButton
             ref={buttonRef}
-            className={`flex cursor-pointer items-center gap-x-2 rounded-full px-3 py-2 text-xs font-semibold tracking-wide text-black transition hover:bg-black/5 hover:shadow-sm focus:outline-none dark:text-white dark:hover:bg-white/10 2xl:px-4 2xl:text-sm ${
+            className={`flex cursor-pointer items-center gap-x-2 rounded-full px-3 py-2 text-xs font-semibold tracking-wide text-black transition hover:bg-black/5 hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:text-white dark:hover:bg-white/10 dark:focus-visible:ring-white/40 2xl:px-4 2xl:text-sm ${
               active
                 ? "bg-black/15 text-black shadow-sm ring-1 ring-black/10 dark:bg-white/25 dark:text-white dark:ring-white/20"
                 : ""

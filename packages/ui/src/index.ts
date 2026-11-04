@@ -63,6 +63,7 @@ export * from "./Text";
 export * from "./TestimonialCard";
 export * from "./Textarea";
 export * from "./Tooltip";
+export * from "./Wordmark";
 export * from "./Avatar";
 export * from "./Banner";
 export * from "./AnimatedCollapse";

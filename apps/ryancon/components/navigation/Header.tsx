@@ -1,7 +1,7 @@
 "use client";
 
 // Components
-import { Heading } from "@ryanmeetup/ui";
+import { Wordmark } from "@ryanmeetup/ui";
 import NextLink from "next/link";
 import { MobileMenu } from "@/components/navigation";
 import { FaTicket as Ticket } from "react-icons/fa6";
@@ -30,9 +30,7 @@ const Header = () => {
           href="/"
           className="title group flex items-center tracking-[0.2em] timing hover:scale-105"
         >
-          <Heading className="text-2xl sm:text-3xl" size="h1">
-            RYANCON
-          </Heading>
+          <Wordmark name="RYANCON" />
         </NextLink>
 
         <nav className="hidden min-w-0 flex-1 items-center justify-center xl:flex">
