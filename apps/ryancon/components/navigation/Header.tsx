@@ -10,13 +10,13 @@ import { FaTicket as Ticket } from "react-icons/fa6";
 import { usePathname } from "next/navigation";
 import { layoutPaddingX, leftRoutes, rightRoutes } from "@/lib/constants";
 
-const Header = () => {
+const Header = ({ className = "" }: { className?: string }) => {
   const pathname = usePathname();
 
   const headerRoutes = [...leftRoutes, ...rightRoutes];
 
   return (
-    <header className="sticky top-0 z-30 relative border-b border-black/10 bg-white/80 backdrop-blur dark:border-white/10 dark:bg-black/70">
+    <header className={`sticky top-0 z-30 relative border-b border-black/10 bg-white/80 backdrop-blur dark:border-white/10 dark:bg-black/70 ${className}`}>
       <div className="absolute top-16 -left-[305px] -rotate-45 z-10">
         <div className="px-2 text-center rounded-lg font-semibold uppercase w-200 h-6 flex items-center justify-center bg-red-500 text-lg py-6">
           UNDER CONSTRUCTION

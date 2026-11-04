@@ -10,16 +10,17 @@ import type { ReactNode } from "react";
 
 type LayoutProps = {
   className?: string;
+  headerClassName?: string;
   children: ReactNode;
   fullscreen?: boolean;
 };
 
 const Layout = (props: LayoutProps) => {
-  const { className, children, fullscreen = false } = props;
+  const { className, headerClassName, children, fullscreen = false } = props;
 
   return (
     <main>
-      <Header />
+      <Header className={headerClassName} />
       <section
         className={`${className}
                     text-white h-full flex flex-col dark:bg-black dark:text-white
