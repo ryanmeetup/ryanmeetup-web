@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   readyForRydFulfillment,
+  rydCardFileStatus,
   rydFulfillmentCounts,
   rydFulfillmentParam,
   rydFulfillmentStage,
@@ -56,5 +57,33 @@ describe("RY-D fulfillment handoff", () => {
     expect(rydFulfillmentParam("in-production")).toBe("sent-to-fulfillment");
     expect(rydFulfillmentParam("all")).toBeNull();
     expect(rydFulfillmentParam("unknown")).toBeNull();
+  });
+
+  it("says why verified orders are missing from the card file", () => {
+    const card = {
+      firstName: "Ryan",
+      lastName: "Le",
+      location: "Brooklyn, NY",
+      ryanSince: "1999",
+    };
+    const status = rydCardFileStatus([
+      order({ orderId: "approved", card, cardSaved: true }),
+      order({ orderId: "draft", card, cardSaved: false }),
+      order({
+        orderId: "blank",
+        card: { ...card, location: "" },
+        cardSaved: true,
+      }),
+      order({
+        orderId: "sent",
+        card,
+        cardSaved: true,
+        sentToFulfillment: true,
+      }),
+      order({ orderId: "pending", status: "pending", card, cardSaved: true }),
+    ]);
+    expect(status.printable.map((o) => o.orderId)).toEqual(["approved"]);
+    expect(status.notApproved).toBe(1);
+    expect(status.unfinished).toBe(1);
   });
 });

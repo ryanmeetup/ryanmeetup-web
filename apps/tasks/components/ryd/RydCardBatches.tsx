@@ -1,25 +1,29 @@
 "use client";
 
 import { useState } from "react";
-import { Button, ConfirmationDialog, toast } from "@ryanmeetup/ui";
+import { Button, ConfirmationDialog, Tooltip, toast } from "@ryanmeetup/ui";
 import { FiDownload, FiPrinter } from "react-icons/fi";
 import { mutate } from "@/lib/mutation-client";
 import { errorMessage } from "@/lib/presentation";
-import { rydCardComplete } from "@/lib/ryd/card";
 import type { RydCardBatch } from "@/lib/ryd/card-export";
 import { formatRydDay } from "@/lib/ryd/form-responses";
-import { rydFulfillmentStage } from "@/lib/ryd/fulfillment-view";
+import { rydCardFileStatus } from "@/lib/ryd/fulfillment-view";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 
-/** Verified, approved, and not yet pulled: what the next card file holds. */
-export function rydPrintableOrders(orders: RydQueueOrder[]) {
-  return orders.filter(
-    (order) =>
-      order.status === "verified" &&
-      order.cardSaved &&
-      rydCardComplete(order.card) &&
-      rydFulfillmentStage(order) === "ready-to-send",
-  );
+const cards = (count: number) => `${count} card${count === 1 ? "" : "s"}`;
+
+/** Why verified orders are missing from the next file, or null if none are. */
+function waitingReason({
+  notApproved,
+  unfinished,
+}: ReturnType<typeof rydCardFileStatus>) {
+  const reasons = [
+    notApproved &&
+      `${cards(notApproved)} still need approving: open the review and save the card ("Card not approved" below)`,
+    unfinished &&
+      `${cards(unfinished)} ${unfinished === 1 ? "is" : "are"} missing a name, location, or year ("Card unfinished" below)`,
+  ].filter(Boolean);
+  return reasons.length ? `${reasons.join(". ")}.` : null;
 }
 
 const batchHref = (id: string) => `/api/ryd/cards/${encodeURIComponent(id)}`;
@@ -56,7 +60,9 @@ export function RydCardBatches({
   const [pending, setPending] = useState(false);
   // One operation per confirmation, so a retried request returns its batch.
   const [operationId, setOperationId] = useState(() => crypto.randomUUID());
-  const printable = rydPrintableOrders(orders).length;
+  const status = rydCardFileStatus(orders);
+  const printable = status.printable.length;
+  const waiting = waitingReason(status);
 
   async function pull() {
     setPending(true);
@@ -103,19 +109,29 @@ export function RydCardBatches({
           <p className="text-sm text-black/70 dark:text-white/70">
             {printable
               ? `${printable} approved card${printable === 1 ? " is" : "s are"} ready to print.`
-              : "No approved cards are waiting. Verified orders appear here once their card is approved."}
+              : waiting
+                ? "Nothing can print yet."
+                : "No verified orders are waiting to send. Verified orders appear here once their card is approved."}
+            {waiting && ` ${waiting}`}
           </p>
         </div>
-        <Button
-          type="button"
-          size="sm"
-          className="w-full shrink-0 sm:w-auto"
-          leftIcon={<FiDownload aria-hidden />}
-          disabled={disabled || !printable}
-          onClick={() => setConfirming(true)}
+        {/* A disabled button gets no hover, so the wrapper carries the tooltip. */}
+        <Tooltip
+          content={waiting}
+          disabled={Boolean(printable) || !waiting}
+          triggerClassName="w-full shrink-0 sm:w-auto"
         >
-          Download new cards ({printable})
-        </Button>
+          <Button
+            type="button"
+            size="sm"
+            className="w-full disabled:pointer-events-none sm:w-auto"
+            leftIcon={<FiDownload aria-hidden />}
+            disabled={disabled || !printable}
+            onClick={() => setConfirming(true)}
+          >
+            Download new cards ({printable})
+          </Button>
+        </Tooltip>
       </div>
       {batches.length > 0 && (
         <ul

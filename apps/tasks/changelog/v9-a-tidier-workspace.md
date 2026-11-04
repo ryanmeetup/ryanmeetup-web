@@ -48,6 +48,8 @@ The Verified view's Card files panel downloads every approved card that
 hasn't printed as a four-column file in fulfillment's own wording (Order ID#,
 First & Last, Location, Date) and marks those orders sent to fulfillment with the date, so no card
 prints twice. Past files can be downloaded again without changing anything.
+When verified orders are left out, the panel counts how many still need their
+card approved and how many are missing a line, so an empty file explains itself.
 
 ### Guest tiers for partners
 

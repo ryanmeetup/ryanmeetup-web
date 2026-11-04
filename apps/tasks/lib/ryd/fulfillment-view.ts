@@ -1,3 +1,4 @@
+import { rydCardComplete } from "./card";
 import type { RydQueueOrder } from "./queue-types";
 
 /**
@@ -56,4 +57,24 @@ export function readyForRydFulfillment(orders: RydQueueOrder[]) {
       order.status === "verified" &&
       rydFulfillmentStage(order) === "ready-to-send",
   );
+}
+
+/**
+ * Where each verified, ready-to-send order stands against the next card
+ * file. Only `printable` goes in; the rest say why the file is short.
+ */
+export function rydCardFileStatus(orders: RydQueueOrder[]) {
+  const status = {
+    printable: [] as RydQueueOrder[],
+    /** Complete, but no one has saved the card in its review. */
+    notApproved: 0,
+    /** Missing a line the card prints, or a year out of range. */
+    unfinished: 0,
+  };
+  for (const order of readyForRydFulfillment(orders)) {
+    if (!rydCardComplete(order.card)) status.unfinished += 1;
+    else if (!order.cardSaved) status.notApproved += 1;
+    else status.printable.push(order);
+  }
+  return status;
 }

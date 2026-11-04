@@ -1130,6 +1130,7 @@ test("a partner pulls approved cards once and downloads them again", async ({
     production_sent_at: expect.any(String),
   });
   await expect(page.getByRole("button", { name: "Download new cards (0)", exact: true })).toBeDisabled();
+  await expect(page.getByText(/No verified orders are waiting to send/)).toBeVisible();
   const again = page.getByRole("link", { name: /card file again$/ });
   const [repeat] = await Promise.all([page.waitForEvent("download"), again.click()]);
   expect(await contents(repeat)).toBe(printed);
