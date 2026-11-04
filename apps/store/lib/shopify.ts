@@ -456,7 +456,7 @@ async function getShopifyProduct(handle: string): Promise<Product | null> {
 
 // Footer and sitemap order. A policy left blank in Shopify Admin comes back null and
 // gets no page.
-const policyFields = ["refundPolicy", "shippingPolicy", "privacyPolicy", "termsOfService"] as const;
+const policyFields = ["refundPolicy", "shippingPolicy", "privacyPolicy", "termsOfService", "termsOfSale", "legalNotice", "contactInformation"] as const;
 
 export async function getPolicies(): Promise<ShopPolicy[]> {
   // The policy text is the shop's own legal copy, so demo mode has none to show.
