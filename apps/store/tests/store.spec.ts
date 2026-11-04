@@ -267,7 +267,8 @@ test("customer can read about the store and get back to shopping", async ({ page
   await expect(page).toHaveURL(/\/about$/);
   await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toHaveText("Official provisions for the Ryan people.");
   await expect(page.getByText("We can’t accept returns.", { exact: false })).toBeVisible();
-  await expect(page.getByRole("link", { name: "shipping guidelines" })).toHaveAttribute("href", "https://www.printful.com/shipping");
+  await expect(page.getByText("We ship to most of the world.", { exact: false })).toBeVisible();
+  await expect(page.getByText(/printful/i)).toHaveCount(0);
   await page.screenshot({ path: "/private/tmp/store-about-desktop.png", fullPage: true });
 
   await page.setViewportSize({ width: 390, height: 844 });

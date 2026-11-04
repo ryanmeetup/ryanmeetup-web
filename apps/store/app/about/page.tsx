@@ -19,8 +19,8 @@ const sections = [
 
 const glance = [
   { icon: FiHeart, term: "Proceeds", detail: "Ryan Meetup events and activities" },
-  { icon: FiPrinter, term: "Made", detail: "On demand by Printful" },
-  { icon: FiGlobe, term: "Ships", detail: "Most of the world, per Printful" },
+  { icon: FiPrinter, term: "Made", detail: "To order, just for you" },
+  { icon: FiGlobe, term: "Ships", detail: "Most of the world" },
   { icon: FiXCircle, term: "Returns", detail: "Not accepted" },
 ];
 
@@ -83,7 +83,7 @@ export default function AboutPage() {
           <section id="made" className={sectionClassName}>
             <SectionTitle id="made">Printed when you order it.</SectionTitle>
             <Text className="max-w-3xl">
-              Our printing partner, Printful, makes each item on demand and ships it straight to you. Nothing sits in a warehouse waiting for its Ryan, so give your order a little time to be made before it heads your way.
+              Each item is printed when you order it, so give yours a little time to be made before it heads your way.
             </Text>
           </section>
 
@@ -97,9 +97,7 @@ export default function AboutPage() {
           <section id="shipping" className={sectionClassName}>
             <SectionTitle id="shipping">The fine print.</SectionTitle>
             <Text className="max-w-3xl">
-              Printful handles fulfillment and ships to most of the world. Their{" "}
-              <a href="https://www.printful.com/shipping" target="_blank" rel="noopener noreferrer" className={linkClassName}>shipping guidelines</a>{" "}
-              cover where orders can go and how long delivery takes.
+              We ship to most of the world. Shipping options and costs for your address appear at checkout, and tracking details arrive by email once your order is on its way.
             </Text>
             <Text className="max-w-3xl">
               We can’t accept returns. Every item is printed for its order, and we don’t have a back room to send it to. If something about your order looks wrong,{" "}

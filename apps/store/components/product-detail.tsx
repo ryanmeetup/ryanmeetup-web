@@ -237,7 +237,7 @@ export function ProductDetail({ product, title = product.title, designField, hid
           <ProductDescription description={product.description} descriptionHtml={product.descriptionHtml} part="details" />
           <div className="grid gap-6 pt-6 text-sm text-black/70 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3 dark:text-white/70">
             {[
-              { icon: FiPackage, title: "Made to order", text: "Printed by Printful" },
+              { icon: FiPackage, title: "Made to order", text: "Printed when you order" },
               { icon: FiShield, title: "Secure checkout", text: "Hosted by Shopify" },
               { icon: FiCheckCircle, title: "Ryan approved", text: "Obviously" },
             ].map(({ icon: Icon, title: label, text }) => (
