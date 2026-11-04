@@ -1099,6 +1099,9 @@ test("a partner downloads selected cards without moving them", async ({
   await upload.getByRole("button", { name: "Upload", exact: true }).click();
   await expect(upload).toHaveCount(0);
 
+  // A two-digit birthday leaves the year blank until someone accepts it.
+  const cardWarning = page.getByRole("img", { name: /^Card needs Ryan since/ });
+  await expect(cardWarning).toBeVisible();
   await page.getByRole("button", { name: "Review Jamie Perez", exact: true }).click();
   const review = page.getByRole("dialog");
   await expect(review.getByLabel("Last name", { exact: false })).toHaveValue("Pérez");
@@ -1108,6 +1111,7 @@ test("a partner downloads selected cards without moving them", async ({
   await expect(review).toHaveCount(0);
 
   await page.goto("/ryd?status=verified");
+  await expect(cardWarning).toHaveCount(0);
   await page.getByRole("checkbox", { name: "Select Jamie Perez", exact: true }).check();
   const [download] = await Promise.all([
     page.waitForEvent("download"),

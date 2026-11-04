@@ -16,6 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuItems,
   DropdownMenuSeparator,
+  Tooltip,
 } from "@ryanmeetup/ui";
 import { formatRydDay } from "@/lib/ryd/form-responses";
 import { rydCardComplete, rydCardProblems } from "@/lib/ryd/card";
@@ -286,6 +287,12 @@ export function RydOrderTable({
             {orders.map((order) => {
               const name = `${order.firstName} ${order.lastName}`.trim();
               const { reasons } = rydMatchEvidence(order);
+              const cardProblems =
+                order.status === "rejected" ? [] : rydCardProblems(order.card);
+              // Sent cards are read-only until the order moves back.
+              const cardWarning = cardProblems.length
+                ? `Card needs ${cardProblems.join(", ")}, so it's left out of card CSVs.${rydDecisionLocked(order) ? " Move it back to Ready to send to finish the card." : " Open the review to finish it."}`
+                : null;
               return (
                 <tr
                   key={order.orderId}
@@ -311,6 +318,17 @@ export function RydOrderTable({
                       >
                         {name || order.displayEmail}
                       </button>
+                      {cardWarning && (
+                        <Tooltip content={cardWarning}>
+                          <span
+                            role="img"
+                            aria-label={cardWarning}
+                            className="inline-flex text-amber-600 dark:text-amber-400"
+                          >
+                            <FiAlertTriangle aria-hidden />
+                          </span>
+                        </Tooltip>
+                      )}
                       <RydRyanPositionChip
                         position={ryanPositions.get(order.orderId)}
                       />
