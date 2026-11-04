@@ -1130,10 +1130,20 @@ test("a partner pulls approved cards once and downloads them again", async ({
     production_sent_at: expect.any(String),
   });
   await expect(page.getByRole("button", { name: "Download new cards (0)", exact: true })).toBeDisabled();
-  await expect(page.getByText(/No verified orders are waiting to send/)).toBeVisible();
+  await expect(page.getByText(/None are waiting/)).toBeVisible();
   const again = page.getByRole("link", { name: /card file again$/ });
   const [repeat] = await Promise.all([page.waitForEvent("download"), again.click()]);
   expect(await contents(repeat)).toBe(printed);
+
+  // Picking orders by hand downloads the same file and moves nothing.
+  await page.getByRole("button", { name: "Sent to fulfillment 1", exact: true }).click();
+  await page.getByRole("checkbox", { name: "Select Jamie Perez", exact: true }).check();
+  const [picked] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("button", { name: "Download cards CSV (1)", exact: true }).click(),
+  ]);
+  expect(picked.suggestedFilename()).toMatch(/^ry-d-cards-\d{4}-\d{2}-\d{2}\.csv$/);
+  expect(await contents(picked)).toBe(printed);
   const calls = (await state(request)).calls.filter(
     (call: { name: string }) => call.name === "ryd_create_card_batch",
   );

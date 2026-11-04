@@ -1,7 +1,14 @@
 "use client";
 
-import { Button } from "@ryanmeetup/ui";
-import { FiCheckSquare, FiCornerUpLeft, FiMail, FiSend } from "react-icons/fi";
+import { Button, Tooltip, toast } from "@ryanmeetup/ui";
+import {
+  FiCheckSquare,
+  FiCornerUpLeft,
+  FiDownload,
+  FiMail,
+  FiSend,
+} from "react-icons/fi";
+import { rydSelectedCardsFile } from "@/lib/ryd/card-export";
 import {
   rydFulfillmentCounts,
   rydFulfillmentStage,
@@ -53,6 +60,29 @@ export function RydProductionPanel({
   const selectedStages = new Set(selectedOrders.map(rydFulfillmentStage));
   const shows = (...stages: RydFulfillmentStage[]) =>
     !stage || stages.includes(stage);
+  const cardsFile = rydSelectedCardsFile(selectedOrders, queue.timeZone);
+
+  function downloadCards() {
+    const url = URL.createObjectURL(
+      new Blob([cardsFile.csv], { type: "text/csv;charset=utf-8" }),
+    );
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = cardsFile.filename;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    // Safari reads the blob after click() returns.
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    const count = cardsFile.printable.length;
+    toast.success(
+      `${count} card${count === 1 ? "" : "s"} downloaded. No stages changed.`,
+    );
+    if (cardsFile.skipped)
+      toast.error(
+        `${cardsFile.skipped} selected card${cardsFile.skipped === 1 ? " was" : "s were"} left out: missing a name, location, or year.`,
+      );
+  }
 
   return (
     <div className="space-y-3">
@@ -79,6 +109,30 @@ export function RydProductionPanel({
           disabled={busy}
           onToggleAll={onToggleAll}
         >
+          {shows("ready-to-send", "sent-to-fulfillment") && (
+            // A disabled button gets no hover, so the wrapper carries the tooltip.
+            <Tooltip
+              content={
+                selectedOrders.length
+                  ? "None of the selected cards has a name, location, and year."
+                  : "Select the orders to put in the file."
+              }
+              disabled={cardsFile.printable.length > 0}
+              triggerClassName="w-full sm:w-auto"
+            >
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                className="w-full disabled:pointer-events-none sm:w-auto"
+                leftIcon={<FiDownload aria-hidden />}
+                disabled={busy || !cardsFile.printable.length}
+                onClick={downloadCards}
+              >
+                Download cards CSV ({cardsFile.printable.length})
+              </Button>
+            </Tooltip>
+          )}
           {shows("ready-to-send") && (
             <Button
               type="button"

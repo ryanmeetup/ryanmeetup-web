@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { parseCsv } from "@/lib/ryd/csv";
-import { rydCardBatchCsv, rydCardBatchFilename } from "@/lib/ryd/card-export";
+import {
+  rydCardBatchCsv,
+  rydCardBatchFilename,
+  rydSelectedCardsFile,
+} from "@/lib/ryd/card-export";
+import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 
 const row = {
   order_id: "607227",
@@ -34,5 +39,36 @@ describe("RY-D card file", () => {
       "ry-d-cards-2026-10-27.csv",
     );
     expect(rydCardBatchFilename("not a date")).toBe("ry-d-cards-batch.csv");
+  });
+});
+
+describe("RY-D selected cards", () => {
+  const card = {
+    firstName: " Ryan",
+    lastName: "Pérez ",
+    location: "Brooklyn, NY",
+    ryanSince: "1999",
+  };
+  const order = (orderId: string, overrides: Partial<RydQueueOrder> = {}) =>
+    ({ orderId, status: "verified", card, ...overrides }) as RydQueueOrder;
+
+  it("prints verified, complete cards in selection order and skips the rest", () => {
+    const file = rydSelectedCardsFile(
+      [
+        order("2"),
+        order("1", { sentToFulfillment: true }),
+        order("blank", { card: { ...card, ryanSince: "" } }),
+        order("pending", { status: "pending" }),
+      ],
+      "America/New_York",
+      new Date("2026-11-05T02:00:00Z"),
+    );
+    expect(parseCsv(file.csv).rows).toEqual([
+      ["2", "Ryan Pérez", "Brooklyn, NY", "1999"],
+      ["1", "Ryan Pérez", "Brooklyn, NY", "1999"],
+    ]);
+    expect(file.skipped).toBe(2);
+    // Still the 4th in New York, though UTC has reached the 5th.
+    expect(file.filename).toBe("ry-d-cards-2026-11-04.csv");
   });
 });

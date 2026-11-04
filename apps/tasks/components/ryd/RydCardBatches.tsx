@@ -111,7 +111,7 @@ export function RydCardBatches({
               ? `${printable} approved card${printable === 1 ? " is" : "s are"} ready to print.`
               : waiting
                 ? "Nothing can print yet."
-                : "No verified orders are waiting to send. Verified orders appear here once their card is approved."}
+                : "Pulls every approved card that hasn't been sent yet and marks those orders sent to fulfillment. None are waiting. To download specific orders, select them below."}
             {waiting && ` ${waiting}`}
           </p>
         </div>

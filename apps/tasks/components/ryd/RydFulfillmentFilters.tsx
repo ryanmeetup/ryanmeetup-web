@@ -51,9 +51,9 @@ export function RydFulfillmentFilters({
       </div>
       <p className="text-sm text-black/70 dark:text-white/70">
         {stage === "ready-to-send"
-          ? "Select ready orders to generate an email and CSV. After emailing fulfillment, mark them Sent to fulfillment. Every stage change is manual."
+          ? "Select ready orders to download their cards CSV or generate an email and CSV. After emailing fulfillment, mark them Sent to fulfillment. Every stage change is manual."
           : stage === "sent-to-fulfillment"
-            ? "Fulfillment has these orders, dated by when you marked them sent. Mark them done once they're finished."
+            ? "Fulfillment has these orders, dated by when you marked them sent. Select any to download their cards CSV again, and mark them done once they're finished."
             : stage === "done"
               ? "These orders are finished."
               : "Ready to send → Sent to fulfillment → Done. Move orders between stages manually; generating an email changes nothing."}

@@ -1,4 +1,6 @@
+import { rydCardComplete } from "./card";
 import { serializeCsv } from "./csv";
+import type { RydQueueOrder } from "./queue-types";
 
 /** One printed card, as frozen in its batch. */
 export type RydCardBatchRow = {
@@ -55,4 +57,36 @@ export function rydCardBatchCsv(rows: RydCardBatchRow[]) {
 export function rydCardBatchFilename(createdAt: string) {
   const day = createdAt.slice(0, 10);
   return `ry-d-cards-${/^\d{4}-\d{2}-\d{2}$/.test(day) ? day : "batch"}.csv`;
+}
+
+/**
+ * A card file for orders picked by hand, from the cards as the page shows
+ * them. Only verified orders with every line print; the rest are skipped.
+ * Nothing is saved and no stage moves.
+ */
+export function rydSelectedCardsFile(
+  orders: RydQueueOrder[],
+  timeZone: string,
+  now = new Date(),
+) {
+  const printable = orders.filter(
+    (order) => order.status === "verified" && rydCardComplete(order.card, now),
+  );
+  return {
+    printable,
+    skipped: orders.length - printable.length,
+    csv: rydCardBatchCsv(
+      printable.map((order) => ({
+        order_id: order.orderId,
+        first_name: order.card.firstName.trim(),
+        last_name: order.card.lastName.trim(),
+        location: order.card.location.trim(),
+        ryan_since: order.card.ryanSince.trim(),
+      })),
+    ),
+    // en-CA formats as YYYY-MM-DD, in the workspace's day rather than UTC's.
+    filename: rydCardBatchFilename(
+      now.toLocaleDateString("en-CA", { timeZone }),
+    ),
+  };
 }

@@ -50,6 +50,8 @@ First & Last, Location, Date) and marks those orders sent to fulfillment with th
 prints twice. Past files can be downloaded again without changing anything.
 When verified orders are left out, the panel counts how many still need their
 card approved and how many are missing a line, so an empty file explains itself.
+To send specific orders, select them in the Ready to send or Sent to fulfillment
+stage and choose Download cards CSV: the same four columns, and no stage moves.
 
 ### Guest tiers for partners
 
