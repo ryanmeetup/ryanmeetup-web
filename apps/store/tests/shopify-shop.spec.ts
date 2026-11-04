@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { getPolicies } from "../lib/shopify";
+import { getCustomerAccountUrl, getPolicies } from "../lib/shopify";
 
 const originalFetch = globalThis.fetch;
 const originalDomain = process.env.SHOPIFY_STORE_DOMAIN;
@@ -36,4 +36,23 @@ test("demo mode has no policies to show", async () => {
   globalThis.fetch = async () => { throw new Error("Demo mode should not call Shopify."); };
 
   expect(await getPolicies()).toEqual([]);
+});
+
+test("the customer account link appears once Shopify reports one", async () => {
+  process.env.SHOPIFY_STORE_DOMAIN = "catalog.test";
+  process.env.SHOPIFY_STOREFRONT_API_TOKEN = "test-token";
+  let customerAccountUrl: string | null = null;
+  globalThis.fetch = async () => new Response(JSON.stringify({ data: { shop: { customerAccountUrl } } }));
+
+  expect(await getCustomerAccountUrl()).toBeNull();
+  customerAccountUrl = "https://shopify.com/1/account";
+  expect(await getCustomerAccountUrl()).toBe("https://shopify.com/1/account");
+});
+
+test("demo mode has no customer account", async () => {
+  delete process.env.SHOPIFY_STORE_DOMAIN;
+  delete process.env.SHOPIFY_STOREFRONT_API_TOKEN;
+  globalThis.fetch = async () => { throw new Error("Demo mode should not call Shopify."); };
+
+  expect(await getCustomerAccountUrl()).toBeNull();
 });

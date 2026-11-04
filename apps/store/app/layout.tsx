@@ -6,7 +6,7 @@ import { CartDrawer } from "@/components/cart-drawer";
 import { CartProvider } from "@/components/cart-provider";
 import { Header } from "@/components/header";
 import { NavSectionProvider } from "@/components/nav-section";
-import { getCollections, getPolicies, isShopifyConfigured } from "@/lib/shopify";
+import { getCollections, getCustomerAccountUrl, getPolicies, isShopifyConfigured } from "@/lib/shopify";
 import "./globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://store.ryanmeetup.com";
@@ -44,9 +44,17 @@ async function getPolicyLinks() {
   return policies.map(({ handle, title }) => ({ href: `/policies/${handle}`, label: title }));
 }
 
+// Shown once customer accounts are turned on in Shopify Admin.
+async function getHeaderAccountUrl() {
+  return getCustomerAccountUrl().catch((error: unknown) => {
+    console.error("Could not load the customer account link.", error);
+    return null;
+  });
+}
+
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const commerceConfigured = isShopifyConfigured();
-  const [collections, policyLinks] = await Promise.all([getMenuCollections(), getPolicyLinks()]);
+  const [collections, policyLinks, accountUrl] = await Promise.all([getMenuCollections(), getPolicyLinks(), getHeaderAccountUrl()]);
   return (
     <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
       <body className="antialiased">
@@ -67,7 +75,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
               </span>
             </Banner>
             <NavSectionProvider>
-              <Header collections={collections} />
+              <Header collections={collections} accountUrl={accountUrl} />
               {children}
             </NavSectionProvider>
             <RyanMeetupFooter

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
-import { FiChevronDown, FiMenu, FiShoppingBag, FiX } from "react-icons/fi";
+import { FiChevronDown, FiMenu, FiPackage, FiShoppingBag, FiX } from "react-icons/fi";
 import { AnimatedCollapse, NavMenu, Wordmark } from "@ryanmeetup/ui";
 import { getCollectionMenuRoutes, storeNavigation } from "@/lib/navigation";
 import type { StoreMenuCollection } from "@/lib/navigation";
@@ -11,7 +11,10 @@ import { useCart } from "./cart-provider";
 import { useNavSection } from "./nav-section";
 import { ThemeToggle } from "./theme-toggle";
 
-export function Header({ collections }: { collections: StoreMenuCollection[] }) {
+// Shopify's customer account, where a shopper finds order status and tracking.
+const accountLabel = "Your orders";
+
+export function Header({ collections, accountUrl }: { collections: StoreMenuCollection[]; accountUrl: string | null }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const section = useNavSection();
@@ -41,7 +44,7 @@ export function Header({ collections }: { collections: StoreMenuCollection[] }) 
           aria-label="Main navigation"
           className="hidden min-w-0 flex-1 items-center justify-center xl:flex"
         >
-          <div className="flex max-w-full items-center gap-1 overflow-x-auto rounded-full border border-black/10 bg-white/70 p-1 shadow-sm backdrop-blur dark:border-white/20 dark:bg-white/10 dark:ring-1 dark:ring-white/10 2xl:gap-2 2xl:p-1.5">
+          <div className="flex max-w-full items-center gap-1 overflow-x-auto rounded-full border border-black/10 bg-white/70 p-1 shadow-sm backdrop-blur dark:border-white/20 dark:bg-white/10 dark:ring-1 dark:ring-white/10 2xl:p-1.5">
             {storeNavigation.map(({ icon: Icon, label, ...item }) =>
               "menu" in item ? (
                 <NavMenu
@@ -56,7 +59,7 @@ export function Header({ collections }: { collections: StoreMenuCollection[] }) 
                   key={item.href}
                   href={item.href}
                   aria-current={isCurrent(item.href) ? "page" : undefined}
-                  className={`flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold tracking-wide transition hover:bg-black/5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:hover:bg-white/10 dark:focus-visible:ring-white/40 2xl:px-4 2xl:text-sm ${isCurrent(item.href) ? "bg-black/15 shadow-sm ring-1 ring-black/10 dark:bg-white/25 dark:ring-white/20" : ""}`}
+                  className={`flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold tracking-wide transition hover:bg-black/5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:hover:bg-white/10 dark:focus-visible:ring-white/40 2xl:text-sm ${isCurrent(item.href) ? "bg-black/15 shadow-sm ring-1 ring-black/10 dark:bg-white/25 dark:ring-white/20" : ""}`}
                 >
                   <Icon aria-hidden className="shrink-0" />
                   {label}
@@ -66,6 +69,21 @@ export function Header({ collections }: { collections: StoreMenuCollection[] }) 
           </div>
         </nav>
         <div className="ml-auto flex flex-none items-center gap-2 sm:gap-4">
+          {/* Phones reach it from the menu instead. The label drops wherever it would
+              wrap the wordmark or crowd the main navigation into scrolling. */}
+          {accountUrl && (
+            <div className="hidden sm:block">
+              <a
+                href={accountUrl}
+                aria-label={accountLabel}
+                title={accountLabel}
+                className="inline-flex h-10 w-10 items-center justify-center gap-2 rounded-full border border-black/15 bg-white/70 text-xs font-semibold tracking-wide shadow-sm transition hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 md:w-auto md:px-4 xl:w-10 xl:px-0 dark:border-white/20 dark:bg-white/10 dark:hover:bg-white/15 dark:focus-visible:ring-white/40"
+              >
+                <FiPackage aria-hidden className="text-base" />
+                <span aria-hidden className="hidden md:inline xl:hidden">{accountLabel}</span>
+              </a>
+            </div>
+          )}
           {/* Opens the drawer rather than /cart: the page still works but stays
               unlinked while we hear which of the two shoppers prefer. */}
           <button
@@ -169,6 +187,20 @@ export function Header({ collections }: { collections: StoreMenuCollection[] }) 
                 </span>
               </Link>
             ),
+          )}
+          {accountUrl && (
+            <a
+              href={accountUrl}
+              className="grid grid-cols-[auto_1fr] items-start gap-3 rounded-xl border border-black/10 bg-white/70 px-3 py-3 text-sm shadow-sm transition hover:-translate-y-0.5 hover:border-black/20 hover:bg-black/5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:border-white/15 dark:bg-white/5 dark:hover:border-white/30 dark:hover:bg-white/10 dark:focus-visible:ring-white/40"
+            >
+              <FiPackage aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>
+                <span className="block font-semibold tracking-wide">{accountLabel}</span>
+                <span className="mt-1 block text-xs font-normal leading-relaxed text-black/70 dark:text-white/70">
+                  Order status and tracking, no inbox archaeology required.
+                </span>
+              </span>
+            </a>
           )}
         </nav>
       )}

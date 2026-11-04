@@ -25,12 +25,14 @@ Last reviewed: 2026-11-04.
 - About (including shipping and returns), Contact, and the sitemap.
 - Policy pages at `/policies/<handle>` for each policy written in Shopify Admin,
   linked from the footer and listed in the sitemap.
+- **Your orders** links to Shopify's customer account (order status and
+  tracking) in the header, mobile menu, thank-you page, and Contact hints,
+  shown once Shopify reports the account URL.
 
 ## Status
 
 | # | Item | Priority | Status |
 | --- | --- | --- | --- |
-| 3 | [Order lookup and customer accounts](#3-order-lookup-and-customer-accounts) | Blocker | Not started |
 | 4 | [Launch switches and Shopify Admin setup](#4-launch-switches-and-shopify-admin-setup) | Blocker | Not started |
 | 5 | [Sale prices](#5-sale-prices) | Etsy parity | Not started |
 | 6 | [Product search](#6-product-search) | Etsy parity | Not started |
@@ -49,24 +51,6 @@ Status values: Not started, In progress, Dropped (with reason). Finished items
 leave the roadmap.
 
 ## Blockers
-
-### 3. Order lookup and customer accounts
-
-- [ ] Done
-
-**Problem.** Etsy buyers have Purchases with order status and tracking. The store
-has no way back to an order except the Shopify email.
-
-**Approach.**
-- Enable Shopify customer accounts (new customer accounts) in Shopify Admin.
-- Add an account/orders link to the header and the thank-you page pointing at the
-  shop's customer account URL. Full in-site login via the Customer Account API is
-  optional and can come later.
-- Update the Contact page's "Order email" guidance if the flow changes.
-- Add customer accounts to the privacy policy in Shopify Admin.
-
-**Done when.** A customer can get from the store to their order status without
-searching their inbox.
 
 ### 4. Launch switches and Shopify Admin setup
 
@@ -93,6 +77,10 @@ Shopify Admin and environment (no code):
       no data sales, Vercel Analytics, the services that receive data). The
       Shopify template it replaces describes accounts, wishlists, ad partners,
       and SMS marketing the store doesn't have.
+- [ ] Customer accounts turned on (Settings → Customer accounts, new customer
+      accounts). The Storefront API's `customerAccountUrl` is null until then,
+      so the **Your orders** links stay hidden.
+- [ ] Privacy policy covers customer accounts once they're on.
 - [ ] `JUDGEME_PRIVATE_API_TOKEN` set in Production and Preview.
 - [ ] Etsy listings retired or redirected, and `ryanmeetup.com/merch` (currently
       pointing at Etsy in `apps/ryanmeetup`) switched to the store.
@@ -186,7 +174,7 @@ before checkout.
 
 **Approach.** Start with a per-browser favorites list (`localStorage`, wrapped in
 try/catch) with a heart button on cards and product pages and a `/favorites` page.
-Move it to customer accounts after item 3 if wanted, and add that to the
+Move it to customer accounts once they're on if wanted, and add that to the
 privacy policy when it happens.
 
 **Done when.** Favorites persist across visits in the same browser.
@@ -266,6 +254,7 @@ Record each finished or changed item here, newest first.
 
 | Date | Item | Change | Commit |
 | --- | --- | --- | --- |
+| 2026-11-04 | 3 | **Your orders** links to Shopify's customer account from the header, mobile menu, thank-you page, and Contact, driven by `shop.customerAccountUrl` so nothing appears until accounts are on. Turning accounts on and covering them in the privacy policy moved to item 4. Policy pages also gained Shopify's terms of sale, legal notice, and contact information. | — |
 | 2026-11-03 | 2 | Policies written in Shopify Admin render at `/policies/<handle>`, appear in a footer Policies column (`RyanMeetupFooter` now takes `sections`), and are in the sitemap. Writing the missing refund, shipping, and terms policies moved to item 4. | `ee346e84` |
 | 2026-11-03 | 1 | Cart refreshes from Shopify on load and Back, starts fresh when a checked-out or expired cart rejects a change, clears on `/thank-you`, and has a confirmed **Empty cart** action on the cart page and drawer. | `27147be6` |
 | 2026-11-03 | — | Roadmap created. | — |

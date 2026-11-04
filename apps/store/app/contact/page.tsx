@@ -2,19 +2,23 @@ import type { Metadata } from "next";
 import { Card, Heading, Kicker, Pill, Text } from "@ryanmeetup/ui";
 import { FiHash, FiMail, FiPackage } from "react-icons/fi";
 import { StoreContactForm } from "@/components/store-contact-form";
+import { getCustomerAccountUrl } from "@/lib/shopify";
 
 export const metadata: Metadata = {
   title: "Store customer service",
   description: "Contact Ryan General Store customer service about an order, product, or delivery.",
 };
 
-const helpfulDetails = [
-  { icon: FiHash, title: "Order number", text: "Find it in your order confirmation email." },
-  { icon: FiMail, title: "Order email", text: "Share the address used when the order was placed." },
-  { icon: FiPackage, title: "Product details", text: "Include the item, size, color, and what went sideways." },
-];
+function getHelpfulDetails(hasAccount: boolean) {
+  return [
+    { icon: FiHash, title: "Order number", text: hasAccount ? "Find it in your order confirmation email or under Your orders." : "Find it in your order confirmation email." },
+    { icon: FiMail, title: "Order email", text: "Share the address used when the order was placed." },
+    { icon: FiPackage, title: "Product details", text: "Include the item, size, color, and what went sideways." },
+  ];
+}
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const helpfulDetails = getHelpfulDetails(Boolean(await getCustomerAccountUrl().catch(() => null)));
   return (
     <main className="store-container py-8 sm:py-12 lg:py-16">
       <section className="relative overflow-hidden rounded-3xl border border-black/10 bg-white/80 p-5 shadow-[0_35px_70px_-50px_rgba(0,0,0,0.6)] backdrop-blur-[2px] sm:p-8 dark:border-white/10 dark:bg-white/5 lg:p-10">

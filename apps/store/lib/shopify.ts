@@ -469,6 +469,17 @@ export async function getPolicies(): Promise<ShopPolicy[]> {
   return policyFields.flatMap((field) => data.shop[field] ?? []).filter((policy) => policy.body.trim());
 }
 
+/** Shopify's customer account (order status and tracking), or null until customer accounts are turned on. */
+export async function getCustomerAccountUrl(): Promise<string | null> {
+  if (!isShopifyConfigured()) return null;
+  const data = await storefrontRequest<{ shop: { customerAccountUrl: string | null } }>(
+    `query CustomerAccount { shop { customerAccountUrl } }`,
+    {},
+    { revalidate: 300 },
+  );
+  return data.shop.customerAccountUrl || null;
+}
+
 function reshapeCart(raw: Omit<Cart, "lines"> & { lines: Connection<Cart["lines"][number]> }): Cart {
   return {
     ...raw,
