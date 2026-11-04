@@ -431,9 +431,18 @@ test("runs review, on-demand files, and independent manual fulfillment stages", 
   // A sent card is read-only until it's unlocked, and unlocking keeps the stage.
   await page.getByRole("button", { name: "Review Ryan Fixture", exact: true }).click();
   const sentReview = page.getByRole("dialog");
-  await expect(sentReview.getByText(/Locked because this order went to fulfillment/)).toBeVisible();
   const location = sentReview.getByLabel("Location", { exact: false });
   await expect(location).toBeDisabled();
+  await expect(location).toHaveCSS("cursor", "not-allowed");
+  const unlock = sentReview.getByRole("button", { name: "Unlock card", exact: true });
+  await unlock.hover();
+  await expect(page.getByRole("tooltip")).toContainText("Locked because this order went to fulfillment");
+  await unlock.click();
+  // Locking again drops the unsaved edit.
+  await location.fill("Nowhere");
+  await sentReview.getByRole("button", { name: "Lock card", exact: true }).click();
+  await expect(location).toBeDisabled();
+  await expect(location).not.toHaveValue("Nowhere");
   await sentReview.getByRole("button", { name: "Unlock card", exact: true }).click();
   await location.fill("Queens, NY");
   await sentReview.getByRole("button", { name: "Save card", exact: true }).click();

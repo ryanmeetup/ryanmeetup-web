@@ -320,8 +320,10 @@ uses, set in /admin/usage).
    for another generated email. Historical audit events stay. Once fulfillment
    has an order, its decision cannot be changed.
 
-   Its card is locked too, but a reviewer can open the review and choose
-   **Unlock card** to correct it while the order is Sent to fulfillment. The
+   Its card is locked too, shown by the lock beside the review's **Card**
+   heading; its tooltip says why. Click it to unlock and correct the card
+   while the order is Sent to fulfillment, and click again to lock it and drop
+   unsaved edits. The
    order keeps its stage and send date; the request carries `unlockCard` so a
    stale page can't change a sent card by accident, and the audit event
    records `unlocked`. Send fulfillment the updated cards CSV afterward. A

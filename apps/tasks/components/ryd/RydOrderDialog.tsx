@@ -197,6 +197,9 @@ export function RydOrderDialog({
   const locked = rydDecisionLocked(order);
   // Unlocking frees only the card, and only until the order is done.
   const cardLocked = locked && !cardUnlocked;
+  const showSaveCard =
+    !cardLocked && order.status !== "rejected" && cardChanged;
+  const showSaveNote = order.status !== "pending" && noteChanged;
   const name =
     `${order.firstName} ${order.lastName}`.trim() || order.displayEmail;
 
@@ -254,82 +257,89 @@ export function RydOrderDialog({
           </RydReviewAction>
         )
       }
+      // Nothing to do on a sent order with no edits: leave the footer out.
       actions={
-        <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
-          {!locked &&
-            RYD_DECISIONS.filter(({ status }) => status !== order.status).map(
-              ({ status, label, icon: Icon }) => (
-                <RydReviewAction
-                  key={status}
-                  tooltip={
-                    busy
-                      ? busyExplanation
-                      : status === "verified"
-                        ? cardComplete
-                          ? "Verify this order and approve the card exactly as shown."
-                          : cardExplanation
-                        : status === "rejected"
-                          ? "Prepare cancellation and refund email drafts, then confirm the cancellation."
-                          : "Mark this order as needing more information. Buyer emails are prepared separately."
-                  }
-                  type="button"
-                  size="sm"
-                  variant={
-                    status === "verified" && order.status === "pending"
-                      ? "primary"
-                      : "secondary"
-                  }
-                  leftIcon={<Icon aria-hidden />}
-                  disabled={busy || (status === "verified" && !cardComplete)}
-                  loading={pending === status}
-                  onClick={() =>
-                    status === "rejected" ? setCancelOpen(true) : decide(status)
-                  }
-                >
-                  {label}
-                </RydReviewAction>
-              ),
+        (!locked || showSaveCard || showSaveNote) && (
+          <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
+            {!locked &&
+              RYD_DECISIONS.filter(({ status }) => status !== order.status).map(
+                ({ status, label, icon: Icon }) => (
+                  <RydReviewAction
+                    key={status}
+                    tooltip={
+                      busy
+                        ? busyExplanation
+                        : status === "verified"
+                          ? cardComplete
+                            ? "Verify this order and approve the card exactly as shown."
+                            : cardExplanation
+                          : status === "rejected"
+                            ? "Prepare cancellation and refund email drafts, then confirm the cancellation."
+                            : "Mark this order as needing more information. Buyer emails are prepared separately."
+                    }
+                    type="button"
+                    size="sm"
+                    variant={
+                      status === "verified" && order.status === "pending"
+                        ? "primary"
+                        : "secondary"
+                    }
+                    leftIcon={<Icon aria-hidden />}
+                    disabled={busy || (status === "verified" && !cardComplete)}
+                    loading={pending === status}
+                    onClick={() =>
+                      status === "rejected"
+                        ? setCancelOpen(true)
+                        : decide(status)
+                    }
+                  >
+                    {label}
+                  </RydReviewAction>
+                ),
+              )}
+            {showSaveCard && (
+              <RydReviewAction
+                tooltip={
+                  busy
+                    ? busyExplanation
+                    : order.status === "verified" && !cardComplete
+                      ? cardExplanation
+                      : order.status === "verified"
+                        ? "Save and approve the updated card for printing."
+                        : "Save the card details without verifying the order. Unfinished cards can be saved."
+                }
+                type="button"
+                size="sm"
+                variant="secondary"
+                leftIcon={<FiSave aria-hidden />}
+                disabled={
+                  busy || (order.status === "verified" && !cardComplete)
+                }
+                loading={pending === "card"}
+                onClick={saveCard}
+              >
+                Save card
+              </RydReviewAction>
             )}
-          {!cardLocked && order.status !== "rejected" && cardChanged && (
-            <RydReviewAction
-              tooltip={
-                busy
-                  ? busyExplanation
-                  : order.status === "verified" && !cardComplete
-                    ? cardExplanation
-                    : order.status === "verified"
-                      ? "Save and approve the updated card for printing."
-                      : "Save the card details without verifying the order. Unfinished cards can be saved."
-              }
-              type="button"
-              size="sm"
-              variant="secondary"
-              leftIcon={<FiSave aria-hidden />}
-              disabled={busy || (order.status === "verified" && !cardComplete)}
-              loading={pending === "card"}
-              onClick={saveCard}
-            >
-              Save card
-            </RydReviewAction>
-          )}
-          {order.status !== "pending" && noteChanged && (
-            <RydReviewAction
-              tooltip={
-                busy
-                  ? busyExplanation
-                  : "Save the note without changing the order's verification status."
-              }
-              type="button"
-              size="sm"
-              leftIcon={<FiSave aria-hidden />}
-              disabled={busy}
-              loading={pending === "note"}
-              onClick={saveNote}
-            >
-              Save note
-            </RydReviewAction>
-          )}
-        </div>
+            {showSaveNote && (
+              <RydReviewAction
+                tooltip={
+                  busy
+                    ? busyExplanation
+                    : "Save the note without changing the order's verification status."
+                }
+                type="button"
+                size="sm"
+                leftIcon={<FiSave aria-hidden />}
+                disabled={busy}
+                loading={pending === "note"}
+                onClick={saveNote}
+              >
+                Save note
+              </RydReviewAction>
+            )}
+          </div>
+        )
       }
     >
       <div className="grid min-h-0 gap-6 lg:h-full lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
@@ -339,7 +349,20 @@ export function RydOrderDialog({
           note={note}
           busy={busy}
           locked={cardLocked}
-          onUnlockCard={order.doneAt ? undefined : () => setCardUnlocked(true)}
+          cardLock={
+            !locked
+              ? undefined
+              : order.doneAt
+                ? "final"
+                : cardUnlocked
+                  ? "unlocked"
+                  : "locked"
+          }
+          onCardLockChange={(unlocked) => {
+            setCardUnlocked(unlocked);
+            // Locking again drops edits that weren't saved.
+            if (!unlocked) setCard(order.card);
+          }}
           onCardChange={setCard}
           onNoteChange={setNote}
         />

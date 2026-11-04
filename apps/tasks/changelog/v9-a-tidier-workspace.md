@@ -51,8 +51,8 @@ Downloading moves no stage, so the same cards can be downloaded again any time.
 A card missing its name, location, or year is left out of the file and shows
 a warning beside the Ryan's name saying which lines it needs. Set the Card
 filter to Missing a line to list only those orders.
-A card that has gone to fulfillment is locked; choose Unlock card in its review
-to correct it without moving the order out of Sent to fulfillment.
+A card that has gone to fulfillment is locked; click the lock beside Card in its
+review to correct it without moving the order out of Sent to fulfillment.
 
 ### Guest tiers for partners
 

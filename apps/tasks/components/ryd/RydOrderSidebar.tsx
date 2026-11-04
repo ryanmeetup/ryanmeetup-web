@@ -1,18 +1,26 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { CopyText, DisclosureCard, Textarea } from "@ryanmeetup/ui";
+import {
+  CopyText,
+  DisclosureCard,
+  IconButton,
+  Textarea,
+  Tooltip,
+} from "@ryanmeetup/ui";
 import type { IconType } from "react-icons";
 import {
   FiCalendar,
   FiCreditCard,
   FiFileText,
   FiHash,
+  FiLock,
   FiMail,
   FiPackage,
   FiSend,
+  FiUnlock,
 } from "react-icons/fi";
-import type { RydCard } from "@/lib/ryd/card";
+import { rydCardProblems, type RydCard } from "@/lib/ryd/card";
 import { formatRydOrderTotal } from "@/lib/ryd/orders";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
 import { RydCardFields } from "./RydCardFields";
@@ -22,15 +30,20 @@ import { rydProductionSummary } from "./RydStatusChip";
 function ReviewSection({
   title,
   defaultOpen = true,
+  action,
   children,
 }: {
   title: string;
   defaultOpen?: boolean;
+  /** Beside the chevron, outside the toggle so it can be its own button. */
+  action?: ReactNode;
   children: ReactNode;
 }) {
   return (
     <DisclosureCard
       defaultOpen={defaultOpen}
+      actions={action}
+      actionsClassName="absolute right-6 top-1/2 -translate-y-1/2"
       className="pb-4 last:pb-0"
       buttonClassName="flex w-full items-center justify-between gap-3 rounded-lg py-1 text-left text-black/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/30 dark:text-white/70 dark:focus-visible:ring-white/40"
       panelClassName="pt-3"
@@ -42,11 +55,62 @@ function ReviewSection({
             aria-hidden
             className="h-px flex-1 bg-black/10 dark:bg-white/10"
           />
+          {action && <span aria-hidden className="w-8 shrink-0" />}
         </span>
       }
     >
       {children}
     </DisclosureCard>
+  );
+}
+
+export type RydCardLock = "final" | "locked" | "unlocked";
+
+/**
+ * The card's lock once fulfillment has it. A sent card unlocks on purpose and
+ * stays sent; locking again drops unsaved edits. A done card never unlocks,
+ * so it shows a lock, not a button.
+ */
+function RydCardLockControl({
+  lock,
+  missing,
+  disabled,
+  onChange,
+}: {
+  lock: RydCardLock;
+  missing: string[];
+  disabled: boolean;
+  onChange: (unlocked: boolean) => void;
+}) {
+  const gaps = missing.length ? ` It's missing ${missing.join(", ")}.` : "";
+  if (lock === "final")
+    return (
+      <Tooltip content={`Locked because this order is done.${gaps}`}>
+        <span
+          role="img"
+          aria-label="Card locked: this order is done"
+          className="inline-flex h-8 w-8 items-center justify-center text-black/70 dark:text-white/70"
+        >
+          <FiLock aria-hidden />
+        </span>
+      </Tooltip>
+    );
+  const unlocked = lock === "unlocked";
+  return (
+    <IconButton
+      label={unlocked ? "Lock card" : "Unlock card"}
+      tooltip={
+        unlocked
+          ? "Unlocked. Saving keeps the order sent to fulfillment, so send them the updated cards CSV. Lock again to drop unsaved edits."
+          : `Locked because this order went to fulfillment.${gaps} Unlock to edit it; it stays sent to fulfillment.`
+      }
+      variant="plain"
+      aria-pressed={unlocked}
+      disabled={disabled}
+      onClick={() => onChange(!unlocked)}
+    >
+      {unlocked ? <FiUnlock aria-hidden /> : <FiLock aria-hidden />}
+    </IconButton>
   );
 }
 
@@ -77,7 +141,8 @@ export function RydOrderSidebar({
   note,
   busy,
   locked,
-  onUnlockCard,
+  cardLock,
+  onCardLockChange,
   onCardChange,
   onNoteChange,
 }: {
@@ -86,7 +151,9 @@ export function RydOrderSidebar({
   note: string;
   busy: boolean;
   locked: boolean;
-  onUnlockCard?: () => void;
+  /** Set once the order is with fulfillment: done, locked, or unlocked. */
+  cardLock?: RydCardLock;
+  onCardLockChange?: (unlocked: boolean) => void;
   onCardChange: (card: RydCard) => void;
   onNoteChange: (note: string) => void;
 }) {
@@ -134,14 +201,25 @@ export function RydOrderSidebar({
         </dl>
       </ReviewSection>
       {order.status !== "rejected" && (
-        <ReviewSection title="Card">
+        <ReviewSection
+          title="Card"
+          action={
+            cardLock && (
+              <RydCardLockControl
+                lock={cardLock}
+                missing={rydCardProblems(card)}
+                disabled={busy}
+                onChange={(unlocked) => onCardLockChange?.(unlocked)}
+              />
+            )
+          }
+        >
           <RydCardFields
             card={card}
             hint={order.cardHint}
             saved={order.cardSaved}
             disabled={busy}
             locked={locked}
-            onUnlock={onUnlockCard}
             onChange={onCardChange}
           />
         </ReviewSection>

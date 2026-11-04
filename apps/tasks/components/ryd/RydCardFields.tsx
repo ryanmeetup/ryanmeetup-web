@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Input } from "@ryanmeetup/ui";
-import { FiAlertTriangle, FiGift, FiLock, FiUnlock } from "react-icons/fi";
+import { FiAlertTriangle, FiGift } from "react-icons/fi";
 import {
   RYD_CARD_LIMITS,
   rydCardProblems,
@@ -26,7 +26,6 @@ export function RydCardFields({
   saved,
   disabled,
   locked,
-  onUnlock,
   onChange,
 }: {
   card: RydCard;
@@ -36,8 +35,6 @@ export function RydCardFields({
   disabled: boolean;
   /** Fulfillment has it: the card is shown, not edited. */
   locked: boolean;
-  /** Offered while the order is sent but not done. */
-  onUnlock?: () => void;
   onChange: (card: RydCard) => void;
 }) {
   const problems = rydCardProblems(card);
@@ -48,34 +45,6 @@ export function RydCardFields({
 
   return (
     <div className="space-y-3">
-      {locked && (
-        <div className="space-y-2">
-          <p className="flex items-start gap-2 text-sm text-black/70 dark:text-white/70">
-            <FiLock aria-hidden className="mt-0.5 shrink-0" />
-            <span>
-              {onUnlock
-                ? "Locked because this order went to fulfillment."
-                : "Locked because this order is done."}
-              {problems.length > 0 && ` It's missing ${listLabels(problems)}.`}
-              {onUnlock &&
-                " Unlocking keeps it sent to fulfillment, so send them the updated cards CSV after saving."}
-            </span>
-          </p>
-          {onUnlock && (
-            <Button
-              type="button"
-              size="xs"
-              variant="secondary"
-              className="w-full sm:w-auto"
-              leftIcon={<FiUnlock aria-hidden />}
-              disabled={disabled}
-              onClick={onUnlock}
-            >
-              Unlock card
-            </Button>
-          )}
-        </div>
-      )}
       {!saved && hint.nameFrom === "billing" && !locked && (
         <p className="flex items-start gap-2 text-sm text-black/70 dark:text-white/70">
           <FiGift aria-hidden className="mt-0.5 shrink-0" />
