@@ -170,11 +170,15 @@ export function SiteFooter({
           </Link>
         </div>
 
+        {/* Balanced columns rather than a grid, so a short section stacks under
+            a neighbour instead of sharing a row with a tall one and leaving a
+            hole beneath it. */}
         <div
-          className={`grid gap-8 ${sections.length > 1 ? "sm:grid-cols-2" : ""} ${sections.length === 0 ? "hidden" : ""}`}
+          className={`space-y-8 ${sections.length > 1 ? "sm:columns-2 sm:gap-8" : ""} ${sections.length === 0 ? "hidden" : ""}`}
         >
           {sections.map((section) => (
             <section
+              className="break-inside-avoid"
               key={section.title}
               aria-labelledby={`footer-${section.title.toLowerCase().replaceAll(" ", "-")}`}
             >
