@@ -112,33 +112,6 @@ test("a markdown shows on the card, the product page, and the cart line", async 
   await expect(drawer.getByText("Sale", { exact: true })).toBeVisible();
 });
 
-test("search filters as the shopper types and keeps a shareable query", async ({ page }) => {
-  await page.goto("/");
-  await page.setViewportSize({ width: 1280, height: 900 });
-  await page.getByRole("link", { name: "Search the store" }).click();
-  const search = page.getByRole("textbox", { name: "Search products" });
-  await expect(search).toBeFocused();
-  await search.fill("cap");
-  await expect(page).toHaveURL(/\/search\?q=cap$/);
-  const main = page.getByRole("main");
-  await expect(main.getByText("1 result for “cap”")).toBeVisible();
-  await expect(main.getByRole("link", { name: /Ryan Society Cap/ })).toBeVisible();
-  await expect(main.getByRole("link", { name: /Official Ryan Meetup Tee/ })).toHaveCount(0);
-
-  // A Style name inside a grouped listing finds the listing.
-  await page.goto("/search?q=dad");
-  await expect(main.getByRole("link", { name: /Name Tag Shirt/ })).toBeVisible();
-  await expect(search).toHaveValue("dad");
-
-  await search.fill("shirts");
-  await expect(main.getByRole("link", { name: /Name Tag Shirt/ })).toBeVisible();
-  await search.fill("accessories");
-  await expect(main.getByRole("link", { name: /Ryan Society Cap/ })).toBeVisible();
-
-  await search.fill("bryan");
-  await expect(main.getByText("No Ryan provisions match that yet.", { exact: false })).toBeVisible();
-});
-
 test("collection pages sort by price and newest, and the sort survives a reload", async ({ page }) => {
   await page.goto("/collections/apparel");
   const titles = page.getByRole("main").getByRole("heading", { level: 3 });
@@ -408,6 +381,9 @@ test("apparel and accessories are header links, and shop all sits in the collect
   await expect(page).toHaveURL(/\/collections\/apparel$/);
   await expect(mainNavigation.getByRole("link", { name: "Apparel" })).toHaveAttribute("aria-current", "page");
 
+  // Close the desktop popover before switching to the mobile navigation.
+  await page.mouse.move(0, 0);
+  await mainNavigation.getByRole("button", { name: "Collections" }).press("Escape");
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("button", { name: "Open navigation" }).click();
   const mobileNavigation = page.getByRole("navigation", { name: "Mobile navigation" });
@@ -463,7 +439,7 @@ test("store navigation and breadcrumbs use icons", async ({ page }) => {
     page
       .getByRole("navigation", { name: "Mobile navigation" })
       .locator("a svg"),
-  ).toHaveCount(6); // Search, four links, and the collapsed Shop all chip
+  ).toHaveCount(5); // Four links and the collapsed Shop all chip
   await page.screenshot({
     path: "/private/tmp/store-mobile-navigation.png",
     fullPage: false,

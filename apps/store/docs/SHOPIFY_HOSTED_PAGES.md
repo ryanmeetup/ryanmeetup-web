@@ -1,12 +1,12 @@
 # Shopify-hosted pages
 
-The store is headless. Shoppers browse, search, review, and fill their cart on
+The store is headless. Shoppers browse, review, and fill their cart on
 `store.ryanmeetup.com`; Shopify only takes over for the parts that have to run on
 Shopify:
 
 | Lives on this app | Hosted by Shopify, styled in Admin | Never shown |
 | --- | --- | --- |
-| Catalog, product pages, search, sorting, sale prices | Checkout and payment | The Online Store theme at `ryan-meetup-store.myshopify.com` |
+| Catalog, product pages, sorting, sale prices | Checkout and payment | The Online Store theme at `ryan-meetup-store.myshopify.com` |
 | Cart and cart drawer (Shopify's cart API) | Order confirmation and order status pages | |
 | Reviews (Judge.me, server-side) | Customer accounts (`shopify.com/71870054511/account`) | |
 | About, Contact, policy pages | Notification emails | |
@@ -19,8 +19,8 @@ email links, and the checkout branding below.
 Shopify links to its own theme in places we don't control, such as the checkout
 logo, "Continue shopping" after an order, and the store link in emails. This
 snippet sends every theme page to the matching page here. Product, collection,
-policy, search, and cart paths line up one to one; Best Sellers and anything else go to the home
-page.
+policy, and cart paths line up one to one; Shopify search goes to Shop all, while
+Best Sellers and anything else go to the home page.
 
 In Shopify Admin → **Online Store → Themes → ⋯ → Edit code**, paste it as the
 first thing inside `<head>` in **both** files:
@@ -53,11 +53,7 @@ first thing inside `<head>` in **both** files:
     {%- when 'policy' -%}
       {%- assign headless_path = request.path -%}
     {%- when 'search' -%}
-      {%- assign headless_path = '/search' -%}
-      {%- if search.terms != blank -%}
-        {%- assign headless_terms = search.terms | url_encode -%}
-        {%- assign headless_path = '/search?q=' | append: headless_terms -%}
-      {%- endif -%}
+      {%- assign headless_path = '/collections/all' -%}
     {%- when 'cart' -%}
       {%- assign headless_path = '/cart' -%}
   {%- endcase -%}

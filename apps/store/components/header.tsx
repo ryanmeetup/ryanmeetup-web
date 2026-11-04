@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
-import { FiChevronDown, FiMenu, FiPackage, FiSearch, FiShoppingBag, FiX } from "react-icons/fi";
-import { AnimatedCollapse, NavMenu, Wordmark } from "@ryanmeetup/ui";
+import { FiChevronDown, FiMenu, FiPackage, FiShoppingBag, FiX } from "react-icons/fi";
+import { AnimatedCollapse, NavMenu, Tooltip, Wordmark } from "@ryanmeetup/ui";
 import { getCollectionMenuRoutes, storeNavigation } from "@/lib/navigation";
 import type { StoreMenuCollection } from "@/lib/navigation";
 import { useCart } from "./cart-provider";
@@ -68,66 +68,60 @@ export function Header({ collections, accountUrl }: { collections: StoreMenuColl
             )}
           </div>
         </nav>
-        {/* Narrower widths move search and orders into the menu, and the labels drop
+        {/* Narrower widths move orders into the menu, and the labels drop
             wherever they would wrap the wordmark or push the main navigation into
             scrolling. Breakpoints sit on wrappers so they win over inline-flex. */}
         <div className="ml-auto flex flex-none items-center gap-2 sm:gap-4 xl:gap-2">
-          <div className="hidden sm:block">
-            <Link
-              href="/search"
-              aria-label="Search the store"
-              title="Search the store"
-              aria-current={pathname === "/search" ? "page" : undefined}
-              className={`inline-flex h-10 w-10 items-center justify-center rounded-full border border-black/15 bg-white/70 text-base shadow-sm transition hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:border-white/20 dark:bg-white/10 dark:hover:bg-white/15 dark:focus-visible:ring-white/40 ${pathname === "/search" ? "ring-1 ring-black/20 dark:ring-white/30" : ""}`}
-            >
-              <FiSearch aria-hidden />
-            </Link>
-          </div>
           {accountUrl && (
             <div className="hidden md:block">
-              <a
-                href={accountUrl}
-                aria-label={accountLabel}
-                title={accountLabel}
-                className="inline-flex h-10 w-10 items-center justify-center gap-2 rounded-full border border-black/15 bg-white/70 text-xs font-semibold tracking-wide shadow-sm transition hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 md:w-auto md:px-4 xl:w-10 xl:px-0 dark:border-white/20 dark:bg-white/10 dark:hover:bg-white/15 dark:focus-visible:ring-white/40"
-              >
-                <FiPackage aria-hidden className="text-base" />
-                <span aria-hidden className="hidden md:inline xl:hidden">{accountLabel}</span>
-              </a>
+              <Tooltip content={accountLabel} placement="bottom">
+                <a
+                  href={accountUrl}
+                  aria-label={accountLabel}
+                  className="inline-flex h-10 w-10 items-center justify-center gap-2 rounded-full border border-black/15 bg-white/70 text-xs font-semibold tracking-wide shadow-sm transition hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 md:w-auto md:px-4 xl:w-10 xl:px-0 dark:border-white/20 dark:bg-white/10 dark:hover:bg-white/15 dark:focus-visible:ring-white/40"
+                >
+                  <FiPackage aria-hidden className="text-base" />
+                  <span aria-hidden className="hidden md:inline xl:hidden">{accountLabel}</span>
+                </a>
+              </Tooltip>
             </div>
           )}
           {/* Opens the drawer rather than /cart: the page still works but stays
               unlinked while we hear which of the two shoppers prefer. */}
-          <button
-            type="button"
-            aria-label={`Cart with ${cart?.totalQuantity ?? 0} items`}
-            aria-haspopup="dialog"
-            aria-expanded={drawerOpen}
-            onClick={() => setDrawerOpen(true)}
-            className="relative inline-flex h-10 items-center justify-center gap-2 rounded-full bg-black px-3 text-xs font-semibold tracking-wide text-white shadow-sm transition hover:scale-[1.02] hover:bg-black/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 sm:px-4 dark:bg-white dark:text-black dark:hover:bg-white/90 dark:focus-visible:ring-white/40"
-          >
-            <FiShoppingBag aria-hidden className="text-base" />
-            <span className="hidden sm:inline xl:hidden 3xl:inline">Cart</span>
-            {(cart?.totalQuantity ?? 0) > 0 && (
-              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-nametag px-1 text-[10px] font-bold text-white">
-                {cart?.totalQuantity}
-              </span>
-            )}
-          </button>
-          <button
-            type="button"
-            aria-label={open ? "Close navigation" : "Open navigation"}
-            aria-expanded={open}
-            onClick={() => setOpen((value) => !value)}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg px-2 text-sm font-semibold tracking-wide transition hover:bg-black/5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 sm:px-3 xl:hidden dark:hover:bg-white/10 dark:focus-visible:ring-white/40"
-          >
-            {open ? (
-              <FiX aria-hidden className="h-5 w-5" />
-            ) : (
-              <FiMenu aria-hidden className="h-5 w-5" />
-            )}
-            <span className="hidden sm:inline">{open ? "Close" : "Menu"}</span>
-          </button>
+          <Tooltip content="View cart" placement="bottom">
+            <button
+              type="button"
+              aria-label={`Cart with ${cart?.totalQuantity ?? 0} items`}
+              aria-haspopup="dialog"
+              aria-expanded={drawerOpen}
+              onClick={() => setDrawerOpen(true)}
+              className="relative inline-flex h-10 items-center justify-center gap-2 rounded-full bg-black px-3 text-xs font-semibold tracking-wide text-white shadow-sm transition hover:scale-[1.02] hover:bg-black/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 sm:px-4 dark:bg-white dark:text-black dark:hover:bg-white/90 dark:focus-visible:ring-white/40"
+            >
+              <FiShoppingBag aria-hidden className="text-base" />
+              <span className="hidden sm:inline xl:hidden 3xl:inline">Cart</span>
+              {(cart?.totalQuantity ?? 0) > 0 && (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-nametag px-1 text-[10px] font-bold text-white">
+                  {cart?.totalQuantity}
+                </span>
+              )}
+            </button>
+          </Tooltip>
+          <Tooltip content={open ? "Close navigation" : "Open navigation"} placement="bottom" triggerClassName="xl:hidden">
+            <button
+              type="button"
+              aria-label={open ? "Close navigation" : "Open navigation"}
+              aria-expanded={open}
+              onClick={() => setOpen((value) => !value)}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg px-2 text-sm font-semibold tracking-wide transition hover:bg-black/5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 sm:px-3 dark:hover:bg-white/10 dark:focus-visible:ring-white/40"
+            >
+              {open ? (
+                <FiX aria-hidden className="h-5 w-5" />
+              ) : (
+                <FiMenu aria-hidden className="h-5 w-5" />
+              )}
+              <span className="hidden sm:inline">{open ? "Close" : "Menu"}</span>
+            </button>
+          </Tooltip>
           <ThemeToggle />
         </div>
       </div>
@@ -136,20 +130,6 @@ export function Header({ collections, accountUrl }: { collections: StoreMenuColl
           aria-label="Mobile navigation"
           className="store-container relative grid gap-1 border-t border-black/10 py-3 xl:hidden dark:border-white/10"
         >
-          <Link
-            href="/search"
-            aria-current={pathname === "/search" ? "page" : undefined}
-            onClick={() => setOpen(false)}
-            className={`grid grid-cols-[auto_1fr] items-start gap-3 rounded-xl border px-3 py-3 text-sm shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/40 ${pathname === "/search" ? "border-black/30 bg-black/5 dark:border-white/40 dark:bg-white/10" : "border-black/10 bg-white/70 hover:border-black/20 hover:bg-black/5 dark:border-white/15 dark:bg-white/5 dark:hover:border-white/30 dark:hover:bg-white/10"}`}
-          >
-            <FiSearch aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
-            <span>
-              <span className="block font-semibold tracking-wide">Search</span>
-              <span className="mt-1 block text-xs font-normal leading-relaxed text-black/70 dark:text-white/70">
-                Find a shirt, hat, or Ryan provision by name.
-              </span>
-            </span>
-          </Link>
           {storeNavigation.map(({ description, icon: Icon, label, ...item }) =>
             "menu" in item ? (
               <div
