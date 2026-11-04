@@ -21,6 +21,11 @@ Copy `.env.example` to `.env.local` and add the development-store credentials. W
 - Customize checkout branding in Shopify Admin.
 - Configure a catalog revalidation webhook before launch if five-minute ISR freshness is not sufficient.
 
+## Launch roadmap
+
+What remains before the store takes real orders and replaces the Etsy shop is
+tracked in [docs/LAUNCH_ROADMAP.md](docs/LAUNCH_ROADMAP.md).
+
 ## Storefront listings
 
 For the Shopify-side steps when listing a new product, without the code

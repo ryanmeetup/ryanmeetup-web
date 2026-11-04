@@ -1,0 +1,281 @@
+# Store launch roadmap
+
+What `store.ryanmeetup.com` still needs before it can take real orders and stand
+in for the Etsy shop (`ryanmeetup.etsy.com`). Work through it one item at a time.
+When an item is finished, delete its row and section and add a line to the
+[Log](#log). Item numbers are kept stable rather than renumbered, so a gap means
+an item is done.
+
+The baseline is "do just about everything the Etsy storefront can do". The Etsy
+comparison is against Etsy's standard shop features; the live shop could not be
+read automatically (Etsy returns 403), so confirm items marked **check Etsy**
+against the real listings.
+
+Last reviewed: 2026-11-03.
+
+## Already in place
+
+- Catalog, collection, and type pages; listings with Style, color, and size
+  selection (see the [README](../README.md)).
+- Type and size filters on collection pages.
+- Cart drawer and cart page backed by the Shopify cart API, refreshed from
+  Shopify on load, cleared after checkout, and emptied on confirmation.
+- Shopify hosted checkout and a thank-you page.
+- Judge.me product reviews, read and submitted server-side.
+- About (including shipping and returns), Contact, and the sitemap.
+
+## Status
+
+| # | Item | Priority | Status |
+| --- | --- | --- | --- |
+| 2 | [Policy pages](#2-policy-pages) | Blocker | Not started |
+| 3 | [Order lookup and customer accounts](#3-order-lookup-and-customer-accounts) | Blocker | Not started |
+| 4 | [Launch switches and Shopify Admin setup](#4-launch-switches-and-shopify-admin-setup) | Blocker | Not started |
+| 5 | [Sale prices](#5-sale-prices) | Etsy parity | Not started |
+| 6 | [Product search](#6-product-search) | Etsy parity | Not started |
+| 7 | [Sorting](#7-sorting) | Etsy parity | Not started |
+| 8 | [Note to seller and personalization](#8-note-to-seller-and-personalization) | Etsy parity | Not started |
+| 9 | [Shipping cost and delivery estimates before checkout](#9-shipping-cost-and-delivery-estimates-before-checkout) | Etsy parity | Not started |
+| 10 | [Favorites](#10-favorites) | Etsy parity | Not started |
+| 11 | [More from this shop](#11-more-from-this-shop) | Etsy parity | Not started |
+| 12 | [Gift options](#12-gift-options) | Etsy parity | Not started |
+| 13 | [Local currency](#13-local-currency) | Etsy parity | Not started |
+| 14 | [Shop-wide reviews and buyer-only reviews](#14-shop-wide-reviews-and-buyer-only-reviews) | Polish | Not started |
+| 15 | [Catalog revalidation webhook](#15-catalog-revalidation-webhook) | Polish | Not started |
+| 16 | [Cookie consent and Shopify analytics](#16-cookie-consent-and-shopify-analytics) | Polish | Not started |
+
+Status values: Not started, In progress, Dropped (with reason). Finished items
+leave the roadmap.
+
+## Blockers
+
+### 2. Policy pages
+
+- [ ] Done
+
+**Problem.** Etsy supplies shop policies. Here, the About page's "fine print" is
+the only policy content; there is no privacy policy, terms of service, or refund
+policy, and the footer links to none.
+
+**Approach.**
+- Write the policies in Shopify Admin → Settings → Policies so they also appear in
+  checkout.
+- Read them with the Storefront API
+  (`shop { privacyPolicy refundPolicy shippingPolicy termsOfService { title body handle url } }`)
+  and render them at `/policies/<handle>`.
+- Link them from the footer (`RyanMeetupFooter` accepts links; keep it generic per
+  the shared-footer rule) and add them to the sitemap.
+- Do not invent policy terms in code; the copy comes from Shopify.
+
+**Done when.** Each policy page renders Shopify's text, is linked from the footer,
+and appears in the sitemap.
+
+### 3. Order lookup and customer accounts
+
+- [ ] Done
+
+**Problem.** Etsy buyers have Purchases with order status and tracking. The store
+has no way back to an order except the Shopify email.
+
+**Approach.**
+- Enable Shopify customer accounts (new customer accounts) in Shopify Admin.
+- Add an account/orders link to the header and the thank-you page pointing at the
+  shop's customer account URL. Full in-site login via the Customer Account API is
+  optional and can come later.
+- Update the Contact page's "Order email" guidance if the flow changes.
+
+**Done when.** A customer can get from the store to their order status without
+searching their inbox.
+
+### 4. Launch switches and Shopify Admin setup
+
+- [ ] Done
+
+Code:
+- [ ] Remove the beta banner in [app/layout.tsx](../app/layout.tsx).
+- [ ] Remove the site-wide `robots: { index: false, follow: false }` in the same
+      file (keep it on `/cart` and `/thank-you`).
+
+Shopify Admin and environment (no code):
+- [ ] Production `SHOPIFY_STORE_DOMAIN` and `SHOPIFY_STOREFRONT_API_TOKEN` set in
+      Vercel.
+- [ ] Payments activated and a test order refunded end to end.
+- [ ] Tax collection configured for the regions shipped to.
+- [ ] Shipping rates match Printful's for every region on the About page.
+- [ ] Every published variant mapped to a Printful SKU.
+- [ ] Checkout return URL set to `https://store.ryanmeetup.com/thank-you`.
+- [ ] Checkout branding customized.
+- [ ] `JUDGEME_PRIVATE_API_TOKEN` set in Production and Preview.
+- [ ] Etsy listings retired or redirected, and `ryanmeetup.com/merch` (currently
+      pointing at Etsy in `apps/ryanmeetup`) switched to the store.
+
+**Done when.** A real order placed on production is charged, taxed, shipped by
+Printful, and confirmed by email.
+
+## Etsy parity
+
+### 5. Sale prices
+
+- [ ] Done
+
+**Problem.** The store never requests `compareAtPrice`, so a markdown in Shopify
+shows no struck-through original price or sale badge.
+
+**Approach.** Add `compareAtPrice` to the variant fields and
+`priceRange`/`compareAtPriceRange` to products in
+[lib/shopify.ts](../lib/shopify.ts) and [lib/types.ts](../lib/types.ts); show the
+original price and a sale label on cards, the product page, and cart lines. Do not
+rely on color alone for the sale state.
+
+**Done when.** Setting a compare-at price in Shopify shows the sale on the card,
+product page, and cart.
+
+### 6. Product search
+
+- [ ] Done
+
+**Problem.** No search.
+
+**Approach.** Use the Storefront API `search` (or `products(query:)`) and group
+results with `groupProductListings`. Follow the repo's shared debounced search
+rule: immediate input, debounced query and URL state, a spinner in the input, and
+`aria-busy` with dimmed stale results. Use a readable `?q=` parameter. Add a
+header entry point.
+
+**Done when.** Searching from the header finds products by title, and the results
+URL is shareable.
+
+### 7. Sorting
+
+- [ ] Done
+
+**Problem.** Etsy offers sorting by most recent and by price; the store's order is
+fixed.
+
+**Approach.** A `DropdownSelect variant="compact"` next to the existing filters in
+[components/collection-grid.tsx](../components/collection-grid.tsx), with a
+readable `?sort=` (`featured`, `newest`, `price-low`, `price-high`). Sort listings
+by their minimum price.
+
+**Done when.** Each collection and type page sorts, and the choice survives reload.
+
+### 8. Note to seller and personalization
+
+- [ ] Done — **check Etsy** for which listings take personalization.
+
+**Problem.** Etsy has a cart "note to seller" and per-listing personalization
+fields. The store supports neither.
+
+**Approach.**
+- Cart note: a text area in the cart page and drawer saved with
+  `cartNoteUpdate`.
+- Personalization: line `attributes` on `cartLinesAdd`, driven by a Shopify
+  metafield or tag on the products that accept it (no handle checks in code).
+  Mark the field required when the product needs it. Confirm the attributes reach
+  Printful or the order, and decide how they are fulfilled.
+
+**Done when.** A note and any personalization show on the Shopify order.
+
+### 9. Shipping cost and delivery estimates before checkout
+
+- [ ] Done
+
+**Problem.** Etsy shows shipping cost and an estimated arrival on each listing.
+The store says only "calculated at checkout".
+
+**Approach.** Show a short shipping and processing summary on the product page
+(sourced from the shipping policy in item 2 or a Shopify metafield rather than
+hard-coded claims), and, if wanted, a free-shipping threshold in the cart.
+
+**Done when.** A shopper can see roughly what shipping costs and how long it takes
+before checkout.
+
+### 10. Favorites
+
+- [ ] Done
+
+**Problem.** Etsy shoppers can favorite items.
+
+**Approach.** Start with a per-browser favorites list (`localStorage`, wrapped in
+try/catch) with a heart button on cards and product pages and a `/favorites` page.
+Move it to customer accounts after item 3 if wanted.
+
+**Done when.** Favorites persist across visits in the same browser.
+
+### 11. More from this shop
+
+- [ ] Done
+
+**Problem.** Product pages don't suggest other products.
+
+**Approach.** A section below the product details using Shopify's
+`productRecommendations`, falling back to the product's collection, with listings
+grouped so a listing appears once.
+
+**Done when.** Every product page suggests other listings.
+
+### 12. Gift options
+
+- [ ] Done — **check Etsy** for whether gift options are used.
+
+**Problem.** Etsy has "this order is a gift" with a message.
+
+**Approach.** A gift checkbox and message in the cart, saved as cart attributes
+(reuse item 8's plumbing). Confirm Printful can omit prices from the packing slip.
+
+**Done when.** Gift orders carry the message on the Shopify order.
+
+### 13. Local currency
+
+- [ ] Done
+
+**Problem.** The store ships to most of the world but shows only USD.
+
+**Approach.** Enable Shopify Markets, then pass `@inContext(country:)` on catalog
+and cart queries, chosen from the request's country header with a manual
+selector. Mind the five-minute ISR cache: cache per country or price on the
+client.
+
+**Done when.** A visitor outside the US sees prices in their currency, matching
+checkout.
+
+## Polish
+
+### 14. Shop-wide reviews and buyer-only reviews
+
+- [ ] Done
+
+**Problem.** Etsy shows a shop rating and only buyers can review. Here reviews are
+per product and anyone can submit.
+
+**Approach.** Show the overall Judge.me rating on the home and About pages. Use
+Judge.me's verified-buyer settings, or its review request emails, to limit
+submissions.
+
+### 15. Catalog revalidation webhook
+
+- [ ] Done
+
+**Problem.** Sold-out and catalog changes take up to five minutes to appear.
+
+**Approach.** A route that verifies Shopify's webhook HMAC and calls
+`revalidateTag("shopify-catalog")` on product, inventory, and collection updates.
+
+### 16. Cookie consent and Shopify analytics
+
+- [ ] Done
+
+**Problem.** Shopify's conversion analytics for headless stores need its Customer
+Privacy API, and EU and UK visitors need consent before tracking cookies.
+
+**Approach.** Decide whether Shopify analytics is wanted beyond Vercel Analytics.
+If so, add a consent banner wired to the Customer Privacy API.
+
+## Log
+
+Record each finished or changed item here, newest first.
+
+| Date | Item | Change | Commit |
+| --- | --- | --- | --- |
+| 2026-11-03 | 1 | Cart refreshes from Shopify on load and Back, starts fresh when a checked-out or expired cart rejects a change, clears on `/thank-you`, and has a confirmed **Empty cart** action on the cart page and drawer. | — |
+| 2026-11-03 | — | Roadmap created. | — |
