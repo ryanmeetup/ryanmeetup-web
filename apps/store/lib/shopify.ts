@@ -476,6 +476,16 @@ function readCartPayload(payload: CartPayload): Cart {
   return reshapeCart(payload.cart);
 }
 
+/** The cart as Shopify has it now, or null once it has checked out or expired. */
+export async function getCart(cartId: string) {
+  const data = await storefrontRequest<{ cart: CartPayload["cart"] }>(
+    `${cartFragment}
+      query Cart($cartId: ID!) { cart(id: $cartId) { ...CartFields } }`,
+    { cartId },
+  );
+  return data.cart ? reshapeCart(data.cart) : null;
+}
+
 export async function createCart(merchandiseId: string, quantity: number) {
   const data = await storefrontRequest<{ cartCreate: CartPayload }>(
     `${cartFragment}

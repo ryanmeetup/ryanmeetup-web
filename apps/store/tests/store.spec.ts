@@ -38,6 +38,53 @@ test("cart lines move a listing member's title color into the options", async ({
   await expect(main.getByText(`Size: ${variant.selectedOptions[0].value} · Color: Black`, { exact: true })).toBeVisible();
 });
 
+test("returning from checkout empties the cart", async ({ page }) => {
+  await seedCart(page);
+  await page.goto("/thank-you");
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("ryan-store-cart"))).toBeNull();
+  await expect(page.getByRole("button", { name: "Cart with 0 items" })).toBeVisible();
+});
+
+async function seedCart(page: Page) {
+  const variant = superBlack.variants[0];
+  await page.goto("/");
+  await page.evaluate((cart) => localStorage.setItem("ryan-store-cart", JSON.stringify(cart)), {
+    id: "demo-cart",
+    checkoutUrl: "",
+    totalQuantity: 2,
+    cost: { subtotalAmount: variant.price, totalAmount: variant.price },
+    lines: [{ id: "super-line", quantity: 2, merchandise: { ...variant, product: { handle: superBlack.handle, title: superBlack.title, tags: superBlack.tags } } }],
+  });
+}
+
+test("emptying the cart asks first and can be cancelled", async ({ page }) => {
+  await seedCart(page);
+  await page.goto("/cart");
+  const main = page.getByRole("main");
+  await main.getByRole("button", { name: "Empty cart" }).click();
+  const confirm = page.getByRole("dialog", { name: "Empty your cart?" });
+  await expect(confirm).toContainText("This removes all 2 items from your cart.");
+  await confirm.getByRole("button", { name: "Cancel" }).click();
+  await expect(confirm).toHaveCount(0);
+  await expect(main.getByText("Super Ryan Shirt", { exact: true })).toBeVisible();
+
+  await main.getByRole("button", { name: "Empty cart" }).click();
+  await confirm.getByRole("button", { name: "Empty cart" }).click();
+  await expect(main.getByText("Your cart is remarkably Ryan-free.")).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem("ryan-store-cart"))).toBeNull();
+});
+
+test("the cart drawer can be emptied without closing it", async ({ page }) => {
+  await seedCart(page);
+  await page.goto("/collections/all");
+  await page.getByRole("button", { name: "Cart with 2 items" }).click();
+  const drawer = page.getByRole("dialog", { name: "Your cart" });
+  await drawer.getByRole("button", { name: "Empty cart" }).click();
+  await page.getByRole("dialog", { name: "Empty your cart?" }).getByRole("button", { name: "Empty cart" }).click();
+  await expect(drawer.getByText("Your cart is remarkably Ryan-free.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Cart with 0 items" })).toBeAttached();
+});
+
 // Adding to the cart opens the drawer over the page; close it before going on.
 async function keepShopping(page: Page) {
   await page.getByRole("button", { name: "Keep shopping" }).click();

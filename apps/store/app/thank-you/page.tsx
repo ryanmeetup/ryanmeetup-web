@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import { Button, Card, Heading, Kicker, Text } from "@ryanmeetup/ui";
 import { FiCheck } from "react-icons/fi";
+import { ClearCart } from "@/components/clear-cart";
 
 export const metadata: Metadata = { title: "Order confirmed", robots: { index: false, follow: false } };
 
 export default function ThankYouPage() {
   return (
     <main className="store-container grid min-h-[65vh] place-items-center py-16">
+      <ClearCart />
       <Card size="lg" className="max-w-xl text-center">
         <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-nametag text-2xl text-white"><FiCheck aria-hidden /></span>
         <Kicker className="mt-6">Order confirmed</Kicker>

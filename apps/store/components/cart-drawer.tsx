@@ -5,6 +5,7 @@ import { formatMoney } from "@/lib/money";
 import { CartLineItem } from "./cart-line";
 import { useCart } from "./cart-provider";
 import { CheckoutButton } from "./checkout-button";
+import { EmptyCartButton } from "./empty-cart-button";
 
 /** Slides in after an item is added, so shoppers see the cart without leaving the page. */
 export function CartDrawer() {
@@ -37,6 +38,7 @@ export function CartDrawer() {
         <div className="space-y-4" aria-busy={loading}>
           {cart.lines.map((line) => <CartLineItem key={line.id} line={line} compact highlighted={line.merchandise.id === justAdded} />)}
           {error && <ErrorCallout>{error}</ErrorCallout>}
+          <EmptyCartButton />
         </div>
       ) : (
         <EmptyState message="Your cart is remarkably Ryan-free." />

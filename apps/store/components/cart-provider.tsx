@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { Cart, CartLine, Product, ProductVariant } from "@/lib/types";
 
 const storageKey = "ryan-store-cart";
@@ -8,6 +8,8 @@ const storageKey = "ryan-store-cart";
 type CartContextValue = {
   addItem: (product: Product, variant: ProductVariant, quantity: number) => Promise<void>;
   cart: Cart | null;
+  /** Forgets the cart: after a completed checkout, or when the shopper empties it. */
+  clearCart: () => void;
   commerceConfigured: boolean;
   drawerOpen: boolean;
   error: string;
@@ -51,23 +53,17 @@ export function CartProvider({
   const [error, setError] = useState("");
   const [drawerOpen, setDrawerOpenState] = useState(false);
   const [justAdded, setJustAdded] = useState<string | null>(null);
-
-  useEffect(() => {
-    const stored = window.localStorage.getItem(storageKey);
-    if (!stored) return;
-    try {
-      // The server cannot read this guest-only localStorage cart, so hydrate it once after mount.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setCart(JSON.parse(stored) as Cart);
-    } catch {
-      window.localStorage.removeItem(storageKey);
-    }
-  }, []);
+  // Counts cart changes, so a refresh that started before one doesn't overwrite its result.
+  const changes = useRef(0);
 
   const saveCart = useCallback((nextCart: Cart | null) => {
     setCart(nextCart);
-    if (nextCart) window.localStorage.setItem(storageKey, JSON.stringify(nextCart));
-    else window.localStorage.removeItem(storageKey);
+    try {
+      if (nextCart) window.localStorage.setItem(storageKey, JSON.stringify(nextCart));
+      else window.localStorage.removeItem(storageKey);
+    } catch {
+      // Storage can be blocked; the cart still works for this visit.
+    }
   }, []);
 
   const setDrawerOpen = useCallback((open: boolean) => {
@@ -81,15 +77,70 @@ export function CartProvider({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    const data = (await response.json()) as { cart?: Cart; error?: string };
-    if (!response.ok || !data.cart) throw new Error(data.error || "Cart update failed.");
+    // A null cart means Shopify no longer has it: it checked out or expired.
+    const data = (await response.json()) as { cart?: Cart | null; error?: string };
+    if (!response.ok || data.cart === undefined) throw new Error(data.error || "Cart update failed.");
     return data.cart;
   }, []);
 
+  const startChange = useCallback(() => {
+    changes.current += 1;
+    setLoading(true);
+    setError("");
+  }, []);
+
+  // The stored cart is only a snapshot; Shopify's copy has current prices and drops a
+  // cart once it checks out.
+  const refreshCart = useCallback(
+    async (stored: Cart) => {
+      if (!commerceConfigured || stored.id.startsWith("demo-")) return;
+      const startedAt = changes.current;
+      try {
+        const fresh = await request({ action: "get", cartId: stored.id });
+        if (changes.current === startedAt) saveCart(fresh);
+      } catch {
+        // Keep the snapshot; the next change reports anything still wrong.
+      }
+    },
+    [commerceConfigured, request, saveCart],
+  );
+
+  useEffect(() => {
+    function readStored() {
+      try {
+        const stored = window.localStorage.getItem(storageKey);
+        return stored ? (JSON.parse(stored) as Cart) : null;
+      } catch {
+        return null;
+      }
+    }
+    const stored = readStored();
+    if (stored) {
+      // The server cannot read this guest-only localStorage cart, so hydrate it once after mount.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCart(stored);
+      void refreshCart(stored);
+    }
+    // Coming back from checkout with the Back button restores this page without remounting it.
+    function onPageShow(event: PageTransitionEvent) {
+      const current = event.persisted ? readStored() : null;
+      if (current) void refreshCart(current);
+    }
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, [refreshCart]);
+
+  // Shopify keeps the abandoned cart until it expires; forgetting its ID is enough.
+  const clearCart = useCallback(() => {
+    changes.current += 1;
+    setError("");
+    setJustAdded(null);
+    saveCart(null);
+  }, [saveCart]);
+
   const addItem = useCallback(
     async (product: Product, variant: ProductVariant, quantity: number) => {
-      setLoading(true);
-      setError("");
+      startChange();
       try {
         if (commerceConfigured) {
           const cartId = cart?.id.startsWith("demo-") ? undefined : cart?.id;
@@ -122,14 +173,13 @@ export function CartProvider({
         setLoading(false);
       }
     },
-    [cart, commerceConfigured, request, saveCart],
+    [cart, commerceConfigured, request, saveCart, startChange],
   );
 
   const updateItem = useCallback(
     async (lineId: string, quantity: number) => {
       if (quantity < 1) return;
-      setLoading(true);
-      setError("");
+      startChange();
       try {
         if (commerceConfigured && cart) {
           saveCart(await request({ action: "update", cartId: cart.id, lineId, quantity }));
@@ -142,13 +192,12 @@ export function CartProvider({
         setLoading(false);
       }
     },
-    [cart, commerceConfigured, request, saveCart],
+    [cart, commerceConfigured, request, saveCart, startChange],
   );
 
   const removeItem = useCallback(
     async (lineId: string) => {
-      setLoading(true);
-      setError("");
+      startChange();
       try {
         if (commerceConfigured && cart) {
           saveCart(await request({ action: "remove", cartId: cart.id, lineId }));
@@ -162,12 +211,12 @@ export function CartProvider({
         setLoading(false);
       }
     },
-    [cart, commerceConfigured, request, saveCart],
+    [cart, commerceConfigured, request, saveCart, startChange],
   );
 
   const value = useMemo(
-    () => ({ addItem, cart, commerceConfigured, drawerOpen, error, justAdded, loading, removeItem, setDrawerOpen, updateItem }),
-    [addItem, cart, commerceConfigured, drawerOpen, error, justAdded, loading, removeItem, setDrawerOpen, updateItem],
+    () => ({ addItem, cart, clearCart, commerceConfigured, drawerOpen, error, justAdded, loading, removeItem, setDrawerOpen, updateItem }),
+    [addItem, cart, clearCart, commerceConfigured, drawerOpen, error, justAdded, loading, removeItem, setDrawerOpen, updateItem],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

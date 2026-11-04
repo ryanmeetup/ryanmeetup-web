@@ -6,6 +6,7 @@ import { cartOrigin } from "@/lib/product-origin";
 import { CartLineItem } from "./cart-line";
 import { useCart } from "./cart-provider";
 import { CheckoutButton } from "./checkout-button";
+import { EmptyCartButton } from "./empty-cart-button";
 
 export function CartPage() {
   const { cart, error, loading } = useCart();
@@ -27,6 +28,7 @@ export function CartPage() {
         <div className="space-y-4" aria-busy={loading}>
           {cart.lines.map((line) => <CartLineItem key={line.id} line={line} from={cartOrigin} />)}
           {error && <ErrorCallout>{error}</ErrorCallout>}
+          <EmptyCartButton />
         </div>
         <Card size="lg" className="h-fit xl:sticky xl:top-28">
           <Heading size="h2" className="text-2xl">Order summary</Heading>
