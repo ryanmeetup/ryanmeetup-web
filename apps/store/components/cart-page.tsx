@@ -1,12 +1,13 @@
 "use client";
 
-import { Button, Card, EmptyState, ErrorCallout, Heading, Kicker, Text } from "@ryanmeetup/ui";
+import { Card, ErrorCallout, Heading, Kicker, Text } from "@ryanmeetup/ui";
 import { formatMoney } from "@/lib/money";
 import { cartOrigin } from "@/lib/product-origin";
 import { CartLineItem } from "./cart-line";
 import { useCart } from "./cart-provider";
 import { CheckoutButton } from "./checkout-button";
 import { EmptyCartButton } from "./empty-cart-button";
+import { EmptyCartPrompt } from "./empty-cart-prompt";
 
 export function CartPage() {
   const { cart, error, loading } = useCart();
@@ -14,8 +15,7 @@ export function CartPage() {
   if (!cart?.lines.length) {
     return (
       <main className="store-container min-h-[62vh] py-16 sm:py-24">
-        <EmptyState className="mx-auto max-w-xl" message="Your cart is remarkably Ryan-free." />
-        <div className="mx-auto mt-6 max-w-xs"><Button.Link href="/collections/all" size="md" fullWidth>Browse the goods</Button.Link></div>
+        <EmptyCartPrompt className="mx-auto max-w-xl" />
       </main>
     );
   }

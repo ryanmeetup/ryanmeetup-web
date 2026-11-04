@@ -79,10 +79,20 @@ test("the cart drawer can be emptied without closing it", async ({ page }) => {
   await page.goto("/collections/all");
   await page.getByRole("button", { name: "Cart with 2 items" }).click();
   const drawer = page.getByRole("dialog", { name: "Your cart" });
-  await drawer.getByRole("button", { name: "Empty cart" }).click();
+  // Opening focus stays on close rather than the destructive trash button beside it.
+  await expect(drawer.getByRole("button", { name: "Close panel" })).toBeFocused();
+  const trash = drawer.getByRole("button", { name: "Empty cart" });
+  await trash.hover();
+  await expect(page.getByRole("tooltip", { name: "Empty cart" })).toBeVisible();
+  await trash.click();
   await page.getByRole("dialog", { name: "Empty your cart?" }).getByRole("button", { name: "Empty cart" }).click();
   await expect(drawer.getByText("Your cart is remarkably Ryan-free.")).toBeVisible();
+  await expect(trash).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Cart with 0 items" })).toBeAttached();
+
+  await drawer.getByRole("link", { name: /Apparel/ }).click();
+  await expect(page).toHaveURL(/\/collections\/apparel$/);
+  await expect(drawer).toHaveCount(0);
 });
 
 test("a markdown shows on the card, the product page, and the cart line", async ({ page }) => {
