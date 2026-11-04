@@ -428,6 +428,13 @@ test("runs review, on-demand files, and independent manual fulfillment stages", 
   expect((await state(request)).orders[0].production_sent_at).not.toBeNull();
   await expect(page.getByText(/^Sent to fulfillment [A-Z][a-z]{2} \d{1,2}$/)).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("manual-handoff.png") });
+  // A sent card is read-only, and the review says how to change it.
+  await page.getByRole("button", { name: "Review Ryan Fixture", exact: true }).click();
+  const sentReview = page.getByRole("dialog");
+  await expect(sentReview.getByText(/Locked because this order went to fulfillment/)).toContainText("Move back");
+  await expect(sentReview.getByLabel("Location", { exact: false })).toBeDisabled();
+  await page.keyboard.press("Escape");
+  await expect(sentReview).toHaveCount(0);
   expect((await state(request)).snapshot).toBeNull();
   await page.goto("/ryd?status=verified&production=sent-to-fulfillment");
   await page

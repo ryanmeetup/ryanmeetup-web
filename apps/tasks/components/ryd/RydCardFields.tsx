@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Input } from "@ryanmeetup/ui";
-import { FiAlertTriangle, FiGift } from "react-icons/fi";
+import { FiAlertTriangle, FiGift, FiLock } from "react-icons/fi";
 import {
   RYD_CARD_LIMITS,
   rydCardProblems,
@@ -45,6 +45,17 @@ export function RydCardFields({
 
   return (
     <div className="space-y-3">
+      {locked && (
+        <p className="flex items-start gap-2 text-sm text-black/70 dark:text-white/70">
+          <FiLock aria-hidden className="mt-0.5 shrink-0" />
+          <span>
+            Locked because this order went to fulfillment.
+            {problems.length > 0 && ` It's missing ${listLabels(problems)}.`} To
+            edit it, select the order in the list, choose Move back, save the
+            card, then mark it sent to fulfillment again.
+          </span>
+        </p>
+      )}
       {!saved && hint.nameFrom === "billing" && !locked && (
         <p className="flex items-start gap-2 text-sm text-black/70 dark:text-white/70">
           <FiGift aria-hidden className="mt-0.5 shrink-0" />
