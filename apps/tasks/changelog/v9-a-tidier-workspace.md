@@ -63,6 +63,11 @@ closed to them, and their sidebar shows only what they can open.
 
 ## Improved
 
+### A clearer way back from missing pages
+
+Missing pages now show a name-tag 404 with links back to the task board and
+workspace home, plus guidance for checking shared links and access.
+
 ### RY-D settings have their own access
 
 RY-D Settings is locked separately from the queue, so someone can verify

@@ -40,7 +40,7 @@ async function expectMissingPage(page: Page, path: string) {
   await page.goto(path);
   // Next may stream the not-found boundary after a 200 response has begun.
   await expect(
-    page.getByRole("heading", { name: "404", exact: true }),
+    page.getByRole("heading", { name: /Wrong turn\.\s*Work awaits\./ }),
   ).toBeVisible();
   await page.waitForLoadState("networkidle");
 }
