@@ -6,11 +6,13 @@ import {
 } from "react-icons/fa";
 import { FaThreads as Threads } from "react-icons/fa6";
 import { PiLetterCirclePBold as Partiful } from "react-icons/pi";
-import { SiteFooter } from "./SiteFooter";
+import { SiteFooter, type SiteFooterSection } from "./SiteFooter";
 
 export type RyanMeetupFooterProps = {
   className?: string;
   homeHref?: string;
+  /** Site-specific link columns, shown before the shared Ryan Meetup ones. */
+  sections?: SiteFooterSection[];
 };
 
 const socialLinks = [
@@ -49,6 +51,7 @@ const socialLinks = [
 export function RyanMeetupFooter({
   className,
   homeHref = "/",
+  sections = [],
 }: RyanMeetupFooterProps) {
   return (
     <SiteFooter
@@ -57,6 +60,7 @@ export function RyanMeetupFooter({
       homeHref={homeHref}
       className={className}
       sections={[
+        ...sections,
         {
           title: "Follow us",
           links: socialLinks.map(({ href, label }) => ({ href, label })),
