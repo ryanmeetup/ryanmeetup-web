@@ -102,6 +102,33 @@ test("a markdown shows on the card, the product page, and the cart line", async 
   await expect(drawer.getByText("Sale", { exact: true })).toBeVisible();
 });
 
+test("search filters as the shopper types and keeps a shareable query", async ({ page }) => {
+  await page.goto("/");
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.getByRole("link", { name: "Search the store" }).click();
+  const search = page.getByRole("textbox", { name: "Search products" });
+  await expect(search).toBeFocused();
+  await search.fill("cap");
+  await expect(page).toHaveURL(/\/search\?q=cap$/);
+  const main = page.getByRole("main");
+  await expect(main.getByText("1 result for “cap”")).toBeVisible();
+  await expect(main.getByRole("link", { name: /Ryan Society Cap/ })).toBeVisible();
+  await expect(main.getByRole("link", { name: /Official Ryan Meetup Tee/ })).toHaveCount(0);
+
+  // A Style name inside a grouped listing finds the listing.
+  await page.goto("/search?q=dad");
+  await expect(main.getByRole("link", { name: /Name Tag Shirt/ })).toBeVisible();
+  await expect(search).toHaveValue("dad");
+
+  await search.fill("shirts");
+  await expect(main.getByRole("link", { name: /Name Tag Shirt/ })).toBeVisible();
+  await search.fill("accessories");
+  await expect(main.getByRole("link", { name: /Ryan Society Cap/ })).toBeVisible();
+
+  await search.fill("bryan");
+  await expect(main.getByText("No Ryan provisions match that yet.", { exact: false })).toBeVisible();
+});
+
 // Adding to the cart opens the drawer over the page; close it before going on.
 async function keepShopping(page: Page) {
   await page.getByRole("button", { name: "Keep shopping" }).click();
@@ -408,7 +435,7 @@ test("store navigation and breadcrumbs use icons", async ({ page }) => {
     page
       .getByRole("navigation", { name: "Mobile navigation" })
       .locator("a svg"),
-  ).toHaveCount(5); // four links and the collapsed Shop all chip
+  ).toHaveCount(6); // Search, four links, and the collapsed Shop all chip
   await page.screenshot({
     path: "/private/tmp/store-mobile-navigation.png",
     fullPage: false,

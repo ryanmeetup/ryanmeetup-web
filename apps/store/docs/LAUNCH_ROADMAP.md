@@ -30,13 +30,14 @@ Last reviewed: 2026-11-04.
 - Sale prices: a compare-at price above the price in Shopify adds a **Sale**
   label and the struck-through original on cards, the product page, and cart
   lines.
+- Product search at `/search?q=` from the header (or the mobile menu), matching
+  titles, product types, and Style names as the shopper types.
 
 ## Status
 
 | # | Item | Priority | Status |
 | --- | --- | --- | --- |
 | 4 | [Launch switches and Shopify Admin setup](#4-launch-switches-and-shopify-admin-setup) | Blocker | Not started |
-| 6 | [Product search](#6-product-search) | Etsy parity | Not started |
 | 7 | [Sorting](#7-sorting) | Etsy parity | Not started |
 | 8 | [Note to seller and personalization](#8-note-to-seller-and-personalization) | Etsy parity | Not started |
 | 9 | [Shipping cost and delivery estimates before checkout](#9-shipping-cost-and-delivery-estimates-before-checkout) | Etsy parity | Not started |
@@ -88,21 +89,6 @@ Shopify Admin and environment (no code):
 Printful, and confirmed by email.
 
 ## Etsy parity
-
-### 6. Product search
-
-- [ ] Done
-
-**Problem.** No search.
-
-**Approach.** Use the Storefront API `search` (or `products(query:)`) and group
-results with `groupProductListings`. Follow the repo's shared debounced search
-rule: immediate input, debounced query and URL state, a spinner in the input, and
-`aria-busy` with dimmed stale results. Use a readable `?q=` parameter. Add a
-header entry point.
-
-**Done when.** Searching from the header finds products by title, and the results
-URL is shareable.
 
 ### 7. Sorting
 
@@ -237,6 +223,7 @@ Record each finished or changed item here, newest first.
 
 | Date | Item | Change | Commit |
 | --- | --- | --- | --- |
+| 2026-11-04 | 6 | `/search` filters the grouped catalog in the browser with the shared `useSearchFilter`, `SearchInput`, and `PendingResults`, matching titles, product types, and Style names, with a shareable `?q=`. The catalog is small and already cached for Shop all, so this skips Shopify's `search` API. A header search button (from `sm`) and a mobile menu entry lead there; to make room, **Your orders** moves into the menu below `md` and the **Cart** label drops between `xl` and `3xl`. | — |
 | 2026-11-04 | 5 | Variants read `compareAtPrice`; a value above the price shows a **Sale** label and the struck-through original on cards (beside the lowest price), the product page, and cart lines. Sale state is worked out from the variants, so grouped listings need no `compareAtPriceRange`. The demo cap is marked down to show it in preview mode. | `5cf0ce46` |
 | 2026-11-04 | 3 | Customer accounts are on, but the Storefront API still returns a null `customerAccountUrl`, so the link falls back to `https://shopify.com/<shop id>/account` (the URL Shopify Admin shows). | — |
 | 2026-11-04 | 3 | **Your orders** links to Shopify's customer account from the header, mobile menu, thank-you page, and Contact, driven by `shop.customerAccountUrl` so nothing appears until accounts are on. Turning accounts on and covering them in the privacy policy moved to item 4. Policy pages also gained Shopify's terms of sale, legal notice, and contact information. | `4133f799` |
