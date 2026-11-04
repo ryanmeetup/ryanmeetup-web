@@ -18,7 +18,7 @@ Copy `.env.example` to `.env.local` and add the development-store credentials. W
 - Create public Storefront API access for products, collections, and carts.
 - Set the headless storefront domain and checkout return URL to `https://store.ryanmeetup.com/thank-you`.
 - Install/connect Printful in Shopify and map every Shopify variant to the matching Printful SKU.
-- Customize checkout branding in Shopify Admin.
+- Brand checkout and customer accounts, redirect the Online Store theme here, and point the notification emails at the store; see [docs/SHOPIFY_HOSTED_PAGES.md](docs/SHOPIFY_HOSTED_PAGES.md).
 - Keep customer accounts on (Settings → Customer accounts). The **Your orders** links use the Storefront API's `customerAccountUrl`, which is null for this headless shop, so they fall back to `https://shopify.com/<shop id>/account`.
 - Write the store policies in Settings → Policies. Each one that has text gets a page at `/policies/<handle>`, a footer link, and a sitemap entry; a blank one gets nothing. Without Shopify credentials there are no policy pages.
 - Configure a catalog revalidation webhook before launch if five-minute ISR freshness is not sufficient.

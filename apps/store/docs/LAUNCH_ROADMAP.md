@@ -72,7 +72,14 @@ Shopify Admin and environment (no code):
 - [ ] Shipping rates match Printful's for every region on the About page.
 - [ ] Every published variant mapped to a Printful SKU.
 - [ ] Checkout return URL set to `https://store.ryanmeetup.com/thank-you`.
-- [ ] Checkout branding customized.
+- [ ] Checkout and customer accounts branded to match the store (Sidekick
+      prompt and logo files in [SHOPIFY_HOSTED_PAGES.md](SHOPIFY_HOSTED_PAGES.md#3-brand-checkout-and-customer-accounts)).
+- [ ] Theme redirect pasted into `layout/theme.liquid` and
+      `layout/password.liquid`, so the Shopify theme sends shoppers here
+      ([snippet](SHOPIFY_HOSTED_PAGES.md#1-redirect-the-theme-to-the-store)).
+- [ ] Email templates branded and their store links pointed at
+      `https://store.ryanmeetup.com`
+      ([steps](SHOPIFY_HOSTED_PAGES.md#2-point-the-emails-at-the-store)).
 - [ ] Refund policy, shipping policy, and terms of service written in Settings →
       Policies. Only the privacy policy exists today; each one appears on the
       site as soon as it has text.
