@@ -7,7 +7,6 @@ import {
   contactableSubmitters,
   linkableOrders,
   orderRyanPositions,
-  rydProductionStage,
   rydSortParam,
   rydSortValue,
   rydStatusParam,
@@ -340,19 +339,6 @@ describe("linkableOrders", () => {
 });
 
 describe("RY-D production", () => {
-  const sent = "2026-10-18T15:00:00Z";
-  const done = "2026-10-19T15:00:00Z";
-
-  it("reads the stage from the two dates, done winning", () => {
-    expect(rydProductionStage(order({}))).toBe("not-started");
-    expect(rydProductionStage(order({ productionSentAt: sent }))).toBe(
-      "in-production",
-    );
-    expect(
-      rydProductionStage(order({ productionSentAt: sent, doneAt: done })),
-    ).toBe("done");
-  });
-
   it("accepts a pinned production operation", () => {
     const request = {
       operationId: "00000000-0000-4000-8000-000000000601",

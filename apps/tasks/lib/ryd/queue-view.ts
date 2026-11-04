@@ -58,21 +58,6 @@ export function rydCardGaps(order: Pick<RydQueueOrder, "status" | "card">) {
   return order.status === "rejected" ? [] : rydCardProblems(order.card);
 }
 
-/** Internal production states. The email handoff is displayed by fulfillment-view. */
-export const RYD_PRODUCTION_STAGES = [
-  "not-started",
-  "in-production",
-  "done",
-] as const;
-export type RydProductionStage = (typeof RYD_PRODUCTION_STAGES)[number];
-
-export function rydProductionStage(
-  order: Pick<RydQueueOrder, "productionSentAt" | "doneAt">,
-): RydProductionStage {
-  if (order.doneAt) return "done";
-  return order.productionSentAt ? "in-production" : "not-started";
-}
-
 export function submissionsByKey(submissions: RydSubmission[]) {
   return new Map(submissions.map((submission) => [submission.key, submission]));
 }

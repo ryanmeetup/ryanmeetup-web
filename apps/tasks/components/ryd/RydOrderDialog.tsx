@@ -178,7 +178,7 @@ export function RydOrderDialog({
       "card",
       () => saveRydCard(order, card, cardUnlocked),
       cardUnlocked
-        ? "Card saved. It's still sent to fulfillment, so send them the updated cards CSV."
+        ? `Card saved. It's still ${order.productionStartedAt ? "in production" : "sent to fulfillment"}, so send them the updated cards CSV.`
         : order.status === "verified"
           ? "Card saved. That's what fulfillment will print."
           : "Card saved.",
