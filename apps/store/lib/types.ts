@@ -40,6 +40,8 @@ export type ProductOption = {
 
 export type Product = {
   availableForSale: boolean;
+  /** When the product was created in Shopify; sorts the Newest order. */
+  createdAt?: string;
   description: string;
   descriptionHtml: string;
   featuredImage: StoreImage | null;

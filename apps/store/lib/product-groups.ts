@@ -165,6 +165,8 @@ export function createProductGroup(group: ProductGroup, products: Product[]): Pr
     // Members may spell the tag differently; the first design's spelling names the listing.
     title: getListingTagName(first.tags) ?? group.title,
     availableForSale: designs.some(({ product }) => product.availableForSale),
+    // A listing is as new as its newest design.
+    createdAt: designs.map(({ product }) => product.createdAt ?? "").sort().at(-1) || undefined,
     featuredImage: getColorPreview(first, defaultColor)?.image ?? first.featuredImage,
     images: designs.flatMap(({ product }) => product.images),
     options: [...new Set(designs.flatMap(({ product }) => product.options.map((option) => option.name)))].map((name) => sortOptionValues({

@@ -129,6 +129,24 @@ test("search filters as the shopper types and keeps a shareable query", async ({
   await expect(main.getByText("No Ryan provisions match that yet.", { exact: false })).toBeVisible();
 });
 
+test("collection pages sort by price and newest, and the sort survives a reload", async ({ page }) => {
+  await page.goto("/collections/apparel");
+  const titles = page.getByRole("main").getByRole("heading", { level: 3 });
+  await expect(titles).toHaveText(["Official Ryan Meetup Tee", "Hello, My Name Is Ryan Sweatshirt", "Name Tag Shirt"]);
+
+  await page.getByRole("button", { name: /^Sort/ }).click();
+  await page.getByRole("option", { name: "Price: high to low" }).click();
+  await expect(page).toHaveURL(/\?sort=price-high$/);
+  await expect(titles).toHaveText(["Hello, My Name Is Ryan Sweatshirt", "Official Ryan Meetup Tee", "Name Tag Shirt"]);
+
+  await page.reload();
+  await expect(titles).toHaveText(["Hello, My Name Is Ryan Sweatshirt", "Official Ryan Meetup Tee", "Name Tag Shirt"]);
+
+  // A grouped listing is as new as its newest design.
+  await page.goto("/collections/apparel?sort=newest");
+  await expect(titles).toHaveText(["Name Tag Shirt", "Hello, My Name Is Ryan Sweatshirt", "Official Ryan Meetup Tee"]);
+});
+
 // Adding to the cart opens the drawer over the page; close it before going on.
 async function keepShopping(page: Page) {
   await page.getByRole("button", { name: "Keep shopping" }).click();

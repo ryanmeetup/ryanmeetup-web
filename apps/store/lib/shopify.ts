@@ -57,6 +57,7 @@ const productFragment = `
     description
     descriptionHtml
     availableForSale
+    createdAt
     productType
     tags
     featuredImage { url altText width height }

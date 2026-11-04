@@ -1,16 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import { useQueryParamState } from "@ryanmeetup/hooks";
 import { AnimatedCollapse, Button, DropdownSelect, EmptyState, SectionHeader } from "@ryanmeetup/ui";
 import { FiArrowRight, FiChevronDown } from "react-icons/fi";
 import type { CatalogSections, CollectionSummary, ProductListing } from "@/lib/types";
 import { collectionHeading } from "@/lib/catalog-collections";
+import { defaultSort, parseSort, sortListings, sortOptions } from "@/lib/sort";
 import { ProductGrid } from "./product-grid";
 
-// With sections, the filters apply within each collection and an emptied section is hidden.
+// With sections, the filters and sort apply within each collection and an emptied section
+// is hidden. The sort rides in `?sort=` so a reload or shared link keeps it.
 export function CollectionGrid({ handle, products, sections, more = [] }: { handle: string; products: ProductListing[] } & Partial<CatalogSections>) {
   const [type, setType] = useState("all");
   const [size, setSize] = useState("all");
+  const [sortParam, setSortParam] = useQueryParamState("sort", defaultSort);
+  const sort = parseSort(sortParam);
   const types = [...new Set(products.map((product) => product.productType).filter(Boolean))];
   const sizes = [
     ...new Set(
@@ -29,17 +34,18 @@ export function CollectionGrid({ handle, products, sections, more = [] }: { hand
             (option) => option.name.toLowerCase() === "size" && option.value === size,
           ),
       ));
-  const visible = products.filter(matches);
+  const arrange = (listings: ProductListing[]) => sortListings(listings.filter(matches), sort);
+  const visible = arrange(products);
   const visibleSections = [
-    ...(sections ?? []).map((section) => ({ ...section, products: section.products.filter(matches) })),
-    ...(sections?.length ? [{ collection: null, products: more.filter(matches) }] : []),
+    ...(sections ?? []).map((section) => ({ ...section, products: arrange(section.products) })),
+    ...(sections?.length ? [{ collection: null, products: arrange(more) }] : []),
   ].filter((section) => section.products.length);
 
   return (
     <div className="space-y-6">
-      {(types.length > 1 || sizes.length > 1) && (
-        <div className="flex flex-col gap-3 rounded-2xl border border-black/10 bg-white/60 p-3 sm:flex-row sm:items-center dark:border-white/10 dark:bg-white/5">
-          <span className="px-2 text-xs font-semibold uppercase tracking-[0.2em] text-black/55 dark:text-white/55">Filter the goods</span>
+      {products.length > 1 && (
+        <div className="flex flex-col gap-3 rounded-2xl border border-black/10 bg-white/60 p-3 lg:flex-row lg:items-center dark:border-white/10 dark:bg-white/5">
+          <span className="px-2 text-xs font-semibold uppercase tracking-[0.2em] text-black/55 dark:text-white/55">{types.length > 1 || sizes.length > 1 ? "Filter the goods" : "Sort the goods"}</span>
           {types.length > 1 && (
             <DropdownSelect
               label="Type"
@@ -58,6 +64,15 @@ export function CollectionGrid({ handle, products, sections, more = [] }: { hand
               stackLabelOnMobile
             />
           )}
+          {/* The controls stack until lg, matching where stackLabelOnMobile goes inline. */}
+          <DropdownSelect
+            label="Sort"
+            value={sort}
+            onChange={setSortParam}
+            options={sortOptions.map(({ label, value }) => ({ label, value }))}
+            stackLabelOnMobile
+            className="lg:ml-auto"
+          />
         </div>
       )}
       {!visible.length ? (

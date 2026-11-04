@@ -14,6 +14,7 @@ const makeProduct = (input: {
   description: string;
   price: string;
   compareAtPrice?: string;
+  createdAt: string;
   imageUrl: string;
   color: string;
   type: string;
@@ -28,6 +29,7 @@ const makeProduct = (input: {
     description: input.description,
     descriptionHtml: `<p>${input.description}</p>`,
     availableForSale: true,
+    createdAt: input.createdAt,
     featuredImage: productImage,
     images: [productImage],
     options: [
@@ -58,6 +60,7 @@ export const demoProducts: Product[] = [
     title: "Official Ryan Meetup Tee",
     description: "The uniform for meeting a suspiciously large number of people with your name.",
     price: "29.00",
+    createdAt: "2026-06-01T00:00:00Z",
     imageUrl: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=1200&q=85",
     color: "Black",
     type: "Apparel",
@@ -67,6 +70,7 @@ export const demoProducts: Product[] = [
     title: "Hello, My Name Is Ryan Sweatshirt",
     description: "Warm, comfortable, and a decisive end to the introductions portion of the evening.",
     price: "54.00",
+    createdAt: "2026-08-15T00:00:00Z",
     imageUrl: "https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=1200&q=85",
     color: "Cream",
     type: "Apparel",
@@ -76,6 +80,7 @@ export const demoProducts: Product[] = [
     title: "Ryan Society Cap",
     description: "A low-profile cap for high-profile Ryans and their approved non-Ryan guests.",
     price: "26.00",
+    createdAt: "2026-07-10T00:00:00Z",
     // Marked down so preview mode shows how a sale looks.
     compareAtPrice: "32.00",
     imageUrl: "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&w=1200&q=85",
@@ -87,6 +92,7 @@ export const demoProducts: Product[] = [
     title: "Certified Ryan Pack",
     description: "Carries snacks, name tags, and the burden of being named Ryan with equal ease.",
     price: "24.00",
+    createdAt: "2026-05-20T00:00:00Z",
     imageUrl: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=1200&q=85",
     color: "Natural",
     type: "Accessory",
@@ -96,6 +102,7 @@ export const demoProducts: Product[] = [
     title: "Ryan Name Tag shirt",
     description: "The classic Ryan introduction, printed on a shirt.",
     price: "12.00",
+    createdAt: "2026-10-01T00:00:00Z",
     imageUrl: "https://cdn.shopify.com/s/files/1/0718/7005/4511/files/unisex-classic-tee-white-front-6acd5a66edb8c.jpg?v=1791842937",
     color: "White",
     type: "Apparel",
@@ -106,6 +113,7 @@ export const demoProducts: Product[] = [
     title: "Ryan's Dad Name Tag shirt",
     description: "A name tag shirt for Ryan’s dad.",
     price: "30.00",
+    createdAt: "2026-09-12T00:00:00Z",
     imageUrl: "https://cdn.shopify.com/s/files/1/0718/7005/4511/files/unisex-classic-tee-white-front-6acd5bf343e98.jpg?v=1791843327",
     color: "Natural",
     type: "Apparel",
