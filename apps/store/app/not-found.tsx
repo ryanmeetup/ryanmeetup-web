@@ -1,10 +1,15 @@
-import { Button, EmptyState } from "@ryanmeetup/ui";
+import { NotFoundCard } from "@ryanmeetup/ui";
 
 export default function NotFound() {
   return (
-    <main className="store-container min-h-[62vh] py-20">
-      <EmptyState className="mx-auto max-w-xl" message="That aisle does not exist in the Ryan General Store." />
-      <div className="mx-auto mt-6 max-w-xs"><Button.Link href="/collections/all" size="md" fullWidth>Browse collections</Button.Link></div>
+    <main className="store-container grid min-h-[65vh] items-center py-12 sm:py-16 lg:py-20">
+      <NotFoundCard
+        title={<>Wrong aisle.<br />Right store.</>}
+        description="We couldn’t find the page you’re looking for. Let’s get you back to the Ryan goods."
+        primaryAction={{ href: "/collections/all", label: "Shop all" }}
+        secondaryAction={{ href: "/", label: "Store home" }}
+        helpLink={{ href: "/contact", label: "Contact store support" }}
+      />
     </main>
   );
 }
