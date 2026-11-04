@@ -27,6 +27,8 @@ const order = (id: string, stage = "sent-to-fulfillment") =>
     sentToFulfillment: stage !== "ready-to-send",
     productionSentAt:
       stage === "ready-to-send" ? null : "2026-10-20T12:00:00Z",
+    productionStartedAt:
+      stage === "in-production" ? "2026-10-21T08:00:00Z" : null,
     doneAt: stage === "done" ? "2026-10-21T12:00:00Z" : null,
   }) as RydQueueOrder;
 
@@ -44,7 +46,40 @@ describe("RY-D bounded operation contracts", () => {
       ],
     ]);
   });
-  it.each(["fulfillment", "done", "back"] as const)(
+  it("moves back through In production only when it was recorded", () => {
+    const made = {
+      ...order("made", "done"),
+      productionStartedAt: "2026-10-21T08:00:00Z",
+    };
+    expect(
+      rydProductionGroups(
+        [made, order("skipped", "done"), order("making", "in-production")],
+        "back",
+      ),
+    ).toEqual([
+      [
+        { orderId: "made", from: "done", to: "in-production" },
+        { orderId: "skipped", from: "done", to: "sent-to-fulfillment" },
+        { orderId: "making", from: "in-production", to: "sent-to-fulfillment" },
+      ],
+    ]);
+  });
+  it("starts production only for orders sent to fulfillment", () => {
+    expect(
+      rydProductionGroups(
+        [
+          order("ready", "ready-to-send"),
+          order("sent"),
+          order("making", "in-production"),
+          order("done", "done"),
+        ],
+        "production",
+      ),
+    ).toEqual([
+      [{ orderId: "sent", from: "sent-to-fulfillment", to: "in-production" }],
+    ]);
+  });
+  it.each(["fulfillment", "production", "done", "back"] as const)(
     "bounds a large %s selection by count and encoded bytes",
     (action) => {
       const orders = Array.from({ length: 603 }, (_, i) =>
@@ -52,7 +87,7 @@ describe("RY-D bounded operation contracts", () => {
           `${i}${"界".repeat(60)}`,
           action === "back"
             ? "done"
-            : action === "done"
+            : action === "done" || action === "production"
               ? "sent-to-fulfillment"
               : "ready-to-send",
         ),
@@ -87,18 +122,24 @@ describe("RY-D bounded operation contracts", () => {
       { ...order("legacy-handoff"), productionSentAt: null },
     ], "fulfillment")).toEqual([[{ orderId: "ready", from: "ready-to-send", to: "sent-to-fulfillment" }]]);
   });
-  it("completes only orders already sent to fulfillment", () => {
+  it("completes orders sent to fulfillment or in production", () => {
     expect(
       rydProductionGroups(
         [
           order("ready", "ready-to-send"),
           { ...order("legacy-handoff"), productionSentAt: null },
+          order("making", "in-production"),
         ],
         "done",
       ),
-    ).toEqual([[{ orderId: "legacy-handoff", from: "sent-to-fulfillment", to: "done" }]]);
+    ).toEqual([
+      [
+        { orderId: "legacy-handoff", from: "sent-to-fulfillment", to: "done" },
+        { orderId: "making", from: "in-production", to: "done" },
+      ],
+    ]);
   });
-  it("accepts retired stages from older clients", () => {
+  it("accepts the retired stage from older clients", () => {
     const request = {
       operationId,
       moves: [{ orderId: "1", from: "not-started", to: "in-production" }],

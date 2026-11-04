@@ -31,8 +31,11 @@ export type RydQueueOrder = {
   lastEmailedAt: string | null;
   /** Fulfillment has had a file clearing this order; its decision is final. */
   sentToFulfillment: boolean;
-  /** When production was acknowledged, and when the order was finished. */
+  /** When the order was sent to fulfillment. */
   productionSentAt: string | null;
+  /** When fulfillment confirmed production started, if it was recorded. */
+  productionStartedAt: string | null;
+  /** When the order was finished. */
   doneAt: string | null;
   linkedKeys: string[];
   suggestion: RydMatchSuggestion | null;

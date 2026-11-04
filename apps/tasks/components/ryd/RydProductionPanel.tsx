@@ -6,6 +6,7 @@ import {
   FiCornerUpLeft,
   FiDownload,
   FiMail,
+  FiPackage,
   FiSend,
 } from "react-icons/fi";
 import { rydSelectedCardsFile } from "@/lib/ryd/card-export";
@@ -159,16 +160,36 @@ export function RydProductionPanel({
             <Button
               type="button"
               size="sm"
+              variant="secondary"
+              className="w-full sm:w-auto"
+              leftIcon={<FiPackage aria-hidden />}
+              disabled={busy || !selectedStages.has("sent-to-fulfillment")}
+              loading={moving === "production"}
+              onClick={() => moveSelected("production")}
+            >
+              Mark in production
+            </Button>
+          )}
+          {shows("sent-to-fulfillment", "in-production") && (
+            <Button
+              type="button"
+              size="sm"
               className="w-full sm:w-auto"
               leftIcon={<FiCheckSquare aria-hidden />}
-              disabled={busy || !selectedStages.has("sent-to-fulfillment")}
+              disabled={
+                busy ||
+                !(
+                  selectedStages.has("sent-to-fulfillment") ||
+                  selectedStages.has("in-production")
+                )
+              }
               loading={moving === "done"}
               onClick={() => moveSelected("done")}
             >
               Done
             </Button>
           )}
-          {shows("sent-to-fulfillment", "done") && (
+          {shows("sent-to-fulfillment", "in-production", "done") && (
             <Button
               type="button"
               size="sm"
@@ -179,6 +200,7 @@ export function RydProductionPanel({
                 busy ||
                 !(
                   selectedStages.has("sent-to-fulfillment") ||
+                  selectedStages.has("in-production") ||
                   selectedStages.has("done")
                 )
               }

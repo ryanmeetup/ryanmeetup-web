@@ -24,9 +24,11 @@ export function RydProductionDialog({
   const label =
     action === "fulfillment"
       ? "Mark sent to fulfillment"
-      : action === "done"
-        ? "Mark done"
-        : "Move back one step";
+      : action === "production"
+        ? "Mark in production"
+        : action === "done"
+          ? "Mark done"
+          : "Move back one step";
   return (
     <Modal
       open
@@ -34,9 +36,11 @@ export function RydProductionDialog({
       description={
         action === "fulfillment"
           ? "Use this after you have emailed these orders to fulfillment. This moves the selected ready orders to Sent to fulfillment and records today as their send date."
-          : action === "done"
-            ? "Mark the selected orders finished. Only orders already sent to fulfillment are included."
-            : "Move the selected orders back one stage: Done → Sent to fulfillment → Ready to send."
+          : action === "production"
+            ? "Use this after fulfillment confirms the selected orders are being made. Only orders sent to fulfillment are included, and today is recorded as their production date."
+            : action === "done"
+              ? "Mark the selected orders finished. Only orders sent to fulfillment or in production are included."
+              : "Move the selected orders back one stage: Done → In production → Sent to fulfillment → Ready to send. A done order that skipped In production returns to Sent to fulfillment."
       }
       setIsOpen={(open) => !open && !operation.pending && onClose()}
       closable={!operation.pending}

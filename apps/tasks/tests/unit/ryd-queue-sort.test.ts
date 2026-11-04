@@ -31,6 +31,7 @@ function order(overrides: Partial<RydQueueOrder>): RydQueueOrder {
     lastEmailedAt: null,
     sentToFulfillment: false,
     productionSentAt: null,
+    productionStartedAt: null,
     doneAt: null,
     linkedKeys: [],
     suggestion: null,

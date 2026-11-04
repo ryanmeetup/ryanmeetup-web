@@ -27,6 +27,7 @@ const reviewOrder: RydQueueOrder = {
   lastEmailedAt: null,
   sentToFulfillment: false,
   productionSentAt: null,
+  productionStartedAt: null,
   doneAt: null,
   updatedAt: "2026-10-20T12:00:00Z",
   linkedKeys: [],

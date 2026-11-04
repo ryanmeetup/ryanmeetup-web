@@ -13,13 +13,19 @@ const order = (overrides: Partial<RydQueueOrder> = {}) =>
     status: "verified",
     sentToFulfillment: false,
     productionSentAt: null,
+    productionStartedAt: null,
     doneAt: null,
     ...overrides,
   }) as RydQueueOrder;
 const orders = [
   order(),
   order({ orderId: "emailed", sentToFulfillment: true }),
-  order({ orderId: "started", productionSentAt: "2026-10-20T12:00:00Z" }),
+  order({ orderId: "sent", productionSentAt: "2026-10-20T12:00:00Z" }),
+  order({
+    orderId: "making",
+    productionSentAt: "2026-10-20T12:00:00Z",
+    productionStartedAt: "2026-10-21T12:00:00Z",
+  }),
   order({
     orderId: "done",
     productionSentAt: "2026-10-20T12:00:00Z",
@@ -29,17 +35,19 @@ const orders = [
 ];
 
 describe("RY-D fulfillment handoff", () => {
-  it("treats a handoff or a legacy production record as sent to fulfillment", () => {
+  it("reads each recorded date as its stage", () => {
     expect(orders.map(rydFulfillmentStage)).toEqual([
       "ready-to-send",
       "sent-to-fulfillment",
       "sent-to-fulfillment",
+      "in-production",
       "done",
       "ready-to-send",
     ]);
     expect(rydFulfillmentCounts(orders)).toEqual({
       "ready-to-send": 1,
       "sent-to-fulfillment": 2,
+      "in-production": 1,
       done: 1,
     });
     expect(readyForRydFulfillment(orders).map((o) => o.orderId)).toEqual([
@@ -53,7 +61,7 @@ describe("RY-D fulfillment handoff", () => {
     expect(rydFulfillmentParam("sent-to-fulfillment")).toBe(
       "sent-to-fulfillment",
     );
-    expect(rydFulfillmentParam("in-production")).toBe("sent-to-fulfillment");
+    expect(rydFulfillmentParam("in-production")).toBe("in-production");
     expect(rydFulfillmentParam("all")).toBeNull();
     expect(rydFulfillmentParam("unknown")).toBeNull();
   });

@@ -53,10 +53,12 @@ export function RydFulfillmentFilters({
         {stage === "ready-to-send"
           ? "Select ready orders to download their cards CSV or generate an email and CSV. After emailing fulfillment, mark them Sent to fulfillment. Every stage change is manual."
           : stage === "sent-to-fulfillment"
-            ? "Fulfillment has these orders, dated by when you marked them sent. Select any to download their cards CSV again, and mark them done once they're finished."
-            : stage === "done"
-              ? "These orders are finished."
-              : "Ready to send → Sent to fulfillment → Done. Move orders between stages manually; generating an email changes nothing."}
+            ? "Fulfillment has these orders, dated by when you marked them sent. Select any to download their cards CSV again, mark them in production once fulfillment confirms they're being made, or mark them done once they're finished."
+            : stage === "in-production"
+              ? "Fulfillment is making these orders, dated by when you marked them in production. Mark them done once they're finished."
+              : stage === "done"
+                ? "These orders are finished."
+                : "Ready to send → Sent to fulfillment → In production → Done. Move orders between stages manually; generating an email changes nothing, and In production can be skipped."}
       </p>
       {(!stage || stage === "done") && olderDone && olderDone.count > 0 && (
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

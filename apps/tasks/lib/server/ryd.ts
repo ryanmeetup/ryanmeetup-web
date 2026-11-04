@@ -86,6 +86,7 @@ export type RydOrderRow = {
   cleared_batch_id: string | null;
   last_emailed_at: string | null;
   production_sent_at: string | null;
+  production_started_at: string | null;
   done_at: string | null;
   /** NULL until a card is saved. */
   card_first_name: string | null;
@@ -111,6 +112,7 @@ const ORDER_COLUMNS = [
   "cleared_batch_id",
   "last_emailed_at",
   "production_sent_at",
+  "production_started_at",
   "done_at",
   "card_first_name",
   "card_last_name",
@@ -350,6 +352,7 @@ export async function loadRydQueue(
       lastEmailedAt: row.last_emailed_at,
       sentToFulfillment: Boolean(row.cleared_batch_id),
       productionSentAt: row.production_sent_at,
+      productionStartedAt: row.production_started_at,
       doneAt: row.done_at,
       linkedKeys: linkedByOrder.get(row.order_id) ?? [],
       suggestion: null,

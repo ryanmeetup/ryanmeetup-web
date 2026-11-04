@@ -62,6 +62,7 @@ const STATUS_OPTIONS = Object.keys(RYD_STATUS_PARAMS).map((value) => {
 
 const MOVED_TO: Partial<Record<RydProductionAction, RydFulfillmentStage>> = {
   fulfillment: "sent-to-fulfillment",
+  production: "in-production",
   done: "done",
 };
 

@@ -15,7 +15,11 @@ export const RYD_BULK_BODY_BYTES = 14_000;
 export const RYD_DECISION_BODY_BYTES = 512 * 1024;
 export const RYD_MAILTO_LIMIT = 1900;
 const OPERATION_PLACEHOLDER = "00000000-0000-4000-8000-000000000000";
-export type RydProductionAction = "fulfillment" | "done" | "back";
+export type RydProductionAction =
+  | "fulfillment"
+  | "production"
+  | "done"
+  | "back";
 export type RydProductionMove = {
   orderId: string;
   from: RydFulfillmentStage | "not-started";
@@ -27,6 +31,7 @@ export type RydProductionResult = {
     RydQueueOrder,
     | "orderId"
     | "productionSentAt"
+    | "productionStartedAt"
     | "doneAt"
     | "updatedAt"
     | "sentToFulfillment"
@@ -101,15 +106,26 @@ export function rydProductionGroups(
     seen.add(order.orderId);
     const from = rydFulfillmentStage(order);
     if (action === "fulfillment" && from !== "ready-to-send") continue;
-    if (action === "done" && from !== "sent-to-fulfillment") continue;
+    if (action === "production" && from !== "sent-to-fulfillment") continue;
+    if (
+      action === "done" &&
+      from !== "sent-to-fulfillment" &&
+      from !== "in-production"
+    )
+      continue;
     const to =
       action === "fulfillment"
         ? "sent-to-fulfillment"
-        : action === "done"
-          ? "done"
-          : RYD_FULFILLMENT_STAGES[
-              Math.max(0, RYD_FULFILLMENT_STAGES.indexOf(from) - 1)
-            ];
+        : action === "production"
+          ? "in-production"
+          : action === "done"
+            ? "done"
+            : // A done order that skipped production goes back to sent.
+              from === "done" && !order.productionStartedAt
+              ? "sent-to-fulfillment"
+              : RYD_FULFILLMENT_STAGES[
+                  Math.max(0, RYD_FULFILLMENT_STAGES.indexOf(from) - 1)
+                ];
     if (to !== from) moves.push({ orderId: order.orderId, from, to });
   }
   return boundedGroups(moves, (group) => ({

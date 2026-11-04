@@ -458,9 +458,19 @@ test("runs review, on-demand files, and independent manual fulfillment stages", 
   await page
     .getByRole("checkbox", { name: "Select Ryan Fixture", exact: true })
     .check();
+  await page.getByRole("button", { name: "Mark in production", exact: true }).click();
+  const making = page.getByRole("dialog", { name: "Mark in production", exact: true });
+  await making.getByRole("button", { name: "Mark in production", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "Confirm production started", exact: true }),
-  ).toHaveCount(0);
+    making.getByRole("status").filter({ hasText: "orders confirmed saved" }),
+  ).toContainText("1 of 1 orders confirmed saved");
+  await making.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(page).toHaveURL(/production=in-production/);
+  await expect(page.getByText(/^In production [A-Z][a-z]{2} \d{1,2}$/)).toBeVisible();
+  expect((await state(request)).orders[0].production_started_at).not.toBeNull();
+  await page
+    .getByRole("checkbox", { name: "Select Ryan Fixture", exact: true })
+    .check();
   await page.getByRole("button", { name: "Done", exact: true }).click();
   const done = page.getByRole("dialog", { name: "Mark done", exact: true });
   await done.getByRole("button", { name: "Mark done", exact: true }).click();
@@ -473,13 +483,15 @@ test("runs review, on-demand files, and independent manual fulfillment stages", 
     note: "Checked the synthetic form response.",
     cleared_batch_id: expect.any(String),
     production_sent_at: expect.any(String),
+    production_started_at: expect.any(String),
     done_at: expect.any(String),
   });
   expect(finished.calls.map((call: { name: string }) => call.name)).toEqual([
     "ryd_import_orders", "ryd_link_submissions", "ryd_review_order",
     "ryd_generate_fulfillment", "ryd_generate_fulfillment",
-    // Sent, then the unlocked card fix, then done.
+    // Sent, then the unlocked card fix, then in production, then done.
     "ryd_move_production", "ryd_review_order", "ryd_move_production",
+    "ryd_move_production",
   ]);
 
 });
@@ -510,7 +522,7 @@ test("ignores a previously saved email and generates fresh selected files withou
     data: {
       operationId: "00000000-0000-4000-8000-000000000812",
       moves: [
-        { orderId: "802", from: "not-started", to: "in-production" },
+        { orderId: "802", from: "not-started", to: "sent-to-fulfillment" },
         { orderId: "803", from: "not-started", to: "done" },
       ],
     },
@@ -568,7 +580,7 @@ test("generates a selected batch across pages while respecting the ready filter"
   await verifyOrders(page, [...Array.from({ length: 12 }, (_, i) => String(801 + i)), "900"]);
   expect((await page.request.post("/api/ryd/production", { data: {
     operationId: "00000000-0000-4000-8000-000000000832",
-    moves: [{ orderId: "900", from: "not-started", to: "in-production" }],
+    moves: [{ orderId: "900", from: "not-started", to: "sent-to-fulfillment" }],
   } })).ok()).toBeTruthy();
   await page.goto("/ryd?status=verified&pageSize=10");
   await expect(page.locator("table tbody tr")).toHaveCount(10);
@@ -682,7 +694,7 @@ test("sorts the production column by stage and sent date", async ({ page, reques
     data: {
       operationId: "00000000-0000-4000-8000-000000000822",
       moves: [
-        { orderId: "802", from: "not-started", to: "in-production" },
+        { orderId: "802", from: "not-started", to: "sent-to-fulfillment" },
         { orderId: "803", from: "not-started", to: "done" },
       ],
     },

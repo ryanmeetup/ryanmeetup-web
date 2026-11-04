@@ -298,15 +298,19 @@ uses, set in /admin/usage).
    generated email. The server rechecks every selected ID at generation time
    and refuses missing, unverified, already-sent, or done orders.
 
-   Marking sent also records `production_sent_at`, which is now the date the
-   order was sent to fulfillment; its progress chip reads "Sent to fulfillment
-   Oct 20". Production runs in fulfillment's own system, so RY-D has no
-   separate production stage. Orders from before the merge carry their
-   handoff's date, and an older record with only a production date counts as
-   sent on that date.
-5. **Mark completion.** In **Sent to fulfillment**, select finished orders and
-   choose **Done** to record `done_at`. Ready orders cannot skip the email
-   handoff through these controls.
+   Marking sent also records `production_sent_at`, the date the order was
+   sent to fulfillment; its progress chip reads "Sent to fulfillment Oct 20".
+   Orders sent before In production returned carry their handoff's date, and
+   an older record with only a production date counts as sent on that date.
+5. **Mark production.** When fulfillment confirms orders are being made,
+   select them in **Sent to fulfillment** and choose **Mark in production**.
+   This records `production_started_at` and `production_started_by`; the chip
+   reads "In production Oct 22". The step is optional, since not every
+   production start is reported.
+6. **Mark completion.** In **Sent to fulfillment** or **In production**,
+   select finished orders and choose **Done** to record `done_at`. Ready
+   orders cannot skip the email handoff through these controls, and the
+   database refuses a move from Ready to send straight to In production.
 
    The queue loads orders marked done in the last 30 days
    (`RYD_DONE_WINDOW_DAYS`); older ones are only counted, so the page doesn't
@@ -314,15 +318,18 @@ uses, set in /admin/usage).
    stage filters loads them for the rest of the visit. They stay in the
    database either way.
 
-   **Move back** takes an order one stage backward: Done → Sent to
-   fulfillment → Ready to send. Moving back from Done keeps the send date;
-   returning an order to Ready to send clears it and makes the order eligible
+   **Move back** takes an order one stage backward: Done → In production →
+   Sent to fulfillment → Ready to send. A done order that skipped In
+   production returns to Sent to fulfillment. Moving back from Done keeps the
+   send and production dates; returning to Sent to fulfillment clears the
+   production date, and returning to Ready to send clears both and makes the
+   order eligible
    for another generated email. Historical audit events stay. Once fulfillment
    has an order, its decision cannot be changed.
 
    Its card is locked too, shown by the lock beside the review's **Card**
    heading; its tooltip says why. Click it to unlock and correct the card
-   while the order is Sent to fulfillment, and click again to lock it and drop
+   while the order is Sent to fulfillment or In production, and click again to lock it and drop
    unsaved edits. The
    order keeps its stage and send date; the request carries `unlockCard` so a
    stale page can't change a sent card by accident, and the audit event

@@ -34,6 +34,7 @@ const order: RydQueueOrder = {
   lastEmailedAt: null,
   sentToFulfillment: false,
   productionSentAt: null,
+  productionStartedAt: null,
   doneAt: null,
   linkedKeys: [],
   suggestion: null,
