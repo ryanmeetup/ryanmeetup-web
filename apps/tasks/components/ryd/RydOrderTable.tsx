@@ -20,7 +20,7 @@ import {
 } from "@ryanmeetup/ui";
 import { formatRydDay } from "@/lib/ryd/form-responses";
 import { rydCardComplete, rydCardProblems } from "@/lib/ryd/card";
-import { canEmailRydOrder } from "@/lib/ryd/queue-view";
+import { canEmailRydOrder, rydCardGaps } from "@/lib/ryd/queue-view";
 import { rydDecisionLocked } from "@/lib/ryd/ryd-decisions";
 import type { RyanPosition } from "@/lib/ryd/normalize";
 import type { RydQueueOrder } from "@/lib/ryd/queue-types";
@@ -287,8 +287,7 @@ export function RydOrderTable({
             {orders.map((order) => {
               const name = `${order.firstName} ${order.lastName}`.trim();
               const { reasons } = rydMatchEvidence(order);
-              const cardProblems =
-                order.status === "rejected" ? [] : rydCardProblems(order.card);
+              const cardProblems = rydCardGaps(order);
               // Sent cards are read-only until the order moves back.
               const cardWarning = cardProblems.length
                 ? `Card needs ${cardProblems.join(", ")}, so it's left out of card CSVs.${rydDecisionLocked(order) ? " Move it back to Ready to send to finish the card." : " Open the review to finish it."}`

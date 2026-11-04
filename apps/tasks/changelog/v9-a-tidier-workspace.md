@@ -49,7 +49,8 @@ or Select all, and choose Download cards CSV for a four-column file in
 fulfillment's own wording (Order ID#, First & Last, Location, Date).
 Downloading moves no stage, so the same cards can be downloaded again any time.
 A card missing its name, location, or year is left out of the file and shows
-a warning beside the Ryan's name saying which lines it needs.
+a warning beside the Ryan's name saying which lines it needs. Set the Card
+filter to Missing a line to list only those orders.
 
 ### Guest tiers for partners
 

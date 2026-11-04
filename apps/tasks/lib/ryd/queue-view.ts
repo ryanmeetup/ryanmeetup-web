@@ -8,6 +8,7 @@ import {
   ryanPosition,
   type RyanPosition,
 } from "./normalize";
+import { rydCardProblems } from "./card";
 import type { RydOrderStatus } from "./orders";
 import type { RydQueue, RydQueueOrder } from "./queue-types";
 import {
@@ -40,6 +41,21 @@ export function rydView(value: string): RydView {
   return (RYD_VIEWS as readonly string[]).includes(value)
     ? (value as RydView)
     : "queue";
+}
+
+/** Readable `?card=` values: every order, or only unfinished cards. */
+export type RydCardFilter = "all" | "unfinished";
+
+export function rydCardFilter(value: string): RydCardFilter {
+  return value === "unfinished" ? "unfinished" : "all";
+}
+
+/**
+ * The card lines an order still needs before it can go in a card CSV. A
+ * cancelled order never prints, so it needs nothing.
+ */
+export function rydCardGaps(order: Pick<RydQueueOrder, "status" | "card">) {
+  return order.status === "rejected" ? [] : rydCardProblems(order.card);
 }
 
 /** Internal production states. The email handoff is displayed by fulfillment-view. */

@@ -1102,6 +1102,10 @@ test("a partner downloads selected cards without moving them", async ({
   // A two-digit birthday leaves the year blank until someone accepts it.
   const cardWarning = page.getByRole("img", { name: /^Card needs Ryan since/ });
   await expect(cardWarning).toBeVisible();
+  await page.getByRole("button", { name: "Card", exact: false }).click();
+  await page.getByRole("option", { name: "Missing a line (1)", exact: true }).click();
+  await expect(page).toHaveURL(/[?&]card=unfinished/);
+  await expect(page.getByRole("checkbox", { name: "Select Jamie Perez", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Review Jamie Perez", exact: true }).click();
   const review = page.getByRole("dialog");
   await expect(review.getByLabel("Last name", { exact: false })).toHaveValue("Pérez");
@@ -1110,6 +1114,9 @@ test("a partner downloads selected cards without moving them", async ({
   await review.getByRole("button", { name: "Verify", exact: true }).click();
   await expect(review).toHaveCount(0);
 
+  // Finished, so the card filter no longer lists it.
+  await page.goto("/ryd?status=verified&card=unfinished");
+  await expect(page.getByRole("checkbox", { name: "Select Jamie Perez", exact: true })).toHaveCount(0);
   await page.goto("/ryd?status=verified");
   await expect(cardWarning).toHaveCount(0);
   await page.getByRole("checkbox", { name: "Select Jamie Perez", exact: true }).check();

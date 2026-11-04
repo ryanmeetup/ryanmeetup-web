@@ -36,6 +36,7 @@ import {
   claimedElsewhere,
   followUpOrders,
   rydCounts,
+  rydCardFilter,
   rydSortParam,
   rydStatusParam,
   rydView,
@@ -136,6 +137,7 @@ export function RydPageClient({
   const [productionParam, setProductionParam] =
     useQueryParamState("production");
   const [sortParam, setSortParam] = useQueryParamState("sort");
+  const [cardParam, setCardParam] = useQueryParamState("card");
   const [openOrderId, setOpenOrderId] = useQueryParamState("order");
   const [googleParam, setGoogleParam] = useQueryParamState("google");
   // Kept here so a selection survives switching views.
@@ -379,6 +381,7 @@ export function RydPageClient({
                   producing ? rydFulfillmentParam(productionParam) : null
                 }
                 sort={rydSortParam(sortParam)}
+                cardFilter={rydCardFilter(cardParam)}
                 verifiedCount={counts.verified}
                 selected={selected}
                 setSelected={setSelected}
@@ -389,6 +392,9 @@ export function RydPageClient({
                 onStatusChange={setStatusParam}
                 onProductionChange={setProductionParam}
                 onSortChange={setSortParam}
+                onCardFilterChange={(value) =>
+                  setCardParam(value === "all" ? "" : value)
+                }
                 onReview={(order) => setOpenOrderId(order.orderId)}
               />
             )}

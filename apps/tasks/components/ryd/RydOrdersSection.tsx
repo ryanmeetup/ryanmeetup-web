@@ -30,8 +30,10 @@ import {
   orderSubmissions,
   RYD_STATUS_PARAMS,
   remindableOrders,
+  rydCardGaps,
   rydSortValue,
   sortRydOrders,
+  type RydCardFilter,
   type RydSort,
   type RydStatusParam,
 } from "@/lib/ryd/queue-view";
@@ -75,6 +77,7 @@ export function RydOrdersSection({
   status,
   production,
   sort,
+  cardFilter,
   verifiedCount,
   selected,
   setSelected,
@@ -85,6 +88,7 @@ export function RydOrdersSection({
   onStatusChange,
   onProductionChange,
   onSortChange,
+  onCardFilterChange,
   onReview,
 }: {
   view: "queue" | "follow-up";
@@ -95,6 +99,7 @@ export function RydOrdersSection({
   /** Set only in the Verified view. */
   production: RydFulfillmentStage | null;
   sort: RydSort | null;
+  cardFilter: RydCardFilter;
   verifiedCount: number;
   selected: ReadonlySet<string>;
   setSelected: Dispatch<SetStateAction<ReadonlySet<string>>>;
@@ -105,13 +110,14 @@ export function RydOrdersSection({
   onStatusChange: (status: RydStatusParam | "") => void;
   onProductionChange: (stage: RydFulfillmentStage | "all" | "") => void;
   onSortChange: (sort: string) => void;
+  onCardFilterChange: (filter: RydCardFilter) => void;
   onReview: (order: RydQueueOrder) => void;
 }) {
   const [loadingOlder, setLoadingOlder] = useState(false);
   const producing = view === "queue" && status === "verified";
   const statusFilter = RYD_STATUS_PARAMS[status];
   const remindable = useMemo(() => remindableOrders(followUp), [followUp]);
-  const listed = useMemo(
+  const inView = useMemo(
     () =>
       view === "follow-up"
         ? followUp
@@ -123,6 +129,17 @@ export function RydOrdersSection({
             )
           : queue.orders,
     [view, followUp, queue.orders, statusFilter, production],
+  );
+  const unfinishedCount = useMemo(
+    () => inView.filter((order) => rydCardGaps(order).length).length,
+    [inView],
+  );
+  const listed = useMemo(
+    () =>
+      cardFilter === "unfinished"
+        ? inView.filter((order) => rydCardGaps(order).length)
+        : inView,
+    [inView, cardFilter],
   );
   const {
     query,
@@ -288,8 +305,9 @@ export function RydOrdersSection({
             </Button>
           </div>
         )}
-        <div className="sticky top-0 z-20 -mx-1 flex flex-col gap-3 bg-white px-1 pb-3 sm:flex-row sm:items-stretch dark:bg-[#181818]">
-          <div className="min-w-0 flex-1">
+        {/* Search keeps its own row until xl so its placeholder never clips. */}
+        <div className="sticky top-0 z-20 -mx-1 flex flex-col gap-3 bg-white px-1 pb-3 sm:flex-row sm:flex-wrap sm:items-stretch dark:bg-[#181818]">
+          <div className="min-w-0 flex-1 sm:basis-full xl:basis-0">
             <SearchInput
               label="Search orders"
               name="search"
@@ -318,7 +336,26 @@ export function RydOrdersSection({
               }}
             />
           )}
-          {(query || sort || (view === "queue" && status !== "pending")) && (
+          <DropdownSelect
+            variant="compact"
+            label="Card"
+            options={[
+              { value: "all", label: "Any card" },
+              {
+                value: "unfinished",
+                label: `Missing a line (${unfinishedCount})`,
+              },
+            ]}
+            value={cardFilter}
+            onChange={(value) => {
+              onCardFilterChange(value as RydCardFilter);
+              setPage(1);
+            }}
+          />
+          {(query ||
+            sort ||
+            cardFilter !== "all" ||
+            (view === "queue" && status !== "pending")) && (
             <ClearFiltersButton
               className="self-start sm:self-center"
               onClick={() => {
@@ -326,6 +363,7 @@ export function RydOrdersSection({
                 onStatusChange("");
                 onProductionChange("");
                 onSortChange("");
+                onCardFilterChange("all");
                 setPage(1);
               }}
             />
