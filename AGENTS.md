@@ -20,6 +20,10 @@ business logic into a generic package.
 - `packages/ui`: reusable visual primitives and generic compositions.
 - `packages/contact`: shared contact-form behavior and integrations.
 - `packages/hooks`: reusable client-side state and query hooks.
+- `packages/metadata`: the shared Next.js page-metadata builder. Each app
+  configures it once with its site name and origin in a local
+  `buildPageMetadata`, and every page's title, canonical, Open Graph, and
+  Twitter tags come from that.
 - `packages/sponsors`: shared sponsor-domain components.
 - `packages/utils`: framework-agnostic shared utilities.
 

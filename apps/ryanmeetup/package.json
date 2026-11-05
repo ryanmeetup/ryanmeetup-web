@@ -18,6 +18,7 @@
     "@mailerlite/mailerlite-nodejs": "^1.6.0",
     "@ryanmeetup/contact": "*",
     "@ryanmeetup/hooks": "*",
+    "@ryanmeetup/metadata": "*",
     "@ryanmeetup/sponsors": "*",
     "@ryanmeetup/brand": "*",
     "@ryanmeetup/ui": "*",

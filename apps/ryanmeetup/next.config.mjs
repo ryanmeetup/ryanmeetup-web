@@ -3,7 +3,7 @@ const nextConfig = {
   // Playwright builds into its own directory so an e2e run never disturbs the
   // `.next` a dev server is using.
   distDir: process.env.NEXT_DIST_DIR || ".next",
-  transpilePackages: ["@ryanmeetup/hooks", "@ryanmeetup/ui"],
+  transpilePackages: ["@ryanmeetup/hooks", "@ryanmeetup/metadata", "@ryanmeetup/ui"],
   // Membership cards moved to /ryd; keep printed and shared /cards links
   // working.
   async redirects() {
