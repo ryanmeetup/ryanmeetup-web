@@ -7,7 +7,7 @@ import { ProductDetail } from "@/components/product-detail";
 import { ProductGroupDetail } from "@/components/product-group-detail";
 import { Reviews } from "@/components/reviews";
 import { getProductTypeCollection } from "@/lib/catalog-collections";
-import { buildPageMetadata, DEFAULT_IMAGE, SITE_URL, toMetadataImage } from "@/lib/metadata";
+import { buildPageMetadata, DEFAULT_IMAGE, getProductMetaDescription, SITE_URL, toMetadataImage } from "@/lib/metadata";
 import { formatMoney } from "@/lib/money";
 import { getStoreCollectionIcon, StoreHomeIcon, StoreProductIcon } from "@/lib/navigation";
 import { decodeRouteHandle } from "@/lib/handles";
@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (getProductGroupForMember(product)) return {};
   return buildPageMetadata({
     title: product.title,
-    description: product.description,
+    description: getProductMetaDescription(product),
     canonical: `/products/${product.handle}`,
     image: product.featuredImage ? toMetadataImage(product.featuredImage, product.title) : DEFAULT_IMAGE,
   });

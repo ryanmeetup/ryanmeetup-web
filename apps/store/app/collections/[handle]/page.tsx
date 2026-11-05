@@ -3,7 +3,7 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { Breadcrumbs, SectionHeader } from "@ryanmeetup/ui";
 import { CollectionGrid } from "@/components/collection-grid";
 import { decodeRouteHandle, normalizeHandle } from "@/lib/handles";
-import { buildPageMetadata, DEFAULT_IMAGE, toMetadataImage } from "@/lib/metadata";
+import { buildPageMetadata, DEFAULT_IMAGE, toMetadataImage, toMetaDescription } from "@/lib/metadata";
 import { getStoreCollectionIcon, StoreHomeIcon } from "@/lib/navigation";
 import { getCollection, getCollections } from "@/lib/shopify";
 
@@ -17,12 +17,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const handle = normalizeHandle(decodeRouteHandle((await params).handle));
   const result = await getCollection(handle);
   if (!result) return { title: "Collection not found" };
-  const image = result.products.find((product) => product.featuredImage)?.featuredImage;
+  const { collection } = result;
+  const image = collection.image ?? result.products.find((product) => product.featuredImage)?.featuredImage;
   return buildPageMetadata({
-    title: result.collection.title,
-    description: result.collection.description,
-    canonical: `/collections/${result.collection.handle}`,
-    image: image ? toMetadataImage(image, result.collection.title) : DEFAULT_IMAGE,
+    title: collection.title,
+    // Some Shopify collections have no description written yet.
+    description: toMetaDescription(collection.description || `Shop ${collection.title.toLowerCase()} from the official Ryan Meetup store.`),
+    canonical: `/collections/${collection.handle}`,
+    image: image ? toMetadataImage(image, collection.title) : DEFAULT_IMAGE,
   });
 }
 
