@@ -14,6 +14,7 @@
     "@ryanmeetup/brand": "*",
     "@ryanmeetup/contact": "*",
     "@ryanmeetup/hooks": "*",
+    "@ryanmeetup/metadata": "*",
     "@ryanmeetup/ui": "*",
     "@vercel/analytics": "^2.0.1",
     "next": "^16.2.12",

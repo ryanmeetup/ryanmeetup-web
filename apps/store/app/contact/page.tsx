@@ -1,13 +1,15 @@
-import type { Metadata } from "next";
 import { Card, Heading, Kicker, Pill, Text } from "@ryanmeetup/ui";
 import { FiHash, FiMail, FiPackage } from "react-icons/fi";
 import { StoreContactForm } from "@/components/store-contact-form";
+import { buildPageMetadata, DEFAULT_IMAGE } from "@/lib/metadata";
 import { getCustomerAccountUrl } from "@/lib/shopify";
 
-export const metadata: Metadata = {
+export const metadata = buildPageMetadata({
   title: "Store customer service",
   description: "Contact Ryan General Store customer service about an order, product, or delivery.",
-};
+  canonical: "/contact",
+  image: DEFAULT_IMAGE,
+});
 
 function getHelpfulDetails(hasAccount: boolean) {
   return [

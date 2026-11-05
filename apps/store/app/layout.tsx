@@ -7,23 +7,21 @@ import { CartProvider } from "@/components/cart-provider";
 import { CurrencyProvider } from "@/components/currency-provider";
 import { Header } from "@/components/header";
 import { NavSectionProvider } from "@/components/nav-section";
+import { buildPageMetadata, DEFAULT_IMAGE, SITE_NAME, SITE_URL } from "@/lib/metadata";
 import { getCollections, getCustomerAccountUrl, getPolicies, isShopifyConfigured } from "@/lib/shopify";
 import "./globals.css";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://store.ryanmeetup.com";
-
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
-  title: { default: "Ryan Meetup Store", template: "%s | Ryan Meetup Store" },
-  description: "Official Ryan Meetup shirts, sweatshirts, hats, and assorted Ryan provisions.",
-  openGraph: {
-    type: "website",
-    siteName: "Ryan Meetup Store",
-    title: "Ryan Meetup Store",
-    description: "Official goods for Ryans and the Ryan-curious.",
-  },
-  // Beta: keep search engines from listing the test store.
-  robots: { index: false, follow: false },
+  ...buildPageMetadata({
+    title: SITE_NAME,
+    description: "Official Ryan Meetup shirts, sweatshirts, hats, and assorted Ryan provisions.",
+    canonical: SITE_URL,
+    image: DEFAULT_IMAGE,
+    // Beta: keep search engines from listing the test store.
+    robots: { index: false, follow: false },
+  }),
+  // Page titles stay short in social cards; the browser tab adds the store name.
+  title: { default: SITE_NAME, template: `%s | ${SITE_NAME}` },
 };
 
 // The header menu is on every page, including the error pages, so a Shopify outage

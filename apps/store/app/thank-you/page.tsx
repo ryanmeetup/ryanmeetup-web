@@ -1,10 +1,16 @@
-import type { Metadata } from "next";
 import { Button, Card, Heading, Kicker, Text } from "@ryanmeetup/ui";
 import { FiCheck, FiPackage } from "react-icons/fi";
 import { ClearCart } from "@/components/clear-cart";
+import { buildPageMetadata, DEFAULT_IMAGE } from "@/lib/metadata";
 import { getCustomerAccountUrl } from "@/lib/shopify";
 
-export const metadata: Metadata = { title: "Order confirmed", robots: { index: false, follow: false } };
+export const metadata = buildPageMetadata({
+  title: "Order confirmed",
+  description: "Your Ryan Meetup Store order is confirmed.",
+  canonical: "/thank-you",
+  image: DEFAULT_IMAGE,
+  robots: { index: false, follow: false },
+});
 
 export default async function ThankYouPage() {
   const accountUrl = await getCustomerAccountUrl().catch(() => null);

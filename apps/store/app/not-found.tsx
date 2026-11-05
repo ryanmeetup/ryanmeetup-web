@@ -1,4 +1,12 @@
 import { NotFoundCard } from "@ryanmeetup/ui";
+import { buildPageMetadata, DEFAULT_IMAGE } from "@/lib/metadata";
+
+export const metadata = buildPageMetadata({
+  title: "Page not found",
+  description: "We couldn’t find this page. Head back to the Ryan goods.",
+  canonical: "/",
+  image: DEFAULT_IMAGE,
+});
 
 export default function NotFound() {
   return (

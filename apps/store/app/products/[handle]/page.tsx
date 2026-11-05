@@ -7,6 +7,7 @@ import { ProductDetail } from "@/components/product-detail";
 import { ProductGroupDetail } from "@/components/product-group-detail";
 import { Reviews } from "@/components/reviews";
 import { getProductTypeCollection } from "@/lib/catalog-collections";
+import { buildPageMetadata, DEFAULT_IMAGE, SITE_URL, toMetadataImage } from "@/lib/metadata";
 import { formatMoney } from "@/lib/money";
 import { getStoreCollectionIcon, StoreHomeIcon, StoreProductIcon } from "@/lib/navigation";
 import { decodeRouteHandle } from "@/lib/handles";
@@ -27,12 +28,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const product = await getProduct(handle);
   if (!product) return { title: "Product not found" };
   if (getProductGroupForMember(product)) return {};
-  return {
+  return buildPageMetadata({
     title: product.title,
     description: product.description,
-    alternates: { canonical: `/products/${product.handle}` },
-    openGraph: { images: product.featuredImage ? [{ url: product.featuredImage.url, alt: product.featuredImage.altText || product.title }] : [] },
-  };
+    canonical: `/products/${product.handle}`,
+    image: product.featuredImage ? toMetadataImage(product.featuredImage, product.title) : DEFAULT_IMAGE,
+  });
 }
 
 export default async function ProductPage({ params, searchParams }: Props) {
@@ -59,7 +60,6 @@ export default async function ProductPage({ params, searchParams }: Props) {
   const totalRating = Object.values(reviewsByProduct).reduce((total, reviews) => total + reviews.averageRating * reviews.count, 0);
   const originCrumb = await getOriginCrumb(query.from);
   const typeCollection = getProductTypeCollection(product);
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://store.ryanmeetup.com";
   const productSchema = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -72,7 +72,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
       lowPrice: product.priceRange.minVariantPrice.amount,
       offerCount: product.variants.length,
       availability: product.availableForSale ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-      url: `${siteUrl}/products/${product.handle}`,
+      url: `${SITE_URL}/products/${product.handle}`,
     },
     ...(reviewCount ? { aggregateRating: { "@type": "AggregateRating", ratingValue: (totalRating / reviewCount).toFixed(1), reviewCount } } : {}),
   };

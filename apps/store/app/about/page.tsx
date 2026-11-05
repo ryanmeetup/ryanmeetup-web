@@ -1,15 +1,17 @@
-import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { Button, Card, Heading, Kicker, Pill, Text } from "@ryanmeetup/ui";
 import type { IconType } from "react-icons";
 import { FiArrowRight, FiGlobe, FiHeart, FiPenTool, FiTruck, FiUsers, FiXCircle } from "react-icons/fi";
+import { buildPageMetadata, DEFAULT_IMAGE } from "@/lib/metadata";
 import { getPolicies } from "@/lib/shopify";
 
-export const metadata: Metadata = {
+export const metadata = buildPageMetadata({
   title: "About the store",
   description: "Ryan General Store is the official Ryan Meetup shop. Every purchase helps fund Ryan Meetup events and activities.",
-};
+  canonical: "/about",
+  image: DEFAULT_IMAGE,
+});
 
 const sections = [
   { id: "money", label: "Where your money goes", icon: FiHeart },

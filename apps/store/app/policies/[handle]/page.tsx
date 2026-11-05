@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Breadcrumbs, Heading, Kicker } from "@ryanmeetup/ui";
 import { FiFileText } from "react-icons/fi";
 import { decodeRouteHandle } from "@/lib/handles";
+import { buildPageMetadata, DEFAULT_IMAGE } from "@/lib/metadata";
 import { StoreHomeIcon } from "@/lib/navigation";
 import { getPolicies } from "@/lib/shopify";
 
@@ -17,11 +18,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const handle = decodeRouteHandle((await params).handle);
   const policy = (await getPolicies()).find((item) => item.handle === handle);
   if (!policy) return { title: "Policy not found" };
-  return {
+  return buildPageMetadata({
     title: policy.title,
     description: `The Ryan General Store ${policy.title.toLowerCase()}.`,
-    alternates: { canonical: `/policies/${policy.handle}` },
-  };
+    canonical: `/policies/${policy.handle}`,
+    image: DEFAULT_IMAGE,
+  });
 }
 
 export default async function PolicyPage({ params }: Props) {
