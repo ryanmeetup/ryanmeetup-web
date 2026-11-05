@@ -6,7 +6,7 @@ import { getCustomerAccountUrl } from "@/lib/shopify";
 
 export const metadata = buildPageMetadata({
   title: "Store customer service",
-  description: "Contact Ryan General Store customer service about an order, product, or delivery.",
+  description: "Contact Ryan Meetup Store customer service about an order, product, or delivery.",
   canonical: "/contact",
   image: DEFAULT_IMAGE,
 });

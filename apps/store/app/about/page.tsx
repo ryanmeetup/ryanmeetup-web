@@ -8,7 +8,7 @@ import { getPolicies } from "@/lib/shopify";
 
 export const metadata = buildPageMetadata({
   title: "About the store",
-  description: "Ryan General Store is the official Ryan Meetup shop. Every purchase helps fund Ryan Meetup events and activities.",
+  description: "Ryan Meetup Store is the official Ryan Meetup shop. Every purchase helps fund Ryan Meetup events and activities.",
   canonical: "/about",
   image: DEFAULT_IMAGE,
 });
@@ -70,7 +70,7 @@ export default async function AboutPage() {
               Official goods. Unmistakably Ryan.
             </Heading>
             <Text className="max-w-3xl text-lg text-black/80 dark:text-white/80">
-              Ryan General Store is the official shop of Ryan Meetup, the gathering of people named Ryan. New to the Ryanverse?{" "}
+              Ryan Meetup Store is the official shop of Ryan Meetup, the gathering of people named Ryan. New to the Ryanverse?{" "}
               <a href="https://ryanmeetup.com/about" className={linkClassName}>Read the full story on RyanMeetup.com</a>.
             </Text>
           </header>

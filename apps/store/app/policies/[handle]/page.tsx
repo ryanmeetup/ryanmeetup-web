@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!policy) return { title: "Policy not found" };
   return buildPageMetadata({
     title: policy.title,
-    description: `The Ryan General Store ${policy.title.toLowerCase()}.`,
+    description: `The Ryan Meetup Store ${policy.title.toLowerCase()}.`,
     canonical: `/policies/${policy.handle}`,
     image: DEFAULT_IMAGE,
   });

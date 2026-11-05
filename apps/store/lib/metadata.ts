@@ -2,7 +2,8 @@ import { createPageMetadataBuilder, type PageMetadataImage } from "@ryanmeetup/m
 import type { StoreImage } from "@/lib/types";
 
 export const SITE_NAME = "Ryan Meetup Store";
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://store.ryanmeetup.com";
+// Fixed, like RyanMeetup.com: previews and local runs still link to the real store.
+export const SITE_URL = "https://store.ryanmeetup.com";
 
 // The social card for pages without their own image.
 export const DEFAULT_IMAGE: PageMetadataImage = {

@@ -90,7 +90,7 @@ export function StoreContactForm() {
         source: "store-contact",
         subject: `[Store: ${topic}] ${fields.orderNumber.trim() || `${fields.firstName} ${fields.lastName}`}`,
         message: [
-          "Ryan General Store customer service request",
+          "Ryan Meetup Store customer service request",
           "",
           `Topic: ${topic}`,
           `Order number: ${orderReference}`,
