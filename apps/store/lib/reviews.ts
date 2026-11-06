@@ -1,4 +1,5 @@
 import type { ReviewsData } from "./types";
+import { getJudgeMeShopDomain } from "./judgeme";
 
 type JudgeMeReview = {
   body: string;
@@ -22,25 +23,24 @@ function shopifyNumericId(id: string) {
 
 export async function getReviews(productId: string): Promise<ReviewsData> {
   const token = process.env.JUDGEME_PRIVATE_API_TOKEN;
-  const shopDomain = process.env.SHOPIFY_STORE_DOMAIN;
+  const shopDomain = getJudgeMeShopDomain();
   if (!token || !shopDomain || productId.includes("/demo-")) return emptyReviews;
 
   const lookupUrl = new URL("https://api.judge.me/api/v1/products/-1");
   lookupUrl.searchParams.set("shop_domain", shopDomain);
-  lookupUrl.searchParams.set("api_token", token);
   lookupUrl.searchParams.set("external_id", shopifyNumericId(productId));
-  const productResponse = await fetch(lookupUrl, { next: { revalidate: 300 } });
+  const requestOptions = { headers: { "X-Api-Token": token }, next: { revalidate: 300 } };
+  const productResponse = await fetch(lookupUrl, requestOptions);
   if (!productResponse.ok) return emptyReviews;
   const productPayload = (await productResponse.json()) as { product?: { id: number } };
   if (!productPayload.product?.id) return emptyReviews;
 
   const reviewsUrl = new URL("https://api.judge.me/api/v1/reviews");
   reviewsUrl.searchParams.set("shop_domain", shopDomain);
-  reviewsUrl.searchParams.set("api_token", token);
   reviewsUrl.searchParams.set("product_id", String(productPayload.product.id));
   reviewsUrl.searchParams.set("published", "true");
   reviewsUrl.searchParams.set("per_page", "20");
-  const reviewsResponse = await fetch(reviewsUrl, { next: { revalidate: 300 } });
+  const reviewsResponse = await fetch(reviewsUrl, requestOptions);
   if (!reviewsResponse.ok) return emptyReviews;
   const payload = (await reviewsResponse.json()) as { reviews?: JudgeMeReview[] };
   const reviews = payload.reviews ?? [];
