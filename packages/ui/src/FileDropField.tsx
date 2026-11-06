@@ -7,11 +7,9 @@ import { FiFile, FiUploadCloud } from "react-icons/fi";
 import type { DragEvent, ReactNode } from "react";
 import { getFieldLabelClasses } from "./fieldStyles";
 
-export type FileDropFieldProps = {
+type FileDropFieldBaseProps = {
   label: string;
   name: string;
-  file: File | null;
-  onFileChange: (file: File | null) => void;
   /** Same syntax as the native attribute; also checked for dropped files. */
   accept?: string;
   required?: boolean;
@@ -20,8 +18,17 @@ export type FileDropFieldProps = {
   hint?: ReactNode;
   /** Shown when a dropped file does not match `accept`. */
   rejectMessage?: string;
+  /** Checked for both picker selections and dropped files. */
+  maxFileSize?: number;
+  maxFiles?: number;
+  compact?: boolean;
   className?: string;
 };
+
+export type FileDropFieldProps = FileDropFieldBaseProps & (
+  | { multiple?: false; file: File | null; onFileChange: (file: File | null) => void }
+  | { multiple: true; files: File[]; onFilesChange: (files: File[]) => void }
+);
 
 /** Whether a file satisfies an `accept` list of extensions and MIME types. */
 export function fileMatchesAccept(file: File, accept?: string) {
@@ -47,22 +54,26 @@ const hasFiles = (event: DragEvent) =>
  * underneath so keyboard users get the OS picker and `required` still gates
  * the form; a dropped file is written back into it.
  */
-export function FileDropField({
-  label,
-  name,
-  file,
-  onFileChange,
-  accept,
-  required = false,
-  disabled = false,
-  hint,
-  rejectMessage = "That file type isn't accepted here.",
-  className,
-}: FileDropFieldProps) {
+export function FileDropField(props: FileDropFieldProps) {
+  const {
+    label,
+    name,
+    accept,
+    required = false,
+    disabled = false,
+    hint,
+    rejectMessage = "That file type isn't accepted here.",
+    maxFileSize,
+    maxFiles,
+    compact = false,
+    className,
+  } = props;
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
-  const [rejected, setRejected] = useState(false);
+  const [rejected, setRejected] = useState("");
+  const fileSelection = props.multiple ? props.files : props.file;
+  const selected = Array.isArray(fileSelection) ? fileSelection : fileSelection ? [fileSelection] : [];
 
   // A drop that misses the zone would otherwise open the file in the tab and
   // throw away whatever the page was holding.
@@ -78,15 +89,32 @@ export function FileDropField({
     };
   }, []);
 
-  // Clearing the selection from outside must clear the native input too, or
-  // `required` keeps passing on a file the form no longer holds.
+  // Keep the native required state in sync, including additions/removals made
+  // outside the picker. Replaced/prepared files must also reach native forms.
   useEffect(() => {
-    if (!file && input.current) input.current.value = "";
-  }, [file]);
+    if (!input.current) return;
+    const transfer = new DataTransfer();
+    const files = Array.isArray(fileSelection) ? fileSelection : fileSelection ? [fileSelection] : [];
+    files.forEach((file) => transfer.items.add(file));
+    input.current.files = transfer.files;
+  }, [fileSelection]);
 
-  const choose = (next: File | null) => {
-    setRejected(false);
-    onFileChange(next);
+  const choose = (incoming: File[]) => {
+    if (!incoming.length || disabled) return;
+    const next = props.multiple ? [...props.files, ...incoming] : incoming.slice(0, 1);
+    const invalidType = incoming.some((file) => !fileMatchesAccept(file, accept));
+    const tooLarge = maxFileSize !== undefined && incoming.some((file) => file.size > maxFileSize);
+    const tooMany = maxFiles !== undefined && next.length > maxFiles;
+    const error = invalidType ? rejectMessage
+      : tooLarge ? `Each file must be ${Math.round(maxFileSize! / 1024 / 1024)} MB or smaller.`
+      : tooMany ? `Choose up to ${maxFiles} files.` : "";
+    setRejected(error);
+    const transfer = new DataTransfer();
+    (error ? selected : next).forEach((file) => transfer.items.add(file));
+    if (input.current) input.current.files = transfer.files;
+    if (error) return;
+    if (props.multiple) props.onFilesChange(next);
+    else props.onFileChange(next[0] ?? null);
   };
 
   const onDrop = (event: DragEvent<HTMLLabelElement>) => {
@@ -94,18 +122,7 @@ export function FileDropField({
     event.preventDefault();
     setDragging(false);
     if (disabled) return;
-    const dropped = event.dataTransfer.files[0];
-    if (!dropped) return;
-    if (!fileMatchesAccept(dropped, accept)) {
-      setRejected(true);
-      return;
-    }
-    if (input.current) {
-      const transfer = new DataTransfer();
-      transfer.items.add(dropped);
-      input.current.files = transfer.files;
-    }
-    choose(dropped);
+    choose(Array.from(event.dataTransfer.files));
   };
 
   const tone = rejected
@@ -138,7 +155,7 @@ export function FileDropField({
           setDragging(false);
         }}
         onDrop={onDrop}
-        className={`flex flex-col items-center gap-2 rounded-xl border-2 border-dashed px-4 py-6 text-center text-sm text-black transition focus-within:ring-2 focus-within:ring-black/30 dark:text-white dark:focus-within:ring-white/40 ${tone} ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+        className={`flex items-center rounded-xl border-2 border-dashed px-4 text-sm text-black transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-black/30 dark:text-white dark:has-[:focus-visible]:ring-white/40 ${compact ? "gap-3 py-3 text-left" : "flex-col gap-2 py-6 text-center"} ${tone} ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
       >
         <input
           ref={input}
@@ -146,26 +163,27 @@ export function FileDropField({
           name={name}
           type="file"
           accept={accept}
+          multiple={props.multiple}
           required={required}
           aria-required={required || undefined}
           aria-labelledby={`${id}-label`}
           aria-describedby={`${id}-status`}
-          aria-invalid={rejected || undefined}
+          aria-invalid={Boolean(rejected) || undefined}
           disabled={disabled}
-          onChange={(event) => choose(event.target.files?.[0] ?? null)}
+          onChange={(event) => choose(Array.from(event.target.files ?? []))}
           className="sr-only"
         />
-        {file ? (
+        {selected.length ? (
           <FiFile aria-hidden className="text-2xl" />
         ) : (
           <FiUploadCloud aria-hidden className="text-2xl" />
         )}
         <span id={`${id}-status`} className="min-w-0 max-w-full space-y-1">
-          {file ? (
+          {selected.length ? (
             <>
-              <span className="block truncate font-semibold">{file.name}</span>
+              <span className="block truncate font-semibold">{props.multiple ? `${selected.length} file${selected.length === 1 ? "" : "s"} selected` : selected[0].name}</span>
               <span className="block text-xs text-black/70 dark:text-white/70">
-                Drop another file or click to replace it
+                {props.multiple ? "Drop more here or click to add" : "Drop another file or click to replace it"}
               </span>
             </>
           ) : (
@@ -173,7 +191,7 @@ export function FileDropField({
               <span className="block font-semibold">
                 {dragging
                   ? "Drop it here"
-                  : "Drag a file here or click to choose"}
+                  : props.multiple ? "Drag files here or click to choose" : "Drag a file here or click to choose"}
               </span>
               {hint && (
                 <span className="block text-xs text-black/70 dark:text-white/70">
@@ -187,7 +205,7 @@ export function FileDropField({
               role="alert"
               className="block text-xs font-semibold text-red-600 dark:text-red-400"
             >
-              {rejectMessage}
+              {rejected}
             </span>
           )}
         </span>

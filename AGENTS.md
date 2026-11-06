@@ -302,6 +302,10 @@ Rules:
   one, in an app or in the package. Use `variant="field"` for a labelled form
   field and `variant="compact"` for a toolbar or filter control. Reach for
   `MultiSelect` when more than one value may be chosen.
+- Exception: star-review ratings use the shared `StarRating` control. Match its
+  step to the review provider: the store uses whole stars for Judge.me, while
+  fractional averages remain supported. Keep other single-choice controls on
+  `DropdownSelect`.
 - All search inputs must use the shared debounced search behavior established by
   the task board. Update the input value immediately, debounce filtering and URL
   state, show a loading spinner in the input while the query is pending, and

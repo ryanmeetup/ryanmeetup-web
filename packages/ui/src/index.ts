@@ -60,6 +60,7 @@ export * from "./SuccessCallout";
 export * from "./TagInput";
 export * from "./Toast";
 export * from "./StatCard";
+export * from "./StarRating";
 export * from "./Text";
 export * from "./TestimonialCard";
 export * from "./Textarea";
