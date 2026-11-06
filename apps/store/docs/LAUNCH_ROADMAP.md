@@ -46,7 +46,7 @@ Last reviewed: 2026-11-04, against the code and the live Storefront API.
 | 11 | [More from this shop](#11-more-from-this-shop) | Etsy parity | Not started |
 | 8 | [Note to seller and personalization](#8-note-to-seller-and-personalization) | Etsy parity | Not started |
 | 15 | [Catalog revalidation webhook](#15-catalog-revalidation-webhook) | Polish | Not started |
-| 14 | [Shop-wide reviews and buyer-only reviews](#14-shop-wide-reviews-and-buyer-only-reviews) | Polish | Not started |
+| 14 | [Shop-wide reviews and buyer-only reviews](#14-shop-wide-reviews-and-buyer-only-reviews) | Polish | In progress |
 
 Rows are in suggested working order. Status values: Not started, In progress.
 Finished and dropped items leave the roadmap.
@@ -153,9 +153,12 @@ appear, which [ADDING_PRODUCTS.md](ADDING_PRODUCTS.md) has to warn about.
 **Problem.** Etsy shows a shop rating and only buyers can review. Here reviews are
 per product and anyone can submit.
 
-**Approach.** Show the overall Judge.me rating on the home and About pages. Use
-Judge.me's verified-buyer settings, or its review request emails, to limit
-submissions.
+**Approach.** Show the overall Judge.me rating on the home and About pages.
+Product pages hand review collection to Shopify customer accounts, where
+Judge.me handles fulfilled purchases, photos, and review management. The
+domain mismatch is resolved; deployment and a fulfilled-order test remain.
+The separate web-review API is unverified and does not enforce purchase
+eligibility. See the [current integration audit](REVIEWS_SETUP.md).
 
 ## Log
 
@@ -163,6 +166,10 @@ Record each finished or changed item here, newest first.
 
 | Date | Item | Change | Commit |
 | --- | --- | --- | --- |
+| 2026-11-06 | 14 | Resolved Judge.me authentication with its registered shop domain, independent of the Shopify catalog domain. Product lookup, review reads, and media settings are verified. Added the storefront account handoff and published-photo display; fulfilled-order verification remains. | — |
+| 2026-11-05 | 14 | Closed the legacy anonymous review POST endpoint after confirming Judge.me's public API does not require authorization. Four security tests cover rejection, 30 concurrent spam attempts, and forged buyer claims without provider calls. A private Shopify purchase-authorized backend is the recommended next direction; no new storage is provisioned yet. | — |
+| 2026-11-05 | 14 | Built the shared product-review modal with mobile full-screen layout, preserved drafts, deliberate rating selection, and retryable submission errors. Removed the title field and hardened API input validation. Shopify sign-in and purchase enforcement still await the setup recorded in the handoff. | — |
+| 2026-11-05 | 14 | Recorded the live review integration audit and a Claude handoff. Modal reviews with Shopify sign-in/purchase history are the chosen direction; implementation awaits the Headless client details and a working local Judge.me credential. See [REVIEWS_SETUP.md](REVIEWS_SETUP.md) and [REVIEWS_HANDOFF.md](REVIEWS_HANDOFF.md). | — |
 | 2026-11-04 | 13 | Added a currency button to product price badges: USD → EUR → GBP → CAD → AUD. The preference persists across pages and reloads. Cached Frankfurter reference rates supply approximate display conversions; Shopify cart and checkout amounts remain in USD. Local-currency checkout through Markets remains deferred. | — |
 | 2026-11-04 | 4 | Etsy stays live alongside the store for now: `ryanmeetup.com/merch`, the main site's **Merch** link, and the Etsy listings are no longer launch work. Switch them when Ryan decides to retire Etsy. | — |
 | 2026-11-04 | — | Audited against the code and the live Storefront API. Item 4 gained the Markets check (only the US is active), the `apps/ryanmeetup` Etsy links, and the privacy policy's returns wording; the privacy and customer-accounts lines that were done left. Remaining items reordered by suggested working order. | — |
