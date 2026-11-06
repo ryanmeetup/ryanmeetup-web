@@ -113,6 +113,7 @@ export type Review = {
   reviewerName: string;
   title: string;
   verified: boolean;
+  photoUrls?: string[];
 };
 
 export type ReviewsData = {

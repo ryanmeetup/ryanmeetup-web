@@ -238,11 +238,31 @@ individually, use a collection and keep their standalone pages.
 
 ## Judge.me setup
 
-Install Judge.me in the same Shopify store and provide its private API token server-side. Published reviews are read during product-page rendering; new reviews post through the server route and follow Judge.me moderation settings.
+Install Judge.me in the same Shopify store and provide its private API token server-side. Published reviews and visible review photos are read during product-page rendering using the documented `X-Api-Token` header.
+
+When Shopify is configured, **Write a review** links to the Shopify customer
+account. Judge.me's account extensions collect reviews for fulfilled purchases,
+host uploaded photos, and provide **My Reviews** for management. A failure to
+resolve the account link disables collection with a visible explanation.
+
+Without Shopify credentials, demo mode retains the product-context modal for
+UI previews. Individual ratings use whole stars; averages retain fractional
+fills. The custom photo chooser is hidden until separate photo hosting exists.
+The JSON `POST /api/reviews` route remains an unverified web-review forwarding
+endpoint; it does not prove purchase eligibility and rejects multipart requests
+with HTTP 415. The configured storefront's account handoff does not use it.
+See [the setup audit](docs/REVIEWS_SETUP.md) and
+[the parity checklist](docs/REVIEWS_PARITY.md) for the remaining integration work.
 
 1. In Shopify Admin, install **Judge.me Product Reviews** from the Shopify App Store.
 2. In Judge.me, open **Settings → Integrations → View API token** (under Developers) and copy the **Private API token**.
 3. Set it as `JUDGEME_PRIVATE_API_TOKEN` in `.env.local` and in the Vercel project's Production and Preview environments. It must stay server-only; never prefix it with `NEXT_PUBLIC_`.
-4. Redeploy. Reviews refresh every five minutes.
+4. Set `JUDGEME_SHOP_DOMAIN` to the exact **Shop domain** in the same modal. For this store it is `9mf9bm-3f.myshopify.com`, while the working catalog connection uses `SHOPIFY_STORE_DOMAIN=ryan-meetup-store.myshopify.com`. Keep those separate. If `JUDGEME_SHOP_DOMAIN` is absent, the app falls back to `SHOPIFY_STORE_DOMAIN` for stores whose domains match.
+5. Redeploy. Reviews refresh every five minutes.
 
-Until the token is set, product pages show no reviews and submissions return a “will open when Judge.me is connected” message. `JUDGEME_PUBLIC_API_TOKEN` in `.env.example` is not read by the app.
+Missing or invalid provider credentials currently appear as an empty review
+section. Authentication was resolved on November 6 by configuring Judge.me's
+registered domain separately. Live product lookup and review reads return 200;
+the account currently contains zero reviews. See the [authentication record](docs/JUDGEME_AUTH_DIAGNOSTIC.md).
+The public token is named `JUDGEME_PUBLIC_TOKEN`; the custom server-rendered
+review list currently uses only the private token.

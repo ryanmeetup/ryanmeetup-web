@@ -1,4 +1,5 @@
 import type { ReviewsData } from "./types";
+import { publishedReviewPhotoUrl } from "./review-photo-hosts";
 import { getJudgeMeShopDomain } from "./judgeme";
 
 type JudgeMeReview = {
@@ -9,6 +10,9 @@ type JudgeMeReview = {
   reviewer?: { name?: string };
   title?: string;
   verified?: string;
+  hidden?: boolean;
+  curated?: string;
+  pictures?: { hidden?: boolean; urls?: { huge?: string; original?: string } }[];
 };
 
 const emptyReviews: ReviewsData = {
@@ -43,7 +47,7 @@ export async function getReviews(productId: string): Promise<ReviewsData> {
   const reviewsResponse = await fetch(reviewsUrl, requestOptions);
   if (!reviewsResponse.ok) return emptyReviews;
   const payload = (await reviewsResponse.json()) as { reviews?: JudgeMeReview[] };
-  const reviews = payload.reviews ?? [];
+  const reviews = (payload.reviews ?? []).filter((review) => review.hidden === false && review.curated === "ok");
 
   return {
     count: reviews.length,
@@ -58,6 +62,11 @@ export async function getReviews(productId: string): Promise<ReviewsData> {
       reviewerName: review.reviewer?.name ?? "Ryan customer",
       createdAt: review.created_at,
       verified: review.verified === "buyer" || review.verified === "verified-buyer",
+      photoUrls: Array.from(new Set((review.pictures ?? []).flatMap((picture) => {
+        if (picture.hidden !== false) return [];
+        const url = publishedReviewPhotoUrl(picture.urls?.huge) ?? publishedReviewPhotoUrl(picture.urls?.original);
+        return url ? [url] : [];
+      }))).slice(0, 5),
     })),
   };
 }

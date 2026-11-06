@@ -7,16 +7,18 @@ import { DropdownSelect } from "@ryanmeetup/ui";
 import { getColorOption, getColorPreview, getColorSlug, getColorValue, getImageColor, getListingColors } from "@/lib/product-colors";
 import { getProductGallery } from "@/lib/product-gallery";
 import type { ProductDesign, ReviewsData, StoreImage } from "@/lib/types";
+import type { ReviewAccount } from "@/lib/review-collection";
 import { ProductDetail } from "./product-detail";
 import { Reviews } from "./reviews";
 
-export function ProductGroupDetail({ title, handle, breadcrumbs, designs, defaultColor, reviewsByProduct }: {
+export function ProductGroupDetail({ title, handle, breadcrumbs, designs, defaultColor, reviewsByProduct, reviewAccount }: {
   title: string;
   breadcrumbs?: ReactNode;
   handle: string;
   designs: ProductDesign[];
   defaultColor?: string;
   reviewsByProduct: Record<string, ReviewsData>;
+  reviewAccount: ReviewAccount | undefined;
 }) {
   const searchParams = useSearchParams();
   const navigationFocus = useRef<string | null>(null);
@@ -102,7 +104,7 @@ export function ProductGroupDetail({ title, handle, breadcrumbs, designs, defaul
           );
         }}
       />
-      <Reviews key={`reviews-${selected.product.id}`} data={reviewsByProduct[selected.product.id]} productId={selected.product.id} />
+      <Reviews key={`reviews-${selected.product.id}`} data={reviewsByProduct[selected.product.id]} product={selected.product} reviewAccount={reviewAccount} />
     </>
   );
 }
