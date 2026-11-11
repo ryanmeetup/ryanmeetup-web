@@ -142,8 +142,8 @@ Removed:
 
 Kept on purpose, because each carries information the heading doesn't:
 
-- the `Blurb` tags on RSVP (the event date), Name Change ("Change your name to
-  Ryan"), and Press (the heading is just "RYAN MEETUP");
+- the `Blurb` tag on RSVP (the event date). The Name Change and Press tags
+  were kept at first, then removed at Ryan's request;
 - the store's "Order confirmed" (status) and spotlight collection label;
 - the "Monthly Backer opening" and "Monthly Backer spotlight" labels (tier);
 - `HeroCard`'s image caption ("First meetup");
@@ -154,3 +154,33 @@ Kept on purpose, because each carries information the heading doesn't:
 - data labels, and labels that are a block's only title, such as "Starting
   at", "Typically includes", "Reach Snapshot", "Helpful details", "On this
   page", "Integrations", and "Workload digest".
+
+### 2026-11-11: follow-up decisions and the system pass
+
+- **Blurred blobs:** kept by decision and removed from the cleanup list.
+- **Store trust strip** ("Designed by Ryan / Secure checkout / Tracked
+  delivery" on the store home page): deleted. The product page's similar strip
+  stays, because its "Designed by Ryan" row credits the actual designer.
+- **Partnerships page structure:** kept as it is.
+- **"Why join" card** (on `/about`, not the homepage): replaced with a "Get
+  involved" section of three linked next steps: find your chapter
+  (`/chapters`), come to the next event (`/events/upcoming`), and get the
+  newsletter (`/newsletter`). The six generic bullets are gone, including the
+  unsupported "record-breaking scale" claim.
+- **Remaining slop copy:** still open, to be done alongside the RyanCon work.
+- **System tokens:** done.
+  - Letter-spacing: the 14 arbitrary `tracking-[…em]` values (about 215 uses)
+    now map to three brand tokens in `packages/brand/theme.css`. Values up to
+    0.16em became `tracking-caps-tight` (0.12em), 0.18–0.25em became
+    `tracking-caps` (0.2em), and 0.28em and up became `tracking-caps-wide`
+    (0.3em). The single 0.05em use became Tailwind's `tracking-wider`.
+  - Shadows: 11 of the 13 arbitrary values now map to `shadow-drop`,
+    `shadow-drop-lg`, and `shadow-overlay`, or to Tailwind's `shadow-sm` and
+    `shadow-lg`. The `StarRating` amber glow and the campaign-yellow tier badge
+    keep their colored glows on purpose.
+  - `Pill`: letter-spacing now comes from the variant alone. Previously both
+    the size and the variant set it, so stylesheet order decided which won.
+  - `Kicker`: uses `tracking-caps-wide`, and its one-off spacing overrides were
+    removed. `EventRow`'s responsive override now uses `!`, so it wins
+    reliably.
+  - The AGENTS.md design rules now name these tokens, plus the kicker rule.

@@ -178,8 +178,14 @@ new styling conventions.
   roles.
 - Cooper is the display face. Use it for intentional headings, not body copy.
 - Prefer clear sentence-case body copy and short uppercase metadata labels.
-- Metadata commonly uses `text-xs font-semibold uppercase` with generous
-  tracking.
+- Metadata commonly uses `text-xs font-semibold uppercase` with one of the
+  brand letter-spacing steps: `tracking-caps-tight` (0.12em) for dense chips
+  and table labels, `tracking-caps` (0.2em) for metadata, and
+  `tracking-caps-wide` (0.3em, the `Kicker` default). Do not add arbitrary
+  `tracking-[…em]` values.
+- A `Kicker` or uppercase label above a heading must add information the
+  heading lacks: a date, price, count, status, or tier. Never use one to
+  restate the page or section name.
 - Avoid adding arbitrary font families or duplicating font assets in apps.
 
 ### Color and surfaces
@@ -200,7 +206,11 @@ new styling conventions.
 - Prefer established gaps and spacing such as `gap-2`, `gap-4`, `gap-6`,
   `space-y-6`, and `space-y-12`.
 - Cards generally use rounded corners, subtle borders, translucent surfaces,
-  and restrained shadows.
+  and restrained shadows. Use the brand elevation tokens: `shadow-drop` for a
+  raised card, `shadow-drop-lg` for a page-level panel, and `shadow-overlay`
+  for modals and drawers. Tailwind's `shadow-sm` and `shadow-lg` cover small
+  controls. Do not add arbitrary `shadow-[…]` values except for a deliberate
+  colored glow.
 - Use hover lift sparingly and consistently. Interactive elements should not
   shift far enough to disturb surrounding layout.
 - When two desktop columns have unequal content, balance them through alignment
