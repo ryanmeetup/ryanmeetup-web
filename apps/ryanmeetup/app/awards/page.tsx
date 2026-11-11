@@ -1,7 +1,7 @@
 // Components
 import { Layout } from "@/components/navigation";
 import { AnchorNav } from "@/components/global";
-import { Divider, Heading, Pill, Text } from "@ryanmeetup/ui";
+import { Divider, Heading, Text } from "@ryanmeetup/ui";
 import {
   FarthestRyan,
   Champion,
@@ -86,9 +86,6 @@ const AwardsPage = async () => {
     <Layout>
       <div className="relative space-y-12">
         <section className="space-y-4 text-center">
-          <div className="flex justify-center">
-            <Pill>Awards</Pill>
-          </div>
           <Heading className="text-4xl title sm:text-5xl lg:text-6xl" size="h1">
             Hall of Ryans
           </Heading>

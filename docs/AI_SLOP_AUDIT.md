@@ -1,0 +1,156 @@
+# AI-Slop Component Audit
+
+Audit date: 2026-11-11. Scope: `apps/ryanmeetup`, `apps/ryancon`, `apps/store`,
+`apps/tasks`, and the shared packages.
+
+Copy is mostly clean: there is no "seamless / elevate / unlock / supercharge"
+filler anywhere. The problem is visual. The marketing pages lean on the stock
+generated-landing-page kit: an eyebrow over every heading, blurred background
+blobs, icon-in-circle feature grids, numbered timelines, and "Ready to…?"
+call-to-action cards.
+
+## Tier 1: Clear slop
+
+### 1. Eyebrows that repeat the heading
+
+This shows up in two forms. `Kicker` is uppercase with wide letter-spacing. The
+default `Pill` variant is also uppercase with the same 0.3em spacing, so it is
+effectively a second eyebrow component.
+
+- **Partnerships page** (`apps/ryanmeetup/app/partnerships/page.tsx`): every
+  section had one ("Reach & proof", "Start the conversation", "Events &
+  beyond", "Possible ingredients", "From brief to big Ryan energy"), plus a
+  `Step 01` kicker beside a badge that already shows the number.
+- **RyanCon**: pills that only repeat the page or section, such as "Register",
+  "FAQs", "Our Mission", "Our History", "Newsletter", "Community voices", "Why
+  sponsor", and "FAQ".
+- **Store**: "Official Ryan provisions", "About the store", "Store support",
+  and "Order confirmed".
+- **Ryan Meetup**: `HeroCard` has an `eyebrow` prop and a second image eyebrow.
+  `Landing` has an "Established 2023" pill and an uppercase subtitle.
+- **Tasks**: a "What's new" pill above the "Changelog" heading, and a "Team
+  workspace" or "Project workspace" line above the workspace title.
+
+### 2. Blurred blobs and glows
+
+Large, blurred, absolutely positioned circles that do nothing:
+
+- the three contact pages (ryanmeetup, ryancon, and store);
+- `HeroCard`, which also has a radial-gradient wash;
+- the Tasks dashboard, which has an amber and a blue blob on a working screen;
+- the changelog page and `LatestChangelogCard`;
+- the dot-grid texture in the store hero.
+
+### 3. Icon-in-circle feature grids
+
+- the partnerships page's six "Possible ingredients" cards;
+- `PartnershipPerks`, which is near-duplicated across ryanmeetup and ryancon;
+- `ReachSnapshot` and `SponsorshipInfo`;
+- the "helpful details" on the store contact page;
+- the store home page's three-icon trust strip ("Designed by Ryan / Secure
+  checkout / Tracked delivery"), which is the most generic thing in the repo.
+
+### 4. The numbered "How it works" timeline
+
+The partnerships page's `nextSteps` section combines numbered circles, a
+connecting line, step kickers, and four generic steps.
+
+### 5. A "Why join" bullet card
+
+`apps/ryanmeetup/components/home/BenefitsSection.tsx` pairs "More than just a
+meetup." with six generic bullets, each a dot inside a rounded box. It keeps
+`benefits` and `reasons` as two arrays and then merges them into one list, so
+the split means nothing.
+
+### 6. Call-to-action cards built from a template
+
+- a "Ready when you are" kicker over "Want to support the Ryans?" in
+  `MonthlyBackerTiers`;
+- "Ready to talk?" on the partnerships page;
+- RyanCon's "Let's build a sponsorship plan that works for your brand."
+
+## Tier 2: Signs across the codebase
+
+7. **Letter-spacing sprawl.** There are 14 distinct `tracking-[…em]` values,
+   from 0.05 to 0.35em. Many files hand-roll `uppercase tracking-[…]` labels
+   instead of using `Kicker`, and `ReachSnapshot` and `SponsorshipInfo`
+   override Kicker's own spacing.
+8. **Custom shadows and corner radii.** There are 13 different one-off
+   `shadow-[…]` values, mostly the same soft long-drop shadow with slightly
+   different numbers. Corner radii include `rounded-[2rem]`, `[1.75rem]`, and
+   `[20px]` alongside the standard `3xl`.
+9. **Slop phrasing.** Examples include "Explore the channels, proof points, and
+   community surfaces behind these numbers" (`ReachSnapshot`), "Why this makes
+   sense for your brand", and "Built for brands that want a consistent
+   presence…". UI copy also has heavy em-dash use: about 22 in ryanmeetup and
+   21 in tasks components.
+10. **Emoji used as icons.** The RyanCon hero shows "🏙 LOCATION TBD / 🗓 DATE
+    TBD / 📍 VENUE TBD", and `RotatingGallery` uses 📍. The 🔥 on the leaderboard
+    streak is fine, because it's actual personality.
+11. **Faded text everywhere.** There are about 559 uses of `text-black/30` to
+    `/55` in tasks and 38 in the shared packages. AGENTS.md sets secondary text
+    at about `/70`.
+
+## Not slop: leave these alone
+
+- `Kicker` used as a real data label: StatCard labels, "Starting at $X", Usage
+  stat labels, and "Typically includes" / "Best for".
+- Status chips in `AccessGroupGrid` and the Usage page.
+- Background blur on menus, modals, drawers, and sticky headers, which helps
+  you read what's on top.
+- The fade gradients in `scrollRegion` and `RotatingGallery`.
+- `TestimonialCard` as a pattern, provided the quotes are real.
+
+## Suggested rule
+
+A kicker is allowed only when it adds information the heading doesn't, such as
+a category, date, price label, or status. Then:
+
+- fold `Pill`'s uppercase default into either a real tag or `Kicker`, so there
+  is one eyebrow component rather than two;
+- delete every blob `<div>`;
+- pick three or four letter-spacing values and two shadows, and put them in the
+  brand theme.
+
+## Cleanup log
+
+### 2026-11-11: eyebrows that repeat the heading
+
+Rule applied: a label directly above a heading was removed when it only names
+the page or section, or restates what the heading already says. Any top margin
+on the heading that existed only to clear the label went with it.
+
+Removed:
+
+- **Ryan Meetup**: the partnerships section kickers ("Reach & proof", "Start
+  the conversation", "Events & beyond", "Possible ingredients", "From brief to
+  big Ryan energy") and the `Step 01` kickers; page pills on Gallery, Awards,
+  Contribute, Donate, Contact, Membership card (`/ryd`), Charity, and Map;
+  "The taps are resting" (Rytoberfest); "Three ways to back the Ryans" and
+  "Ready when you are" (`MonthlyBackerTiers`); "How Sponsorship Works"; "Why
+  join"; `HeroCard`'s `eyebrow` prop ("How it all started"); and the `Blurb`
+  tags on Events, All Events, Upcoming Events, Flyers, Chapters, and Sponsors.
+- **RyanCon**: "Community voices", "Our History", "Our Mission", "Newsletter",
+  "Become a sponsor", "Why sponsor", "FAQ", "Register", "FAQs", "Need more
+  help?", "About Ryan Meetup", and "RyanCon" (contact), plus the Sponsors
+  `Blurb` tag.
+- **Store**: "Official Ryan provisions", "About the store", the section-label
+  kickers on the About page (they duplicated the "On this page" nav), "Store
+  support", "Current provisions", and "Customer dispatches".
+- **Tasks**: the "What's new" pill above "Changelog". The Beta pill still shows
+  for prereleases.
+
+Kept on purpose, because each carries information the heading doesn't:
+
+- the `Blurb` tags on RSVP (the event date), Name Change ("Change your name to
+  Ryan"), and Press (the heading is just "RYAN MEETUP");
+- the store's "Order confirmed" (status) and spotlight collection label;
+- the "Monthly Backer opening" and "Monthly Backer spotlight" labels (tier);
+- `HeroCard`'s image caption ("First meetup");
+- Landing's "Established 2023";
+- the Tasks "Project / Category / Team workspace" line, which names the scope
+  type. It also hosts the mobile task count, so removing it needs a layout
+  change.
+- data labels, and labels that are a block's only title, such as "Starting
+  at", "Typically includes", "Reach Snapshot", "Helpful details", "On this
+  page", "Integrations", and "Workload digest".

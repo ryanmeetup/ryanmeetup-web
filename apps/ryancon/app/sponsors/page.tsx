@@ -25,7 +25,6 @@ const SponsorsPage = async () => {
   return (
     <Layout className="space-y-12">
       <Blurb
-        tag="Sponsors"
         fullHeadline="Help Power RyanCon"
         smallHeadline="Help Power RyanCon"
         fullHeadlineNode={

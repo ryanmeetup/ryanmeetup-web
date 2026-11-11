@@ -1,5 +1,5 @@
 // Components
-import { Card, Heading, Kicker, Text } from "@ryanmeetup/ui";
+import { Card, Heading, Text } from "@ryanmeetup/ui";
 
 const BenefitsSection = () => {
   const benefits = [
@@ -19,7 +19,6 @@ const BenefitsSection = () => {
       <Card className="p-6 lg:p-8" hover={false} size="md" variant="soft">
         <div className="space-y-4">
           <div className="space-y-2">
-            <Kicker>Why join</Kicker>
             <Heading className="text-4xl title" size="h3">
               More than just a meetup.
             </Heading>

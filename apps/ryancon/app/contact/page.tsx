@@ -2,7 +2,7 @@ import { Suspense } from "react";
 
 import { Layout } from "@/components/navigation";
 import { ContactForm, FollowUs } from "@/components/contact";
-import { Card, Heading, Pill, Text } from "@ryanmeetup/ui";
+import { Card, Heading, Text } from "@ryanmeetup/ui";
 
 // Utilities
 import { contactTopics, DEFAULT_INBOX } from "@/utils/contact";
@@ -33,7 +33,6 @@ const ContactPage = async ({ searchParams }: ContactPageProps) => {
         <div className="relative grid gap-10 xl:grid-cols-[1.05fr_0.95fr] xl:items-center xl:gap-16">
           <div className="space-y-6 xl:flex xl:self-stretch xl:flex-col xl:space-y-0 xl:py-6">
             <div className="space-y-6">
-              <Pill>RyanCon</Pill>
               <Heading
                 className="text-4xl title sm:text-5xl lg:text-6xl"
                 size="h1"

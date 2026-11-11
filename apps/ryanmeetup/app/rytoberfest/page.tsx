@@ -162,8 +162,7 @@ const RytoberfestPage = async ({
         {upcomingEvents.length === 0 ? (
           <div className="space-y-5">
             <div className="text-center">
-              <Pill variant="subtle">The taps are resting</Pill>
-              <Heading size="h2" className="mt-4 text-3xl title sm:text-4xl">
+              <Heading size="h2" className="text-3xl title sm:text-4xl">
                 More Rytoberfests are fermenting
               </Heading>
             </div>

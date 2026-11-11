@@ -10,7 +10,6 @@ type HeroCardImage = {
 };
 
 type HeroCardProps = {
-  eyebrow: string;
   title: string;
   description: ReactNode;
   badges: string[];
@@ -18,7 +17,7 @@ type HeroCardProps = {
 };
 
 const HeroCard = (props: HeroCardProps) => {
-  const { eyebrow, title, description, badges, image } = props;
+  const { title, description, badges, image } = props;
 
   return (
     <section className="relative overflow-hidden rounded-3xl border border-black/10 bg-white/80 p-6 shadow-[0_30px_60px_-40px_rgba(0,0,0,0.6)] dark:border-white/10 dark:bg-white/5 lg:p-10">
@@ -26,9 +25,6 @@ const HeroCard = (props: HeroCardProps) => {
       <div className="absolute -top-24 right-10 hidden h-64 w-64 rounded-full border border-black/10 bg-white/60 blur-3xl dark:border-white/10 dark:bg-white/10 lg:block" />
       <div className="relative grid gap-8 lg:grid-cols-2 lg:items-center">
         <div className="space-y-6">
-          <Pill className="px-3 py-1 text-xs dark:border-white/15 dark:bg-white/5">
-            {eyebrow}
-          </Pill>
           <Heading className="text-4xl title sm:text-5xl" size="h1">
             {title}
           </Heading>

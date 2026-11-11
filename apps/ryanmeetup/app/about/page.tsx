@@ -41,7 +41,6 @@ const AboutPage = () => {
     <Layout>
       <div className="xl:px-20 space-y-12">
         <HeroCard
-          eyebrow="How it all started"
           title="About Ryan Meetup"
           description="A community built by Ryans, for Ryans, with a mission to unite the most Ryans in one place and make history together."
           badges={["Founded 2023", "Brooklyn, NY", "Not-for-profit"]}

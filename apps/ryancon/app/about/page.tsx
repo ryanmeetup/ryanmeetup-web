@@ -1,6 +1,6 @@
 // Components
 import { Layout } from "@/components/navigation";
-import { Divider, Heading, Pill, Text } from "@ryanmeetup/ui";
+import { Divider, Heading, Text } from "@ryanmeetup/ui";
 import { History, KeepInTouch, MasonryGrid, Mission } from "@/components/about";
 import NextImage from "next/image";
 
@@ -28,9 +28,6 @@ const AboutPage = () => {
         <div
           className={`relative mx-auto flex w-full max-w-6xl flex-col items-center gap-5 px-6 py-20 text-center ${layoutPaddingX}`}
         >
-          <Pill className="bg-white/80 text-black/80 dark:bg-white/15 dark:text-white/85">
-            About Ryan Meetup
-          </Pill>
           <Heading
             className="text-4xl sm:text-5xl lg:text-6xl title lg:whitespace-nowrap"
             size="h1"

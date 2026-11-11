@@ -118,7 +118,6 @@ const ChaptersPage = async ({
         <Blurb
           fullHeadline="Ryan Meetup Chapters"
           smallHeadline="Ryan Meetup Chapters"
-          tag="Chapters"
         >
           <Text className="secondary text-xl mb-6 xl:mx-40">
             Introducing Ryan Meetup chapters — a new way to keep connected with

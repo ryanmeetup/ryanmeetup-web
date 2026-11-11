@@ -2,7 +2,7 @@
 import { Layout } from "@/components/navigation";
 import NextImage from "next/image";
 import { Backdrop } from "@/components/global";
-import { Button, Card, Heading, IconBadge, Pill, Text } from "@ryanmeetup/ui";
+import { Button, Card, Heading, IconBadge, Text } from "@ryanmeetup/ui";
 import { HiOutlineMail as Envelope } from "react-icons/hi";
 import { FiCheck as Check } from "react-icons/fi";
 import { RydInfo } from "@/components/ryd";
@@ -45,7 +45,6 @@ const RydPage = () => {
           className={`grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center py-8 ${layoutPaddingX}`}
         >
           <div className="space-y-6">
-            <Pill>Membership</Pill>
             <Heading
               className="text-4xl title sm:text-5xl lg:text-6xl"
               size="h1"

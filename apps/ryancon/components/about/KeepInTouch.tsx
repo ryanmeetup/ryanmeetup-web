@@ -1,16 +1,15 @@
 "use client";
 
 // Components
-import { Button, Heading, Pill, Text } from "@ryanmeetup/ui";
+import { Button, Heading, Text } from "@ryanmeetup/ui";
 import { FaRegNewspaper as Newsletter } from "react-icons/fa6";
 
 const KeepInTouch = () => {
   return (
     <div className="grid gap-6 lg:grid-cols-12 lg:gap-10 xl:py-10">
       <div className="lg:col-span-4">
-        <Pill className="text-xs">Newsletter</Pill>
         <Heading
-          className="mt-3 text-3xl title sm:text-4xl lg:text-5xl"
+          className="text-3xl title sm:text-4xl lg:text-5xl"
           size="h2"
         >
           Keep in touch with the Ryans.

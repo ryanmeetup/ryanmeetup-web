@@ -1,7 +1,6 @@
 import {
   Button,
   Heading,
-  Kicker,
   RotatingGallery,
   SectionHeader,
   Text,
@@ -52,12 +51,9 @@ export default async function HomePage() {
           />
           <div className="relative grid items-center gap-12 lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)] lg:gap-14 xl:gap-20">
             <div>
-              <Kicker className="!text-black/55 dark:!text-white/60">
-                Official Ryan provisions
-              </Kicker>
               <Heading
                 size="h1"
-                className="mt-4 max-w-3xl text-5xl leading-[0.95] sm:text-6xl xl:text-7xl"
+                className="max-w-3xl text-5xl leading-[0.95] sm:text-6xl xl:text-7xl"
               >
                 Dress like everyone knows your name.
               </Heading>

@@ -29,7 +29,6 @@ const SponsorshipInfo = () => {
   return (
     <section className="space-y-6" id="sponsorship-info">
       <div className="space-y-3">
-        <Kicker>How Sponsorship Works</Kicker>
         <Heading className="text-3xl title sm:text-4xl lg:text-5xl" size="h2">
           Sponsorship options with room to customize
         </Heading>

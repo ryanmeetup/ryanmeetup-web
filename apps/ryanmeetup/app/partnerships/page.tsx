@@ -302,7 +302,6 @@ const PartnershipsPage = () => (
 
           <section className="space-y-6" aria-labelledby="proof-heading">
             <div className="space-y-3">
-              <Kicker>Reach & proof</Kicker>
               <Heading
                 id="proof-heading"
                 className="text-3xl title sm:text-4xl lg:text-5xl"
@@ -329,7 +328,6 @@ const PartnershipsPage = () => (
             aria-labelledby="partnership-intake-heading"
           >
             <div className="space-y-3">
-              <Kicker>Start the conversation</Kicker>
               <Heading
                 id="partnership-intake-heading"
                 className="text-3xl title sm:text-4xl lg:text-5xl"
@@ -367,7 +365,6 @@ const PartnershipsPage = () => (
             aria-labelledby="collaboration-formats-heading"
           >
             <div className="space-y-3">
-              <Kicker>Events & beyond</Kicker>
               <Heading
                 id="collaboration-formats-heading"
                 className="text-3xl title sm:text-4xl lg:text-5xl"
@@ -450,7 +447,6 @@ const PartnershipsPage = () => (
             aria-labelledby="possibilities-heading"
           >
             <div className="space-y-3">
-              <Kicker>Possible ingredients</Kicker>
               <Heading
                 id="possibilities-heading"
                 className="text-3xl title sm:text-4xl lg:text-5xl"
@@ -491,7 +487,6 @@ const PartnershipsPage = () => (
 
           <section className="space-y-6" aria-labelledby="next-steps-heading">
             <div className="space-y-3">
-              <Kicker>From brief to big Ryan energy</Kicker>
               <Heading
                 id="next-steps-heading"
                 className="text-3xl title sm:text-4xl lg:text-5xl"
@@ -522,7 +517,6 @@ const PartnershipsPage = () => (
                         : ""
                     }`}
                   >
-                    <Kicker>Step {String(index + 1).padStart(2, "0")}</Kicker>
                     <Heading className="text-2xl title" size="h3">
                       {step.title}
                     </Heading>

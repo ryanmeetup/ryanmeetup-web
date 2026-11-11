@@ -1,6 +1,6 @@
 // Components
 import { Layout } from "@/components/navigation";
-import { Button, Heading, Pill, Text } from "@ryanmeetup/ui";
+import { Button, Heading, Text } from "@ryanmeetup/ui";
 import { FAQ } from "@/components/faqs";
 import { FaRegNewspaper as Newsletter } from "react-icons/fa6";
 
@@ -14,7 +14,6 @@ const FAQsPage = async () => {
     <Layout>
       <section className="space-y-10">
         <div className="mx-auto flex max-w-4xl flex-col items-center gap-4 text-center">
-          <Pill>FAQs</Pill>
           <Heading className="text-4xl title sm:text-5xl lg:text-6xl" size="h1">
             Questions from the Ryan community.
           </Heading>
@@ -27,9 +26,6 @@ const FAQsPage = async () => {
         <div className="grid gap-6 lg:grid-cols-12 lg:gap-10">
           <div className="lg:col-span-4 lg:sticky lg:top-28 lg:self-start">
             <div className="rounded-2xl border border-black/10 bg-white/80 p-6 shadow-sm dark:border-white/10 dark:bg-white/5 space-y-4">
-              <div className="text-xs font-semibold uppercase tracking-[0.3em] text-black/60 dark:text-white/60">
-                Need more help?
-              </div>
               <Heading className="text-2xl title sm:text-3xl" size="h2">
                 We&apos;re here for you.
               </Heading>

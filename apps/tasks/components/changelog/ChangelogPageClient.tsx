@@ -60,23 +60,15 @@ export function ChangelogPageClient({
           ]}
         />
         <header className="mb-10 mt-6 border-b border-black/10 pb-8 dark:border-white/10">
-          <div className="flex flex-wrap items-center gap-2">
+          {latestRelease?.prerelease && (
             <Pill
               size="sm"
-              className="!border-emerald-500/30 !bg-emerald-500/10 !text-emerald-800 dark:!text-emerald-200"
+              className="mb-4 !border-amber-500/30 !bg-amber-500/10 !text-amber-800 dark:!text-amber-200"
             >
-              <FiZap className="mr-2" aria-hidden /> What&apos;s new
+              Beta
             </Pill>
-            {latestRelease?.prerelease && (
-              <Pill
-                size="sm"
-                className="!border-amber-500/30 !bg-amber-500/10 !text-amber-800 dark:!text-amber-200"
-              >
-                Beta
-              </Pill>
-            )}
-          </div>
-          <Heading size="h1" bold className="mt-4 text-4xl sm:text-5xl">
+          )}
+          <Heading size="h1" bold className="text-4xl sm:text-5xl">
             Changelog
           </Heading>
           <p className="mt-3 text-sm leading-6 text-black/65 dark:text-white/65 sm:text-base">

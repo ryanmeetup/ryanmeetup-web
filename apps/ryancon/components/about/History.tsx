@@ -1,6 +1,6 @@
 // Components
 import NextLink from "next/link";
-import { Heading, Pill, Text } from "@ryanmeetup/ui";
+import { Heading, Text } from "@ryanmeetup/ui";
 
 type HistoryProps = {
   hrefStyles: string;
@@ -12,9 +12,8 @@ const History = (props: HistoryProps) => {
   return (
     <div className="grid gap-6 lg:grid-cols-12 lg:gap-10 lg:py-10">
       <div className="lg:col-span-4">
-        <Pill className="text-xs">Our History</Pill>
         <Heading
-          className="mt-3 text-3xl title sm:text-4xl lg:text-5xl"
+          className="text-3xl title sm:text-4xl lg:text-5xl"
           size="h2"
         >
           From a neighborhood poster to a movement.

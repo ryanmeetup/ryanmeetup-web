@@ -1,4 +1,4 @@
-import { Card, Heading, Kicker, Pill, Text } from "@ryanmeetup/ui";
+import { Card, Heading, Kicker, Text } from "@ryanmeetup/ui";
 import { FiHash, FiMail, FiPackage } from "react-icons/fi";
 import { StoreContactForm } from "@/components/store-contact-form";
 import { buildPageMetadata, DEFAULT_IMAGE } from "@/lib/metadata";
@@ -28,7 +28,6 @@ export default async function ContactPage() {
         <div className="relative grid gap-10 xl:grid-cols-[0.75fr_1.25fr] xl:gap-16">
           <div className="space-y-8 xl:py-4">
             <div className="space-y-5">
-              <Pill>Store support</Pill>
               <Heading size="h1" className="text-4xl leading-[1.05] sm:text-5xl lg:text-6xl">
                 Let’s sort out your order.
               </Heading>

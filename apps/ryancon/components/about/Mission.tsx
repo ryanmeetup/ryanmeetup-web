@@ -1,5 +1,5 @@
 // Components
-import { Heading, Pill, Text } from "@ryanmeetup/ui";
+import { Heading, Text } from "@ryanmeetup/ui";
 import NextLink from "next/link";
 
 type MissionProps = {
@@ -13,9 +13,8 @@ const Mission = (props: MissionProps) => {
   return (
     <div className="grid gap-6 lg:grid-cols-12 lg:gap-10 xl:py-10">
       <div className="lg:col-span-4">
-        <Pill className="text-xs">Our Mission</Pill>
         <Heading
-          className="mt-3 text-3xl title sm:text-4xl lg:text-5xl"
+          className="text-3xl title sm:text-4xl lg:text-5xl"
           size="h2"
         >
           Set a world record, spark a global community.

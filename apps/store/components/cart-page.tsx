@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, ErrorCallout, Heading, Kicker, Text } from "@ryanmeetup/ui";
+import { Card, ErrorCallout, Heading, Text } from "@ryanmeetup/ui";
 import { formatMoney } from "@/lib/money";
 import { cartOrigin } from "@/lib/product-origin";
 import { CartLineItem } from "./cart-line";
@@ -23,8 +23,7 @@ export function CartPage() {
 
   return (
     <main className="store-container py-12 sm:py-16">
-      <Kicker>Current provisions</Kicker>
-      <Heading size="h1" className="mt-2 text-4xl sm:text-5xl">Your cart</Heading>
+      <Heading size="h1" className="text-4xl sm:text-5xl">Your cart</Heading>
       <div className="mt-10 grid gap-8 xl:grid-cols-[minmax(0,1fr)_24rem]">
         <div className="space-y-4" aria-busy={loading}>
           {cart.lines.map((line) => <CartLineItem key={line.id} line={line} from={cartOrigin} />)}

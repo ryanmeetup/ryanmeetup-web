@@ -1,5 +1,5 @@
 // Components
-import { Heading, Pill, TestimonialCard, Text } from "@ryanmeetup/ui";
+import { Heading, TestimonialCard, Text } from "@ryanmeetup/ui";
 
 // Utilities
 import { layoutPaddingX } from "@/lib/constants";
@@ -34,7 +34,6 @@ const CommunityVoices = () => {
     <section className={`py-12 sm:py-16 ${layoutPaddingX}`}>
       <div className="space-y-10">
         <div className="mx-auto flex max-w-4xl flex-col items-center gap-4 text-center">
-          <Pill>Community voices</Pill>
           <Heading className="text-4xl title sm:text-5xl lg:text-6xl" size="h2">
             People are talking about RyanCon.
           </Heading>

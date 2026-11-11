@@ -54,7 +54,6 @@ const AllEventsPage = async () => {
       <Blurb
         fullHeadline="All Ryan Meetups"
         smallHeadline="All Events"
-        tag="Events"
         href="/newsletter"
         icon={<News />}
         hrefText="Sign up for emails"

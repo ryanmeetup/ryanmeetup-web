@@ -3,7 +3,6 @@ import {
   Card,
   Heading,
   IconBadge,
-  Kicker,
   Pill,
   Text,
 } from "@ryanmeetup/ui";
@@ -20,7 +19,6 @@ const MonthlyBackerTiers = () => (
     aria-labelledby="monthly-backer-tier-heading"
   >
     <div className="space-y-3">
-      <Kicker>Three ways to back the Ryans</Kicker>
       <Heading
         id="monthly-backer-tier-heading"
         className="text-3xl title sm:text-4xl lg:text-5xl"
@@ -99,7 +97,6 @@ const MonthlyBackerTiers = () => (
             <Heart className="h-4 w-4" />
           </IconBadge>
           <div className="space-y-2">
-            <Kicker>Ready when you are</Kicker>
             <Heading className="text-2xl title @3xl:text-3xl" size="h3">
               Want to support the Ryans?
             </Heading>

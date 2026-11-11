@@ -6,7 +6,6 @@ import {
   Divider,
   Heading,
   IconBadge,
-  Pill,
   Text,
 } from "@ryanmeetup/ui";
 import {
@@ -118,9 +117,6 @@ const ContributePage = async () => {
   return (
     <Layout>
       <section className="space-y-4 text-center mb-8">
-        <div className="flex justify-center">
-          <Pill>Contribute</Pill>
-        </div>
         <Heading className="text-4xl title sm:text-5xl lg:text-6xl" size="h1">
           Contribute to the Ryan Meetup
         </Heading>

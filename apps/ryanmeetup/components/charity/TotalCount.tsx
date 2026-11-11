@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 
 // Components
-import { Heading, Pill, Text } from "@ryanmeetup/ui";
+import { Heading, Text } from "@ryanmeetup/ui";
 
 // Types
 import type { Charity } from "@/lib/types";
@@ -37,9 +37,6 @@ const TotalCount = (props: TotalCountProps) => {
 
   return (
     <div className="px-6 text-center max-w-7xl mx-auto">
-      <div className="mb-4 flex justify-center">
-        <Pill>Charity</Pill>
-      </div>
       <Heading
         className="mb-6 text-center text-4xl xl:text-7xl title"
         size="h1"

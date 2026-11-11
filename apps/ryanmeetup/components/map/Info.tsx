@@ -1,5 +1,5 @@
 // Components
-import { Heading, Text, Card, Pill, StatCard, StatGrid } from "@ryanmeetup/ui";
+import { Heading, Text, Card, StatCard, StatGrid } from "@ryanmeetup/ui";
 import NextLink from "next/link";
 import { getLocationStats } from "@/utils/stats";
 import { contactHrefs } from "@/utils/contact";
@@ -56,9 +56,6 @@ const Info = (props: InfoProps) => {
         size="lg"
         className="mx-auto max-w-5xl text-center bg-white/90 ring-1 ring-black/10 dark:bg-white/5 dark:ring-white/10"
       >
-        <div className="mb-4 flex justify-center">
-          <Pill>Map</Pill>
-        </div>
         <Heading
           className="text-3xl title text-black sm:text-4xl dark:text-white"
           size="h2"

@@ -1,6 +1,6 @@
 // Components
 import { Layout } from "@/components/navigation";
-import { Button, Card, Divider, Heading, Pill, Text } from "@ryanmeetup/ui";
+import { Button, Card, Divider, Heading, Text } from "@ryanmeetup/ui";
 
 // Utilities
 import { contactHrefs } from "@/utils/contact";
@@ -92,7 +92,6 @@ const SponsorshipPage = () => {
   return (
     <Layout className="space-y-12">
       <div className="mx-auto flex max-w-4xl flex-col items-center gap-4 text-center">
-        <Pill>Become a sponsor</Pill>
         <Heading className="text-4xl title sm:text-5xl lg:text-6xl" size="h1">
           Partner with RyanCon.
         </Heading>
@@ -141,8 +140,7 @@ const SponsorshipPage = () => {
 
       <div className="grid gap-10 lg:grid-cols-12">
         <div className="lg:col-span-5">
-          <Pill className="text-xs">Why sponsor</Pill>
-          <Heading className="mt-4 text-3xl title sm:text-4xl" size="h2">
+          <Heading className="text-3xl title sm:text-4xl" size="h2">
             High‑energy, high‑visibility, high‑community.
           </Heading>
           <Text className="mt-4 text-base sm:text-lg">
@@ -186,8 +184,7 @@ const SponsorshipPage = () => {
 
       <div className="grid gap-6 lg:grid-cols-12">
         <div className="lg:col-span-4">
-          <Pill className="text-xs">FAQ</Pill>
-          <Heading className="mt-4 text-3xl title sm:text-4xl" size="h2">
+          <Heading className="text-3xl title sm:text-4xl" size="h2">
             Sponsorship questions.
           </Heading>
           <Text className="mt-3 text-base sm:text-lg">

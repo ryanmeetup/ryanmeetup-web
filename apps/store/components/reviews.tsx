@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useEffect, useId, useRef, useState } from "react";
 import type { FormEvent } from "react";
-import { Button, Card, ErrorCallout, FormStatus, Heading, Input, Kicker, Modal, ModalActions, RatingStars, StarRating, Text, Textarea } from "@ryanmeetup/ui";
+import { Button, Card, ErrorCallout, FormStatus, Heading, Input, Modal, ModalActions, RatingStars, StarRating, Text, Textarea } from "@ryanmeetup/ui";
 import { FiCheck } from "react-icons/fi";
 import type { Product, ReviewsData } from "@/lib/types";
 import type { ReviewPhoto } from "@/lib/review-photos";
@@ -88,8 +88,7 @@ export function Reviews({ data, product, reviewAccount }: { data: ReviewsData; p
     <section id="reviews" className="border-t border-black/10 py-16 dark:border-white/10 sm:py-20">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <Kicker>Customer dispatches</Kicker>
-          <Heading size="h2" className="mt-2 text-3xl sm:text-4xl">The Ryans have spoken</Heading>
+          <Heading size="h2" className="text-3xl sm:text-4xl">The Ryans have spoken</Heading>
           <RatingSummary data={data} className="mt-3" />
         </div>
         {reviewAccount ? (

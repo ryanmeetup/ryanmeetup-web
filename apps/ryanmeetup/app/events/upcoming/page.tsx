@@ -52,7 +52,7 @@ const UpcomingPage = async ({
 
   return (
     <Layout>
-      <Blurb fullHeadline="Upcoming Events" tag="Coming Soon">
+      <Blurb fullHeadline="Upcoming Events">
         <Text className="secondary text-xl mb-6 xl:mx-40">
           Browse upcoming Ryan Meetups and join in on the fun.
         </Text>

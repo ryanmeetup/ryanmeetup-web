@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Button, Card, Heading, Kicker, Pill, Text } from "@ryanmeetup/ui";
+import { Button, Card, Heading, Kicker, Text } from "@ryanmeetup/ui";
 import type { IconType } from "react-icons";
 import { FiArrowRight, FiGlobe, FiHeart, FiPenTool, FiTruck, FiUsers, FiXCircle } from "react-icons/fi";
 import { buildPageMetadata, DEFAULT_IMAGE } from "@/lib/metadata";
@@ -37,13 +37,12 @@ const sectionClassName = "scroll-mt-24 space-y-4 border-t border-black/10 pt-8 d
 const linkClassName = "font-semibold underline decoration-black/30 underline-offset-4 transition hover:decoration-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:decoration-white/30 dark:hover:decoration-white dark:focus-visible:ring-white/40";
 
 function SectionTitle({ id, children }: { id: (typeof sections)[number]["id"]; children: string }) {
-  const { icon: Icon, label } = sections.find((section) => section.id === id)!;
+  const { icon: Icon } = sections.find((section) => section.id === id)!;
   return (
     <div className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-1">
       <span className="row-span-2 flex h-12 w-12 items-center justify-center rounded-full bg-nametag/10 text-xl text-nametag">
         <Icon aria-hidden />
       </span>
-      <Kicker>{label}</Kicker>
       <Heading size="h2" className="text-2xl sm:text-3xl">{children}</Heading>
     </div>
   );
@@ -65,7 +64,6 @@ export default async function AboutPage() {
       <div className="grid gap-12 xl:grid-cols-[20rem_minmax(0,1fr)] xl:gap-16">
         <article className="min-w-0 space-y-12">
           <header className="space-y-5">
-            <Pill>About the store</Pill>
             <Heading size="h1" className="text-4xl leading-[1.05] sm:text-5xl lg:text-6xl">
               Official goods. Unmistakably Ryan.
             </Heading>
