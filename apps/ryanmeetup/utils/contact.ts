@@ -165,6 +165,24 @@ const contactTopics: ContactTopic[] = [
     },
   },
   {
+    value: "baseball-classic",
+    label: "Ryan Baseball Classic",
+    subject: "Ryan Baseball Classic Question",
+    description: "Tickets, game nights, merch, or getting your team involved.",
+    message: `${greeting}I have a question about the Ryan Baseball Classic.\n`,
+    messagePlaceholder: "Which team or game are you asking about?",
+    routeTo: DEFAULT_INBOX,
+    detail: {
+      label: "What's it about?",
+      options: [
+        { value: "tickets", label: "Tickets or a specific game" },
+        { value: "group-outing", label: "Bringing a group of Ryans" },
+        { value: "merch", label: "Classic merch" },
+        { value: "team-partner", label: "My team wants in" },
+      ],
+    },
+  },
+  {
     value: "name-change",
     label: "Name Change Paperwork",
     subject: "Name Change Paperwork Request",
