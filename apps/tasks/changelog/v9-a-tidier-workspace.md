@@ -261,6 +261,10 @@ Pages with tooltips no longer fail to load when their content arrives from the s
 
 The header search leaves more room for its placeholder when its clear and loading controls are hidden.
 
+### Task attachments appear once
+
+Adding a link or uploading a file no longer shows it twice when the live update arrives before the save finishes. Removing an attachment leaves the task's other attachments in place.
+
 ## Under the hood
 
 The latest organization work reuses the project lifecycle, archive, dropdown, and sortable-list foundations already in the app. Proximity-based dropdown options remain visible while navigating long menus, and the board's drag behavior is covered at the mutation and workspace-navigation boundaries.

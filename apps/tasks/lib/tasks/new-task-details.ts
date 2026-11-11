@@ -5,6 +5,8 @@ import type { TaskActivity } from "@/lib/activity/activity-types";
 import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import { attachmentUrlName } from "./task-attachment-urls";
 import { mutate } from "@/lib/mutation-client";
+import { withRecordedRows } from "@/lib/activity/activity-state";
+import { mergeTaskAttachments } from "./task-attachment-state";
 
 export async function persistNewTaskDetails({
   taskId,
@@ -33,8 +35,7 @@ export async function persistNewTaskDetails({
           created_at: createdAt,
         })),
       ],
-      attachments: [
-        ...current.attachments,
+      attachments: mergeTaskAttachments(current.attachments, [
         ...draft.files.map((file) => ({
           id: crypto.randomUUID(),
           task_id: taskId,
@@ -57,7 +58,7 @@ export async function persistNewTaskDetails({
           created_by: current.currentProfile.id,
           created_at: createdAt,
         })),
-      ],
+      ]),
     }));
     return 0;
   }
@@ -129,11 +130,15 @@ export async function persistNewTaskDetails({
       failures += 1;
     }
   }
-  setData((current) => ({
-    ...current,
-    subtasks: [...current.subtasks, ...subtasks],
-    attachments: [...current.attachments, ...attachments],
-    activity: [...activity, ...current.activity],
-  }));
+  setData((current) =>
+    withRecordedRows(
+      { activity },
+      {
+        ...current,
+        subtasks: [...current.subtasks, ...subtasks],
+        attachments: mergeTaskAttachments(current.attachments, attachments),
+      },
+    ),
+  );
   return failures;
 }

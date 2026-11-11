@@ -13,6 +13,7 @@ import type {
   TaskLabel,
 } from "@/lib/tasks/task-types";
 import type { TaskActivity } from "@/lib/activity/activity-types";
+import { mergeTaskAttachments } from "@/lib/tasks/task-attachment-state";
 import type { WorkspaceData } from "./workspace-types";
 import {
   eventRow,
@@ -143,13 +144,11 @@ export function reconcileAttachmentEvent(
   const existing = data.attachments.find((item) => item.id === attachment.id);
   return {
     ...data,
-    attachments: replaceByKey(
-      data.attachments,
+    attachments: mergeTaskAttachments(data.attachments, [
       existing?.file_path === attachment.file_path
         ? { ...attachment, url: existing.url }
         : attachment,
-      (item) => item.id,
-    ).sort((a, b) => a.created_at.localeCompare(b.created_at)),
+    ]).sort((a, b) => a.created_at.localeCompare(b.created_at)),
   };
 }
 

@@ -9,23 +9,16 @@ import {
   attachUrl,
   deleteAttachment,
   uploadAttachment,
-  type AttachmentResult,
 } from "@/lib/tasks/task-detail-mutations";
+import {
+  mergeTaskAttachments,
+  withTaskAttachment,
+} from "@/lib/tasks/task-attachment-state";
 import { useWorkspaceWrite } from "@/hooks/useWorkspaceWrite";
 import { withRecordedRows } from "@/lib/activity/activity-state";
 import { errorMessage } from "@/lib/presentation";
 import type { TaskAttachment } from "@/lib/tasks/task-types";
-import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import type { TaskDetailContext } from "./task-detail-context";
-
-/** Files the server accepted, plus the audit row it wrote for them. */
-const withAttachment =
-  (result: AttachmentResult) =>
-  (current: WorkspaceData): WorkspaceData =>
-    withRecordedRows(result, {
-      ...current,
-      attachments: [...current.attachments, result.attachment],
-    });
 
 export function useTaskAttachments({
   task,
@@ -55,7 +48,7 @@ export function useTaskAttachments({
   async function addLocally(attachment: TaskAttachment) {
     setData((current) => ({
       ...current,
-      attachments: [...current.attachments, attachment],
+      attachments: mergeTaskAttachments(current.attachments, [attachment]),
     }));
     await recordActivity(`attached “${attachment.name}”`);
   }
@@ -75,7 +68,7 @@ export function useTaskAttachments({
       });
       return;
     }
-    setData(withAttachment(await uploadAttachment(task.id, file)));
+    setData(withTaskAttachment(await uploadAttachment(task.id, file)));
   }
 
   async function upload(files: File[]) {
@@ -110,6 +103,7 @@ export function useTaskAttachments({
   }
 
   async function addUrl() {
+    if (addingUrl) return;
     const normalized = normalizeHttpUrl(url);
     if (!normalized) {
       toast.error("Enter a valid web address.");
@@ -135,7 +129,7 @@ export function useTaskAttachments({
           created_at: new Date().toISOString(),
         });
       } else {
-        setData(withAttachment(await attachUrl(task.id, normalized)));
+        setData(withTaskAttachment(await attachUrl(task.id, normalized)));
       }
       setUrl("");
       toast.success("URL attached.");
@@ -157,7 +151,7 @@ export function useTaskAttachments({
       }),
       revert: (current) => ({
         ...current,
-        attachments: [...current.attachments, item],
+        attachments: mergeTaskAttachments(current.attachments, [item]),
       }),
       persist: demoMode ? undefined : () => deleteAttachment(item.id),
       reconcile:
