@@ -109,7 +109,7 @@ const Layout = (props: LayoutProps) => {
         icon={<FiSun className="h-7 w-7" aria-hidden />}
       />
 
-      <RyanMeetupFooter className={layoutPaddingX} />
+      <RyanMeetupFooter className={layoutPaddingX} followColumn={false} />
     </main>
   );
 };
