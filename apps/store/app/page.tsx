@@ -5,7 +5,7 @@ import {
   SectionHeader,
   Text,
 } from "@ryanmeetup/ui";
-import { FiArrowRight, FiPenTool, FiShield, FiTruck } from "react-icons/fi";
+import { FiArrowRight } from "react-icons/fi";
 import { HomeCollectionTiles } from "@/components/home-collection-tiles";
 import { HomeSpotlight } from "@/components/home-spotlight";
 import { ProductGrid } from "@/components/product-grid";
@@ -122,18 +122,6 @@ export default async function HomePage() {
           <ProductGrid products={favorites.products} eagerCount={0} className={gridColumns} />
         </section>
       )}
-
-      <section className="border-y border-black/10 bg-white/45 dark:border-white/10 dark:bg-white/[0.025]">
-        <div className="store-container grid gap-8 py-12 sm:grid-cols-3 sm:py-16">
-          {[
-            { icon: <FiPenTool />, title: "Designed by Ryan", text: "Original Ryan Meetup designs." },
-            { icon: <FiShield />, title: "Secure checkout", text: "Payment and tax are handled by Shopify." },
-            { icon: <FiTruck />, title: "Tracked delivery", text: "Shipping updates arrive right in your inbox." },
-          ].map((item) => (
-            <div key={item.title} className="flex gap-4"><span className="mt-1 text-xl text-nametag">{item.icon}</span><div><h2 className="font-cooper text-xl tracking-wide">{item.title}</h2><Text className="mt-1 text-sm">{item.text}</Text></div></div>
-          ))}
-        </div>
-      </section>
     </main>
   );
 }
