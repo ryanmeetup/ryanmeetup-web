@@ -257,6 +257,10 @@ On a saved task, each checklist item can now be renamed in place or copied to th
 
 Pages with tooltips no longer fail to load when their content arrives from the server.
 
+### Search stays readable on small screens
+
+The header search leaves more room for its placeholder when its clear and loading controls are hidden.
+
 ## Under the hood
 
 The latest organization work reuses the project lifecycle, archive, dropdown, and sortable-list foundations already in the app. Proximity-based dropdown options remain visible while navigating long menus, and the board's drag behavior is covered at the mutation and workspace-navigation boundaries.
