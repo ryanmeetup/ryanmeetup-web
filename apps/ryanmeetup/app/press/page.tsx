@@ -99,7 +99,6 @@ const PressPage = async () => {
       />
       <div className={`pt-8 ${layoutPaddingX}`}>
         <Blurb
-          tag="Press"
           fullHeadline="RYAN MEETUP"
           smallHeadline="RYAN MEETUP"
         >

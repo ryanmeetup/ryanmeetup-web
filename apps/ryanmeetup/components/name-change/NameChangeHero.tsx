@@ -9,7 +9,6 @@ import { contactHrefs } from "@/utils/contact";
 const NameChangeHero = () => {
   return (
     <Blurb
-      tag="Change your name to Ryan"
       fullHeadline="Name Change Paperwork"
       smallHeadline="Name Change Paperwork"
       href={contactHrefs.nameChangePaperwork}
