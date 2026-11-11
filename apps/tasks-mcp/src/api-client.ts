@@ -75,7 +75,7 @@ export async function callRmtReadApi(
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Request failed";
-    throw new Error(`RMT Tasks could not be reached: ${message}`);
+    throw new Error(`RMT Tasks could not be reached: ${message}`, { cause: error });
   }
 
   let body: unknown;

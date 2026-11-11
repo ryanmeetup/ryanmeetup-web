@@ -75,4 +75,19 @@ describe("RMT read API client", () => {
       }),
     ).rejects.toThrow(/valid MCP read token/);
   });
+
+  it("preserves the cause when the request fails", async () => {
+    const cause = new Error("Connection closed");
+    const request = vi.fn().mockRejectedValue(cause);
+
+    await expect(
+      callRmtReadApi("list_tasks", {}, {
+        fetch: request,
+        token: "t".repeat(32),
+      }),
+    ).rejects.toMatchObject({
+      message: "RMT Tasks could not be reached: Connection closed",
+      cause,
+    });
+  });
 });
