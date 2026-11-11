@@ -223,6 +223,31 @@ type ContactFormFields = {
   message: string;
 };
 
+/**
+ * One host team in the Ryan Baseball Classic (Contentful `baseballTeam`).
+ * Each team hosts a single Ryan night. `servesStates` and `servesCities` list
+ * the places without a team of their own that this one covers, so a Vermont
+ * Ryan filtering by state still finds the closest game.
+ */
+type BaseballTeam = {
+  name: string;
+  slug: string;
+  logo: ContentfulImage;
+  city: string;
+  /** Two-letter postal abbreviation, e.g. "NH". */
+  state: string;
+  venue?: string;
+  coordinates: {
+    lat: number;
+    lon: number;
+  };
+  /** ISO date, e.g. "2027-06-12". */
+  gameDate: string;
+  ticketUrl: string;
+  servesStates?: string[];
+  servesCities?: string[];
+};
+
 type Charity = {
   title: string;
   amount: string;
@@ -251,4 +276,5 @@ export type {
   Testimonial,
   Charity,
   EventFlyer,
+  BaseballTeam,
 };

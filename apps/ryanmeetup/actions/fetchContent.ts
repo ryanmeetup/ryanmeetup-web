@@ -244,7 +244,26 @@ const fetchFlyers = unstable_cache(
   { revalidate: CMS_REVALIDATE_SECONDS },
 );
 
+// The `baseballTeam` content type may not exist in Contentful yet, and the
+// Classic page is unlisted until it does; callers treat a rejection as "no
+// teams announced" rather than as fixture data.
+const fetchBaseballTeams = unstable_cache(
+  async () => {
+    const data = await client.getEntries({
+      content_type: "baseballTeam",
+      // @ts-ignore -- the SDK's order typing only accepts sys fields without a content type generic.
+      order: "fields.gameDate",
+      limit: 1000,
+    });
+
+    return data.items.map((entry) => entry.fields);
+  },
+  ["contentful-baseball-teams"],
+  { revalidate: CMS_REVALIDATE_SECONDS },
+);
+
 export {
+  fetchBaseballTeams,
   fetchEvents,
   fetchFAQs,
   fetchArticles,
