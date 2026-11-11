@@ -19,7 +19,7 @@
     "postinstall": "node scripts/apply-patches.cjs"
   },
   "engines": {
-    "node": ">=20.9.0"
+    "node": "^22.13.0 || ^24.0.0 || >=26.0.0"
   },
   "dependencies": {
     "patch-package": "^8.0.1"

@@ -12,10 +12,16 @@ system.
 
 ## Local development
 
+Use Node.js 22.13 or later on a supported release line (22, 24, or 26+).
 Install all dependencies from the repository root with `npm install`, then run
 either application with `npm run dev:ryanmeetup` or `npm run dev:ryancon`.
 
 Use `npm run build` to build every workspace.
+
+Type checks use TypeScript 7 through the `@typescript/native` npm alias, which
+provides `tsc`. The `typescript` dependency aliases `@typescript/typescript6`
+so Next.js and ESLint can still use the compiler API that TypeScript 7 does
+not yet provide. Keep both aliases together when updating the toolchain.
 
 ## Vercel
 

@@ -10,30 +10,31 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
-    "@emailjs/browser": "^4.4.1",
-    "@headlessui/react": "^2.2.4",
+    "@emailjs/browser": "^5.0.3",
+    "@headlessui/react": "^2.2.10",
     "@ryanmeetup/contact": "*",
     "@ryanmeetup/sponsors": "*",
     "@ryanmeetup/brand": "*",
     "@ryanmeetup/ui": "*",
     "@ryanmeetup/utils": "*",
-    "contentful": "^11.7.3",
-    "next": "^16.2.12",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
+    "contentful": "^11.12.10",
+    "next": "^16.4.6",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "react-fast-marquee": "^1.6.5",
-    "react-hook-form": "^7.59.0",
-    "react-hot-toast": "^2.5.2",
-    "react-icons": "^5.5.0"
+    "react-hook-form": "^7.92.0",
+    "react-hot-toast": "^2.6.1",
+    "react-icons": "^5.7.0"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.3.3",
-    "@types/node": "^25.7.0",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
-    "eslint": "9.39.5",
-    "eslint-config-next": "16.2.12",
-    "tailwindcss": "^4.3.3",
-    "typescript": "6.0.3"
+    "@tailwindcss/postcss": "^4.3.5",
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "eslint": "10.14.0",
+    "eslint-config-next": "16.4.6",
+    "tailwindcss": "^4.3.5",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "@typescript/native": "npm:typescript@^7.0.2"
   }
 }

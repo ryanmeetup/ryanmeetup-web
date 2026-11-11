@@ -7,6 +7,6 @@
     ".": "./src/index.ts"
   },
   "peerDependencies": {
-    "next": "^16.2.12"
+    "next": "^16.4.6"
   }
 }
