@@ -207,7 +207,7 @@ const EventsListPager = (props: EventsListPagerProps) => {
   return (
     <div className="space-y-4">
       {breadcrumbNode ? (
-        <div className="-mb-4 flex items-center">{breadcrumbNode}</div>
+        <div className="flex items-center">{breadcrumbNode}</div>
       ) : null}
 
       {sortedEvents.length === 0 ? (

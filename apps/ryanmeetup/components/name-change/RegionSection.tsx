@@ -1,5 +1,5 @@
 // Components
-import { Heading, Kicker } from "@ryanmeetup/ui";
+import { Kicker, SectionHeader } from "@ryanmeetup/ui";
 import { RegionGrid } from "@/components/name-change/RegionGrid";
 
 // Types
@@ -18,12 +18,17 @@ const RegionSection = (props: RegionSectionProps) => {
 
   return (
     <section id={id} className="scroll-mt-24">
-      <div className="mb-4 flex items-center justify-between">
-        <Heading className="text-2xl title sm:text-3xl" size="h2">
-          {title}
-        </Heading>
-        <Kicker>{subtitle}</Kicker>
-      </div>
+      <SectionHeader
+        title={title}
+        meta={
+          <Kicker className="w-full lg:w-auto">
+            {subtitle}
+          </Kicker>
+        }
+        align="left"
+        className="mb-4"
+        headingClassName="text-2xl title sm:text-3xl"
+      />
       <RegionGrid items={items} region={region} />
     </section>
   );
