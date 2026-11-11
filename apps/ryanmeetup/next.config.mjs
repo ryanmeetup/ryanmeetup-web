@@ -34,6 +34,11 @@ const nextConfig = {
         hostname: "play-lh.googleusercontent.com",
         port: "",
       },
+      {
+        protocol: "https",
+        hostname: "cdn.shopify.com",
+        port: "",
+      },
     ],
   },
 };
