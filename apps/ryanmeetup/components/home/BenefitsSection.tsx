@@ -1,47 +1,71 @@
-// Components
+import NextLink from "next/link";
+
 import { Card, Heading, Text } from "@ryanmeetup/ui";
+import { GoArrowRight as ArrowRight } from "react-icons/go";
 
-const BenefitsSection = () => {
-  const benefits = [
-    "Meet Ryans in your city and make instant connections.",
-    "Get invites to unique meetups and themed events.",
-    "Find your local chapter and help shape the community.",
-  ];
-  const reasons = [
-    "Build a real-world network beyond group chats.",
-    "Show up to memorable themed gatherings and pop-up surprises.",
-    "Help Ryan Meetup reach record-breaking scale.",
-  ];
-  const items = [...benefits, ...reasons];
+// Real next steps rather than claims about the community: each one goes to a
+// page where a visitor can actually act on it.
+const steps = [
+  {
+    title: "Find your chapter",
+    body: "Local Ryans, local meetups. See which cities already have one.",
+    href: "/chapters",
+  },
+  {
+    title: "Come to the next event",
+    body: "See what's on the calendar and RSVP while there's room.",
+    href: "/events/upcoming",
+  },
+  {
+    title: "Get the newsletter",
+    body: "New events, new chapters, and big Ryan news, straight to your inbox.",
+    href: "/newsletter",
+  },
+] as const;
 
-  return (
-    <section className="relative overflow-hidden">
-      <Card className="p-6 lg:p-8" hover={false} size="md" variant="soft">
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Heading className="text-4xl title" size="h3">
-              More than just a meetup.
-            </Heading>
-            <Text className="text-base text-black/70 dark:text-white/70">
-              Connect with Ryans in your area and join events that bring the
-              community together.
-            </Text>
-          </div>
+const BenefitsSection = () => (
+  <section className="space-y-6" aria-labelledby="get-involved-heading">
+    <div className="space-y-2">
+      <Heading id="get-involved-heading" className="text-4xl title" size="h2">
+        Get involved
+      </Heading>
+      <Text className="text-base text-black/70 dark:text-white/70">
+        Three ways to go from reading about Ryans to meeting them.
+      </Text>
+    </div>
 
-          <div className="columns-1 gap-4 lg:columns-2">
-            {items.map((item) => (
-              <div key={item} className="mb-3 break-inside-avoid">
-                <div className="flex items-start gap-3 rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-sm text-black/80 dark:border-white/10 dark:bg-white/5 dark:text-white/80">
-                  <span className="mt-1 inline-flex h-2.5 w-2.5 shrink-0 rounded-full bg-black/70 dark:bg-white/70" />
-                  <Text className="text-sm">{item}</Text>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </Card>
-    </section>
-  );
-};
+    <ul className="grid gap-4 lg:grid-cols-3">
+      {steps.map((step) => (
+        <li key={step.href}>
+          <NextLink
+            href={step.href}
+            className="group block h-full rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40 dark:focus-visible:ring-white/40"
+          >
+            <Card
+              variant="soft"
+              size="md"
+              hover
+              className="flex h-full flex-col gap-2"
+            >
+              <Heading
+                className="flex items-center justify-between gap-3 text-2xl title"
+                size="h3"
+              >
+                {step.title}
+                <ArrowRight
+                  aria-hidden
+                  className="h-5 w-5 shrink-0 transition-transform motion-safe:group-hover:translate-x-1"
+                />
+              </Heading>
+              <Text className="text-sm text-black/70 dark:text-white/70">
+                {step.body}
+              </Text>
+            </Card>
+          </NextLink>
+        </li>
+      ))}
+    </ul>
+  </section>
+);
 
 export { BenefitsSection };
