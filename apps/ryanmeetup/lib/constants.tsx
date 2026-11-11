@@ -118,12 +118,6 @@ export const routes = [
         description: "Check out upcoming meetups and RSVP details.",
       },
       {
-        icon: <Party />,
-        text: "Rytoberfest",
-        href: "/rytoberfest",
-        description: "Find the Rytoberfest celebration nearest you.",
-      },
-      {
         icon: <Group />,
         text: "Chapters",
         href: "/chapters",

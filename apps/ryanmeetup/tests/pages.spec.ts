@@ -1,5 +1,10 @@
 import { test, expect } from "@playwright/test";
 
+test("removed Rytoberfest route returns 404", async ({ request }) => {
+  const response = await request.get("/rytoberfest");
+  expect(response.status()).toBe(404);
+});
+
 test("missing pages offer a way back to meetups", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("bryanCheck", "true"));
   const response = await page.goto("/missing-ryan-page");
@@ -30,7 +35,6 @@ const contentRoutes = [
   { path: "/map" },
   { path: "/press" },
   { path: "/rsvp", expectText: "Ryan Meetup returns to California" },
-  { path: "/rytoberfest" },
   { path: "/sponsors" },
   { path: "/sponsors/partnerships" },
 ];
