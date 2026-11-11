@@ -321,6 +321,24 @@ test("customer can browse the merch hero gallery", async ({ page }) => {
   await expect(page.getByText("Ryan’s Game Show")).toBeVisible();
 });
 
+test("the home page opens doors to collections, spotlights one listing, and keeps favorites short", async ({ page }) => {
+  await page.goto("/");
+  const main = page.getByRole("main");
+  const lanes = main.getByRole("region", { name: "Pick your Ryan lane" });
+  await expect(lanes.getByRole("listitem")).toHaveCount(2);
+  await expect(lanes.getByRole("link", { name: /Apparel/ })).toHaveAttribute("href", "/collections/apparel");
+
+  const spotlight = main.getByRole("region", { name: "New arrival" });
+  await expect(spotlight.getByRole("heading", { name: "Name Tag Shirt" })).toBeVisible();
+  await spotlight.getByRole("link", { name: "Take a closer look" }).click();
+  await expect(page).toHaveURL(/\/products\/name-tag-shirt/);
+
+  await page.goBack();
+  const favorites = main.getByRole("region", { name: "Best Sellers" });
+  await expect(favorites.getByRole("heading", { level: 3 })).toHaveCount(4);
+  await expect(favorites.getByRole("heading", { name: "Name Tag Shirt" })).toHaveCount(0);
+});
+
 test("customer can open store support and enter order details", async ({
   page,
 }) => {

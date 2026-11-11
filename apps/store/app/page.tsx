@@ -7,8 +7,9 @@ import {
   Text,
 } from "@ryanmeetup/ui";
 import { FiArrowRight, FiPenTool, FiShield, FiTruck } from "react-icons/fi";
+import { HomeCollectionTiles } from "@/components/home-collection-tiles";
+import { HomeSpotlight } from "@/components/home-spotlight";
 import { ProductGrid } from "@/components/product-grid";
-import { collectionHeading } from "@/lib/catalog-collections";
 import { getHomeCatalog } from "@/lib/shopify";
 
 export const revalidate = 300;
@@ -36,12 +37,11 @@ const heroPhotos = [
   },
 ];
 
-// Four columns at xl and two below keep the four-listing sections and eight favorites
-// in full rows.
+// Four columns at xl and two below keep the four favorites in full rows.
 const gridColumns = "mt-8 sm:grid-cols-2 xl:grid-cols-4";
 
 export default async function HomePage() {
-  const { featured, sections, more } = await getHomeCatalog();
+  const { spotlight, favorites, collections } = await getHomeCatalog();
   return (
     <main>
       <section className="store-container py-8 sm:py-12 lg:py-16">
@@ -89,30 +89,41 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section id="collections" className="store-container py-10 sm:py-14">
-        <SectionHeader title={collectionHeading(featured.collection.title)} description={featured.collection.description} meta="Featured goods" />
-        <ProductGrid products={featured.products} className={gridColumns} />
-      </section>
-
-      {sections.map(({ collection, products, total }) => (
-        <section key={collection.id} aria-labelledby={`collection-${collection.handle}`} className="store-container py-10 sm:py-14">
+      {collections.length > 0 && (
+        <section id="collections" aria-labelledby="home-collections" className="store-container scroll-mt-24 py-10 sm:py-14">
           <SectionHeader
-            title={<span id={`collection-${collection.handle}`}>{collectionHeading(collection.title)}</span>}
-            description={collection.description || undefined}
+            title={<span id="home-collections">Pick your Ryan lane</span>}
+            description="Every collection, one tap away. The full shelf lives on Shop all."
+            meta="Collections"
             actions={
-              <Button.Link href={`/collections/${collection.handle}`} size="md" variant="secondary" className="!w-full sm:!w-auto" rightIcon={<FiArrowRight />}>
-                {total > products.length ? `See all ${total}` : "View collection"}
+              <Button.Link href="/collections/all" size="md" variant="secondary" className="!w-full sm:!w-auto" rightIcon={<FiArrowRight />}>
+                Shop all
               </Button.Link>
             }
           />
-          <ProductGrid products={products} eagerCount={0} className={gridColumns} />
+          <div className="mt-8"><HomeCollectionTiles tiles={collections} /></div>
         </section>
-      ))}
+      )}
 
-      {more.length > 0 && (
-        <section className="store-container py-10 sm:py-14">
-          <SectionHeader title="More Ryan goods" description="Everything else on the shelf." meta="Also available" />
-          <ProductGrid products={more} eagerCount={0} className={gridColumns} />
+      {spotlight && (
+        <section aria-label={spotlight.label} className="store-container py-10 sm:py-14">
+          <HomeSpotlight spotlight={spotlight} />
+        </section>
+      )}
+
+      {favorites.products.length > 0 && (
+        <section aria-labelledby="home-favorites" className="store-container py-10 sm:py-14">
+          <SectionHeader
+            title={<span id="home-favorites">{favorites.collection.title}</span>}
+            description={favorites.collection.description}
+            meta="Ryan favorites"
+            actions={favorites.total > favorites.products.length && (
+              <Button.Link href="/collections/all" size="md" variant="secondary" className="!w-full sm:!w-auto" rightIcon={<FiArrowRight />}>
+                See everything
+              </Button.Link>
+            )}
+          />
+          <ProductGrid products={favorites.products} eagerCount={0} className={gridColumns} />
         </section>
       )}
 

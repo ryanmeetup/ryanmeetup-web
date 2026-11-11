@@ -32,13 +32,23 @@ type ProductNode = Omit<Product, "images" | "variants"> & {
 };
 type CollectionMembership = CollectionSummary & { products: Connection<{ handle: string }> };
 
-export type HomeCatalog = CatalogSections & { featured: CollectionSection };
+/** One listing given the home page's spotlight. `description` is the spotlight collection's own copy, when it has some. */
+export type HomeSpotlight = { listing: ProductListing; label: string; description: string; curated: boolean };
+/** A doorway into a collection: its lead image and how many listings wait inside. */
+export type HomeCollectionTile = { collection: CollectionSummary; image: StoreImage | null; total: number };
+export type HomeCatalog = {
+  spotlight: HomeSpotlight | null;
+  favorites: CollectionSection;
+  collections: HomeCollectionTile[];
+};
 
 // Shopify's built-in home page collection (named Best Sellers in Shopify) holds
 // hand-picked favorites rather than a browsing department.
 const featuredCollectionHandle = "frontpage";
-const featuredLimit = 8;
-const sectionLimit = 4;
+// A Shopify collection whose first listing leads the home page as the featured drop.
+// Without one, the newest listing takes the spot.
+const spotlightCollectionHandle = "spotlight";
+const favoritesLimit = 4;
 
 const imageFields = "url altText width height";
 const variantFields = `
@@ -208,7 +218,7 @@ export async function getCollections(): Promise<CollectionSummary[]> {
 }
 
 function isBrowsingCollection(collection: Pick<CollectionSummary, "handle">) {
-  return collection.handle !== featuredCollectionHandle && !getCatalogCollection(collection.handle);
+  return collection.handle !== featuredCollectionHandle && collection.handle !== spotlightCollectionHandle && !getCatalogCollection(collection.handle);
 }
 
 // Follows Shopify's cursors to the last page and fails rather than returning a partial
@@ -322,22 +332,51 @@ function sectionListings(listings: ProductListing[], memberships: CollectionMemb
   return { sections, more: sections.length ? listings.filter((listing) => !sectioned.has(listing.id)) : [] };
 }
 
+// A tile shows the collection's own Shopify image, else its first Shopify listing's photo;
+// off-Shopify listings are cutouts that read poorly as a cover.
+function getCollectionTile({ collection, products, total }: CollectionSection): HomeCollectionTile {
+  const lead = products.find((listing) => !listing.externalUrl && listing.featuredImage) ?? products.find((listing) => listing.featuredImage);
+  return { collection, image: collection.image ?? lead?.featuredImage ?? null, total };
+}
+
+// With no Shopify collections (preview mode), the type pages are the ways in.
+function getTypeCollectionSections(listings: ProductListing[]): CollectionSection[] {
+  return catalogCollections.flatMap((collection) => {
+    if (collection.productType === null) return [];
+    const products = listings.filter((listing) => isInCatalogCollection(collection, listing));
+    return products.length ? [{ collection: getCatalogCollectionSummary(collection), products, total: products.length }] : [];
+  });
+}
+
+function getSpotlight(listings: ProductListing[], memberships: CollectionMembership[]): HomeSpotlight | null {
+  const curated = memberships.find((collection) => collection.handle === spotlightCollectionHandle);
+  const [pick] = curated ? getListingsInCollection(listings, curated.products.edges.map(({ node }) => node.handle)) : [];
+  if (curated && pick) return { listing: pick, label: curated.title || "Featured drop", description: curated.description, curated: true };
+  const newest = listings.filter((listing) => listing.availableForSale).sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""))[0];
+  return newest ? { listing: newest, label: "New arrival", description: "", curated: false } : null;
+}
+
 export async function getHomeCatalog(): Promise<HomeCatalog> {
   const configured = isShopifyConfigured();
   const [products, memberships] = configured
     ? await Promise.all([getCatalogProducts(null), getCollectionMemberships()])
     : [demoProducts, []];
   const listings = groupProductListings(products);
+  const spotlight = getSpotlight(listings, memberships);
 
   const favorites = memberships.find((collection) => collection.handle === featuredCollectionHandle);
   const picks = favorites ? getListingsInCollection(listings, favorites.products.edges.map(({ node }) => node.handle)) : [];
   const curated = picks.length ? favorites : undefined;
-  // Without hand-picked favorites, fall back to the actual best sellers.
-  const featured = curated ? picks : listings;
-  const { sections, more } = sectionListings(listings, memberships);
+  // Without hand-picked favorites, fall back to the actual best sellers. The spotlight
+  // already has the page's attention, so it sits this row out unless nothing else would fill it.
+  const candidates = curated ? picks : listings;
+  const others = candidates.filter((listing) => listing.id !== spotlight?.listing.id);
+  const featured = others.length ? others : candidates;
+  const { sections } = sectionListings(listings, memberships);
 
   return {
-    featured: {
+    spotlight,
+    favorites: {
       collection: {
         id: curated?.id ?? "featured",
         handle: featuredCollectionHandle,
@@ -345,11 +384,10 @@ export async function getHomeCatalog(): Promise<HomeCatalog> {
         description: curated?.description || "Popular picks, pulled straight from the official catalog.",
         image: null,
       },
-      products: featured.slice(0, featuredLimit),
+      products: featured.slice(0, favoritesLimit),
       total: featured.length,
     },
-    sections: sections.map((section) => ({ ...section, products: section.products.slice(0, sectionLimit) })),
-    more,
+    collections: (sections.length ? sections : getTypeCollectionSections(listings)).map(getCollectionTile),
   };
 }
 

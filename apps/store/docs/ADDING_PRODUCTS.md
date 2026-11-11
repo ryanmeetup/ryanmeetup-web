@@ -13,7 +13,7 @@ what customers see:
 | --- | --- |
 | **Status** and **Sales channels** | Whether the product appears at all. |
 | **Product type** | Whether it appears on the **Apparel** or **Accessories** page. |
-| **Collections** | Which section of the home page it appears in, and which collection page lists it. |
+| **Collections** | Which collection page lists it, and whether the home page features it. |
 | **`listing:` tag** | Whether it is combined with similar products into one listing with a **Style** dropdown. |
 | **Title** | The product name, and the option name in that Style dropdown. |
 | **`designer:` tags** | The names credited under **Designed by Ryan** on the product page. |
@@ -47,7 +47,7 @@ Create and sync the product through Printful as usual, then open it in Shopify
 8. **Designer credits.** Add a `designer:Ryan Name` tag for each contributor you
    want to credit. See [Designer credits](#designer-credits).
 9. **Check the store** after about 5 minutes: the product's page, its collection
-   section on the home page, and the Apparel or Accessories page.
+   page, and the Apparel or Accessories page.
 
 ## Designer credits
 
@@ -148,24 +148,35 @@ General conventions:
 ## Collections
 
 Collections are how the store is organized into themes, and they build the home
-page. There are two kinds.
+page. There are three kinds.
 
 **Design collections**: currently **I ❤️ RY**, **Name Tag**, and **Ryan
-Classics**. Each one gets its own section on the home page (showing its first
-four listings, with a link to see all) and its own page.
+Classics**. Each one gets its own page and a tile on the home page that leads
+there. The tile shows the collection's image from Shopify, or its first
+product's photo when it has none.
 
 - Add **every** product to a design collection. A product in none of them still
-  appears on the Apparel/Accessories pages, but on the home page and Collections it
-  falls into a catch-all "More Ryan goods" section at the bottom.
+  appears on the Apparel/Accessories pages, but under Collections it falls into
+  a catch-all "More Ryan goods" section at the bottom.
 - Add products from the product page (**Product organization → Collections**),
   or select several in the **Products** list and use **More actions → Add to
   collection(s)**.
 - The order of products inside a collection in Shopify is the order on the store.
 
-**Best Sellers** is special. It is the featured section at the top of the home
-page, showing up to **eight** listings in the collection's order. Use it for
-hand-picked highlights, not every product. If it is ever empty, the store shows
-the actual best-selling products there instead.
+**Best Sellers** is special. It is the favorites row on the home page, showing
+up to **four** listings in the collection's order. Use it for hand-picked
+highlights, not every product. If it is ever empty, the store shows the actual
+best-selling products there instead.
+
+**Spotlight** is special too. Create a manual collection with the handle
+`spotlight` (published to Ryan Meetup Store Headless) and its **first** product
+becomes the large featured drop on the home page. The collection's title is the
+small label above the product name (for example *Fresh off the press*), and its
+description, if any, replaces the product's own intro. To change the drop,
+reorder or swap the product; to retire it, empty the collection. With no
+spotlight product, the newest in-stock listing takes the spot as a *New
+arrival*. The spotlight product sits out the favorites row so it isn't shown
+twice, and the collection itself never gets a tile or a menu entry.
 
 **To create a new design collection:**
 
@@ -177,10 +188,10 @@ the actual best-selling products there instead.
    does not appear on the store.
 5. Save, then add products to it.
 
-Its home page section appears automatically; sections are ordered alphabetically
-by title. Don't give a collection the handle `all`, `apparel`, or `accessories`;
+Its home page tile appears automatically; tiles are ordered alphabetically by
+title. Don't give a collection the handle `all`, `apparel`, or `accessories`;
 those addresses belong to the store's own Collections, Apparel, and Accessories
-pages.
+pages. `frontpage` and `spotlight` are reserved for Best Sellers and Spotlight.
 
 ## Tags
 
@@ -195,9 +206,9 @@ if they help you; they can also be left off entirely.
 | Collections | Active and on the Ryan Meetup Store Headless channel; grouped under each design collection it is in |
 | Apparel page | Product type `Apparel` |
 | Accessories page | Product type `Accessory` |
-| Home page, top section | In the Best Sellers collection (up to eight shown) |
-| Home page, collection sections | In that design collection (first four shown) |
-| Home page, "More Ryan goods" | In no design collection |
+| Home page, featured drop | First in the `spotlight` collection, otherwise the newest in-stock listing |
+| Home page, favorites row | In the Best Sellers collection (up to four shown) |
+| Home page, collection tile photo | First product in that design collection, unless the collection has its own image |
 | Collection page | In that collection |
 | Combined with other products | Same `listing:` tag |
 
@@ -207,9 +218,9 @@ if they help you; they can also be left off entirely.
 | --- | --- |
 | Product doesn't appear anywhere | Status is Active, it's on the **Ryan Meetup Store Headless** channel, and 5 minutes have passed. |
 | Missing from the Apparel or Accessories page | Product type is exactly `Apparel` or `Accessory`. |
-| Shows under "More Ryan goods" | It isn't in a design collection yet. |
+| Shows under "More Ryan goods" on Collections | It isn't in a design collection yet. |
 | Shows as its own card instead of joining a listing | It has the `listing:` tag, and the name after `listing:` matches the other products word for word. |
 | Style option shows the whole title | The listing name isn't in the title exactly. Fix the title or the tag so they match. |
 | Two Style options have the same name | Two products in the listing have titles that differ only in the listing name. Make the part after it unique. |
-| Collection doesn't appear on the home page | It's on the **Ryan Meetup Store Headless** channel and has at least one product. |
+| Collection has no home page tile | It's on the **Ryan Meetup Store Headless** channel and has at least one product. |
 | Wrong item printed or shipped | The product's Printful sync. Listings only change how products are displayed; they never change what Printful prints. |

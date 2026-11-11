@@ -20,7 +20,7 @@ test.afterEach(() => {
   else process.env.SHOPIFY_STOREFRONT_API_TOKEN = originalToken;
 });
 
-function mockCatalog(failDiscovery = false) {
+function mockCatalog(failDiscovery = false, spotlight: { handle: string }[] = []) {
   const requests: { query: string; variables: { handle?: string; query?: string | null; after?: string | null } }[] = [];
   globalThis.fetch = async (_input, init) => {
     const request = JSON.parse(String(init?.body));
@@ -39,7 +39,7 @@ function mockCatalog(failDiscovery = false) {
       data = { collections: { edges: [{ node: { id: "shopify-apparel", handle: "apparel", title: "Shopify Apparel", description: "", image: null } }, { node: { id: "frontpage", handle: "frontpage", title: "Home page", description: "", image: null } }, { node: { id: "shirts", handle: "shirts", title: "Shirts", description: "", image: null } }] } };
     } else if (request.query.includes("CollectionMemberships")) {
       const collection = (id: string, title: string, products: { handle: string }[]) => ({ node: { id, handle: id, title, description: "", image: null, products: { edges: products.map(({ handle }) => ({ node: { handle } })) } } });
-      data = { collections: { edges: [collection("apparel", "Shopify Apparel", [tee]), collection("frontpage", "Home page", [tee, dad]), collection("shirts", "Shirts", [mom]), collection("empty", "Empty", [])] } };
+      data = { collections: { edges: [collection("apparel", "Shopify Apparel", [tee]), collection("frontpage", "Home page", [tee, dad]), collection("shirts", "Shirts", [mom]), collection("empty", "Empty", []), ...(spotlight.length ? [collection("spotlight", "Fresh off the press", spotlight)] : [])] } };
     } else if (request.query.includes("CollectionHandles")) {
       data = { collections: { edges: [{ node: { handle: "shirts" } }, { node: { handle: "i-❤️-ry" } }] } };
     } else if (request.query.includes("query Collection(") && request.variables.handle === "i-❤️-ry") {
@@ -76,14 +76,31 @@ test("collection pages load every page and include tagged designs outside the co
   expect(await getCollection("frontpage")).toBeNull();
 });
 
-test("the home page features the home page collection and gives every other collection a section", async () => {
+test("the home page spotlights the newest listing, keeps it out of the favorites, and tiles every other collection", async () => {
   mockCatalog();
   const home = await getHomeCatalog();
-  expect(home.featured.collection.title).toBe("Home page");
-  expect(home.featured.products.map((product) => product.handle)).toEqual([tee.handle, "name-tag-shirt"]);
-  expect(home.featured.products[1].designs).toHaveLength(3);
-  expect(home.sections.map(({ collection, products, total }) => [collection.title, products.map((product) => product.handle), total])).toEqual([["Shirts", ["name-tag-shirt"], 1]]);
-  expect(home.more.map((product) => product.handle)).toEqual([tee.handle]);
+  expect(home.spotlight).toMatchObject({ label: "New arrival", curated: false });
+  expect(home.spotlight?.listing.handle).toBe("name-tag-shirt");
+  expect(home.favorites.collection.title).toBe("Home page");
+  expect(home.favorites.products.map((product) => product.handle)).toEqual([tee.handle]);
+  expect(home.collections.map(({ collection, image, total }) => [collection.title, image?.url, total])).toEqual([["Shirts", ryan.featuredImage!.url, 1]]);
+});
+
+test("a spotlight collection picks the featured drop and stays out of the collection tiles", async () => {
+  mockCatalog(false, [tee]);
+  const home = await getHomeCatalog();
+  expect(home.spotlight).toMatchObject({ label: "Fresh off the press", curated: true });
+  expect(home.spotlight?.listing.handle).toBe(tee.handle);
+  expect(home.favorites.products.map((product) => product.handle)).toEqual(["name-tag-shirt"]);
+  expect(home.collections.map(({ collection }) => collection.handle)).toEqual(["shirts"]);
+});
+
+test("without Shopify collections the home page tiles the type pages", async () => {
+  delete process.env.SHOPIFY_STORE_DOMAIN;
+  const home = await getHomeCatalog();
+  expect(home.collections.map(({ collection }) => collection.handle)).toEqual(["apparel", "accessories"]);
+  expect(home.collections.every(({ image }) => image)).toBe(true);
+  expect(home.favorites.products).toHaveLength(4);
 });
 
 test("shop all lists every product once and breaks it up into the home page's collection sections", async () => {
