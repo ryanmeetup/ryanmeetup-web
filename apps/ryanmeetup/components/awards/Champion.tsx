@@ -33,7 +33,7 @@ const Champion = (props: ChampionProps) => {
   const imageUrl = convertImageUrl(headshot);
 
   return (
-    <div className="group rounded-2xl border border-black/10 bg-white/90 p-6 text-center shadow-[0_25px_50px_-40px_rgba(0,0,0,0.6)] transition hover:-translate-y-1 hover:border-black/30 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/40">
+    <div className="group rounded-2xl border border-black/10 bg-white/90 p-6 text-center shadow-drop transition hover:-translate-y-1 hover:border-black/30 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/40">
       <div className="relative mx-auto mb-5 h-72 w-72 overflow-hidden rounded-full ring-1 ring-black/10 dark:ring-white/10">
         <NextImage
           className="rounded-full"
@@ -72,7 +72,7 @@ const Champion = (props: ChampionProps) => {
         )}
       </div>
       <Heading
-        className="mt-3 text-xl dark:text-white text-black tracking-[0.3em]"
+        className="mt-3 text-xl dark:text-white text-black tracking-caps-wide"
         size="h4"
       >
         {title}

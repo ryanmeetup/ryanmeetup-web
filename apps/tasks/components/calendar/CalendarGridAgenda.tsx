@@ -216,7 +216,7 @@ export function CalendarGridAgenda({
             {weekdays.map((day) => (
               <div
                 key={day}
-                className="px-2 py-2 text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-black/55 dark:text-white/55"
+                className="px-2 py-2 text-center text-[10px] font-semibold uppercase tracking-caps text-black/55 dark:text-white/55"
               >
                 {day}
               </div>
@@ -308,7 +308,7 @@ export function CalendarGridAgenda({
               >
                 {upcomingDates.slice(0, 6).map((date) => (
                   <div key={`upcoming:${date}`} className="space-y-1">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-black/50 dark:text-white/50">
+                    <p className="text-[10px] font-semibold uppercase tracking-caps-tight text-black/50 dark:text-white/50">
                       {dayFormatter.format(new Date(`${date}T00:00:00Z`))}
                     </p>
                     {renderDayItems(date, itemsOnDate(monthItems, date), 2)}

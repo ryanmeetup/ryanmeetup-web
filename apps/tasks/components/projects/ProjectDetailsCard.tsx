@@ -47,7 +47,7 @@ const groupCaps = { members: 6, links: 6, notes: 3, files: 3 } as const;
 
 function Subheading({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-black/45 dark:text-white/45">
+    <p className="mb-2 text-xs font-semibold uppercase tracking-caps-tight text-black/45 dark:text-white/45">
       {children}
     </p>
   );

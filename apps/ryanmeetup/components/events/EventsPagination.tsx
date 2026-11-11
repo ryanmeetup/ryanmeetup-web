@@ -85,7 +85,7 @@ const EventsPagination = (props: EventsPaginationProps) => {
               <button
                 type="button"
                 onClick={() => onPage(pageNumber)}
-                className={`h-8 w-8 rounded-full border text-[10px] font-semibold uppercase tracking-[0.2em] transition sm:h-9 sm:w-9 sm:text-xs ${
+                className={`h-8 w-8 rounded-full border text-[10px] font-semibold uppercase tracking-caps transition sm:h-9 sm:w-9 sm:text-xs ${
                   isActive
                     ? "border-black/70 bg-black text-white dark:border-white/50 dark:bg-white dark:text-black"
                     : "border-black/20 text-black/70 hover:border-black/40 hover:text-black dark:border-white/20 dark:text-white/70 dark:hover:border-white/40 dark:hover:text-white"

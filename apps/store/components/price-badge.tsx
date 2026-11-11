@@ -47,7 +47,7 @@ export function PriceBadge({ price, compareAt, from = false, size = "sm", classN
   return (
     <p id={id} aria-busy={loading || undefined} aria-describedby={converted ? noteId : undefined} className={`inline-grid max-w-full grid-cols-[minmax(0,1fr)_auto] overflow-hidden rounded-sm bg-price font-mono font-medium leading-none tabular-nums text-white ring-1 ring-inset ring-white/30 ${className}`}>
       <span className={`col-start-1 row-start-1 whitespace-nowrap font-semibold tracking-tight ${classes.price} ${compareAt ? classes.saleGap : classes.bottom}`}>
-        {from && <span className="mr-1.5 text-[0.65em] font-medium uppercase tracking-[0.12em]">From </span>}
+        {from && <span className="mr-1.5 text-[0.65em] font-medium uppercase tracking-caps-tight">From </span>}
         {converted && <span aria-hidden className="mr-1 text-[0.65em]">≈</span>}
         {formatMoney(displayed)}
       </span>{" "}
@@ -61,7 +61,7 @@ export function PriceBadge({ price, compareAt, from = false, size = "sm", classN
           aria-label={loading ? "Loading currency conversions" : `Prices in ${displayed.currencyCode}. Choose a currency`}
           aria-describedby={converted ? noteId : undefined}
           title={canConvert ? hint : `Currency conversion is unavailable for ${price.currencyCode} prices.`}
-          className={`pointer-events-auto col-start-2 row-span-2 row-start-1 inline-flex min-w-12 cursor-pointer items-center justify-center gap-1 self-stretch border-l border-white/25 bg-black/20 font-mono font-medium uppercase leading-none tracking-[0.12em] text-white transition hover:bg-black/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white disabled:cursor-not-allowed disabled:opacity-60 aria-busy:cursor-wait ${classes.currency}`}
+          className={`pointer-events-auto col-start-2 row-span-2 row-start-1 inline-flex min-w-12 cursor-pointer items-center justify-center gap-1 self-stretch border-l border-white/25 bg-black/20 font-mono font-medium uppercase leading-none tracking-caps-tight text-white transition hover:bg-black/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white disabled:cursor-not-allowed disabled:opacity-60 aria-busy:cursor-wait ${classes.currency}`}
         >
           {displayed.currencyCode}
           {loading
@@ -76,7 +76,7 @@ export function PriceBadge({ price, compareAt, from = false, size = "sm", classN
               aria-current={option === currency || undefined}
               onClick={() => void selectCurrency(option)}
             >
-              <span className="w-10 font-mono text-xs font-semibold tracking-[0.12em]">{option}</span>
+              <span className="w-10 font-mono text-xs font-semibold tracking-caps-tight">{option}</span>
               <span className="flex-1">{currencyNames[option]}</span>
               {option === currency && <FiCheck aria-label="Selected" className="h-4 w-4" />}
             </DropdownMenuItem>

@@ -14,7 +14,7 @@ export function AccountProvisioningError() {
         <ThemeToggle />
       </div>
       <Card className="w-full max-w-lg" size="lg">
-        <p className="mb-6 text-center font-cooper text-2xl uppercase tracking-[0.08em] sm:text-3xl">
+        <p className="mb-6 text-center font-cooper text-2xl uppercase tracking-caps-tight sm:text-3xl">
           <InstanceWordmark />
         </p>
         <Heading size="h1">Your account needs provisioning</Heading>

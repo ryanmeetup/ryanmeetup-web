@@ -108,7 +108,7 @@ export function ActivityRows({
       <div className="@min-[64rem]:hidden" aria-busy={loading}>
         {showMobileHeader && (
           <div className="border-b border-black/10 bg-black/[0.025] px-4 py-3 dark:border-white/10 dark:bg-white/[0.025]">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-black/50 dark:text-white/50">
+            <p className="text-[10px] font-semibold uppercase tracking-caps-tight text-black/50 dark:text-white/50">
               Activity
             </p>
           </div>
@@ -206,7 +206,7 @@ export function ActivityRows({
             <col className={showProject ? "w-[23%] xl:w-[30%]" : "w-[30%]"} />
             {showProject && <col className="w-[14%] xl:w-[15%]" />}
           </colgroup>
-          <thead className="border-b border-black/10 bg-black/[0.025] text-[10px] uppercase tracking-[0.16em] text-black/50 dark:border-white/10 dark:bg-white/[0.025] dark:text-white/50">
+          <thead className="border-b border-black/10 bg-black/[0.025] text-[10px] uppercase tracking-caps-tight text-black/50 dark:border-white/10 dark:bg-white/[0.025] dark:text-white/50">
             <tr>
               <th className="px-4 py-3 font-semibold">When</th>
               <th className="px-4 py-3 font-semibold">Who</th>

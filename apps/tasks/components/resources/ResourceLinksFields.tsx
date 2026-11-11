@@ -231,7 +231,7 @@ export function ResourceLinksFields({
 
       {editingIndex !== null && linkDraft && (
         <div className="mt-4 rounded-xl border border-blue-500/20 bg-blue-50/50 p-3 dark:border-blue-400/20 dark:bg-blue-950/20">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-blue-700 dark:text-blue-300">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-caps-tight text-blue-700 dark:text-blue-300">
             {editingIndex < links.length ? "Edit link" : "New link"}
           </p>
           <div className="grid gap-3 sm:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)]">

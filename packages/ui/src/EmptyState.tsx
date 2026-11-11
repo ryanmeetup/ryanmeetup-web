@@ -24,7 +24,7 @@ const EmptyState = ({
       {...props}
       className={`text-center ${variantStyles[variant]} ${className ?? ""}`}
     >
-      <span className="text-sm uppercase tracking-[0.2em] text-black/70 dark:text-white/70">
+      <span className="text-sm uppercase tracking-caps text-black/70 dark:text-white/70">
         {message}
       </span>
     </div>

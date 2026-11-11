@@ -27,7 +27,7 @@ const ContactPage = async ({ searchParams }: ContactPageProps) => {
 
   return (
     <Layout className="space-y-12">
-      <section className="relative overflow-hidden rounded-3xl border border-black/10 bg-white/80 p-6 shadow-[0_35px_70px_-50px_rgba(0,0,0,0.6)] dark:border-white/10 dark:bg-white/5 lg:p-10">
+      <section className="relative overflow-hidden rounded-3xl border border-black/10 bg-white/80 p-6 shadow-drop-lg dark:border-white/10 dark:bg-white/5 lg:p-10">
         <div className="absolute -right-24 -top-24 hidden h-64 w-64 rounded-full border border-black/10 bg-white/70 blur-3xl dark:border-white/10 dark:bg-white/10 lg:block" />
         <div className="absolute -bottom-24 left-10 hidden h-64 w-64 rounded-full border border-black/10 bg-white/60 blur-3xl dark:border-white/10 dark:bg-white/10 lg:block" />
         <div className="relative grid gap-10 xl:grid-cols-[1.05fr_0.95fr] xl:items-center xl:gap-16">
@@ -55,7 +55,7 @@ const ContactPage = async ({ searchParams }: ContactPageProps) => {
           <Card
             variant="solid"
             size="lg"
-            className="bg-white/95 shadow-[0_25px_50px_-40px_rgba(0,0,0,0.6)] dark:border-white/15 dark:bg-black/80 xl:bg-gradient-to-br xl:from-white/95 xl:to-white/75 xl:p-8 xl:shadow-[0_30px_70px_-45px_rgba(0,0,0,0.75)] dark:xl:from-white/10 dark:xl:to-white/[0.03]"
+            className="bg-white/95 shadow-drop dark:border-white/15 dark:bg-black/80 xl:bg-gradient-to-br xl:from-white/95 xl:to-white/75 xl:p-8 xl:shadow-drop-lg dark:xl:from-white/10 dark:xl:to-white/[0.03]"
           >
             <Heading className="text-2xl title xl:text-3xl" size="h2">
               Send a message

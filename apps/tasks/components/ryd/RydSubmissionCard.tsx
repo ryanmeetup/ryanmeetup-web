@@ -248,7 +248,7 @@ export function RydSubmissionCard({
           {submission.otherAnswers.map((entry, index) => (
             // Question titles may repeat; these parsed answers have no question ID.
             <div key={`${index}:${entry.question}`}>
-              <dt className="wrap-anywhere text-xs font-semibold uppercase tracking-[0.16em] text-black/60 dark:text-white/60">
+              <dt className="wrap-anywhere text-xs font-semibold uppercase tracking-caps-tight text-black/60 dark:text-white/60">
                 {entry.question}
               </dt>
               <dd className="mt-1 whitespace-pre-line wrap-anywhere text-sm">

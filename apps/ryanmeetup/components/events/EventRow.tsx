@@ -43,7 +43,7 @@ const EventRow = (props: EventRowProps) => {
     >
       <div className="flex items-start gap-3 sm:items-center sm:gap-4">
         <div className="mt-0.5 flex min-h-[44px] min-w-[44px] flex-col items-center justify-center rounded-xl border border-black/10 bg-black/5 px-2 py-1.5 text-black dark:border-white/10 dark:bg-white/10 dark:text-white sm:mt-0 sm:h-12 sm:w-12 sm:px-0 sm:py-0">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-black/70 dark:text-white/70">
+          <span className="text-[10px] font-semibold uppercase tracking-caps text-black/70 dark:text-white/70">
             {date.month}
           </span>
           <span className="text-lg font-semibold">{date.day}</span>
@@ -59,33 +59,33 @@ const EventRow = (props: EventRowProps) => {
             {(isNationalEvent || chapterTags.length > 0) && (
               <div className="order-1 flex flex-wrap items-center gap-2 sm:order-2">
                 {isNationalEvent && (
-                  <span className="inline-flex items-center rounded-full border border-amber-500/50 bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-700 shadow-sm dark:border-amber-300/60 dark:bg-amber-300/20 dark:text-amber-200">
+                  <span className="inline-flex items-center rounded-full border border-amber-500/50 bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-caps text-amber-700 shadow-sm dark:border-amber-300/60 dark:bg-amber-300/20 dark:text-amber-200">
                     National Event
                   </span>
                 )}
                 {visibleChapterTags.map((tag) => (
                   <span
                     key={tag}
-                    className="inline-flex items-center rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-700 shadow-sm dark:border-emerald-300/40 dark:bg-emerald-300/15 dark:text-emerald-200"
+                    className="inline-flex items-center rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-caps text-emerald-700 shadow-sm dark:border-emerald-300/40 dark:bg-emerald-300/15 dark:text-emerald-200"
                   >
                     {tag} Chapter
                   </span>
                 ))}
                 {remainingChapterCount > 0 && (
-                  <span className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/5 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-700/80 shadow-sm dark:border-emerald-300/30 dark:bg-emerald-300/10 dark:text-emerald-200/80">
+                  <span className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/5 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-caps text-emerald-700/80 shadow-sm dark:border-emerald-300/30 dark:bg-emerald-300/10 dark:text-emerald-200/80">
                     +{remainingChapterCount} more
                   </span>
                 )}
               </div>
             )}
           </div>
-          <Kicker className="tracking-[0.14em] sm:tracking-[0.2em]">
+          <Kicker className="!tracking-caps-tight sm:!tracking-caps">
             {formatEventLocationLabel(event, "en-US", false)}
             <span className="hidden sm:inline"> • {event.venue}</span>
           </Kicker>
         </div>
       </div>
-      <span className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-black/20 px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-black transition group-hover:border-black/40 group-hover:bg-black/5 dark:border-white/20 dark:text-white dark:group-hover:border-white/40 dark:group-hover:bg-white/10 sm:w-auto">
+      <span className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-black/20 px-3 py-2 text-xs font-semibold uppercase tracking-caps text-black transition group-hover:border-black/40 group-hover:bg-black/5 dark:border-white/20 dark:text-white dark:group-hover:border-white/40 dark:group-hover:bg-white/10 sm:w-auto">
         {showPartifulRsvp && (
           <NextImage
             src="/icons/partiful.webp"

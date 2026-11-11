@@ -133,7 +133,7 @@ export function SectionCard({
   return (
     <Card
       size="none"
-      className="overflow-hidden bg-white/90 shadow-[0_12px_35px_rgba(0,0,0,0.045)] dark:bg-white/[0.055] dark:shadow-none"
+      className="overflow-hidden bg-white/90 shadow-sm dark:bg-white/[0.055] dark:shadow-none"
     >
       <div
         className={`flex items-center gap-3 px-4 py-3.5 ${collapsed ? "" : "border-b border-black/[0.07] dark:border-white/10"}`}

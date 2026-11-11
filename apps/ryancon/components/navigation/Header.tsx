@@ -28,7 +28,7 @@ const Header = ({ className = "" }: { className?: string }) => {
       >
         <NextLink
           href="/"
-          className="title group flex items-center tracking-[0.2em] timing hover:scale-105"
+          className="title group flex items-center tracking-caps timing hover:scale-105"
         >
           <Wordmark name="RYANCON" />
         </NextLink>

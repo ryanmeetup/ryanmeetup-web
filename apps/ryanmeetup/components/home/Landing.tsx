@@ -115,7 +115,7 @@ const Overview = (props: { stats: StatItem[] }) => {
         <Heading className="text-3xl title order-2 sm:order-1" size="h2">
           RYAN MEETUP
         </Heading>
-        <div className="order-1 inline-flex items-center rounded-full border border-black/10 bg-black/5 px-3 py-1 text-[10px] uppercase tracking-[0.35em] text-black/70 dark:border-white/10 dark:bg-white/10 dark:text-white/70 sm:order-2">
+        <div className="order-1 inline-flex items-center rounded-full border border-black/10 bg-black/5 px-3 py-1 text-[10px] uppercase tracking-caps-wide text-black/70 dark:border-white/10 dark:bg-white/10 dark:text-white/70 sm:order-2">
           Established 2023
         </div>
       </div>
@@ -138,7 +138,7 @@ const Overview = (props: { stats: StatItem[] }) => {
                 {stat.value}
               </Heading>
             </div>
-            <Text className="w-full whitespace-nowrap text-left text-sm uppercase tracking-[0.12em] text-black/70 dark:text-white/70 sm:w-auto sm:tracking-[0.2em]">
+            <Text className="w-full whitespace-nowrap text-left text-sm uppercase tracking-caps-tight text-black/70 dark:text-white/70 sm:w-auto sm:tracking-caps">
               {stat.label}
             </Text>
           </NextLink>

@@ -51,7 +51,7 @@ export function GuestWelcomePage({
         />
         <div className="grid gap-4 md:grid-cols-2">
           <Card className="space-y-2">
-            <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-black/55 dark:text-white/55">
+            <h2 className="text-xs font-semibold uppercase tracking-caps text-black/55 dark:text-white/55">
               What happens next
             </h2>
             <p className="text-sm leading-6 text-black/70 dark:text-white/70">
@@ -61,7 +61,7 @@ export function GuestWelcomePage({
             </p>
           </Card>
           <Card className="space-y-3">
-            <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-black/55 dark:text-white/55">
+            <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-caps text-black/55 dark:text-white/55">
               <FiKey aria-hidden /> Need access?
             </h2>
             <p className="text-sm leading-6 text-black/70 dark:text-white/70">

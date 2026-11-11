@@ -104,7 +104,7 @@ export function SiteFooter({
               {wordmark ?? title}
             </Link>
             {subtitle && (
-              <p className="text-[11px] font-semibold uppercase tracking-[0.28em]">
+              <p className="text-[11px] font-semibold uppercase tracking-caps-wide">
                 {subtitle}
               </p>
             )}
@@ -130,7 +130,7 @@ export function SiteFooter({
           {socialLinks.length > 0 && (
             <div className="flex flex-col items-center gap-1 sm:items-end">
               {socialLabel && (
-                <h2 id="footer-social" className="text-[11px] font-semibold uppercase tracking-[0.28em]">
+                <h2 id="footer-social" className="text-[11px] font-semibold uppercase tracking-caps-wide">
                   {socialLabel}
                 </h2>
               )}
@@ -205,7 +205,7 @@ export function SiteFooter({
             >
               <h2
                 id={`footer-${section.title.toLowerCase().replaceAll(" ", "-")}`}
-                className="mb-4 text-xs font-semibold uppercase tracking-[0.3em] text-black/70 dark:text-white/70"
+                className="mb-4 text-xs font-semibold uppercase tracking-caps-wide text-black/70 dark:text-white/70"
               >
                 {section.title}
               </h2>
@@ -242,7 +242,7 @@ export function SiteFooter({
             {socialLabel && (
               <h2
                 id="footer-social"
-                className="text-xs font-semibold uppercase tracking-[0.3em] text-black/70 dark:text-white/70"
+                className="text-xs font-semibold uppercase tracking-caps-wide text-black/70 dark:text-white/70"
               >
                 {socialLabel}
               </h2>

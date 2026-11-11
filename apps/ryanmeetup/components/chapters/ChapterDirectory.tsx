@@ -172,7 +172,7 @@ const ChapterDirectory = (props: ChapterDirectoryProps) => {
                 )
               }
               aria-pressed={onlyUpcoming}
-              className={`h-11 w-full rounded-lg border px-4 text-[11px] font-semibold uppercase tracking-[0.2em] transition lg:w-auto ${
+              className={`h-11 w-full rounded-lg border px-4 text-[11px] font-semibold uppercase tracking-caps transition lg:w-auto ${
                 onlyUpcoming
                   ? "border-black/50 bg-black text-white dark:border-white/30 dark:bg-white dark:text-black"
                   : "border-black/20 bg-white text-black/70 hover:border-black/40 hover:bg-black/5 dark:border-white/20 dark:bg-white/10 dark:text-white/70 dark:hover:border-white/40 dark:hover:bg-white/10"
@@ -184,7 +184,7 @@ const ChapterDirectory = (props: ChapterDirectoryProps) => {
             <button
               type="button"
               onClick={handleClear}
-              className="h-11 w-full rounded-lg border border-black/20 bg-white px-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-black/70 transition hover:border-black/40 hover:bg-black/5 dark:border-white/20 dark:bg-white/10 dark:text-white/70 dark:hover:border-white/40 dark:hover:bg-white/10 lg:w-auto"
+              className="h-11 w-full rounded-lg border border-black/20 bg-white px-4 text-[11px] font-semibold uppercase tracking-caps text-black/70 transition hover:border-black/40 hover:bg-black/5 dark:border-white/20 dark:bg-white/10 dark:text-white/70 dark:hover:border-white/40 dark:hover:bg-white/10 lg:w-auto"
             >
               Clear
             </button>

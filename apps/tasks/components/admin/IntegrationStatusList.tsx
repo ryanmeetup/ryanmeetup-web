@@ -204,7 +204,7 @@ export function IntegrationStatusList({
                   <span className="flex flex-wrap items-center gap-2">
                     <span className="font-semibold">{integration.label}</span>
                     <span
-                      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${stateStyle[integration.state]}`}
+                      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-caps-tight ${stateStyle[integration.state]}`}
                     >
                       <span
                         aria-hidden
@@ -277,7 +277,7 @@ export function IntegrationStatusList({
                           aria-hidden
                           className="h-3.5 w-3.5 shrink-0 translate-y-0.5 text-black/30 dark:text-white/30"
                         />
-                        <dt className="whitespace-nowrap text-xs uppercase tracking-[0.12em] text-black/45 dark:text-white/45">
+                        <dt className="whitespace-nowrap text-xs uppercase tracking-caps-tight text-black/45 dark:text-white/45">
                           {fact.label}
                         </dt>
                         <dd

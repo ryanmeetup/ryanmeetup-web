@@ -82,7 +82,7 @@ const SponsorCarousel = (props: SponsorCarousel) => {
           <div className="relative overflow-hidden rounded-[2rem] border border-black/10 bg-[radial-gradient(circle_at_top_left,rgba(250,204,21,0.24),transparent_32%),linear-gradient(135deg,rgba(255,255,255,0.96),rgba(255,247,237,0.88))] p-1 shadow-xl shadow-black/10 dark:border-white/15 dark:bg-[radial-gradient(circle_at_top_left,rgba(250,204,21,0.22),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.12),rgba(255,255,255,0.04))] dark:shadow-black/30">
             <div className="grid gap-6 rounded-[1.75rem] border border-white/70 bg-white/75 p-6 backdrop-blur dark:border-white/10 dark:bg-black/20 sm:p-8 xl:grid-cols-[0.8fr_1.55fr] xl:items-center">
               <div className="space-y-3 text-center xl:text-left">
-                <p className="text-xs font-bold uppercase tracking-[0.3em] text-black/55 dark:text-white/55">
+                <p className="text-xs font-bold uppercase tracking-caps-wide text-black/55 dark:text-white/55">
                   Monthly Backer spotlight
                 </p>
                 <h3 className="text-3xl font-black tracking-tight text-black dark:text-white sm:text-4xl">
@@ -111,7 +111,7 @@ const SponsorCarousel = (props: SponsorCarousel) => {
                   partnershipType={featuredRecurringSponsor.partnershipType}
                   className="relative flex min-h-[220px] items-center justify-center rounded-3xl border border-black/10 bg-black p-6 transition hover:-translate-y-1 hover:border-black/20 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/30 sm:min-h-[280px] sm:p-8"
                 >
-                  <span className="absolute left-5 top-5 rounded-full border border-black/10 bg-white/90 px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.2em] text-black/60 dark:border-white/15 dark:bg-black/50 dark:text-white/65">
+                  <span className="absolute left-5 top-5 rounded-full border border-black/10 bg-white/90 px-3 py-1 text-[0.65rem] font-bold uppercase tracking-caps text-black/60 dark:border-white/15 dark:bg-black/50 dark:text-white/65">
                     {getMonthlyBackerTier(featuredRecurringSponsor.backerTier)
                       ?.name ?? "Monthly Backer"}
                   </span>

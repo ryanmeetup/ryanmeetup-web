@@ -74,7 +74,7 @@ export function QuickAdd({ product, href }: { product: ProductListing; href: str
       </DropdownMenuButton>
       <DropdownMenuItems className="!w-52">
         <div className="px-2 pb-1 pt-1.5">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/70 dark:text-white/70">Add to cart</p>
+          <p className="text-xs font-semibold uppercase tracking-caps-tight text-black/70 dark:text-white/70">Add to cart</p>
           {details.length > 0 && (
             <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-sm">
               {details.map(({ name, value, swatch }) => (
@@ -90,7 +90,7 @@ export function QuickAdd({ product, href }: { product: ProductListing; href: str
           )}
         </div>
         <DropdownMenuSeparator />
-        <p className="px-2 pt-0.5 text-xs font-semibold uppercase tracking-[0.16em] text-black/70 dark:text-white/70">{option.name}</p>
+        <p className="px-2 pt-0.5 text-xs font-semibold uppercase tracking-caps-tight text-black/70 dark:text-white/70">{option.name}</p>
         <div className="grid grid-cols-4 gap-1">
           {option.values.map((value) => {
             const variant = findVariant(target, { ...selections, [option.name]: value });

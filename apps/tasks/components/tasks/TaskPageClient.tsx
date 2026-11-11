@@ -366,7 +366,7 @@ export function TaskPageClient({
           <div className="contents min-w-0 xl:block xl:space-y-6">
             <Card className="order-1 min-w-0 space-y-5">
               <div>
-                <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-black/55 dark:text-white/55">
+                <h2 className="text-xs font-semibold uppercase tracking-caps text-black/55 dark:text-white/55">
                   Description
                 </h2>
                 {task.description ? (
@@ -383,7 +383,7 @@ export function TaskPageClient({
               </div>
               {categories.length > 0 && (
                 <div>
-                  <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-black/45 dark:text-white/45">
+                  <p className="mb-1 text-[9px] font-semibold uppercase tracking-caps text-black/45 dark:text-white/45">
                     Categories
                   </p>
                   <div className="space-y-3">
@@ -466,7 +466,7 @@ export function TaskPageClient({
 
           <div className="contents min-w-0 xl:sticky xl:top-24 xl:block xl:space-y-6">
             <Card className="order-2 min-w-0 space-y-5">
-              <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-black/55 dark:text-white/55">
+              <h2 className="text-xs font-semibold uppercase tracking-caps text-black/55 dark:text-white/55">
                 Task details
               </h2>
               <dl className="grid min-w-0 grid-cols-2 gap-x-4 gap-y-4 text-sm sm:gap-x-6">

@@ -49,7 +49,7 @@ type Props = {
 };
 
 const headingClass =
-  "border-y border-black/5 bg-black/[0.025] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-black/45 dark:border-white/5 dark:bg-white/[0.025] dark:text-white/45";
+  "border-y border-black/5 bg-black/[0.025] px-4 py-2 text-[10px] font-semibold uppercase tracking-caps text-black/45 dark:border-white/5 dark:bg-white/[0.025] dark:text-white/45";
 const linkClass =
   "block border-b border-black/5 px-4 py-3 text-sm hover:bg-black/[0.025] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/30 dark:border-white/5 dark:hover:bg-white/[0.04] dark:focus-visible:ring-white/40";
 
@@ -309,7 +309,7 @@ export function TaskSearchResults(props: Props) {
                         <span className="min-w-0 truncate font-semibold">
                           {item.name}
                         </span>
-                        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-black/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-black/60 dark:border-white/10 dark:text-white/65">
+                        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-black/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-caps-tight text-black/60 dark:border-white/10 dark:text-white/65">
                           <span
                             aria-hidden
                             className="h-1.5 w-1.5 rounded-full"

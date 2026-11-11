@@ -166,7 +166,7 @@ export function NoteModal({
       ) : (
         <div className="space-y-6">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-xl border border-black/10 bg-black/[0.025] px-4 py-3 text-xs text-black/50 dark:border-white/10 dark:bg-white/[0.035] dark:text-white/50">
-            <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-black/10 bg-white/70 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-black/65 dark:border-white/10 dark:bg-white/5 dark:text-white/65">
+            <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-black/10 bg-white/70 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-caps-tight text-black/65 dark:border-white/10 dark:bg-white/5 dark:text-white/65">
               <i
                 className="h-2 w-2 shrink-0 rounded-full ring-1 ring-black/10 dark:ring-white/15"
                 style={{ backgroundColor: category?.color ?? "#8a8a8a" }}

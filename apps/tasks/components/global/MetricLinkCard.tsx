@@ -52,7 +52,7 @@ export function MetricLinkCard({
           : ""
       } ${active ? "ring-2 ring-black/70 dark:ring-white/75" : ""} ${toneClasses[tone]}`}
     >
-      <span className="relative z-10 flex items-center gap-1 whitespace-nowrap text-[0.625rem] font-semibold uppercase tracking-[0.08em] text-black/50 dark:text-white/50 sm:gap-2 sm:text-xs sm:tracking-[0.16em]">
+      <span className="relative z-10 flex items-center gap-1 whitespace-nowrap text-[0.625rem] font-semibold uppercase tracking-caps-tight text-black/50 dark:text-white/50 sm:gap-2 sm:text-xs sm:tracking-caps-tight">
         <span className="shrink-0">{icon}</span>
         <span className="shrink-0 md:hidden">{mobileLabel}</span>
         <span className="hidden shrink-0 md:inline">{label}</span>

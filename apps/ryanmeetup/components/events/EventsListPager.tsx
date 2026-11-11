@@ -177,7 +177,7 @@ const EventsListPager = (props: EventsListPagerProps) => {
             type="button"
             onClick={() => setDisplayMode(item.value)}
             aria-pressed={isActive}
-            className={`inline-flex min-h-9 items-center justify-center gap-2 rounded-full px-3 text-[11px] font-semibold uppercase tracking-[0.16em] transition ${
+            className={`inline-flex min-h-9 items-center justify-center gap-2 rounded-full px-3 text-[11px] font-semibold uppercase tracking-caps-tight transition ${
               isActive
                 ? "bg-black text-white shadow-sm dark:bg-white dark:text-black"
                 : "text-black/65 hover:bg-black/10 hover:text-black dark:text-white/65 dark:hover:bg-white/10 dark:hover:text-white"

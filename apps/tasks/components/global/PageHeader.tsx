@@ -53,7 +53,7 @@ export function PageHeader({
           carry the whole header off the right edge. */}
       <div className="w-full min-w-0 flex-1">
         {kicker && (
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-black/50 dark:text-white/50">
+          <p className="text-xs font-semibold uppercase tracking-caps text-black/50 dark:text-white/50">
             {kicker}
           </p>
         )}

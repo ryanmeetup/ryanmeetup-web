@@ -23,7 +23,7 @@ export default async function ContactPage() {
   const helpfulDetails = getHelpfulDetails(Boolean(await getCustomerAccountUrl().catch(() => null)));
   return (
     <main className="store-container py-8 sm:py-12 lg:py-16">
-      <section className="relative overflow-hidden rounded-3xl border border-black/10 bg-white/80 p-5 shadow-[0_35px_70px_-50px_rgba(0,0,0,0.6)] backdrop-blur-[2px] sm:p-8 dark:border-white/10 dark:bg-white/5 lg:p-10">
+      <section className="relative overflow-hidden rounded-3xl border border-black/10 bg-white/80 p-5 shadow-drop-lg backdrop-blur-[2px] sm:p-8 dark:border-white/10 dark:bg-white/5 lg:p-10">
         <div aria-hidden className="absolute -right-24 -top-24 hidden h-64 w-64 rounded-full bg-nametag/10 blur-3xl lg:block" />
         <div className="relative grid gap-10 xl:grid-cols-[0.75fr_1.25fr] xl:gap-16">
           <div className="space-y-8 xl:py-4">
@@ -54,7 +54,7 @@ export default async function ContactPage() {
             </Card>
           </div>
 
-          <Card variant="solid" size="lg" className="bg-white/95 shadow-[0_25px_50px_-40px_rgba(0,0,0,0.6)] dark:border-white/15 dark:bg-black/80 sm:p-8">
+          <Card variant="solid" size="lg" className="bg-white/95 shadow-drop dark:border-white/15 dark:bg-black/80 sm:p-8">
             <Heading size="h2" className="text-2xl sm:text-3xl">Contact customer service</Heading>
             <Text className="mt-2 text-sm sm:text-base">Give us the clearest clues you have. We’ll route everything through the Ryan Meetup contact team.</Text>
             <div className="mt-6 border-t border-black/10 pt-6 dark:border-white/10">

@@ -731,16 +731,16 @@ export function AccessPageClient({
               </ul>
               <div className="hidden min-w-0 overflow-x-auto 2xl:block">
                 <table className="w-full text-left text-sm">
-                  <thead className="border-b border-black/10 bg-black/[0.025] text-[10px] uppercase tracking-[0.16em] text-black/50 dark:border-white/10 dark:bg-white/[0.025] dark:text-white/50">
+                  <thead className="border-b border-black/10 bg-black/[0.025] text-[10px] uppercase tracking-caps-tight text-black/50 dark:border-white/10 dark:bg-white/[0.025] dark:text-white/50">
                     <tr>
                       <th className="px-4 py-3 font-semibold">Person</th>
                       <th className="px-4 py-3 font-semibold">Account</th>
                       <th className="hidden w-px whitespace-nowrap px-4 py-3 font-semibold 2xl:table-cell">
                         <Popover className="relative">
-                          <PopoverButton className="inline-flex items-center gap-2 rounded-md py-1 uppercase tracking-[0.16em] transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:hover:text-white dark:focus-visible:ring-white/30">
+                          <PopoverButton className="inline-flex items-center gap-2 rounded-md py-1 uppercase tracking-caps-tight transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:hover:text-white dark:focus-visible:ring-white/30">
                             Tasks
                             {teamSortField !== "name" && (
-                              <span className="border-l border-black/20 pl-2 uppercase tracking-[0.16em] text-black/70 dark:border-white/20 dark:text-white/70">
+                              <span className="border-l border-black/20 pl-2 uppercase tracking-caps-tight text-black/70 dark:border-white/20 dark:text-white/70">
                                 {
                                   taskSortOptions.find(
                                     (option) => option.value === teamSortField,

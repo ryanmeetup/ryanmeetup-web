@@ -100,7 +100,7 @@ export function RecentEmailTable({ emails }: { emails: ResendEmailSummary[] }) {
       >
         <Card variant="solid" size="none" className="overflow-hidden">
           <div className="border-b border-black/10 px-4 py-3 dark:border-white/10 xl:hidden">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-black/50 dark:text-white/50">
+            <p className="text-[10px] font-semibold uppercase tracking-caps-tight text-black/50 dark:text-white/50">
               Recent email activity
             </p>
           </div>
@@ -150,7 +150,7 @@ export function RecentEmailTable({ emails }: { emails: ResendEmailSummary[] }) {
                 <col className="w-[26%]" />
                 <col className="w-[18%]" />
               </colgroup>
-              <thead className="border-b border-black/10 bg-black/[0.025] text-[10px] uppercase tracking-[0.16em] text-black/50 dark:border-white/10 dark:bg-white/[0.025] dark:text-white/50">
+              <thead className="border-b border-black/10 bg-black/[0.025] text-[10px] uppercase tracking-caps-tight text-black/50 dark:border-white/10 dark:bg-white/[0.025] dark:text-white/50">
                 <tr>
                   <th className="px-4 py-3 font-semibold">Subject</th>
                   <th className="px-4 py-3 font-semibold">Status</th>

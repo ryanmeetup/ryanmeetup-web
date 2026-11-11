@@ -54,7 +54,7 @@ const SponsorshipInfo = () => {
                 <Heading className="text-2xl title" size="h3">
                   {track.title}
                 </Heading>
-                <Kicker className="tracking-[0.2em]">{track.price}</Kicker>
+                <Kicker>{track.price}</Kicker>
               </div>
             </div>
             <Text className="text-sm text-black/70 dark:text-white/70">
@@ -72,7 +72,7 @@ const SponsorshipInfo = () => {
               <Heading className="text-2xl title" size="h3">
                 Sponsor Reach
               </Heading>
-              <Kicker className="tracking-[0.2em]">Audience Snapshot</Kicker>
+              <Kicker>Audience Snapshot</Kicker>
             </div>
           </div>
           <Text className="text-sm text-black/70 dark:text-white/70">

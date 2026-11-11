@@ -375,7 +375,7 @@ export function RydOrderDialog({
           <div className="flex flex-wrap items-center gap-3">
             <h3
               id="ryd-submissions-heading"
-              className="text-xs font-semibold uppercase tracking-[0.2em] text-black/70 dark:text-white/70"
+              className="text-xs font-semibold uppercase tracking-caps text-black/70 dark:text-white/70"
             >
               {shown.linked ? "Linked" : "From the form"}
             </h3>

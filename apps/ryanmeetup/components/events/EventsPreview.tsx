@@ -33,7 +33,7 @@ const EventsPreview = (props: EventsPreviewProps) => {
             onClick={() => {
               setView("upcoming");
             }}
-            className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] transition ${
+            className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-caps transition ${
               view === "upcoming"
                 ? "bg-black text-white dark:bg-white dark:text-black"
                 : "text-black/70 hover:text-black dark:text-white/70 dark:hover:text-white"
@@ -47,7 +47,7 @@ const EventsPreview = (props: EventsPreviewProps) => {
             onClick={() => {
               setView("past");
             }}
-            className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] transition ${
+            className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-caps transition ${
               view === "past"
                 ? "bg-black text-white dark:bg-white dark:text-black"
                 : "text-black/70 hover:text-black dark:text-white/70 dark:hover:text-white"

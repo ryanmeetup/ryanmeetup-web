@@ -142,7 +142,7 @@ const DonatePage = async () => {
           </Text>
 
           <Card variant="soft" size="md">
-            <Text className="text-sm font-semibold uppercase tracking-[0.25em] text-black/80 dark:text-white/80">
+            <Text className="text-sm font-semibold uppercase tracking-caps text-black/80 dark:text-white/80">
               Prefer merch instead?
             </Text>
             <Text className="mt-3 text-sm text-black/70 dark:text-white/70">
@@ -161,7 +161,7 @@ const DonatePage = async () => {
             </Button.Link>
           </Card>
           <Card variant="soft" size="md">
-            <Text className="text-sm font-semibold uppercase tracking-[0.25em] text-black/80 dark:text-white/80">
+            <Text className="text-sm font-semibold uppercase tracking-caps text-black/80 dark:text-white/80">
               Where does all the money go?
             </Text>
             <Text className="mt-3 text-sm text-black/70 dark:text-white/70">
@@ -190,7 +190,7 @@ const DonatePage = async () => {
           </Card>
 
           <Card variant="soft" size="md">
-            <Text className="text-sm font-semibold uppercase tracking-[0.25em] text-black/80 dark:text-white/80">
+            <Text className="text-sm font-semibold uppercase tracking-caps text-black/80 dark:text-white/80">
               What kinds of things does Ryan Meetup spend money on?
             </Text>
             <Text className="mt-3 text-sm text-black/70 dark:text-white/70">
@@ -218,7 +218,7 @@ const DonatePage = async () => {
             >
               Two easy ways to donate
             </Heading>
-            <Text className="hidden text-xs font-semibold uppercase tracking-[0.3em] text-black/70 dark:text-white/70 sm:inline-block">
+            <Text className="hidden text-xs font-semibold uppercase tracking-caps-wide text-black/70 dark:text-white/70 sm:inline-block">
               2 options
             </Text>
           </div>

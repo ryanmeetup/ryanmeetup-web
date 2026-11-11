@@ -174,7 +174,7 @@ export function AdminSettingsPageClient({
           editLabel="Edit identity"
         >
           <dl className="grid max-w-3xl gap-x-6 gap-y-3 sm:grid-cols-[10rem_minmax(0,1fr)]">
-            <dt className="text-xs font-semibold uppercase tracking-[0.2em] text-black/55 dark:text-white/55">
+            <dt className="text-xs font-semibold uppercase tracking-caps text-black/55 dark:text-white/55">
               Wordmark
             </dt>
             <dd>
@@ -192,7 +192,7 @@ export function AdminSettingsPageClient({
               )}
             </dd>
 
-            <dt className="text-xs font-semibold uppercase tracking-[0.2em] text-black/55 dark:text-white/55">
+            <dt className="text-xs font-semibold uppercase tracking-caps text-black/55 dark:text-white/55">
               Description
             </dt>
             <dd className="text-sm text-black/70 dark:text-white/70">
@@ -244,7 +244,7 @@ export function AdminSettingsPageClient({
           editLabel="Edit features"
         >
           <dl className="grid max-w-3xl gap-x-6 gap-y-3 sm:grid-cols-[10rem_minmax(0,1fr)]">
-            <dt className="text-xs font-semibold uppercase tracking-[0.2em] text-black/55 dark:text-white/55">
+            <dt className="text-xs font-semibold uppercase tracking-caps text-black/55 dark:text-white/55">
               RY-D Verification
             </dt>
             <dd className="text-sm text-black/70 dark:text-white/70">

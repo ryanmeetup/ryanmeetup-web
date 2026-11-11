@@ -119,7 +119,7 @@ export function IntegrationSetupModal({
 
         {setup.variables.length ? (
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-black/45 dark:text-white/45">
+            <h3 className="text-xs font-semibold uppercase tracking-caps-tight text-black/45 dark:text-white/45">
               Variables to set
             </h3>
             <ul className="mt-2 grid gap-2">

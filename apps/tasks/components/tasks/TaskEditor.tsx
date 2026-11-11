@@ -499,7 +499,7 @@ export function TaskEditor(props: TaskEditorProps) {
                     Reminder
                     <Pill
                       size="sm"
-                      className="!px-2 !py-0 text-[8px] leading-3 !tracking-[0.18em]"
+                      className="!px-2 !py-0 text-[8px] leading-3 !tracking-caps"
                     >
                       Coming soon
                     </Pill>

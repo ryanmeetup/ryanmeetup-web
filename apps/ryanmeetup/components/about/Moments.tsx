@@ -29,7 +29,7 @@ const Moments = () => {
                   (max-width: 1536px) 100vw"
               />
             </div>
-            <Text className="text-center mt-3 text-sm uppercase tracking-[0.2em] text-black/70 dark:text-white/70">
+            <Text className="text-center mt-3 text-sm uppercase tracking-caps text-black/70 dark:text-white/70">
               {photo.title}
             </Text>
           </Card>

@@ -35,7 +35,7 @@ const Hero = () => {
           <div className="mt-8 grid grid-cols-2 items-end lg:mt-20">
             {/* Location, Date, Venue */}
             <Card className="inline-flex flex-col">
-              <Text className="text-xs font-semibold uppercase tracking-[0.3em] text-black/60 dark:text-white/60">
+              <Text className="text-xs font-semibold uppercase tracking-caps-wide text-black/60 dark:text-white/60">
                 Event details
               </Text>
               <div className="mt-3 flex flex-wrap space-x-16">

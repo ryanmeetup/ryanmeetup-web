@@ -108,7 +108,7 @@ body:has([data-workspace-error]) .tasks-footer {
     @apply bg-black/[0.08] text-black ring-1 ring-inset ring-black/10 hover:bg-black/[0.12] hover:text-black dark:bg-white dark:text-black dark:ring-0 dark:hover:bg-white/90 dark:hover:text-black;
   }
   .view-button {
-    @apply flex items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-black/50 transition hover:text-black focus:outline-none focus:ring-2 focus:ring-black/10 dark:text-white/50 dark:hover:text-white dark:focus:ring-white/10;
+    @apply flex items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-semibold uppercase tracking-caps-tight text-black/50 transition hover:text-black focus:outline-none focus:ring-2 focus:ring-black/10 dark:text-white/50 dark:hover:text-white dark:focus:ring-white/10;
   }
   .view-button-active {
     @apply bg-black/10 text-black shadow-sm ring-1 ring-inset ring-black/10 hover:bg-black/15 hover:text-black dark:bg-white dark:text-black dark:ring-0 dark:hover:bg-white dark:hover:text-black;

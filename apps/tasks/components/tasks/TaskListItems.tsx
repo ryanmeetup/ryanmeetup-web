@@ -49,7 +49,7 @@ function MonthDisclosureButton({
       aria-controls={panelId}
       aria-expanded={!collapsed}
       onClick={onClick}
-      className="flex w-full items-center gap-2 px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.16em] text-black/60 transition-colors hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/30 dark:text-white/60 dark:hover:bg-white/[0.04] dark:focus-visible:ring-white/30"
+      className="flex w-full items-center gap-2 px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-caps-tight text-black/60 transition-colors hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/30 dark:text-white/60 dark:hover:bg-white/[0.04] dark:focus-visible:ring-white/30"
     >
       {label}
       <FiChevronDown

@@ -151,7 +151,7 @@ export function TaskChecklistPanel({
       iconClassName="h-3.5 w-3.5"
       summary={
         <span className="flex items-center gap-2">
-          <span className="text-xs font-semibold uppercase tracking-[0.2em]">
+          <span className="text-xs font-semibold uppercase tracking-caps">
             Checklist
           </span>
           {!loading && <CountBadge>{items.length}</CountBadge>}

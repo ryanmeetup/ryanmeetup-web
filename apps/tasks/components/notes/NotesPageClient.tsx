@@ -371,7 +371,7 @@ export function NotesPageClient({
 
           <section className="mt-6 border-t border-black/10 pt-5 dark:border-white/10">
             <div className="mb-4 flex items-center gap-4">
-              <h2 className="text-sm font-semibold uppercase tracking-[0.18em]">
+              <h2 className="text-sm font-semibold uppercase tracking-caps">
                 {showArchived ? "Archived notes" : "Recent notes"}
               </h2>
             </div>

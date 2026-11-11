@@ -45,7 +45,7 @@ export function CollectionGrid({ handle, products, sections, more = [] }: { hand
     <div className="space-y-6">
       {products.length > 1 && (
         <div className="flex flex-col gap-3 rounded-2xl border border-black/10 bg-white/60 p-3 lg:flex-row lg:items-center dark:border-white/10 dark:bg-white/5">
-          <span className="px-2 text-xs font-semibold uppercase tracking-[0.2em] text-black/55 dark:text-white/55">{types.length > 1 || sizes.length > 1 ? "Filter the goods" : "Sort the goods"}</span>
+          <span className="px-2 text-xs font-semibold uppercase tracking-caps text-black/55 dark:text-white/55">{types.length > 1 || sizes.length > 1 ? "Filter the goods" : "Sort the goods"}</span>
           {types.length > 1 && (
             <DropdownSelect
               label="Type"

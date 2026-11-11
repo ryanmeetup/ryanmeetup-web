@@ -28,7 +28,7 @@ const ChapterInfo = (props: ChapterInfoProps) => {
     <Card variant="soft" size="lg" className="relative overflow-hidden">
       {!isActive && (
         <div className="absolute left-[-40px] top-8 z-10 -rotate-45">
-          <span className="block bg-red-600/90 px-10 py-1 text-sm font-semibold uppercase tracking-[0.3em] text-white shadow-md dark:bg-red-500/80">
+          <span className="block bg-red-600/90 px-10 py-1 text-sm font-semibold uppercase tracking-caps-wide text-white shadow-md dark:bg-red-500/80">
             Inactive
           </span>
         </div>
@@ -53,7 +53,7 @@ const ChapterInfo = (props: ChapterInfoProps) => {
       <div className="mt-6 space-y-5">
         <div className="grid grid-cols-9 gap-3">
           <div className="col-span-4">
-            <Text className="text-sm font-semibold uppercase tracking-[0.3em] text-black/70 dark:text-white/70">
+            <Text className="text-sm font-semibold uppercase tracking-caps-wide text-black/70 dark:text-white/70">
               Chapter Lead{leaders?.length > 1 && "s"}
             </Text>
           </div>
@@ -78,7 +78,7 @@ const ChapterInfo = (props: ChapterInfoProps) => {
 
         <div className="grid grid-cols-7 gap-3 flex items-center">
           <div className="col-span-3">
-            <Text className="text-sm font-semibold uppercase tracking-[0.3em] text-black/70 dark:text-white/70">
+            <Text className="text-sm font-semibold uppercase tracking-caps-wide text-black/70 dark:text-white/70">
               Instagram
             </Text>
           </div>
@@ -88,7 +88,7 @@ const ChapterInfo = (props: ChapterInfoProps) => {
               href={instagram}
               target="_blank"
               rel="noreferrer"
-              className="relative inline-flex w-full items-center justify-start gap-2 overflow-hidden rounded-lg bg-transparent p-2 text-xs font-semibold uppercase tracking-[0.2em] text-black transition hover:text-black/70 dark:text-white dark:hover:text-white/70 hover:underline"
+              className="relative inline-flex w-full items-center justify-start gap-2 overflow-hidden rounded-lg bg-transparent p-2 text-xs font-semibold uppercase tracking-caps text-black transition hover:text-black/70 dark:text-white dark:hover:text-white/70 hover:underline"
             >
               <span className="text-base">
                 <Instagram className="h-4 w-4" />
@@ -101,7 +101,7 @@ const ChapterInfo = (props: ChapterInfoProps) => {
         {whatsApp && (
           <div className="grid grid-cols-7 gap-3 flex items-center">
             <div className="col-span-3">
-              <Text className="text-sm font-semibold uppercase tracking-[0.3em] text-black/70 dark:text-white/70">
+              <Text className="text-sm font-semibold uppercase tracking-caps-wide text-black/70 dark:text-white/70">
                 WhatsApp
               </Text>
             </div>
@@ -111,7 +111,7 @@ const ChapterInfo = (props: ChapterInfoProps) => {
                 href={whatsApp}
                 target="_blank"
                 rel="noreferrer"
-                className="relative inline-flex w-full items-center justify-start gap-2 overflow-hidden rounded-lg bg-transparent p-2 text-xs font-semibold uppercase tracking-[0.2em] text-black transition hover:text-black/70 dark:text-white dark:hover:text-white/70 hover:underline"
+                className="relative inline-flex w-full items-center justify-start gap-2 overflow-hidden rounded-lg bg-transparent p-2 text-xs font-semibold uppercase tracking-caps text-black transition hover:text-black/70 dark:text-white dark:hover:text-white/70 hover:underline"
               >
                 <span className="text-base">
                   <WhatsApp className="h-4 w-4" />

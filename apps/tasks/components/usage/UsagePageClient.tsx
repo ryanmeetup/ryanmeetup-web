@@ -71,12 +71,12 @@ function QuotaCard({
         <Kicker>{label}</Kicker>
         <span className="flex flex-wrap justify-end gap-2">
           {quota.estimated && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-sky-800 dark:text-sky-200">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-caps-tight text-sky-800 dark:text-sky-200">
               <FiInfo aria-hidden /> Estimated
             </span>
           )}
           <span
-            className={`inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${usageBadgeColor}`}
+            className={`inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-caps-tight ${usageBadgeColor}`}
           >
             {percent}% used
           </span>
@@ -194,7 +194,7 @@ export function UsagePageClient({
             </p>
           </div>
           {usage.status === "available" ? (
-            <span className="ml-auto inline-flex items-center gap-2 rounded-full border border-emerald-500/35 bg-emerald-500/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-800 dark:text-emerald-200">
+            <span className="ml-auto inline-flex items-center gap-2 rounded-full border border-emerald-500/35 bg-emerald-500/15 px-4 py-2 text-xs font-semibold uppercase tracking-caps-tight text-emerald-800 dark:text-emerald-200">
               <FiCheckCircle aria-hidden className="h-4 w-4" /> Connected
             </span>
           ) : (

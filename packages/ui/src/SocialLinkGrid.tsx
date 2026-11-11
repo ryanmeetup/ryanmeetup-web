@@ -38,7 +38,7 @@ const SocialLinkGrid = ({
           className="group flex min-w-0 flex-col items-center justify-center gap-2 rounded-xl border border-black/10 bg-white/70 px-2 py-3 text-black shadow-sm transition hover:-translate-y-0.5 hover:border-black/30 hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:border-white/30 dark:hover:bg-white/10"
         >
           {icon}
-          <span className="max-w-full truncate text-[10px] font-semibold uppercase tracking-[0.12em]">
+          <span className="max-w-full truncate text-[10px] font-semibold uppercase tracking-caps-tight">
             {link.label}
           </span>
         </Link>

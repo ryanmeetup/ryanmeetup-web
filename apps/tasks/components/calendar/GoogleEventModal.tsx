@@ -79,7 +79,7 @@ function Section({
         >
           {icon}
         </span>
-        <span className="text-xs font-bold uppercase tracking-[0.14em] text-black dark:text-white">
+        <span className="text-xs font-bold uppercase tracking-caps-tight text-black dark:text-white">
           {title}
         </span>
         <span aria-hidden className="h-px flex-1 bg-black/10 dark:bg-white/10" />
@@ -175,7 +175,7 @@ function AttendeeRow({ attendee }: { attendee: GoogleCalendarAttendee }) {
         )}
       </span>
       <span
-        className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${responseStyles[attendee.response]}`}
+        className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-caps-tight ${responseStyles[attendee.response]}`}
       >
         {googleResponseLabel(attendee.response)}
       </span>

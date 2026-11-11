@@ -128,7 +128,7 @@ const FloatingCta = (props: FloatingCtaProps) => {
                 className={`absolute -inset-1 rounded-3xl opacity-40 blur-md ${resolvedTheme.halo}`}
               />
               <div
-                className={`relative inline-flex min-h-[78px] w-[18.75rem] items-start gap-3 rounded-2xl border px-3 py-3 shadow-[0_12px_30px_-25px_rgba(0,0,0,0.65)] transition group-hover:-translate-y-1 hover:-translate-y-1 sm:min-h-[92px] sm:w-fit sm:max-w-[calc(100vw-3rem)] sm:gap-4 sm:px-5 sm:py-4 sm:shadow-[0_25px_60px_-35px_rgba(0,0,0,0.65)] ${resolvedTheme.panel} ${resolvedTheme.border} ${resolvedTheme.text}`}
+                className={`relative inline-flex min-h-[78px] w-[18.75rem] items-start gap-3 rounded-2xl border px-3 py-3 shadow-drop transition group-hover:-translate-y-1 hover:-translate-y-1 sm:min-h-[92px] sm:w-fit sm:max-w-[calc(100vw-3rem)] sm:gap-4 sm:px-5 sm:py-4 sm:shadow-drop-lg ${resolvedTheme.panel} ${resolvedTheme.border} ${resolvedTheme.text}`}
               >
                 {icon && (
                   <NextLink
@@ -237,7 +237,7 @@ const FloatingCta = (props: FloatingCtaProps) => {
                 className={`absolute -inset-1 rounded-3xl opacity-40 blur-md ${resolvedTheme.halo}`}
               />
               <div
-                className={`relative inline-flex min-h-[78px] w-[18.75rem] items-start gap-3 rounded-2xl border px-3 py-3 shadow-[0_12px_30px_-25px_rgba(0,0,0,0.65)] transition group-hover:-translate-y-1 hover:-translate-y-1 sm:min-h-[92px] sm:w-fit sm:max-w-[calc(100vw-3rem)] sm:gap-4 sm:px-5 sm:py-4 sm:shadow-[0_25px_60px_-35px_rgba(0,0,0,0.65)] ${resolvedTheme.panel} ${resolvedTheme.border} ${resolvedTheme.text}`}
+                className={`relative inline-flex min-h-[78px] w-[18.75rem] items-start gap-3 rounded-2xl border px-3 py-3 shadow-drop transition group-hover:-translate-y-1 hover:-translate-y-1 sm:min-h-[92px] sm:w-fit sm:max-w-[calc(100vw-3rem)] sm:gap-4 sm:px-5 sm:py-4 sm:shadow-drop-lg ${resolvedTheme.panel} ${resolvedTheme.border} ${resolvedTheme.text}`}
               >
                 {icon && (
                   <div

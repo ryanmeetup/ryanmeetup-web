@@ -66,7 +66,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
               mobileInline
               className="!border-b-4 !border-black !bg-[#ffcc00] !text-black"
               contentClassName="store-container !justify-center"
-              icon={<span className="rounded-md bg-black px-2.5 py-1 font-cooper text-base tracking-[0.2em] text-[#ffcc00] sm:text-lg">BETA</span>}
+              icon={<span className="rounded-md bg-black px-2.5 py-1 font-cooper text-base tracking-caps text-[#ffcc00] sm:text-lg">BETA</span>}
             >
               <span className="font-semibold">
                 This store is a test drive, not the real thing yet. Please don&apos;t place real orders.

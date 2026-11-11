@@ -125,7 +125,7 @@ const SponsorshipPage = () => {
                 {tier.highlights.map((item) => (
                   <span
                     key={item}
-                    className="rounded-full border border-black/10 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-black/60 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-white/60"
+                    className="rounded-full border border-black/10 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-caps-wide text-black/60 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-white/60"
                   >
                     {item}
                   </span>
@@ -172,7 +172,7 @@ const SponsorshipPage = () => {
               <Text className="text-3xl font-semibold text-black dark:text-white">
                 {stat.value}
               </Text>
-              <Text className="text-xs uppercase tracking-[0.3em] text-black/60 dark:text-white/60">
+              <Text className="text-xs uppercase tracking-caps-wide text-black/60 dark:text-white/60">
                 {stat.label}
               </Text>
             </div>

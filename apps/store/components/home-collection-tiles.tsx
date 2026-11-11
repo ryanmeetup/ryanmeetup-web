@@ -48,7 +48,7 @@ export function HomeCollectionTiles({ tiles }: { tiles: HomeCollectionTile[] }) 
                   {collection.title}
                 </h3>
                 {collection.description && <p className="hidden text-sm sm:block text-black/70 dark:text-white/70">{collection.description}</p>}
-                <span className="mt-auto inline-flex items-center gap-2 pt-2 text-xs font-semibold uppercase tracking-[0.16em] text-black/70 group-hover:text-black dark:text-white/70 dark:group-hover:text-white">
+                <span className="mt-auto inline-flex items-center gap-2 pt-2 text-xs font-semibold uppercase tracking-caps-tight text-black/70 group-hover:text-black dark:text-white/70 dark:group-hover:text-white">
                   {total} item{total === 1 ? "" : "s"}
                   <FiArrowRight aria-hidden className="h-4 w-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
                 </span>

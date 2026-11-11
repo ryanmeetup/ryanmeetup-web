@@ -36,7 +36,7 @@ function Detail({
         <Icon aria-hidden />
       </span>
       <div className="min-w-0 pt-0.5">
-        <dt className="text-[10px] font-semibold uppercase tracking-[0.16em] text-black/50 dark:text-white/50">
+        <dt className="text-[10px] font-semibold uppercase tracking-caps-tight text-black/50 dark:text-white/50">
           {label}
         </dt>
         <dd className="mt-1 text-sm font-semibold leading-relaxed">
@@ -111,7 +111,7 @@ export function DigestSettingsCard({
               </div>
             </div>
             <span
-              className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] ${
+              className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-caps-tight ${
                 settings.enabled
                   ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-800 dark:text-emerald-200"
                   : "border-amber-500/30 bg-amber-500/15 text-amber-900 dark:text-amber-100"

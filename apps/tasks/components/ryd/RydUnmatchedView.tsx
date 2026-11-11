@@ -320,7 +320,7 @@ function UnmatchedCards({
           >
             <div className="flex flex-wrap items-center justify-between gap-2 px-1">
               <div className="flex flex-wrap items-center gap-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/70 dark:text-white/70">
+                <p className="text-xs font-semibold uppercase tracking-caps-tight text-black/70 dark:text-white/70">
                   {submitter.submissions.length} responses, same email
                 </p>
                 <RydContactedChip contact={contacts[submitter.email]} />
@@ -372,7 +372,7 @@ function UnmatchedTable({
             <col className="w-[21%]" />
             <col className="w-[24%]" />
           </colgroup>
-          <thead className="border-b border-black/10 bg-black/[0.025] text-[10px] uppercase tracking-[0.16em] text-black/60 dark:border-white/10 dark:bg-white/[0.025] dark:text-white/60">
+          <thead className="border-b border-black/10 bg-black/[0.025] text-[10px] uppercase tracking-caps-tight text-black/60 dark:border-white/10 dark:bg-white/[0.025] dark:text-white/60">
             <tr>
               <th className="py-3 pl-4">
                 <span className="sr-only">Selected</span>
@@ -542,7 +542,7 @@ function RemovedResponses({
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen(!open)}
-        className="inline-flex items-center gap-2 rounded text-xs font-semibold uppercase tracking-[0.16em] text-black/70 transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:text-white/70 dark:hover:text-white dark:focus-visible:ring-white/40"
+        className="inline-flex items-center gap-2 rounded text-xs font-semibold uppercase tracking-caps-tight text-black/70 transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:text-white/70 dark:hover:text-white dark:focus-visible:ring-white/40"
       >
         <FiChevronDown
           aria-hidden

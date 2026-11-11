@@ -74,7 +74,7 @@ const ReachSnapshot = () => {
     <>
       <Card variant="solid" size="lg" className="space-y-4">
         <div className="space-y-1">
-          <Kicker className="tracking-[0.2em]">Reach Snapshot</Kicker>
+          <Kicker>Reach Snapshot</Kicker>
           <Text className="text-sm text-black/70 dark:text-white/70">
             Explore the channels, proof points, and community surfaces behind
             these numbers.
@@ -103,7 +103,7 @@ const ReachSnapshot = () => {
                   </Text>
                 </div>
 
-                <div className="flex w-full items-center justify-between rounded-full border border-black/15 bg-black/5 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-black/65 transition group-hover:border-black/35 group-hover:bg-black/10 group-hover:text-black dark:border-white/15 dark:bg-white/5 dark:text-white/65 dark:group-hover:border-white/35 dark:group-hover:bg-white/10 dark:group-hover:text-white">
+                <div className="flex w-full items-center justify-between rounded-full border border-black/15 bg-black/5 px-4 py-2 text-[11px] font-semibold uppercase tracking-caps-tight text-black/65 transition group-hover:border-black/35 group-hover:bg-black/10 group-hover:text-black dark:border-white/15 dark:bg-white/5 dark:text-white/65 dark:group-hover:border-white/35 dark:group-hover:bg-white/10 dark:group-hover:text-white">
                   <span>{item.cta}</span>
                   <ArrowUpRight className="h-4 w-4" />
                 </div>

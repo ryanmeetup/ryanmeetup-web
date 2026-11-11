@@ -267,7 +267,7 @@ export function ContactsPageClient({
                         onClick={() => toggleGroup(id)}
                         className="flex w-full items-center gap-2 rounded-lg border-b border-black/10 pb-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:border-white/10 dark:focus-visible:ring-white/30"
                       >
-                        <span className="text-sm font-semibold uppercase tracking-[0.18em]">
+                        <span className="text-sm font-semibold uppercase tracking-caps">
                           {label}
                         </span>
                         <span className="rounded-full bg-black/[0.06] px-2 py-0.5 text-[10px] font-semibold dark:bg-white/10">
@@ -355,7 +355,7 @@ export function ContactsPageClient({
                                       )}
                                       aria-controls={`contact-people-${contact.id}`}
                                       onClick={() => togglePeople(contact.id)}
-                                      className="flex w-full items-center gap-2 rounded-lg py-3 text-xs font-semibold uppercase tracking-[0.18em] text-black/65 transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:text-white/65 dark:hover:text-white dark:focus-visible:ring-white/30"
+                                      className="flex w-full items-center gap-2 rounded-lg py-3 text-xs font-semibold uppercase tracking-caps text-black/65 transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:text-white/65 dark:hover:text-white dark:focus-visible:ring-white/30"
                                     >
                                       <span>People</span>
                                       <span className="rounded-full bg-black/[0.06] px-2 py-0.5 text-[10px] tracking-normal dark:bg-white/10">

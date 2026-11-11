@@ -93,7 +93,7 @@ function ContactMethodsEditor({
             aria-hidden
             className="shrink-0 text-black/50 dark:text-white/50"
           />
-          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-black/60 dark:text-white/60">
+          <span className="text-xs font-semibold uppercase tracking-caps-tight text-black/60 dark:text-white/60">
             {heading}
           </span>
           <CountBadge>{methods.length}</CountBadge>
@@ -422,7 +422,7 @@ export function ContactEditor(props: ContactEditorProps) {
               <div className="min-w-0 space-y-2 sm:contents">
                 <label
                   htmlFor="contact-image"
-                  className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-black/20 bg-white/80 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] transition hover:bg-black/5 focus-within:ring-2 focus-within:ring-black/30 dark:border-white/20 dark:bg-white/5 dark:hover:bg-white/10 dark:focus-within:ring-white/30 sm:w-32"
+                  className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-black/20 bg-white/80 px-3 py-2 text-[10px] font-semibold uppercase tracking-caps-tight transition hover:bg-black/5 focus-within:ring-2 focus-within:ring-black/30 dark:border-white/20 dark:bg-white/5 dark:hover:bg-white/10 dark:focus-within:ring-white/30 sm:w-32"
                 >
                   {imagePreview ? "Change image" : "Upload image"}
                   <input
@@ -573,7 +573,7 @@ export function ContactEditor(props: ContactEditorProps) {
         <Card size="lg" className="space-y-3">
           <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="w-full min-w-0">
-              <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em]">
+              <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-caps">
                 People <CountBadge>{draft.people.length}</CountBadge>
               </h2>
               <p className="mt-1 text-xs text-black/55 dark:text-white/55">

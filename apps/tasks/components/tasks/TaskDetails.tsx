@@ -112,7 +112,7 @@ export function TaskDetails({
         <DetailGroup
           card={pageLayout}
           header={
-            <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-black/55 dark:text-white/55">
+            <h2 className="text-xs font-semibold uppercase tracking-caps text-black/55 dark:text-white/55">
               Task work
             </h2>
           }

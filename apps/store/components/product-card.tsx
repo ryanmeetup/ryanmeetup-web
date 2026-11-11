@@ -44,7 +44,7 @@ export function ProductCard({ product, eager = false, from }: { product: Product
             ) : (
               <div className="grid h-full place-items-center font-cooper text-5xl text-black/10 dark:text-white/10">R</div>
             )}
-            {product.availableForSale ? sale.onSale && <SaleBadge className="absolute left-3 top-3" /> : <span className="absolute left-3 top-3 rounded-full bg-black px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white">Sold out</span>}
+            {product.availableForSale ? sale.onSale && <SaleBadge className="absolute left-3 top-3" /> : <span className="absolute left-3 top-3 rounded-full bg-black px-3 py-1 text-[10px] font-bold uppercase tracking-caps-tight text-white">Sold out</span>}
           </div>
           <div className="p-4 sm:p-5">
             <h3 className="font-cooper text-lg leading-tight tracking-wide text-black dark:text-white sm:text-xl">{product.title}{product.externalUrl && <span className="sr-only"> (opens in a new tab)</span>}</h3>

@@ -53,7 +53,7 @@ const CommunityVoices = () => {
           {mentions.map((item) => (
             <span
               key={item}
-              className='rounded-full border border-black/10 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-black/60 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-white/60'
+              className='rounded-full border border-black/10 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-caps-wide text-black/60 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-white/60'
             >
               {item}
             </span>

@@ -71,7 +71,7 @@ export function LoginForm({ notice = "" }: { notice?: string }) {
         <div className="mb-8">
           <Heading
             size="h1"
-            className="mb-6 whitespace-nowrap text-center text-3xl uppercase tracking-[0.08em] sm:text-5xl"
+            className="mb-6 whitespace-nowrap text-center text-3xl uppercase tracking-caps-tight sm:text-5xl"
           >
             <InstanceWordmark />
           </Heading>

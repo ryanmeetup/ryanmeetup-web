@@ -56,7 +56,7 @@ const Article = (props: ArticleProps) => {
                 {publishedOn}
               </Pill>
               {isNew && (
-                <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.3em] text-emerald-600 dark:text-emerald-300">
+                <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-caps-wide text-emerald-600 dark:text-emerald-300">
                   New
                 </span>
               )}
@@ -73,7 +73,7 @@ const Article = (props: ArticleProps) => {
               </Text>
             </div>
 
-            <div className="mt-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.3em] text-black/70 transition group-hover:text-black dark:text-white/70 dark:group-hover:text-white">
+            <div className="mt-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-caps-wide text-black/70 transition group-hover:text-black dark:text-white/70 dark:group-hover:text-white">
               Read
               <span className="text-base">→</span>
             </div>

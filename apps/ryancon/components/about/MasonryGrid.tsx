@@ -40,7 +40,7 @@ const MasonryGrid = () => {
             <span className="font-semibold text-black/80 dark:text-white/85">
               {item.title}
             </span>
-            <span className="text-xs uppercase tracking-[0.3em] text-black/40 dark:text-white/40">
+            <span className="text-xs uppercase tracking-caps-wide text-black/40 dark:text-white/40">
               Photo
             </span>
           </figcaption>

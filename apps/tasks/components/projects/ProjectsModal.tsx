@@ -743,7 +743,7 @@ export function ProjectsModal({
               </span>
             )}
             <div className="min-w-0 flex-1">
-              <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-black/40 dark:text-white/40">
+              <p className="text-[9px] font-semibold uppercase tracking-caps text-black/40 dark:text-white/40">
                 Owners
               </p>
               {owners.length === 0 && (
@@ -1057,7 +1057,7 @@ export function ProjectsModal({
                             className="h-2 w-2 shrink-0 rounded-full"
                             style={{ backgroundColor: group.color }}
                           />
-                          <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-black/55 dark:text-white/55">
+                          <h3 className="text-xs font-semibold uppercase tracking-caps text-black/55 dark:text-white/55">
                             {group.label}
                           </h3>
                           <CountBadge>{group.projects.length}</CountBadge>

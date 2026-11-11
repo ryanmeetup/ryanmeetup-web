@@ -57,14 +57,14 @@ export function LatestChangelogCard({
           <div className="flex flex-wrap items-center gap-1.5">
             <Pill
               size="sm"
-              className="!border-emerald-500/30 !bg-emerald-500/10 !px-2 !py-0.5 !text-[9px] !tracking-[0.18em] !text-emerald-800 dark:!text-emerald-200"
+              className="!border-emerald-500/30 !bg-emerald-500/10 !px-2 !py-0.5 !text-[9px] !tracking-caps !text-emerald-800 dark:!text-emerald-200"
             >
               {release.version}
             </Pill>
             {release.prerelease && (
               <Pill
                 size="sm"
-                className="!border-amber-500/30 !bg-amber-500/10 !px-2 !py-0.5 !text-[9px] !tracking-[0.18em] !text-amber-800 dark:!text-amber-200"
+                className="!border-amber-500/30 !bg-amber-500/10 !px-2 !py-0.5 !text-[9px] !tracking-caps !text-amber-800 dark:!text-amber-200"
               >
                 Beta
               </Pill>
@@ -117,7 +117,7 @@ export function LatestChangelogCard({
           <div className="mt-3 flex shrink-0 flex-col gap-2 sm:mt-4 sm:flex-row lg:mt-0 lg:flex-col lg:items-stretch">
             <Link
               href={withAccessPreview(changelogReleasePath(release), preview)}
-              className="group inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-600/25 bg-emerald-600 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-700 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 motion-reduce:transform-none dark:border-emerald-200/20 dark:bg-emerald-200 dark:text-emerald-950 dark:hover:bg-emerald-100"
+              className="group inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-600/25 bg-emerald-600 px-4 py-2 text-xs font-semibold uppercase tracking-caps-tight text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-700 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 motion-reduce:transform-none dark:border-emerald-200/20 dark:bg-emerald-200 dark:text-emerald-950 dark:hover:bg-emerald-100"
             >
               <FiBookOpen aria-hidden />
               Read {release.version}

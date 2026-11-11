@@ -38,7 +38,7 @@ const Event = (props: EventProps) => {
 
   return (
     <NextLink href={href} className="group block h-full">
-      <div className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-black/10 bg-white/90 shadow-[0_25px_50px_-40px_rgba(0,0,0,0.6)] transition hover:-translate-y-1 hover:border-black/30 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/40">
+      <div className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-black/10 bg-white/90 shadow-drop transition hover:-translate-y-1 hover:border-black/30 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/40">
         <div className="relative aspect-[2/1] w-full max-h-[450px] overflow-hidden border-b border-black/10 dark:border-white/10">
           <NextImage
             className="rounded-t-2xl"
@@ -54,7 +54,7 @@ const Event = (props: EventProps) => {
         <div className="flex flex-1 flex-col px-5 py-4">
           <div className="mb-4 flex items-center justify-between">
             <div className="space-y-1">
-              <Text className="flex items-center gap-2 text-sm uppercase tracking-[0.2em] text-black/70 dark:text-white/70">
+              <Text className="flex items-center gap-2 text-sm uppercase tracking-caps text-black/70 dark:text-white/70">
                 <Calendar className="h-4 w-4" />
                 {displayDate}
               </Text>
@@ -76,12 +76,12 @@ const Event = (props: EventProps) => {
           <div className="mt-auto gap-2 pt-5 text-black/70 dark:text-white/70">
             <div className="flex items-center gap-2">
               <City className="w-4 h-4" />
-              <Text className="text-sm uppercase tracking-[0.2em]">{city}</Text>
+              <Text className="text-sm uppercase tracking-caps">{city}</Text>
             </div>
 
             <div className="flex items-center gap-2">
               <Pin className="w-4 h-4" />
-              <Text className="text-sm uppercase tracking-[0.2em]">
+              <Text className="text-sm uppercase tracking-caps">
                 {venue}
               </Text>
             </div>
@@ -89,7 +89,7 @@ const Event = (props: EventProps) => {
 
           <div className="mt-4 flex items-center justify-end gap-3 border-t border-black/10 pt-4 text-black/70 dark:border-white/10 dark:text-white/70">
             <span
-              className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] transition ${
+              className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-caps transition ${
                 isUpcoming
                   ? "border border-black/70 bg-black text-white shadow-md group-hover:-translate-y-0.5 group-hover:border-black/90 group-hover:bg-black/90 dark:border-white/40 dark:bg-white dark:text-black dark:group-hover:border-white/70 dark:group-hover:bg-white/90"
                   : "border border-black/30 bg-black/5 text-black group-hover:-translate-y-0.5 group-hover:border-black/50 group-hover:bg-black/10 dark:border-white/30 dark:bg-white/10 dark:text-white dark:group-hover:border-white/60 dark:group-hover:bg-white/20"

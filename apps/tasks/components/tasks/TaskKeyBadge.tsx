@@ -19,7 +19,7 @@ export function TaskKeyBadge({
 
   return (
     <code
-      className={`inline-flex shrink-0 border-black/20 bg-transparent font-mono font-bold leading-none tracking-[0.08em] text-black/60 dark:border-white/20 dark:text-white/60 ${sizeClasses[size]} ${className}`}
+      className={`inline-flex shrink-0 border-black/20 bg-transparent font-mono font-bold leading-none tracking-caps-tight text-black/60 dark:border-white/20 dark:text-white/60 ${sizeClasses[size]} ${className}`}
     >
       {taskKey(task)}
     </code>

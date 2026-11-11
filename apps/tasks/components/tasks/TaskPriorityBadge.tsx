@@ -20,7 +20,7 @@ export function TaskPriorityBadge({
 }) {
   const sizeClasses =
     size === "compact"
-      ? "px-1.5 py-0.5 tracking-[0.08em] sm:px-2 sm:tracking-[0.16em]"
+      ? "px-1.5 py-0.5 tracking-caps-tight sm:px-2 sm:tracking-caps-tight"
       : "px-2 py-1 tracking-widest";
 
   return (

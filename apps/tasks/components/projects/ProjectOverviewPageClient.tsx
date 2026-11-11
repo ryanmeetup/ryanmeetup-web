@@ -79,7 +79,7 @@ import { statusOutcomeLabel } from "@/lib/tasks/status-outcome";
  * so they share the status chip's shape rather than the neighbouring buttons'.
  */
 const chipClassName =
-  "inline-flex items-center gap-2 rounded-full border border-black/10 bg-black/[0.035] px-2.5 py-1 font-sans text-[11px] font-semibold uppercase tracking-[0.12em] dark:border-white/10 dark:bg-white/[0.07]";
+  "inline-flex items-center gap-2 rounded-full border border-black/10 bg-black/[0.035] px-2.5 py-1 font-sans text-[11px] font-semibold uppercase tracking-caps-tight dark:border-white/10 dark:bg-white/[0.07]";
 
 const dueChipToneClass = {
   danger: "text-red-700 dark:text-red-300",
@@ -127,7 +127,7 @@ function GroupHeading({
     <div
       className={`flex items-center gap-3 border-b border-black/10 bg-black/[0.02] px-4 py-2.5 dark:border-white/10 dark:bg-white/[0.025] sm:px-5 ${divider ? "border-t" : ""}`}
     >
-      <h3 className="min-w-0 text-xs font-semibold uppercase tracking-[0.16em] text-black/50 dark:text-white/50">
+      <h3 className="min-w-0 text-xs font-semibold uppercase tracking-caps-tight text-black/50 dark:text-white/50">
         {label}
       </h3>
       {action && <div className="ml-auto shrink-0">{action}</div>}

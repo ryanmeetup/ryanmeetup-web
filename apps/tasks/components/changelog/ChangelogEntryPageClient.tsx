@@ -147,7 +147,7 @@ export function ChangelogEntryPageClient({
                 remarkPlugins={[remarkGfm]}
                 components={{
                   h2: ({ children }) => (
-                    <h2 className="mb-4 mt-8 w-fit rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-800 first:mt-0 dark:text-emerald-200">
+                    <h2 className="mb-4 mt-8 w-fit rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-caps-tight text-emerald-800 first:mt-0 dark:text-emerald-200">
                       {children}
                     </h2>
                   ),
@@ -186,7 +186,7 @@ export function ChangelogEntryPageClient({
               )}
               className="group rounded-xl border border-black/10 bg-white/60 p-4 transition hover:border-black/25 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:border-white/10 dark:bg-white/[0.035] dark:hover:border-white/25 dark:hover:bg-white/[0.07] dark:focus-visible:ring-white/40"
             >
-              <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-black/45 dark:text-white/45">
+              <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-caps-tight text-black/45 dark:text-white/45">
                 <FiArrowLeft aria-hidden /> Previous release
               </span>
               <span className="mt-2 block text-sm font-semibold group-hover:underline">
@@ -204,7 +204,7 @@ export function ChangelogEntryPageClient({
               )}
               className="group rounded-xl border border-black/10 bg-white/60 p-4 text-right transition hover:border-black/25 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:border-white/10 dark:bg-white/[0.035] dark:hover:border-white/25 dark:hover:bg-white/[0.07] dark:focus-visible:ring-white/40"
             >
-              <span className="flex items-center justify-end gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-black/45 dark:text-white/45">
+              <span className="flex items-center justify-end gap-2 text-xs font-semibold uppercase tracking-caps-tight text-black/45 dark:text-white/45">
                 Next release <FiArrowRight aria-hidden />
               </span>
               <span className="mt-2 block text-sm font-semibold group-hover:underline">

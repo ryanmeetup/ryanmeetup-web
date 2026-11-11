@@ -39,7 +39,7 @@ const Wordmark = ({
       {name}
     </span>
     {tagline && (
-      <span className="text-[10px] font-bold uppercase leading-none tracking-[0.2em] text-black/70 dark:text-white/70">
+      <span className="text-[10px] font-bold uppercase leading-none tracking-caps text-black/70 dark:text-white/70">
         {tagline}
       </span>
     )}

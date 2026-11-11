@@ -110,7 +110,7 @@ const SortHeader = (props: SortHeaderProps) => {
 // The headings are the widest thing in the count columns, so one tracking at
 // every width is what pays for the gutter between them.
 const TableHeader = (props: TableHeaderProps) => (
-  <thead className="uppercase tracking-[0.15em] text-[10px] text-black/70 dark:text-white/70">
+  <thead className="uppercase tracking-caps-tight text-[10px] text-black/70 dark:text-white/70">
     <tr className="border-b border-black/10 dark:border-white/10">
       <th scope="col" className="w-10 pb-3 pl-3 md:w-16 md:pl-4">
         Rank

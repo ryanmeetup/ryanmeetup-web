@@ -918,7 +918,7 @@ export function CategoriesModal({
                               )}
                               {(category.links ?? []).length > 0 && (
                                 <div className="mt-3">
-                                  <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-black/45 dark:text-white/45">
+                                  <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-caps text-black/45 dark:text-white/45">
                                     Useful links
                                   </p>
                                   <ResourceLinks links={category.links} />
@@ -926,7 +926,7 @@ export function CategoriesModal({
                               )}
                               {category.tags.length > 0 && (
                                 <div className="mb-3 mt-3">
-                                  <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-black/45 dark:text-white/45">
+                                  <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-caps text-black/45 dark:text-white/45">
                                     Available tags
                                   </p>
                                   <div className="flex flex-wrap gap-1.5">
@@ -1012,7 +1012,7 @@ export function CategoriesModal({
                               </span>
                             )}
                             <div className="min-w-0 flex-1">
-                              <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-black/40 dark:text-white/40">
+                              <p className="text-[9px] font-semibold uppercase tracking-caps text-black/40 dark:text-white/40">
                                 Owners
                               </p>
                               <p
@@ -1082,7 +1082,7 @@ export function CategoriesModal({
                           <Pill
                             variant="neutral"
                             size="sm"
-                            className="shrink-0 !px-2.5 !tracking-[0.16em]"
+                            className="shrink-0 !px-2.5 !tracking-caps-tight"
                           >
                             Archived
                           </Pill>

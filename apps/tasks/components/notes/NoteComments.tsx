@@ -135,7 +135,7 @@ export function NoteComments({
       <h3>
         <button
           type="button"
-          className="flex w-full cursor-pointer items-center gap-2 px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-[0.2em] transition hover:bg-black/[0.035] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/30 dark:hover:bg-white/[0.04] dark:focus-visible:ring-white/30"
+          className="flex w-full cursor-pointer items-center gap-2 px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-caps transition hover:bg-black/[0.035] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/30 dark:hover:bg-white/[0.04] dark:focus-visible:ring-white/30"
           aria-controls={contentId}
           aria-expanded={!collapsed}
           onClick={() => setCollapsed((current) => !current)}

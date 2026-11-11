@@ -151,7 +151,7 @@ export function Reviews({ data, product, reviewAccount }: { data: ReviewsData; p
               {review.title && <Heading size="h3" className="mt-4 text-xl">{review.title}</Heading>}
               <Text className="mt-2">{review.body}</Text>
               {!!review.photoUrls?.length && <ReviewPhotoGallery urls={review.photoUrls} reviewerName={review.reviewerName} />}
-              <p className="mt-4 text-xs font-semibold uppercase tracking-[0.18em]">{review.reviewerName}{review.verified ? " · Verified buyer" : ""}</p>
+              <p className="mt-4 text-xs font-semibold uppercase tracking-caps">{review.reviewerName}{review.verified ? " · Verified buyer" : ""}</p>
             </Card>
           ))}
         </div>

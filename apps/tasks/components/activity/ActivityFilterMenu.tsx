@@ -116,7 +116,7 @@ export function ActivityFilterMenu({
             return (
               <Fragment key={option.value}>
                 {showGroup && (
-                  <div className="mb-1 mt-2 flex items-center gap-2 border-b border-black/10 px-2 pb-2 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-black/55 first:mt-0 dark:border-white/10 dark:text-white/55">
+                  <div className="mb-1 mt-2 flex items-center gap-2 border-b border-black/10 px-2 pb-2 text-[0.65rem] font-semibold uppercase tracking-caps text-black/55 first:mt-0 dark:border-white/10 dark:text-white/55">
                     {option.group?.icon}
                     {option.group?.color && (
                       <i

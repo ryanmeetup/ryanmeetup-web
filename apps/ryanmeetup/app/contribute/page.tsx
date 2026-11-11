@@ -132,7 +132,7 @@ const ContributePage = async () => {
       <Card
         variant="soft"
         size="lg"
-        className="shadow-[0_25px_50px_-40px_rgba(0,0,0,0.6)] lg:p-10"
+        className="shadow-drop lg:p-10"
       >
         <div className="space-y-4">
           <Heading className="text-3xl title sm:text-4xl" size="h2">
@@ -148,7 +148,7 @@ const ContributePage = async () => {
             <Card key={role.title} variant="solid" size="md" hover>
               <div className="flex items-center gap-3">
                 <IconBadge>{role.icon}</IconBadge>
-                <Text className="text-sm uppercase tracking-[0.3em] text-black/70 dark:text-white/70">
+                <Text className="text-sm uppercase tracking-caps-wide text-black/70 dark:text-white/70">
                   {role.title} Ryan
                 </Text>
               </div>
@@ -174,7 +174,7 @@ const ContributePage = async () => {
       <Card
         variant="soft"
         size="lg"
-        className="shadow-[0_25px_50px_-40px_rgba(0,0,0,0.6)] lg:p-10"
+        className="shadow-drop lg:p-10"
       >
         <div className="space-y-6">
           <Heading className="text-3xl title sm:text-4xl" size="h2">
@@ -185,7 +185,7 @@ const ContributePage = async () => {
               <Card key={item.title} variant="solid" size="md" hover>
                 <div className="flex items-center gap-3">
                   <IconBadge>{item.icon}</IconBadge>
-                  <Text className="text-sm uppercase tracking-[0.3em] text-black/70 dark:text-white/70">
+                  <Text className="text-sm uppercase tracking-caps-wide text-black/70 dark:text-white/70">
                     {item.title}
                   </Text>
                 </div>

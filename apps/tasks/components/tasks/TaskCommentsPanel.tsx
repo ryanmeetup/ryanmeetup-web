@@ -276,7 +276,7 @@ export function TaskCommentsPanel({
 
   return (
     <section className="space-y-3">
-      <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em]">
+      <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-caps">
         <FiMessageSquare /> Comments{" "}
         {!loading && <CountBadge>{comments.length}</CountBadge>}
       </h3>

@@ -41,7 +41,7 @@ export type ButtonVariant =
 export type ButtonSize = "xs" | "sm" | "field" | "md" | "lg";
 
 const sizeStyles: Record<ButtonSize, string> = {
-  xs: "px-3 py-1.5 text-[11px] tracking-[0.16em]",
+  xs: "px-3 py-1.5 text-[11px] tracking-caps-tight",
   sm: "px-4 py-2 text-xs",
   field: "h-[42px] px-4 py-0 text-xs",
   md: "px-5 py-2.5 text-sm",
@@ -54,7 +54,7 @@ const getBaseClasses = (
   fullWidth: boolean,
 ) => {
   const base =
-    "relative inline-flex items-center justify-center gap-2 rounded-lg font-semibold uppercase tracking-[0.2em] transition focus:outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/10 group";
+    "relative inline-flex items-center justify-center gap-2 rounded-lg font-semibold uppercase tracking-caps transition focus:outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/10 group";
 
   const width = fullWidth ? "w-full" : "w-auto";
 

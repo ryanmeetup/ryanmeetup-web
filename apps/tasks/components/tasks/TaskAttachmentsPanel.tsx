@@ -78,7 +78,7 @@ export function TaskAttachmentsPanel({
       panelClassName="space-y-3 pt-3"
       iconClassName="h-3.5 w-3.5"
       summary={
-        <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em]">
+        <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-caps">
           <FiPaperclip aria-hidden /> Attachments
           {!loading && <CountBadge>{attachments.length}</CountBadge>}
         </span>

@@ -22,7 +22,7 @@ const RegionSection = (props: RegionSectionProps) => {
         <Heading className="text-2xl title sm:text-3xl" size="h2">
           {title}
         </Heading>
-        <Kicker className="tracking-[0.2em]">{subtitle}</Kicker>
+        <Kicker>{subtitle}</Kicker>
       </div>
       <RegionGrid items={items} region={region} />
     </section>

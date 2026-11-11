@@ -16,6 +16,18 @@
   --breakpoint-1xl: 1360px;
   --breakpoint-3xl: 1800px;
   --breakpoint-4xl: 2100px;
+  /* Letter-spacing for uppercase labels: kickers, chips, metadata. These three
+     replace a dozen one-off tracking-[…em] values; pick the nearest step
+     rather than adding another. caps-wide is the Kicker default. */
+  --tracking-caps-tight: 0.12em;
+  --tracking-caps: 0.2em;
+  --tracking-caps-wide: 0.3em;
+  /* Elevation. drop is the soft long shadow under a raised card; drop-lg is
+     the same idea for a page-level panel; overlay sits under modals and
+     drawers. Tailwind's shadow-sm/shadow-lg cover small controls. */
+  --shadow-drop: 0 25px 50px -40px rgb(0 0 0 / 0.6);
+  --shadow-drop-lg: 0 35px 70px -50px rgb(0 0 0 / 0.6);
+  --shadow-overlay: 0 24px 80px rgb(0 0 0 / 0.35);
   --animate-disco: disco 1.5s linear infinite;
 
   @keyframes disco {

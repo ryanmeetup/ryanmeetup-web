@@ -199,8 +199,8 @@ function WorkspaceSwitch({
             onClick={() => onChange(option.value)}
             className={`view-button [&_svg]:size-4 [&_svg]:shrink-0 ${
               grid
-                ? "min-h-9 w-full min-w-0 px-2 tracking-[0.08em]"
-                : "px-3 tracking-[0.14em]"
+                ? "min-h-9 w-full min-w-0 px-2 tracking-caps-tight"
+                : "px-3 tracking-caps-tight"
             } ${option.unavailable ? "opacity-40" : ""} ${
               option.value === value ? "view-button-active" : ""
             }`}
@@ -223,7 +223,7 @@ function WorkspaceSwitch({
     <div>
       <p
         aria-hidden="true"
-        className="mb-1 text-[9px] font-semibold uppercase tracking-[0.16em] text-black/45 dark:text-white/45"
+        className="mb-1 text-[9px] font-semibold uppercase tracking-caps-tight text-black/45 dark:text-white/45"
       >
         {caption}
       </p>
@@ -383,7 +383,7 @@ export function TaskWorkspaceHeader({
   return (
     <div className="mb-6">
       <div className="mb-2 flex items-center justify-between gap-3">
-        <p className="min-w-0 text-[10px] font-semibold uppercase tracking-[0.24em] text-black/50 dark:text-white/50">
+        <p className="min-w-0 text-[10px] font-semibold uppercase tracking-caps text-black/50 dark:text-white/50">
           {selectedProject
             ? "Project workspace"
             : selectedCategory
@@ -457,7 +457,7 @@ export function TaskWorkspaceHeader({
               <Pill
                 variant="neutral"
                 size="sm"
-                className="shrink-0 gap-1 !px-2 !py-0.5 !text-[10px] font-medium !tracking-[0.12em]"
+                className="shrink-0 gap-1 !px-2 !py-0.5 !text-[10px] font-medium !tracking-caps-tight"
               >
                 <FiArchive aria-hidden /> Archived
               </Pill>
@@ -525,7 +525,7 @@ export function TaskWorkspaceHeader({
               >
                 <div className="min-w-0">
                   <div className="mb-1 flex min-h-8 items-center">
-                    <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-black/45 dark:text-white/45">
+                    <p className="text-[9px] font-semibold uppercase tracking-caps text-black/45 dark:text-white/45">
                       Owners
                     </p>
                   </div>
@@ -564,7 +564,7 @@ export function TaskWorkspaceHeader({
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="mb-1 flex min-h-8 items-center gap-1">
-                    <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-black/45 dark:text-white/45">
+                    <p className="text-[9px] font-semibold uppercase tracking-caps text-black/45 dark:text-white/45">
                       Project context
                     </p>
                     <IconButton
@@ -580,7 +580,7 @@ export function TaskWorkspaceHeader({
                   <div className="flex flex-wrap items-start gap-x-5 gap-y-3">
                     {selectedProject.links.length > 0 && (
                       <div className="flex min-w-0 flex-col gap-1.5">
-                        <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-black/40 dark:text-white/40">
+                        <p className="text-[9px] font-semibold uppercase tracking-caps-tight text-black/40 dark:text-white/40">
                           Links
                         </p>
                         <ResourceLinks links={selectedProject.links} />
@@ -588,7 +588,7 @@ export function TaskWorkspaceHeader({
                     )}
                     {projectAttachmentsPending ? (
                       <div className="flex min-w-0 flex-col gap-1.5">
-                        <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-black/40 dark:text-white/40">
+                        <p className="text-[9px] font-semibold uppercase tracking-caps-tight text-black/40 dark:text-white/40">
                           Notes &amp; files
                         </p>
                         <ResourceChipsSkeleton
@@ -600,7 +600,7 @@ export function TaskWorkspaceHeader({
                       <>
                         {projectAttachments.notes.length > 0 && (
                           <div className="flex min-w-0 flex-col gap-1.5">
-                            <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-black/40 dark:text-white/40">
+                            <p className="text-[9px] font-semibold uppercase tracking-caps-tight text-black/40 dark:text-white/40">
                               Notes
                             </p>
                             <ResourceAttachmentsPreview
@@ -611,7 +611,7 @@ export function TaskWorkspaceHeader({
                         )}
                         {projectAttachments.files.length > 0 && (
                           <div className="flex min-w-0 flex-col gap-1.5">
-                            <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-black/40 dark:text-white/40">
+                            <p className="text-[9px] font-semibold uppercase tracking-caps-tight text-black/40 dark:text-white/40">
                               Files
                             </p>
                             <ResourceAttachmentsPreview
@@ -661,7 +661,7 @@ export function TaskWorkspaceHeader({
                 >
                   {(selectedCategory.links ?? []).length > 0 && (
                     <div className="min-w-0">
-                      <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-black/45 dark:text-white/45">
+                      <p className="mb-1 text-[9px] font-semibold uppercase tracking-caps text-black/45 dark:text-white/45">
                         Useful links
                       </p>
                       <ResourceLinks links={selectedCategory.links ?? []} />
@@ -671,7 +671,7 @@ export function TaskWorkspaceHeader({
                     categoryAttachments.notes.length > 0 ||
                     categoryAttachments.files.length > 0) && (
                     <div className="min-w-0">
-                      <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-black/45 dark:text-white/45">
+                      <p className="mb-1 text-[9px] font-semibold uppercase tracking-caps text-black/45 dark:text-white/45">
                         Attachments
                       </p>
                       {categoryAttachmentsPending ? (

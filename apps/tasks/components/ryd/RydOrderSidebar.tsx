@@ -49,7 +49,7 @@ function ReviewSection({
       panelClassName="pt-3"
       iconClassName="h-3.5 w-3.5 motion-reduce:transition-none"
       summary={
-        <span className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em]">
+        <span className="flex items-center gap-3 text-xs font-semibold uppercase tracking-caps">
           <span className="shrink-0">{title}</span>
           <span
             aria-hidden

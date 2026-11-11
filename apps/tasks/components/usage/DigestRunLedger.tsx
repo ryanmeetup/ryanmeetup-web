@@ -24,7 +24,7 @@ const outcomeStyles: Record<DigestRunOutcome, string> = {
 function OutcomeBadge({ outcome }: { outcome: DigestRunOutcome }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${outcomeStyles[outcome]}`}
+      className={`inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-caps-tight ${outcomeStyles[outcome]}`}
     >
       {DIGEST_OUTCOME_LABEL[outcome]}
     </span>
@@ -49,7 +49,7 @@ const summarize = (run: DigestRun) => {
 export function DigestRunLedger({ runs }: { runs: DigestRun[] }) {
   return (
     <section aria-label="Recent digest runs" className="space-y-3">
-      <h3 className="text-[10px] font-semibold uppercase tracking-[0.16em] text-black/50 dark:text-white/50">
+      <h3 className="text-[10px] font-semibold uppercase tracking-caps-tight text-black/50 dark:text-white/50">
         Recent digest runs
       </h3>
       <Card variant="solid" size="none" className="overflow-hidden">
@@ -88,7 +88,7 @@ export function DigestRunLedger({ runs }: { runs: DigestRun[] }) {
                   <col className="w-[12%]" />
                   <col className="w-[46%]" />
                 </colgroup>
-                <thead className="border-b border-black/10 bg-black/[0.025] text-[10px] uppercase tracking-[0.16em] text-black/50 dark:border-white/10 dark:bg-white/[0.025] dark:text-white/50">
+                <thead className="border-b border-black/10 bg-black/[0.025] text-[10px] uppercase tracking-caps-tight text-black/50 dark:border-white/10 dark:bg-white/[0.025] dark:text-white/50">
                   <tr>
                     <th className="px-4 py-3 font-semibold">Ran</th>
                     <th className="px-4 py-3 font-semibold">Outcome</th>

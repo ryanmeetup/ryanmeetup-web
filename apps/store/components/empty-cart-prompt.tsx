@@ -18,7 +18,7 @@ export function EmptyCartPrompt({ onNavigate, className = "" }: { onNavigate?: (
         <FiShoppingCart className="h-8 w-8" strokeWidth={1.5} />
       </div>
       <div className="space-y-2 text-center">
-        <Text className="text-xs font-semibold uppercase tracking-[0.2em]">Your cart is remarkably Ryan-free.</Text>
+        <Text className="text-xs font-semibold uppercase tracking-caps">Your cart is remarkably Ryan-free.</Text>
         <Text>Easily fixed. Every Ryan deserves at least one shirt with their name on it.</Text>
       </div>
       <ul className="space-y-2">

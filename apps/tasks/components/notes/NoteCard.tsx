@@ -76,7 +76,7 @@ export function NoteCard({
             {title}
           </button>
         </h3>
-        <span className="inline-flex min-w-0 max-w-[45%] shrink-0 items-center gap-2 rounded-full border border-black/10 bg-white/70 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-black/65 dark:border-white/10 dark:bg-white/5 dark:text-white/65">
+        <span className="inline-flex min-w-0 max-w-[45%] shrink-0 items-center gap-2 rounded-full border border-black/10 bg-white/70 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-caps-tight text-black/65 dark:border-white/10 dark:bg-white/5 dark:text-white/65">
           <i
             className="h-2 w-2 shrink-0 rounded-full ring-1 ring-black/10 dark:ring-white/15"
             style={{ backgroundColor: category?.color ?? "#8a8a8a" }}

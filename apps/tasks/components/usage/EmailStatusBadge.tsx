@@ -48,7 +48,7 @@ export const emailStatusLabel = (status: string) =>
 export function EmailStatusBadge({ status }: { status: string }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${statusStyles[status] ?? fallbackStyle}`}
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-caps-tight ${statusStyles[status] ?? fallbackStyle}`}
     >
       <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-current" />
       {emailStatusLabel(status)}

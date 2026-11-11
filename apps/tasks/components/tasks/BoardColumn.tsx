@@ -88,7 +88,7 @@ export function BoardColumn({
               className="h-2.5 w-2.5 shrink-0 rounded-full"
               style={{ backgroundColor: status.color }}
             />
-            <h2 className="shrink-0 whitespace-nowrap text-[11px] font-bold uppercase tracking-[0.12em] sm:text-xs sm:tracking-[0.16em]">
+            <h2 className="shrink-0 whitespace-nowrap text-[11px] font-bold uppercase tracking-caps-tight sm:text-xs sm:tracking-caps-tight">
               {status.name}
             </h2>
             <span className="text-xs text-black/40 dark:text-white/40">

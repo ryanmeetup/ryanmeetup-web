@@ -83,7 +83,7 @@ export function TaskListView({
       )}
       <div className="md:hidden" aria-busy={loading}>
         <div className="flex items-center justify-between gap-3 border-b border-black/10 bg-black/[0.025] px-4 py-3 dark:border-white/10 dark:bg-white/[0.025]">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-black/50 dark:text-white/50">
+          <p className="text-[10px] font-semibold uppercase tracking-caps-tight text-black/50 dark:text-white/50">
             {archived ? "Archive" : "Tasks"}
           </p>
           <DropdownSelect
@@ -101,7 +101,7 @@ export function TaskListView({
               { label: "Due", value: "due" },
               { label: "Priority", value: "priority" },
             ]}
-            className="uppercase tracking-[0.12em]"
+            className="uppercase tracking-caps-tight"
           />
         </div>
         <div className="divide-y divide-black/5 dark:divide-white/5">
@@ -128,7 +128,7 @@ export function TaskListView({
             <col className="w-[7%]" />
             <col className="w-[8%]" />
           </colgroup>
-          <thead className="border-b border-black/10 bg-black/[0.025] text-[10px] uppercase tracking-[0.16em] text-black/50 dark:border-white/10 dark:bg-white/[0.025] dark:text-white/50">
+          <thead className="border-b border-black/10 bg-black/[0.025] text-[10px] uppercase tracking-caps-tight text-black/50 dark:border-white/10 dark:bg-white/[0.025] dark:text-white/50">
             <tr>
               <th className="px-4 py-3">Task</th>
               <th className="px-3 py-3">Status</th>

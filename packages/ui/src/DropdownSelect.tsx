@@ -171,7 +171,7 @@ const DropdownSelect = ({
         <Fragment key={option.value}>
           {showGroup && (
             <div
-              className={`flex items-center gap-2 border-b border-black/10 px-3 pb-2 pt-2 text-[0.65rem] font-semibold uppercase tracking-[0.2em] dark:border-white/10 ${option.group?.textClassName ?? "text-black/55 dark:text-white/55"}`}
+              className={`flex items-center gap-2 border-b border-black/10 px-3 pb-2 pt-2 text-[0.65rem] font-semibold uppercase tracking-caps dark:border-white/10 ${option.group?.textClassName ?? "text-black/55 dark:text-white/55"}`}
             >
               {option.group?.icon}
               <span className="truncate">{option.group?.label}</span>

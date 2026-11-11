@@ -120,7 +120,7 @@ export function NewTaskDetails({
         iconClassName="h-3.5 w-3.5"
         summary={
           <span className="flex items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.2em]">
+            <span className="text-xs font-semibold uppercase tracking-caps">
               Checklist
             </span>
             <CountBadge>{value.checklist.length}</CountBadge>
@@ -211,7 +211,7 @@ export function NewTaskDetails({
       </DisclosureCard>
 
       <section className="space-y-3 border-t border-black/10 pt-5 dark:border-white/10">
-        <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em]">
+        <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-caps">
           <FiPaperclip aria-hidden /> Attachments
           {value.files.length + value.urls.length > 0 && (
             <CountBadge>{value.files.length + value.urls.length}</CountBadge>

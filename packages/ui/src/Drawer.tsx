@@ -74,7 +74,7 @@ const Drawer = ({
           into view, cancelling the slide-in. */}
       <div className="fixed inset-0 flex justify-end overflow-clip">
         <DialogPanel
-          className={`flex h-full w-full max-w-md flex-col border-l border-black/15 bg-white pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] shadow-[0_24px_80px_rgba(0,0,0,0.35)] will-change-transform dark:border-white/20 dark:bg-[#181818] ${closing ? "pointer-events-none motion-safe:animate-drawer-out" : "motion-safe:animate-drawer-in"} ${panelClassName ?? ""}`}
+          className={`flex h-full w-full max-w-md flex-col border-l border-black/15 bg-white pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] shadow-overlay will-change-transform dark:border-white/20 dark:bg-[#181818] ${closing ? "pointer-events-none motion-safe:animate-drawer-out" : "motion-safe:animate-drawer-in"} ${panelClassName ?? ""}`}
         >
           <EditorHeader
             title={title}

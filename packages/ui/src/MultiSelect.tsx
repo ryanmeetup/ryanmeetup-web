@@ -210,7 +210,7 @@ const MultiSelect = ({
                       if (event.key === "Enter" || event.key === " ")
                         event.stopPropagation();
                     }}
-                    className="mb-1 flex w-full shrink-0 cursor-pointer items-center gap-2 rounded-t-lg border-b border-black/10 px-3 pb-2 pt-2 text-left text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-black/55 transition first:pt-1 hover:text-black/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 disabled:cursor-default disabled:hover:text-black/55 dark:border-white/10 dark:text-white/55 dark:hover:text-white/80 dark:focus-visible:ring-white/20 dark:disabled:hover:text-white/55"
+                    className="mb-1 flex w-full shrink-0 cursor-pointer items-center gap-2 rounded-t-lg border-b border-black/10 px-3 pb-2 pt-2 text-left text-[0.65rem] font-semibold uppercase tracking-caps text-black/55 transition first:pt-1 hover:text-black/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 disabled:cursor-default disabled:hover:text-black/55 dark:border-white/10 dark:text-white/55 dark:hover:text-white/80 dark:focus-visible:ring-white/20 dark:disabled:hover:text-white/55"
                   >
                     {option.group?.color && (
                       <i

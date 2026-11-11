@@ -85,7 +85,7 @@ const Modal = ({
           ...(maxWidth ? { maxWidth } : {}),
         }
       : undefined;
-  const cardClassName = `mx-auto flex w-full min-h-0 flex-col ${maxWidth ? "" : sizeStyles[size]} ${maxHeight ? "" : "max-h-[min(42rem,calc(100dvh-max(1rem,env(safe-area-inset-top))-max(1rem,env(safe-area-inset-bottom))))] sm:max-h-[calc(100dvh-max(1rem,env(safe-area-inset-top))-max(1rem,env(safe-area-inset-bottom)))]"} overflow-hidden rounded-2xl border border-black/15 bg-white shadow-[0_24px_80px_rgba(0,0,0,0.35)] ring-1 ring-black/5 dark:border-white/20 dark:bg-[#181818] dark:shadow-[0_28px_100px_rgba(0,0,0,0.85)] dark:ring-white/10 ${panelClassName ?? ""}`;
+  const cardClassName = `mx-auto flex w-full min-h-0 flex-col ${maxWidth ? "" : sizeStyles[size]} ${maxHeight ? "" : "max-h-[min(42rem,calc(100dvh-max(1rem,env(safe-area-inset-top))-max(1rem,env(safe-area-inset-bottom))))] sm:max-h-[calc(100dvh-max(1rem,env(safe-area-inset-top))-max(1rem,env(safe-area-inset-bottom)))]"} overflow-hidden rounded-2xl border border-black/15 bg-white shadow-overlay ring-1 ring-black/5 dark:border-white/20 dark:bg-[#181818] dark:ring-white/10 ${panelClassName ?? ""}`;
 
   const cardContent = (
     <>

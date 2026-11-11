@@ -66,7 +66,7 @@ From `app/globals.css`:
 
 - Low elevation: `shadow-sm`
 - Floating: `shadow-xl`
-- Hero glow: `shadow-[0_25px_50px_-40px_rgba(0,0,0,0.6)]`
+- Hero glow: `shadow-drop`
 
 ### Hover Affordance
 
@@ -75,7 +75,7 @@ From `app/globals.css`:
 
 ### Meta Label
 
-- `text-xs font-semibold uppercase tracking-[0.3em]`
+- `text-xs font-semibold uppercase tracking-caps-wide`
 
 ## 3) Typography Rules
 
@@ -135,7 +135,7 @@ rounded-2xl border border-black/10 bg-white/80 shadow-sm dark:border-white/10 da
 ### Meta Label
 
 ```
-text-xs font-semibold uppercase tracking-[0.3em] text-black/60 dark:text-white/60
+text-xs font-semibold uppercase tracking-caps-wide text-black/60 dark:text-white/60
 ```
 
 ### Hoverable Tile

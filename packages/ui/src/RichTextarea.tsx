@@ -214,7 +214,7 @@ const RichTextarea = forwardRef<HTMLTextAreaElement, RichTextareaProps>(
         />
         {showListToolbar && (
           <div
-            className="relative z-20 mb-2 ml-auto mr-2 flex w-max items-center gap-0.5 rounded-full border border-zinc-700/80 bg-zinc-950/85 p-0.5 text-white shadow-[0_8px_20px_rgba(0,0,0,0.28)] backdrop-blur sm:hidden"
+            className="relative z-20 mb-2 ml-auto mr-2 flex w-max items-center gap-0.5 rounded-full border border-zinc-700/80 bg-zinc-950/85 p-0.5 text-white shadow-lg backdrop-blur sm:hidden"
             onPointerDown={retainSelection}
             onClick={retainSelection}
           >

@@ -45,7 +45,7 @@ const AnchorNav = (props: AnchorNavProps) => {
                     <a href={child.href} className={childAnchorStyle}>
                       {child.icon}
                     </a>
-                    <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-black px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-white opacity-0 transition group-hover/child:opacity-100 dark:bg-white dark:text-black">
+                    <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-black px-3 py-1 text-[10px] font-semibold uppercase tracking-caps-wide text-white opacity-0 transition group-hover/child:opacity-100 dark:bg-white dark:text-black">
                       {child.tooltip}
                     </span>
                   </div>
@@ -68,7 +68,7 @@ const AnchorNav = (props: AnchorNavProps) => {
             >
               {item.icon}
             </a>
-            <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-black px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-white opacity-0 transition group-hover:opacity-100 dark:bg-white dark:text-black">
+            <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-black px-3 py-1 text-[10px] font-semibold uppercase tracking-caps-wide text-white opacity-0 transition group-hover:opacity-100 dark:bg-white dark:text-black">
               {item.tooltip}
             </span>
           </div>
