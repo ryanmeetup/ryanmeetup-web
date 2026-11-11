@@ -31,7 +31,7 @@ import {
 } from "react-icons/fi";
 import { CountBadge } from "@/components/global";
 import type { ResourceLink } from "@/lib/resources/resource-types";
-import { LinkPreviewThumbnail } from "./LinkPreviewThumbnail";
+import { LinkPreviewThumbnail } from "@/components/global/LinkPreviewThumbnail";
 
 function linkDestination(url: string) {
   try {

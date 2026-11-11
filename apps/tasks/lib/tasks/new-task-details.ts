@@ -50,7 +50,7 @@ export async function persistNewTaskDetails({
         ...draft.urls.map((item) => ({
           id: item.id,
           task_id: taskId,
-          name: attachmentUrlName(item.url),
+          name: attachmentUrlName(item.url, item.title),
           url: item.url,
           file_path: null,
           mime_type: null,
@@ -119,7 +119,7 @@ export async function persistNewTaskDetails({
         activity?: TaskActivity;
       }>("/api/task-attachments", {
         method: "POST",
-        body: JSON.stringify({ taskId, url: item.url }),
+        body: JSON.stringify({ taskId, url: item.url, title: item.title }),
       });
       if (!result.attachment) failures += 1;
       else {

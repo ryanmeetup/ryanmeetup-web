@@ -3,6 +3,13 @@ import { normalizeHttpUrl } from "@ryanmeetup/utils";
 import { attachmentUrlName } from "@/lib/tasks/task-attachment-urls";
 
 describe("task attachment URLs", () => {
+  it("prefers a title supplied by the person attaching the link", () => {
+    expect(
+      attachmentUrlName("https://example.com/random-id", "  Launch plan  "),
+    ).toBe("Launch plan");
+    expect(attachmentUrlName("https://example.com/brief", "  ")).toBe("brief");
+  });
+
   it("accepts and normalizes HTTP URLs", () => {
     expect(normalizeHttpUrl(" https://example.com/docs/file.pdf ")).toBe(
       "https://example.com/docs/file.pdf",

@@ -5,7 +5,15 @@ import { FiLink } from "react-icons/fi";
 
 const previewCache = new Map<string, string | null>();
 
-export function LinkPreviewThumbnail({ url }: { url: string }) {
+const sizeClasses = { sm: "h-9 w-9", md: "h-10 w-10", lg: "h-12 w-12" };
+
+export function LinkPreviewThumbnail({
+  url,
+  size = "sm",
+}: {
+  url: string;
+  size?: keyof typeof sizeClasses;
+}) {
   const [loadedPreview, setLoadedPreview] = useState<{
     url: string;
     imageUrl: string | null;
@@ -41,7 +49,10 @@ export function LinkPreviewThumbnail({ url }: { url: string }) {
   }, [url]);
 
   return (
-    <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-lg bg-black/5 text-black/50 dark:bg-white/5 dark:text-white/50">
+    <span
+      aria-hidden="true"
+      className={`grid shrink-0 place-items-center overflow-hidden rounded-lg bg-black/5 text-black/50 dark:bg-white/5 dark:text-white/50 ${sizeClasses[size]}`}
+    >
       {imageUrl ? (
         // The image host comes from arbitrary user-linked Open Graph metadata,
         // so it cannot be enumerated in Next's static remote image allowlist.

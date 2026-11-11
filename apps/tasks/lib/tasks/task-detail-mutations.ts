@@ -193,11 +193,11 @@ export function uploadAttachment(taskId: string, file: File) {
   );
 }
 
-export function attachUrl(taskId: string, url: string) {
+export function attachUrl(taskId: string, url: string, title?: string) {
   return expectRow(
     mutate<Partial<AttachmentResult>>(
       ATTACHMENTS,
-      json("POST", { taskId, url }),
+      json("POST", { taskId, url, title }),
     ),
     ["attachment"],
     "The URL could not be attached.",

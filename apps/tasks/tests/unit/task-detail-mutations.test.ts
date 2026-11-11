@@ -153,6 +153,24 @@ describe("task detail requests", () => {
       "Content-Type": "application/json",
     });
   });
+
+  it("sends a chosen title with a link attachment", async () => {
+    const fetch = stubFetch({
+      attachment: { id: "attachment-1", name: "Launch plan" },
+    });
+
+    await attachUrl("task-1", "https://example.com/brief", "Launch plan");
+
+    expect(requestOf(fetch)).toEqual({
+      url: "/api/task-attachments",
+      method: "POST",
+      body: {
+        taskId: "task-1",
+        url: "https://example.com/brief",
+        title: "Launch plan",
+      },
+    });
+  });
 });
 
 describe("guarding against an incomplete success", () => {

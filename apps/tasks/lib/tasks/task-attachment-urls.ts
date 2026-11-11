@@ -1,4 +1,6 @@
-export function attachmentUrlName(value: string) {
+export const TASK_LINK_TITLE_MAX_LENGTH = 500;
+
+export function attachmentUrlName(value: string, title?: string) {
   const url = new URL(value);
   const rawPathName = url.pathname.split("/").filter(Boolean).at(-1) ?? "";
   let pathName = rawPathName;
@@ -7,5 +9,5 @@ export function attachmentUrlName(value: string) {
   } catch {
     // Keep the encoded path when a URL contains an incomplete escape sequence.
   }
-  return pathName || url.hostname;
+  return title?.trim() || pathName || url.hostname;
 }

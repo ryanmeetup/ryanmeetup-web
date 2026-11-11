@@ -1,5 +1,6 @@
 import type { TaskDraft } from "./task-mutations";
 import type { NewTaskDetailsDraft } from "./task-types";
+import { TASK_LINK_TITLE_MAX_LENGTH } from "./task-attachment-urls";
 
 export type StoredTaskDraft = {
   id: string;
@@ -49,12 +50,22 @@ function storedTaskDetails(value: unknown): NewTaskDetailsDraft {
     // Browser File objects cannot be represented safely in local storage.
     files: [],
     urls: Array.isArray(details.urls)
-      ? details.urls.filter(
-          (item): item is { id: string; url: string } =>
-            Boolean(item) &&
-            typeof item.id === "string" &&
-            typeof item.url === "string",
-        )
+      ? details.urls
+          .filter(
+            (item): item is NewTaskDetailsDraft["urls"][number] =>
+              Boolean(item) &&
+              typeof item.id === "string" &&
+              typeof item.url === "string",
+          )
+          .map((item) => ({
+            id: item.id,
+            url: item.url,
+            ...(typeof item.title === "string"
+              ? {
+                  title: item.title.trim().slice(0, TASK_LINK_TITLE_MAX_LENGTH),
+                }
+              : {}),
+          }))
       : [],
   };
 }

@@ -2,17 +2,10 @@
 
 import { useRef, useState } from "react";
 import Image from "next/image";
-import {
-  Button,
-  DisclosureCard,
-  IconButton,
-  Input,
-  Tooltip,
-} from "@ryanmeetup/ui";
+import { Button, DisclosureCard, IconButton, Tooltip } from "@ryanmeetup/ui";
 import {
   FiExternalLink,
   FiFile,
-  FiLink,
   FiPaperclip,
   FiTrash2,
   FiX,
@@ -21,6 +14,8 @@ import { CountBadge } from "@/components/global";
 import { SkeletonBar } from "@/components/global/SkeletonBar";
 import { formatFileSize, formatMimeSubtype } from "@/lib/presentation";
 import type { TaskAttachment } from "@/lib/tasks/task-types";
+import { LinkPreviewThumbnail } from "@/components/global/LinkPreviewThumbnail";
+import { TaskLinkFields } from "./TaskLinkFields";
 
 /** Mirrors an attachment's thumbnail, name, and details while they load. */
 function TaskAttachmentSkeletons() {
@@ -43,10 +38,12 @@ function TaskAttachmentSkeletons() {
 export function TaskAttachmentsPanel({
   addingUrl,
   attachmentUrl,
+  attachmentTitle,
   attachments: loadedAttachments,
   loading,
   onAddUrl,
   onAttachmentUrlChange,
+  onAttachmentTitleChange,
   onRemove,
   onUploadFiles,
   previewAttachment,
@@ -56,11 +53,13 @@ export function TaskAttachmentsPanel({
 }: {
   addingUrl: boolean;
   attachmentUrl: string;
+  attachmentTitle: string;
   attachments: TaskAttachment[];
   /** The task's attachments are being fetched, so any held here may be stale. */
   loading: boolean;
   onAddUrl: () => void;
   onAttachmentUrlChange: (value: string) => void;
+  onAttachmentTitleChange: (value: string) => void;
   onRemove: (item: TaskAttachment) => void;
   onUploadFiles: (files: File[]) => void;
   previewAttachment: TaskAttachment | null;
@@ -70,7 +69,6 @@ export function TaskAttachmentsPanel({
 }) {
   const [draggingFiles, setDraggingFiles] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const setAttachmentUrl = onAttachmentUrlChange;
   const attachments = loading ? [] : loadedAttachments;
   return (
     <DisclosureCard
@@ -155,9 +153,7 @@ export function TaskAttachmentsPanel({
               />
             </button>
           ) : item.file_path === null && item.url !== "#" ? (
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-black/5 text-black/55 dark:bg-white/5 dark:text-white/55">
-              <FiLink aria-hidden />
-            </span>
+            <LinkPreviewThumbnail url={item.url} size="lg" />
           ) : (
             <span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-black/5 text-black/55 dark:bg-white/5 dark:text-white/55">
               <FiFile aria-hidden />
@@ -165,13 +161,17 @@ export function TaskAttachmentsPanel({
           )}
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold">{item.name}</p>
-            <p className="mt-0.5 truncate text-xs text-black/50 dark:text-white/50">
-              {[
-                formatMimeSubtype(item.mime_type),
-                formatFileSize(item.size_bytes),
-              ]
-                .filter(Boolean)
-                .join(" · ") || "Attachment"}
+            <p className="mt-0.5 truncate text-xs text-black/70 dark:text-white/70">
+              {item.file_path === null &&
+              item.mime_type === null &&
+              item.url !== "#"
+                ? item.url
+                : [
+                    formatMimeSubtype(item.mime_type),
+                    formatFileSize(item.size_bytes),
+                  ]
+                    .filter(Boolean)
+                    .join(" · ") || "Attachment"}
             </p>
           </div>
           <Tooltip content="Open in new tab">
@@ -194,35 +194,15 @@ export function TaskAttachmentsPanel({
           </IconButton>
         </div>
       ))}
-      <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-        <Input
-          label="Attachment URL"
-          name={`task-${taskId}-attachment-url`}
-          type="url"
-          value={attachmentUrl}
-          placeholder="https://example.com/resource"
-          disabled={addingUrl}
-          onChange={(event) => setAttachmentUrl(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key !== "Enter") return;
-            event.preventDefault();
-            void onAddUrl();
-          }}
-        />
-        <Button
-          type="button"
-          variant="action"
-          size="field"
-          leftIcon={<FiLink aria-hidden />}
-          disabled={!attachmentUrl.trim()}
-          loading={addingUrl}
-          loadingText="Adding..."
-          className="w-full sm:w-auto"
-          onClick={() => void onAddUrl()}
-        >
-          Add URL
-        </Button>
-      </div>
+      <TaskLinkFields
+        namePrefix={`task-${taskId}-attachment`}
+        url={attachmentUrl}
+        title={attachmentTitle}
+        adding={addingUrl}
+        onUrlChange={onAttachmentUrlChange}
+        onTitleChange={onAttachmentTitleChange}
+        onAdd={onAddUrl}
+      />
       <div
         className={`rounded-xl border border-dashed p-3 text-center transition duration-200 ease-in-out sm:p-4 ${
           draggingFiles

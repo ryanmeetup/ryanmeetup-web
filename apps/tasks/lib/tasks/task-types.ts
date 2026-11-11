@@ -86,5 +86,5 @@ export type TaskCategory = { task_id: string; category_id: string };
 export type NewTaskDetailsDraft = {
   checklist: { id: string; title: string; completed: boolean }[];
   files: File[];
-  urls: { id: string; url: string }[];
+  urls: { id: string; url: string; title?: string }[];
 };

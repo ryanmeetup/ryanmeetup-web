@@ -133,10 +133,12 @@ export function TaskDetails({
           <TaskAttachmentsPanel
             addingUrl={attachments.addingUrl}
             attachmentUrl={attachments.url}
+            attachmentTitle={attachments.title}
             attachments={attachments.attachments}
             loading={details.loadingFirstPage}
             onAddUrl={() => void attachments.addUrl()}
             onAttachmentUrlChange={attachments.setUrl}
+            onAttachmentTitleChange={attachments.setTitle}
             onRemove={(item) => void attachments.remove(item)}
             onUploadFiles={(files) => void attachments.upload(files)}
             previewAttachment={attachments.preview}

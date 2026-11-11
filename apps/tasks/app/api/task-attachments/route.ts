@@ -7,7 +7,8 @@ import {
   MAX_ATTACHMENT_SIZE,
 } from "@/lib/tasks/task-attachments";
 import { attachmentUrlName } from "@/lib/tasks/task-attachment-urls";
-import { normalizeHttpUrl } from "@ryanmeetup/utils";
+import { taskLinkAttachmentSchema } from "@/lib/api-schema";
+import { readJson } from "@/lib/server/request";
 
 export const runtime = "nodejs";
 
@@ -27,14 +28,16 @@ export async function POST(request: Request) {
   const isJson = request.headers
     .get("content-type")
     ?.includes("application/json");
-  const payload = isJson
-    ? ((await request.json()) as { taskId?: unknown; url?: unknown })
-    : null;
+  let payload: ReturnType<typeof taskLinkAttachmentSchema> = null;
+  if (isJson) {
+    const parsed = await readJson(request, taskLinkAttachmentSchema);
+    if ("response" in parsed) return parsed.response;
+    payload = parsed.data;
+  }
   const formData = isJson ? null : await request.formData();
   const taskId = payload?.taskId ?? formData?.get("taskId");
   const file = formData?.get("file");
-  const externalUrl =
-    typeof payload?.url === "string" ? normalizeHttpUrl(payload.url) : null;
+  const externalUrl = payload?.url ?? null;
   if (
     typeof taskId !== "string" ||
     (isJson ? !externalUrl : !(file instanceof File))
@@ -68,7 +71,7 @@ export async function POST(request: Request) {
 
   if (externalUrl) {
     const id = crypto.randomUUID();
-    const name = attachmentUrlName(externalUrl);
+    const name = attachmentUrlName(externalUrl, payload?.title);
     const attachment = {
       id,
       task_id: taskId,

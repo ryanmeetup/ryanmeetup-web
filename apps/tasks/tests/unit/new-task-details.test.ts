@@ -43,7 +43,7 @@ describe("new task details", () => {
         const attachment: TaskAttachment = {
           id: isFile ? "saved-file" : "saved-link",
           task_id: taskId,
-          name: isFile ? "brief.txt" : "reference",
+          name: isFile ? "brief.txt" : "Reference docs",
           url: isFile
             ? "https://example.com/signed-file"
             : "https://example.com/reference",
@@ -77,6 +77,7 @@ describe("new task details", () => {
             {
               id: "draft-link",
               url: "https://example.com/reference",
+              title: "Reference docs",
             },
           ],
         },
@@ -87,6 +88,9 @@ describe("new task details", () => {
 
       expect(failures).toBe(0);
       expect(request).toHaveBeenCalledTimes(2);
+      expect(JSON.parse(String(request.mock.calls[1][1]?.body))).toMatchObject({
+        title: "Reference docs",
+      });
       expect(data.attachments).toEqual(
         saved.map((result) => result.attachment),
       );
@@ -97,6 +101,36 @@ describe("new task details", () => {
       }
     },
   );
+
+  it("keeps chosen link titles when creating a task in demo mode", async () => {
+    let data = structuredClone(demoData);
+    const setData: Dispatch<SetStateAction<WorkspaceData>> = (update) => {
+      data = typeof update === "function" ? update(data) : update;
+    };
+
+    await persistNewTaskDetails({
+      taskId: data.tasks[0].id,
+      demoMode: true,
+      draft: {
+        checklist: [],
+        files: [],
+        urls: [
+          {
+            id: "custom",
+            url: "https://example.com/123",
+            title: "  Launch plan  ",
+          },
+          { id: "legacy", url: "https://example.com/notes" },
+        ],
+      },
+      setData,
+    });
+
+    expect(data.attachments.map((attachment) => attachment.name)).toEqual([
+      "Launch plan",
+      "notes",
+    ]);
+  });
 
   it("persists the completion state of checklist items", async () => {
     const fetch = vi.fn<typeof globalThis.fetch>(async () =>

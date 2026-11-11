@@ -80,7 +80,14 @@ describe("saved task details", () => {
           { id: "person-2", title: "Morgan", completed: false },
         ],
         files: [],
-        urls: [{ id: "tax-guide", url: "https://www.irs.gov/1099" }],
+        urls: [
+          { id: "tax-guide", url: "https://www.irs.gov/1099" },
+          {
+            id: "planning-guide",
+            url: "https://example.com/outline",
+            title: "  Launch plan  ",
+          },
+        ],
       },
     );
 
@@ -93,7 +100,14 @@ describe("saved task details", () => {
             { id: "person-2", title: "Morgan", completed: false },
           ],
           files: [],
-          urls: [{ id: "tax-guide", url: "https://www.irs.gov/1099" }],
+          urls: [
+            { id: "tax-guide", url: "https://www.irs.gov/1099" },
+            {
+              id: "planning-guide",
+              url: "https://example.com/outline",
+              title: "Launch plan",
+            },
+          ],
         },
       }),
     ]);

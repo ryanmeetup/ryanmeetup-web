@@ -82,10 +82,12 @@ describe("attachment loading", () => {
       createElement(TaskAttachmentsPanel, {
         addingUrl: false,
         attachmentUrl: "",
+        attachmentTitle: "",
         attachments: [staleAttachment],
         loading,
         onAddUrl: () => {},
         onAttachmentUrlChange: () => {},
+        onAttachmentTitleChange: () => {},
         onRemove: () => {},
         onUploadFiles: () => {},
         previewAttachment: null,

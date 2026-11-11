@@ -257,13 +257,15 @@ On a saved task, each checklist item can now be renamed in place or copied to th
 
 Pages with tooltips no longer fail to load when their content arrives from the server.
 
-### Search stays readable on small screens
-
-The header search leaves more room for its placeholder when its clear and loading controls are hidden.
-
 ### Task attachments appear once
 
 Adding a link or uploading a file no longer shows it twice when the live update arrives before the save finishes. Removing an attachment leaves the task's other attachments in place.
+
+Task links can also have a title you choose, including links added while creating a task. Links show a preview image when the destination provides one, with the usual link icon as a fallback.
+
+### Search stays readable on small screens
+
+The header search leaves more room for its placeholder when its clear and loading controls are hidden.
 
 ## Under the hood
 

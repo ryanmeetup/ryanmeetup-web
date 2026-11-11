@@ -30,6 +30,7 @@ export function useTaskAttachments({
 }: TaskDetailContext & { pasteEnabled: boolean }) {
   const write = useWorkspaceWrite(setData);
   const [url, setUrl] = useState("");
+  const [title, setTitle] = useState("");
   const [addingUrl, setAddingUrl] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<TaskAttachment | null>(null);
@@ -120,7 +121,7 @@ export function useTaskAttachments({
         await addLocally({
           id: crypto.randomUUID(),
           task_id: task.id,
-          name: attachmentUrlName(normalized),
+          name: attachmentUrlName(normalized, title),
           url: normalized,
           file_path: null,
           mime_type: null,
@@ -129,9 +130,14 @@ export function useTaskAttachments({
           created_at: new Date().toISOString(),
         });
       } else {
-        setData(withTaskAttachment(await attachUrl(task.id, normalized)));
+        setData(
+          withTaskAttachment(
+            await attachUrl(task.id, normalized, title.trim() || undefined),
+          ),
+        );
       }
       setUrl("");
+      setTitle("");
       toast.success("URL attached.");
     } catch (error) {
       toast.error(errorMessage(error, "The URL could not be attached."));
@@ -186,6 +192,8 @@ export function useTaskAttachments({
     attachments,
     url,
     setUrl,
+    title,
+    setTitle,
     addingUrl,
     uploading,
     preview,

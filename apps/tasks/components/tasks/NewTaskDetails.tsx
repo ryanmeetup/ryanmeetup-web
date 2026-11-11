@@ -14,20 +14,15 @@ import {
   Input,
   toast,
 } from "@ryanmeetup/ui";
-import {
-  FiCheck,
-  FiFile,
-  FiLink,
-  FiPaperclip,
-  FiPlus,
-  FiTrash2,
-} from "react-icons/fi";
+import { FiCheck, FiFile, FiPaperclip, FiPlus, FiTrash2 } from "react-icons/fi";
 import { MAX_ATTACHMENT_SIZE } from "@/lib/tasks/task-attachments";
 import { attachmentUrlName } from "@/lib/tasks/task-attachment-urls";
 import { CountBadge } from "@/components/global";
 import { normalizeHttpUrl } from "@ryanmeetup/utils";
 import { formatFileSize } from "@/lib/presentation";
 import type { NewTaskDetailsDraft } from "@/lib/tasks/task-types";
+import { LinkPreviewThumbnail } from "@/components/global/LinkPreviewThumbnail";
+import { TaskLinkFields } from "./TaskLinkFields";
 
 export function NewTaskDetails({
   value,
@@ -41,6 +36,7 @@ export function NewTaskDetails({
   const [checklistTitle, setChecklistTitle] = useState("");
   const [draggingFiles, setDraggingFiles] = useState(false);
   const [attachmentUrl, setAttachmentUrl] = useState("");
+  const [attachmentTitle, setAttachmentTitle] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
 
   function addChecklistItem() {
@@ -101,9 +97,17 @@ export function NewTaskDetails({
     }
     onChange((current) => ({
       ...current,
-      urls: [...current.urls, { id: crypto.randomUUID(), url }],
+      urls: [
+        ...current.urls,
+        {
+          id: crypto.randomUUID(),
+          url,
+          ...(attachmentTitle.trim() ? { title: attachmentTitle.trim() } : {}),
+        },
+      ],
     }));
     setAttachmentUrl("");
+    setAttachmentTitle("");
   }
 
   return (
@@ -250,20 +254,18 @@ export function NewTaskDetails({
             key={item.id}
             className="flex items-center gap-3 rounded-xl border border-black/10 p-2 dark:border-white/10"
           >
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-black/5 text-black/55 dark:bg-white/5 dark:text-white/55">
-              <FiLink aria-hidden />
-            </span>
+            <LinkPreviewThumbnail url={item.url} size="md" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold">
-                {attachmentUrlName(item.url)}
+                {attachmentUrlName(item.url, item.title)}
               </p>
-              <p className="truncate text-xs text-black/50 dark:text-white/50">
+              <p className="truncate text-xs text-black/70 dark:text-white/70">
                 {item.url}
               </p>
             </div>
             <IconButton
               type="button"
-              label={`Remove “${item.url}”`}
+              label={`Remove “${item.title || item.url}”`}
               variant="danger"
               disabled={disabled}
               onClick={() =>
@@ -279,32 +281,15 @@ export function NewTaskDetails({
             </IconButton>
           </div>
         ))}
-        <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-          <Input
-            label="Attachment URL"
-            name="new-task-attachment-url"
-            type="url"
-            value={attachmentUrl}
-            placeholder="https://example.com/resource"
-            disabled={disabled}
-            onChange={(event) => setAttachmentUrl(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key !== "Enter") return;
-              event.preventDefault();
-              addUrl();
-            }}
-          />
-          <Button
-            type="button"
-            variant="action"
-            size="field"
-            leftIcon={<FiLink aria-hidden />}
-            disabled={disabled || !attachmentUrl.trim()}
-            onClick={addUrl}
-          >
-            Add URL
-          </Button>
-        </div>
+        <TaskLinkFields
+          namePrefix="new-task-attachment"
+          url={attachmentUrl}
+          title={attachmentTitle}
+          disabled={disabled}
+          onUrlChange={setAttachmentUrl}
+          onTitleChange={setAttachmentTitle}
+          onAdd={addUrl}
+        />
         <div
           className={`rounded-xl border border-dashed p-4 text-center transition duration-200 ease-in-out ${draggingFiles ? "border-black/50 bg-black/5 ring-2 ring-black/10 dark:border-white/60 dark:bg-white/10 dark:ring-white/15" : "border-black/20 bg-black/[0.02] dark:border-white/20 dark:bg-white/[0.03]"}`}
           onDragEnter={(event) => {
