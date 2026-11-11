@@ -2,7 +2,9 @@
 
 import { Transition } from "@headlessui/react";
 import {
+  Children,
   cloneElement,
+  isValidElement,
   useCallback,
   useId,
   useLayoutEffect,
@@ -60,6 +62,8 @@ const Tooltip = ({
   const tooltipRef = useRef<HTMLSpanElement>(null);
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState<TooltipPosition | null>(null);
+
+  if (disabled && open) setOpen(false);
 
   const closeTooltip = () => {
     setOpen(false);
@@ -162,10 +166,6 @@ const Tooltip = ({
     };
   }, [content, disabled, open, updatePosition]);
 
-  useLayoutEffect(() => {
-    if (disabled) setOpen(false);
-  }, [disabled]);
-
   const handleBlur = (event: FocusEvent<HTMLSpanElement>) => {
     if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
   };
@@ -226,15 +226,20 @@ const Tooltip = ({
         if (event.key === "Escape") setOpen(false);
       }}
     >
-      {cloneElement(children, {
-        "aria-describedby":
-          [
-            children.props["aria-describedby"],
-            open && !disabled ? id : undefined,
-          ]
-            .filter(Boolean)
-            .join(" ") || undefined,
-      })}
+      {/* Children.map resolves streamed Server Component children before we read props. */}
+      {Children.map(children, (child) =>
+        isValidElement<{ "aria-describedby"?: string }>(child)
+          ? cloneElement(child, {
+              "aria-describedby":
+                [
+                  child.props["aria-describedby"],
+                  open && !disabled ? id : undefined,
+                ]
+                  .filter(Boolean)
+                  .join(" ") || undefined,
+            })
+          : child,
+      )}
       {disabled || typeof document === "undefined"
         ? null
         : createPortal(tooltip, document.body)}

@@ -253,6 +253,10 @@ Bulleted, numbered, and checklist lines in a task description or note now stay a
 Checklist items can now be marked complete before a new task is created. Their checked state also stays intact in saved drafts and on the finished task.
 On a saved task, each checklist item can now be renamed in place or copied to the clipboard, so fixing a typo no longer means deleting the item, and copying one no longer checks it off. On desktop the checklist now shows in full; on smaller screens a long one scrolls between clear top and bottom rules, and "Show all" opens it to full length.
 
+### Tooltips load reliably
+
+Pages with tooltips no longer fail to load when their content arrives from the server.
+
 ## Under the hood
 
 The latest organization work reuses the project lifecycle, archive, dropdown, and sortable-list foundations already in the app. Proximity-based dropdown options remain visible while navigating long menus, and the board's drag behavior is covered at the mutation and workspace-navigation boundaries.
