@@ -14,6 +14,8 @@ type GalleryItem = {
   src: string;
   alt: string;
   title?: string;
+  /** Shorter badge copy for screens below the sm breakpoint. */
+  mobileTitle?: string;
   city?: string;
 };
 
@@ -134,16 +136,19 @@ const RotatingGallery = (props: RotatingGalleryProps) => {
             <Pill
               variant="overlay"
               size="sm"
-              className="text-[9px] sm:text-[10px]"
+              className="max-sm:whitespace-nowrap max-sm:text-[9px] max-sm:tracking-caps-tight sm:text-[10px]"
             >
-              {items[activeSlide].title}
+              <span className="sm:hidden">
+                {items[activeSlide].mobileTitle ?? items[activeSlide].title}
+              </span>
+              <span className="hidden sm:inline">{items[activeSlide].title}</span>
             </Pill>
           )}
           {items[activeSlide]?.city && (
             <Pill
               variant="overlay"
               size="sm"
-              className="text-[9px] sm:text-[10px]"
+              className="max-sm:whitespace-nowrap max-sm:text-[9px] max-sm:tracking-caps-tight sm:text-[10px]"
             >
               📍 {items[activeSlide].city}
             </Pill>
@@ -176,7 +181,7 @@ const RotatingGallery = (props: RotatingGalleryProps) => {
           <ChevronRight className="h-4 w-4" aria-hidden="true" />
         </IconButton>
       </div>
-      <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center justify-center gap-2 rounded-full border border-white/20 bg-black/50 px-3 py-2 backdrop-blur">
+      <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center justify-center gap-1 rounded-full border border-white/20 bg-black/50 px-2.5 py-1.5 backdrop-blur sm:gap-2 sm:px-3 sm:py-2">
         {items.map((slide, index) => (
           <button
             key={slide.src}
@@ -187,7 +192,7 @@ const RotatingGallery = (props: RotatingGalleryProps) => {
             className="group flex h-3 w-3 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
           >
             <span
-              className={`h-2 w-2 rounded-full transition ${
+              className={`h-1.5 w-1.5 rounded-full transition sm:h-2 sm:w-2 ${
                 activeSlide === index
                   ? "bg-white"
                   : "bg-white/40 group-hover:bg-white/70"

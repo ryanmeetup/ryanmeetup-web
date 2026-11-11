@@ -275,6 +275,10 @@ const Landing = (props: LandingProps) => {
     src: photo.imageUrl,
     alt: `${photo.title} - Ryan Meetup`,
     title: photo.title,
+    mobileTitle: photo.title.replace(
+      /\b(January|February|March|April|May|June|July|August|September|October|November|December)(?= \d{4}$)/,
+      (month) => month.slice(0, 3),
+    ),
     city: photo.city,
   }));
 
