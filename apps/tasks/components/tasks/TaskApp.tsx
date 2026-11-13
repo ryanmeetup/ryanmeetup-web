@@ -377,8 +377,10 @@ export function TaskApp({
               onSetVisibility: filters.setVisibility,
             }}
           />
-          <SavedTaskViews controller={savedViews} data={data} />
           <TaskFilterBar
+            headerActions={
+              <SavedTaskViews controller={savedViews} data={data} />
+            }
             data={data}
             filters={filters}
             resolved={resolved}

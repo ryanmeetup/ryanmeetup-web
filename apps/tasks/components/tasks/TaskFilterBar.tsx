@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import type { TaskFiltersState } from "@/hooks/useTaskFilters";
 import type { ResolvedTaskFilters } from "@/hooks/useResolvedTaskFilters";
@@ -20,11 +21,13 @@ export function TaskFilterBar({
   filters,
   resolved,
   filterCount,
+  headerActions,
 }: {
   data: WorkspaceData;
   filters: TaskFiltersState;
   resolved: ResolvedTaskFilters;
   filterCount: number;
+  headerActions?: ReactNode;
 }) {
   const {
     accessibleCategories,
@@ -54,6 +57,7 @@ export function TaskFilterBar({
 
   return (
     <TaskFilters
+      headerActions={headerActions}
       options={{
         categories: accessibleCategories,
         currentProfileId: data.currentProfile.id,

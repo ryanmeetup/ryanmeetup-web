@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import { FiChevronDown, FiFilter } from "react-icons/fi";
 import { AnimatedCollapse } from "./AnimatedCollapse";
 import { Card } from "./Card";
@@ -13,6 +13,8 @@ export type FilterPanelProps = {
   className?: string;
   controlsClassName?: string;
   defaultExpanded?: boolean;
+  /** Controls that remain available when the filter fields are collapsed. */
+  headerActions?: ReactNode;
   onClear?: () => void;
   preferenceStorageKey?: string;
 };
@@ -24,10 +26,12 @@ const FilterPanel = ({
   className,
   controlsClassName,
   defaultExpanded = false,
+  headerActions,
   onClear,
   preferenceStorageKey,
 }: FilterPanelProps) => {
   const [expanded, setExpanded] = useState(defaultExpanded);
+  const panelId = useId();
 
   useEffect(() => {
     const mobileQuery = collapseOnMobile
@@ -53,27 +57,41 @@ const FilterPanel = ({
     return () => mobileQuery?.removeEventListener("change", handleMobileChange);
   }, [collapseOnMobile, preferenceStorageKey]);
 
+  const toggle = (
+    <button
+      type="button"
+      aria-expanded={expanded}
+      aria-controls={panelId}
+      onClick={() => setExpanded((current) => !current)}
+      className={`flex items-center gap-2 text-left text-xs font-semibold uppercase transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/30 dark:hover:text-white dark:focus-visible:ring-white/30 ${headerActions ? "shrink-0 rounded-xl p-1 tracking-caps text-black/70 dark:text-white/70" : "w-full rounded-2xl p-4 tracking-widest text-black/50 dark:text-white/50"}`}
+    >
+      <FiFilter aria-hidden />
+      Filters
+      {count > 0 && (
+        <b className="grid h-5 min-w-5 place-items-center rounded-full bg-black px-1 text-[10px] text-white dark:bg-white dark:text-black">
+          {count}
+        </b>
+      )}
+      <FiChevronDown
+        aria-hidden
+        className={`${headerActions ? "" : "ml-auto"} transition-transform duration-200 motion-reduce:transition-none ${expanded ? "rotate-180" : ""}`}
+      />
+    </button>
+  );
+
   return (
     <Card size="none" className={className}>
-      <button
-        type="button"
-        aria-expanded={expanded}
-        onClick={() => setExpanded((current) => !current)}
-        className="flex w-full items-center gap-2 rounded-2xl p-4 text-left text-xs font-semibold uppercase tracking-widest text-black/50 transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/30 dark:text-white/50 dark:hover:text-white dark:focus-visible:ring-white/30"
-      >
-        <FiFilter aria-hidden />
-        Filters
-        {count > 0 && (
-          <b className="grid h-5 min-w-5 place-items-center rounded-full bg-black px-1 text-[10px] text-white dark:bg-white dark:text-black">
-            {count}
-          </b>
-        )}
-        <FiChevronDown
-          aria-hidden
-          className={`ml-auto transition-transform motion-reduce:transition-none ${expanded ? "rotate-180" : ""}`}
-        />
-      </button>
-      <AnimatedCollapse open={expanded}>
+      {headerActions ? (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-3 p-3 sm:px-4">
+          {toggle}
+          <div className="min-w-0 w-full sm:w-auto sm:flex-1">
+            {headerActions}
+          </div>
+        </div>
+      ) : (
+        toggle
+      )}
+      <AnimatedCollapse id={panelId} open={expanded}>
         <div className="pb-4">
           <div
             className={`flex items-center gap-2 overflow-x-auto px-4 pb-1 ${controlsClassName ?? ""}`}

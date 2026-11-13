@@ -4,14 +4,27 @@ import { useState, type FormEvent } from "react";
 import {
   Button,
   DropdownSelect,
+  DropdownMenu,
+  DropdownMenuButton,
+  DropdownMenuItem,
+  DropdownMenuItems,
+  getIconButtonClasses,
   IconButton,
   Input,
   Modal,
   ModalActions,
   Pill,
   Text,
+  Tooltip,
 } from "@ryanmeetup/ui";
-import { FiBookmark, FiEdit2, FiSettings, FiTrash2 } from "react-icons/fi";
+import {
+  FiBookmark,
+  FiEdit2,
+  FiMoreHorizontal,
+  FiRotateCcw,
+  FiSettings,
+  FiTrash2,
+} from "react-icons/fi";
 import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import {
   savedViewNameMaxLength,
@@ -61,12 +74,12 @@ export function SavedTaskViews({
   }
   const summarySettings = dialog?.kind === "save" ? dialog.settings : null;
   return (
-    <section aria-label="Saved task views" className="mb-3 space-y-3">
-      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+    <section aria-label="Saved task views" className="min-w-0 space-y-2">
+      <div className="flex flex-wrap items-center gap-2 sm:justify-end">
         <DropdownSelect
           label="Views"
           variant="compact"
-          className="w-full sm:w-auto sm:max-w-sm"
+          className="w-full min-w-0 sm:w-auto sm:max-w-xs"
           value={selected?.id ?? "__current"}
           options={[
             { value: "__current", label: "Unsaved view" },
@@ -79,69 +92,83 @@ export function SavedTaskViews({
           }}
           disabled={!available || pending}
           active={Boolean(selected)}
-          stackLabelOnMobile
         />
-        {modified && (
-          <Pill
-            variant="neutral"
-            size="sm"
-            className="self-start sm:self-center"
-          >
-            Modified
-          </Pill>
-        )}
-        <div className="flex flex-wrap items-center gap-2">
-          {modified && selected && (
-            <>
-              <Button
-                size="sm"
-                variant="secondary"
-                disabled={pending || !available}
-                loading={pending}
-                onClick={() =>
-                  void controller.save(
-                    selected.name,
-                    controller.snapshot(),
-                    selected,
-                  )
-                }
-              >
-                Update view
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                disabled={pending}
-                onClick={() => controller.select(selected)}
-              >
-                Reset changes
-              </Button>
-            </>
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          {modified && (
+            <Pill variant="neutral" size="sm">
+              Modified
+            </Pill>
           )}
           <Button
             size="sm"
             variant="secondary"
             className="flex-1 sm:flex-none"
-            leftIcon={<FiBookmark aria-hidden />}
+            leftIcon={modified ? undefined : <FiBookmark aria-hidden />}
             disabled={!available || pending}
-            onClick={() =>
-              open({ kind: "save", settings: controller.snapshot() })
-            }
+            loading={pending}
+            onClick={() => {
+              if (modified && selected) {
+                void controller.save(
+                  selected.name,
+                  controller.snapshot(),
+                  selected,
+                );
+              } else {
+                open({ kind: "save", settings: controller.snapshot() });
+              }
+            }}
           >
-            {selected ? "Save as new" : "Save view"}
+            {modified && selected
+              ? "Update view"
+              : selected
+                ? "Save as new"
+                : "Save view"}
           </Button>
-          <IconButton
-            label="Manage saved views"
-            disabled={!available || pending || views.length === 0}
-            onClick={() => open({ kind: "manage" })}
-          >
-            <FiSettings aria-hidden />
-          </IconButton>
+          <DropdownMenu>
+            <DropdownMenuButton
+              unstyled
+              aria-label="Saved view actions"
+              className={getIconButtonClasses(
+                "sm",
+                "subtle",
+                "disabled:opacity-50",
+              )}
+              disabled={!available || pending || views.length === 0}
+            >
+              <FiMoreHorizontal aria-hidden />
+            </DropdownMenuButton>
+            <DropdownMenuItems>
+              {modified && selected && (
+                <>
+                  <DropdownMenuItem onClick={() => controller.select(selected)}>
+                    <FiRotateCcw aria-hidden /> Reset changes
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      open({ kind: "save", settings: controller.snapshot() })
+                    }
+                  >
+                    <FiBookmark aria-hidden /> Save as new
+                  </DropdownMenuItem>
+                </>
+              )}
+              <DropdownMenuItem onClick={() => open({ kind: "manage" })}>
+                <FiSettings aria-hidden /> Manage saved views
+              </DropdownMenuItem>
+            </DropdownMenuItems>
+          </DropdownMenu>
+          {!available && (
+            <Tooltip content="Saved views are currently unavailable.">
+              <span
+                tabIndex={0}
+                className="text-xs text-black/70 dark:text-white/70"
+              >
+                Unavailable
+              </span>
+            </Tooltip>
+          )}
         </div>
       </div>
-      {!available && (
-        <Text className="text-sm">Saved views are currently unavailable.</Text>
-      )}
       {error && !dialog && (
         <p role="alert" className="text-sm text-red-700 dark:text-red-300">
           {error}

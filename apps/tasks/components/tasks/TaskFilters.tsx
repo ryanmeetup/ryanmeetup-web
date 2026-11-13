@@ -1,4 +1,5 @@
 import { FilterPanel } from "@ryanmeetup/ui";
+import type { ReactNode } from "react";
 import type { Category, Project } from "@/lib/resources/resource-types";
 import type { Priority, Status } from "@/lib/tasks/task-types";
 import type { Profile } from "@/lib/workspace/workspace-types";
@@ -55,9 +56,11 @@ export type TaskFilterController = {
 export function TaskFilters({
   options,
   controller,
+  headerActions,
 }: {
   options: TaskFilterOptions;
   controller: TaskFilterController;
+  headerActions?: ReactNode;
 }) {
   const { categories, currentProfileId, profiles, projects, statuses } =
     options;
@@ -79,6 +82,7 @@ export function TaskFilters({
     <FilterPanel
       collapseOnMobile
       count={count}
+      headerActions={headerActions}
       className="mb-6"
       controlsClassName="grid grid-cols-1 gap-3 overflow-visible sm:grid-cols-2 lg:flex lg:gap-2 lg:overflow-x-auto"
       onClear={clear}

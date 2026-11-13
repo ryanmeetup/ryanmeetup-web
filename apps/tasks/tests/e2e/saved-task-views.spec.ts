@@ -5,15 +5,13 @@ import {
 } from "../../lib/demo-preview";
 
 async function enterDemo(page: Page, baseURL: string | undefined, query = "") {
-  await page
-    .context()
-    .addCookies([
-      {
-        name: DEMO_PREVIEW_COOKIE,
-        value: DEMO_PREVIEW_VALUE,
-        url: baseURL ?? "http://127.0.0.1:3100",
-      },
-    ]);
+  await page.context().addCookies([
+    {
+      name: DEMO_PREVIEW_COOKIE,
+      value: DEMO_PREVIEW_VALUE,
+      url: baseURL ?? "http://127.0.0.1:3100",
+    },
+  ]);
   await page.goto(`/board${query}`);
   await expect(
     page.getByRole("button", { name: "Save view", exact: true }),
@@ -84,19 +82,29 @@ test("saved exclusions and layout survive reload and replace current filters", a
 test("changes are explicit, resettable, updatable, and can be saved as another view", async ({
   page,
   baseURL,
-}) => {
+}, testInfo) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await enterDemo(page, baseURL, "?excludeProjects=Website+Refresh");
   await saveView(page, "Immediate focus");
   const layout = page.getByRole("group", { name: "Task layout" });
   await layout.getByRole("button", { name: "List" }).click();
   await expect(page.getByText("Modified", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Reset changes" }).click();
+  await page.getByRole("button", { name: "Saved view actions" }).click();
+  await page.getByRole("menuitem", { name: "Reset changes" }).click();
   await expect(layout.getByRole("button", { name: "Board" })).toHaveAttribute(
     "aria-pressed",
     "true",
   );
   await expect(page.getByText("Modified", { exact: true })).toHaveCount(0);
   await layout.getByRole("button", { name: "List" }).click();
+  await page.getByRole("button", { name: "Saved view actions" }).click();
+  await page
+    .getByRole("menuitem", { name: "Save as new", exact: true })
+    .click();
+  await page
+    .getByRole("dialog", { name: "Save view", exact: true })
+    .getByRole("button", { name: "Cancel", exact: true })
+    .click();
   await page.getByRole("button", { name: "Update view", exact: true }).click();
   await expect(page.getByText("Modified", { exact: true })).toHaveCount(0);
   await saveView(page, "Focus list", true);
@@ -106,7 +114,8 @@ test("changes are explicit, resettable, updatable, and can be saved as another v
     "true",
   );
 
-  await page.getByRole("button", { name: "Manage saved views" }).click();
+  await page.getByRole("button", { name: "Saved view actions" }).click();
+  await page.getByRole("menuitem", { name: "Manage saved views" }).click();
   await page
     .getByRole("button", { name: "Rename Immediate focus", exact: true })
     .click();
@@ -129,12 +138,31 @@ test("changes are explicit, resettable, updatable, and can be saved as another v
   await page.getByRole("button", { name: "Done", exact: true }).click();
   await chooseView(page, "Focus list");
   await expect(page).toHaveURL(/savedView=Focus/);
+  await layout.getByRole("button", { name: "Board" }).click();
+  for (const width of [390, 1024, 1280, 1536]) {
+    await page.setViewportSize({ width, height: 900 });
+    const controls = page.getByRole("region", { name: "Saved task views" });
+    await expect(
+      controls.getByRole("button", { name: "Update view", exact: true }),
+    ).toBeVisible();
+    await expect
+      .poll(() =>
+        controls.evaluate(
+          (element) => element.scrollWidth <= element.clientWidth,
+        ),
+      )
+      .toBe(true);
+    await page.screenshot({
+      path: testInfo.outputPath(`saved-views-modified-${width}.png`),
+    });
+  }
 });
 
 test("save modal summarizes exclusions, validates names, and fits boundary widths in both themes", async ({
   page,
   baseURL,
 }, testInfo) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await enterDemo(
     page,
     baseURL,
@@ -148,6 +176,9 @@ test("save modal summarizes exclusions, validates names, and fits boundary width
     for (const width of [390, 1024, 1280, 1536]) {
       await page.setViewportSize({ width, height: 900 });
       const controls = page.getByRole("region", { name: "Saved task views" });
+      const filterToggle = page.getByRole("button", { name: /^Filters/ });
+      if ((await filterToggle.getAttribute("aria-expanded")) === "true")
+        await filterToggle.click();
       await expect(
         controls.getByRole("button", { name: "Save view", exact: true }),
       ).toBeVisible();
@@ -158,6 +189,9 @@ test("save modal summarizes exclusions, validates names, and fits boundary width
           ),
         )
         .toBe(true);
+      await page.screenshot({
+        path: testInfo.outputPath(`saved-views-header-${theme}-${width}.png`),
+      });
       await page
         .getByRole("button", { name: "Save view", exact: true })
         .click();
@@ -189,6 +223,7 @@ test("save modal summarizes exclusions, validates names, and fits boundary width
         path: testInfo.outputPath(`saved-views-${theme}-${width}.png`),
       });
       await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+      await expect(filterToggle).toHaveAttribute("aria-expanded", "false");
     }
   }
 });

@@ -20,7 +20,9 @@ overview:
 ### Save a focused task view
 
 Save your current task filters, exclusions, sort order, and board or list layout
-as a personal view, then switch between working contexts from the Views picker.
+as a personal view, then switch between working contexts from the Views picker
+in the filter panel header. Saved view controls stay available when filters
+are collapsed.
 Changes stay temporary until you update the saved view; reset them or save a
 new view instead. Rename and delete views from Manage saved views. Your views
 follow your account across devices, with separate collections in each instance.
