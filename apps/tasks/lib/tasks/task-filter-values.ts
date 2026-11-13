@@ -5,6 +5,22 @@ import type { Category } from "@/lib/resources/resource-types";
 
 export const taskPriorities: Priority[] = ["low", "medium", "high", "urgent"];
 
+/** Use a name only when the comma-separated URL can identify it reliably. */
+export function readableTaskFilterValue<T extends { id: string }>(
+  id: string,
+  items: T[],
+  displayName: (item: T) => string,
+) {
+  const item = items.find((candidate) => candidate.id === id);
+  if (!item) return id;
+  const name = displayName(item);
+  return !name.includes(",") &&
+    !["all", "none", "unassigned"].includes(name.toLowerCase()) &&
+    items.filter((candidate) => displayName(candidate) === name).length === 1
+    ? name
+    : id;
+}
+
 export function splitTaskFilterValues(value: string) {
   return value === "all" || !value ? [] : value.split(",").filter(Boolean);
 }

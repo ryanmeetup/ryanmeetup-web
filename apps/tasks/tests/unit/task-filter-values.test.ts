@@ -4,6 +4,7 @@ import {
   resolveEntityFilterIds,
   resolvePriorityFilterValues,
   splitTaskFilterValues,
+  readableTaskFilterValue,
 } from "@/lib/tasks/task-filter-values";
 
 describe("task filter values", () => {
@@ -16,6 +17,24 @@ describe("task filter values", () => {
     const items = [{ id: "one", name: "Project One" }];
     expect(resolveEntityFilterIds("Project One", items)).toEqual(["one"]);
     expect(resolveEntityFilterIds("none", items, true)).toEqual(["none"]);
+  });
+
+  it("uses IDs for ambiguous, reserved, and comma-containing names", () => {
+    const items = [
+      { id: "one", name: "Duplicate" },
+      { id: "two", name: "Duplicate" },
+      { id: "three", name: "Work, home" },
+      { id: "four", name: "Unassigned" },
+      { id: "five", name: "Life improvements" },
+    ];
+    for (const item of items.slice(0, 4)) {
+      expect(
+        readableTaskFilterValue(item.id, items, (value) => value.name),
+      ).toBe(item.id);
+    }
+    expect(readableTaskFilterValue("five", items, (value) => value.name)).toBe(
+      "Life improvements",
+    );
   });
 
   it("accepts only supported priority and due values", () => {
