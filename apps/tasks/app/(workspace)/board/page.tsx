@@ -19,6 +19,7 @@ import {
 import type { Metadata } from "next";
 import { parseTaskKey } from "@/lib/tasks/task-key";
 import { pageTitle } from "@/lib/server/instance-settings";
+import { loadSavedTaskViews } from "@/lib/server/saved-task-views";
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: { absolute: await pageTitle("Task Board") } };
@@ -58,6 +59,11 @@ export default async function BoardPage({
     { guestProjectWork: true },
   );
   const { supabase } = loaded;
+  // Access previews never load another person's private preferences.
+  const initialSavedViews =
+    requestedGroupPreview || requestedUserPreview
+      ? { views: [], available: false }
+      : await loadSavedTaskViews(supabase, loaded.user.id);
   let initialData = loaded.data;
   const archiveBoundary = new Date().toISOString();
   const taskResult = await supabase
@@ -135,6 +141,7 @@ export default async function BoardPage({
       initialData={initialData}
       demoMode={false}
       initialTaskId={initialTaskId}
+      initialSavedViews={initialSavedViews}
     />
   );
 }

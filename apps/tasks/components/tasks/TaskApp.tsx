@@ -39,6 +39,9 @@ import { StatusReasonDialog } from "./StatusReasonDialog";
 import { statusNeedingReason } from "@/lib/tasks/task-status-reason";
 import { projectPath } from "@/lib/resources/project-route";
 import { withAccessPreview } from "@/lib/access/access-preview";
+import type { SavedTaskViewsState } from "@/lib/tasks/saved-task-views";
+import { SavedTaskViews } from "./SavedTaskViews";
+import { useSavedTaskViews } from "./useSavedTaskViews";
 
 type View = "board" | "list";
 
@@ -55,10 +58,12 @@ export function TaskApp({
   initialData,
   demoMode,
   initialTaskId,
+  initialSavedViews = { views: [], available: true },
 }: {
   initialData: WorkspaceData;
   demoMode: boolean;
   initialTaskId?: string;
+  initialSavedViews?: SavedTaskViewsState;
 }) {
   const initialTaskNumber = initialTaskId ? parseTaskKey(initialTaskId) : null;
   const initialEditing = initialTaskId
@@ -108,6 +113,19 @@ export function TaskApp({
         ? "list"
         : "board";
   const resolved = useResolvedTaskFilters(data, filters);
+  const savedViews = useSavedTaskViews({
+    initial: initialSavedViews,
+    current: {
+      version: 1,
+      filters: resolved.queryFilters,
+      view,
+      sort,
+      visibility,
+    },
+    data,
+    demoMode,
+    clearSearch: () => setSearch(""),
+  });
   useReadableFilterParams({ data, filters, resolved });
   const { collapsedStatusIds, expandStatusSection, toggleStatusSection } =
     useCollapsedStatuses();
@@ -359,6 +377,7 @@ export function TaskApp({
               onSetVisibility: filters.setVisibility,
             }}
           />
+          <SavedTaskViews controller={savedViews} data={data} />
           <TaskFilterBar
             data={data}
             filters={filters}

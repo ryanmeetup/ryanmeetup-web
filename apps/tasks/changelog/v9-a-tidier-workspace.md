@@ -17,6 +17,14 @@ overview:
 
 ## New
 
+### Save a focused task view
+
+Save your current task filters, exclusions, sort order, and board or list layout
+as a personal view, then switch between working contexts from the Views picker.
+Changes stay temporary until you update the saved view; reset them or save a
+new view instead. Rename and delete views from Manage saved views. Your views
+follow your account across devices, with separate collections in each instance.
+
 ### Closed projects leave the current workspace
 
 Projects marked Complete or Dropped move out of the Current view, Favorites, the sidebar, the calendar, search, and the project pickers for new tasks. Closing replaces the separate Archive step, so finishing a project is one change instead of two, and its timeline stops on the day it closed. Dropped covers the projects that end without shipping, so they no longer have to pose as Paused forever. Both remain available in a dedicated Closed view, keeping active navigation focused while preserving the project as a record.

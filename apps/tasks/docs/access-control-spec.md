@@ -225,6 +225,17 @@ bounded group, so conflicting claims or audit failures roll back all its links.
   policy must be written as explicit `for insert` / `for update` / `for delete`
   policies. Widening a read by way of a write policy is a bug.
 
+## Personal saved task views
+
+Saved task views belong to one profile. Only that onboarded person may read,
+create, update, or delete their views; app ownership does not override this
+privacy boundary. RLS enforces ownership, and API writes also constrain the
+profile to the authenticated caller. Views store filter references and layout
+preferences, never task copies or access grants. Applying a view still uses
+the normal task/project/category access checks. Access previews do not load
+personal saved views. If a referenced resource becomes unavailable, applying
+the view is refused rather than silently broadening its filters.
+
 ## External read authority
 
 The optional MCP bearer token is a separate workspace-wide read authority. It

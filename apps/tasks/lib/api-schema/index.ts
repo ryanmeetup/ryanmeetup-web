@@ -10,6 +10,10 @@ export { instanceSettingsSchema } from "./instance-settings";
 export { projectCreateSchema, projectPatchSchema } from "./project";
 export { statusCreateSchema, statusPatchSchema } from "./status";
 export { taskMoveSchema, taskSaveSchema } from "./task";
+export {
+  savedTaskViewCreateSchema,
+  savedTaskViewPatchSchema,
+} from "./saved-task-view";
 export { taskLinkAttachmentSchema } from "./task-attachment";
 export { inviteSchema, profileSchema, userDeleteSchema } from "./team";
 export {
