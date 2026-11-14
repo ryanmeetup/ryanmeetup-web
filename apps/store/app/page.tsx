@@ -44,7 +44,7 @@ export default async function HomePage() {
   return (
     <main>
       <section className="store-container py-8 sm:py-12 lg:py-16">
-        <div className="relative overflow-hidden rounded-[2rem] border border-black/10 bg-[#e9e3d6] px-5 py-8 shadow-xl sm:px-10 sm:py-12 lg:px-12 lg:py-14 xl:px-16 dark:border-white/10 dark:bg-[#151816]">
+        <div className="relative overflow-hidden rounded-4xl border border-black/10 bg-[#e9e3d6] px-5 py-8 shadow-xl sm:px-10 sm:py-12 lg:px-12 lg:py-14 xl:px-16 dark:border-white/10 dark:bg-[#151816]">
           <div
             aria-hidden
             className="absolute inset-0 opacity-30 [background-image:radial-gradient(circle_at_center,rgba(0,0,0,0.16)_1px,transparent_1.5px)] [background-size:18px_18px] dark:opacity-20 dark:[background-image:radial-gradient(circle_at_center,rgba(255,255,255,0.22)_1px,transparent_1.5px)]"

@@ -79,8 +79,8 @@ const SponsorCarousel = (props: SponsorCarousel) => {
     <div className="-mb-8 flex flex-col gap-4">
       {featuredRecurringSponsor ? (
         <div className={layoutPaddingX}>
-          <div className="relative overflow-hidden rounded-[2rem] border border-black/10 bg-[radial-gradient(circle_at_top_left,rgba(250,204,21,0.24),transparent_32%),linear-gradient(135deg,rgba(255,255,255,0.96),rgba(255,247,237,0.88))] p-1 shadow-xl shadow-black/10 dark:border-white/15 dark:bg-[radial-gradient(circle_at_top_left,rgba(250,204,21,0.22),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.12),rgba(255,255,255,0.04))] dark:shadow-black/30">
-            <div className="grid gap-6 rounded-[1.75rem] border border-white/70 bg-white/75 p-6 backdrop-blur dark:border-white/10 dark:bg-black/20 sm:p-8 xl:grid-cols-[0.8fr_1.55fr] xl:items-center">
+          <div className="relative overflow-hidden rounded-4xl border border-black/10 bg-[radial-gradient(circle_at_top_left,rgba(250,204,21,0.24),transparent_32%),linear-gradient(135deg,rgba(255,255,255,0.96),rgba(255,247,237,0.88))] p-1 shadow-xl shadow-black/10 dark:border-white/15 dark:bg-[radial-gradient(circle_at_top_left,rgba(250,204,21,0.22),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.12),rgba(255,255,255,0.04))] dark:shadow-black/30">
+            <div className="grid gap-6 rounded-3xl border border-white/70 bg-white/75 p-6 backdrop-blur dark:border-white/10 dark:bg-black/20 sm:p-8 xl:grid-cols-[0.8fr_1.55fr] xl:items-center">
               <div className="space-y-3 text-center xl:text-left">
                 <p className="text-xs font-bold uppercase tracking-caps-wide text-black/55 dark:text-white/55">
                   Monthly Backer spotlight
