@@ -497,7 +497,7 @@ export function DashboardPageClient({
             </div>
             <div className="mb-6 break-inside-avoid">
               <SectionCard
-                title="Recent status changes"
+                title="Recent activity"
                 icon={<FiClock />}
                 tone="green"
                 action={
@@ -507,7 +507,7 @@ export function DashboardPageClient({
                       data.accessPreview,
                     )}
                   >
-                    All activity
+                    View all
                   </CardAction.Link>
                 }
               >
