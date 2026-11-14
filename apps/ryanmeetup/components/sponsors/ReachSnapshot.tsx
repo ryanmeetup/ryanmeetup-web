@@ -5,15 +5,11 @@ import { useState } from "react";
 import Image from "next/image";
 import NextLink from "next/link";
 
-import { Card, Heading, IconBadge, Kicker, Modal, Text } from "@ryanmeetup/ui";
+import { Card, Heading, Kicker, Modal, Text } from "@ryanmeetup/ui";
 import {
-  FaChartLine as Traffic,
-  FaInstagram as Instagram,
-  FaMapMarkedAlt as Footprint,
-  FaTiktok as TikTok,
-} from "react-icons/fa";
-import { GoArrowUpRight as ArrowUpRight } from "react-icons/go";
-import { BiParty as Party } from "react-icons/bi";
+  GoArrowRight as ArrowRight,
+  GoArrowUpRight as ArrowUpRight,
+} from "react-icons/go";
 
 const reachSnapshot = [
   {
@@ -22,7 +18,6 @@ const reachSnapshot = [
       "Followers on Instagram; and we're still consistently growing even bigger",
     href: "https://www.instagram.com/ryanmeetup/",
     cta: "Instagram",
-    icon: <Instagram className="h-4 w-4" />,
     external: true,
   },
   {
@@ -30,22 +25,19 @@ const reachSnapshot = [
     label: "Monthly views across Instagram and TikTok",
     href: "https://www.tiktok.com/@ryanmeetup/",
     cta: "TikTok",
-    icon: <TikTok className="h-4 w-4" />,
     external: true,
   },
   {
     value: "140k+",
     label: "Annual visitors to RyanMeetup.com",
-    cta: "Site Traffic",
-    icon: <Traffic className="h-4 w-4" />,
+    cta: "Site traffic",
     modal: true,
   },
   {
     value: "400+",
     label: "Ryans attending each of our events on average",
     href: "/gallery",
-    cta: "Past Events",
-    icon: <Party className="h-4 w-4" />,
+    cta: "Past events",
     external: false,
   },
   {
@@ -53,7 +45,6 @@ const reachSnapshot = [
     label: "Active chapters across North America, with more to come",
     href: "/chapters",
     cta: "Chapters",
-    icon: <Footprint className="h-4 w-4" />,
     external: false,
   },
   {
@@ -61,8 +52,7 @@ const reachSnapshot = [
     label:
       "Events hosted each year across our national calendar and local chapters",
     href: "/events/all",
-    cta: "All Events",
-    icon: <Party className="h-4 w-4" />,
+    cta: "All events",
     external: false,
   },
 ];
@@ -73,13 +63,7 @@ const ReachSnapshot = () => {
   return (
     <>
       <Card variant="solid" size="lg" className="space-y-4">
-        <div className="space-y-1">
-          <Kicker>Reach Snapshot</Kicker>
-          <Text className="text-sm text-black/70 dark:text-white/70">
-            Explore the channels, proof points, and community surfaces behind
-            these numbers.
-          </Text>
-        </div>
+        <Kicker>Reach snapshot</Kicker>
 
         <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
           {reachSnapshot.map((item) => {
@@ -88,25 +72,25 @@ const ReachSnapshot = () => {
                 variant="soft"
                 size="md"
                 hover
-                className="flex h-full flex-col justify-between gap-5"
+                className="flex h-full flex-col justify-between gap-4"
               >
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <IconBadge>{item.icon}</IconBadge>
-                    <Heading className="text-3xl title" size="h3">
-                      {item.value}
-                    </Heading>
-                  </div>
-
+                <div className="space-y-2">
+                  <Heading className="text-3xl title" size="h3">
+                    {item.value}
+                  </Heading>
                   <Text className="text-sm text-black/70 dark:text-white/70">
                     {item.label}
                   </Text>
                 </div>
 
-                <div className="flex w-full items-center justify-between rounded-full border border-black/15 bg-black/5 px-4 py-2 text-[11px] font-semibold uppercase tracking-caps-tight text-black/65 transition group-hover:border-black/35 group-hover:bg-black/10 group-hover:text-black dark:border-white/15 dark:bg-white/5 dark:text-white/65 dark:group-hover:border-white/35 dark:group-hover:bg-white/10 dark:group-hover:text-white">
-                  <span>{item.cta}</span>
-                  <ArrowUpRight className="h-4 w-4" />
-                </div>
+                <span className="inline-flex items-center gap-1 text-sm font-semibold text-black/70 transition group-hover:text-black dark:text-white/70 dark:group-hover:text-white">
+                  {item.cta}
+                  {item.external ? (
+                    <ArrowUpRight aria-hidden className="h-4 w-4" />
+                  ) : (
+                    <ArrowRight aria-hidden className="h-4 w-4" />
+                  )}
+                </span>
               </Card>
             );
 
@@ -116,7 +100,7 @@ const ReachSnapshot = () => {
                   key={item.label}
                   type="button"
                   onClick={() => setShowTrafficModal(true)}
-                  className="group block cursor-pointer text-left"
+                  className="group block cursor-pointer text-left rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40 dark:focus-visible:ring-white/40"
                 >
                   {content}
                 </button>
@@ -130,7 +114,7 @@ const ReachSnapshot = () => {
                   href={item.href}
                   target="_blank"
                   rel="noreferrer"
-                  className="group block"
+                  className="group block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40 dark:focus-visible:ring-white/40"
                 >
                   {content}
                 </a>
@@ -141,7 +125,7 @@ const ReachSnapshot = () => {
               <NextLink
                 key={item.label}
                 href={item.href!}
-                className="group block"
+                className="group block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40 dark:focus-visible:ring-white/40"
               >
                 {content}
               </NextLink>
