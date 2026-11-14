@@ -1,11 +1,43 @@
 // Components
 import { Layout } from "@/components/navigation";
 import { Blurb, Divider, Text } from "@ryanmeetup/ui";
-import { PartnershipPerks, SponsorSection } from "@/components/sponsors";
+import { SponsorSection } from "@/components/sponsors";
+import { PartnershipPerks } from "@ryanmeetup/sponsors";
+import type { PartnershipPerk } from "@ryanmeetup/sponsors";
+import { BiMailSend as Send } from "react-icons/bi";
+import { GoSponsorTiers as SponsorDetails } from "react-icons/go";
 
 // Types
 import { Sponsor } from "@/lib/types";
+import { contactHrefs } from "@/utils/contact";
 import { buildPageMetadata } from "@/utils/metadata";
+
+const partnershipPerks: PartnershipPerk[] = [
+  {
+    label: "Backer recognition",
+    text: "Logo placement in the Monthly Backers grid, from a standard listing up to a larger, first-row spot depending on tier.",
+  },
+  {
+    label: "Newsletter recognition",
+    text: "From plain-text mentions to full visual logo placement whenever we send a newsletter — new events, chapters, or big Ryan news.",
+  },
+  {
+    label: "Instagram recognition",
+    text: "Periodic Instagram Stories recognition and rotating sponsor spotlights for Operations and Sustaining Partners.",
+  },
+  {
+    label: "Event-recap visibility",
+    text: "Logo inclusion in event-recap content, with expanded credits in National Event recap graphics for Sustaining Partners.",
+  },
+  {
+    label: "On-site presence",
+    text: "Agreed signage, a verbal thank-you, and an on-site activation at a National Event for Sustaining Partners.",
+  },
+  {
+    label: "Custom collaborations",
+    text: "Custom event and brand collaborations scoped around your specific idea — pricing discussed based on scope.",
+  },
+];
 
 // Utilities
 import { fetchSponsors } from "@/actions/fetchContent";
@@ -74,7 +106,20 @@ const SponsorsPage = async () => {
           <Text className="mx-0 text-lg text-black/70 dark:text-white/70 lg:mx-32">
             Ryan Meetup is a growing community with real-world events, internet momentum, and a name brands do not forget. We work with sponsors who want to support the community on a recurring basis or help bring specific events to life.
           </Text>
-          <PartnershipPerks detailsHref="/sponsors/partnerships" />
+          <PartnershipPerks
+            perks={partnershipPerks}
+            intro="Sponsor opportunities may include"
+            details={{
+              href: "/sponsors/partnerships",
+              label: "View partnership details",
+              icon: <SponsorDetails className="h-4 w-4" />,
+            }}
+            contact={{
+              href: contactHrefs.sponsorship,
+              label: "Get in contact",
+              icon: <Send className="h-4 w-4" />,
+            }}
+          />
         </div>
       </Blurb>
 

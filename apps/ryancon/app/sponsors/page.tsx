@@ -1,13 +1,27 @@
 // Components
 import { Layout } from "@/components/navigation";
 import { Blurb, Divider, Text } from "@ryanmeetup/ui";
-import { PartnershipPerks, SponsorSection } from "@/components/sponsors";
+import { SponsorSection } from "@/components/sponsors";
+import { PartnershipPerks } from "@ryanmeetup/sponsors";
+import type { PartnershipPerk } from "@ryanmeetup/sponsors";
+import { BiMailSend as Send } from "react-icons/bi";
+import { GoSponsorTiers as SponsorDetails } from "react-icons/go";
 
 // Types
 import type { Sponsor } from "@/lib/types";
 
 // Utilities
 import { fetchSponsors } from "@/actions/fetchContent";
+import { contactHrefs } from "@/utils/contact";
+
+const partnershipPerks: PartnershipPerk[] = [
+  { text: "Logo placement across RyanCon web, event, and promotional materials." },
+  { text: "On-site booths, branded experiences, and memorable attendee activations." },
+  { text: "Custom partnership opportunities aligned with your brand and goals." },
+  { text: "Visibility through RyanCon and Ryan Meetup social storytelling." },
+  { text: "Inclusion in event recaps and content that extends beyond RyanCon itself." },
+  { text: "Stage recognition and sponsor mentions when the program format fits." },
+];
 
 const SponsorsPage = async () => {
   const sponsors = (await fetchSponsors()) as Sponsor[];
@@ -46,7 +60,20 @@ const SponsorsPage = async () => {
             experience possible while connecting their brand with an engaged,
             highly shareable community.
           </Text>
-          <PartnershipPerks detailsHref="/sponsorship" />
+          <PartnershipPerks
+            perks={partnershipPerks}
+            intro="RyanCon sponsor opportunities may include"
+            details={{
+              href: "/sponsorship",
+              label: "View sponsorship details",
+              icon: <SponsorDetails className="h-4 w-4" />,
+            }}
+            contact={{
+              href: contactHrefs.sponsorship,
+              label: "Partner with RyanCon",
+              icon: <Send className="h-4 w-4" />,
+            }}
+          />
         </div>
       </Blurb>
 
