@@ -121,13 +121,44 @@ test("returns from new task through browser history without a from parameter", a
   await page.goto("/board?view=list");
   await page.waitForLoadState("networkidle");
 
-  const newTask = page.getByRole("link", { name: "New task", exact: true });
+  // On a phone the header's + is a menu of everything this person can create.
+  await page.getByRole("button", { name: "Create new" }).click();
+  await expect(
+    page.getByRole("menuitem", { name: "New project" }),
+  ).toHaveAttribute("href", /^\/projects\/new\?from=/);
+  await expect(
+    page.getByRole("menuitem", { name: "New category" }),
+  ).toHaveAttribute("href", /^\/categories\/new\?from=/);
+  const newTask = page.getByRole("menuitem", { name: "New task" });
   await expect(newTask).toHaveAttribute("href", "/task/new");
   await newTask.click();
   await expect(page).toHaveURL(/\/task\/new$/);
 
   await page.getByRole("button", { name: "Cancel" }).click();
   await expect(page).toHaveURL(/\/board\?view=list$/);
+});
+
+test("creates projects and categories from the header's New menu on desktop", async ({
+  page,
+  baseURL,
+}) => {
+  await enterDemoWorkspace(page, baseURL);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/board");
+  await page.waitForLoadState("networkidle");
+
+  const trigger = page.getByRole("button", { name: "Create new" });
+  await expect(trigger).toContainText("New");
+  await trigger.click();
+  for (const name of ["New task", "New project", "New category"])
+    await expect(page.getByRole("menuitem", { name })).toBeVisible();
+  // From `sm` up the default preference opens the dialog, not the route.
+  await page.getByRole("menuitem", { name: "New project" }).click();
+  await expect(
+    page
+      .getByRole("dialog", { name: "New project" })
+      .getByRole("heading", { name: "New Project" }),
+  ).toBeVisible();
 });
 
 test("returns a directly opened new task page to the board", async ({

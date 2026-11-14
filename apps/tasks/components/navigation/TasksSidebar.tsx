@@ -4,15 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
 import { useQueryParamState } from "@ryanmeetup/hooks";
-import {
-  AnimatedCollapse,
-  DropdownMenu,
-  DropdownMenuButton,
-  DropdownMenuItem,
-  DropdownMenuItems,
-  IconButton,
-  Tooltip,
-} from "@ryanmeetup/ui";
+import { AnimatedCollapse, IconButton, Tooltip } from "@ryanmeetup/ui";
 import {
   FiCalendar,
   FiCheckSquare,
@@ -24,11 +16,9 @@ import {
   FiFileText,
   FiInfo,
   FiLock,
-  FiPlus,
   FiSidebar,
   FiUsers,
   FiStar,
-  FiTag,
   FiX,
 } from "react-icons/fi";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -46,11 +36,7 @@ import {
   projectStatusDetails,
 } from "@/lib/resources/project-status";
 import { projectPath } from "@/lib/resources/project-route";
-import {
-  editorTriggers,
-  InstanceWordmark,
-  useInstance,
-} from "@/components/global";
+import { InstanceWordmark, useInstance } from "@/components/global";
 
 /**
  * A filled dot in this sidebar already means "category identity", so project
@@ -127,8 +113,6 @@ export function TasksSidebar({
   setDesktopOpen,
   open,
   setOpen,
-  onCreateCategory,
-  onCreateProject,
 }: {
   data: WorkspaceData;
   demoMode: boolean;
@@ -136,12 +120,8 @@ export function TasksSidebar({
   setDesktopOpen: (open: boolean) => void;
   open: boolean;
   setOpen: (open: boolean) => void;
-  onCreateCategory: () => void;
-  onCreateProject: () => void;
 }) {
-  const isOwner = demoMode || data.currentProfile.app_role === "owner";
   const canManageCategories = demoMode || data.canManageCategories;
-  const triggers = editorTriggers(data.currentProfile.editor_surface);
   const currentProjects = data.projects.filter(isCurrentProject);
   const activeCategories = data.categories.filter(
     (category) => !category.archived_at,
@@ -460,88 +440,14 @@ export function TasksSidebar({
           ) : null,
         )}
       </nav>
-      {(isOwner || canManageCategories) && (
-        <section
-          data-sidebar-create-menu
-          className="mt-4 border-y border-black/10 py-3 dark:border-white/10"
-        >
-          <DropdownMenu>
-            <DropdownMenuButton
-              unstyled
-              className="flex w-full items-center gap-3 rounded-lg border border-black/15 bg-black/[0.06] px-3 py-2.5 text-left text-sm font-semibold text-black/70 shadow-sm shadow-black/5 transition hover:border-black/25 hover:bg-black/10 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/30 dark:border-white/10 dark:bg-white/[0.06] dark:text-white/70 dark:shadow-none dark:hover:border-white/20 dark:hover:bg-white/10 dark:hover:text-white dark:focus-visible:ring-white/40"
-            >
-              <FiPlus aria-hidden />
-              New
-              <FiChevronDown className="ml-auto" aria-hidden />
-            </DropdownMenuButton>
-            <DropdownMenuItems align="start" className="w-56">
-              {/*
-                Each entry is a pair: the link opens the dedicated editor route,
-                the item opens the dialog over the current page. Which of the
-                two a reader gets is their profile's editor surface — see
-                components/global/editor-routes.ts.
-              */}
-              {isOwner && (
-                <>
-                  {triggers.route && (
-                    <DropdownMenuItem.Link
-                      href={`/projects/new?from=${encodeURIComponent(pathname)}`}
-                      className={triggers.routeClassName}
-                      onClick={closeSidebar}
-                    >
-                      <FiFolder aria-hidden /> New project
-                    </DropdownMenuItem.Link>
-                  )}
-                  {triggers.dialog && (
-                    <DropdownMenuItem
-                      className={triggers.dialogClassName}
-                      onClick={() => {
-                        closeSidebar();
-                        onCreateProject();
-                      }}
-                    >
-                      <FiFolder aria-hidden /> New project
-                    </DropdownMenuItem>
-                  )}
-                </>
-              )}
-              {canManageCategories && (
-                <>
-                  {triggers.route && (
-                    <DropdownMenuItem.Link
-                      href={`/categories/new?from=${encodeURIComponent(pathname)}`}
-                      className={triggers.routeClassName}
-                      onClick={closeSidebar}
-                    >
-                      <FiTag aria-hidden /> New category
-                    </DropdownMenuItem.Link>
-                  )}
-                  {triggers.dialog && (
-                    <DropdownMenuItem
-                      className={triggers.dialogClassName}
-                      onClick={() => {
-                        closeSidebar();
-                        onCreateCategory();
-                      }}
-                    >
-                      <FiTag aria-hidden /> New category
-                    </DropdownMenuItem>
-                  )}
-                </>
-              )}
-            </DropdownMenuItems>
-          </DropdownMenu>
-        </section>
-      )}
-      {/* The create menu's bottom rule is this viewport's top fence, while the
-          rail owns its bottom rule. With no create menu, the rail supplies both
-          edges itself. Child borders only divide Favorites, Categories, and
-          Projects inside the shared scroller. */}
+      {/* The rail supplies both of this viewport's edges. Creating lives in the
+          header's New menu, not here. Child borders only divide Favorites,
+          Categories, and Projects inside the shared scroller. */}
       {!projectWork && !previewing ? null : (
         <div
           data-sidebar-resource-scroll
           {...(!projectWork ? { "data-preview-block": "" } : {})}
-          className={`min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain border-b border-black/10 py-4 pr-1 [scrollbar-gutter:stable] dark:border-white/10 ${isOwner || canManageCategories ? "" : "mt-4 border-t"}`}
+          className="mt-4 min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain border-y border-black/10 py-4 pr-1 [scrollbar-gutter:stable] dark:border-white/10"
         >
           {favoriteProjects.length > 0 && (
             <section className="shrink-0 border-b border-black/10 pb-4 dark:border-white/10">

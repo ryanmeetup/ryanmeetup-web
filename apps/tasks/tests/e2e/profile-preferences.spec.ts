@@ -82,11 +82,10 @@ test("uses a changed form layout for New task without a hard refresh", async ({
 
   await expect(preferences).toHaveAttribute("aria-busy", "false");
   await expect(page.getByText("Form layout set to Always a full page.")).toBeVisible();
-  const newTask = page.getByRole("link", { name: "New task", exact: true });
+  await page.getByRole("button", { name: "Create new" }).click();
+  const newTask = page.getByRole("menuitem", { name: "New task" });
+  await expect(newTask).toHaveCount(1);
   await expect(newTask).toHaveAttribute("href", "/task/new");
-  await expect(
-    page.getByRole("button", { name: "New task", exact: true }),
-  ).toHaveCount(0);
   await newTask.click();
   await expect(page).toHaveURL(/\/task\/new$/);
   await expect(page.getByRole("dialog")).toHaveCount(0);

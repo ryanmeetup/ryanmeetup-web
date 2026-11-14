@@ -32,22 +32,20 @@ test("keeps sidebar resource dividers flush with their scroller", async ({
   const scroller = page
     .locator("[data-workspace-sidebar]")
     .locator("[data-sidebar-resource-scroll]");
-  const createMenu = page.locator("[data-sidebar-create-menu]");
   await expect(scroller).toBeVisible();
+  // Creating lives in the header's New menu, so the rail fences both edges.
+  await expect(page.locator("[data-sidebar-create-menu]")).toHaveCount(0);
+  await expect(scroller).toHaveCSS("border-top-width", "1px");
   await expect(scroller).toHaveCSS("border-bottom-width", "1px");
   expect(
     await scroller.evaluate(
       (element) => element.scrollHeight > element.clientHeight,
     ),
   ).toBe(true);
-  const createBounds = (await createMenu.boundingBox())!;
   const scrollBounds = (await scroller.boundingBox())!;
   const sidebarBounds = (await page
     .locator("[data-workspace-sidebar]")
     .boundingBox())!;
-  expect(
-    Math.abs(createBounds.y + createBounds.height - scrollBounds.y),
-  ).toBeLessThanOrEqual(1);
   expect(
     Math.abs(
       scrollBounds.y +

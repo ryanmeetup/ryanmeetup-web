@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Button,
   Avatar,
@@ -11,12 +11,16 @@ import {
   DropdownMenuSeparator,
 } from "@ryanmeetup/ui";
 import {
+  FiCheckSquare,
+  FiChevronDown,
+  FiFolder,
   FiLogOut,
   FiMenu,
   FiMoon,
   FiPlus,
   FiSliders,
   FiSun,
+  FiTag,
   FiUser,
 } from "react-icons/fi";
 import type { Profile } from "@/lib/workspace/workspace-types";
@@ -34,23 +38,45 @@ import { profileDisplayName } from "@/lib/presentation";
 const newTaskClassName =
   "max-sm:gap-0 max-sm:px-3 [&>span:last-child]:hidden sm:gap-2 sm:px-4 sm:[&>span:last-child]:inline";
 
+/**
+ * The create menu's trigger, for when there is more than one thing to create.
+ * It wears the New task button's look: icon only on a phone, icon, label, and
+ * chevron from `sm` up.
+ */
+const createTriggerClassName =
+  "relative inline-flex items-center justify-center gap-2 rounded-lg border border-black/60 bg-black px-3 py-2 text-sm/4 font-semibold text-white sm:px-4 shadow-lg transition hover:border-black/80 hover:bg-black/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 data-open:bg-black/90 dark:border-white/10 dark:bg-white dark:text-black dark:hover:bg-white/90 dark:focus-visible:ring-white/30 dark:data-open:bg-white/90";
+
 export function TaskHeaderActions({
   profile,
   demoMode,
   canCreateTasks = true,
+  canCreateProjects = false,
+  canCreateCategories = false,
   onNewTask,
+  onCreateProject,
+  onCreateCategory,
 }: {
   profile: Profile;
   demoMode: boolean;
   canCreateTasks?: boolean;
+  canCreateProjects?: boolean;
+  canCreateCategories?: boolean;
   onNewTask: () => void;
+  onCreateProject?: () => void;
+  onCreateCategory?: () => void;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   // Demo builds hide /admin entirely, so the entry points go with it.
   const isOwner = !demoMode && profile.app_role === "owner";
   const profileName = profileDisplayName(profile);
   const triggers = editorTriggers(profile.editor_surface);
+  // One menu offers everything this person can create. It is the workspace's
+  // only create entry point; the sidebar no longer carries its own. With only
+  // tasks to create it stays the plain New task button.
+  const createMenu =
+    canCreateTasks && (canCreateProjects || canCreateCategories);
   return (
     <>
       <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-3">
@@ -157,7 +183,85 @@ export function TaskHeaderActions({
             </DropdownMenuItems>
           </DropdownMenu>
         </span>
-        {canCreateTasks && (
+        {createMenu && (
+          <DropdownMenu>
+            <DropdownMenuButton
+              unstyled
+              aria-label="Create new"
+              className={createTriggerClassName}
+            >
+              <span className="text-base">
+                <FiPlus aria-hidden />
+              </span>
+              <span className="hidden sm:inline">New</span>
+              <FiChevronDown aria-hidden className="hidden sm:block" />
+            </DropdownMenuButton>
+            <DropdownMenuItems align="end">
+              {/*
+                  Each entry is a route/dialog pair, as everywhere else: on the
+                  default preference the route half shows on a phone and the
+                  dialog half from `sm` up.
+                */}
+              {triggers.route && (
+                <DropdownMenuItem.Link
+                  href="/task/new"
+                  className={triggers.routeClassName}
+                >
+                  <FiCheckSquare aria-hidden /> New task
+                </DropdownMenuItem.Link>
+              )}
+              {triggers.dialog && (
+                <DropdownMenuItem
+                  className={triggers.dialogClassName}
+                  onClick={onNewTask}
+                >
+                  <FiCheckSquare aria-hidden /> New task
+                </DropdownMenuItem>
+              )}
+              {canCreateProjects && (
+                <>
+                  {triggers.route && (
+                    <DropdownMenuItem.Link
+                      href={`/projects/new?from=${encodeURIComponent(pathname)}`}
+                      className={triggers.routeClassName}
+                    >
+                      <FiFolder aria-hidden /> New project
+                    </DropdownMenuItem.Link>
+                  )}
+                  {triggers.dialog && onCreateProject && (
+                    <DropdownMenuItem
+                      className={triggers.dialogClassName}
+                      onClick={onCreateProject}
+                    >
+                      <FiFolder aria-hidden /> New project
+                    </DropdownMenuItem>
+                  )}
+                </>
+              )}
+              {canCreateCategories && (
+                <>
+                  {triggers.route && (
+                    <DropdownMenuItem.Link
+                      href={`/categories/new?from=${encodeURIComponent(pathname)}`}
+                      className={triggers.routeClassName}
+                    >
+                      <FiTag aria-hidden /> New category
+                    </DropdownMenuItem.Link>
+                  )}
+                  {triggers.dialog && onCreateCategory && (
+                    <DropdownMenuItem
+                      className={triggers.dialogClassName}
+                      onClick={onCreateCategory}
+                    >
+                      <FiTag aria-hidden /> New category
+                    </DropdownMenuItem>
+                  )}
+                </>
+              )}
+            </DropdownMenuItems>
+          </DropdownMenu>
+        )}
+        {canCreateTasks && !createMenu && (
           <>
             {/*
               One control, two surfaces. The link goes to the dedicated create

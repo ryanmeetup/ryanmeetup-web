@@ -125,8 +125,6 @@ function WorkspaceChrome({
         setDesktopOpen={setDesktopSidebarOpen}
         open={sidebarOpen}
         setOpen={setSidebarOpen}
-        onCreateCategory={onCreateCategory ?? (() => undefined)}
-        onCreateProject={onCreateProject ?? (() => undefined)}
       />
       <main className="flex min-h-dvh min-w-0 flex-col overflow-x-clip transition-[padding] duration-200 ease-out motion-reduce:transition-none lg:pl-[var(--workspace-sidebar-width)]">
         <header className="tasks-app-header">
@@ -173,7 +171,13 @@ function WorkspaceChrome({
             profile={data.currentProfile}
             demoMode={demoMode}
             canCreateTasks={!data.isGuest}
+            canCreateProjects={
+              demoMode || data.currentProfile.app_role === "owner"
+            }
+            canCreateCategories={demoMode || data.canManageCategories}
             onNewTask={onNewTask ?? (() => setNewTaskOpen(true))}
+            onCreateProject={onCreateProject}
+            onCreateCategory={onCreateCategory}
           />
         </header>
         <div className="hidden h-16 lg:block" aria-hidden="true" />
