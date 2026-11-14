@@ -6,12 +6,14 @@ import type {
   ReactNode,
 } from "react";
 import { Tooltip } from "./Tooltip";
+import { getFilterControlClasses } from "./filterStyles";
 
 export type IconButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   children: ReactNode;
   label: string;
   size?: "sm" | "md";
-  variant?: "subtle" | "overlay" | "plain" | "edit" | "archive" | "danger";
+  variant?:
+    "subtle" | "overlay" | "plain" | "edit" | "archive" | "danger" | "filter";
   tooltip?: ReactNode | false;
   tooltipPlacement?: "top" | "right" | "bottom" | "left";
   tooltipTriggerClassName?: string;
@@ -33,6 +35,7 @@ export type IconButtonLinkProps = Omit<ComponentProps<typeof NextLink>, "href"> 
 
 const sizeStyles = { sm: "h-8 w-8", md: "h-10 w-10" };
 const variantStyles = {
+  filter: `${getFilterControlClasses()} !p-0 disabled:opacity-60`,
   subtle:
     "rounded-full border border-black/10 text-black hover:bg-black/5 focus-visible:ring-black/30 dark:border-white/10 dark:text-white dark:hover:bg-white/10 dark:focus-visible:ring-white/30",
   overlay:

@@ -4,6 +4,7 @@ import NextLink from "next/link";
 // Types
 import type { ButtonHTMLAttributes, ComponentProps, ReactNode } from "react";
 import { Spinner } from "./Spinner";
+import { getFilterControlClasses } from "./filterStyles";
 
 export type ButtonLinkProps = Omit<ComponentProps<typeof NextLink>, "href"> & {
   children: ReactNode;
@@ -37,7 +38,9 @@ export type ButtonVariant =
   | "danger"
   | "success"
   | "outline"
-  | "ghost";
+  | "ghost"
+  /** A compact action beside filter dropdowns, using their shared treatment. */
+  | "filter";
 export type ButtonSize = "xs" | "sm" | "field" | "md" | "lg";
 
 const sizeStyles: Record<ButtonSize, string> = {
@@ -53,12 +56,13 @@ const getBaseClasses = (
   size: ButtonSize,
   fullWidth: boolean,
 ) => {
+  const width = fullWidth ? "w-full" : "w-auto";
+  if (variant === "filter")
+    return `relative h-8 whitespace-nowrap ${getFilterControlClasses()} ${width}`;
   const base =
     "relative inline-flex items-center justify-center gap-2 rounded-lg font-semibold uppercase tracking-caps transition focus:outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/10 group";
 
-  const width = fullWidth ? "w-full" : "w-auto";
-
-  const variantStyles: Record<ButtonVariant, string> = {
+  const variantStyles: Record<Exclude<ButtonVariant, "filter">, string> = {
     primary:
       "border border-black/60 bg-black text-white shadow-lg hover:border-black/80 hover:bg-black/90 hover:-translate-y-0.5 dark:border-white/10 dark:bg-white dark:text-black dark:hover:bg-white/90 dark:hover:text-black",
     secondary:

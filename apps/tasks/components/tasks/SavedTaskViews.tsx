@@ -110,7 +110,7 @@ export function SavedTaskViews({
         <DropdownSelect
           label="Views"
           variant="compact"
-          className="w-full min-w-0 sm:w-auto sm:max-w-xs"
+          className="h-8 w-full min-w-0 disabled:!opacity-60 sm:w-auto sm:max-w-xs"
           value={selected?.id ?? "__current"}
           options={[
             { value: "__current", label: "Unsaved view" },
@@ -131,8 +131,7 @@ export function SavedTaskViews({
             </Pill>
           )}
           <Button
-            size="sm"
-            variant="secondary"
+            variant="filter"
             className="flex-1 sm:flex-none"
             leftIcon={modified ? undefined : <FiBookmark aria-hidden />}
             disabled={!available || pending}
@@ -159,11 +158,7 @@ export function SavedTaskViews({
             <DropdownMenuButton
               unstyled
               aria-label="Saved view actions"
-              className={getIconButtonClasses(
-                "sm",
-                "subtle",
-                "disabled:opacity-50",
-              )}
+              className={getIconButtonClasses("sm", "filter")}
               disabled={!available || pending || views.length === 0}
             >
               <FiMoreHorizontal aria-hidden />
@@ -202,6 +197,7 @@ export function SavedTaskViews({
             unavailableReason === "browser-storage") && (
             <IconButton
               label="Retry saved views"
+              variant="filter"
               onClick={() => window.location.reload()}
             >
               <FiRefreshCw aria-hidden />

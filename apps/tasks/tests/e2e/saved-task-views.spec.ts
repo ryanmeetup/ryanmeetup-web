@@ -262,6 +262,29 @@ test("save modal summarizes exclusions, validates names, and fits boundary width
       await expect(
         controls.getByRole("button", { name: "Save view", exact: true }),
       ).toBeVisible();
+      const controlStyles = await Promise.all(
+        [
+          controls.getByRole("button", { name: /^Views/ }),
+          controls.getByRole("button", { name: "Save view", exact: true }),
+          controls.getByRole("button", {
+            name: "Saved view actions",
+            exact: true,
+          }),
+        ].map((control) =>
+          control.evaluate((element) => {
+            const style = getComputedStyle(element);
+            return {
+              height: element.getBoundingClientRect().height,
+              radius: style.borderRadius,
+              fontSize: style.fontSize,
+              textTransform: style.textTransform,
+              letterSpacing: style.letterSpacing,
+            };
+          }),
+        ),
+      );
+      expect(controlStyles[1]).toEqual(controlStyles[0]);
+      expect(controlStyles[2]).toEqual(controlStyles[0]);
       await expect
         .poll(() =>
           controls.evaluate(
