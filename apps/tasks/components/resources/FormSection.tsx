@@ -28,11 +28,11 @@ export function FormSection({
           </span>
         )}
         <div className="min-w-0">
-          <Heading size="h3" className="text-base sm:text-lg">
+          <Heading size="h3" className="text-section-title">
             {title}
           </Heading>
           {description && (
-            <p className="mt-1 text-xs leading-relaxed text-black/55 dark:text-white/55">
+            <p className="mt-1 text-secondary text-black/55 dark:text-white/55">
               {description}
             </p>
           )}

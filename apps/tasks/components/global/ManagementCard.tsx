@@ -29,7 +29,7 @@ export function ManagementCardTitle({
 }) {
   return (
     <span
-      className={`block truncate text-lg font-semibold leading-tight ${className ?? ""}`}
+      className={`block truncate text-card-title font-semibold ${className ?? ""}`}
     >
       {children}
     </span>

@@ -542,11 +542,11 @@ test("keeps the task due date inside the create form on mobile", async ({
   await expect(dueDateInput).toHaveCSS("min-width", "0px");
 
   // Editable text uses the same compact scale as field dropdowns.
-  await expect(titleInput).toHaveCSS("font-size", "14px");
+  await expect(titleInput).toHaveCSS("font-size", "13px");
   await expect(
     page.locator('[contenteditable="true"][aria-label="Description"]'),
-  ).toHaveCSS("font-size", "14px");
-  await expect(dueDateInput).toHaveCSS("font-size", "14px");
+  ).toHaveCSS("font-size", "13px");
+  await expect(dueDateInput).toHaveCSS("font-size", "13px");
 
   // Safari can retain a phantom root scroll region after closing its keyboard.
   // Reproduce that geometry and verify the footer remains the reachable end.

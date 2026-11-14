@@ -316,7 +316,7 @@ export function ContactsPageClient({
                                               .toUpperCase()}
                                         </span>
                                         <div className="min-w-0">
-                                          <h2 className="truncate text-lg font-semibold">
+                                          <h2 className="truncate text-card-title font-semibold">
                                             {contact.display_name}
                                           </h2>
                                         </div>

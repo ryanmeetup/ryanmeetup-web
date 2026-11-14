@@ -190,7 +190,7 @@ export function TaskListCards({
       className="block w-full p-4 text-left transition hover:bg-black/[0.025] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/30 dark:hover:bg-white/[0.025] dark:focus-visible:ring-white/30"
     >
       <span className="flex items-start justify-between gap-3">
-        <span className="min-w-0 font-semibold leading-snug">
+        <span className="min-w-0 text-card-title font-semibold">
           <TaskKeyBadge task={task} className="mr-2 align-middle" />
           {task.title}
         </span>
@@ -332,7 +332,7 @@ export function TaskListRows({
       className="cursor-pointer text-sm hover:bg-black/[0.025] dark:hover:bg-white/[0.025]"
     >
       <td className="px-4 py-4">
-        <span className="font-semibold">
+        <span className="text-card-title font-semibold">
           <TaskKeyBadge task={task} className="mr-2 align-middle" />
           {task.title}
         </span>

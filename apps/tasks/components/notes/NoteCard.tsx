@@ -67,7 +67,7 @@ export function NoteCard({
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-black/5 text-black/55 dark:bg-white/10 dark:text-white/60">
           <FiFileText aria-hidden />
         </span>
-        <h3 className="min-w-0 flex-1 text-base font-semibold leading-snug">
+        <h3 className="min-w-0 flex-1 text-card-title font-semibold">
           <button
             type="button"
             className="text-left after:absolute after:inset-0 after:rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/30"
@@ -89,7 +89,7 @@ export function NoteCard({
         text={note.body}
         maxLines={6}
         maxLength={320}
-        className="mt-3 min-w-0 break-words text-sm leading-6 text-black/75 dark:text-white/75"
+        className="mt-3 min-w-0 break-words text-body text-black/75 dark:text-white/75"
       />
 
       <NoteLinks
@@ -106,12 +106,12 @@ export function NoteCard({
           size="md"
         />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-black/75 dark:text-white/75">
+          <p className="truncate text-secondary font-semibold text-black/75 dark:text-white/75">
             {author?.full_name ?? "Unknown teammate"}
           </p>
           <time
             dateTime={note.updated_at}
-            className="mt-0.5 flex items-center gap-1.5 text-xs text-black/50 dark:text-white/50"
+            className="mt-0.5 flex items-center gap-1.5 text-meta text-black/50 dark:text-white/50"
           >
             <FiClock className="shrink-0" aria-hidden />
             Updated {formatShortTimestamp(note.updated_at)}

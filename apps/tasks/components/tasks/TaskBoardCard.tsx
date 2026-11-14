@@ -146,7 +146,7 @@ export function TaskBoardCard({
           </Link>
         </span>
       </div>
-      <h3 className="text-sm font-semibold leading-snug text-black sm:text-base dark:text-white">
+      <h3 className="text-card-title font-semibold text-black dark:text-white">
         {task.title}
       </h3>
       {task.description && (
@@ -155,7 +155,7 @@ export function TaskBoardCard({
           linkify
           maxLines={3}
           maxLength={120}
-          className="mt-1.5 break-words text-[11px] leading-relaxed text-black/60 sm:mt-2 sm:text-xs dark:text-white/60"
+          className="mt-1.5 break-words text-secondary text-black/60 sm:mt-2 dark:text-white/60"
         />
       )}
       {subtasks.length > 0 && (
@@ -181,7 +181,7 @@ export function TaskBoardCard({
       >
         <div className="min-w-0 flex-1 space-y-2">
           {project && (
-            <span className="flex items-center gap-1.5 truncate text-[10px] font-semibold text-black/60 dark:text-white/60">
+            <span className="flex items-center gap-1.5 truncate text-meta font-semibold text-black/60 dark:text-white/60">
               <FiFolder className="shrink-0" />
               {project.name}
             </span>

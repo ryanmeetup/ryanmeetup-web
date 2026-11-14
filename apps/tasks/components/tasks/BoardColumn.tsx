@@ -88,10 +88,10 @@ export function BoardColumn({
               className="h-2.5 w-2.5 shrink-0 rounded-full"
               style={{ backgroundColor: status.color }}
             />
-            <h2 className="shrink-0 whitespace-nowrap text-[11px] font-bold uppercase tracking-caps-tight sm:text-xs sm:tracking-caps-tight">
+            <h2 className="shrink-0 whitespace-nowrap text-meta font-semibold uppercase tracking-caps-tight">
               {status.name}
             </h2>
-            <span className="text-xs text-black/40 dark:text-white/40">
+            <span className="text-meta text-black/40 dark:text-white/40">
               {tasks.length}
             </span>
             <IconButton
@@ -112,7 +112,7 @@ export function BoardColumn({
               />
             </IconButton>
           </div>
-          <p className="mt-0.5 line-clamp-2 h-8 text-xs leading-snug text-black/60 sm:mt-1 sm:h-10 sm:text-sm dark:text-white/60">
+          <p className="mt-1 line-clamp-2 h-9 text-secondary text-black/60 dark:text-white/60">
             {status.description}
           </p>
           <div className="mt-3 sm:mt-4">

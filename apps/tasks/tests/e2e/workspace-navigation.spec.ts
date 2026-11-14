@@ -451,14 +451,14 @@ test("keeps board search text and placeholder sizes consistent on mobile", async
     search.evaluate(
       (input) => getComputedStyle(input, "::placeholder").fontSize,
     );
-  await expect(search).toHaveCSS("font-size", "14px");
-  expect(await placeholderFontSize()).toBe("14px");
+  await expect(search).toHaveCSS("font-size", "13px");
+  expect(await placeholderFontSize()).toBe("13px");
   await search.focus();
-  await expect(search).toHaveCSS("font-size", "14px");
-  expect(await placeholderFontSize()).toBe("14px");
+  await expect(search).toHaveCSS("font-size", "13px");
+  expect(await placeholderFontSize()).toBe("13px");
 
   await page.setViewportSize({ width: 768, height: 812 });
-  await expect(search).toHaveCSS("font-size", "14px");
+  await expect(search).toHaveCSS("font-size", "13px");
 });
 
 test("stops page scrolling with equal space above and below the board", async ({

@@ -101,7 +101,7 @@ function SectionHeading({
       <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-black/5 text-black/55 dark:bg-white/10 dark:text-white/60">
         {icon}
       </span>
-      <h2 className="min-w-0 text-base font-semibold">{title}</h2>
+      <h2 className="min-w-0 text-section-title font-semibold">{title}</h2>
       {/* The action keeps its natural width: these labels are uppercase and
           widely tracked, so a shrinking button wraps its own words long before
           the heading beside it runs out of room. */}

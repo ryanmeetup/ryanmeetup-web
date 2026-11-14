@@ -4,6 +4,37 @@
 
 @theme {
   --font-sans: var(--font-inter, Arial), Arial, Helvetica, sans-serif;
+  /* Tasks is a working interface. Keep the scale local so shared primitives
+     inherit its density without changing the public sites. See docs/TYPOGRAPHY.md. */
+  --text-sm: 0.8125rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base: 0.875rem;
+  --text-base--line-height: 1.375rem;
+  --text-lg: 1rem;
+  --text-lg--line-height: 1.5rem;
+  --text-xl: 1.125rem;
+  --text-xl--line-height: 1.625rem;
+  --text-2xl: 1.25rem;
+  --text-2xl--line-height: 1.75rem;
+  --text-3xl: 1.5rem;
+  --text-3xl--line-height: 2rem;
+  --text-4xl: 1.75rem;
+  --text-4xl--line-height: 2.125rem;
+
+  --text-body: 0.8125rem;
+  --text-body--line-height: 1.25rem;
+  --text-secondary: 0.75rem;
+  --text-secondary--line-height: 1.125rem;
+  --text-label: 0.75rem;
+  --text-label--line-height: 1rem;
+  --text-meta: 0.6875rem;
+  --text-meta--line-height: 1rem;
+  --text-card-title: 0.8125rem;
+  --text-card-title--line-height: 1.125rem;
+  --text-section-title: 1rem;
+  --text-section-title--line-height: 1.5rem;
+  --text-page-title: 1.25rem;
+  --text-page-title--line-height: 1.75rem;
   --animate-sync-sweep: sync-sweep 1.4s ease-in-out infinite;
 
   @keyframes sync-sweep {
@@ -19,6 +50,17 @@
 * {
   box-sizing: border-box;
 }
+:root {
+  --field-label-font-size: var(--text-label);
+  --field-label-line-height: var(--text-label--line-height);
+  --field-control-line-height: var(--text-body--line-height);
+}
+@media (min-width: 40rem) {
+  :root {
+    --text-page-title: 1.75rem;
+    --text-page-title--line-height: 2.125rem;
+  }
+}
 html {
   color-scheme: light;
 }
@@ -30,6 +72,8 @@ body {
   min-width: 320px;
   background: #f1f2ef;
   font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: var(--text-body--line-height);
 }
 html.dark body {
   background: #101010;
@@ -46,14 +90,6 @@ button {
 }
 button:disabled {
   cursor: not-allowed;
-}
-
-/* Keep phone forms compact without overriding the shared control typography.
-   Browser focus/pinch zoom remains native; do not restrict viewport scaling. */
-@media (max-width: 39.999rem) {
-  :root {
-    --field-label-font-size: 0.75rem;
-  }
 }
 
 body:has([data-workspace-error]) .tasks-footer {
@@ -109,8 +145,9 @@ body:has([data-workspace-error]) .tasks-footer {
     @apply min-w-0 flex flex-col gap-2;
   }
   .date-field > span {
-    @apply flex gap-2 font-semibold leading-5 text-black dark:text-white;
+    @apply flex gap-2 font-semibold text-black dark:text-white;
     font-size: var(--field-label-font-size, 0.875rem);
+    line-height: var(--field-label-line-height, 1.25rem);
   }
   .date-field input {
     /* Let the flex parent stretch the auto width. iOS WebKit currently adds

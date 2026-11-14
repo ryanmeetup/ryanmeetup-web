@@ -75,11 +75,13 @@ closed to them, and their sidebar shows only what they can open.
 
 ## Improved
 
-### More compact phone forms
+### A consistent, more compact text scale
 
-Inputs, descriptions, dropdowns, and search fields now share consistent 14px
-text on phones. Smaller field labels, page headings, and supporting copy keep
-mobile forms easier to scan and leave more room for the work.
+Fields, search, menus, and everyday interface text now share a compact 13px
+scale across phones and desktop. Task, project, and note card titles stay the
+same size in boards and lists. Smaller labels and metadata, consistent
+supporting copy, and a clearer heading hierarchy make the workspace easier
+to scan without oversized fields or cards.
 
 ### A clearer way back from missing pages
 

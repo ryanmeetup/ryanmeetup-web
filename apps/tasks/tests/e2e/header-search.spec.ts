@@ -20,13 +20,13 @@ test("keeps the header search placeholder readable on narrow screens", async ({
 
   const search = page.getByRole("combobox", { name: "Search tasks" });
   await expect(search).toHaveAttribute("placeholder", "Search tasks…");
-  await expect(search).toHaveCSS("font-size", "14px");
+  await expect(search).toHaveCSS("font-size", "13px");
   await expect(search).toHaveCSS("height", "32px");
   const placeholderFontSize = () =>
     search.evaluate(
       (input) => getComputedStyle(input, "::placeholder").fontSize,
     );
-  expect(await placeholderFontSize()).toBe("14px");
+  expect(await placeholderFontSize()).toBe("13px");
 
   const { availableWidth, placeholderWidth } = await search.evaluate(
     (input) => {
@@ -49,8 +49,8 @@ test("keeps the header search placeholder readable on narrow screens", async ({
   expect(placeholderWidth).toBeLessThan(availableWidth);
 
   await search.focus();
-  await expect(search).toHaveCSS("font-size", "14px");
-  expect(await placeholderFontSize()).toBe("14px");
+  await expect(search).toHaveCSS("font-size", "13px");
+  expect(await placeholderFontSize()).toBe("13px");
 });
 
 test("explains what task search supports on desktop screens", async ({
@@ -72,7 +72,7 @@ test("explains what task search supports on desktop screens", async ({
     "placeholder",
     "Search tasks by title, ID, or project...",
   );
-  await expect(search).toHaveCSS("font-size", "14px");
+  await expect(search).toHaveCSS("font-size", "13px");
   await expect(search).toHaveCSS("height", "40px");
 });
 
