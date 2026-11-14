@@ -72,39 +72,44 @@ products to one.
 
 ### Home page
 
-The home page is built from Shopify collections, in this order:
+The hero reads “this merch has your name on it”. Below it:
 
-1. The featured section shows up to eight listings from Shopify's built-in home
-   page collection (handle `frontpage`, currently titled **Best Sellers**), in
-   that collection's order and under its title and description. Keep it to
-   hand-picked products. While it is empty or unpublished, the section shows the
-   actual best sellers instead. This collection has no standalone page of its own.
-2. Every other published collection gets a section with up to four listings and
-   a link to its page. Sections are ordered by collection title, and listings by
-   the collection's order in Shopify.
-3. **More Ryan goods** lists every product that is in none of those collections,
-   so a product never disappears from the home page. Add a product to a
-   collection to move it out of this section.
+1. **Best Sellers** shows up to four listings from Shopify's built-in home page
+   collection (`frontpage`), in its curated order. An empty or unpublished
+   collection falls back to Shopify's actual best-selling order. A pick stays
+   in this row even when it is also featured in the spotlight.
+2. Collection tiles lead to every published design collection. Each uses the
+   collection image or its leading listing's photo.
+3. The spotlight shows the first listing in the `spotlight` collection, or the
+   newest in-stock listing when no spotlight has been curated.
 
-### Type pages
+`frontpage` and `spotlight` have no browsing tile or menu entry.
 
-`/collections/all`, `/collections/apparel`, and `/collections/accessories` are
-defined in [lib/catalog-collections.ts](lib/catalog-collections.ts), not in
-Shopify. Each one searches the catalog by the exact Product type (`Apparel` or
-`Accessory`; *all* has no filter) and loads every match before grouping, so a
-listing gets one card. A Shopify collection with
-one of these handles is ignored in favor of the definition here.
+### Catalog pages and ordering
 
-*All* is broken up into the same collection sections as the home page, each
-showing every listing in that collection and linking to its page, followed by
-**More Ryan goods** for products in no collection. The type and size filters
-apply within every section.
+`/collections/all`, `/collections/apparel`, `/collections/accessories`, and
+`/collections/ryd` are defined in
+[lib/catalog-collections.ts](lib/catalog-collections.ts). Apparel and Accessories
+search by Shopify Product type (`Apparel` or `Accessory`); Shop all has no type
+filter. RY-D’s lists the membership card sold at ryanmeetup.com. These handles
+shadow same-handle Shopify collections.
 
-Apparel and Accessories are links in the header. The header's **Collections**
-menu lists the Shopify collections being featured right now (every Shopify
-collection except the type pages and the home page favorites), then Shop all
-(*all*). A new collection appears there on its own within five minutes. Give it its own icon in `collectionIcons` in
-[lib/navigation.ts](lib/navigation.ts); without one it shows stacked boxes.
+The default **Recommended** order puts matching hand-picked Best Sellers first,
+then uses Shopify's best-selling order. On Apparel, the remaining listings follow
+T-shirts, hoodies/sweatshirts, hats, other goods, then flags; sales order breaks
+ties within each department. Newest and price sorts override recommendations.
+All matching products load before grouping, so each listing gets one card.
+
+Shop all retains its design collection sections, with up to four **Popular
+picks** above them in the default order. Those picks are removed from the sections
+below. **More Ryan goods** holds products in no design collection. Type and size
+filters also update the popular picks. Other sort choices apply within sections.
+
+Apparel and Accessories are links in the header. The **Collections** dropdown
+starts with **RY-D’s**, followed by published Shopify design collections and
+**Shop all**. New Shopify collections appear within five minutes. Give each one
+an icon in `collectionIcons` in [lib/navigation.ts](lib/navigation.ts); otherwise
+it uses stacked boxes.
 
 ### Example: name tag shirts
 

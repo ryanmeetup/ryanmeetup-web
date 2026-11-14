@@ -36,9 +36,14 @@ export function CollectionGrid({ handle, products, sections, more = [] }: { hand
       ));
   const arrange = (listings: ProductListing[]) => sortListings(listings.filter(matches), sort);
   const visible = arrange(products);
+  // Shop all keeps its design sections, with popular picks above them. Each pick
+  // appears once; choosing a different sort restores that order within sections.
+  const popular = sort === defaultSort && sections?.length ? visible.filter((product) => !product.externalUrl).slice(0, 4) : [];
+  const popularIds = new Set(popular.map(({ id }) => id));
+  const arrangeSection = (listings: ProductListing[]) => arrange(listings).filter(({ id }) => !popularIds.has(id));
   const visibleSections = [
-    ...(sections ?? []).map((section) => ({ ...section, products: arrange(section.products) })),
-    ...(sections?.length ? [{ collection: null, products: arrange(more) }] : []),
+    ...(sections ?? []).map((section) => ({ ...section, products: arrangeSection(section.products) })),
+    ...(sections?.length ? [{ collection: null, products: arrangeSection(more) }] : []),
   ].filter((section) => section.products.length);
 
   return (
@@ -77,10 +82,16 @@ export function CollectionGrid({ handle, products, sections, more = [] }: { hand
       )}
       {!visible.length ? (
         <EmptyState message="No Ryan gear found. Try another size or product type." />
-      ) : visibleSections.length ? (
+      ) : visibleSections.length || popular.length ? (
         <div className="space-y-12">
+          {popular.length > 0 && (
+            <section aria-labelledby="popular-picks">
+              <SectionHeader title={<span id="popular-picks">Popular picks</span>} />
+              <ProductGrid products={popular} from={handle} className="mt-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" />
+            </section>
+          )}
           {visibleSections.map(({ collection, products: sectionProducts }, index) => (
-            <CollapsibleCollection key={collection?.id ?? "more"} from={handle} collection={collection} products={sectionProducts} eagerCount={index === 0 ? 4 : 0} />
+            <CollapsibleCollection key={collection?.id ?? "more"} from={handle} collection={collection} products={sectionProducts} eagerCount={!popular.length && index === 0 ? 4 : 0} />
           ))}
         </div>
       ) : (

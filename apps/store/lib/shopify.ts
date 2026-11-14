@@ -5,6 +5,7 @@ import { normalizeHandle } from "./handles";
 import { createProductGroup, getListingHandles, getProductGroupForMember, groupProductListings, resolveListingHandle, resolveProductHandle } from "./product-groups";
 import { sortOptionValues } from "./product-options";
 import { shopifyCatalogTag } from "./shopify-cache";
+import { recommendListings } from "./sort";
 import type {
   Cart,
   CatalogSections,
@@ -292,14 +293,13 @@ function getMemberHandles(listing: ProductListing) {
   return listing.designs?.map((design) => design.product.handle) ?? [listing.handle];
 }
 
-// Orders listings by their earliest member in a collection, so Shopify's manual
-// collection order carries through to grouped listings.
-function getListingsInCollection(listings: ProductListing[], handles: string[]) {
+// Orders curated picks by their earliest member in the collection.
+function getListingsInCollection(listings: ProductListing[], handles: string[], preserveSalesOrder = false) {
   const positions = new Map(handles.map((handle, index) => [handle, index]));
   return listings
     .map((listing) => ({ listing, position: Math.min(...getMemberHandles(listing).map((handle) => positions.get(handle) ?? Infinity)) }))
     .filter(({ position }) => position !== Infinity)
-    .sort((a, b) => a.position - b.position)
+    .sort((a, b) => preserveSalesOrder ? 0 : a.position - b.position)
     .map(({ listing }) => listing);
 }
 
@@ -326,7 +326,7 @@ async function getCollectionMemberships(): Promise<CollectionMembership[]> {
 function sectionListings(listings: ProductListing[], memberships: CollectionMembership[]): CatalogSections {
   const sectioned = new Set<string>();
   const sections = memberships.filter(isBrowsingCollection).flatMap(({ products: members, ...collection }) => {
-    const sectionListings = withExternalListings(collection.handle, getListingsInCollection(listings, members.edges.map(({ node }) => node.handle)));
+    const sectionListings = withExternalListings(collection.handle, getListingsInCollection(listings, members.edges.map(({ node }) => node.handle), true));
     for (const listing of sectionListings) sectioned.add(listing.id);
     return sectionListings.length ? [{ collection, products: sectionListings, total: sectionListings.length }] : [];
   });
@@ -344,7 +344,7 @@ function getCollectionTile({ collection, products, total }: CollectionSection): 
 function getTypeCollectionSections(listings: ProductListing[]): CollectionSection[] {
   return catalogCollections.flatMap((collection) => {
     if (collection.productType === null) return [];
-    const products = listings.filter((listing) => isInCatalogCollection(collection, listing));
+    const products = withExternalListings(collection.handle, listings.filter((listing) => isInCatalogCollection(collection, listing)));
     return products.length ? [{ collection: getCatalogCollectionSummary(collection), products, total: products.length }] : [];
   });
 }
@@ -368,11 +368,10 @@ export async function getHomeCatalog(): Promise<HomeCatalog> {
   const favorites = memberships.find((collection) => collection.handle === featuredCollectionHandle);
   const picks = favorites ? getListingsInCollection(listings, favorites.products.edges.map(({ node }) => node.handle)) : [];
   const curated = picks.length ? favorites : undefined;
-  // Without hand-picked favorites, fall back to the actual best sellers. The spotlight
-  // already has the page's attention, so it sits this row out unless nothing else would fill it.
-  const candidates = curated ? picks : listings;
-  const others = candidates.filter((listing) => listing.id !== spotlight?.listing.id);
-  const featured = others.length ? others : candidates;
+  // Shopify's original setup copy can remain until the collection is edited there.
+  const description = curated?.description.trim();
+  // A popular listing stays in this row even when it also has the spotlight.
+  const featured = curated ? picks : listings;
   const { sections } = sectionListings(listings, memberships);
 
   return {
@@ -382,7 +381,7 @@ export async function getHomeCatalog(): Promise<HomeCatalog> {
         id: curated?.id ?? "featured",
         handle: featuredCollectionHandle,
         title: curated?.title || "Best Sellers",
-        description: curated?.description || "Popular picks, pulled straight from the official catalog.",
+        description: description && description !== "This is a test description." ? description : "Popular picks, pulled straight from the official catalog.",
         image: null,
       },
       products: featured.slice(0, favoritesLimit),
@@ -398,13 +397,28 @@ export async function getProductHandles(): Promise<string[]> {
 }
 
 export async function getCollection(handle: string): Promise<ProductPage | null> {
+  // The same hand-picked favorites lead every page where they belong. Shopify's
+  // best-selling order fills the rest, with department ordering on Apparel.
+  const memberships = isShopifyConfigured() && handle !== "ryd" ? await getCollectionMemberships() : [];
+  const page = await loadCollection(handle, memberships);
+  if (!page) return null;
+  const popularHandles = memberships.find((collection) => collection.handle === featuredCollectionHandle)?.products.edges.map(({ node }) => node.handle) ?? [];
+  const products = recommendListings(page.products, popularHandles, handle === "apparel");
+  return { ...page, products };
+}
+
+async function loadCollection(handle: string, memberships: CollectionMembership[]): Promise<ProductPage | null> {
   const catalogCollection = getCatalogCollection(handle);
+
+  if (handle === "ryd" && catalogCollection) {
+    return { collection: getCatalogCollectionSummary(catalogCollection), products: withExternalListings(handle, []) };
+  }
 
   if (!isShopifyConfigured()) {
     if (!catalogCollection) return null;
     return {
       collection: getCatalogCollectionSummary(catalogCollection),
-      products: groupProductListings(demoProducts.filter((product) => isInCatalogCollection(catalogCollection, product))),
+      products: withExternalListings(handle, groupProductListings(demoProducts.filter((product) => isInCatalogCollection(catalogCollection, product)))),
     };
   }
 
@@ -414,8 +428,8 @@ export async function getCollection(handle: string): Promise<ProductPage | null>
     const collection = getCatalogCollectionSummary(catalogCollection);
     // Shop all is broken up into the same collection sections as the home page.
     if (catalogCollection.productType === null) {
-      const [products, memberships] = await Promise.all([getCatalogProducts(null), getCollectionMemberships()]);
-      const listings = await getGroupedListings(products);
+      const products = await getCatalogProducts(null);
+      const listings = withExternalListings(handle, await getGroupedListings(products));
       return { collection, products: listings, ...sectionListings(listings, memberships) };
     }
     return { collection, products: withExternalListings(handle, await getGroupedListings(await getCatalogProducts(getCatalogProductQuery(catalogCollection)))) };
@@ -446,7 +460,7 @@ async function getShopifyCollection(handle: string): Promise<ProductPage | null>
         query Collection($handle: String!, $after: String) {
           collection(handle: $handle) {
             id handle title description image { url altText width height }
-            products(first: 50, after: $after, sortKey: COLLECTION_DEFAULT) {
+            products(first: 50, after: $after, sortKey: BEST_SELLING) {
               edges { node { ...ProductFields } }
               pageInfo { endCursor hasNextPage }
             }

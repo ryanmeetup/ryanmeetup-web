@@ -4,11 +4,10 @@ type ExternalListing = { collectionHandles: string[]; listing: ProductListing };
 
 const rydImage = { url: "/listings/ryd.png", altText: "Front and back of the RY-D Ryan Meetup membership card", width: 685, height: 671 };
 
-// Goods sold outside Shopify, listed in Shopify and catalog collections by handle. Each
-// leads its collection so it stays in the home page's preview of that collection.
+// Goods sold outside Shopify, listed in Shopify and catalog collections by handle.
 const externalListings: ExternalListing[] = [
   {
-    collectionHandles: ["ryan-classics", "accessories"],
+    collectionHandles: ["all", "ryd", "ryan-classics", "accessories"],
     listing: {
       id: "external:ryd",
       handle: "ryd",
@@ -30,5 +29,5 @@ const externalListings: ExternalListing[] = [
 
 export function withExternalListings(handle: string, listings: ProductListing[]) {
   const external = externalListings.filter((entry) => entry.collectionHandles.includes(handle)).map((entry) => entry.listing);
-  return external.length ? [...external, ...listings] : listings;
+  return external.length ? [...listings, ...external.filter((item) => !listings.some(({ id }) => id === item.id))] : listings;
 }

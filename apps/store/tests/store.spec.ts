@@ -117,7 +117,7 @@ test("a markdown shows on the card, the product page, and the cart line", async 
 test("collection pages sort by price and newest, and the sort survives a reload", async ({ page }) => {
   await page.goto("/collections/apparel");
   const titles = page.getByRole("main").getByRole("heading", { level: 3 });
-  await expect(titles).toHaveText(["Official Ryan Meetup Tee", "Hello, My Name Is Ryan Sweatshirt", "Name Tag Shirt"]);
+  await expect(titles).toHaveText(["Official Ryan Meetup Tee", "Name Tag Shirt", "Hello, My Name Is Ryan Sweatshirt"]);
 
   await page.getByRole("button", { name: /^Sort/ }).click();
   await page.getByRole("option", { name: "Price: high to low" }).click();
@@ -325,7 +325,7 @@ test("the home page opens doors to collections, spotlights one listing, and keep
   await page.goto("/");
   const main = page.getByRole("main");
   const lanes = main.getByRole("region", { name: "Pick your Ryan lane" });
-  await expect(lanes.getByRole("listitem")).toHaveCount(2);
+  await expect(lanes.getByRole("listitem")).toHaveCount(3);
   await expect(lanes.getByRole("link", { name: /Apparel/ })).toHaveAttribute("href", "/collections/apparel");
 
   const spotlight = main.getByRole("region", { name: "New arrival" });
@@ -335,8 +335,10 @@ test("the home page opens doors to collections, spotlights one listing, and keep
 
   await page.goBack();
   const favorites = main.getByRole("region", { name: "Best Sellers" });
-  await expect(favorites.getByRole("heading", { level: 3 })).toHaveCount(4);
-  await expect(favorites.getByRole("heading", { name: "Name Tag Shirt" })).toHaveCount(0);
+  await expect(favorites.getByRole("heading", { level: 3 })).toHaveText([
+    "Official Ryan Meetup Tee", "Hello, My Name Is Ryan Sweatshirt", "Ryan Society Cap", "Certified Ryan Pack",
+  ]);
+  await expect(main.locator("section[aria-labelledby]").first()).toHaveAttribute("aria-labelledby", "home-favorites");
 });
 
 test("customer can open store support and enter order details", async ({
@@ -397,6 +399,7 @@ test("apparel and accessories are header links, and shop all sits in the collect
   // The shared NavMenu opens on hover, as it does on ryanmeetup.com.
   await mainNavigation.getByRole("button", { name: "Collections" }).hover();
   await expect(page.getByRole("link", { name: "Shop all" })).toHaveAttribute("href", "/collections/all");
+  await expect(page.getByRole("link", { name: /RY-D’s/ })).toHaveAttribute("href", "/collections/ryd");
   await mainNavigation.getByRole("link", { name: "Apparel" }).click();
   await expect(page).toHaveURL(/\/collections\/apparel$/);
   await expect(mainNavigation.getByRole("link", { name: "Apparel" })).toHaveAttribute("aria-current", "page");
@@ -459,7 +462,7 @@ test("store navigation and breadcrumbs use icons", async ({ page }) => {
     page
       .getByRole("navigation", { name: "Mobile navigation" })
       .locator("a svg"),
-  ).toHaveCount(5); // Four links and the collapsed Shop all chip
+  ).toHaveCount(6); // Four links, RY-D’s, and Shop all
   await page.screenshot({
     path: "/private/tmp/store-mobile-navigation.png",
     fullPage: false,
@@ -480,7 +483,7 @@ for (const viewport of [
     await page.goto("/");
     await expect(
       page.getByRole("heading", {
-        name: "Dress like everyone knows your name.",
+        name: "this merch has your name on it",
       }),
     ).toBeVisible();
     if (viewport.name === "mobile") {
@@ -494,3 +497,15 @@ for (const viewport of [
     });
   });
 }
+
+test("RY-D’s can be found in the mobile dropdown and ordered from its own page", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Open navigation" }).click();
+  const navigation = page.getByRole("navigation", { name: "Mobile navigation" });
+  await navigation.getByRole("button", { name: /^Collections/ }).click();
+  await navigation.getByRole("link", { name: /RY-D’s/ }).click();
+  await expect(page).toHaveURL(/\/collections\/ryd$/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("RY-D’s");
+  await expect(page.getByRole("main").getByRole("link", { name: /RY-D Membership Card/ })).toHaveAttribute("href", "https://ryanmeetup.com/ryd");
+});

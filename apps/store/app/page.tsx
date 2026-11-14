@@ -55,7 +55,7 @@ export default async function HomePage() {
                 size="h1"
                 className="max-w-3xl text-5xl leading-[0.95] sm:text-6xl xl:text-7xl"
               >
-                Dress like everyone knows your name.
+                this merch has your name on it
               </Heading>
               <Text className="mt-6 max-w-xl text-lg text-black/70 sm:text-xl dark:text-white/70">
                 Shirts, hats, and assorted goods for the world’s most organized
@@ -85,28 +85,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {collections.length > 0 && (
-        <section id="collections" aria-labelledby="home-collections" className="store-container scroll-mt-24 py-10 sm:py-14">
-          <SectionHeader
-            title={<span id="home-collections">Pick your Ryan lane</span>}
-            description="Every collection, one tap away. The full shelf lives on Shop all."
-            meta="Collections"
-            actions={
-              <Button.Link href="/collections/all" size="md" variant="secondary" className="!w-full sm:!w-auto" rightIcon={<FiArrowRight />}>
-                Shop all
-              </Button.Link>
-            }
-          />
-          <div className="mt-8"><HomeCollectionTiles tiles={collections} /></div>
-        </section>
-      )}
-
-      {spotlight && (
-        <section aria-label={spotlight.label} className="store-container py-10 sm:py-14">
-          <HomeSpotlight spotlight={spotlight} />
-        </section>
-      )}
-
       {favorites.products.length > 0 && (
         <section aria-labelledby="home-favorites" className="store-container py-10 sm:py-14">
           <SectionHeader
@@ -120,6 +98,28 @@ export default async function HomePage() {
             )}
           />
           <ProductGrid products={favorites.products} eagerCount={0} className={gridColumns} />
+        </section>
+      )}
+
+      {collections.length > 0 && (
+        <section id="collections" aria-labelledby="home-collections" className="store-container scroll-mt-24 py-10 sm:py-14">
+          <SectionHeader
+            title={<span id="home-collections">Pick your Ryan lane</span>}
+            description="Every collection, one tap away. The full shelf lives on Shop all."
+            meta="Collections"
+            actions={
+              <Button.Link href="/collections/all" size="md" variant="secondary" className="!w-full sm:!w-auto" rightIcon={<FiArrowRight />}>
+                Shop all
+              </Button.Link>
+            }
+          />
+          <HomeCollectionTiles tiles={collections} className={gridColumns} />
+        </section>
+      )}
+
+      {spotlight && (
+        <section aria-label={spotlight.label} className="store-container py-10 sm:py-14">
+          <HomeSpotlight spotlight={spotlight} />
         </section>
       )}
     </main>

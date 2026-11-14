@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import type { NavRoute } from "@ryanmeetup/ui";
 import { FiInfo, FiMail, FiTag } from "react-icons/fi";
-import { FaBoxesStacked, FaHeart, FaIdBadge, FaRecordVinyl, FaShirt, FaStore, FaTableCellsLarge } from "react-icons/fa6";
+import { FaAddressCard, FaBoxesStacked, FaHeart, FaIdBadge, FaRecordVinyl, FaShirt, FaStore, FaTableCellsLarge } from "react-icons/fa6";
 import type { IconType } from "react-icons";
 import { getCatalogCollection } from "./catalog-collections";
 import type { CollectionSummary } from "./types";
@@ -51,6 +51,7 @@ const collectionIcons: Record<string, IconType> = {
   all: FaTableCellsLarge,
   apparel: FaShirt,
   accessories: FiTag,
+  ryd: FaAddressCard,
   "i-heart-ry": FaHeart,
   "name-tag": FaIdBadge,
   "ryan-classics": FaRecordVinyl,
@@ -58,11 +59,13 @@ const collectionIcons: Record<string, IconType> = {
 
 export type StoreMenuCollection = Pick<CollectionSummary, "handle" | "title" | "description">;
 
-/** The featured Shopify collections, then Shop all; Apparel and Accessories have their own links. */
+/** RY-D’s and featured Shopify collections, then Shop all; type pages have their own links. */
 export function getCollectionMenuRoutes(collections: StoreMenuCollection[]): NavRoute[] {
   const shopAll = getCatalogCollection("all");
+  const ryd = getCatalogCollection("ryd");
   const featured = collections.filter(({ handle }) => !getCatalogCollection(handle));
   return [
+    ...(ryd ? [ryd] : []),
     ...featured,
     ...(shopAll ? [{ ...shopAll, title: "Shop all" }] : []),
   ].map(({ handle, title, description }) => ({

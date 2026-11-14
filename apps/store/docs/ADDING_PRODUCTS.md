@@ -165,12 +165,17 @@ product's photo when it has none.
 - Add products from the product page (**Product organization → Collections**),
   or select several in the **Products** list and use **More actions → Add to
   collection(s)**.
-- The order of products inside a collection in Shopify is the order on the store.
+- Design collection pages put matching Best Sellers first, then follow sales
+  popularity. Manual collection order still controls the curated Best Sellers
+  and Spotlight picks.
 
 **Best Sellers** is special. It is the favorites row on the home page, showing
-up to **four** listings in the collection's order. Use it for hand-picked
+up to **four** listings in the collection's order, directly below the hero. Use it for hand-picked
 highlights, not every product. If it is ever empty, the store shows the actual
-best-selling products there instead.
+best-selling products there instead. Matching Best Sellers also lead other
+catalog pages. Apparel then orders the remaining goods as T-shirts,
+hoodies/sweatshirts, hats, other goods, and flags, with sales popularity within
+each department. Customers can still choose newest or price sorting.
 
 **Spotlight** is special too. Create a manual collection with the handle
 `spotlight` (published to Ryan Meetup Store Headless) and its **first** product
@@ -179,8 +184,8 @@ small label above the product name (for example *Fresh off the press*), and its
 description, if any, replaces the product's own intro. To change the drop,
 reorder or swap the product; to retire it, empty the collection. With no
 spotlight product, the newest in-stock listing takes the spot as a *New
-arrival*. The spotlight product sits out the favorites row so it isn't shown
-twice, and the collection itself never gets a tile or a menu entry.
+arrival*. A popular spotlight product stays in the Best Sellers row too. The
+Spotlight collection itself never gets a tile or a menu entry.
 
 **To create a new design collection:**
 
@@ -193,9 +198,10 @@ twice, and the collection itself never gets a tile or a menu entry.
 5. Save, then add products to it.
 
 Its home page tile appears automatically; tiles are ordered alphabetically by
-title. Don't give a collection the handle `all`, `apparel`, or `accessories`;
-those addresses belong to the store's own Collections, Apparel, and Accessories
-pages. `frontpage` and `spotlight` are reserved for Best Sellers and Spotlight.
+title. Don't give a collection the handle `all`, `apparel`, `accessories`, or `ryd`;
+those addresses belong to the store's own catalog pages. The Collections
+dropdown always offers RY-D’s at `/collections/ryd`, where the membership card
+links to its external order page. `frontpage` and `spotlight` are reserved for Best Sellers and Spotlight.
 
 ## Tags
 

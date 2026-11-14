@@ -33,6 +33,14 @@ export const catalogCollections: CatalogCollection[] = [
     image: null,
     productType: "Accessory",
   },
+  {
+    id: "catalog:ryd",
+    handle: "ryd",
+    title: "RY-D’s",
+    description: "Your official Ryan identification, made just for you.",
+    image: null,
+    productType: "Membership",
+  },
 ];
 
 export function getCatalogCollection(handle: string) {
