@@ -438,7 +438,7 @@ test("aligns board column searches across description lengths", async ({
   expect(Math.max(...topPositions) - Math.min(...topPositions)).toBeLessThan(1);
 });
 
-test("keeps the board search placeholder steady on mobile without zooming on focus", async ({
+test("keeps board search text and placeholder sizes consistent on mobile", async ({
   page,
   baseURL,
 }) => {
@@ -451,11 +451,11 @@ test("keeps the board search placeholder steady on mobile without zooming on foc
     search.evaluate(
       (input) => getComputedStyle(input, "::placeholder").fontSize,
     );
-  await expect(search).toHaveCSS("font-size", "16px");
-  expect(await placeholderFontSize()).toBe("12px");
+  await expect(search).toHaveCSS("font-size", "14px");
+  expect(await placeholderFontSize()).toBe("14px");
   await search.focus();
-  await expect(search).toHaveCSS("font-size", "16px");
-  expect(await placeholderFontSize()).toBe("12px");
+  await expect(search).toHaveCSS("font-size", "14px");
+  expect(await placeholderFontSize()).toBe("14px");
 
   await page.setViewportSize({ width: 768, height: 812 });
   await expect(search).toHaveCSS("font-size", "14px");

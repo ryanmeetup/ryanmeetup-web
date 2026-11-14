@@ -48,19 +48,11 @@ button:disabled {
   cursor: not-allowed;
 }
 
-/* iOS Safari zooms the viewport when a focused text control is smaller than
-   16px. Keep phone-sized controls at that threshold while preserving the
-   denser field typography once the layout reaches the sm breakpoint. */
+/* Keep phone forms compact without overriding the shared control typography.
+   Browser focus/pinch zoom remains native; do not restrict viewport scaling. */
 @media (max-width: 39.999rem) {
-  input:not([type="button"]):not([type="checkbox"]):not([type="color"]):not(
-      [type="file"]
-    ):not([type="hidden"]):not([type="image"]):not([type="radio"]):not(
-      [type="range"]
-    ):not([type="reset"]):not([type="submit"]),
-  select,
-  textarea,
-  [contenteditable="true"] {
-    font-size: 1rem;
+  :root {
+    --field-label-font-size: 0.75rem;
   }
 }
 
@@ -117,7 +109,8 @@ body:has([data-workspace-error]) .tasks-footer {
     @apply min-w-0 flex flex-col gap-2;
   }
   .date-field > span {
-    @apply flex gap-2 text-sm font-semibold text-black dark:text-white;
+    @apply flex gap-2 font-semibold leading-5 text-black dark:text-white;
+    font-size: var(--field-label-font-size, 0.875rem);
   }
   .date-field input {
     /* Let the flex parent stretch the auto width. iOS WebKit currently adds

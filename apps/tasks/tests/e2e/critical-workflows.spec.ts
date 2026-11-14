@@ -541,12 +541,12 @@ test("keeps the task due date inside the create form on mobile", async ({
   await expect(dueDateField).toHaveCSS("min-width", "0px");
   await expect(dueDateInput).toHaveCSS("min-width", "0px");
 
-  // iOS Safari zooms the page when a focused text control is below 16px.
-  await expect(titleInput).toHaveCSS("font-size", "16px");
+  // Editable text uses the same compact scale as field dropdowns.
+  await expect(titleInput).toHaveCSS("font-size", "14px");
   await expect(
     page.locator('[contenteditable="true"][aria-label="Description"]'),
-  ).toHaveCSS("font-size", "16px");
-  await expect(dueDateInput).toHaveCSS("font-size", "16px");
+  ).toHaveCSS("font-size", "14px");
+  await expect(dueDateInput).toHaveCSS("font-size", "14px");
 
   // Safari can retain a phantom root scroll region after closing its keyboard.
   // Reproduce that geometry and verify the footer remains the reachable end.
@@ -563,7 +563,7 @@ test("keeps the task due date inside the create form on mobile", async ({
         .locator(".tasks-footer")
         .evaluate((footer) =>
           Math.round(
-            footer.getBoundingClientRect().bottom - window.innerHeight,
+            Math.abs(footer.getBoundingClientRect().bottom - window.innerHeight),
           ),
         ),
     )

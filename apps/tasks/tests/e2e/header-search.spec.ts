@@ -20,7 +20,7 @@ test("keeps the header search placeholder readable on narrow screens", async ({
 
   const search = page.getByRole("combobox", { name: "Search tasks" });
   await expect(search).toHaveAttribute("placeholder", "Search tasks…");
-  await expect(search).toHaveCSS("font-size", "16px");
+  await expect(search).toHaveCSS("font-size", "14px");
   await expect(search).toHaveCSS("height", "32px");
   const placeholderFontSize = () =>
     search.evaluate(
@@ -49,7 +49,7 @@ test("keeps the header search placeholder readable on narrow screens", async ({
   expect(placeholderWidth).toBeLessThan(availableWidth);
 
   await search.focus();
-  await expect(search).toHaveCSS("font-size", "16px");
+  await expect(search).toHaveCSS("font-size", "14px");
   expect(await placeholderFontSize()).toBe("14px");
 });
 

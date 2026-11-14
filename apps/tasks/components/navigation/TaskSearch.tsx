@@ -228,7 +228,7 @@ export function TaskSearch({
         aria-hidden
         className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-black/40 sm:left-3 sm:text-base dark:text-white/40"
       />
-      {/* Typed text keeps the mobile 16px minimum (prevents iOS zoom); only the placeholder is denser, so focusing never resizes it. */}
+      {/* Search values and placeholders use the same compact text scale. */}
       <input
         ref={inputRef}
         type="search"

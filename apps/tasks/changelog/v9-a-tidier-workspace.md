@@ -75,6 +75,12 @@ closed to them, and their sidebar shows only what they can open.
 
 ## Improved
 
+### More compact phone forms
+
+Inputs, descriptions, dropdowns, and search fields now share consistent 14px
+text on phones. Smaller field labels, page headings, and supporting copy keep
+mobile forms easier to scan and leave more room for the work.
+
 ### A clearer way back from missing pages
 
 Missing pages now show a name-tag 404 with links back to the task board and

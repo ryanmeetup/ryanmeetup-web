@@ -64,7 +64,7 @@ export function PageHeader({
         <Heading
           size="h1"
           className={clsx(
-            "wrap-anywhere text-2xl sm:text-4xl",
+            "wrap-anywhere text-xl sm:text-4xl",
             kicker && "mt-2",
           )}
         >
@@ -88,7 +88,9 @@ export function PageHeader({
             </span>
           )}
         </Heading>
-        {description && <Text className="mt-2 text-sm">{description}</Text>}
+        {description && (
+          <Text className="mt-2 text-xs sm:text-sm">{description}</Text>
+        )}
       </div>
       {/*
         `shrink-0` is load-bearing. The actions sit behind `sm:justify-end` at

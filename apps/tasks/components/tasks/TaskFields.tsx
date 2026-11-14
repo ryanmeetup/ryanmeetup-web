@@ -153,7 +153,7 @@ export function TaskFields({
           </div>
         )}
         <fieldset className="sm:col-span-2" aria-required="true">
-          <legend className="mb-2 flex gap-1 text-sm font-semibold">
+          <legend className={`mb-2 ${getFieldLabelClasses()}`}>
             <span>Categories</span>
             <span className="text-red-500">*</span>
           </legend>
