@@ -6,9 +6,13 @@ or developer help are needed for everyday listing work.
 
 ## How the store reads Shopify
 
-Catalog changes normally appear within five minutes. Once the
-[catalog webhook](CATALOG_WEBHOOK.md) is configured, supported changes expire
-the cache on delivery and appear on the next page request.
+Product, collection, and inventory changes appear on the next page load.
+Shopify sends a signed webhook to `/api/webhooks/shopify`, which expires the
+store's catalog cache; a five-minute refresh is the fallback. The subscriptions
+live in Shopify Admin under **Settings → Notifications → Webhooks**, and their
+signing secret is `SHOPIFY_WEBHOOK_SECRET` in the Vercel **store** project. If
+the store's domain changes, update each subscription's URL; if the secret is
+rotated, update Vercel and redeploy.
 
 The store pulls everything from Shopify. These settings on each product decide
 what customers see:

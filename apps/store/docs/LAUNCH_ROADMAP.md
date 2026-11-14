@@ -45,7 +45,6 @@ Last reviewed: 2026-11-04, against the code and the live Storefront API.
 | 9 | [Shipping cost and delivery estimates before checkout](#9-shipping-cost-and-delivery-estimates-before-checkout) | Etsy parity | Not started |
 | 11 | [More from this shop](#11-more-from-this-shop) | Etsy parity | Not started |
 | 8 | [Note to seller and personalization](#8-note-to-seller-and-personalization) | Etsy parity | Not started |
-| 15 | [Catalog revalidation webhook](#15-catalog-revalidation-webhook) | Polish | In progress |
 | 14 | [Shop-wide reviews and buyer-only reviews](#14-shop-wide-reviews-and-buyer-only-reviews) | Polish | In progress |
 
 Rows are in suggested working order. Status values: Not started, In progress.
@@ -138,19 +137,6 @@ fields. The store supports neither.
 
 ## Polish
 
-### 15. Catalog revalidation webhook
-
-- [ ] Done
-
-**Implemented.** `POST /api/webhooks/shopify` verifies Shopify's raw-body HMAC
-and immediately expires `shopify-catalog` on product, collection, inventory,
-and publication changes. The next request fetches fresh data; the five-minute
-refresh remains a fallback. Duplicate deliveries are safe.
-
-**Remaining.** Configure `SHOPIFY_WEBHOOK_SECRET` in the store's Vercel project,
-deploy, register the Shopify subscriptions, and verify a real catalog edit.
-See [setup and verification](CATALOG_WEBHOOK.md).
-
 ### 14. Shop-wide reviews and buyer-only reviews
 
 - [ ] Done
@@ -171,6 +157,7 @@ Record each finished or changed item here, newest first.
 
 | Date | Item | Change | Commit |
 | --- | --- | --- | --- |
+| 2026-11-14 | 15 | Done. `SHOPIFY_WEBHOOK_SECRET` is set in Production and the product, collection, and inventory subscriptions point at store.ryanmeetup.com. A real product edit was delivered (200) and appeared on the next uncached page load. Setup notes moved into [ADDING_PRODUCTS.md](ADDING_PRODUCTS.md). | — |
 | 2026-11-14 | 4 | Removed the beta banner and site-wide noindex; cart and confirmation pages retain their own noindex. Best Sellers uses its normal storefront fallback when Shopify still supplies the original test description. | — |
 | 2026-11-13 | 15 | Implemented authenticated catalog cache invalidation with immediate expiry and signed-delivery tests. Deployment, signing-secret configuration, and Shopify subscription verification remain. | — |
 | 2026-11-06 | 14 | Resolved Judge.me authentication with its registered shop domain, independent of the Shopify catalog domain. Product lookup, review reads, and media settings are verified. Added the storefront account handoff and published-photo display; fulfilled-order verification remains. | — |

@@ -21,7 +21,7 @@ Copy `.env.example` to `.env.local` and add the development-store credentials. W
 - Brand checkout and customer accounts, redirect the Online Store theme here, and point the notification emails at the store; see [docs/SHOPIFY_HOSTED_PAGES.md](docs/SHOPIFY_HOSTED_PAGES.md).
 - Keep customer accounts on (Settings → Customer accounts). The **Your orders** links use the Storefront API's `customerAccountUrl`, which is null for this headless shop, so they fall back to `https://shopify.com/<shop id>/account`.
 - Write the store policies in Settings → Policies. Each one that has text gets a page at `/policies/<handle>`, a footer link, and a sitemap entry; a blank one gets nothing. Without Shopify credentials there are no policy pages.
-- Configure the [catalog revalidation webhook](docs/CATALOG_WEBHOOK.md) for immediate cache expiry on product, collection, inventory, and publication changes. Five-minute ISR freshness remains a fallback.
+- Keep the catalog webhooks in Settings → Notifications → Webhooks pointed at `https://store.ryanmeetup.com/api/webhooks/shopify`, with their signing secret in `SHOPIFY_WEBHOOK_SECRET`; see [docs/ADDING_PRODUCTS.md](docs/ADDING_PRODUCTS.md#how-the-store-reads-shopify). Five-minute ISR freshness remains a fallback.
 
 ## Launch roadmap
 
