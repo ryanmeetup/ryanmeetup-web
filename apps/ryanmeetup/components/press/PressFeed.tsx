@@ -119,7 +119,7 @@ const PressFeed = (props: PressFeedProps) => {
         <button
           type="button"
           onClick={() => setShowFilters((prev) => !prev)}
-          className="rounded-full border border-black/10 bg-white/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-caps text-black/70 transition hover:border-black/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:border-white/10 dark:bg-white/10 dark:text-white/70 dark:hover:border-white/40 dark:focus-visible:ring-white/30"
+          className="rounded-full border border-black/10 bg-white/80 px-3 py-1 text-xs font-semibold text-black/70 transition hover:border-black/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:border-white/10 dark:bg-white/10 dark:text-white/70 dark:hover:border-white/40 dark:focus-visible:ring-white/30"
           aria-expanded={showFilters}
         >
           {showFilters ? "Hide filters" : "Show filters"}

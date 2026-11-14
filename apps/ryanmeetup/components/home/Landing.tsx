@@ -219,7 +219,7 @@ const Highlights = (props: HighlightsProps) => {
               <span className="flex-1">{item.title}</span>
               <NextLink
                 href={item.href}
-                className="hidden xl:inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-black/70 hover:text-black dark:text-white/70 dark:hover:text-white"
+                className="hidden xl:inline-flex items-center gap-2 text-xs font-semibold text-black/70 hover:text-black dark:text-white/70 dark:hover:text-white"
               >
                 {item.cta}
                 <ArrowRight className="h-3 w-3" />
@@ -231,7 +231,7 @@ const Highlights = (props: HighlightsProps) => {
             <div className="flex justify-end xl:hidden">
               <NextLink
                 href={item.href}
-                className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-black/70 hover:text-black dark:text-white/70 dark:hover:text-white"
+                className="inline-flex items-center gap-2 text-xs font-semibold text-black/70 hover:text-black dark:text-white/70 dark:hover:text-white"
               >
                 {item.cta}
                 <ArrowRight className="h-3 w-3" />

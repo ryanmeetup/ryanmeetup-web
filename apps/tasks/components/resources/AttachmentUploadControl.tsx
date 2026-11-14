@@ -23,7 +23,7 @@ export function AttachmentUploadControl({
         variant="secondary"
         size="sm"
         leftIcon={<FiPlus aria-hidden />}
-        className="w-full shrink-0 !normal-case tracking-normal sm:w-auto"
+        className="w-full shrink-0 sm:w-auto"
         loading={saving}
         disabled={disabled}
         onClick={() => input.current?.click()}

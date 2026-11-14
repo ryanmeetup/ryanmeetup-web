@@ -72,7 +72,7 @@ const RydInfo = () => {
         variant="primary"
         size="md"
       >
-        BUY NOW
+        Buy now
       </Button.Link>
     </Card>
   );

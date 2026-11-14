@@ -183,6 +183,17 @@ new styling conventions.
   and table labels, `tracking-caps` (0.2em) for metadata, and
   `tracking-caps-wide` (0.3em, the `Kicker` default). Do not add arbitrary
   `tracking-[…em]` values.
+- Uppercase is for labels you read, never for controls you click. Kickers,
+  section labels, table column headers, and metadata may be uppercase.
+  Buttons, links styled as buttons or calls to action, segmented switches,
+  filter chips, toggles, menu items, and dropdowns use sentence case.
+  `Button` applies no text transform, so do not add `uppercase` or a
+  `tracking-caps*` step to it or to a hand-built control. A heading that also
+  collapses its section, or a sortable column header, is still a label. Write
+  control copy in sentence case in the source ("Get tickets", not
+  "GET TICKETS") so it reads correctly to screen readers and translates
+  cleanly. Decorative brand treatments such as the name-tag graphic are
+  exempt.
 - A `Kicker` or uppercase label above a heading must add information the
   heading lacks: a date, price, count, status, or tier. Never use one to
   restate the page or section name.

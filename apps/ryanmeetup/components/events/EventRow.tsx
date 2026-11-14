@@ -85,7 +85,7 @@ const EventRow = (props: EventRowProps) => {
           </Kicker>
         </div>
       </div>
-      <span className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-black/20 px-3 py-2 text-xs font-semibold uppercase tracking-caps text-black transition group-hover:border-black/40 group-hover:bg-black/5 dark:border-white/20 dark:text-white dark:group-hover:border-white/40 dark:group-hover:bg-white/10 sm:w-auto">
+      <span className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-black/20 px-3 py-2 text-xs font-semibold text-black transition group-hover:border-black/40 group-hover:bg-black/5 dark:border-white/20 dark:text-white dark:group-hover:border-white/40 dark:group-hover:bg-white/10 sm:w-auto">
         {showPartifulRsvp && (
           <NextImage
             src="/icons/partiful.webp"

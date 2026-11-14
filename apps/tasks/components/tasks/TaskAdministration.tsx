@@ -382,7 +382,7 @@ export function StatusSettings({
                             !item.requires_reason,
                           )
                         }
-                        className={`inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-[11px] font-semibold uppercase tracking-caps-tight transition focus:outline-none focus:ring-2 focus:ring-black/20 disabled:opacity-50 dark:focus:ring-white/30 ${item.requires_reason ? "border-amber-500/35 bg-amber-500/15 text-amber-800 dark:text-amber-200" : "border-black/10 text-black/50 hover:border-black/25 hover:text-black dark:border-white/10 dark:text-white/50 dark:hover:border-white/25 dark:hover:text-white"}`}
+                        className={`inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-black/20 disabled:opacity-50 dark:focus:ring-white/30 ${item.requires_reason ? "border-amber-500/35 bg-amber-500/15 text-amber-800 dark:text-amber-200" : "border-black/10 text-black/50 hover:border-black/25 hover:text-black dark:border-white/10 dark:text-white/50 dark:hover:border-white/25 dark:hover:text-white"}`}
                       >
                         <FiMessageSquare aria-hidden className="h-3.5 w-3.5" />
                         {item.requires_reason

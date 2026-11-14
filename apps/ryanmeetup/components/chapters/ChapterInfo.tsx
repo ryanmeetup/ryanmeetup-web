@@ -88,7 +88,7 @@ const ChapterInfo = (props: ChapterInfoProps) => {
               href={instagram}
               target="_blank"
               rel="noreferrer"
-              className="relative inline-flex w-full items-center justify-start gap-2 overflow-hidden rounded-lg bg-transparent p-2 text-xs font-semibold uppercase tracking-caps text-black transition hover:text-black/70 dark:text-white dark:hover:text-white/70 hover:underline"
+              className="relative inline-flex w-full items-center justify-start gap-2 overflow-hidden rounded-lg bg-transparent p-2 text-xs font-semibold text-black transition hover:text-black/70 dark:text-white dark:hover:text-white/70 hover:underline"
             >
               <span className="text-base">
                 <Instagram className="h-4 w-4" />
@@ -111,7 +111,7 @@ const ChapterInfo = (props: ChapterInfoProps) => {
                 href={whatsApp}
                 target="_blank"
                 rel="noreferrer"
-                className="relative inline-flex w-full items-center justify-start gap-2 overflow-hidden rounded-lg bg-transparent p-2 text-xs font-semibold uppercase tracking-caps text-black transition hover:text-black/70 dark:text-white dark:hover:text-white/70 hover:underline"
+                className="relative inline-flex w-full items-center justify-start gap-2 overflow-hidden rounded-lg bg-transparent p-2 text-xs font-semibold text-black transition hover:text-black/70 dark:text-white dark:hover:text-white/70 hover:underline"
               >
                 <span className="text-base">
                   <WhatsApp className="h-4 w-4" />

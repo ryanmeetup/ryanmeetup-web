@@ -422,7 +422,7 @@ export function ContactEditor(props: ContactEditorProps) {
               <div className="min-w-0 space-y-2 sm:contents">
                 <label
                   htmlFor="contact-image"
-                  className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-black/20 bg-white/80 px-3 py-2 text-[10px] font-semibold uppercase tracking-caps-tight transition hover:bg-black/5 focus-within:ring-2 focus-within:ring-black/30 dark:border-white/20 dark:bg-white/5 dark:hover:bg-white/10 dark:focus-within:ring-white/30 sm:w-32"
+                  className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-black/20 bg-white/80 px-3 py-2 text-xs font-semibold transition hover:bg-black/5 focus-within:ring-2 focus-within:ring-black/30 dark:border-white/20 dark:bg-white/5 dark:hover:bg-white/10 dark:focus-within:ring-white/30 sm:w-32"
                 >
                   {imagePreview ? "Change image" : "Upload image"}
                   <input

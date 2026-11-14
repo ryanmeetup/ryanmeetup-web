@@ -184,7 +184,7 @@ const ChapterDirectory = (props: ChapterDirectoryProps) => {
             <button
               type="button"
               onClick={handleClear}
-              className="h-11 w-full rounded-lg border border-black/20 bg-white px-4 text-[11px] font-semibold uppercase tracking-caps text-black/70 transition hover:border-black/40 hover:bg-black/5 dark:border-white/20 dark:bg-white/10 dark:text-white/70 dark:hover:border-white/40 dark:hover:bg-white/10 lg:w-auto"
+              className="h-11 w-full rounded-lg border border-black/20 bg-white px-4 text-xs font-semibold text-black/70 transition hover:border-black/40 hover:bg-black/5 dark:border-white/20 dark:bg-white/10 dark:text-white/70 dark:hover:border-white/40 dark:hover:bg-white/10 lg:w-auto"
             >
               Clear
             </button>

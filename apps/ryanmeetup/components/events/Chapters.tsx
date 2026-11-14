@@ -26,7 +26,7 @@ const Chapters = () => {
             <Text className="text-white text-xl mt-4">
               Check out our local chapters and join the community in your city.
             </Text>
-            <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/10 px-5 py-2 text-xs font-semibold uppercase tracking-caps-wide text-white transition group-hover:bg-white group-hover:text-black">
+            <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/10 px-5 py-2 text-xs font-semibold text-white transition group-hover:bg-white group-hover:text-black">
               Explore chapters
             </div>
           </div>

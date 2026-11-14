@@ -73,7 +73,7 @@ const Article = (props: ArticleProps) => {
               </Text>
             </div>
 
-            <div className="mt-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-caps-wide text-black/70 transition group-hover:text-black dark:text-white/70 dark:group-hover:text-white">
+            <div className="mt-4 flex items-center gap-2 text-sm font-semibold text-black/70 transition group-hover:text-black dark:text-white/70 dark:group-hover:text-white">
               Read
               <span className="text-base">→</span>
             </div>
