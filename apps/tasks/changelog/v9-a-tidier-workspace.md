@@ -81,6 +81,15 @@ The header's New menu brings New task, New project, and New category together,
 with the options your account can use. On a phone it stays a compact plus button,
 and each option follows your preferred form layout.
 
+### RY-D orders fit your phone
+
+The RY-D queue switches to stacked orders when space is tight, keeping names,
+emails, status, form matches, order details, and review actions visible without
+sideways scrolling. Sorting, selection, follow-up emails, and production progress
+stay available in the compact layout. Bulk selection tools start collapsed behind
+Bulk actions; expand them when needed, and collapse them without losing your
+selection.
+
 ### A consistent, more compact text scale
 
 Fields, placeholders, page descriptions, card summaries, search, menus, and

@@ -74,6 +74,11 @@ async function signIn(page: Page) {
   await expect(page.locator("[data-workspace-shell]")).toBeVisible();
 }
 
+async function expandBulkActions(page: Page) {
+  const toggle = page.getByRole("button", { name: /^Bulk actions/ });
+  if (await toggle.getAttribute("aria-expanded") === "false") await toggle.click();
+}
+
 test("dismisses the upload-day reminder until the next upload day", async ({
   page,
   request,
@@ -392,6 +397,7 @@ test("runs review, on-demand files, and independent manual fulfillment stages", 
   });
   await page.goto("/ryd?status=verified");
   await expect(page.getByRole("button", { name: "Ready to send 1", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expandBulkActions(page);
   await page.getByRole("checkbox", { name: "Select Ryan Fixture", exact: true }).check();
   await page
     .getByRole("button", { name: "Generate email & CSV (1)", exact: true })
@@ -414,6 +420,7 @@ test("runs review, on-demand files, and independent manual fulfillment stages", 
   await send.getByRole("button", { name: "Close", exact: true }).click();
   await page.reload();
   await expect(page.getByRole("button", { name: "Resume fulfillment batch", exact: true })).toHaveCount(0);
+  await expandBulkActions(page);
   await page.getByRole("checkbox", { name: "Select Ryan Fixture", exact: true }).check();
   await page.getByRole("button", { name: "Generate email & CSV (1)", exact: true }).click();
   await expect(downloadLink).toHaveAttribute("href", /^blob:/);
@@ -426,7 +433,7 @@ test("runs review, on-demand files, and independent manual fulfillment stages", 
   await handoff.getByRole("button", { name: "Close", exact: true }).click();
   await expect(page.getByRole("button", { name: "Sent to fulfillment 1", exact: true })).toHaveAttribute("aria-pressed", "true");
   expect((await state(request)).orders[0].production_sent_at).not.toBeNull();
-  await expect(page.getByText(/^Sent to fulfillment [A-Z][a-z]{2} \d{1,2}$/)).toBeVisible();
+  await expect(page.getByText(/^Sent to fulfillment [A-Z][a-z]{2} \d{1,2}$/).filter({ visible: true })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("manual-handoff.png") });
   // A sent card is read-only until it's unlocked, and unlocking keeps the stage.
   await page.getByRole("button", { name: "Review Ryan Fixture", exact: true }).click();
@@ -455,6 +462,7 @@ test("runs review, on-demand files, and independent manual fulfillment stages", 
   });
   expect((await state(request)).snapshot).toBeNull();
   await page.goto("/ryd?status=verified&production=sent-to-fulfillment");
+  await expandBulkActions(page);
   await page
     .getByRole("checkbox", { name: "Select Ryan Fixture", exact: true })
     .check();
@@ -466,8 +474,9 @@ test("runs review, on-demand files, and independent manual fulfillment stages", 
   ).toContainText("1 of 1 orders confirmed saved");
   await making.getByRole("button", { name: "Close", exact: true }).click();
   await expect(page).toHaveURL(/production=in-production/);
-  await expect(page.getByText(/^In production [A-Z][a-z]{2} \d{1,2}$/)).toBeVisible();
+  await expect(page.getByText(/^In production [A-Z][a-z]{2} \d{1,2}$/).filter({ visible: true })).toBeVisible();
   expect((await state(request)).orders[0].production_started_at).not.toBeNull();
+  await expandBulkActions(page);
   await page
     .getByRole("checkbox", { name: "Select Ryan Fixture", exact: true })
     .check();
@@ -529,6 +538,7 @@ test("ignores a previously saved email and generates fresh selected files withou
   });
   expect(moved.ok()).toBeTruthy();
   await page.goto("/ryd?status=verified&production=not-started");
+  await expandBulkActions(page);
   await page.getByRole("checkbox", { name: "Select Ryan New", exact: true }).check();
   await page.getByRole("button", { name: "Generate email & CSV (1)", exact: true }).click();
   const send = page.getByRole("dialog", { name: "Fulfillment email & CSV", exact: true });
@@ -557,6 +567,7 @@ test("ignores a previously saved email and generates fresh selected files withou
   const verified = await page.request.patch("/api/ryd/orders/804", { data: { status: "verified", card: approvedCard } });
   expect(verified.ok()).toBeTruthy();
   await page.goto("/ryd?status=verified");
+  await expandBulkActions(page);
   await page.getByRole("checkbox", { name: "Select all 3", exact: true }).check();
   await page.getByRole("button", { name: "Generate email & CSV (3)", exact: true }).click();
   await expect(send.getByRole("link", { name: "Download CSV", exact: true })).toBeVisible();
@@ -584,6 +595,7 @@ test("generates a selected batch across pages while respecting the ready filter"
   } })).ok()).toBeTruthy();
   await page.goto("/ryd?status=verified&pageSize=10");
   await expect(page.locator("table tbody tr")).toHaveCount(10);
+  await expandBulkActions(page);
   await expect(page.getByRole("button", { name: "Generate email & CSV (0)", exact: true })).toBeDisabled();
   await page.getByRole("checkbox", { name: "Select all 12", exact: true }).check();
   await expect(page.getByRole("checkbox", { name: "12 of 12 selected", exact: true })).toBeChecked();
@@ -623,6 +635,7 @@ test("generates the linked Ryan recipient and rerolls a fresh gift email", async
     submissionKeys: ["synthetic-response-801"], source: "manual",
   } })).ok()).toBeTruthy();
   await page.goto("/ryd?status=verified");
+  await expandBulkActions(page);
   await page.getByRole("checkbox", { name: "Select Brooke Ericson", exact: true }).check();
   await page.getByRole("button", { name: "Generate email & CSV (1)", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Fulfillment email & CSV", exact: true });
@@ -670,6 +683,95 @@ test("tucks away long-done orders until someone asks for them", async ({ page, r
   await expect(page.getByText(/Done counts cover the last 30 days/)).toBeHidden();
 });
 
+test("keeps RY-D orders readable and actionable without sideways scrolling", async ({
+  page,
+  request,
+}, testInfo) => {
+  await reset(request);
+  await signIn(page);
+  const longName = "Courtney Sutherland-With-A-Very-Long-Surname";
+  const longEmail = "courtney.sutherland.with.a.long.email.address@example.test";
+  expect((await page.request.post("/api/ryd/imports", {
+    multipart: {
+      operationId: "00000000-0000-4000-8000-000000000831",
+      file: {
+        name: "mobile-orders.csv",
+        mimeType: "text/csv",
+        buffer: Buffer.from(
+          "OrderId,BillFirstName,BillLastName,BillEmail\r\n" +
+          `801,Courtney,Sutherland-With-A-Very-Long-Surname,${longEmail}\r\n` +
+          "802,Ryan,Fixture,ryan.fixture@example.test\r\n",
+        ),
+      },
+    },
+  })).ok()).toBeTruthy();
+  await page.goto("/ryd");
+  const bulk = page.getByRole("button", { name: /^Bulk actions/ });
+  await expect(bulk).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByRole("button", { name: "Email selected", exact: true })).toHaveCount(0);
+  const compact = page.getByRole("list", { name: "Orders", exact: true });
+  const table = page.getByRole("table", { name: "Orders", exact: true });
+  for (const width of [360, 390, 640, 1024, 1280, 1536]) {
+    await page.setViewportSize({ width, height: 900 });
+    const results = await table.isVisible() ? table : compact;
+    await expect(results).toBeVisible();
+    const review = results.getByRole("button", { name: `Review ${longName}`, exact: true });
+    await review.scrollIntoViewIfNeeded();
+    await expect(review).toBeInViewport({ ratio: 1 });
+    expect(await results.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    if (width < 1280) await expect(compact).toBeVisible();
+    if (width === 1536) await expect(table).toBeVisible();
+    await bulk.evaluate((element) => element.scrollIntoView({ block: "center" }));
+    await expect(bulk).toHaveAttribute("aria-expanded", "false");
+    await page.screenshot({ path: testInfo.outputPath(`ryd-orders-${width}.png`) });
+  }
+  await page.setViewportSize({ width: 390, height: 900 });
+  const order = compact.getByRole("listitem").filter({ hasText: longEmail });
+  await expect(order.getByRole("link", { name: longEmail, exact: true })).toBeVisible();
+  await expect(order.getByText("Pending", { exact: true })).toBeVisible();
+  await expect(order.getByText("Card unfinished", { exact: true })).toBeVisible();
+  await expect(order.getByText("#801", { exact: true })).toBeVisible();
+  await order.getByRole("checkbox", { name: `Select ${longName}`, exact: true }).check();
+  await expect(bulk).toContainText("1 selected");
+  await expect(bulk).toHaveAttribute("aria-expanded", "false");
+  await bulk.press("Enter");
+  await expect(bulk).toHaveAttribute("aria-expanded", "true");
+  const selectAll = page.getByRole("checkbox", { name: "1 of 2 selected", exact: true });
+  await expect(selectAll).toBeVisible();
+  await expect(selectAll).toHaveJSProperty("indeterminate", true);
+  await expect(page.getByRole("button", { name: "Email selected (1)", exact: true })).toBeEnabled();
+  await bulk.evaluate((element) => element.scrollIntoView({ block: "center" }));
+  await expect(page.getByRole("button", { name: "Verify", exact: true })).toBeInViewport();
+  await page.screenshot({ path: testInfo.outputPath("ryd-bulk-expanded.png") });
+  await bulk.click();
+  await expect(bulk).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByRole("button", { name: "Email selected (1)", exact: true })).toHaveCount(0);
+  await expect(order.getByRole("checkbox", { name: `Select ${longName}`, exact: true })).toBeChecked();
+  await bulk.press("Space");
+  await expect(selectAll).toBeVisible();
+  await selectAll.check();
+  await expect(bulk).toContainText("2 selected");
+  await bulk.click();
+  await page.getByRole("button", { name: "Sort orders", exact: false }).click();
+  await page.getByRole("option", { name: "Z to A by surname", exact: true }).click();
+  await expect(page).toHaveURL(/sort=name-desc(?:&|$)/);
+  await expect(compact.getByRole("listitem")).toHaveText([/Courtney Sutherland/, /Ryan Fixture/]);
+  await page.reload();
+  await expect(bulk).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByRole("button", { name: "Sort orders", exact: false })).toContainText("Z to A by surname");
+  await page.getByRole("button", { name: "Sort orders", exact: false }).click();
+  await page.getByRole("option", { name: "Queue order", exact: true }).click();
+  await expect(page).not.toHaveURL(/[?&]sort=/);
+  await order.getByRole("button", { name: `Review ${longName}`, exact: true }).click();
+  await expect(page.getByRole("dialog").getByRole("textbox", { name: "First name", exact: false })).toBeVisible();
+  await page.getByRole("button", { name: "Close dialog", exact: true }).click();
+  await page.goto("/ryd?view=follow-up");
+  const followUp = page.getByRole("list", { name: "Follow-up", exact: true });
+  await followUp.getByRole("button", { name: `Email ${longName}`, exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Email Courtney", exact: true }).getByRole("heading", { name: "Email Courtney", exact: true })).toBeVisible();
+});
+
 test("sorts the production column by stage and sent date", async ({ page, request }, testInfo) => {
   await reset(request);
   await signIn(page);
@@ -700,49 +802,55 @@ test("sorts the production column by stage and sent date", async ({ page, reques
     },
   })).ok()).toBeTruthy();
   await page.goto("/ryd?status=verified&production=all");
+  const table = page.getByRole("table", { name: "Orders", exact: true });
+  const compact = page.getByRole("list", { name: "Orders", exact: true });
   const sort = page.getByRole("button", { name: "Sort by progress", exact: true });
   const header = page.getByRole("columnheader").filter({ has: sort });
-  const rows = page.locator("table tbody tr");
-  await sort.scrollIntoViewIfNeeded();
-  await sort.press("Enter");
-  await page.getByRole("menuitem", { name: "Ready to send first", exact: true }).press("Enter");
-  await expect(header).toHaveAttribute("aria-sort", "ascending");
-  await expect(rows).toHaveText([/Ryan Waiting/, /Ryan Sent/, /Ryan Done/]);
+  async function chooseSort(choice: string, descending: boolean | null) {
+    if (await table.isVisible()) {
+      await sort.click();
+      await page.getByRole("menuitem", { name: choice, exact: true }).click();
+      await expect(header).toHaveAttribute("aria-sort", descending === null ? "none" : descending ? "descending" : "ascending");
+    } else {
+      await page.getByRole("button", { name: "Sort orders", exact: false }).click();
+      await page.getByRole("option", { name: choice === "Clear sort" ? "Queue order" : choice, exact: true }).click();
+    }
+  }
+  async function expectOrder(names: RegExp[]) {
+    const rows = await table.isVisible() ? table.locator("tbody tr") : compact.getByRole("listitem");
+    await expect(rows).toHaveText(names);
+  }
+  await chooseSort("Ready to send first", false);
+  await expectOrder([/Ryan Waiting/, /Ryan Sent/, /Ryan Done/]);
   await expect(page).toHaveURL(/sort=production(?:&|$)/);
-  await sort.click();
-  await page.getByRole("menuitem", { name: "Done first", exact: true }).click();
-  await expect(header).toHaveAttribute("aria-sort", "descending");
-  await expect(rows).toHaveText([/Ryan Done/, /Ryan Sent/, /Ryan Waiting/]);
+  await chooseSort("Done first", true);
+  await expectOrder([/Ryan Done/, /Ryan Sent/, /Ryan Waiting/]);
   await expect(page).toHaveURL(/sort=production-desc(?:&|$)/);
   await page.reload();
-  await expect(header).toHaveAttribute("aria-sort", "descending");
-  await expect(rows).toHaveText([/Ryan Done/, /Ryan Sent/, /Ryan Waiting/]);
-  await sort.scrollIntoViewIfNeeded();
-  await sort.click();
-  await page.getByRole("menuitem", { name: "Newest sent first", exact: true }).click();
+  await expectOrder([/Ryan Done/, /Ryan Sent/, /Ryan Waiting/]);
+  await chooseSort("Newest sent first", true);
   await expect(page).toHaveURL(/sort=production-sent-desc(?:&|$)/);
-  await expect(header).toHaveAttribute("aria-sort", "descending");
-  await expect(rows).toHaveText([/Ryan Done/, /Ryan Sent/, /Ryan Waiting/]);
-  await sort.click();
-  await page.getByRole("menuitem", { name: "Oldest sent first", exact: true }).click();
+  await expectOrder([/Ryan Done/, /Ryan Sent/, /Ryan Waiting/]);
+  await chooseSort("Oldest sent first", false);
   await expect(page).toHaveURL(/sort=production-sent(?:&|$)/);
-  await expect(header).toHaveAttribute("aria-sort", "ascending");
   const widths = testInfo.project.name === "chromium-mobile" ? [390] : [1024, 1280, 1536];
   for (const width of widths) {
     await page.setViewportSize({ width, height: 900 });
-    await sort.scrollIntoViewIfNeeded();
-    await sort.click();
-    await expect(page.getByRole("menu")).toHaveCSS("opacity", "1");
-    await expect(page.getByRole("menu")).toBeInViewport();
-    await expect(page.getByRole("menuitem", { name: "Newest sent first", exact: true })).toBeInViewport();
+    if (await table.isVisible()) {
+      await sort.click();
+      await expect(page.getByRole("menu")).toHaveCSS("opacity", "1");
+      await expect(page.getByRole("menu")).toBeInViewport();
+      await expect(page.getByRole("menuitem", { name: "Newest sent first", exact: true })).toBeInViewport();
+    } else {
+      await page.getByRole("button", { name: "Sort orders", exact: false }).click();
+      await expect(page.getByRole("listbox")).toBeInViewport();
+    }
     await page.screenshot({ path: testInfo.outputPath(`production-sort-${width}.png`) });
     await page.keyboard.press("Escape");
   }
-  await sort.click();
-  await page.getByRole("menuitem", { name: "Clear sort", exact: true }).click();
-  await expect(header).toHaveAttribute("aria-sort", "none");
+  await chooseSort("Clear sort", null);
   await expect(page).not.toHaveURL(/[?&]sort=/);
-  await expect(rows).toHaveText([/Ryan Waiting/, /Ryan Sent/, /Ryan Done/]);
+  await expectOrder([/Ryan Waiting/, /Ryan Sent/, /Ryan Done/]);
 });
 
 test("shows ambiguous identity mapping and distinguishes buyer and review form links", async ({
@@ -811,7 +919,8 @@ test("decides selected orders together after confirming missing evidence", async
   });
   await upload.getByRole("button", { name: "Upload", exact: true }).click();
   await expect(upload).toHaveCount(0);
-  await expect(page.getByText("Card unfinished")).toHaveCount(1);
+  await expect(page.getByText("Card unfinished").filter({ visible: true })).toHaveCount(1);
+  await expandBulkActions(page);
   await page.getByRole("checkbox", { name: "Select all 3", exact: true }).check();
   await page.getByRole("button", { name: "Verify", exact: true }).click();
   const confirm = page.getByRole("dialog", { name: "Verify 2 orders?", exact: true });
@@ -844,6 +953,7 @@ test("keeps stale bulk reviews selected while saving the remaining orders", asyn
     ) },
   } })).ok()).toBeTruthy();
   await page.goto("/ryd");
+  await expandBulkActions(page);
   await page.getByRole("checkbox", { name: "Select all 2", exact: true }).check();
   await page.getByRole("button", { name: "Verify", exact: true }).click();
   const confirm = page.getByRole("dialog", { name: "Verify 2 orders?", exact: true });
@@ -906,6 +1016,7 @@ test("cancels selected orders after drafting fulfillment's refund request and th
     ) },
   } })).ok()).toBeTruthy();
   await page.goto("/ryd");
+  await expandBulkActions(page);
   await page.getByRole("checkbox", { name: "Select all 2", exact: true }).check();
   await page.getByRole("button", { name: "Cancel orders", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Cancel 2 orders", exact: true });
@@ -945,6 +1056,7 @@ test("emails every selected pending buyer in one Bcc draft and marks them contac
   await upload.getByRole("button", { name: "Upload", exact: true }).click();
   await expect(upload).toHaveCount(0);
   await page.goto("/ryd?status=pending");
+  await expandBulkActions(page);
   await page.getByRole("checkbox", { name: "Select all 2", exact: true }).check();
   await page.getByRole("button", { name: "Email selected (2)", exact: true }).click();
   const remind = page.getByRole("dialog", { name: "Email 2 selected", exact: true });
@@ -964,7 +1076,7 @@ test("emails every selected pending buyer in one Bcc draft and marks them contac
   await contacted.getByRole("button", { name: "Mark group 1 as contacted", exact: true }).click();
   await expect(contacted.getByRole("button", { name: "Contact recorded" })).toBeDisabled();
   await contacted.getByRole("button", { name: "Close", exact: true }).click();
-  await expect(page.getByText(/^Last contacted /)).toHaveCount(2);
+  await expect(page.getByText(/^Last contacted /).filter({ visible: true })).toHaveCount(2);
   const saved = await state(request);
   expect(saved.calls.filter((call: { name: string }) => call.name === "ryd_record_reminders")).toHaveLength(1);
 });
@@ -1157,6 +1269,7 @@ test("a partner downloads selected cards without moving them", async ({
   await expect(page.getByRole("checkbox", { name: "Select Jamie Perez", exact: true })).toHaveCount(0);
   await page.goto("/ryd?status=verified");
   await expect(cardWarning).toHaveCount(0);
+  await expandBulkActions(page);
   await page.getByRole("checkbox", { name: "Select Jamie Perez", exact: true }).check();
   const [download] = await Promise.all([
     page.waitForEvent("download"),

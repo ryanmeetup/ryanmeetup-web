@@ -6,6 +6,7 @@ import {
   Button,
   ErrorCallout,
   FilterChip,
+  IconButton,
   ManagementSurface,
   toast,
 } from "@ryanmeetup/ui";
@@ -208,28 +209,24 @@ export function RydPageClient({
           }
           description="Match each RY-D order to what the buyer sent the RY-dentification form, decide, then send fulfillment the orders they can start."
           actions={
-            <div className="flex w-full flex-col gap-2 2xl:flex-row 2xl:items-center">
+            <div className="flex w-full items-center gap-2">
               <Button
                 type="button"
                 size="sm"
                 variant="secondary"
-                className="w-full 2xl:w-auto"
+                className="min-w-0 flex-1 sm:flex-none"
                 leftIcon={<FiUpload aria-hidden />}
                 onClick={() => setDialog("upload")}
               >
                 Upload orders
               </Button>
               {canManageSettings && (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="w-full 2xl:w-auto"
-                  leftIcon={<FiSettings aria-hidden />}
+                <IconButton
+                  label="Settings"
                   onClick={() => setDialog("settings")}
                 >
-                  Settings
-                </Button>
+                  <FiSettings aria-hidden className="h-4 w-4" />
+                </IconButton>
               )}
             </div>
           }
