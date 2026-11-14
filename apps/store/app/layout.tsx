@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/react";
-import { Banner, RyanMeetupFooter, ToastHost } from "@ryanmeetup/ui";
+import { RyanMeetupFooter, ToastHost } from "@ryanmeetup/ui";
 import { ThemeProvider } from "next-themes";
 import { CartDrawer } from "@/components/cart-drawer";
 import { CartProvider } from "@/components/cart-provider";
@@ -17,8 +17,6 @@ export const metadata: Metadata = {
     description: "Official Ryan Meetup shirts, sweatshirts, hats, and assorted Ryan provisions.",
     canonical: SITE_URL,
     image: DEFAULT_IMAGE,
-    // Beta: keep search engines from listing the test store.
-    robots: { index: false, follow: false },
   }),
   // Page titles stay short in social cards; the browser tab adds the store name.
   title: { default: SITE_NAME, template: `%s | ${SITE_NAME}` },
@@ -59,20 +57,6 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       <body className="antialiased">
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           <CartProvider commerceConfigured={commerceConfigured}>
-            {/* Remove before launch, along with the noindex robots metadata above. */}
-            <Banner
-              role="region"
-              aria-label="Beta notice"
-              mobileInline
-              className="!border-b-4 !border-black !bg-[#ffcc00] !text-black"
-              contentClassName="store-container !justify-center"
-              icon={<span className="rounded-md bg-black px-2.5 py-1 font-cooper text-base tracking-caps text-[#ffcc00] sm:text-lg">BETA</span>}
-            >
-              <span className="font-semibold">
-                This store is a test drive, not the real thing yet. Please don&apos;t place real orders.
-                {!commerceConfigured && " Shopify isn't connected, so checkout is off."}
-              </span>
-            </Banner>
             <CurrencyProvider>
               <NavSectionProvider>
                 <Header collections={collections} accountUrl={accountUrl} />

@@ -57,10 +57,12 @@ Finished and dropped items leave the roadmap.
 
 - [ ] Done
 
-Code (last, once everything below is done):
-- [ ] Remove the beta banner in [app/layout.tsx](../app/layout.tsx).
-- [ ] Remove the site-wide `robots: { index: false, follow: false }` in the same
+Code:
+- [x] Remove the beta banner in [app/layout.tsx](../app/layout.tsx).
+- [x] Remove the site-wide `robots: { index: false, follow: false }` in the same
       file (keep it on `/cart` and `/thank-you`).
+- [x] Replace the Best Sellers setup description with the storefront fallback
+      until a real description is written in Shopify.
 
 Shopify Admin and environment (no code):
 - [ ] Production `SHOPIFY_STORE_DOMAIN` and `SHOPIFY_STOREFRONT_API_TOKEN` set in
@@ -169,6 +171,7 @@ Record each finished or changed item here, newest first.
 
 | Date | Item | Change | Commit |
 | --- | --- | --- | --- |
+| 2026-11-14 | 4 | Removed the beta banner and site-wide noindex; cart and confirmation pages retain their own noindex. Best Sellers uses its normal storefront fallback when Shopify still supplies the original test description. | — |
 | 2026-11-13 | 15 | Implemented authenticated catalog cache invalidation with immediate expiry and signed-delivery tests. Deployment, signing-secret configuration, and Shopify subscription verification remain. | — |
 | 2026-11-06 | 14 | Resolved Judge.me authentication with its registered shop domain, independent of the Shopify catalog domain. Product lookup, review reads, and media settings are verified. Added the storefront account handoff and published-photo display; fulfilled-order verification remains. | — |
 | 2026-11-05 | 14 | Closed the legacy anonymous review POST endpoint after confirming Judge.me's public API does not require authorization. Four security tests cover rejection, 30 concurrent spam attempts, and forged buyer claims without provider calls. A private Shopify purchase-authorized backend is the recommended next direction; no new storage is provisioned yet. | — |

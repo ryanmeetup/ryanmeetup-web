@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/metadata";
 
-// Crawlers may fetch pages so they can read the beta noindex in each page's metadata.
+// Public pages can be indexed; cart and confirmation pages set their own noindex.
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: { userAgent: "*", allow: "/" },
