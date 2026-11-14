@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 
 // Utilities
 import { Geist, Geist_Mono } from "next/font/google";
+import { ToastHost } from "@ryanmeetup/ui";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -31,6 +32,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
+        <ToastHost />
       </body>
     </html>
   );

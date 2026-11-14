@@ -146,5 +146,8 @@ test.describe("sponsorship program", () => {
       .click();
 
     await expect(page.getByText("Inquiry sent!")).toBeVisible();
+    // Every toast can be closed rather than left to time out over the page.
+    await page.getByRole("button", { name: "Dismiss notification" }).click();
+    await expect(page.getByText("Inquiry sent!")).toBeHidden();
   });
 });

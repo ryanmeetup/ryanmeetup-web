@@ -1,6 +1,7 @@
 // Components
 import { BryanChecker } from "@/components/global";
 import { ThemeProvider } from "next-themes";
+import { ToastHost } from "@ryanmeetup/ui";
 
 // Types
 import { buildPageMetadata, SITE_URL } from "@/utils/metadata";
@@ -80,6 +81,7 @@ export default function RootLayout({
           <BryanChecker />
           {children}
           <Analytics />
+          <ToastHost />
         </ThemeProvider>
       </body>
     </html>

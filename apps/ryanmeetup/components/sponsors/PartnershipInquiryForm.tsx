@@ -10,13 +10,13 @@ import {
   Input,
   RequiredFieldsNote,
   SuccessCallout,
+  toast,
   Textarea,
 } from "@ryanmeetup/ui";
 import { sendContactMessage } from "@ryanmeetup/contact";
 import { normalizeHttpUrl, validateEmail } from "@ryanmeetup/utils";
 import { Controller, useForm } from "react-hook-form";
 import { useRef, useState } from "react";
-import toast, { Toaster } from "react-hot-toast";
 import { BiMailSend as Send } from "react-icons/bi";
 
 import {
@@ -287,7 +287,6 @@ const PartnershipInquiryForm = () => {
           </FormActions>
         </div>
       </form>
-      <Toaster position="bottom-center" />
     </>
   );
 };

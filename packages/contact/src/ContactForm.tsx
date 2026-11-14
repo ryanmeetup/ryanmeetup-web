@@ -9,13 +9,13 @@ import {
   Input,
   RequiredFieldsNote,
   SuccessCallout,
+  toast,
   Text,
   Textarea,
 } from "@ryanmeetup/ui";
 import { validateEmail } from "@ryanmeetup/utils";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import toast, { Toaster } from "react-hot-toast";
 import { BiMailSend as Send } from "react-icons/bi";
 import { sendContactMessage } from "./sendContactMessage";
 import {
@@ -402,7 +402,6 @@ const ContactForm = ({
           </Button>
         </FormActions>
       </form>
-      <Toaster position="bottom-center" />
     </>
   );
 };
