@@ -6,6 +6,10 @@ or developer help are needed for everyday listing work.
 
 ## How the store reads Shopify
 
+Catalog changes normally appear within five minutes. Once the
+[catalog webhook](CATALOG_WEBHOOK.md) is configured, supported changes expire
+the cache on delivery and appear on the next page request.
+
 The store pulls everything from Shopify. These settings on each product decide
 what customers see:
 

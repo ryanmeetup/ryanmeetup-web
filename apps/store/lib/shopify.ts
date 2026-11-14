@@ -4,6 +4,7 @@ import { withExternalListings } from "./external-listings";
 import { normalizeHandle } from "./handles";
 import { createProductGroup, getListingHandles, getProductGroupForMember, groupProductListings, resolveListingHandle, resolveProductHandle } from "./product-groups";
 import { sortOptionValues } from "./product-options";
+import { shopifyCatalogTag } from "./shopify-cache";
 import type {
   Cart,
   CatalogSections,
@@ -146,7 +147,7 @@ async function storefrontRequest<T>(
       },
       body: JSON.stringify({ query, variables }),
       next: options.revalidate
-        ? { revalidate: options.revalidate, tags: ["shopify-catalog"] }
+        ? { revalidate: options.revalidate, tags: [shopifyCatalogTag] }
         : undefined,
       cache: options.revalidate ? undefined : "no-store",
     },
