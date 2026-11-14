@@ -510,7 +510,7 @@ export function TaskWorkspaceHeader({
             )}
           </div>
           {scopeDescription && (
-            <p className="mt-2 max-w-[85ch] text-sm text-black/70 dark:text-white/70 sm:text-base xl:col-start-1 xl:row-start-2 xl:self-baseline">
+            <p className="mt-2 max-w-[85ch] text-body text-black/70 dark:text-white/70 xl:col-start-1 xl:row-start-2 xl:self-baseline">
               {scopeDescription}
             </p>
           )}

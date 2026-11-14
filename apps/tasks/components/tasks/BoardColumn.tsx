@@ -112,7 +112,7 @@ export function BoardColumn({
               />
             </IconButton>
           </div>
-          <p className="mt-1 line-clamp-2 h-9 text-secondary text-black/60 dark:text-white/60">
+          <p className="mt-1 line-clamp-2 h-10 text-body text-black/60 dark:text-white/60">
             {status.description}
           </p>
           <div className="mt-3 sm:mt-4">

@@ -32,7 +32,7 @@ export function FormSection({
             {title}
           </Heading>
           {description && (
-            <p className="mt-1 text-secondary text-black/55 dark:text-white/55">
+            <p className="mt-1 text-body text-black/55 dark:text-white/55">
               {description}
             </p>
           )}

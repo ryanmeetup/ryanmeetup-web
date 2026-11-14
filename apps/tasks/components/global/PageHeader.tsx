@@ -89,7 +89,7 @@ export function PageHeader({
           )}
         </Heading>
         {description && (
-          <Text className="mt-2 text-secondary">{description}</Text>
+          <Text className="mt-2 text-body">{description}</Text>
         )}
       </div>
       {/*

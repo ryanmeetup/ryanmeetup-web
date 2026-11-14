@@ -60,7 +60,7 @@ export function ExpandableResourceEditor({
               <span className="block font-cooper text-section-title tracking-wider">
                 {title}
               </span>
-              <span className="mt-1 block text-xs text-black/55 dark:text-white/55">
+              <span className="mt-1 block text-body text-black/55 dark:text-white/55">
                 {summary}
               </span>
             </span>
@@ -86,7 +86,7 @@ export function ExpandableResourceEditor({
             <Heading size="h3" className="text-section-title">
               {title}
             </Heading>
-            <p className="mt-1 text-xs text-black/55 dark:text-white/55">
+            <p className="mt-1 text-body text-black/55 dark:text-white/55">
               {summary}
             </p>
           </div>

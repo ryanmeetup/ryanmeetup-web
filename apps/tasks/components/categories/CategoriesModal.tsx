@@ -912,7 +912,7 @@ export function CategoriesModal({
                           category.tags.length ? (
                             <div className="min-w-0">
                               {category.description && (
-                                <p className="text-secondary text-black/60 dark:text-white/60">
+                                <p className="text-body text-black/60 dark:text-white/60">
                                   {category.description}
                                 </p>
                               )}

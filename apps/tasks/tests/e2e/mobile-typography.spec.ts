@@ -29,6 +29,15 @@ test("cards share a compact title scale across surfaces, themes and widths", asy
     await expect(page.locator("body")).toHaveCSS("font-size", "13px");
     const column = page.locator("[data-board-column]").first();
     await expect(column.locator("h2")).toHaveCSS("font-size", "11px");
+    await expect(column.locator("[data-board-column-header] p")).toHaveCSS(
+      "font-size",
+      "13px",
+    );
+    await expect(
+      page.getByText("Keep it warm, short, and easy to understand.", {
+        exact: true,
+      }),
+    ).toHaveCSS("font-size", "13px");
     for (const dark of [true, false]) {
       await page.evaluate(
         (enabled) => document.documentElement.classList.toggle("dark", enabled),
@@ -65,6 +74,12 @@ test("cards share a compact title scale across surfaces, themes and widths", asy
     await expect(
       page.getByRole("main").getByText("Website Refresh", { exact: true }),
     ).toHaveCSS("font-size", "13px");
+    await expect(
+      page.getByRole("main").getByText(
+        "Content, design, and launch work for the new website.",
+        { exact: true },
+      ),
+    ).toHaveCSS("font-size", "13px");
     await page.screenshot({ path: testInfo.outputPath(`projects-${width}.png`) });
   }
 });
@@ -85,10 +100,20 @@ test("task form text stays compact and consistent across phone and desktop width
   await page.goto("/task/new");
   const form = page.locator("#task-editor-form");
   const title = page.getByRole("textbox", { name: "Task title" });
+  const introduction = page.getByText(
+    "Fill in what needs doing and who is on it. Everything else can be added later.",
+    { exact: true },
+  );
   const description = page.locator(
     '[contenteditable="true"][aria-label="Description"]',
   );
   await expect(title).toBeVisible();
+  await expect(introduction).toHaveCSS("font-size", "13px");
+  expect(
+    await title.evaluate(
+      (input) => getComputedStyle(input, "::placeholder").fontSize,
+    ),
+  ).toBe(await introduction.evaluate((text) => getComputedStyle(text).fontSize));
   await page.screenshot({
     path: testInfo.outputPath("new-task-phone-empty.png"),
     fullPage: false,
@@ -105,6 +130,7 @@ test("task form text stays compact and consistent across phone and desktop width
 
   for (const width of [320, 390, 640, 1024, 1280, 1536]) {
     await page.setViewportSize({ width, height: 900 });
+    await expect(introduction).toHaveCSS("font-size", "13px");
     for (const control of [
       title,
       description,

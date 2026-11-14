@@ -351,7 +351,7 @@ export function SavedTaskViews({
               </Text>
             ))}
           {dialog?.kind === "delete" && (
-            <Text>
+            <Text className="text-body">
               Delete “{dialog.view.name}”? Your tasks and current filters will
               stay as they are.
             </Text>

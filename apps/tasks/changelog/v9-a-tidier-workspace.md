@@ -77,9 +77,10 @@ closed to them, and their sidebar shows only what they can open.
 
 ### A consistent, more compact text scale
 
-Fields, search, menus, and everyday interface text now share a compact 13px
-scale across phones and desktop. Task, project, and note card titles stay the
-same size in boards and lists. Smaller labels and metadata, consistent
+Fields, placeholders, page descriptions, card summaries, search, menus, and
+everyday interface text now share a compact 13px scale across phones and desktop.
+Task, project, and note card titles stay the same size in boards and lists.
+Smaller labels and metadata, consistent
 supporting copy, and a clearer heading hierarchy make the workspace easier
 to scan without oversized fields or cards.
 

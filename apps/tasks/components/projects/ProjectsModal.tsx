@@ -688,7 +688,7 @@ export function ProjectsModal({
           project.description || (project.links ?? []).length ? (
             <div className="min-w-0">
               {project.description && (
-                <p className="break-words text-secondary text-black/60 dark:text-white/60">
+                <p className="break-words text-body text-black/60 dark:text-white/60">
                   {project.description}
                 </p>
               )}

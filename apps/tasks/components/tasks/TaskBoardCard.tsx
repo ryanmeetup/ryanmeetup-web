@@ -155,7 +155,7 @@ export function TaskBoardCard({
           linkify
           maxLines={3}
           maxLength={120}
-          className="mt-1.5 break-words text-secondary text-black/60 sm:mt-2 dark:text-white/60"
+          className="mt-1.5 break-words text-body text-black/60 sm:mt-2 dark:text-white/60"
         />
       )}
       {subtasks.length > 0 && (
