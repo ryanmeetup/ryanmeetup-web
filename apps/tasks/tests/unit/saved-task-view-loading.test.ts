@@ -42,4 +42,16 @@ describe("personal saved view loading", () => {
     ).rejects.toThrow("Workspace data could not be loaded");
     log.mockRestore();
   });
+
+  it("does not read personal views during a resolved access preview", async () => {
+    const db = database({ data: [], error: null });
+    expect(
+      await loadSavedTaskViews(db.database, "current-user", {
+        kind: "user",
+        subjectId: "preview-user",
+        subjectName: "Another member",
+      }),
+    ).toEqual({ views: [], available: false });
+    expect(db.database.from).not.toHaveBeenCalled();
+  });
 });

@@ -36,6 +36,86 @@ async function chooseView(page: Page, name: string) {
   await page.getByRole("option", { name, exact: true }).click();
 }
 
+test("only a resolved access preview disables personal saved views", async ({
+  page,
+}) => {
+  await page.goto("/login");
+  await page.getByLabel("Username").fill("member@example.com");
+  await page.getByLabel(/^Password/).fill("correct-horse-battery");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.locator("[data-workspace-shell]")).toBeVisible();
+  await page.goto("/board?viewAsGroup=No+such+group");
+  await expect(
+    page.getByRole("button", { name: "Save view", exact: true }),
+  ).toBeEnabled();
+  await expect(page.getByText("Setup needed", { exact: true })).toHaveCount(0);
+  await page.goto("/board?viewAsUser=Test+Member");
+  await expect(page.getByText("Preview only", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Save view", exact: true }),
+  ).toBeDisabled();
+  await expect(
+    page.getByRole("button", { name: "Retry saved views", exact: true }),
+  ).toHaveCount(0);
+});
+
+test("demo storage failure explains the cause and retry preserves task filters", async ({
+  page,
+  baseURL,
+}, testInfo) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.addInitScript(() => {
+    const getItem = Storage.prototype.getItem;
+    Storage.prototype.getItem = function (key: string) {
+      if (
+        key.startsWith("ryanmeetup.tasks.demo.saved-views.") &&
+        !getItem.call(sessionStorage, "saved-views-storage-retried")
+      ) {
+        sessionStorage.setItem("saved-views-storage-retried", "true");
+        throw new Error("Storage temporarily unavailable");
+      }
+      return getItem.call(this, key);
+    };
+  });
+  await page.context().addCookies([
+    {
+      name: DEMO_PREVIEW_COOKIE,
+      value: DEMO_PREVIEW_VALUE,
+      url: baseURL ?? "http://127.0.0.1:3100",
+    },
+  ]);
+  await page.goto("/board?excludeProjects=Website+Refresh");
+  await expect(
+    page.getByText("Storage blocked", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Save view", exact: true }),
+  ).toBeDisabled();
+  const controls = page.getByRole("region", { name: "Saved task views" });
+  for (const width of [390, 1024]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect
+      .poll(() =>
+        controls.evaluate(
+          (element) => element.scrollWidth <= element.clientWidth,
+        ),
+      )
+      .toBe(true);
+    await controls.screenshot({
+      path: testInfo.outputPath(`saved-views-retry-${width}.png`),
+    });
+  }
+  await page
+    .getByRole("button", { name: "Retry saved views", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Save view", exact: true }),
+  ).toBeEnabled();
+  expect(new URL(page.url()).searchParams.get("excludeProjects")).toBe(
+    "Website Refresh",
+  );
+});
+
 test("saved exclusions and layout survive reload and replace current filters", async ({
   page,
   baseURL,

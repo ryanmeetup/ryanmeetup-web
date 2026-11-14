@@ -21,6 +21,7 @@ import {
   FiBookmark,
   FiEdit2,
   FiMoreHorizontal,
+  FiRefreshCw,
   FiRotateCcw,
   FiSettings,
   FiTrash2,
@@ -49,8 +50,16 @@ export function SavedTaskViews({
   controller: SavedTaskViewsController;
   data: WorkspaceData;
 }) {
-  const { views, selected, modified, pending, available, error, setError } =
-    controller;
+  const {
+    views,
+    selected,
+    modified,
+    pending,
+    available,
+    unavailableReason,
+    error,
+    setError,
+  } = controller;
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [name, setName] = useState("");
   function open(next: Dialog) {
@@ -73,6 +82,28 @@ export function SavedTaskViews({
     if (saved) setDialog(dialog.kind === "rename" ? { kind: "manage" } : null);
   }
   const summarySettings = dialog?.kind === "save" ? dialog.settings : null;
+  const availability = unavailableReason
+    ? {
+        "access-preview": {
+          label: "Preview only",
+          description: "Exit access preview to use your personal saved views.",
+        },
+        "workspace-setup": {
+          label: "Setup needed",
+          description:
+            "Saved views haven't been set up for this workspace yet. Ask an app owner to finish setup, then retry.",
+        },
+        "browser-storage": {
+          label: "Storage blocked",
+          description:
+            "This browser couldn't load your demo saved views. Allow browser storage, then retry.",
+        },
+        loading: {
+          label: "Loading…",
+          description: "Loading your saved views.",
+        },
+      }[unavailableReason]
+    : null;
   return (
     <section aria-label="Saved task views" className="min-w-0 space-y-2">
       <div className="flex flex-wrap items-center gap-2 sm:justify-end">
@@ -157,15 +188,24 @@ export function SavedTaskViews({
               </DropdownMenuItem>
             </DropdownMenuItems>
           </DropdownMenu>
-          {!available && (
-            <Tooltip content="Saved views are currently unavailable.">
+          {availability && (
+            <Tooltip content={availability.description}>
               <span
                 tabIndex={0}
-                className="text-xs text-black/70 dark:text-white/70"
+                className="rounded text-xs text-black/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:text-white/70 dark:focus-visible:ring-white/30"
               >
-                Unavailable
+                {availability.label}
               </span>
             </Tooltip>
+          )}
+          {(unavailableReason === "workspace-setup" ||
+            unavailableReason === "browser-storage") && (
+            <IconButton
+              label="Retry saved views"
+              onClick={() => window.location.reload()}
+            >
+              <FiRefreshCw aria-hidden />
+            </IconButton>
           )}
         </div>
       </div>

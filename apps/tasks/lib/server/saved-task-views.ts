@@ -1,5 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { AccessPreview } from "@/lib/workspace/workspace-types";
 import type {
   SavedTaskView,
   SavedTaskViewsState,
@@ -12,7 +13,9 @@ export const SAVED_TASK_VIEW_COLUMNS = "id,name,settings";
 export async function loadSavedTaskViews(
   database: SupabaseClient,
   userId: string,
+  preview?: AccessPreview,
 ): Promise<SavedTaskViewsState> {
+  if (preview) return { views: [], available: false };
   const result = await database
     .from("saved_task_views")
     .select(SAVED_TASK_VIEW_COLUMNS)

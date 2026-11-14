@@ -59,11 +59,6 @@ export default async function BoardPage({
     { guestProjectWork: true },
   );
   const { supabase } = loaded;
-  // Access previews never load another person's private preferences.
-  const initialSavedViews =
-    requestedGroupPreview || requestedUserPreview
-      ? { views: [], available: false }
-      : await loadSavedTaskViews(supabase, loaded.user.id);
   let initialData = loaded.data;
   const archiveBoundary = new Date().toISOString();
   const taskResult = await supabase
@@ -136,6 +131,13 @@ export default async function BoardPage({
       }
     }
   }
+  // Use the resolved preview, so an invalid or stale query cannot disable
+  // the signed-in member's own views.
+  const initialSavedViews = await loadSavedTaskViews(
+    supabase,
+    loaded.user.id,
+    initialData.accessPreview,
+  );
   return (
     <TaskApp
       initialData={initialData}

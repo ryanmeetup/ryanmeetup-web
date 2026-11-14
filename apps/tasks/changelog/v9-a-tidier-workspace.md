@@ -26,6 +26,8 @@ are collapsed.
 Changes stay temporary until you update the saved view; reset them or save a
 new view instead. Rename and delete views from Manage saved views. Your views
 follow your account across devices, with separate collections in each instance.
+If saved views cannot load, the controls explain whether workspace setup,
+access preview, or browser storage is responsible and offer retry where possible.
 
 ### Closed projects leave the current workspace
 

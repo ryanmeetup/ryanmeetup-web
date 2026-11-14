@@ -187,7 +187,16 @@ export function useSavedTaskViews({
     select,
     save,
     remove,
-    available: initial.available && ready,
+    available: !data.accessPreview && initial.available && ready,
+    unavailableReason: data.accessPreview
+      ? ("access-preview" as const)
+      : !initial.available
+        ? ("workspace-setup" as const)
+        : !ready
+          ? error
+            ? ("browser-storage" as const)
+            : ("loading" as const)
+          : null,
     modified: Boolean(
       selected && !savedViewSettingsEqual(selected.settings, current),
     ),
