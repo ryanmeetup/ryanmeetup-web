@@ -286,30 +286,24 @@ test("opens a project's board from the sidebar row", async ({
     page.getByRole("heading", { level: 1, name: /Website Refresh/ }),
   ).toBeVisible();
 
-  const projectDescription = page.getByText(
-    "Content, design, and launch work for the new website.",
-    { exact: true },
-  );
   const taskCount = page.locator(".task-workspace-count:visible");
-  const archiveButton = page.getByRole("button", {
-    name: "Archive",
-    exact: true,
-  });
+  const toolbar = page.locator("[data-task-toolbar]");
   await expect(taskCount).toContainText("6");
   await expect(taskCount.getByText("tasks", { exact: true })).toBeVisible();
-  const [descriptionBox, taskCountBox, archiveButtonBox] = await Promise.all([
-    projectDescription.boundingBox(),
+  const [taskCountBox, toolbarBox] = await Promise.all([
     taskCount.boundingBox(),
-    archiveButton.boundingBox(),
+    toolbar.boundingBox(),
   ]);
-  // Supporting metadata shares the description row and quietly closes the
-  // toolbar's right edge rather than interrupting the project title.
-  expect(Math.abs(descriptionBox!.y - taskCountBox!.y)).toBeLessThan(8);
+  // The count sits on the eyebrow line directly above the filters and
+  // shares the toolbar's right edge.
+  expect(taskCountBox!.y + taskCountBox!.height).toBeLessThanOrEqual(
+    toolbarBox!.y,
+  );
   expect(
     Math.abs(
       taskCountBox!.x +
         taskCountBox!.width -
-        (archiveButtonBox!.x + archiveButtonBox!.width),
+        (toolbarBox!.x + toolbarBox!.width),
     ),
   ).toBeLessThan(2);
 

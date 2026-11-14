@@ -372,9 +372,8 @@ export function TaskWorkspaceHeader({
     projectAttachments.loading && projectAttachmentCount !== 0;
   const categoryAttachmentsPending =
     categoryAttachments.loading && categoryAttachmentCount !== 0;
-  // One badge, two slots. Below `xl` the count rides the eyebrow line, where
-  // there is room to spare; from `xl` up it closes the toolbar's right edge
-  // alongside the description instead.
+  // The count rides the eyebrow line at every width, so from `xl` up it sits
+  // directly above the toolbar's right edge.
   const taskCountBadge = (
     <CountBadge label="task" variant="ghost" className="task-workspace-count">
       {taskCount}
@@ -392,7 +391,7 @@ export function TaskWorkspaceHeader({
                 ? "Personal workspace"
                 : "Team workspace"}
         </p>
-        <span className="shrink-0 xl:hidden">{taskCountBadge}</span>
+        <span className="shrink-0">{taskCountBadge}</span>
       </div>
       <div className="flex flex-col gap-4 xl:grid xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start xl:gap-x-8 xl:gap-y-0">
         <div className="min-w-0 flex-1 xl:contents">
@@ -733,9 +732,6 @@ export function TaskWorkspaceHeader({
                 }
               />
             </div>
-          </div>
-          <div className="hidden xl:col-start-2 xl:row-start-2 xl:mr-2 xl:block xl:justify-self-end xl:self-baseline">
-            {taskCountBadge}
           </div>
         </div>
       </div>
