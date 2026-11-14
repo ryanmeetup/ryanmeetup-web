@@ -106,7 +106,7 @@ const RichTextarea = forwardRef<HTMLTextAreaElement, RichTextareaProps>(
       editorProps: {
         attributes: {
           class:
-            "ProseMirror min-h-[120px] px-4 py-2.5 text-sm leading-6 text-black outline-none [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-bold [&_h3]:text-lg [&_h3]:font-semibold [&_h4]:text-base [&_h4]:font-semibold [&_h5]:text-sm [&_h5]:font-semibold [&_h6]:text-xs [&_h6]:font-semibold [&_h6]:uppercase [&_h6]:tracking-wider [&_p]:min-h-6 dark:text-white",
+            "ProseMirror min-h-[120px] px-4 py-2.5 text-sm leading-[var(--field-control-line-height,1.5rem)] text-black outline-none [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-bold [&_h3]:text-lg [&_h3]:font-semibold [&_h4]:text-base [&_h4]:font-semibold [&_h5]:text-sm [&_h5]:font-semibold [&_h6]:text-xs [&_h6]:font-semibold [&_h6]:uppercase [&_h6]:tracking-wider [&_p]:min-h-[var(--field-control-line-height,1.5rem)] dark:text-white",
           "aria-label":
             typeof textareaProps["aria-label"] === "string"
               ? textareaProps["aria-label"]
@@ -204,7 +204,7 @@ const RichTextarea = forwardRef<HTMLTextAreaElement, RichTextareaProps>(
           }}
         />
         {!textValue && placeholder && (
-          <span className="pointer-events-none absolute left-4 right-4 top-2.5 text-sm leading-6 text-black/70 dark:text-white/70">
+          <span className="pointer-events-none absolute left-4 right-4 top-2.5 text-sm leading-[var(--field-control-line-height,1.5rem)] text-black/70 dark:text-white/70">
             {placeholder}
           </span>
         )}

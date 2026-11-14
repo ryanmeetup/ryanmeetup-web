@@ -1,7 +1,6 @@
-// Apps can set --field-label-font-size to adjust label density without
-// changing control text or the public sites' default 14px labels.
+// Apps can adjust label density without changing the public sites' 14px/20px default.
 const fieldLabelBaseClasses =
-  "inline-flex items-center gap-1 text-[length:var(--field-label-font-size,0.875rem)] leading-5 font-semibold";
+  "inline-flex items-center gap-1 text-[length:var(--field-label-font-size,0.875rem)] leading-[var(--field-label-line-height,1.25rem)] font-semibold";
 const fieldLabelMutedClasses = "text-black dark:text-white";
 
 const getFieldLabelClasses = (muted = true) =>
