@@ -184,3 +184,25 @@ Kept on purpose, because each carries information the heading doesn't:
     removed. `EventRow`'s responsive override now uses `!`, so it wins
     reliably.
   - The AGENTS.md design rules now name these tokens, plus the kicker rule.
+
+### 2026-11-14: radii, icon grids, and dead code
+
+- **One-off radii:** the store home hero and the homepage sponsor spotlight
+  now use Tailwind's `rounded-4xl` (2rem, unchanged) and `rounded-3xl` steps.
+  The map containers, the link-preview mock, and the star rating keep their
+  purpose-built radii.
+- **`SponsorshipInfo`:** deleted. Nothing rendered it, and it carried the
+  "Built for brands that want a consistent presence…" copy.
+- **`PartnershipPerks`:** the near-identical Ryan Meetup and RyanCon copies are
+  now one component in `@ryanmeetup/sponsors`. Each sponsors page passes its
+  own perks, intro label, and links. The decorative icon badges are gone; a
+  perk is now its label, when it has one, plus its sentence.
+- **`ReachSnapshot`** (`/sponsors/partnerships`): the icon badges and the pill
+  buttons inside each linked card are gone. A card is now the number, its
+  sentence, and a small text label with an arrow. The "Explore the channels,
+  proof points, and community surfaces behind these numbers" line is gone, and
+  every card gets a visible focus ring.
+
+Still open: the remaining template copy and the RyanCon hero's emoji
+placeholders (with the RyanCon pass), and the faded secondary text in Tasks
+(a design decision).
