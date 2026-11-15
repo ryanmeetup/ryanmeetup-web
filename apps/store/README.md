@@ -93,10 +93,10 @@ The hero reads “this merch has your name on it”. Below it:
    collection (`frontpage`), in its curated order. An empty or unpublished
    collection falls back to Shopify's actual best-selling order. A pick stays
    in this row even when it is also featured in the spotlight.
-2. Collection tiles lead to every published design collection. Each uses the
-   collection image or its leading listing's photo.
-3. The spotlight shows the first listing in the `spotlight` collection, or the
+2. The spotlight shows the first listing in the `spotlight` collection, or the
    newest in-stock listing when no spotlight has been curated.
+3. Collection tiles lead to every published design collection. Each uses the
+   collection image or its leading listing's photo.
 
 `frontpage` and `spotlight` have no browsing tile or menu entry.
 

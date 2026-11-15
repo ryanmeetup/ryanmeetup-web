@@ -101,6 +101,12 @@ export default async function HomePage() {
         </section>
       )}
 
+      {spotlight && (
+        <section aria-label={spotlight.label} className="store-container py-10 sm:py-14">
+          <HomeSpotlight spotlight={spotlight} />
+        </section>
+      )}
+
       {collections.length > 0 && (
         <section id="collections" aria-labelledby="home-collections" className="store-container scroll-mt-24 py-10 sm:py-14">
           <SectionHeader
@@ -114,12 +120,6 @@ export default async function HomePage() {
             }
           />
           <HomeCollectionTiles tiles={collections} className={gridColumns} />
-        </section>
-      )}
-
-      {spotlight && (
-        <section aria-label={spotlight.label} className="store-container py-10 sm:py-14">
-          <HomeSpotlight spotlight={spotlight} />
         </section>
       )}
     </main>
