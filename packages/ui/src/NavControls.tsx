@@ -83,7 +83,7 @@ const NavMenu = ({
           >
             <PopoverPanel
               anchor="bottom"
-              className={`z-50 rounded-2xl border border-black/10 bg-white/95 p-4 shadow-xl backdrop-blur dark:border-white/10 dark:bg-black/95 ${hasDescriptions ? "w-[720px]" : "w-64"} ${className ?? ""}`}
+              className={`z-50 rounded-2xl border border-black/10 bg-white/95 p-4 shadow-xl backdrop-blur dark:border-white/10 dark:bg-black/95 ${hasDescriptions ? "w-[780px]" : "w-64"} ${className ?? ""}`}
             >
               <div
                 className={
