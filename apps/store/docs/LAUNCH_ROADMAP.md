@@ -10,7 +10,8 @@ The baseline is "do what the Etsy storefront does that shoppers actually rely
 on", not every Etsy feature. The live shop could not be read automatically (Etsy
 returns 403), so confirm items marked **check Etsy** against the real listings.
 
-Last reviewed: 2026-11-14, against the code, Vercel, and the live Storefront API.
+Last reviewed: 2026-11-15, against the code, Vercel, the live Storefront API,
+and the live checkout.
 
 ## Already in place
 
@@ -19,29 +20,37 @@ Last reviewed: 2026-11-14, against the code, Vercel, and the live Storefront API
 - Type and size filters, plus sorting (Featured, Newest, price low to high,
   price high to low) in a readable `?sort=`, on every collection and type page.
 - Cart drawer and cart page backed by the Shopify cart API, refreshed from
-  Shopify on load, cleared after checkout, and emptied on confirmation.
-- Shopify hosted checkout and its Thank-you page; a checked-out cart clears on
-  the shopper's next store page load.
-- Judge.me product reviews, read and submitted server-side.
+  Shopify on load; a checked-out cart clears on the shopper's next page load.
+- Shopify hosted checkout at `checkout.ryanmeetup.com`, branded with the
+  wordmark, with payments live. Shopify's Thank-you page is the order
+  confirmation; its **Continue shopping** button returns to the store through
+  the theme redirect.
+- Customer accounts, also branded; **Your orders** links to them from the
+  header, mobile menu, and Contact hints.
+- Every published variant (1,878 across 86 products) is mapped to a Printful
+  SKU.
+- US shipping for name tag shirts and hoodies uses weight tiers that cover
+  Printful's cost (see [SHIPPING_SETUP.md](SHIPPING_SETUP.md)).
+- Judge.me product reviews, read server-side.
 - About (including shipping and returns), Contact, and the sitemap.
 - Policy pages at `/policies/<handle>` for each policy written in Shopify Admin,
   linked from the footer and listed in the sitemap.
-- **Your orders** links to Shopify's customer account (order status and
-  tracking) in the header, mobile menu, and Contact hints.
 - Sale prices: a compare-at price above the price in Shopify adds a **Sale**
   label and the struck-through original on cards, the product page, and cart
   lines.
-- A currency menu on product price badges shows prices in USD (the default),
-  EUR, GBP, CAD, or AUD. Converted prices are estimates from reference exchange rates;
-  cart and checkout prices stay in USD.
+- A currency menu on product price badges shows estimated prices in USD (the
+  default), EUR, GBP, CAD, or AUD; cart and checkout stay in USD.
 - Designer credits on product pages from `designer:` product tags (see
   [ADDING_PRODUCTS.md](ADDING_PRODUCTS.md#designer-credits)).
+- Cancelling and refunding an order is documented in
+  [CANCELLING_ORDERS.md](CANCELLING_ORDERS.md).
 
 ## Status
 
 | # | Item | Priority | Status |
 | --- | --- | --- | --- |
-| 4 | [Launch switches and Shopify Admin setup](#4-launch-switches-and-shopify-admin-setup) | Blocker | In progress |
+| 4 | [Shopify Admin setup](#4-shopify-admin-setup) | Blocker | In progress |
+| 17 | [Branded error pages](#17-branded-error-pages) | Polish | Not started |
 | 11 | [More from this shop](#11-more-from-this-shop) | Etsy parity | Not started |
 | 8 | [Note to seller and personalization](#8-note-to-seller-and-personalization) | Etsy parity | Not started |
 | 14 | [Shop-wide reviews and buyer-only reviews](#14-shop-wide-reviews-and-buyer-only-reviews) | Polish | In progress |
@@ -52,84 +61,34 @@ Finished and dropped items leave the roadmap.
 
 ## Blockers
 
-### 4. Launch switches and Shopify Admin setup
+### 4. Shopify Admin setup
 
 - [ ] Done
 
-Shopify Admin (no code):
-- [ ] Markets cover every country the About page says we ship to. The
-      Storefront API currently reports only the United States, and shoppers
-      can't check out to a country outside an active market.
-- [ ] Tax collection configured for the regions shipped to.
-- [ ] Shipping charges cover Printful's costs for every region shipped to.
-      Ryan chose to keep Basic and use conservative weight-based tiers, with
-      potentially higher charges for heavier carts. US name tag shirts and
-      hoodies are live and quote exactly Printful's cost plus the holiday
-      allowance; other product families and international rates still need
-      the [custom-profile setup](SHIPPING_SETUP.md). Do not change the plan,
-      retail prices, or product weights.
-- [ ] Email templates branded and their store links pointed at
-      `https://store.ryanmeetup.com`
-      ([steps](SHOPIFY_HOSTED_PAGES.md#2-point-the-emails-at-the-store)).
+Next steps, in order:
 
-**Done when.** A real order placed on production is charged, taxed, shipped by
-Printful, and confirmed by email. The second real order (November 15) was
-charged and is in Printful fulfillment; repeat the check once Markets, tax,
-and the email templates are done.
+| Step | Who | Where | Notes |
+| --- | --- | --- | --- |
+| Give the Admin API token the scopes below | Ryan | The catalog admin app's Admin API configuration | Every scope still returned `ACCESS_DENIED` on November 15, even `currentAppInstallation`. Save and install or update the app (or approve the new version, for a Dev Dashboard app), and make sure `SHOPIFY_PRIVATE_ACCESS_TOKEN` in `.env.local` is that app's token. |
+| Turn on Markets for the countries we ship to | Claude, once scoped | Settings → Markets | Only the US is active, but the shipping policy says "most of the world". Agree the country list first, checked against [Printful's restrictions](https://help.printful.com/hc/en-us/articles/50265153665681-Which-countries-does-Printful-not-ship-to). Add each country's shipping rates before enabling it, or shoppers there get no rate or an underpriced one. Narrowing the policy instead is also an option. |
+| Shipping profiles for every other product family and for international rates | Claude, once scoped | Settings → Shipping and delivery | Mugs, flags, pins, children's clothing, and the rest each need a verified profile; see [SHIPPING_SETUP.md](SHIPPING_SETUP.md). Do not change the plan, retail prices, or product weights. |
+| Tax collection for every region shipped to | Ryan | Settings → Taxes and duties | Not possible through the Admin API. Check whether the second order showed a tax line. |
+| Brand the email templates and point their links at the store | Ryan | Settings → Notifications | Not possible through the Admin API. [Steps](SHOPIFY_HOSTED_PAGES.md#2-point-the-emails-at-the-store). |
+| Place a final real order | Ryan | Production | After the steps above. |
+| Remove the $0.40 holiday allowance from the custom shipping rates | Ryan or Claude | Settings → Shipping and delivery | Due January 17, 2027, when Printful's surcharge ends. |
 
-**Shipping audit, November 14.** Temporary Storefront API carts returned these
-standard shipping quotes for a public New York destination (USD):
+Admin API scopes to grant: `read_markets`, `write_markets`, `read_shipping`,
+`write_shipping`, `read_products`, `read_locations`, `read_orders`,
+`read_fulfillments`. Shopify may require approval for some shipping scopes; if
+`write_shipping` can't be granted, apply the shipping profiles by hand. Drop
+back to read-only scopes once setup is done.
 
-| Cart | Shopify quote | Printful published base rate |
-| --- | --- | --- |
-| One Name Tag Shirt | $4.95 | $4.95 |
-| Two Name Tag Shirts | $4.95 | $7.15 ($4.95 + $2.20) |
-| One Name Tag Hoodie | $8.79 | $8.79 |
-| One shirt and one hoodie | $13.74 | Separate category rates combined |
-
-The [published rates](https://www.printful.com/shipping) exclude the current
-[$0.40 US holiday surcharge](https://help.printful.com/hc/en-us/articles/41396792413457-What-is-the-holiday-shipping-surcharge-and-does-it-affect-my-orders),
-active October 15, 2026–January 17, 2027. The sampled quotes do not include it.
-Printful → Settings → Store settings → Shipping → Temporary shipping
-surcharges → **Add surcharges to shipping prices on my storefront** passes it
-through automatically when using supported Printful rates.
-
-The two-shirt discrepancy matches Printful's documented
-[Shopify flat-rate limitation](https://help.printful.com/hc/en-us/articles/50262284973841-How-do-I-set-up-shipping-for-my-Shopify-store):
-additional items in the same profile do not increase the Shopify charge.
-Printful-managed profiles keep base rates updated, but full multi-item cost
-coverage needs a separate solution, such as live rates on an eligible plan.
-Do not edit managed profiles directly; the next sync overwrites those edits.
-
-The fix, conservative weight-based tiers on Basic, is in
-[SHIPPING_SETUP.md](SHIPPING_SETUP.md) and not yet applied.
-
-Canada and UK test addresses returned no delivery groups, and available
-countries still listed only the US. This conflicts with the shipping policy's
-“most of the world” coverage. International Markets and shipping zones need
-review against [Printful's restrictions](https://help.printful.com/hc/en-us/articles/50265153665681-Which-countries-does-Printful-not-ship-to),
-including product-specific restrictions. These samples do not verify every
-product's Printful profile or SKU mapping; Admin access is still needed.
-All six temporary carts were emptied; no order or payment was submitted.
+**Done when.** A real order placed on production is charged the right shipping
+and tax, ships through Printful, and sends a branded confirmation email linking
+to the store. The second real order (November 15) was charged and is in Printful
+fulfillment, but predates Markets, tax, and the email templates.
 
 ## Etsy parity
-
-### 9. Optional processing and delivery summary
-
-- [ ] Done
-
-**Scope.** Ryan confirmed on November 14 that shipping costs can be calculated
-and displayed entirely in Shopify's hosted checkout. No product-page or cart
-shipping-rate estimator is required for launch. The current checkout button
-already follows Shopify's cart `checkoutUrl`; shipping configuration in item 4
-still applies to that checkout, including a custom checkout domain.
-
-**Optional improvement.** Show a short processing and delivery summary on the
-product page, sourced from the Shopify shipping policy or a metafield rather
-than hard-coded claims. Keep final shipping charges in hosted checkout.
-
-**Done when.** If pursued, a shopper can understand processing and delivery
-expectations before checkout. This is optional polish rather than launch work.
 
 ### 11. More from this shop
 
@@ -164,6 +123,18 @@ fields. The store supports neither.
 **Done when.** A note, and any personalization, show on the Shopify order.
 
 ## Polish
+
+### 17. Branded error pages
+
+- [ ] Done
+
+**Problem.** The store has no `error.tsx` or `global-error.tsx`, so a Shopify
+outage or timeout shows Next's plain default error page.
+
+**Approach.** Add both, using the shared not-found treatment, with a retry action
+and links to Shop all and Contact.
+
+**Done when.** A failed catalog request shows a branded page with a way to retry.
 
 ### 14. Shop-wide reviews and buyer-only reviews
 
@@ -211,12 +182,30 @@ bought. Nobody else can get a review published, so spam has no way in.
 **Done when.** The shop rating is visible, product summaries are accurate, and a
 real buyer's review with a photo appears on the product page.
 
+### 9. Optional processing and delivery summary
+
+- [ ] Done
+
+**Scope.** Ryan confirmed on November 14 that shipping costs can be calculated
+and displayed entirely in Shopify's hosted checkout. No product-page or cart
+shipping-rate estimator is required for launch. The current checkout button
+already follows Shopify's cart `checkoutUrl`; shipping configuration in item 4
+still applies to that checkout, including a custom checkout domain.
+
+**Optional improvement.** Show a short processing and delivery summary on the
+product page, sourced from the Shopify shipping policy or a metafield rather
+than hard-coded claims. Keep final shipping charges in hosted checkout.
+
+**Done when.** If pursued, a shopper can understand processing and delivery
+expectations before checkout. This is optional polish rather than launch work.
+
 ## Log
 
 Record each finished or changed item here, newest first.
 
 | Date | Item | Change | Commit |
 | --- | --- | --- | --- |
+| 2026-11-15 | — | Reviewed the roadmap. Item 4 is now a next-steps table led by the Admin API scopes it is blocked on; the superseded November 14 shipping audit left (the live tiers replaced it). "Already in place" now covers branded checkout and accounts, payments, SKU mapping, and the name tag shipping tiers. Added item 17 for branded error pages, and moved item 9 under Polish to match its priority. | — |
 | 2026-11-15 | 4 | Ryan cancelled and refunded test order #1001, then placed a second real order that is going through Printful fulfillment. Shipping tiers for US name tag shirts and hoodies verified live (1–3 and 10 shirts, 1–2 hoodies, and a mixed cart all match Printful's cost plus $0.40). | — |
 | 2026-11-15 | 4 | Removed Printful SKU mapping: all 1,878 published variants across 86 products carry a unique SKU in Printful's sync format (`<product>_<variant>`), none blank. Checkout and the customer-account sign-in page show the wordmark in the light scheme from [SHOPIFY_HOSTED_PAGES.md](SHOPIFY_HOSTED_PAGES.md#3-brand-checkout-and-customer-accounts); headings stay in Shopify's system font. | — |
 | 2026-11-14 | 4 | Closed the checkout return URL. Shopify has no setting that sends shoppers to another site after payment, and Thank-you page extensions can only show a link, not redirect. Shopify's Thank-you page now serves as the confirmation, its **Continue shopping** button reaches the store home page through the theme redirect, and the store already drops a checked-out cart on the next page load. Removed the unreachable `/thank-you` page and its cart-clearing helper; the Playwright test now covers clearing on any page. | — |
