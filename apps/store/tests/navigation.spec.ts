@@ -29,7 +29,7 @@ test("without Shopify collections the menu still offers RY-D’s and Shop all", 
 
 test("each current collection has its own icon, and a new one falls back to the stacked boxes", () => {
   const iconFor = (handle: string) => getStoreCollectionIcon(handle).type;
-  const handles = ["all", "apparel", "accessories", "ryd", "i-heart-ry", "name-tag", "ryan-classics"];
+  const handles = ["all", "apparel", "accessories", "ryd", "i-heart-ry", "name-tag", "ryan-classics", "not-a-cult", "limited-edition", "lunch-money"];
   expect(new Set(handles.map(iconFor)).size).toBe(handles.length);
   expect(iconFor("next-big-drop")).toBe(FaBoxesStacked);
   expect(handles.map(iconFor)).not.toContain(FaBoxesStacked);
