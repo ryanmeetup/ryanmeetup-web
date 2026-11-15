@@ -11,7 +11,22 @@ npm install
 npm run dev:store
 ```
 
-Copy `.env.example` to `.env.local` and add the development-store credentials. Without Shopify credentials, the app deliberately starts in a labeled preview mode with a small demo catalog and local cart; checkout and review submission remain disabled.
+Copy `.env.example` to `.env.local` and add the development-store credentials. Without Shopify credentials, the app uses a small demo catalog and local cart; checkout and review submission remain disabled.
+
+## Store support
+
+The `/contact` form uses `@ryanmeetup/contact` and the main Ryan Meetup site's
+EmailJS service and template. Set `NEXT_PUBLIC_EMAIL_SERVICE_ID`,
+`NEXT_PUBLIC_EMAIL_TEMPLATE_ID`, and `NEXT_PUBLIC_EMAIL_USER_ID` in `.env.local`
+and in the Vercel **store** project's Production, Preview, and Development
+environments. `NEXT_PUBLIC_EMAIL_USER_ID` is EmailJS's public key.
+
+The shared template must honor `routeTo`; the store sets it to
+`ryan@ryanmeetup.com`, with the topic, order reference, and preferred resolution
+included in the message. After changing these build-time settings, deploy a
+fresh build from `main`. Verify with a clearly labeled test from `/contact`
+and confirm it reaches the support inbox; the success message confirms only
+that EmailJS accepted the request.
 
 ## Shopify setup
 
