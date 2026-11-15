@@ -42,8 +42,8 @@ const gridColumns = "mt-8 sm:grid-cols-2 xl:grid-cols-4";
 export default async function HomePage() {
   const { spotlight, favorites, collections } = await getHomeCatalog();
   return (
-    <main>
-      <section className="store-container py-8 sm:py-12 lg:py-16">
+    <main className="flex flex-col gap-8 py-8 sm:gap-12 sm:py-12 lg:py-16">
+      <section className="store-container">
         <div className="relative overflow-hidden rounded-4xl border border-black/10 bg-[#e9e3d6] px-5 py-8 shadow-xl sm:px-10 sm:py-12 lg:px-12 lg:py-14 xl:px-16 dark:border-white/10 dark:bg-[#151816]">
           <div
             aria-hidden
@@ -86,7 +86,7 @@ export default async function HomePage() {
       </section>
 
       {favorites.products.length > 0 && (
-        <section aria-labelledby="home-favorites" className="store-container py-10 sm:py-14">
+        <section aria-labelledby="home-favorites" className="store-container">
           <SectionHeader
             title={<span id="home-favorites">{favorites.collection.title}</span>}
             description={favorites.collection.description}
@@ -102,13 +102,13 @@ export default async function HomePage() {
       )}
 
       {spotlight && (
-        <section aria-label={spotlight.label} className="store-container py-10 sm:py-14">
+        <section aria-label={spotlight.label} className="store-container">
           <HomeSpotlight spotlight={spotlight} />
         </section>
       )}
 
       {collections.length > 0 && (
-        <section id="collections" aria-labelledby="home-collections" className="store-container scroll-mt-24 py-10 sm:py-14">
+        <section id="collections" aria-labelledby="home-collections" className="store-container scroll-mt-24">
           <SectionHeader
             title={<span id="home-collections">Pick your Ryan lane</span>}
             description="Every collection, one tap away. The full shelf lives on Shop All."
