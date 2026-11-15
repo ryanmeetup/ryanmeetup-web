@@ -56,8 +56,10 @@ Finished and dropped items leave the roadmap.
 - [ ] Done
 
 Shopify Admin (no code):
-- [ ] Refund the November 14 test order end to end, and confirm it reached
-      Printful and sent a confirmation email.
+- [ ] Cancel and refund the November 14 test order (#1001) following
+      [CANCELLING_ORDERS.md](CANCELLING_ORDERS.md), and settle its open
+      questions. Its confirmation email arrived; Shopify blocked the cancel
+      because Printful had already accepted it.
 - [ ] Markets cover every country the About page says we ship to. The
       Storefront API currently reports only the United States, and shoppers
       can't check out to a country outside an active market.
