@@ -12,6 +12,7 @@ import {
   SuccessCallout,
   Textarea,
 } from "@ryanmeetup/ui";
+import { getAdminOrderSearchUrl, type SupportPrefill } from "@/lib/support";
 
 type StoreContactFields = {
   firstName: string;
@@ -52,8 +53,13 @@ const resolutions = [
   { label: "Not sure yet", value: "unsure" },
 ];
 
-export function StoreContactForm() {
-  const [fields, setFields] = useState(initialFields);
+export function StoreContactForm({ prefill, adminOrdersUrl }: { prefill?: SupportPrefill; adminOrdersUrl?: string | null }) {
+  // A link from a Shopify order email fills in the order; the form resets to blank after sending.
+  const [fields, setFields] = useState<StoreContactFields>({
+    ...initialFields,
+    email: prefill?.email ?? "",
+    orderNumber: prefill?.order ?? "",
+  });
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -96,6 +102,7 @@ export function StoreContactForm() {
           `Order number: ${orderReference}`,
           `Email used for order: ${fields.orderEmail.trim() || "Same as contact email"}`,
           `Preferred resolution: ${resolution}`,
+          ...(adminOrdersUrl ? [`Find in Shopify: ${getAdminOrderSearchUrl(adminOrdersUrl, fields.orderNumber, fields.orderEmail || fields.email)}`] : []),
           "",
           "Customer message:",
           fields.message,

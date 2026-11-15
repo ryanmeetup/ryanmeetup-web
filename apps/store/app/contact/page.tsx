@@ -3,6 +3,7 @@ import { FiHash, FiMail, FiPackage } from "react-icons/fi";
 import { StoreContactForm } from "@/components/store-contact-form";
 import { buildPageMetadata, DEFAULT_IMAGE } from "@/lib/metadata";
 import { getCustomerAccountUrl } from "@/lib/shopify";
+import { getAdminOrdersUrl, parseSupportPrefill } from "@/lib/support";
 
 export const metadata = buildPageMetadata({
   title: "Store customer service",
@@ -19,7 +20,10 @@ function getHelpfulDetails(hasAccount: boolean) {
   ];
 }
 
-export default async function ContactPage() {
+type Props = { searchParams: Promise<{ order?: string | string[]; email?: string | string[] }> };
+
+export default async function ContactPage({ searchParams }: Props) {
+  const prefill = parseSupportPrefill(await searchParams);
   const helpfulDetails = getHelpfulDetails(Boolean(await getCustomerAccountUrl().catch(() => null)));
   return (
     <main className="store-container py-8 sm:py-12 lg:py-16">
@@ -58,7 +62,7 @@ export default async function ContactPage() {
             <Heading size="h2" className="text-2xl sm:text-3xl">Contact customer service</Heading>
             <Text className="mt-2 text-sm sm:text-base">Give us the clearest clues you have. We’ll route everything through the Ryan Meetup contact team.</Text>
             <div className="mt-6 border-t border-black/10 pt-6 dark:border-white/10">
-              <StoreContactForm />
+              <StoreContactForm prefill={prefill} adminOrdersUrl={getAdminOrdersUrl()} />
             </div>
           </Card>
         </div>

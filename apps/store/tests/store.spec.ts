@@ -374,6 +374,13 @@ test("customer can open store support and enter order details", async ({
   });
 });
 
+test("a help link from a Shopify order email fills in the order details", async ({ page }) => {
+  await page.goto("/contact?order=1042&email=ryan%40example.com");
+  await expect(page.getByLabel("Order number")).toHaveValue("#1042");
+  await expect(page.getByLabel("Contact email")).toHaveValue("ryan@example.com");
+  await expect(page.getByLabel("First name")).toHaveValue("");
+});
+
 test("customer can read about the store and get back to shopping", async ({ page }) => {
   await page.goto("/");
   await page.setViewportSize({ width: 1280, height: 900 });
