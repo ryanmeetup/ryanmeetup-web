@@ -126,6 +126,7 @@ test("a markdown shows on the card, the product page, and the cart line", async 
 test("collection pages sort by price and newest, and the sort survives a reload", async ({ page }) => {
   await page.goto("/collections/all");
   const titles = page.getByRole("main").getByRole("heading", { level: 3 });
+  await page.getByRole("button", { name: "Filters", exact: true }).click();
   await page.getByRole("button", { name: /^Sort/ }).click();
   await page.getByRole("option", { name: "Price: high to low" }).click();
   await expect(page).toHaveURL(/\?sort=price-high$/);
@@ -134,6 +135,37 @@ test("collection pages sort by price and newest, and the sort survives a reload"
   await page.reload();
   await expect(titles).toHaveText(byPrice);
 });
+
+for (const width of [393, 1280]) {
+  test(`catalog filters start collapsed and retain sorting at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    for (const path of ["/apparel", "/accessories", "/collections/all", "/apparel/t-shirts"]) {
+      await page.goto(path);
+      const toggle = page.getByRole("button", { name: "Filters", exact: true });
+      const sort = page.getByRole("button", { name: /^Sort / });
+      await expect(toggle).toHaveAttribute("aria-expanded", "false");
+      await expect(sort).toHaveCount(0);
+
+      await toggle.click();
+      await expect(toggle).toHaveAttribute("aria-expanded", "true");
+      await sort.click();
+      await page.getByRole("option", { name: "Newest", exact: true }).click();
+      await expect(page).toHaveURL(`${path}?sort=newest`);
+
+      await toggle.focus();
+      await toggle.press("Enter");
+      await expect(toggle).toHaveAttribute("aria-expanded", "false");
+      await expect(sort).toHaveCount(0);
+      await toggle.click();
+      await expect(sort).toContainText("Newest");
+
+      await page.reload();
+      await expect(toggle).toHaveAttribute("aria-expanded", "false");
+      await toggle.click();
+      await expect(sort).toContainText("Newest");
+    }
+  });
+}
 
 test("apparel groups listings by garment, t-shirts first, and sorts within each grouping", async ({ page }) => {
   await page.goto("/apparel");

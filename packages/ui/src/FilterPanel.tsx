@@ -63,7 +63,7 @@ const FilterPanel = ({
       aria-expanded={expanded}
       aria-controls={panelId}
       onClick={() => setExpanded((current) => !current)}
-      className={`flex items-center gap-2 text-left text-xs font-semibold uppercase transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/30 dark:hover:text-white dark:focus-visible:ring-white/30 ${headerActions ? "shrink-0 rounded-xl p-1 tracking-caps text-black/70 dark:text-white/70" : "w-full rounded-2xl p-4 tracking-widest text-black/50 dark:text-white/50"}`}
+      className={`flex cursor-pointer items-center gap-2 text-left text-xs font-semibold transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/30 dark:hover:text-white dark:focus-visible:ring-white/30 ${headerActions ? "shrink-0 rounded-xl p-1 text-black/70 dark:text-white/70" : "w-full rounded-2xl p-4 text-black/70 dark:text-white/70"}`}
     >
       <FiFilter aria-hidden />
       Filters

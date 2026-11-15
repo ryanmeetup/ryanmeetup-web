@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { useQueryParamState } from "@ryanmeetup/hooks";
-import { AnchorNav, AnimatedCollapse, Button, DropdownSelect, EmptyState, SectionHeader } from "@ryanmeetup/ui";
-import { FiArrowRight, FiChevronDown } from "react-icons/fi";
+import { AnchorNav, AnimatedCollapse, DropdownSelect, EmptyState, FilterPanel, Heading, SectionHeader, Text } from "@ryanmeetup/ui";
+import { FiChevronDown } from "react-icons/fi";
 import type { CatalogSections, CollectionSummary, ProductListing } from "@/lib/types";
-import { collectionHeading, getCollectionPath } from "@/lib/catalog-collections";
+import { collectionHeading } from "@/lib/catalog-collections";
 import { getGarmentIcon } from "@/lib/navigation";
 import { defaultSort, parseSort, sortListings, sortOptions } from "@/lib/sort";
 import { ProductGrid } from "./product-grid";
@@ -56,8 +56,10 @@ export function CollectionGrid({ handle, products, sections, more = [] }: { hand
   return (
     <div className="space-y-6">
       {products.length > 1 && (
-        <div className="flex flex-col gap-3 rounded-2xl border border-black/10 bg-white/60 p-3 lg:flex-row lg:items-center dark:border-white/10 dark:bg-white/5">
-          <span className="px-2 text-xs font-semibold uppercase tracking-caps text-black/55 dark:text-white/55">{types.length > 1 || sizes.length > 1 ? "Filter the goods" : "Sort the goods"}</span>
+        <FilterPanel
+          count={Number(type !== "all") + Number(size !== "all")}
+          controlsClassName="grid grid-cols-1 items-stretch gap-3 overflow-visible lg:flex lg:items-center"
+        >
           {types.length > 1 && (
             <DropdownSelect
               label="Type"
@@ -85,15 +87,15 @@ export function CollectionGrid({ handle, products, sections, more = [] }: { hand
             stackLabelOnMobile
             className="lg:ml-auto"
           />
-        </div>
+        </FilterPanel>
       )}
       {!visible.length ? (
         <EmptyState message="No Ryan gear found. Try another size or product type." />
       ) : visibleSections.length || popular.length ? (
-        <div className="space-y-12">
+        <div className="space-y-6">
           {popular.length > 0 && (
             <section aria-labelledby="popular-picks">
-              <SectionHeader title={<span id="popular-picks">Popular Picks</span>} />
+              <SectionHeader align="left" title={<span id="popular-picks">Popular Picks</span>} />
               <ProductGrid products={popular} from={handle} className="mt-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" />
             </section>
           )}
@@ -112,36 +114,38 @@ export function CollectionGrid({ handle, products, sections, more = [] }: { hand
 
 // Sections start open; the heading toggles one closed so a shopper can skip past it.
 // A garment grouping keeps its plain title and is anchored by its handle, as in `#hats`.
-// The header menus reach its own page, so its section carries no button.
+// The header menus provide navigation to each collection's own page.
 function CollapsibleCollection({ from, collection, grouping = false, products, eagerCount }: { from: string; collection: CollectionSummary | null; grouping?: boolean; products: ProductListing[]; eagerCount: number }) {
   const [open, setOpen] = useState(true);
   const id = `collection-${collection?.handle ?? "more"}`;
+  const description = collection ? collection.description : "Everything else on the shelf.";
   return (
-    <section aria-labelledby={id} id={grouping ? collection?.handle : undefined} className={grouping ? "scroll-mt-24" : undefined}>
-      <SectionHeader
-        title={
-          <button
-            type="button"
-            aria-expanded={open}
-            aria-controls={`${id}-panel`}
-            onClick={() => setOpen((current) => !current)}
-            className="inline-flex cursor-pointer items-center gap-3 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40 dark:focus-visible:ring-white/40"
-          >
-            <span id={id}>{collection ? (grouping ? collection.title : collectionHeading(collection.title)) : "More Ryan Goods"}</span>
-            <FiChevronDown aria-hidden className={`h-5 w-5 shrink-0 text-black/55 transition-transform duration-200 motion-reduce:transition-none dark:text-white/55 ${open ? "-rotate-180" : ""}`} />
-          </button>
-        }
-        description={collection ? collection.description || undefined : "Everything else on the shelf."}
-        meta={`${products.length} item${products.length === 1 ? "" : "s"}`}
-        actions={collection && !grouping && (
-          <Button.Link href={getCollectionPath(collection.handle)} size="md" variant="secondary" className="!w-full sm:!w-auto" rightIcon={<FiArrowRight />}>
-            View Collection
-          </Button.Link>
-        )}
-      />
-      {/* The gap under the header lives inside the collapse so a closed section is no taller than its header. */}
-      <AnimatedCollapse id={`${id}-panel`} open={open} contentClassName="pt-6">
-        <ProductGrid products={products} eagerCount={eagerCount} from={from} />
+    <section aria-labelledby={id} id={grouping ? collection?.handle : undefined} className={`border-t border-black/10 pt-6 first:border-t-0 first:pt-0 dark:border-white/10${grouping ? " scroll-mt-24" : ""}`}>
+      <Heading size="h2" aria-labelledby={id} className="min-w-0 text-2xl sm:text-4xl">
+        <button
+          type="button"
+          aria-labelledby={id}
+          aria-describedby={`${id}-count`}
+          aria-expanded={open}
+          aria-controls={`${id}-panel`}
+          onClick={() => setOpen((current) => !current)}
+          className="grid min-h-11 w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40 sm:gap-4 dark:focus-visible:ring-white/40"
+        >
+          <span id={id} className="min-w-0">{collection ? (grouping ? collection.title : collectionHeading(collection.title)) : "More Ryan Goods"}</span>
+          <span id={`${id}-count`} className="whitespace-nowrap font-sans text-xs font-semibold tracking-normal text-black/70 dark:text-white/70">
+            {products.length} item{products.length === 1 ? "" : "s"}
+          </span>
+          <FiChevronDown aria-hidden className={`h-5 w-5 shrink-0 text-black/55 transition-transform duration-200 motion-reduce:transition-none dark:text-white/55 ${open ? "-rotate-180" : ""}`} />
+        </button>
+      </Heading>
+      {/* Keep spacing inside the clipped content so closed panels occupy no height. */}
+      <AnimatedCollapse id={`${id}-panel`} open={open}>
+        <div>
+          {description && <Text className="pt-2">{description}</Text>}
+          <div className="pt-6">
+            <ProductGrid products={products} eagerCount={eagerCount} from={from} />
+          </div>
+        </div>
       </AnimatedCollapse>
     </section>
   );

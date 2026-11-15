@@ -11,6 +11,7 @@ export type SectionHeaderProps = {
   className?: string;
   headingClassName?: string;
   align?: "left" | "center" | "responsive";
+  layout?: "responsive" | "split";
   headingLevel?: "h1" | "h2" | "h3";
 };
 
@@ -22,6 +23,7 @@ const SectionHeader = ({
   className,
   headingClassName = "text-3xl title sm:text-4xl",
   align = "responsive",
+  layout = "responsive",
   headingLevel = "h2",
 }: SectionHeaderProps) => {
   const alignment = {
@@ -29,6 +31,7 @@ const SectionHeader = ({
     center: "items-center text-center",
     responsive: "text-center lg:text-left",
   }[align];
+  const metaAlignment = align === "left" ? "justify-start lg:justify-end" : "justify-center lg:justify-end";
   const metaNode =
     typeof meta === "string" || typeof meta === "number" ? (
       <Kicker>{meta}</Kicker>
@@ -38,12 +41,12 @@ const SectionHeader = ({
 
   return (
     <div className={`flex flex-col gap-2 ${alignment} ${className ?? ""}`}>
-      <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
-        <Heading className={headingClassName} size={headingLevel}>
+      <div className={layout === "split" ? "flex flex-wrap items-end justify-between gap-x-4 gap-y-2" : "flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between"}>
+        <Heading className={`${layout === "split" ? "min-w-0 max-w-full break-words " : ""}${headingClassName}`} size={headingLevel}>
           {title}
         </Heading>
         {(metaNode || actions) && (
-          <div className="flex flex-wrap items-center justify-center gap-3 lg:justify-end">
+          <div className={`flex flex-wrap items-center gap-3 ${layout === "split" ? "ml-auto justify-end text-right" : metaAlignment}`}>
             {metaNode}
             {actions}
           </div>
