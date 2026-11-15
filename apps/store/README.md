@@ -89,7 +89,7 @@ products to one.
 ### Home page
 
 The hero reads “This merch has your name on it, Ryan” under a small
-“HELLO my name is Ryan” name tag. Below it:
+red-and-white Ryan name tag using the supplied brand artwork. Below it:
 
 1. **Best Sellers** shows up to four listings from Shopify's built-in home page
    collection (`frontpage`), in its curated order. An empty or unpublished

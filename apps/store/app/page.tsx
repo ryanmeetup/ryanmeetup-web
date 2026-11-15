@@ -1,11 +1,11 @@
 import {
   Button,
   Heading,
-  NameTag,
   RotatingGallery,
   SectionHeader,
   Text,
 } from "@ryanmeetup/ui";
+import Image from "next/image";
 import { FiArrowRight } from "react-icons/fi";
 import { HomeCollectionTiles } from "@/components/home-collection-tiles";
 import { HomeSpotlight } from "@/components/home-spotlight";
@@ -52,7 +52,14 @@ export default async function HomePage() {
           />
           <div className="relative grid items-center gap-12 lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)] lg:gap-14 xl:gap-20">
             <div>
-              <NameTag name="Ryan" size="sm" className="mb-8 ml-1 sm:mb-10" />
+              <Image
+                src="/hero/ryan-name-tag.png"
+                alt=""
+                width={2264}
+                height={1442}
+                sizes="(min-width: 640px) 144px, 112px"
+                className="pointer-events-none mb-8 ml-1 h-auto w-28 -rotate-6 select-none drop-shadow-lg sm:mb-10 sm:w-36"
+              />
               <Heading
                 size="h1"
                 className="max-w-3xl text-5xl leading-[0.95] sm:text-6xl xl:text-7xl"
@@ -90,6 +97,7 @@ export default async function HomePage() {
       {favorites.products.length > 0 && (
         <section aria-labelledby="home-favorites" className="store-container">
           <SectionHeader
+            align="left"
             title={<span id="home-favorites">{favorites.collection.title}</span>}
             description={favorites.collection.description}
             meta="Ryan favorites"
@@ -112,6 +120,7 @@ export default async function HomePage() {
       {collections.length > 0 && (
         <section id="collections" aria-labelledby="home-collections" className="store-container scroll-mt-24">
           <SectionHeader
+            align="left"
             title={<span id="home-collections">Pick your Ryan lane</span>}
             description="Every collection, one tap away. The full shelf lives on Shop All."
             meta="Collections"

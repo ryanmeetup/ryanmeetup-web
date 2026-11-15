@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 export type NameTagSize = "sm" | "lg";
 
 export type NameTagProps = {
-  /** What's written on the tag, e.g. "Ryan" or "404". */
+  /** What's written on the tag, e.g. "RYAN" or "404". */
   name: ReactNode;
   size?: NameTagSize;
   className?: string;
@@ -12,12 +12,12 @@ export type NameTagProps = {
 
 const sizes: Record<NameTagSize, { tag: string; hello: string; label: string; header: string; name: string; footer: string }> = {
   sm: {
-    tag: "w-36 rounded-xl border-2 shadow-lg sm:w-44",
-    header: "pb-1.5 pt-2",
-    hello: "text-xl sm:text-2xl",
-    label: "text-[0.5rem] sm:text-[0.6rem]",
-    name: "px-3 py-2 text-4xl sm:py-2.5 sm:text-5xl",
-    footer: "h-2.5",
+    tag: "grid aspect-[7/4] w-28 grid-rows-[auto_minmax(0,1fr)_auto] rounded-lg border-2 shadow-lg sm:w-36",
+    header: "py-0.5",
+    hello: "text-sm sm:text-lg",
+    label: "text-[0.4rem] leading-none sm:text-[0.5rem]",
+    name: "flex items-center justify-center px-2 text-2xl sm:text-3xl",
+    footer: "h-1",
   },
   lg: {
     tag: "w-full rounded-2xl border-4 shadow-xl",
