@@ -4,7 +4,7 @@ import {
   DEMO_PREVIEW_VALUE,
 } from "../../lib/demo-preview";
 
-test("cards share a compact title scale across surfaces, themes and widths", async ({
+test("task titles stand out within the compact card scale across themes and widths", async ({
   page,
   baseURL,
 }, testInfo) => {
@@ -24,8 +24,8 @@ test("cards share a compact title scale across surfaces, themes and widths", asy
       level: 3,
       name: "Fix confirmation email copy",
     });
-    await expect(title).toHaveCSS("font-size", "13px");
-    await expect(title).toHaveCSS("line-height", "18px");
+    await expect(title).toHaveCSS("font-size", "15px");
+    await expect(title).toHaveCSS("line-height", "20px");
     await expect(page.locator("body")).toHaveCSS("font-size", "13px");
     const column = page.locator("[data-board-column]").first();
     await expect(column.locator("h2")).toHaveCSS("font-size", "11px");
@@ -59,7 +59,7 @@ test("cards share a compact title scale across surfaces, themes and widths", asy
     await page.goto("/board?view=list");
     await expect(
       page.getByText("Fix confirmation email copy", { exact: true }),
-    ).toHaveCSS("font-size", "13px");
+    ).toHaveCSS("font-size", "15px");
 
     await page.goto("/notes");
     const noteTitle = page.getByRole("heading", {

@@ -94,7 +94,8 @@ selection.
 
 Fields, placeholders, page descriptions, card summaries, search, menus, and
 everyday interface text now share a compact 13px scale across phones and desktop.
-Task, project, and note card titles stay the same size in boards and lists.
+Task titles use a slightly larger 15px size in boards and lists so they stand
+out from their descriptions. Project and note card titles keep their compact size.
 Smaller labels and metadata, consistent
 supporting copy, and a clearer heading hierarchy make the workspace easier
 to scan without oversized fields or cards.

@@ -146,7 +146,7 @@ export function TaskBoardCard({
           </Link>
         </span>
       </div>
-      <h3 className="text-card-title font-semibold text-black dark:text-white">
+      <h3 className="text-task-title font-semibold text-black dark:text-white">
         {task.title}
       </h3>
       {task.description && (

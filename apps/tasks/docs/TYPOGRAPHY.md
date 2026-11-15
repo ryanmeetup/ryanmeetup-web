@@ -8,7 +8,8 @@ the public sites retain their own defaults. Keep browser and text zoom enabled.
 | --- | --- | --- | --- |
 | Page title | `text-page-title` | 20/28px; 28/34px from `sm` | `PageHeader` |
 | Section title | `text-section-title` | 16/24px | Form sections and dashboard panels |
-| Card title | `text-card-title font-semibold` | 13/18px | Tasks, notes, projects, and resource cards |
+| Task title | `text-task-title font-semibold` | 15/20px | Task board cards and list rows |
+| Card title | `text-card-title font-semibold` | 13/18px | Notes, projects, and resource cards |
 | Interface / body | `text-body` or `text-sm` | 13/20px | Fields, placeholders, page and section descriptions, card summaries, menus, buttons, navigation |
 | Secondary detail | `text-secondary` | 12/18px | Short field hints and secondary authorship |
 | Field label | Shared field components | 12/16px | Labels and legends |
