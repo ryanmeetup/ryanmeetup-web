@@ -91,12 +91,12 @@ test("the cart drawer can be emptied without closing it", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Cart with 0 items" })).toBeAttached();
 
   await drawer.getByRole("link", { name: /Apparel/ }).click();
-  await expect(page).toHaveURL(/\/collections\/apparel$/);
+  await expect(page).toHaveURL(/\/apparel$/);
   await expect(drawer).toHaveCount(0);
 });
 
 test("a markdown shows on the card, the product page, and the cart line", async ({ page }) => {
-  await page.goto("/collections/accessories");
+  await page.goto("/accessories");
   const card = page.getByRole("link", { name: /Ryan Society Cap/ });
   await expect(card).toContainText("Sale");
   await expect(card.locator("..").locator("p.bg-price")).toContainText("$26.00 USD, originally $32.00");
@@ -127,24 +127,38 @@ test("collection pages sort by price and newest, and the sort survives a reload"
 });
 
 test("apparel groups listings by garment, t-shirts first, and sorts within each grouping", async ({ page }) => {
-  await page.goto("/collections/apparel");
+  await page.goto("/apparel");
   const main = page.getByRole("main");
   const titles = main.getByRole("heading", { level: 3 });
   await expect(main.getByRole("button", { name: "T-shirts" })).toBeVisible();
   await expect(main.getByRole("button", { name: "Hoodies & sweatshirts" })).toBeVisible();
-  // A grouping belongs to this page, so it has no collection page to visit.
+  // Each grouping links to its own garment page rather than to a theme collection.
   await expect(main.getByRole("link", { name: "View collection" })).toHaveCount(0);
+  await expect(main.getByRole("link", { name: "Shop all t-shirts" })).toHaveAttribute("href", "/apparel/t-shirts");
   await expect(titles).toHaveText(["Official Ryan Meetup Tee", "Name Tag Shirt", "Hello, My Name Is Ryan Sweatshirt"]);
 
   // A grouped listing is as new as its newest design.
-  await page.goto("/collections/apparel?sort=newest");
+  await page.goto("/apparel?sort=newest");
   await expect(titles).toHaveText(["Name Tag Shirt", "Official Ryan Meetup Tee", "Hello, My Name Is Ryan Sweatshirt"]);
 });
 
-test("retired garment collections redirect to their grouping", async ({ page }) => {
+test("retired garment collections and the old department URLs redirect to the top level", async ({ page }) => {
   await page.goto("/collections/hoodies");
-  await expect(page).toHaveURL(/\/collections\/apparel#hoodies$/);
-  await expect(page.locator("#hoodies")).toBeInViewport();
+  await expect(page).toHaveURL(/\/apparel\/hoodies$/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Hoodies & sweatshirts");
+  await page.goto("/collections/accessories/pins");
+  await expect(page).toHaveURL(/\/accessories\/pins$/);
+  await page.goto("/collections/apparel");
+  await expect(page).toHaveURL(/\/apparel$/);
+});
+
+test("a garment page lists only its garment under a department breadcrumb", async ({ page }) => {
+  await page.goto("/apparel/t-shirts");
+  const main = page.getByRole("main");
+  await expect(page.getByRole("navigation", { name: "Breadcrumb" }).getByRole("listitem")).toHaveText([/^Store/, /^Apparel/, /^T-shirts/]);
+  await expect(main.getByRole("heading", { level: 3 })).toHaveText(["Official Ryan Meetup Tee", "Name Tag Shirt"]);
+  await main.getByRole("link", { name: /Ryan Meetup Tee/ }).first().click();
+  await expect(page.getByRole("navigation", { name: "Breadcrumb" }).getByRole("listitem")).toHaveText([/^Store/, /^Apparel/, /^T-shirts/, "Official Ryan Meetup Tee"]);
 });
 
 // Adding to the cart opens the drawer over the page; close it before going on.
@@ -341,7 +355,7 @@ test("the home page opens doors to collections, spotlights one listing, and keep
   const main = page.getByRole("main");
   const lanes = main.getByRole("region", { name: "Pick your Ryan lane" });
   await expect(lanes.getByRole("listitem")).toHaveCount(3);
-  await expect(lanes.getByRole("link", { name: /Apparel/ })).toHaveAttribute("href", "/collections/apparel");
+  await expect(lanes.getByRole("link", { name: /Apparel/ })).toHaveAttribute("href", "/apparel");
 
   const spotlight = main.getByRole("region", { name: "New arrival" });
   await expect(spotlight.getByRole("heading", { name: "Name Tag Shirt" })).toBeVisible();
@@ -420,7 +434,7 @@ test("customer can read about the store and get back to shopping", async ({ page
   await expect(page).toHaveURL(/\/collections\/all$/);
 });
 
-test("apparel and accessories are header links, and shop all sits in the collections menu", async ({ page }) => {
+test("apparel, accessories, and collections are header menus ending in shop all", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/about");
   const mainNavigation = page.getByRole("navigation", { name: "Main navigation" });
@@ -429,21 +443,23 @@ test("apparel and accessories are header links, and shop all sits in the collect
   await mainNavigation.getByRole("button", { name: "Collections" }).hover();
   await expect(page.getByRole("link", { name: "Shop all" })).toHaveAttribute("href", "/collections/all");
   await expect(page.getByRole("link", { name: /RY-D’s/ })).toHaveAttribute("href", "/collections/ryd");
-  await mainNavigation.getByRole("link", { name: "Apparel" }).click();
-  await expect(page).toHaveURL(/\/collections\/apparel$/);
-  await expect(mainNavigation.getByRole("link", { name: "Apparel" })).toHaveAttribute("aria-current", "page");
+  await page.mouse.move(0, 0);
+  await mainNavigation.getByRole("button", { name: "Apparel" }).hover();
+  await expect(page.getByRole("link", { name: /^Hats/ })).toHaveAttribute("href", "/apparel/hats");
+  await page.getByRole("link", { name: "Shop all apparel" }).click();
+  await expect(page).toHaveURL(/\/apparel$/);
 
   // Close the desktop popover before switching to the mobile navigation.
   await page.mouse.move(0, 0);
-  await mainNavigation.getByRole("button", { name: "Collections" }).press("Escape");
+  await mainNavigation.getByRole("button", { name: "Apparel" }).press("Escape");
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("button", { name: "Open navigation" }).click();
   const mobileNavigation = page.getByRole("navigation", { name: "Mobile navigation" });
   const toggle = mobileNavigation.getByRole("button", { name: /^Collections/ });
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
-  await expect(mobileNavigation.getByRole("link", { name: "Shop all" })).toBeHidden();
+  await expect(mobileNavigation.getByRole("link", { name: "Shop all", exact: true })).toBeHidden();
   await toggle.click();
-  await mobileNavigation.getByRole("link", { name: "Shop all" }).click();
+  await mobileNavigation.getByRole("link", { name: "Shop all", exact: true }).click();
   await expect(page).toHaveURL(/\/collections\/all$/);
   await expect(mobileNavigation).toBeHidden();
 
@@ -454,12 +470,12 @@ test("apparel and accessories are header links, and shop all sits in the collect
 
 test("product breadcrumbs name the page the customer came from", async ({ page }) => {
   const breadcrumb = page.getByRole("navigation", { name: "Breadcrumb" });
-  await page.goto("/collections/apparel");
+  await page.goto("/apparel");
   await page.getByRole("main").getByRole("link", { name: /Ryan Meetup Tee/ }).first().click();
   await expect(page).toHaveURL(/\/products\/ryan-meetup-tee\?(.+&)?from=apparel/);
   await expect(breadcrumb.getByRole("listitem")).toHaveText([/^Store/, /^Apparel/, "Official Ryan Meetup Tee"]);
   await breadcrumb.getByRole("link", { name: "Apparel" }).click();
-  await expect(page).toHaveURL(/\/collections\/apparel$/);
+  await expect(page).toHaveURL(/\/apparel$/);
 
   await page.goto("/");
   await page.getByRole("main").getByRole("link", { name: /Ryan Meetup Tee/ }).first().click();
@@ -474,9 +490,13 @@ test("product breadcrumbs name the page the customer came from", async ({ page }
 test("store navigation and breadcrumbs use icons", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/products/ryan-meetup-tee");
+  // About and Contact are links; Apparel, Accessories, and Collections are menus.
   await expect(
     page.getByRole("navigation", { name: "Main navigation" }).locator("a svg"),
-  ).toHaveCount(4);
+  ).toHaveCount(2);
+  await expect(
+    page.getByRole("navigation", { name: "Main navigation" }).locator("button svg:first-child"),
+  ).toHaveCount(3);
   await expect(
     page.getByRole("navigation", { name: "Breadcrumb" }).locator("li svg"),
   ).toHaveCount(2);
@@ -491,7 +511,7 @@ test("store navigation and breadcrumbs use icons", async ({ page }) => {
     page
       .getByRole("navigation", { name: "Mobile navigation" })
       .locator("a svg"),
-  ).toHaveCount(6); // Four links, RY-D’s, and Shop all
+  ).toHaveCount(15); // About and Contact, plus every menu link: 5 apparel, 6 accessories, RY-D’s, and Shop all
   await page.screenshot({
     path: "/private/tmp/store-mobile-navigation.png",
     fullPage: false,

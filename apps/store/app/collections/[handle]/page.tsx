@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { Breadcrumbs, SectionHeader } from "@ryanmeetup/ui";
 import { CollectionGrid } from "@/components/collection-grid";
+import { isDepartment } from "@/lib/catalog-collections";
 import { decodeRouteHandle, normalizeHandle } from "@/lib/handles";
 import { buildPageMetadata, DEFAULT_IMAGE, toMetadataImage, toMetaDescription } from "@/lib/metadata";
 import { getStoreCollectionIcon, StoreHomeIcon } from "@/lib/navigation";
@@ -10,7 +11,8 @@ import { getCollection, getCollections } from "@/lib/shopify";
 type Props = { params: Promise<{ handle: string }> };
 
 export async function generateStaticParams() {
-  return (await getCollections()).map((collection) => ({ handle: collection.handle }));
+  // Apparel and Accessories have their own top-level pages; next.config redirects here.
+  return (await getCollections()).filter(({ handle }) => !isDepartment(handle)).map(({ handle }) => ({ handle }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

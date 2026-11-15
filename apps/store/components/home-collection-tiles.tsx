@@ -3,6 +3,7 @@ import { FiArrowRight } from "react-icons/fi";
 import { getStoreCollectionIcon } from "@/lib/navigation";
 import { MediaCard } from "./media-card";
 import type { HomeCollectionTile } from "@/lib/shopify";
+import { getCollectionPath } from "@/lib/catalog-collections";
 
 /** Doorways into each collection rather than its products, so the home page stays a front door. */
 // Columns come from the caller so the tiles share the best sellers' grid on the home page.
@@ -12,7 +13,7 @@ export function HomeCollectionTiles({ tiles, className = "" }: { tiles: HomeColl
       {tiles.map(({ collection, image, total }) => (
         <li key={collection.id}>
           <MediaCard
-            href={`/collections/${collection.handle}`}
+            href={getCollectionPath(collection.handle)}
             media={image ? (
               <Image src={image.url} alt="" fill sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw" className="object-contain" />
             ) : (

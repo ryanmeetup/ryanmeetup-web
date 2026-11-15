@@ -5,7 +5,7 @@ import { useQueryParamState } from "@ryanmeetup/hooks";
 import { AnchorNav, AnimatedCollapse, Button, DropdownSelect, EmptyState, SectionHeader } from "@ryanmeetup/ui";
 import { FiArrowRight, FiChevronDown } from "react-icons/fi";
 import type { CatalogSections, CollectionSummary, ProductListing } from "@/lib/types";
-import { collectionHeading } from "@/lib/catalog-collections";
+import { collectionHeading, getCollectionPath } from "@/lib/catalog-collections";
 import { getGarmentPath } from "@/lib/garments";
 import { getGarmentIcon } from "@/lib/navigation";
 import { defaultSort, parseSort, sortListings, sortOptions } from "@/lib/sort";
@@ -135,7 +135,7 @@ function CollapsibleCollection({ from, collection, grouping = false, products, e
         description={collection ? collection.description || undefined : "Everything else on the shelf."}
         meta={`${products.length} item${products.length === 1 ? "" : "s"}`}
         actions={collection && (
-          <Button.Link href={grouping ? getGarmentPath(from, collection.handle) : `/collections/${collection.handle}`} size="md" variant="secondary" className="!w-full sm:!w-auto" rightIcon={<FiArrowRight />}>
+          <Button.Link href={grouping ? getGarmentPath(from, collection.handle) : getCollectionPath(collection.handle)} size="md" variant="secondary" className="!w-full sm:!w-auto" rightIcon={<FiArrowRight />}>
             {grouping ? `Shop all ${collection.title.toLowerCase()}` : "View collection"}
           </Button.Link>
         )}

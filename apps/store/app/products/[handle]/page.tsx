@@ -6,7 +6,7 @@ import { NavSection } from "@/components/nav-section";
 import { ProductDetail } from "@/components/product-detail";
 import { ProductGroupDetail } from "@/components/product-group-detail";
 import { Reviews } from "@/components/reviews";
-import { getProductTypeCollection } from "@/lib/catalog-collections";
+import { getCollectionPath, getProductTypeCollection } from "@/lib/catalog-collections";
 import { buildPageMetadata, DEFAULT_IMAGE, getProductMetaDescription, SITE_URL, toMetadataImage } from "@/lib/metadata";
 import { formatMoney } from "@/lib/money";
 import { findGarment, getGarmentPath } from "@/lib/garments";
@@ -85,7 +85,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
   const breadcrumbs = <Breadcrumbs variant="compact" crumbs={[{ href: "/", title: "Store", icon: <StoreHomeIcon aria-hidden className="shrink-0" /> }, ...originCrumbs, { href: `/products/${product.handle}`, title: product.title, current: true, icon: <StoreProductIcon aria-hidden className="shrink-0" /> }]} />;
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
-      <NavSection href={typeCollection ? `/collections/${typeCollection.handle}` : null} />
+      <NavSection href={typeCollection ? getCollectionPath(typeCollection.handle) : null} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema).replace(/</g, "\\u003c") }} />
       {product.designs ? (
         <ProductGroupDetail title={product.title} handle={product.handle} breadcrumbs={breadcrumbs} designs={product.designs} defaultColor={product.defaultColor} reviewsByProduct={reviewsByProduct} reviewAccount={reviewAccount} />
@@ -108,7 +108,7 @@ async function getOriginCrumbs(from: string | undefined): Promise<Breadcrumb[]> 
   // An unknown handle is dropped rather than trusted as a crumb title.
   const collection = (await getCollections()).find((entry) => entry.handle === handle);
   if (!collection) return [];
-  const crumb = { href: `/collections/${collection.handle}`, title: collection.title, icon: getStoreCollectionIcon(collection.handle) };
+  const crumb = { href: getCollectionPath(collection.handle), title: collection.title, icon: getStoreCollectionIcon(collection.handle) };
   const garment = garmentHandle ? findGarment(handle, garmentHandle) : undefined;
   return garment ? [crumb, { href: getGarmentPath(handle, garment.handle), title: garment.title, icon: getGarmentIcon(handle, garment.handle) }] : [crumb];
 }

@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Breadcrumbs, SectionHeader } from "@ryanmeetup/ui";
 import { CollectionGrid } from "@/components/collection-grid";
-import { getCatalogCollection } from "@/lib/catalog-collections";
+import { getCatalogCollection, getCollectionPath } from "@/lib/catalog-collections";
 import { getGarmentParams, getGarmentPath } from "@/lib/garments";
 import { buildPageMetadata, DEFAULT_IMAGE, toMetadataImage, toMetaDescription } from "@/lib/metadata";
 import { getGarmentIcon, getStoreCollectionIcon, StoreHomeIcon } from "@/lib/navigation";
 import { getGarmentCollection } from "@/lib/shopify";
 
-// One garment grouping of Apparel or Accessories, such as /collections/apparel/hats.
-type Props = { params: Promise<{ handle: string; garment: string }> };
+// One garment grouping of Apparel or Accessories, such as /apparel/hats.
+type Props = { params: Promise<{ department: string; garment: string }> };
 
 export function generateStaticParams() {
   return getGarmentParams();
@@ -18,7 +18,7 @@ export function generateStaticParams() {
 export const dynamicParams = false;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { handle, garment } = await params;
+  const { department: handle, garment } = await params;
   const result = await getGarmentCollection(handle, garment);
   if (!result) return { title: "Collection not found" };
   const { collection } = result;
@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function GarmentPage({ params }: Props) {
-  const { handle, garment } = await params;
+  const { department: handle, garment } = await params;
   const department = getCatalogCollection(handle);
   const result = await getGarmentCollection(handle, garment);
   if (!department || !result) notFound();
@@ -42,7 +42,7 @@ export default async function GarmentPage({ params }: Props) {
         variant="compact"
         crumbs={[
           { href: "/", title: "Store", icon: <StoreHomeIcon aria-hidden className="shrink-0" /> },
-          { href: `/collections/${handle}`, title: department.title, icon: getStoreCollectionIcon(handle) },
+          { href: getCollectionPath(handle), title: department.title, icon: getStoreCollectionIcon(handle) },
           { href: getGarmentPath(handle, garment), title: result.collection.title, current: true, icon: getGarmentIcon(handle, garment) },
         ]}
       />

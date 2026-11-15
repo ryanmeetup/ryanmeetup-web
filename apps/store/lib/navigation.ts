@@ -4,7 +4,7 @@ import { FiInfo, FiMail, FiTag } from "react-icons/fi";
 import { FaAddressCard, FaBaby, FaBagShopping, FaBoxesStacked, FaBurger, FaFlag, FaHeart, FaHouse, FaIdBadge, FaMugHot, FaRecordVinyl, FaShirt, FaStar, FaStore, FaTableCellsLarge, FaThumbtack, FaUsers } from "react-icons/fa6";
 import { PiBaseballCapFill, PiHoodieFill } from "react-icons/pi";
 import type { IconType } from "react-icons";
-import { getCatalogCollection } from "./catalog-collections";
+import { getCatalogCollection, getCollectionPath } from "./catalog-collections";
 import { garmentsByDepartment, getGarmentPath } from "./garments";
 import type { CollectionSummary } from "./types";
 
@@ -89,7 +89,7 @@ export function getCollectionMenuRoutes(collections: StoreMenuCollection[]): Nav
     ...featured,
     ...(shopAll ? [{ ...shopAll, title: "Shop all" }] : []),
   ].map(({ handle, title, description }) => ({
-    href: `/collections/${handle}`,
+    href: getCollectionPath(handle),
     text: title,
     description: description || undefined,
     icon: getStoreCollectionIcon(handle),
@@ -108,7 +108,7 @@ export function getDepartmentMenuRoutes(department: string): NavRoute[] {
       icon: getGarmentIcon(department, handle),
     })),
     {
-      href: `/collections/${department}`,
+      href: getCollectionPath(department),
       text: `Shop all ${page.title.toLowerCase()}`,
       description: page.description,
       icon: getStoreCollectionIcon("all"),

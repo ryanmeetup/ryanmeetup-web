@@ -65,7 +65,7 @@ original variant ID to Shopify's cart and checkout.
 | Concept | What it controls | Example |
 | --- | --- | --- |
 | `listing:` tag | Products sharing it become one listing, titled by the text after `listing:`. | `listing:Name Tag Shirt` → `/products/name-tag-shirt` |
-| Product Type | Which type page lists the product: `Apparel` appears on `/collections/apparel`, `Accessory` on `/collections/accessories`, and every product on `/collections/all`. | Every name tag shirt is `Apparel`. |
+| Product Type | Which type page lists the product: `Apparel` appears on `/apparel`, `Accessory` on `/accessories`, and every product on `/collections/all`. | Every name tag shirt is `Apparel`. |
 | Shopify collection | A manual collection of products, chosen in Shopify. Each one published to the storefront channel gets a home page section and a page at `/collections/<handle>`. | I Heart RY, Name Tag |
 | Product title | The member's Style label: the title with the listing name removed. | `Ryan's Dad Name Tag shirt` in `listing:Name Tag Shirt` reads `Ryan’s Dad`. |
 | Product handle | The member's URL identifier, normally also used in the `design` query parameter. | `ryans-dad-name-tag-shirt` |
@@ -103,9 +103,11 @@ The hero reads “this merch has your name on it”. Below it:
 
 ### Catalog pages and ordering
 
-`/collections/all`, `/collections/apparel`, `/collections/accessories`, and
-`/collections/ryd` are defined in
-[lib/catalog-collections.ts](lib/catalog-collections.ts). Apparel and Accessories
+`/collections/all`, `/apparel`, `/accessories`, and `/collections/ryd` are
+defined in [lib/catalog-collections.ts](lib/catalog-collections.ts). Apparel and
+Accessories are departments, so they live at the top level rather than under
+`/collections`, which is reserved for themes, RY-D’s, and Shop all; build any
+collection link with `getCollectionPath`. Apparel and Accessories
 search by Shopify Product type (`Apparel` or `Accessory`); Shop all has no type
 filter. RY-D’s lists the membership card sold at ryanmeetup.com. These handles
 shadow same-handle Shopify collections.
@@ -120,10 +122,12 @@ Apparel and Accessories split into garment groupings instead, built from each
 product's Shopify standard **Category** in
 [lib/garments.ts](lib/garments.ts): Apparel runs T-shirts, Hoodies &
 sweatshirts, Hats, then Kids; Accessories runs Pins, Bags, Mugs, Home, then
-Flags. Each grouping is a collapsible section anchored by its handle
-(`/collections/apparel#hats`), with no collection page of its own, and sorts
+Flags. Each grouping has its own page (`/apparel/hats`) and a collapsible
+section on its department page anchored by its handle (`/apparel#hats`); sorts
 apply within it. Uncategorized listings fall under **More Ryan goods**.
-`next.config.ts` redirects the retired garment collections to their grouping.
+`next.config.ts` redirects the retired garment collections to their garment page
+and the old `/collections/apparel` and `/collections/accessories` URLs to the
+top level.
 
 Collections are ordered by their best-selling product everywhere they are listed:
 the Collections dropdown, the home page tiles, and the Shop all sections.
@@ -135,7 +139,7 @@ filters also update the popular picks. Other sort choices apply within sections.
 
 The **Apparel** and **Accessories** dropdowns list their page's garment groupings
 from [lib/garments.ts](lib/garments.ts), each with its own page such as
-`/collections/apparel/hats`, then **Shop all** for the whole type page. The type
+`/apparel/hats`, then **Shop all** for the whole type page. The type
 page keeps a section per grouping that links to the same garment page. Give a new grouping an icon in `garmentIcons` in
 [lib/navigation.ts](lib/navigation.ts). The **Collections** dropdown starts with **RY-D’s**, followed by published Shopify theme collections and
 **Shop all**. New Shopify collections appear within five minutes. Give each one

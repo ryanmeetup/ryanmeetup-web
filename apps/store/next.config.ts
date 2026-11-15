@@ -3,14 +3,16 @@ import { reviewPhotoHosts } from "./lib/review-photo-hosts";
 
 const nextConfig: NextConfig = {
   transpilePackages: ["@ryanmeetup/contact", "@ryanmeetup/hooks", "@ryanmeetup/metadata", "@ryanmeetup/ui", "@ryanmeetup/utils"],
-  // Garment collections retired in Shopify now live as garment pages under their department.
+  // Garment collections retired in Shopify now live as garment pages under their
+  // department, and the departments moved from /collections to the top level.
   async redirects() {
     return [
-      { source: "/collections/hats", destination: "/collections/apparel/hats", permanent: true },
-      { source: "/collections/hoodies", destination: "/collections/apparel/hoodies", permanent: true },
-      { source: "/collections/youth", destination: "/collections/apparel/kids", permanent: true },
-      { source: "/collections/toddler", destination: "/collections/apparel/kids", permanent: true },
-      { source: "/collections/flags", destination: "/collections/accessories/flags", permanent: true },
+      { source: "/collections/hats", destination: "/apparel/hats", permanent: true },
+      { source: "/collections/hoodies", destination: "/apparel/hoodies", permanent: true },
+      { source: "/collections/youth", destination: "/apparel/kids", permanent: true },
+      { source: "/collections/toddler", destination: "/apparel/kids", permanent: true },
+      { source: "/collections/flags", destination: "/accessories/flags", permanent: true },
+      { source: "/collections/:department(apparel|accessories)/:garment*", destination: "/:department/:garment*", permanent: true },
     ];
   },
   images: {

@@ -3,6 +3,8 @@ import type { CollectionSummary, Product } from "./types";
 export type CatalogCollection = CollectionSummary & {
   /** Shopify Product type that fills the page; `null` lists every product. */
   productType: string | null;
+  /** A department lives at the top level, as in `/apparel`, rather than under `/collections`. */
+  department?: true;
 };
 
 // Browsing pages built from Shopify's Product type rather than Shopify collections,
@@ -24,6 +26,7 @@ export const catalogCollections: CatalogCollection[] = [
     description: "Wear your first name on your sleeve. Sometimes literally.",
     image: null,
     productType: "Apparel",
+    department: true,
   },
   {
     id: "catalog:accessories",
@@ -32,6 +35,7 @@ export const catalogCollections: CatalogCollection[] = [
     description: "Useful objects with excellent name recognition.",
     image: null,
     productType: "Accessory",
+    department: true,
   },
   {
     id: "catalog:ryd",
@@ -45,6 +49,18 @@ export const catalogCollections: CatalogCollection[] = [
 
 export function getCatalogCollection(handle: string) {
   return catalogCollections.find((collection) => collection.handle === handle);
+}
+
+/** Apparel and Accessories, the departments with top-level pages. */
+export const departments = catalogCollections.filter((collection) => collection.department);
+
+export function isDepartment(handle: string) {
+  return departments.some((collection) => collection.handle === handle);
+}
+
+/** Where a collection lives: `/apparel` for a department, `/collections/<handle>` for the rest. */
+export function getCollectionPath(handle: string) {
+  return isDepartment(handle) ? `/${handle}` : `/collections/${handle}`;
 }
 
 export function getCatalogCollectionSummary({ id, handle, title, description, image }: CatalogCollection): CollectionSummary {

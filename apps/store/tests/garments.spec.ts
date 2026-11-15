@@ -36,8 +36,8 @@ test("department sections follow t-shirts, hoodies, hats, then kids, keeping the
 });
 
 test("every garment has its own page under its department", () => {
-  expect(getGarmentParams()).toContainEqual({ handle: "apparel", garment: "hats" });
-  expect(getGarmentParams()).toContainEqual({ handle: "accessories", garment: "flags" });
-  expect(getGarmentPath("apparel", "kids")).toBe("/collections/apparel/kids");
+  expect(getGarmentParams()).toContainEqual({ department: "apparel", garment: "hats" });
+  expect(getGarmentParams()).toContainEqual({ department: "accessories", garment: "flags" });
+  expect(getGarmentPath("apparel", "kids")).toBe("/apparel/kids");
   expect(findGarment("apparel", "flags")).toBeUndefined();
 });

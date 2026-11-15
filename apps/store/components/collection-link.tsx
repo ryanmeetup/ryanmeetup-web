@@ -1,6 +1,7 @@
 import { Button } from "@ryanmeetup/ui";
 import { FiArrowRight } from "react-icons/fi";
 import type { CollectionSummary } from "@/lib/types";
+import { getCollectionPath } from "@/lib/catalog-collections";
 
 export function CollectionLink({
   collection,
@@ -15,7 +16,7 @@ export function CollectionLink({
 
   return (
     <Button.Link
-      href={`/collections/${collection.handle}`}
+      href={getCollectionPath(collection.handle)}
       aria-label={`${label}: ${collection.title}`}
       variant="ghost"
       size="md"

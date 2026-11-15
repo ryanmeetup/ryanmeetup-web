@@ -1,7 +1,7 @@
 import type { CollectionSection, CollectionSummary, ProductCategory, ProductListing } from "./types";
 
 export type Garment = {
-  /** Its own page under the department, such as `/collections/apparel/hats`, and its anchor on the department page. */
+  /** Its own page under the department, such as `/apparel/hats`, and its anchor on the department page. */
   handle: string;
   title: string;
   description: string;
@@ -33,12 +33,12 @@ export function findGarment(department: string, handle: string) {
 }
 
 export function getGarmentPath(department: string, handle: string) {
-  return `/collections/${department}/${handle}`;
+  return `/${department}/${handle}`;
 }
 
 /** Every department and garment pair that has a page. */
 export function getGarmentParams() {
-  return Object.entries(garmentsByDepartment).flatMap(([handle, garments]) => garments.map(({ handle: garment }) => ({ handle, garment })));
+  return Object.entries(garmentsByDepartment).flatMap(([department, garments]) => garments.map(({ handle: garment }) => ({ department, garment })));
 }
 
 /** A garment shown as a collection, for its page heading and a department section header. */
