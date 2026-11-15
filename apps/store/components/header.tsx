@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { FiChevronDown, FiMenu, FiPackage, FiShoppingBag, FiX } from "react-icons/fi";
 import { AnimatedCollapse, NavMenu, Tooltip, Wordmark } from "@ryanmeetup/ui";
-import { getCollectionMenuRoutes, storeNavigation } from "@/lib/navigation";
+import { getCollectionMenuRoutes, getDepartmentMenuRoutes, storeNavigation } from "@/lib/navigation";
 import type { StoreMenuCollection } from "@/lib/navigation";
 import { useCart } from "./cart-provider";
 import { useNavSection } from "./nav-section";
@@ -20,10 +20,18 @@ export function Header({ collections, accountUrl }: { collections: StoreMenuColl
   const section = useNavSection();
   // A product page sits under its type's link even though its path doesn't match it.
   const isCurrent = (href: string) => pathname === href || section === href;
-  const collectionRoutes = useMemo(() => getCollectionMenuRoutes(collections), [collections]);
-  // Starts expanded on a page in the menu so the mobile menu shows where you are.
-  const [collectionsOpen, setCollectionsOpen] = useState(() =>
-    collectionRoutes.some((route) => route.href === pathname),
+  const currentPath = section ?? pathname;
+  const menuRoutes = useMemo(
+    () => ({
+      apparel: getDepartmentMenuRoutes("apparel"),
+      accessories: getDepartmentMenuRoutes("accessories"),
+      collections: getCollectionMenuRoutes(collections),
+    }),
+    [collections],
+  );
+  // The menu holding the current page starts expanded so the mobile menu shows where you are.
+  const [openMenu, setOpenMenu] = useState<string | null>(
+    () => Object.entries(menuRoutes).find(([, routes]) => routes.some((route) => route.href === currentPath))?.[0] ?? null,
   );
   const { cart, drawerOpen, setDrawerOpen } = useCart();
 
@@ -51,8 +59,8 @@ export function Header({ collections, accountUrl }: { collections: StoreMenuColl
                   key={label}
                   icon={<Icon aria-hidden className="shrink-0" />}
                   title={label}
-                  routes={collectionRoutes}
-                  pathname={pathname}
+                  routes={menuRoutes[item.menu]}
+                  pathname={currentPath}
                 />
               ) : (
                 <Link
@@ -138,9 +146,9 @@ export function Header({ collections, accountUrl }: { collections: StoreMenuColl
               >
                 <button
                   type="button"
-                  aria-expanded={collectionsOpen}
-                  aria-controls="mobile-collections"
-                  onClick={() => setCollectionsOpen((value) => !value)}
+                  aria-expanded={openMenu === item.menu}
+                  aria-controls={`mobile-${item.menu}`}
+                  onClick={() => setOpenMenu((value) => (value === item.menu ? null : item.menu))}
                   className="grid w-full grid-cols-[auto_1fr_auto] items-start gap-3 rounded-xl border border-black/10 bg-white/70 px-3 py-3 text-left text-sm shadow-sm transition hover:border-black/20 hover:bg-black/5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:border-white/15 dark:bg-white/5 dark:hover:border-white/30 dark:hover:bg-white/10 dark:focus-visible:ring-white/40"
                 >
                   <Icon aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
@@ -154,18 +162,18 @@ export function Header({ collections, accountUrl }: { collections: StoreMenuColl
                   </span>
                   <FiChevronDown
                     aria-hidden
-                    className={`mt-0.5 h-4 w-4 transition motion-reduce:transition-none ${collectionsOpen ? "-rotate-180" : ""}`}
+                    className={`mt-0.5 h-4 w-4 transition motion-reduce:transition-none ${openMenu === item.menu ? "-rotate-180" : ""}`}
                   />
                 </button>
-                <AnimatedCollapse id="mobile-collections" open={collectionsOpen}>
+                <AnimatedCollapse id={`mobile-${item.menu}`} open={openMenu === item.menu}>
                   <div className="flex flex-wrap gap-2 px-1.5 pb-1.5 pt-3">
-                    {collectionRoutes.map((route) => (
+                    {menuRoutes[item.menu].map((route) => (
                       <Link
                         key={route.href}
                         href={route.href}
-                        aria-current={pathname === route.href ? "page" : undefined}
+                        aria-current={currentPath === route.href ? "page" : undefined}
                         onClick={() => setOpen(false)}
-                        className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[13px] font-semibold tracking-wide shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/40 ${pathname === route.href ? "border-black/30 bg-black/5 dark:border-white/40 dark:bg-white/10" : "border-black/10 bg-white hover:border-black/20 hover:bg-black/5 dark:border-white/15 dark:bg-white/5 dark:hover:border-white/30 dark:hover:bg-white/10"}`}
+                        className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[13px] font-semibold tracking-wide shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/40 ${currentPath === route.href ? "border-black/30 bg-black/5 dark:border-white/40 dark:bg-white/10" : "border-black/10 bg-white hover:border-black/20 hover:bg-black/5 dark:border-white/15 dark:bg-white/5 dark:hover:border-white/30 dark:hover:bg-white/10"}`}
                       >
                         {route.icon}
                         {route.text}

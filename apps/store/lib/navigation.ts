@@ -1,17 +1,20 @@
 import { createElement } from "react";
 import type { NavRoute } from "@ryanmeetup/ui";
 import { FiInfo, FiMail, FiTag } from "react-icons/fi";
-import { FaAddressCard, FaBoxesStacked, FaBurger, FaHeart, FaIdBadge, FaRecordVinyl, FaShirt, FaStar, FaStore, FaTableCellsLarge, FaUsers } from "react-icons/fa6";
+import { FaAddressCard, FaBaby, FaBagShopping, FaBoxesStacked, FaBurger, FaFlag, FaHeart, FaHouse, FaIdBadge, FaMugHot, FaRecordVinyl, FaShirt, FaStar, FaStore, FaTableCellsLarge, FaThumbtack, FaUsers } from "react-icons/fa6";
+import { PiBaseballCapFill, PiHoodieFill } from "react-icons/pi";
 import type { IconType } from "react-icons";
 import { getCatalogCollection } from "./catalog-collections";
+import { garmentsByDepartment } from "./garments";
 import type { CollectionSummary } from "./types";
 
 export const StoreHomeIcon = FaStore;
 export const StoreCollectionIcon = FaBoxesStacked;
 export const StoreProductIcon = FiTag;
 
-// Apparel and Accessories are standing type pages. The Collections entry opens a menu
-// of the Shopify collections being featured right now, then Shop all.
+// Every shopping entry opens a menu. Apparel and Accessories list the garment groupings
+// on their type page, then the whole page; Collections lists the Shopify collections
+// being featured right now, then Shop all.
 export const storeNavigation = [
   {
     href: "/about",
@@ -20,13 +23,13 @@ export const storeNavigation = [
     icon: FiInfo,
   },
   {
-    href: "/collections/apparel",
+    menu: "apparel",
     label: "Apparel",
     description: "Shirts, sweatshirts, and wearable Ryan pride.",
     icon: FaShirt,
   },
   {
-    href: "/collections/accessories",
+    menu: "accessories",
     label: "Accessories",
     description: "The finishing touches for a fully equipped Ryan.",
     icon: FiTag,
@@ -60,6 +63,20 @@ const collectionIcons: Record<string, IconType> = {
   "limited-edition": FaStar,
 };
 
+// Keyed by garment handle from `garmentsByDepartment`; a new grouping without an entry
+// falls back to its department's icon.
+const garmentIcons: Record<string, IconType> = {
+  "t-shirts": FaShirt,
+  hoodies: PiHoodieFill,
+  hats: PiBaseballCapFill,
+  kids: FaBaby,
+  pins: FaThumbtack,
+  bags: FaBagShopping,
+  mugs: FaMugHot,
+  home: FaHouse,
+  flags: FaFlag,
+};
+
 export type StoreMenuCollection = Pick<CollectionSummary, "handle" | "title" | "description">;
 
 /** RY-D’s and featured Shopify collections, then Shop all; type pages have their own links. */
@@ -77,6 +94,27 @@ export function getCollectionMenuRoutes(collections: StoreMenuCollection[]): Nav
     description: description || undefined,
     icon: getStoreCollectionIcon(handle),
   }));
+}
+
+/** A type page's garment groupings, each linking to its section, then the whole page. */
+export function getDepartmentMenuRoutes(department: string): NavRoute[] {
+  const page = getCatalogCollection(department);
+  if (!page) return [];
+  const fallback = collectionIcons[department] ?? FaBoxesStacked;
+  return [
+    ...(garmentsByDepartment[department] ?? []).map(({ handle, title, description }) => ({
+      href: `/collections/${department}#${handle}`,
+      text: title,
+      description,
+      icon: createElement(garmentIcons[handle] ?? fallback, { "aria-hidden": true, className: "shrink-0" }),
+    })),
+    {
+      href: `/collections/${department}`,
+      text: `Shop all ${page.title.toLowerCase()}`,
+      description: page.description,
+      icon: getStoreCollectionIcon("all"),
+    },
+  ];
 }
 
 export function getStoreCollectionIcon(handle: string) {

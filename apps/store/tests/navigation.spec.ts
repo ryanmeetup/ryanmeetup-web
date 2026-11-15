@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { FaBoxesStacked } from "react-icons/fa6";
-import { getCollectionMenuRoutes, getStoreCollectionIcon } from "../lib/navigation";
+import { getCollectionMenuRoutes, getDepartmentMenuRoutes, getStoreCollectionIcon } from "../lib/navigation";
 
 const collection = (handle: string, title: string, description = "") => ({ handle, title, description });
 
@@ -33,4 +33,25 @@ test("each current collection has its own icon, and a new one falls back to the 
   expect(new Set(handles.map(iconFor)).size).toBe(handles.length);
   expect(iconFor("next-big-drop")).toBe(FaBoxesStacked);
   expect(handles.map(iconFor)).not.toContain(FaBoxesStacked);
+});
+
+test("the apparel and accessories menus link each garment grouping on their page, then the whole page", () => {
+  expect(getDepartmentMenuRoutes("apparel").map(({ href, text }) => ({ href, text }))).toEqual([
+    { href: "/collections/apparel#t-shirts", text: "T-shirts" },
+    { href: "/collections/apparel#hoodies", text: "Hoodies & sweatshirts" },
+    { href: "/collections/apparel#hats", text: "Hats" },
+    { href: "/collections/apparel#kids", text: "Kids" },
+    { href: "/collections/apparel", text: "Shop all apparel" },
+  ]);
+  expect(getDepartmentMenuRoutes("accessories").map(({ href }) => href)).toEqual([
+    "/collections/accessories#pins",
+    "/collections/accessories#bags",
+    "/collections/accessories#mugs",
+    "/collections/accessories#home",
+    "/collections/accessories#flags",
+    "/collections/accessories",
+  ]);
+  const icons = getDepartmentMenuRoutes("accessories").map(({ icon }) => (icon as { type: unknown }).type);
+  expect(new Set(icons).size).toBe(icons.length);
+  expect(getDepartmentMenuRoutes("not-a-department")).toEqual([]);
 });
