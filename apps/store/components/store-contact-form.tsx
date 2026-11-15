@@ -36,11 +36,12 @@ const initialFields: StoreContactFields = {
   message: "",
 };
 
+// All sales are final, so refunds are never offered as an option. Exceptions still
+// reach us through "Damaged or incorrect item", "Something else", and the message.
 const topics = [
   { label: "Order status", value: "order-status" },
   { label: "Change or cancel an order", value: "change-order" },
   { label: "Damaged or incorrect item", value: "item-problem" },
-  { label: "Refund question", value: "return-refund" },
   { label: "Product or sizing question", value: "product-question" },
   { label: "Something else", value: "other" },
 ];
@@ -49,7 +50,6 @@ const resolutions = [
   { label: "Information or an update", value: "information" },
   { label: "Change my order", value: "change" },
   { label: "Replacement item", value: "replacement" },
-  { label: "A refund", value: "return-refund" },
   { label: "Not sure yet", value: "unsure" },
 ];
 

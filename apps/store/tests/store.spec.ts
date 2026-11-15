@@ -358,6 +358,13 @@ test("customer can open store support and enter order details", async ({
   await expect(
     page.getByText("Required fields are marked *", { exact: true }),
   ).toHaveCount(0);
+  // All sales are final: refunds are handled case by case, never offered as a choice.
+  for (const field of ["What can we help with?", "Preferred resolution"]) {
+    await page.getByLabel(new RegExp(`^${field.replace("?", "\\?")}`)).click();
+    await expect(page.getByRole("option").first()).toBeVisible();
+    await expect(page.getByRole("option", { name: /refund/i })).toHaveCount(0);
+    await page.keyboard.press("Escape");
+  }
   await page.getByLabel("First name").fill("Ryan");
   await page.getByLabel("Order number").fill("RM-1234");
   await expect(
