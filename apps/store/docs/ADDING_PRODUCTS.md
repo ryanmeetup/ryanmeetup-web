@@ -167,10 +167,11 @@ Nothing else is needed.
 | | Hoodies & Sweatshirts | Hoodies, Sweatshirts |
 | | Hats | Anything under Hats: Baseball Caps, Beanies, … |
 | | Kids | Anything under Baby & Children's Clothing |
-| Accessories | Pins | Lapel Pins, Pinback Buttons |
+| Accessories | RY-Ds | The RY-D membership card, sold at ryanmeetup.com |
+| | Pins | Lapel Pins, Pinback Buttons |
 | | Bags | Anything under Luggage & Bags |
 | | Mugs | Anything under Drinkware |
-| | Home | Door Mats |
+| | Home Goods | Door Mats |
 | | Flags | Anything under Flags & Windsocks |
 
 Kids sizes go under Kids even when they are hoodies or shirts. A product whose

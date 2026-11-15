@@ -12,6 +12,8 @@ const nextConfig: NextConfig = {
       { source: "/collections/youth", destination: "/apparel/kids", permanent: true },
       { source: "/collections/toddler", destination: "/apparel/kids", permanent: true },
       { source: "/collections/flags", destination: "/accessories/flags", permanent: true },
+      { source: "/accessories/home", destination: "/accessories/home-goods", permanent: true },
+      { source: "/accessories/ryd", destination: "/collections/ryd", permanent: true },
       { source: "/collections/:department(apparel|accessories)/:garment*", destination: "/:department/:garment*", permanent: true },
     ];
   },

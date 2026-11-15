@@ -511,7 +511,7 @@ test("store navigation and breadcrumbs use icons", async ({ page }) => {
     page
       .getByRole("navigation", { name: "Mobile navigation" })
       .locator("a svg"),
-  ).toHaveCount(15); // About and Contact, plus every menu link: 5 apparel, 6 accessories, RY-Ds, and Shop All
+  ).toHaveCount(16); // About and Contact, plus every menu link: 5 apparel, 7 accessories, RY-Ds, and Shop All
   await page.screenshot({
     path: "/private/tmp/store-mobile-navigation.png",
     fullPage: false,

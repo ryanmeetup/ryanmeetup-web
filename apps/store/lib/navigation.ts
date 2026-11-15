@@ -73,7 +73,8 @@ const garmentIcons: Record<string, IconType> = {
   pins: FaThumbtack,
   bags: FaBagShopping,
   mugs: FaMugHot,
-  home: FaHouse,
+  ryd: FaAddressCard,
+  "home-goods": FaHouse,
   flags: FaFlag,
 };
 

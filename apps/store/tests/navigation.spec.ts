@@ -44,10 +44,11 @@ test("the apparel and accessories menus link each garment page, then the whole t
     { href: "/apparel", text: "Shop All Apparel" },
   ]);
   expect(getDepartmentMenuRoutes("accessories").map(({ href }) => href)).toEqual([
+    "/collections/ryd",
     "/accessories/pins",
     "/accessories/bags",
     "/accessories/mugs",
-    "/accessories/home",
+    "/accessories/home-goods",
     "/accessories/flags",
     "/accessories",
   ]);

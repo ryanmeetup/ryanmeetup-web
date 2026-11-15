@@ -121,10 +121,12 @@ Shopify collections are themes (I ❤️ RY, Not A Cult, …), never kinds of pr
 Apparel and Accessories split into garment groupings instead, built from each
 product's Shopify standard **Category** in
 [lib/garments.ts](lib/garments.ts): Apparel runs T-Shirts, Hoodies &
-sweatshirts, Hats, then Kids; Accessories runs Pins, Bags, Mugs, Home, then
-Flags. Each grouping has its own page (`/apparel/hats`) and a collapsible
-section on its department page anchored by its handle (`/apparel#hats`); sorts
-apply within it. Uncategorized listings fall under **More Ryan Goods**.
+Sweatshirts, Hats, then Kids; Accessories runs RY-Ds, Pins, Bags, Mugs, Home
+Goods, then Flags. Each grouping has its own page (`/apparel/hats`) and a
+collapsible section on its department page anchored by its handle
+(`/apparel#hats`); sorts apply within it. RY-Ds is placed by listing handle,
+since the membership card has no Shopify category, and links to
+`/collections/ryd` instead of a page of its own. Uncategorized listings fall under **More Ryan Goods**.
 `next.config.ts` redirects the retired garment collections to their garment page
 and the old `/collections/apparel` and `/collections/accessories` URLs to the
 top level.

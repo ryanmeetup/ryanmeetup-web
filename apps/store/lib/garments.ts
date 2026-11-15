@@ -1,3 +1,4 @@
+import { getCollectionPath } from "./catalog-collections";
 import type { CollectionSection, CollectionSummary, ProductCategory, ProductListing } from "./types";
 
 export type Garment = {
@@ -7,6 +8,10 @@ export type Garment = {
   description: string;
   /** Shopify standard-taxonomy names, matched against the category or any of its ancestors. */
   categories: string[];
+  /** Listing handles placed here whatever their category, such as an external listing with none. */
+  listings?: string[];
+  /** An existing collection page that stands in for this grouping's own page. */
+  collection?: string;
 };
 
 // Groupings inside the Apparel and Accessories pages, built from each product's Shopify
@@ -20,10 +25,11 @@ export const garmentsByDepartment: Record<string, Garment[]> = {
     { handle: "kids", title: "Kids", description: "Youth, toddler, and baby sizes for Ryans in training.", categories: ["Baby & Children's Clothing"] },
   ],
   accessories: [
+    { handle: "ryd", title: "RY-Ds", description: "Your official Ryan identification, made just for you.", categories: [], listings: ["ryd"], collection: "ryd" },
     { handle: "pins", title: "Pins", description: "Small, mighty, and very Ryan.", categories: ["Brooches & Lapel Pins", "Pinback Buttons"] },
     { handle: "bags", title: "Bags", description: "Carry your stuff and your name.", categories: ["Luggage & Bags"] },
     { handle: "mugs", title: "Mugs", description: "Morning coffee with name recognition.", categories: ["Drinkware"] },
-    { handle: "home", title: "Home", description: "Ryan-proof your front door.", categories: ["Door Mats"] },
+    { handle: "home-goods", title: "Home Goods", description: "Ryan-proof your front door.", categories: ["Door Mats"] },
     { handle: "flags", title: "Flags", description: "Fly the official colors.", categories: ["Flags & Windsocks"] },
   ],
 };
@@ -32,13 +38,15 @@ export function findGarment(department: string, handle: string) {
   return garmentsByDepartment[department]?.find((garment) => garment.handle === handle);
 }
 
+/** A garment's page under its department, or the collection that stands in for it, as RY-Ds does. */
 export function getGarmentPath(department: string, handle: string) {
-  return `/${department}/${handle}`;
+  const collection = findGarment(department, handle)?.collection;
+  return collection ? getCollectionPath(collection) : `/${department}/${handle}`;
 }
 
-/** Every department and garment pair that has a page. */
+/** Every department and garment pair with a page of its own. */
 export function getGarmentParams() {
-  return Object.entries(garmentsByDepartment).flatMap(([department, garments]) => garments.map(({ handle: garment }) => ({ department, garment })));
+  return Object.entries(garmentsByDepartment).flatMap(([department, garments]) => garments.flatMap(({ handle: garment, collection }) => (collection ? [] : [{ department, garment }])));
 }
 
 /** A garment shown as a collection, for its page heading and a department section header. */
@@ -53,8 +61,10 @@ function categoryNames(category: ProductCategory | null | undefined) {
   return category ? [category.name, ...category.ancestors.map(({ name }) => name)] : [];
 }
 
-export function getGarment(department: string, listing: Pick<ProductListing, "category">) {
+export function getGarment(department: string, listing: Pick<ProductListing, "category" | "handle">) {
   const garments = garmentsByDepartment[department] ?? [];
+  const named = garments.find((garment) => garment.listings?.includes(listing.handle));
+  if (named) return named;
   const names = categoryNames(listing.category);
   const ordered = [...garments].sort((a, b) => Number(matchPriority.includes(b.handle)) - Number(matchPriority.includes(a.handle)));
   return ordered.find((garment) => garment.categories.some((name) => names.includes(name)));

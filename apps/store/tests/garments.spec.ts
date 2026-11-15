@@ -18,7 +18,7 @@ const card = listing("ryd", []);
 
 test("garments come from the category or any ancestor, with kids sizes ahead of the garment", () => {
   expect([tee, hoodie, activeHoodie, cap, beanie, youthHoodie, bodysuit, polo].map((item) => getGarment("apparel", item)?.handle)).toEqual(["t-shirts", "hoodies", "hoodies", "hats", "hats", "kids", "kids", undefined]);
-  expect([flag, pin, card].map((item) => getGarment("accessories", item)?.handle)).toEqual(["flags", "pins", undefined]);
+  expect([flag, pin, card].map((item) => getGarment("accessories", item)?.handle)).toEqual(["flags", "pins", "ryd"]);
   expect(getGarment("all", tee)).toBeUndefined();
 });
 
@@ -31,7 +31,7 @@ test("department sections follow t-shirts, hoodies, hats, then kids, keeping the
     ["Kids", ["youth-hoodie"]],
   ]);
   expect(grouped?.more.map(({ handle }) => handle)).toEqual(["polo"]);
-  expect(sectionByGarment("accessories", [flag, pin])?.sections.map(({ collection }) => collection.handle)).toEqual(["pins", "flags"]);
+  expect(sectionByGarment("accessories", [flag, pin, card])?.sections.map(({ collection }) => collection.handle)).toEqual(["ryd", "pins", "flags"]);
   expect(sectionByGarment("i-heart-ry", [tee])).toBeNull();
 });
 
@@ -40,4 +40,7 @@ test("every garment has its own page under its department", () => {
   expect(getGarmentParams()).toContainEqual({ department: "accessories", garment: "flags" });
   expect(getGarmentPath("apparel", "kids")).toBe("/apparel/kids");
   expect(findGarment("apparel", "flags")).toBeUndefined();
+  // RY-Ds already has a collection page, so its grouping links there instead.
+  expect(getGarmentPath("accessories", "ryd")).toBe("/collections/ryd");
+  expect(getGarmentParams()).not.toContainEqual({ department: "accessories", garment: "ryd" });
 });
