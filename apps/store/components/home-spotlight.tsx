@@ -19,41 +19,40 @@ export function HomeSpotlight({ spotlight: { listing, label, description: collec
   const external = listing.externalUrl ? { target: "_blank", rel: "noopener noreferrer" } : {};
 
   return (
-    <Card size="none" className="overflow-hidden bg-white/65 dark:bg-white/5">
-      <div className="grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-        <div className="relative aspect-square bg-black/5 lg:aspect-auto lg:min-h-[32rem] dark:bg-white/5">
-          {image ? (
-            <Image
-              src={image.url}
-              alt={image.altText || listing.title}
-              fill
-              sizes="(max-width: 1024px) 100vw, 55vw"
-              className={`object-contain ${listing.externalUrl ? "p-10 sm:p-16" : ""}`}
-            />
-          ) : (
-            <div aria-hidden className="grid h-full place-items-center font-cooper text-8xl text-black/10 dark:text-white/10">R</div>
-          )}
-          {sale.onSale && listing.availableForSale && <SaleBadge className="absolute left-4 top-4" />}
+    <Card size="none" className="flex flex-col overflow-hidden bg-white/65 lg:flex-row lg:items-center dark:bg-white/5">
+      <Card size="none" className="relative w-full shrink-0 overflow-hidden lg:w-2/5 lg:max-w-lg">
+        {image ? (
+          <Image
+            src={image.url}
+            alt={image.altText || listing.title}
+            width={image.width || 1024}
+            height={image.height || 1024}
+            sizes="(min-width: 1536px) 512px, (min-width: 1024px) 40vw, 100vw"
+            className={`h-auto w-full ${listing.externalUrl ? "p-10 sm:p-16" : ""}`}
+          />
+        ) : (
+          <div aria-hidden className="grid aspect-square place-items-center font-cooper text-8xl text-black/10 dark:text-white/10">R</div>
+        )}
+        {sale.onSale && listing.availableForSale && <SaleBadge className="absolute left-4 top-4" />}
+      </Card>
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-6 p-6 sm:p-10 xl:p-14">
+        <div>
+          <Kicker>{label}</Kicker>
+          <Heading size="h2" className="mt-3 text-4xl leading-tight sm:text-5xl">{listing.title}</Heading>
+          {description && <Text className="mt-4 text-lg text-black/70 dark:text-white/70">{description}</Text>}
         </div>
-        <div className="flex flex-col justify-center gap-6 border-t border-black/10 p-6 sm:p-10 lg:border-l lg:border-t-0 xl:p-14 dark:border-white/10">
-          <div>
-            <Kicker>{label}</Kicker>
-            <Heading size="h2" className="mt-3 text-4xl leading-tight sm:text-5xl">{listing.title}</Heading>
-            {description && <Text className="mt-4 text-lg text-black/70 dark:text-white/70">{description}</Text>}
-          </div>
-          {designer && (
-            <p className="flex items-center gap-2 text-sm text-black/70 dark:text-white/70">
-              <FiPenTool aria-hidden className="shrink-0 text-nametag" />
-              <span>Designed by <span className="font-semibold text-black dark:text-white">{designer}</span></span>
-            </p>
-          )}
-          <div className="flex flex-col items-start gap-6">
-            <PriceBadge price={listing.priceRange.minVariantPrice} compareAt={sale.compareAt} from={listing.priceVaries} size="lg" />
-            <Button.Link href={href} {...external} size="lg" className="!w-full sm:!w-auto" rightIcon={<FiArrowRight aria-hidden />}>
-              {curated ? "Shop the drop" : "Take a closer look"}
-              {listing.externalUrl && <span className="sr-only"> (opens in a new tab)</span>}
-            </Button.Link>
-          </div>
+        {designer && (
+          <p className="flex items-center gap-2 text-sm text-black/70 dark:text-white/70">
+            <FiPenTool aria-hidden className="shrink-0 text-nametag" />
+            <span>Designed by <span className="font-semibold text-black dark:text-white">{designer}</span></span>
+          </p>
+        )}
+        <div className="flex flex-col items-start gap-6">
+          <PriceBadge price={listing.priceRange.minVariantPrice} compareAt={sale.compareAt} from={listing.priceVaries} size="lg" />
+          <Button.Link href={href} {...external} size="lg" className="!w-full sm:!w-auto" rightIcon={<FiArrowRight aria-hidden />}>
+            {curated ? "Shop the drop" : "Take a closer look"}
+            {listing.externalUrl && <span className="sr-only"> (opens in a new tab)</span>}
+          </Button.Link>
         </div>
       </div>
     </Card>
