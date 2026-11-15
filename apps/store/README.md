@@ -106,10 +106,10 @@ The hero reads “this merch has your name on it”. Below it:
 `/collections/all`, `/apparel`, `/accessories`, and `/collections/ryd` are
 defined in [lib/catalog-collections.ts](lib/catalog-collections.ts). Apparel and
 Accessories are departments, so they live at the top level rather than under
-`/collections`, which is reserved for themes, RY-D’s, and Shop All; build any
+`/collections`, which is reserved for themes, RY-Ds, and Shop All; build any
 collection link with `getCollectionPath`. Apparel and Accessories
 search by Shopify Product type (`Apparel` or `Accessory`); Shop All has no type
-filter. RY-D’s lists the membership card sold at ryanmeetup.com. These handles
+filter. RY-Ds lists the membership card sold at ryanmeetup.com. These handles
 shadow same-handle Shopify collections.
 
 The default **Recommended** order puts matching hand-picked Best Sellers first,
@@ -141,7 +141,7 @@ The **Apparel** and **Accessories** dropdowns list their page's garment grouping
 from [lib/garments.ts](lib/garments.ts), each with its own page such as
 `/apparel/hats`, then **Shop All** for the whole type page. Give a new grouping
 an icon in `garmentIcons` in [lib/navigation.ts](lib/navigation.ts). The
-**Collections** dropdown starts with **RY-D’s**, followed by published Shopify
+**Collections** dropdown starts with **RY-Ds**, followed by published Shopify
 theme collections and **Shop All**. New Shopify collections appear within five minutes. Give each one
 an icon in `collectionIcons` in [lib/navigation.ts](lib/navigation.ts); otherwise
 it uses stacked boxes.

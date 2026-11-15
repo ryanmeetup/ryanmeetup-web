@@ -79,7 +79,7 @@ const garmentIcons: Record<string, IconType> = {
 
 export type StoreMenuCollection = Pick<CollectionSummary, "handle" | "title" | "description">;
 
-/** RY-D’s and featured Shopify collections, then Shop All; type pages have their own links. */
+/** RY-Ds and featured Shopify collections, then Shop All; type pages have their own links. */
 export function getCollectionMenuRoutes(collections: StoreMenuCollection[]): NavRoute[] {
   const shopAll = getCatalogCollection("all");
   const ryd = getCatalogCollection("ryd");

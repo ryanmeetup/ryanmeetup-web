@@ -235,7 +235,7 @@ Its home page tile appears automatically. Tiles, the Collections menu, and the
 sections on Shop All are ordered by sales: the collection holding the store's
 best-selling product comes first. Don't give a collection the handle `all`, `apparel`, `accessories`, or `ryd`;
 those addresses belong to the store's own catalog pages. The Collections
-dropdown always offers RY-D’s at `/collections/ryd`, where the membership card
+dropdown always offers RY-Ds at `/collections/ryd`, where the membership card
 links to its external order page. `frontpage` and `spotlight` are reserved for Best Sellers and Spotlight.
 
 ## Tags

@@ -442,7 +442,7 @@ test("apparel, accessories, and collections are header menus ending in shop all"
   // The shared NavMenu opens on hover, as it does on ryanmeetup.com.
   await mainNavigation.getByRole("button", { name: "Collections" }).hover();
   await expect(page.getByRole("link", { name: "Shop All" })).toHaveAttribute("href", "/collections/all");
-  await expect(page.getByRole("link", { name: /RY-D’s/ })).toHaveAttribute("href", "/collections/ryd");
+  await expect(page.getByRole("link", { name: /RY-Ds/ })).toHaveAttribute("href", "/collections/ryd");
   await page.mouse.move(0, 0);
   await mainNavigation.getByRole("button", { name: "Apparel" }).hover();
   await expect(page.getByRole("link", { name: /^Hats/ })).toHaveAttribute("href", "/apparel/hats");
@@ -511,7 +511,7 @@ test("store navigation and breadcrumbs use icons", async ({ page }) => {
     page
       .getByRole("navigation", { name: "Mobile navigation" })
       .locator("a svg"),
-  ).toHaveCount(15); // About and Contact, plus every menu link: 5 apparel, 6 accessories, RY-D’s, and Shop All
+  ).toHaveCount(15); // About and Contact, plus every menu link: 5 apparel, 6 accessories, RY-Ds, and Shop All
   await page.screenshot({
     path: "/private/tmp/store-mobile-navigation.png",
     fullPage: false,
@@ -547,14 +547,14 @@ for (const viewport of [
   });
 }
 
-test("RY-D’s can be found in the mobile dropdown and ordered from its own page", async ({ page }) => {
+test("RY-Ds can be found in the mobile dropdown and ordered from its own page", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   await page.getByRole("button", { name: "Open navigation" }).click();
   const navigation = page.getByRole("navigation", { name: "Mobile navigation" });
   await navigation.getByRole("button", { name: /^Collections/ }).click();
-  await navigation.getByRole("link", { name: /RY-D’s/ }).click();
+  await navigation.getByRole("link", { name: /RY-Ds/ }).click();
   await expect(page).toHaveURL(/\/collections\/ryd$/);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("RY-D’s");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("RY-Ds");
   await expect(page.getByRole("main").getByRole("link", { name: /RY-D Membership Card/ })).toHaveAttribute("href", "https://ryanmeetup.com/ryd");
 });

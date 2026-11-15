@@ -40,7 +40,7 @@ export const catalogCollections: CatalogCollection[] = [
   {
     id: "catalog:ryd",
     handle: "ryd",
-    title: "RY-D’s",
+    title: "RY-Ds",
     description: "Your official Ryan identification, made just for you.",
     image: null,
     productType: "Membership",

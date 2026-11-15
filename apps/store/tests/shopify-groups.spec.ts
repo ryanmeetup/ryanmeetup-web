@@ -149,7 +149,7 @@ test("type pages split into garment groupings from each product's Shopify catego
 
 test("the type pages lead the collection list, shadow same-handle Shopify collections, and omit the home page collection", async () => {
   mockCatalog();
-  expect((await getCollections()).map((collection) => collection.title)).toEqual(["Collections", "Apparel", "Accessories", "RY-D’s", "Shirts", "Empty"]);
+  expect((await getCollections()).map((collection) => collection.title)).toEqual(["Collections", "Apparel", "Accessories", "RY-Ds", "Shirts", "Empty"]);
 });
 
 test("a collection whose Shopify handle has a heart emoji is served at its heart URL", async () => {
@@ -161,12 +161,12 @@ test("a collection whose Shopify handle has a heart emoji is served at its heart
   expect(await getCollection("i-heart-nothing")).toBeNull();
 });
 
-test("RY-D’s has a standalone collection with a working external order link in live and preview catalogs", async () => {
+test("RY-Ds has a standalone collection with a working external order link in live and preview catalogs", async () => {
   for (const configured of [true, false]) {
     if (!configured) delete process.env.SHOPIFY_STORE_DOMAIN;
     const requests = mockCatalog();
     const page = await getCollection("ryd");
-    expect(page?.collection.title).toBe("RY-D’s");
+    expect(page?.collection.title).toBe("RY-Ds");
     expect(page?.products).toHaveLength(1);
     expect(page?.products[0]).toMatchObject({ handle: "ryd", externalUrl: "https://ryanmeetup.com/ryd" });
     expect(requests).toHaveLength(0);
