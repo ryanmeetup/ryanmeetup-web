@@ -5,10 +5,12 @@ import { Button, Text } from "@ryanmeetup/ui";
 import { FiArrowRight, FiShoppingCart } from "react-icons/fi";
 import { storeNavigation } from "@/lib/navigation";
 
-const startingPoints = storeNavigation.filter(
-  (item): item is Extract<(typeof storeNavigation)[number], { href: string }> =>
-    "href" in item && (item.href === "/collections/apparel" || item.href === "/collections/accessories"),
-);
+// The department menus, Apparel and Accessories, each linking to its whole type page.
+const startingPoints = storeNavigation
+  .filter((item): item is Extract<(typeof storeNavigation)[number], { menu: "apparel" | "accessories" }> =>
+    "menu" in item && (item.menu === "apparel" || item.menu === "accessories"),
+  )
+  .map(({ menu, ...item }) => ({ ...item, href: `/collections/${menu}` }));
 
 /** An empty cart points somewhere worth shopping instead of just saying so. `onNavigate` closes a drawer on the way out. */
 export function EmptyCartPrompt({ onNavigate, className = "" }: { onNavigate?: () => void; className?: string }) {
