@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return buildPageMetadata({
     title: collection.title,
     // Some Shopify collections have no description written yet.
-    description: toMetaDescription(collection.description || `Shop ${collection.title.toLowerCase()} from the official Ryan Meetup store.`),
+    description: toMetaDescription(collection.description || `Shop ${collection.title} from the official Ryan Meetup store.`),
     canonical: `/collections/${collection.handle}`,
     image: image ? toMetadataImage(image, collection.title) : DEFAULT_IMAGE,
   });

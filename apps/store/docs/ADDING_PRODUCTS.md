@@ -21,7 +21,7 @@ what customers see:
 | --- | --- |
 | **Status** and **Sales channels** | Whether the product appears at all. |
 | **Product type** | Whether it appears on the **Apparel** or **Accessories** page. |
-| **Category** | Which grouping it sits in on that page, such as T-shirts, Hats, or Flags. |
+| **Category** | Which grouping it sits in on that page, such as T-Shirts, Hats, or Flags. |
 | **Collections** | Which theme it belongs to, and whether the home page features it. |
 | **`listing:` tag** | Whether it is combined with similar products into one listing with a **Style** dropdown. |
 | **Title** | The product name, and the option name in that Style dropdown. |
@@ -163,8 +163,8 @@ Nothing else is needed.
 
 | Page | Groupings, in order | Categories that land there |
 | --- | --- | --- |
-| Apparel | T-shirts | T-Shirts, Shirts |
-| | Hoodies & sweatshirts | Hoodies, Sweatshirts |
+| Apparel | T-Shirts | T-Shirts, Shirts |
+| | Hoodies & Sweatshirts | Hoodies, Sweatshirts |
 | | Hats | Anything under Hats: Baseball Caps, Beanies, … |
 | | Kids | Anything under Baby & Children's Clothing |
 | Accessories | Pins | Lapel Pins, Pinback Buttons |
@@ -175,7 +175,7 @@ Nothing else is needed.
 
 Kids sizes go under Kids even when they are hoodies or shirts. A product whose
 category matches none of these, such as the polo, appears at the bottom under
-"More Ryan goods". To add a grouping or change the order, ask a developer to
+"More Ryan Goods". To add a grouping or change the order, ask a developer to
 edit [lib/garments.ts](../lib/garments.ts).
 
 **Don't create collections for a kind of product** such as Hats or Hoodies.
@@ -195,7 +195,7 @@ collection's image from Shopify, or its first product's photo when it has none.
 
 - Add **every** product to a theme collection. A product in none of them still
   appears on the Apparel/Accessories pages, but under Collections it falls into
-  a catch-all "More Ryan goods" section at the bottom.
+  a catch-all "More Ryan Goods" section at the bottom.
 - Add products from the product page (**Product organization → Collections**),
   or select several in the **Products** list and use **More actions → Add to
   collection(s)**.
@@ -263,7 +263,7 @@ if they help you; they can also be left off entirely.
 | --- | --- |
 | Product doesn't appear anywhere | Status is Active, it's on the **Ryan Meetup Store Headless** channel, and 5 minutes have passed. |
 | Missing from the Apparel or Accessories page | Product type is exactly `Apparel` or `Accessory`. |
-| Shows under "More Ryan goods" on Collections | It isn't in a theme collection yet. |
+| Shows under "More Ryan Goods" on Collections | It isn't in a theme collection yet. |
 | Shows as its own card instead of joining a listing | It has the `listing:` tag, and the name after `listing:` matches the other products word for word. |
 | Style option shows the whole title | The listing name isn't in the title exactly. Fix the title or the tag so they match. |
 | Two Style options have the same name | Two products in the listing have titles that differ only in the listing name. Make the part after it unique. |

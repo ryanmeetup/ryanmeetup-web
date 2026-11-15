@@ -109,7 +109,7 @@ export function getDepartmentMenuRoutes(department: string): NavRoute[] {
     })),
     {
       href: getCollectionPath(department),
-      text: `Shop all ${page.title.toLowerCase()}`,
+      text: `Shop all ${page.title}`,
       description: page.description,
       icon: getStoreCollectionIcon("all"),
     },

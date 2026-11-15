@@ -120,11 +120,11 @@ gets one card.
 Shopify collections are themes (I ❤️ RY, Not A Cult, …), never kinds of product.
 Apparel and Accessories split into garment groupings instead, built from each
 product's Shopify standard **Category** in
-[lib/garments.ts](lib/garments.ts): Apparel runs T-shirts, Hoodies &
+[lib/garments.ts](lib/garments.ts): Apparel runs T-Shirts, Hoodies &
 sweatshirts, Hats, then Kids; Accessories runs Pins, Bags, Mugs, Home, then
 Flags. Each grouping has its own page (`/apparel/hats`) and a collapsible
 section on its department page anchored by its handle (`/apparel#hats`); sorts
-apply within it. Uncategorized listings fall under **More Ryan goods**.
+apply within it. Uncategorized listings fall under **More Ryan Goods**.
 `next.config.ts` redirects the retired garment collections to their garment page
 and the old `/collections/apparel` and `/collections/accessories` URLs to the
 top level.
@@ -134,7 +134,7 @@ the Collections dropdown, the home page tiles, and the Shop all sections.
 
 Shop all retains its theme collection sections, with up to four **Popular
 picks** above them in the default order. Those picks are removed from the sections
-below. **More Ryan goods** holds products in no theme collection. Type and size
+below. **More Ryan Goods** holds products in no theme collection. Type and size
 filters also update the popular picks. Other sort choices apply within sections.
 
 The **Apparel** and **Accessories** dropdowns list their page's garment groupings

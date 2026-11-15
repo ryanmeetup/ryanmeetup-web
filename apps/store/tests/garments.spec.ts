@@ -25,8 +25,8 @@ test("garments come from the category or any ancestor, with kids sizes ahead of 
 test("department sections follow t-shirts, hoodies, hats, then kids, keeping the given order inside each", () => {
   const grouped = sectionByGarment("apparel", [polo, cap, youthHoodie, hoodie, tee, beanie]);
   expect(grouped?.sections.map(({ collection, products }) => [collection.title, products.map(({ handle }) => handle)])).toEqual([
-    ["T-shirts", ["tee"]],
-    ["Hoodies & sweatshirts", ["hoodie"]],
+    ["T-Shirts", ["tee"]],
+    ["Hoodies & Sweatshirts", ["hoodie"]],
     ["Hats", ["cap", "beanie"]],
     ["Kids", ["youth-hoodie"]],
   ]);

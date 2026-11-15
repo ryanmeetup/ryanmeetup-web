@@ -130,11 +130,11 @@ test("apparel groups listings by garment, t-shirts first, and sorts within each 
   await page.goto("/apparel");
   const main = page.getByRole("main");
   const titles = main.getByRole("heading", { level: 3 });
-  await expect(main.getByRole("button", { name: "T-shirts" })).toBeVisible();
-  await expect(main.getByRole("button", { name: "Hoodies & sweatshirts" })).toBeVisible();
+  await expect(main.getByRole("button", { name: "T-Shirts" })).toBeVisible();
+  await expect(main.getByRole("button", { name: "Hoodies & Sweatshirts" })).toBeVisible();
   // Each grouping links to its own garment page rather than to a theme collection.
   await expect(main.getByRole("link", { name: "View collection" })).toHaveCount(0);
-  await expect(main.getByRole("link", { name: "Shop all t-shirts" })).toHaveAttribute("href", "/apparel/t-shirts");
+  await expect(main.getByRole("link", { name: "Shop all T-Shirts" })).toHaveAttribute("href", "/apparel/t-shirts");
   await expect(titles).toHaveText(["Official Ryan Meetup Tee", "Name Tag Shirt", "Hello, My Name Is Ryan Sweatshirt"]);
 
   // A grouped listing is as new as its newest design.
@@ -145,7 +145,7 @@ test("apparel groups listings by garment, t-shirts first, and sorts within each 
 test("retired garment collections and the old department URLs redirect to the top level", async ({ page }) => {
   await page.goto("/collections/hoodies");
   await expect(page).toHaveURL(/\/apparel\/hoodies$/);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Hoodies & sweatshirts");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Hoodies & Sweatshirts");
   await page.goto("/collections/accessories/pins");
   await expect(page).toHaveURL(/\/accessories\/pins$/);
   await page.goto("/collections/apparel");
@@ -155,10 +155,10 @@ test("retired garment collections and the old department URLs redirect to the to
 test("a garment page lists only its garment under a department breadcrumb", async ({ page }) => {
   await page.goto("/apparel/t-shirts");
   const main = page.getByRole("main");
-  await expect(page.getByRole("navigation", { name: "Breadcrumb" }).getByRole("listitem")).toHaveText([/^Store/, /^Apparel/, /^T-shirts/]);
+  await expect(page.getByRole("navigation", { name: "Breadcrumb" }).getByRole("listitem")).toHaveText([/^Store/, /^Apparel/, /^T-Shirts/]);
   await expect(main.getByRole("heading", { level: 3 })).toHaveText(["Official Ryan Meetup Tee", "Name Tag Shirt"]);
   await main.getByRole("link", { name: /Ryan Meetup Tee/ }).first().click();
-  await expect(page.getByRole("navigation", { name: "Breadcrumb" }).getByRole("listitem")).toHaveText([/^Store/, /^Apparel/, /^T-shirts/, "Official Ryan Meetup Tee"]);
+  await expect(page.getByRole("navigation", { name: "Breadcrumb" }).getByRole("listitem")).toHaveText([/^Store/, /^Apparel/, /^T-Shirts/, "Official Ryan Meetup Tee"]);
 });
 
 // Adding to the cart opens the drawer over the page; close it before going on.
@@ -446,7 +446,7 @@ test("apparel, accessories, and collections are header menus ending in shop all"
   await page.mouse.move(0, 0);
   await mainNavigation.getByRole("button", { name: "Apparel" }).hover();
   await expect(page.getByRole("link", { name: /^Hats/ })).toHaveAttribute("href", "/apparel/hats");
-  await page.getByRole("link", { name: "Shop all apparel" }).click();
+  await page.getByRole("link", { name: "Shop all Apparel" }).click();
   await expect(page).toHaveURL(/\/apparel$/);
 
   // Close the desktop popover before switching to the mobile navigation.

@@ -128,7 +128,7 @@ function CollapsibleCollection({ from, collection, grouping = false, products, e
             onClick={() => setOpen((current) => !current)}
             className="inline-flex cursor-pointer items-center gap-3 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40 dark:focus-visible:ring-white/40"
           >
-            <span id={id}>{collection ? (grouping ? collection.title : collectionHeading(collection.title)) : "More Ryan goods"}</span>
+            <span id={id}>{collection ? (grouping ? collection.title : collectionHeading(collection.title)) : "More Ryan Goods"}</span>
             <FiChevronDown aria-hidden className={`h-5 w-5 shrink-0 text-black/55 transition-transform duration-200 motion-reduce:transition-none dark:text-white/55 ${open ? "-rotate-180" : ""}`} />
           </button>
         }
@@ -136,7 +136,7 @@ function CollapsibleCollection({ from, collection, grouping = false, products, e
         meta={`${products.length} item${products.length === 1 ? "" : "s"}`}
         actions={collection && (
           <Button.Link href={grouping ? getGarmentPath(from, collection.handle) : getCollectionPath(collection.handle)} size="md" variant="secondary" className="!w-full sm:!w-auto" rightIcon={<FiArrowRight />}>
-            {grouping ? `Shop all ${collection.title.toLowerCase()}` : "View collection"}
+            {grouping ? `Shop all ${collection.title}` : "View collection"}
           </Button.Link>
         )}
       />

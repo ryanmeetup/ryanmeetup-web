@@ -11,11 +11,11 @@ export type Garment = {
 
 // Groupings inside the Apparel and Accessories pages, built from each product's Shopify
 // Category rather than Shopify collections, which are reserved for themes. Listed in
-// display order; a product with no matching category falls under "More Ryan goods".
+// display order; a product with no matching category falls under "More Ryan Goods".
 export const garmentsByDepartment: Record<string, Garment[]> = {
   apparel: [
-    { handle: "t-shirts", title: "T-shirts", description: "The everyday uniform.", categories: ["T-Shirts", "Shirts"] },
-    { handle: "hoodies", title: "Hoodies & sweatshirts", description: "Ryan pride for colder days.", categories: ["Hoodies", "Sweatshirts", "Activewear Sweatshirts & Hoodies"] },
+    { handle: "t-shirts", title: "T-Shirts", description: "The everyday uniform.", categories: ["T-Shirts", "Shirts"] },
+    { handle: "hoodies", title: "Hoodies & Sweatshirts", description: "Ryan pride for colder days.", categories: ["Hoodies", "Sweatshirts", "Activewear Sweatshirts & Hoodies"] },
     { handle: "hats", title: "Hats", description: "Caps and beanies for the top of your Ryan.", categories: ["Hats"] },
     { handle: "kids", title: "Kids", description: "Youth, toddler, and baby sizes for Ryans in training.", categories: ["Baby & Children's Clothing"] },
   ],

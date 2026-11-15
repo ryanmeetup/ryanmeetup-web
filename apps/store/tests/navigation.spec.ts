@@ -37,11 +37,11 @@ test("each current collection has its own icon, and a new one falls back to the 
 
 test("the apparel and accessories menus link each garment page, then the whole type page", () => {
   expect(getDepartmentMenuRoutes("apparel").map(({ href, text }) => ({ href, text }))).toEqual([
-    { href: "/apparel/t-shirts", text: "T-shirts" },
-    { href: "/apparel/hoodies", text: "Hoodies & sweatshirts" },
+    { href: "/apparel/t-shirts", text: "T-Shirts" },
+    { href: "/apparel/hoodies", text: "Hoodies & Sweatshirts" },
     { href: "/apparel/hats", text: "Hats" },
     { href: "/apparel/kids", text: "Kids" },
-    { href: "/apparel", text: "Shop all apparel" },
+    { href: "/apparel", text: "Shop all Apparel" },
   ]);
   expect(getDepartmentMenuRoutes("accessories").map(({ href }) => href)).toEqual([
     "/accessories/pins",
