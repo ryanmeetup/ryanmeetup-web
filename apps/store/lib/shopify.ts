@@ -1,7 +1,7 @@
 import { catalogCollections, getCatalogCollection, getCatalogCollectionSummary, getCatalogProductQuery, isInCatalogCollection } from "./catalog-collections";
 import { demoCollections, demoProducts } from "./demo-data";
 import { withExternalListings } from "./external-listings";
-import { sectionByGarment } from "./garments";
+import { findGarment, getGarment, getGarmentSummary, sectionByGarment } from "./garments";
 import { normalizeHandle } from "./handles";
 import { createProductGroup, getListingHandles, getProductGroupForMember, groupProductListings, resolveListingHandle, resolveProductHandle } from "./product-groups";
 import { sortOptionValues } from "./product-options";
@@ -429,6 +429,14 @@ export async function getCollection(handle: string): Promise<ProductPage | null>
   const popularHandles = memberships.find((collection) => collection.handle === featuredCollectionHandle)?.products.edges.map(({ node }) => node.handle) ?? [];
   const products = recommendListings(page.products, popularHandles);
   return { ...page, products, ...sectionByGarment(handle, products) };
+}
+
+/** One garment grouping of a department page, such as Hats under Apparel, in the same order. */
+export async function getGarmentCollection(department: string, handle: string): Promise<ProductPage | null> {
+  const garment = findGarment(department, handle);
+  const page = garment ? await getCollection(department) : null;
+  if (!garment || !page) return null;
+  return { collection: getGarmentSummary(garment), products: page.products.filter((listing) => getGarment(department, listing)?.handle === handle) };
 }
 
 async function loadCollection(handle: string, memberships: CollectionMembership[]): Promise<ProductPage | null> {

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { getGarment, sectionByGarment } from "../lib/garments";
+import { findGarment, getGarment, getGarmentParams, getGarmentPath, sectionByGarment } from "../lib/garments";
 import type { ProductListing } from "../lib/types";
 
 // Category paths as Shopify's standard taxonomy reports them for the live catalog.
@@ -33,4 +33,11 @@ test("department sections follow t-shirts, hoodies, hats, then kids, keeping the
   expect(grouped?.more.map(({ handle }) => handle)).toEqual(["polo"]);
   expect(sectionByGarment("accessories", [flag, pin])?.sections.map(({ collection }) => collection.handle)).toEqual(["pins", "flags"]);
   expect(sectionByGarment("i-heart-ry", [tee])).toBeNull();
+});
+
+test("every garment has its own page under its department", () => {
+  expect(getGarmentParams()).toContainEqual({ handle: "apparel", garment: "hats" });
+  expect(getGarmentParams()).toContainEqual({ handle: "accessories", garment: "flags" });
+  expect(getGarmentPath("apparel", "kids")).toBe("/collections/apparel/kids");
+  expect(findGarment("apparel", "flags")).toBeUndefined();
 });

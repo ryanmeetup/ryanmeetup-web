@@ -35,20 +35,20 @@ test("each current collection has its own icon, and a new one falls back to the 
   expect(handles.map(iconFor)).not.toContain(FaBoxesStacked);
 });
 
-test("the apparel and accessories menus link each garment grouping on their page, then the whole page", () => {
+test("the apparel and accessories menus link each garment page, then the whole type page", () => {
   expect(getDepartmentMenuRoutes("apparel").map(({ href, text }) => ({ href, text }))).toEqual([
-    { href: "/collections/apparel#t-shirts", text: "T-shirts" },
-    { href: "/collections/apparel#hoodies", text: "Hoodies & sweatshirts" },
-    { href: "/collections/apparel#hats", text: "Hats" },
-    { href: "/collections/apparel#kids", text: "Kids" },
+    { href: "/collections/apparel/t-shirts", text: "T-shirts" },
+    { href: "/collections/apparel/hoodies", text: "Hoodies & sweatshirts" },
+    { href: "/collections/apparel/hats", text: "Hats" },
+    { href: "/collections/apparel/kids", text: "Kids" },
     { href: "/collections/apparel", text: "Shop all apparel" },
   ]);
   expect(getDepartmentMenuRoutes("accessories").map(({ href }) => href)).toEqual([
-    "/collections/accessories#pins",
-    "/collections/accessories#bags",
-    "/collections/accessories#mugs",
-    "/collections/accessories#home",
-    "/collections/accessories#flags",
+    "/collections/accessories/pins",
+    "/collections/accessories/bags",
+    "/collections/accessories/mugs",
+    "/collections/accessories/home",
+    "/collections/accessories/flags",
     "/collections/accessories",
   ]);
   const icons = getDepartmentMenuRoutes("accessories").map(({ icon }) => (icon as { type: unknown }).type);

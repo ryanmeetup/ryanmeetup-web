@@ -1,7 +1,7 @@
-import type { CollectionSection, ProductCategory, ProductListing } from "./types";
+import type { CollectionSection, CollectionSummary, ProductCategory, ProductListing } from "./types";
 
 export type Garment = {
-  /** Anchor on the department page, such as `/collections/apparel#hats`. */
+  /** Its own page under the department, such as `/collections/apparel/hats`, and its anchor on the department page. */
   handle: string;
   title: string;
   description: string;
@@ -28,6 +28,24 @@ export const garmentsByDepartment: Record<string, Garment[]> = {
   ],
 };
 
+export function findGarment(department: string, handle: string) {
+  return garmentsByDepartment[department]?.find((garment) => garment.handle === handle);
+}
+
+export function getGarmentPath(department: string, handle: string) {
+  return `/collections/${department}/${handle}`;
+}
+
+/** Every department and garment pair that has a page. */
+export function getGarmentParams() {
+  return Object.entries(garmentsByDepartment).flatMap(([handle, garments]) => garments.map(({ handle: garment }) => ({ handle, garment })));
+}
+
+/** A garment shown as a collection, for its page heading and a department section header. */
+export function getGarmentSummary({ handle, title, description }: Garment): CollectionSummary {
+  return { id: `garment:${handle}`, handle, title, description, image: null };
+}
+
 // Kids wins over the garment itself, so a youth hoodie lands in Kids rather than Hoodies.
 const matchPriority = ["kids"];
 
@@ -49,7 +67,7 @@ export function sectionByGarment(department: string, listings: ProductListing[])
   const sections: CollectionSection[] = garments.flatMap((garment) => {
     const products = listings.filter((listing) => getGarment(department, listing)?.handle === garment.handle);
     return products.length
-      ? [{ collection: { id: `garment:${garment.handle}`, handle: garment.handle, title: garment.title, description: garment.description, image: null }, products, total: products.length, grouping: true }]
+      ? [{ collection: getGarmentSummary(garment), products, total: products.length, grouping: true }]
       : [];
   });
   return { sections, more: listings.filter((listing) => !getGarment(department, listing)) };

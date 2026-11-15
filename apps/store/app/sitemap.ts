@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { getGarmentParams, getGarmentPath } from "@/lib/garments";
 import { SITE_URL } from "@/lib/metadata";
 import { getCollections, getPolicies, getProductHandles } from "@/lib/shopify";
 
@@ -9,6 +10,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/about`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${SITE_URL}/contact`, changeFrequency: "monthly", priority: 0.6 },
     ...collections.map((collection) => ({ url: `${SITE_URL}/collections/${collection.handle}`, changeFrequency: "daily" as const, priority: 0.8 })),
+    ...getGarmentParams().map(({ handle, garment }) => ({ url: `${SITE_URL}${getGarmentPath(handle, garment)}`, changeFrequency: "daily" as const, priority: 0.7 })),
     ...policies.map((policy) => ({ url: `${SITE_URL}/policies/${policy.handle}`, changeFrequency: "yearly" as const, priority: 0.3 })),
     ...productHandles.map((handle) => ({ url: `${SITE_URL}/products/${handle}`, changeFrequency: "weekly" as const, priority: 0.7 })),
   ];

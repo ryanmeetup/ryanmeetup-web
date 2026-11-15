@@ -5,15 +5,15 @@ import { FaAddressCard, FaBaby, FaBagShopping, FaBoxesStacked, FaBurger, FaFlag,
 import { PiBaseballCapFill, PiHoodieFill } from "react-icons/pi";
 import type { IconType } from "react-icons";
 import { getCatalogCollection } from "./catalog-collections";
-import { garmentsByDepartment } from "./garments";
+import { garmentsByDepartment, getGarmentPath } from "./garments";
 import type { CollectionSummary } from "./types";
 
 export const StoreHomeIcon = FaStore;
 export const StoreCollectionIcon = FaBoxesStacked;
 export const StoreProductIcon = FiTag;
 
-// Every shopping entry opens a menu. Apparel and Accessories list the garment groupings
-// on their type page, then the whole page; Collections lists the Shopify collections
+// Every shopping entry opens a menu. Apparel and Accessories list their garment pages,
+// then the whole type page; Collections lists the Shopify collections
 // being featured right now, then Shop all.
 export const storeNavigation = [
   {
@@ -96,17 +96,16 @@ export function getCollectionMenuRoutes(collections: StoreMenuCollection[]): Nav
   }));
 }
 
-/** A type page's garment groupings, each linking to its section, then the whole page. */
+/** A type page's garment groupings, each linking to its own page, then the whole type page. */
 export function getDepartmentMenuRoutes(department: string): NavRoute[] {
   const page = getCatalogCollection(department);
   if (!page) return [];
-  const fallback = collectionIcons[department] ?? FaBoxesStacked;
   return [
     ...(garmentsByDepartment[department] ?? []).map(({ handle, title, description }) => ({
-      href: `/collections/${department}#${handle}`,
+      href: getGarmentPath(department, handle),
       text: title,
       description,
-      icon: createElement(garmentIcons[handle] ?? fallback, { "aria-hidden": true, className: "shrink-0" }),
+      icon: getGarmentIcon(department, handle),
     })),
     {
       href: `/collections/${department}`,
@@ -115,6 +114,10 @@ export function getDepartmentMenuRoutes(department: string): NavRoute[] {
       icon: getStoreCollectionIcon("all"),
     },
   ];
+}
+
+export function getGarmentIcon(department: string, handle: string, className = "shrink-0") {
+  return createElement(garmentIcons[handle] ?? collectionIcons[department] ?? FaBoxesStacked, { "aria-hidden": true, className });
 }
 
 export function getStoreCollectionIcon(handle: string) {

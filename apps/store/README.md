@@ -134,8 +134,9 @@ below. **More Ryan goods** holds products in no theme collection. Type and size
 filters also update the popular picks. Other sort choices apply within sections.
 
 The **Apparel** and **Accessories** dropdowns list their page's garment groupings
-from [lib/garments.ts](lib/garments.ts), each jumping to its section, then **Shop
-all** for the whole page. Give a new grouping an icon in `garmentIcons` in
+from [lib/garments.ts](lib/garments.ts), each with its own page such as
+`/collections/apparel/hats`, then **Shop all** for the whole type page. The type
+page keeps a section per grouping that links to the same garment page. Give a new grouping an icon in `garmentIcons` in
 [lib/navigation.ts](lib/navigation.ts). The **Collections** dropdown starts with **RY-D’s**, followed by published Shopify theme collections and
 **Shop all**. New Shopify collections appear within five minutes. Give each one
 an icon in `collectionIcons` in [lib/navigation.ts](lib/navigation.ts); otherwise

@@ -9,7 +9,8 @@ import { Reviews } from "@/components/reviews";
 import { getProductTypeCollection } from "@/lib/catalog-collections";
 import { buildPageMetadata, DEFAULT_IMAGE, getProductMetaDescription, SITE_URL, toMetadataImage } from "@/lib/metadata";
 import { formatMoney } from "@/lib/money";
-import { getStoreCollectionIcon, StoreHomeIcon, StoreProductIcon } from "@/lib/navigation";
+import { findGarment, getGarmentPath } from "@/lib/garments";
+import { getGarmentIcon, getStoreCollectionIcon, StoreHomeIcon, StoreProductIcon } from "@/lib/navigation";
 import { decodeRouteHandle } from "@/lib/handles";
 import { getColorPreview } from "@/lib/product-colors";
 import { getProductGroupForMember, getProductHref, resolveProductDesignValue } from "@/lib/product-groups";
@@ -63,7 +64,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
   const reviewsByProduct = Object.fromEntries(reviewEntries);
   const reviewCount = Object.values(reviewsByProduct).reduce((count, reviews) => count + reviews.count, 0);
   const totalRating = Object.values(reviewsByProduct).reduce((total, reviews) => total + reviews.averageRating * reviews.count, 0);
-  const originCrumb = await getOriginCrumb(query.from);
+  const originCrumbs = await getOriginCrumbs(query.from);
   const typeCollection = getProductTypeCollection(product);
   const productSchema = {
     "@context": "https://schema.org",
@@ -81,7 +82,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
     },
     ...(reviewCount ? { aggregateRating: { "@type": "AggregateRating", ratingValue: (totalRating / reviewCount).toFixed(1), reviewCount } } : {}),
   };
-  const breadcrumbs = <Breadcrumbs variant="compact" crumbs={[{ href: "/", title: "Store", icon: <StoreHomeIcon aria-hidden className="shrink-0" /> }, ...(originCrumb ? [originCrumb] : []), { href: `/products/${product.handle}`, title: product.title, current: true, icon: <StoreProductIcon aria-hidden className="shrink-0" /> }]} />;
+  const breadcrumbs = <Breadcrumbs variant="compact" crumbs={[{ href: "/", title: "Store", icon: <StoreHomeIcon aria-hidden className="shrink-0" /> }, ...originCrumbs, { href: `/products/${product.handle}`, title: product.title, current: true, icon: <StoreProductIcon aria-hidden className="shrink-0" /> }]} />;
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
       <NavSection href={typeCollection ? `/collections/${typeCollection.handle}` : null} />
@@ -99,10 +100,15 @@ export default async function ProductPage({ params, searchParams }: Props) {
   );
 }
 
-async function getOriginCrumb(from: string | undefined): Promise<Breadcrumb | null> {
-  if (!from) return null;
-  if (from === cartOrigin) return { href: "/cart", title: "Cart", icon: <FiShoppingBag aria-hidden className="shrink-0" /> };
+async function getOriginCrumbs(from: string | undefined): Promise<Breadcrumb[]> {
+  if (!from) return [];
+  if (from === cartOrigin) return [{ href: "/cart", title: "Cart", icon: <FiShoppingBag aria-hidden className="shrink-0" /> }];
+  // A garment page passes `apparel/hats`, which trails through its department.
+  const [handle, garmentHandle] = from.split("/");
   // An unknown handle is dropped rather than trusted as a crumb title.
-  const collection = (await getCollections()).find((entry) => entry.handle === from);
-  return collection ? { href: `/collections/${collection.handle}`, title: collection.title, icon: getStoreCollectionIcon(collection.handle) } : null;
+  const collection = (await getCollections()).find((entry) => entry.handle === handle);
+  if (!collection) return [];
+  const crumb = { href: `/collections/${collection.handle}`, title: collection.title, icon: getStoreCollectionIcon(collection.handle) };
+  const garment = garmentHandle ? findGarment(handle, garmentHandle) : undefined;
+  return garment ? [crumb, { href: getGarmentPath(handle, garment.handle), title: garment.title, icon: getGarmentIcon(handle, garment.handle) }] : [crumb];
 }
