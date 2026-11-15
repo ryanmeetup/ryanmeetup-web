@@ -6,7 +6,7 @@ Shopify:
 
 | Lives on this app | Hosted by Shopify, styled in Admin | Never shown |
 | --- | --- | --- |
-| Catalog, product pages, sorting, sale prices | Checkout and payment | The Online Store theme at `ryan-meetup-store.myshopify.com` |
+| Catalog, product pages, sorting, sale prices | Checkout and payment | The Online Store theme at `checkout.ryanmeetup.com` (and `ryan-meetup-store.myshopify.com`) |
 | Cart and cart drawer (Shopify's cart API) | Order confirmation and order status pages | |
 | Reviews (Judge.me, server-side) | Customer accounts (`shopify.com/71870054511/account`) | |
 | About, Contact, policy pages | Notification emails | |
@@ -23,12 +23,9 @@ policy, and cart paths line up one to one; Shopify search goes to Shop all, whil
 Best Sellers and anything else go to the home page.
 
 In Shopify Admin → **Online Store → Themes → ⋯ → Edit code**, paste it as the
-first thing inside `<head>` in **both** files:
-
-- `layout/theme.liquid`, which renders every normal page;
-- `layout/password.liquid`, which renders the password page. While the store
-  password is on, every theme request lands here, so it can only send shoppers
-  to the home page.
+first thing inside `<head>` in `layout/theme.liquid`, which renders every theme
+page. The store password is off, so `layout/password.liquid` is never shown;
+add the snippet there too only if the password is ever turned back on.
 
 ```liquid
 {%- comment -%}
@@ -65,22 +62,22 @@ first thing inside `<head>` in **both** files:
 {%- endunless -%}
 ```
 
-Check it by opening `https://ryan-meetup-store.myshopify.com/` in a private
-window: it should land on `https://store.ryanmeetup.com/`.
+Check it by opening `https://checkout.ryanmeetup.com/collections/all` in a
+private window: it should land on `https://store.ryanmeetup.com/collections/all`.
 
-Once the snippet is in `layout/theme.liquid`, the store password can come off
-without anyone seeing the theme, and deep links such as
-`/products/ryan-name-tag-mug` then reach the same product here instead of the
-home page. Turning the password off needs a paid Shopify plan. Checkout,
-order status, and customer accounts don't use the theme, so the redirect doesn't
-touch them.
+The store password is off. `checkout.ryanmeetup.com` is connected to Shopify as
+its primary domain (`store.ryanmeetup.com` stays on Vercel), and
+`ryan-meetup-store.myshopify.com` forwards there. Every theme page, including a
+hand-typed deep link such as `/products/<handle>`, reaches the same page here.
+
+Checkout, order status, and customer accounts don't use the theme, so the
+redirect doesn't touch them.
 
 ## 2. Point the emails at the store
 
 Shopify's notification emails link the store name and the **Visit our store**
 button to `{{ shop.url }}`, the theme's domain. The redirect above catches those
-clicks, but pointing them here directly skips the hop and works even while the
-password page is up.
+clicks, but pointing them here directly skips the hop.
 
 1. **Settings → Notifications → Customer notifications → Customize email
    templates**:
