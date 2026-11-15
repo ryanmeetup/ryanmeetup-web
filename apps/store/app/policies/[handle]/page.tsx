@@ -38,7 +38,7 @@ export default async function PolicyPage({ params }: Props) {
           without hugging the left edge of the wide store container. */}
       <div className="mx-auto max-w-3xl">
         <Breadcrumbs variant="compact" crumbs={[{ href: "/", title: "Store", icon: <StoreHomeIcon aria-hidden className="shrink-0" /> }, { href: `/policies/${policy.handle}`, title: policy.title, current: true, icon: <FiFileText aria-hidden className="shrink-0" /> }]} />
-        <article className="mt-8 space-y-8">
+        <article className="mt-3 space-y-8">
           <Heading size="h1" className="text-4xl leading-[1.05] sm:text-5xl">{policy.title}</Heading>
           {/* Written in Shopify Admin → Settings → Policies and supplied by the Storefront API.
               Links to the store itself become relative, so they stay on previews and local runs. */}
