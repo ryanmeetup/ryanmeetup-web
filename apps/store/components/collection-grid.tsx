@@ -6,7 +6,6 @@ import { AnchorNav, AnimatedCollapse, Button, DropdownSelect, EmptyState, Sectio
 import { FiArrowRight, FiChevronDown } from "react-icons/fi";
 import type { CatalogSections, CollectionSummary, ProductListing } from "@/lib/types";
 import { collectionHeading, getCollectionPath } from "@/lib/catalog-collections";
-import { getGarmentPath } from "@/lib/garments";
 import { getGarmentIcon } from "@/lib/navigation";
 import { defaultSort, parseSort, sortListings, sortOptions } from "@/lib/sort";
 import { ProductGrid } from "./product-grid";
@@ -112,8 +111,8 @@ export function CollectionGrid({ handle, products, sections, more = [] }: { hand
 }
 
 // Sections start open; the heading toggles one closed so a shopper can skip past it.
-// A garment grouping keeps its plain title, links to its own page under this one, and is
-// anchored by its handle, as in `#hats`.
+// A garment grouping keeps its plain title and is anchored by its handle, as in `#hats`.
+// The header menus reach its own page, so its section carries no button.
 function CollapsibleCollection({ from, collection, grouping = false, products, eagerCount }: { from: string; collection: CollectionSummary | null; grouping?: boolean; products: ProductListing[]; eagerCount: number }) {
   const [open, setOpen] = useState(true);
   const id = `collection-${collection?.handle ?? "more"}`;
@@ -134,9 +133,9 @@ function CollapsibleCollection({ from, collection, grouping = false, products, e
         }
         description={collection ? collection.description || undefined : "Everything else on the shelf."}
         meta={`${products.length} item${products.length === 1 ? "" : "s"}`}
-        actions={collection && (
-          <Button.Link href={grouping ? getGarmentPath(from, collection.handle) : getCollectionPath(collection.handle)} size="md" variant="secondary" className="!w-full sm:!w-auto" rightIcon={<FiArrowRight />}>
-            {grouping ? `Shop All ${collection.title}` : "View Collection"}
+        actions={collection && !grouping && (
+          <Button.Link href={getCollectionPath(collection.handle)} size="md" variant="secondary" className="!w-full sm:!w-auto" rightIcon={<FiArrowRight />}>
+            View Collection
           </Button.Link>
         )}
       />

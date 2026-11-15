@@ -132,9 +132,9 @@ test("apparel groups listings by garment, t-shirts first, and sorts within each 
   const titles = main.getByRole("heading", { level: 3 });
   await expect(main.getByRole("button", { name: "T-Shirts" })).toBeVisible();
   await expect(main.getByRole("button", { name: "Hoodies & Sweatshirts" })).toBeVisible();
-  // Each grouping links to its own garment page rather than to a theme collection.
+  // A grouping's own page is in the header menu, so its section has no button.
   await expect(main.getByRole("link", { name: "View Collection" })).toHaveCount(0);
-  await expect(main.getByRole("link", { name: "Shop All T-Shirts" })).toHaveAttribute("href", "/apparel/t-shirts");
+  await expect(main.getByRole("link", { name: /^Shop All/ })).toHaveCount(0);
   await expect(titles).toHaveText(["Official Ryan Meetup Tee", "Name Tag Shirt", "Hello, My Name Is Ryan Sweatshirt"]);
 
   // A grouped listing is as new as its newest design.
