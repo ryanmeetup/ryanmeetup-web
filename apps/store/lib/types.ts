@@ -38,6 +38,8 @@ export type ProductOption = {
   optionValues?: ProductOptionValue[];
 };
 
+export type ProductCategory = { name: string; ancestors: { name: string }[] };
+
 export type Product = {
   availableForSale: boolean;
   /** When the product was created in Shopify; sorts the Newest order. */
@@ -51,6 +53,8 @@ export type Product = {
   options: ProductOption[];
   priceRange: { minVariantPrice: Money };
   productType: string;
+  /** Shopify's standard product category; drives the garment groupings on department pages. */
+  category?: ProductCategory | null;
   tags: string[];
   title: string;
   variants: ProductVariant[];
@@ -79,7 +83,8 @@ export type CollectionSummary = {
   title: string;
 };
 
-export type CollectionSection = { collection: CollectionSummary; products: ProductListing[]; total: number };
+/** `grouping` marks a garment grouping on a department page rather than a Shopify collection. */
+export type CollectionSection = { collection: CollectionSummary; products: ProductListing[]; total: number; grouping?: boolean };
 
 /** Listings broken up by Shopify collection, with `more` holding those in none. */
 export type CatalogSections = { sections: CollectionSection[]; more: ProductListing[] };

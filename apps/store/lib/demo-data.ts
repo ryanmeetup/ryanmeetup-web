@@ -18,6 +18,8 @@ const makeProduct = (input: {
   imageUrl: string;
   color: string;
   type: string;
+  /** Shopify category path, most specific first, as in ["T-Shirts", "Clothing Tops"]. */
+  category?: string[];
   tags?: string[];
 }): Product => {
   const productImage = image(input.imageUrl, input.title);
@@ -38,6 +40,7 @@ const makeProduct = (input: {
     ],
     priceRange: { minVariantPrice: { amount: input.price, currencyCode: "USD" } },
     productType: input.type,
+    category: input.category ? { name: input.category[0], ancestors: input.category.slice(1).map((name) => ({ name })) } : null,
     tags: [input.type.toLowerCase(), input.color.toLowerCase(), ...(input.tags ?? [])],
     variants: sizes.map((size, index) => ({
       id: `gid://shopify/ProductVariant/demo-${input.handle}-${index}`,
@@ -64,6 +67,7 @@ export const demoProducts: Product[] = [
     imageUrl: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=1200&q=85",
     color: "Black",
     type: "Apparel",
+    category: ["T-Shirts", "Clothing Tops", "Clothing"],
   }),
   makeProduct({
     handle: "hello-my-name-is-ryan-sweatshirt",
@@ -74,6 +78,7 @@ export const demoProducts: Product[] = [
     imageUrl: "https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=1200&q=85",
     color: "Cream",
     type: "Apparel",
+    category: ["Sweatshirts", "Clothing Tops", "Clothing"],
   }),
   makeProduct({
     handle: "ryan-society-cap",
@@ -86,6 +91,7 @@ export const demoProducts: Product[] = [
     imageUrl: "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&w=1200&q=85",
     color: "Navy",
     type: "Accessory",
+    category: ["Baseball Caps", "Hats", "Clothing Accessories"],
   }),
   makeProduct({
     handle: "certified-ryan-tote",
@@ -96,6 +102,7 @@ export const demoProducts: Product[] = [
     imageUrl: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=1200&q=85",
     color: "Natural",
     type: "Accessory",
+    category: ["Tote Bags", "Luggage & Bags"],
   }),
   makeProduct({
     handle: "ryan-name-tag-shirt",
@@ -106,6 +113,7 @@ export const demoProducts: Product[] = [
     imageUrl: "https://cdn.shopify.com/s/files/1/0718/7005/4511/files/unisex-classic-tee-white-front-6acd5a66edb8c.jpg?v=1791842937",
     color: "White",
     type: "Apparel",
+    category: ["T-Shirts", "Clothing Tops", "Clothing"],
     tags: ["listing:Name Tag Shirt"],
   }),
   makeProduct({
@@ -117,6 +125,7 @@ export const demoProducts: Product[] = [
     imageUrl: "https://cdn.shopify.com/s/files/1/0718/7005/4511/files/unisex-classic-tee-white-front-6acd5bf343e98.jpg?v=1791843327",
     color: "Natural",
     type: "Apparel",
+    category: ["T-Shirts", "Clothing Tops", "Clothing"],
     tags: ["listing:Name Tag Shirt"],
   }),
 ];

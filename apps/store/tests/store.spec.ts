@@ -115,21 +115,36 @@ test("a markdown shows on the card, the product page, and the cart line", async 
 });
 
 test("collection pages sort by price and newest, and the sort survives a reload", async ({ page }) => {
-  await page.goto("/collections/apparel");
+  await page.goto("/collections/all");
   const titles = page.getByRole("main").getByRole("heading", { level: 3 });
-  await expect(titles).toHaveText(["Official Ryan Meetup Tee", "Name Tag Shirt", "Hello, My Name Is Ryan Sweatshirt"]);
-
   await page.getByRole("button", { name: /^Sort/ }).click();
   await page.getByRole("option", { name: "Price: high to low" }).click();
   await expect(page).toHaveURL(/\?sort=price-high$/);
-  await expect(titles).toHaveText(["Hello, My Name Is Ryan Sweatshirt", "Official Ryan Meetup Tee", "Name Tag Shirt"]);
-
+  const byPrice = ["Hello, My Name Is Ryan Sweatshirt", "RY-D Membership Card (opens in a new tab)", "Official Ryan Meetup Tee", "Ryan Society Cap", "Certified Ryan Pack", "Name Tag Shirt"];
+  await expect(titles).toHaveText(byPrice);
   await page.reload();
-  await expect(titles).toHaveText(["Hello, My Name Is Ryan Sweatshirt", "Official Ryan Meetup Tee", "Name Tag Shirt"]);
+  await expect(titles).toHaveText(byPrice);
+});
+
+test("apparel groups listings by garment, t-shirts first, and sorts within each grouping", async ({ page }) => {
+  await page.goto("/collections/apparel");
+  const main = page.getByRole("main");
+  const titles = main.getByRole("heading", { level: 3 });
+  await expect(main.getByRole("button", { name: "T-shirts" })).toBeVisible();
+  await expect(main.getByRole("button", { name: "Hoodies & sweatshirts" })).toBeVisible();
+  // A grouping belongs to this page, so it has no collection page to visit.
+  await expect(main.getByRole("link", { name: "View collection" })).toHaveCount(0);
+  await expect(titles).toHaveText(["Official Ryan Meetup Tee", "Name Tag Shirt", "Hello, My Name Is Ryan Sweatshirt"]);
 
   // A grouped listing is as new as its newest design.
   await page.goto("/collections/apparel?sort=newest");
-  await expect(titles).toHaveText(["Name Tag Shirt", "Hello, My Name Is Ryan Sweatshirt", "Official Ryan Meetup Tee"]);
+  await expect(titles).toHaveText(["Name Tag Shirt", "Official Ryan Meetup Tee", "Hello, My Name Is Ryan Sweatshirt"]);
+});
+
+test("retired garment collections redirect to their grouping", async ({ page }) => {
+  await page.goto("/collections/hoodies");
+  await expect(page).toHaveURL(/\/collections\/apparel#hoodies$/);
+  await expect(page.locator("#hoodies")).toBeInViewport();
 });
 
 // Adding to the cart opens the drawer over the page; close it before going on.

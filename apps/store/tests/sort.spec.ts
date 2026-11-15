@@ -20,19 +20,10 @@ test("an unknown sort falls back to featured", () => {
   expect(parseSort(null)).toBe("featured");
 });
 
-test("apparel puts shirts, hoodies, and hats before other goods, and flags last", () => {
-  const apparel = ["Ryan Flag", "Ryan Socks", "Ryan Cap", "Ryan Hoodie", "Ryan T-shirt", "Ryan Tee", "Ryan Sweatshirt"]
-    .map((title, index) => ({ ...listing(String(index), "20"), title, handle: String(index), tags: [] }));
-  expect(recommendListings(apparel, [], true).map(({ title }) => title)).toEqual([
-    "Ryan T-shirt", "Ryan Tee", "Ryan Hoodie", "Ryan Sweatshirt", "Ryan Cap", "Ryan Socks", "Ryan Flag",
-  ]);
-  expect(apparel[0].title).toBe("Ryan Flag");
-});
-
-test("popular grouped listings lead apparel while other sorts still override recommendations", () => {
+test("popular grouped listings lead while other sorts still override recommendations", () => {
   const tee = { ...listing("tee", "20"), title: "Ryan Tee", handle: "tee", tags: [] };
   const hoodie = { ...listing("hoodie", "30"), title: "Ryan Hoodie", handle: "hoodie", tags: [], designs: [{ label: "Ryan", value: "ryan", product: { ...tee, handle: "popular-hoodie" } }] };
-  const recommended = recommendListings([tee, hoodie], ["popular-hoodie"], true);
+  const recommended = recommendListings([tee, hoodie], ["popular-hoodie"]);
   expect(ids(recommended)).toEqual(["hoodie", "tee"]);
   expect(ids(sortListings(recommended, "price-low"))).toEqual(["tee", "hoodie"]);
 });

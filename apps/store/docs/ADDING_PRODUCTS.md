@@ -21,7 +21,8 @@ what customers see:
 | --- | --- |
 | **Status** and **Sales channels** | Whether the product appears at all. |
 | **Product type** | Whether it appears on the **Apparel** or **Accessories** page. |
-| **Collections** | Which collection page lists it, and whether the home page features it. |
+| **Category** | Which grouping it sits in on that page, such as T-shirts, Hats, or Flags. |
+| **Collections** | Which theme it belongs to, and whether the home page features it. |
 | **`listing:` tag** | Whether it is combined with similar products into one listing with a **Style** dropdown. |
 | **Title** | The product name, and the option name in that Style dropdown. |
 | **`designer:` tags** | The names credited under **Designed by Ryan** on the product page. |
@@ -40,15 +41,16 @@ Create and sync the product through Printful as usual, then open it in Shopify
    box, click **Manage** and tick it. An Active product without this channel is
    invisible on the store. This is the step most often missed.
 4. **Product type: `Apparel` or `Accessory`.** Spelled exactly that way, singular.
-   - **Apparel** is anything you wear: shirts, hoodies, polos, hats.
-   - **Accessory** is everything else: mugs, totes, doormats.
+   - **Apparel** is anything you wear: shirts, hoodies, polos, and every hat,
+     cap, and beanie.
+   - **Accessory** is everything else: pins, mugs, totes, flags, doormats.
 
    Any other spelling leaves the product off both pages; it only appears under
    Collections.
-5. **Category.** Pick the closest Shopify category (T-Shirts, Hoodies, Mugs, Door
-   Mats, …). Shopify uses it for its own organization and tax rules; the store
-   does not use it today, but keep it filled in.
-6. **Collection.** Add the product to one design collection. See
+5. **Category.** Pick the closest Shopify category (T-Shirts, Hoodies, Baseball
+   Caps, Mugs, Door Mats, …). It decides the product's grouping on the Apparel or
+   Accessories page. See [Groupings](#groupings-apparel-and-accessories).
+6. **Collection.** Add the product to one theme collection. See
    [Collections](#collections).
 7. **`listing:` tag, only if the product is a version of something else.** See
    [Listings](#listings-combining-similar-products).
@@ -105,13 +107,13 @@ Rules for listings:
 
 - **One `listing:` tag per product.**
 - **Only combine products customers would see as one item.** A mug and a shirt
-  with the same design are separate products; put them in the same
+  with the same design are separate products; put them in the same theme
   [collection](#collections) instead.
 - **Products that stand alone get no `listing:` tag**, such as the Trademark Logo
   Shirt or the No Bryans Allowed Doormat.
 - **Never merge the products themselves in Shopify.** Each one must stay a
   separate Shopify product so Printful keeps printing the right thing.
-- **Keep the Product type the same** across a listing's products.
+- **Keep the Product type and Category the same** across a listing's products.
 
 The listing's card shows the lowest price among its products ("From $12.00")
 and its first option's photo. The store stays available as long as one option is
@@ -153,23 +155,51 @@ General conventions:
 - Emoji are allowed in titles. Collection and listing names with ❤️ or ♥ get
   "heart" in their web address automatically.
 
+## Groupings: Apparel and Accessories
+
+The Apparel and Accessories pages split into groupings by each product's Shopify
+**Category**, so a new hoodie lands under Hoodies as soon as its category is set.
+Nothing else is needed.
+
+| Page | Groupings, in order | Categories that land there |
+| --- | --- | --- |
+| Apparel | T-shirts | T-Shirts, Shirts |
+| | Hoodies & sweatshirts | Hoodies, Sweatshirts |
+| | Hats | Anything under Hats: Baseball Caps, Beanies, … |
+| | Kids | Anything under Baby & Children's Clothing |
+| Accessories | Pins | Lapel Pins, Pinback Buttons |
+| | Bags | Anything under Luggage & Bags |
+| | Mugs | Anything under Drinkware |
+| | Home | Door Mats |
+| | Flags | Anything under Flags & Windsocks |
+
+Kids sizes go under Kids even when they are hoodies or shirts. A product whose
+category matches none of these, such as the polo, appears at the bottom under
+"More Ryan goods". To add a grouping or change the order, ask a developer to
+edit [lib/garments.ts](../lib/garments.ts).
+
+**Don't create collections for a kind of product** such as Hats or Hoodies.
+Groupings already cover that, and they stay complete without upkeep. Old links
+to the retired Hats, Hoodies, Youth, Toddler, and Flags collections redirect to
+the matching grouping.
+
 ## Collections
 
-Collections are how the store is organized into themes, and they build the home
+Collections are themes: what a product says, not what it is. They build the home
 page. There are three kinds.
 
-**Design collections**: currently **I ❤️ RY**, **Name Tag**, and **Ryan
-Classics**. Each one gets its own page and a tile on the home page that leads
-there. The tile shows the collection's image from Shopify, or its first
-product's photo when it has none.
+**Theme collections**: currently **Limited Edition**, **Not A Cult**,
+**Lunch Money**, **I ❤️ RY**, **Ryan Classics**, and **Name Tag**. Each one gets
+its own page and a tile on the home page that leads there. The tile shows the
+collection's image from Shopify, or its first product's photo when it has none.
 
-- Add **every** product to a design collection. A product in none of them still
+- Add **every** product to a theme collection. A product in none of them still
   appears on the Apparel/Accessories pages, but under Collections it falls into
   a catch-all "More Ryan goods" section at the bottom.
 - Add products from the product page (**Product organization → Collections**),
   or select several in the **Products** list and use **More actions → Add to
   collection(s)**.
-- Design collection pages put matching Best Sellers first, then follow sales
+- Theme collection pages put matching Best Sellers first, then follow sales
   popularity. Manual collection order still controls the curated Best Sellers
   and Spotlight picks.
 
@@ -177,9 +207,9 @@ product's photo when it has none.
 up to **four** listings in the collection's order, directly below the hero. Use it for hand-picked
 highlights, not every product. If it is ever empty, the store shows the actual
 best-selling products there instead. Matching Best Sellers also lead other
-catalog pages. Apparel then orders the remaining goods as T-shirts,
-hoodies/sweatshirts, hats, other goods, and flags, with sales popularity within
-each department. Customers can still choose newest or price sorting.
+catalog pages, and sales popularity orders the rest within each section.
+Customers can still choose newest or price sorting, which applies within each
+grouping or collection section.
 
 **Spotlight** is special too. Create a manual collection with the handle
 `spotlight` (published to Ryan Meetup Store Headless) and its **first** product
@@ -191,7 +221,7 @@ spotlight product, the newest in-stock listing takes the spot as a *New
 arrival*. A popular spotlight product stays in the Best Sellers row too. The
 Spotlight collection itself never gets a tile or a menu entry.
 
-**To create a new design collection:**
+**To create a new theme collection:**
 
 1. **Products → Collections → Create collection.**
 2. Enter the **Title** customers will see. Add a **Description** if you want one
@@ -201,8 +231,9 @@ Spotlight collection itself never gets a tile or a menu entry.
    does not appear on the store.
 5. Save, then add products to it.
 
-Its home page tile appears automatically; tiles are ordered alphabetically by
-title. Don't give a collection the handle `all`, `apparel`, `accessories`, or `ryd`;
+Its home page tile appears automatically. Tiles, the Collections menu, and the
+sections on Shop all are ordered by sales: the collection holding the store's
+best-selling product comes first. Don't give a collection the handle `all`, `apparel`, `accessories`, or `ryd`;
 those addresses belong to the store's own catalog pages. The Collections
 dropdown always offers RY-D’s at `/collections/ryd`, where the membership card
 links to its external order page. `frontpage` and `spotlight` are reserved for Best Sellers and Spotlight.
@@ -217,12 +248,12 @@ if they help you; they can also be left off entirely.
 
 | Place on the store | What puts a product there |
 | --- | --- |
-| Collections | Active and on the Ryan Meetup Store Headless channel; grouped under each design collection it is in |
-| Apparel page | Product type `Apparel` |
-| Accessories page | Product type `Accessory` |
+| Collections | Active and on the Ryan Meetup Store Headless channel; grouped under each theme collection it is in |
+| Apparel page | Product type `Apparel`, grouped by Category |
+| Accessories page | Product type `Accessory`, grouped by Category |
 | Home page, featured drop | First in the `spotlight` collection, otherwise the newest in-stock listing |
 | Home page, favorites row | In the Best Sellers collection (up to four shown) |
-| Home page, collection tile photo | First product in that design collection, unless the collection has its own image |
+| Home page, collection tile photo | First product in that theme collection, unless the collection has its own image |
 | Collection page | In that collection |
 | Combined with other products | Same `listing:` tag |
 
@@ -232,7 +263,7 @@ if they help you; they can also be left off entirely.
 | --- | --- |
 | Product doesn't appear anywhere | Status is Active, it's on the **Ryan Meetup Store Headless** channel, and 5 minutes have passed. |
 | Missing from the Apparel or Accessories page | Product type is exactly `Apparel` or `Accessory`. |
-| Shows under "More Ryan goods" on Collections | It isn't in a design collection yet. |
+| Shows under "More Ryan goods" on Collections | It isn't in a theme collection yet. |
 | Shows as its own card instead of joining a listing | It has the `listing:` tag, and the name after `listing:` matches the other products word for word. |
 | Style option shows the whole title | The listing name isn't in the title exactly. Fix the title or the tag so they match. |
 | Two Style options have the same name | Two products in the listing have titles that differ only in the listing name. Make the part after it unique. |

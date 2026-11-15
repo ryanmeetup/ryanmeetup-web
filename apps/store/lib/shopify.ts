@@ -1,6 +1,7 @@
 import { catalogCollections, getCatalogCollection, getCatalogCollectionSummary, getCatalogProductQuery, isInCatalogCollection } from "./catalog-collections";
 import { demoCollections, demoProducts } from "./demo-data";
 import { withExternalListings } from "./external-listings";
+import { sectionByGarment } from "./garments";
 import { normalizeHandle } from "./handles";
 import { createProductGroup, getListingHandles, getProductGroupForMember, groupProductListings, resolveListingHandle, resolveProductHandle } from "./product-groups";
 import { sortOptionValues } from "./product-options";
@@ -71,6 +72,7 @@ const productFragment = `
     availableForSale
     createdAt
     productType
+    category { name ancestors { name } }
     tags
     featuredImage { url altText width height }
     images(first: 12) { edges { node { ${imageFields} } } pageInfo { endCursor hasNextPage } }
@@ -206,16 +208,10 @@ async function completeProductConnection<T>(handle: string, field: "images" | "v
 export async function getCollections(): Promise<CollectionSummary[]> {
   if (!isShopifyConfigured()) return demoCollections;
 
-  const data = await storefrontRequest<{
-    collections: Connection<CollectionSummary>;
-  }>(
-    `query Collections { collections(first: 20, sortKey: TITLE) { edges { node { id handle title description image { url altText width height } } } } }`,
-    {},
-    { revalidate: 300 },
-  );
+  const memberships = await getCollectionMemberships();
   return [
     ...catalogCollections.map(getCatalogCollectionSummary),
-    ...data.collections.edges.map(({ node }) => ({ ...node, handle: normalizeHandle(node.handle) })).filter(isBrowsingCollection),
+    ...memberships.filter(isBrowsingCollection).map(({ id, handle, title, description, image }) => ({ id, handle, title, description, image })),
   ];
 }
 
@@ -303,22 +299,50 @@ function getListingsInCollection(listings: ProductListing[], handles: string[], 
     .map(({ listing }) => listing);
 }
 
-// Membership handles only; a collection's first 250 products count toward its section.
-async function getCollectionMemberships(): Promise<CollectionMembership[]> {
-  const data = await storefrontRequest<{ collections: Connection<CollectionMembership> }>(
-    `query CollectionMemberships {
-      collections(first: 50, sortKey: TITLE) {
-        edges { node { id handle title description image { url altText width height } products(first: 250) { edges { node { handle } } } } }
+// Every product handle, best seller first.
+async function getBestSellingHandles(): Promise<string[]> {
+  const products = await loadAllPages(async (after) => (await storefrontRequest<{ products: PaginatedConnection<{ handle: string }> }>(
+    `query BestSellingHandles($after: String) {
+      products(first: 250, after: $after, sortKey: BEST_SELLING) {
+        edges { node { handle } }
+        pageInfo { endCursor hasNextPage }
       }
     }`,
-    {},
+    { after },
     { revalidate: 300 },
-  );
-  return data.collections.edges.map(({ node }) => ({
+  )).products);
+  return (products ?? []).map(({ handle }) => normalizeHandle(handle));
+}
+
+// Membership handles only; a collection's first 250 products count toward its section.
+// Collections are ordered by their best-selling product, so the menu, the home tiles,
+// and Shop all lead with what sells rather than what sorts first alphabetically.
+async function getCollectionMemberships(): Promise<CollectionMembership[]> {
+  const [data, bestSelling] = await Promise.all([
+    storefrontRequest<{ collections: Connection<CollectionMembership> }>(
+      `query CollectionMemberships {
+        collections(first: 50, sortKey: TITLE) {
+          edges { node { id handle title description image { url altText width height } products(first: 250) { edges { node { handle } } } } }
+        }
+      }`,
+      {},
+      { revalidate: 300 },
+    ),
+    getBestSellingHandles(),
+  ]);
+  const memberships = data.collections.edges.map(({ node }) => ({
     ...node,
     handle: normalizeHandle(node.handle),
     products: { edges: node.products.edges.map(({ node: product }) => ({ node: { handle: normalizeHandle(product.handle) } })) },
   }));
+  return sortCollectionsBySales(memberships, bestSelling);
+}
+
+/** Orders collections by the sales rank of their best-selling product; ties keep the given order. */
+export function sortCollectionsBySales<T extends Pick<CollectionMembership, "products">>(collections: T[], bestSelling: string[]) {
+  const positions = new Map(bestSelling.map((handle, index) => [handle, index]));
+  const rank = (collection: T) => Math.min(Infinity, ...collection.products.edges.map(({ node }) => positions.get(node.handle) ?? Infinity));
+  return collections.map((collection) => ({ collection, rank: rank(collection) })).sort((a, b) => a.rank - b.rank).map(({ collection }) => collection);
 }
 
 // Every browsing collection with its listings, plus the listings in none of them. A
@@ -397,14 +421,14 @@ export async function getProductHandles(): Promise<string[]> {
 }
 
 export async function getCollection(handle: string): Promise<ProductPage | null> {
-  // The same hand-picked favorites lead every page where they belong. Shopify's
-  // best-selling order fills the rest, with department ordering on Apparel.
+  // The same hand-picked favorites lead every page where they belong, and Shopify's
+  // best-selling order fills the rest. Department pages split into garment groupings.
   const memberships = isShopifyConfigured() && handle !== "ryd" ? await getCollectionMemberships() : [];
   const page = await loadCollection(handle, memberships);
   if (!page) return null;
   const popularHandles = memberships.find((collection) => collection.handle === featuredCollectionHandle)?.products.edges.map(({ node }) => node.handle) ?? [];
-  const products = recommendListings(page.products, popularHandles, handle === "apparel");
-  return { ...page, products };
+  const products = recommendListings(page.products, popularHandles);
+  return { ...page, products, ...sectionByGarment(handle, products) };
 }
 
 async function loadCollection(handle: string, memberships: CollectionMembership[]): Promise<ProductPage | null> {

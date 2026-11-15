@@ -36,14 +36,16 @@ export function CollectionGrid({ handle, products, sections, more = [] }: { hand
       ));
   const arrange = (listings: ProductListing[]) => sortListings(listings.filter(matches), sort);
   const visible = arrange(products);
-  // Shop all keeps its design sections, with popular picks above them. Each pick
+  // Shop all keeps its collection sections, with popular picks above them. Each pick
   // appears once; choosing a different sort restores that order within sections.
-  const popular = sort === defaultSort && sections?.length ? visible.filter((product) => !product.externalUrl).slice(0, 4) : [];
+  // Department pages open straight onto their garment groupings instead.
+  const showPopular = sort === defaultSort && Boolean(sections?.length) && !sections?.some((section) => section.grouping);
+  const popular = showPopular ? visible.filter((product) => !product.externalUrl).slice(0, 4) : [];
   const popularIds = new Set(popular.map(({ id }) => id));
   const arrangeSection = (listings: ProductListing[]) => arrange(listings).filter(({ id }) => !popularIds.has(id));
   const visibleSections = [
     ...(sections ?? []).map((section) => ({ ...section, products: arrangeSection(section.products) })),
-    ...(sections?.length ? [{ collection: null, products: arrangeSection(more) }] : []),
+    ...(sections?.length ? [{ collection: null, products: arrangeSection(more), grouping: false }] : []),
   ].filter((section) => section.products.length);
 
   return (
@@ -90,8 +92,8 @@ export function CollectionGrid({ handle, products, sections, more = [] }: { hand
               <ProductGrid products={popular} from={handle} className="mt-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" />
             </section>
           )}
-          {visibleSections.map(({ collection, products: sectionProducts }, index) => (
-            <CollapsibleCollection key={collection?.id ?? "more"} from={handle} collection={collection} products={sectionProducts} eagerCount={!popular.length && index === 0 ? 4 : 0} />
+          {visibleSections.map(({ collection, products: sectionProducts, grouping }, index) => (
+            <CollapsibleCollection key={collection?.id ?? "more"} from={handle} collection={collection} grouping={grouping} products={sectionProducts} eagerCount={!popular.length && index === 0 ? 4 : 0} />
           ))}
         </div>
       ) : (
@@ -102,11 +104,13 @@ export function CollectionGrid({ handle, products, sections, more = [] }: { hand
 }
 
 // Sections start open; the heading toggles one closed so a shopper can skip past it.
-function CollapsibleCollection({ from, collection, products, eagerCount }: { from: string; collection: CollectionSummary | null; products: ProductListing[]; eagerCount: number }) {
+// A garment grouping is a part of this page, so it keeps its plain title, has no
+// collection page to link to, and is anchored by its handle, as in `#hats`.
+function CollapsibleCollection({ from, collection, grouping = false, products, eagerCount }: { from: string; collection: CollectionSummary | null; grouping?: boolean; products: ProductListing[]; eagerCount: number }) {
   const [open, setOpen] = useState(true);
   const id = `collection-${collection?.handle ?? "more"}`;
   return (
-    <section aria-labelledby={id}>
+    <section aria-labelledby={id} id={grouping ? collection?.handle : undefined} className={grouping ? "scroll-mt-24" : undefined}>
       <SectionHeader
         title={
           <button
@@ -116,13 +120,13 @@ function CollapsibleCollection({ from, collection, products, eagerCount }: { fro
             onClick={() => setOpen((current) => !current)}
             className="inline-flex cursor-pointer items-center gap-3 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40 dark:focus-visible:ring-white/40"
           >
-            <span id={id}>{collection ? collectionHeading(collection.title) : "More Ryan goods"}</span>
+            <span id={id}>{collection ? (grouping ? collection.title : collectionHeading(collection.title)) : "More Ryan goods"}</span>
             <FiChevronDown aria-hidden className={`h-5 w-5 shrink-0 text-black/55 transition-transform duration-200 motion-reduce:transition-none dark:text-white/55 ${open ? "-rotate-180" : ""}`} />
           </button>
         }
         description={collection ? collection.description || undefined : "Everything else on the shelf."}
         meta={`${products.length} item${products.length === 1 ? "" : "s"}`}
-        actions={collection && (
+        actions={collection && !grouping && (
           <Button.Link href={`/collections/${collection.handle}`} size="md" variant="secondary" className="!w-full sm:!w-auto" rightIcon={<FiArrowRight />}>
             View collection
           </Button.Link>

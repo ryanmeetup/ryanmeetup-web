@@ -19,23 +19,14 @@ export function parseSort(value: string | null | undefined): SortOrder {
 
 const price = (listing: ProductListing) => Number(listing.priceRange.minVariantPrice.amount);
 
-function apparelRank(listing: ProductListing) {
-  const text = [listing.title, listing.handle.replaceAll("-", " "), ...listing.tags].join(" ");
-  if (/\bflags?\b/i.test(text)) return 4;
-  if (/\b(hoodies?|hooded|sweatshirts?)\b/i.test(text)) return 1;
-  if (/\b(t[ -]?shirts?|shirts?|tees?)\b/i.test(text)) return 0;
-  if (/\b(hats?|caps?|beanies?|snapbacks?)\b/i.test(text)) return 2;
-  return 3;
-}
-
-/** Hand-picked best sellers lead; apparel then follows department order, with sales order breaking ties. */
-export function recommendListings(listings: ProductListing[], popularHandles: string[] = [], apparel = false) {
+/** Hand-picked best sellers lead, with sales order breaking ties. */
+export function recommendListings(listings: ProductListing[], popularHandles: string[] = []) {
   const positions = new Map(popularHandles.map((handle, index) => [handle, index]));
   const rank = (listing: ProductListing) => Math.min(
     ...[listing.handle, ...(listing.designs?.map(({ product }) => product.handle) ?? [])]
       .map((handle) => positions.get(handle) ?? popularHandles.length),
   );
-  return [...listings].sort((a, b) => rank(a) - rank(b) || (apparel ? apparelRank(a) - apparelRank(b) : 0));
+  return [...listings].sort((a, b) => rank(a) - rank(b));
 }
 
 /** A sorted copy. Ties keep the featured order, and listings without a date sort last under Newest. */

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { getProductGallery } from "../lib/product-gallery";
-import { getCollection, getCollections, getHomeCatalog, getProduct, getProductHandles } from "../lib/shopify";
+import { getCollection, getCollections, getHomeCatalog, getProduct, getProductHandles, sortCollectionsBySales } from "../lib/shopify";
 import { dad, mom, productNode, ryan, tee } from "./fixtures/products";
 
 const originalFetch = globalThis.fetch;
@@ -35,8 +35,8 @@ function mockCatalog(failDiscovery = false, spotlight: { handle: string }[] = []
       const catalog = [ryan, tee, mom, dad].filter((product) => !request.variables.query || request.variables.query === `product_type:${JSON.stringify(product.productType)}`);
       const page = request.variables.after ? catalog.slice(2) : catalog.slice(0, 2);
       data = { products: { edges: page.map((product) => ({ node: productNode(product) })), pageInfo: { endCursor: "type-page-1", hasNextPage: !request.variables.after && catalog.length > 2 } } };
-    } else if (request.query.includes("query Collections")) {
-      data = { collections: { edges: [{ node: { id: "shopify-apparel", handle: "apparel", title: "Shopify Apparel", description: "", image: null } }, { node: { id: "frontpage", handle: "frontpage", title: "Home page", description: "", image: null } }, { node: { id: "shirts", handle: "shirts", title: "Shirts", description: "", image: null } }] } };
+    } else if (request.query.includes("BestSellingHandles")) {
+      data = { products: { edges: [mom, tee, dad, ryan].map(({ handle }) => ({ node: { handle } })), pageInfo: { endCursor: null, hasNextPage: false } } };
     } else if (request.query.includes("CollectionMemberships")) {
       const collection = (id: string, title: string, products: { handle: string }[]) => ({ node: { id, handle: id, title, description: "", image: null, products: { edges: products.map(({ handle }) => ({ node: { handle } })) } } });
       data = { collections: { edges: [collection("apparel", "Shopify Apparel", [tee]), collection("frontpage", "Home page", [tee, dad]), collection("shirts", "Shirts", [mom]), collection("empty", "Empty", []), ...(spotlight.length ? [collection("spotlight", "Fresh off the press", spotlight)] : [])] } };
@@ -112,7 +112,7 @@ test("shop all lists every product once and breaks it up into the home page's co
   expect(all?.sections?.map(({ collection, products, total }) => [collection.title, products.map((product) => product.handle), total])).toEqual([["Shirts", ["name-tag-shirt"], 1]]);
   expect(all?.sections?.[0].products[0].designs).toHaveLength(3);
   expect(all?.more?.map((product) => product.handle)).toEqual([tee.handle, "ryd"]);
-  expect((await getCollection("apparel"))?.sections).toBeUndefined();
+  expect((await getCollection("apparel"))?.sections?.every(({ grouping }) => grouping)).toBe(true);
 });
 
 test("sitemap discovery includes every catalog page and lists the group once", async () => {
@@ -136,9 +136,20 @@ test("type pages list every product of that Shopify type with each group once", 
   expect((await getCollection("accessories"))?.products.map(({ handle }) => handle)).toEqual(["ryd"]);
 });
 
+test("type pages split into garment groupings from each product's Shopify category", async () => {
+  mockCatalog();
+  const apparel = await getCollection("apparel");
+  expect(apparel?.sections?.map(({ collection, products, grouping }) => [collection.handle, products.map(({ handle }) => handle), grouping])).toEqual([["t-shirts", [tee.handle, "name-tag-shirt"], true]]);
+  expect(apparel?.more).toEqual([]);
+  // RY-D has no Shopify category, so Accessories has nothing to group and lists it plainly.
+  const accessories = await getCollection("accessories");
+  expect(accessories?.sections).toEqual([]);
+  expect(accessories?.more?.map(({ handle }) => handle)).toEqual(["ryd"]);
+});
+
 test("the type pages lead the collection list, shadow same-handle Shopify collections, and omit the home page collection", async () => {
   mockCatalog();
-  expect((await getCollections()).map((collection) => collection.title)).toEqual(["Collections", "Apparel", "Accessories", "RY-D’s", "Shirts"]);
+  expect((await getCollections()).map((collection) => collection.title)).toEqual(["Collections", "Apparel", "Accessories", "RY-D’s", "Shirts", "Empty"]);
 });
 
 test("a collection whose Shopify handle has a heart emoji is served at its heart URL", async () => {
@@ -160,4 +171,10 @@ test("RY-D’s has a standalone collection with a working external order link in
     expect(page?.products[0]).toMatchObject({ handle: "ryd", externalUrl: "https://ryanmeetup.com/ryd" });
     expect(requests).toHaveLength(0);
   }
+});
+
+test("collections are ordered by their best-selling product rather than alphabetically", () => {
+  const collection = (handle: string, products: string[]) => ({ handle, products: { edges: products.map((product) => ({ node: { handle: product } })) } });
+  const sorted = sortCollectionsBySales([collection("flags", ["flag"]), collection("empty", []), collection("hats", ["cap", "beanie"]), collection("tees", ["tee"])], ["tee", "beanie", "flag"]);
+  expect(sorted.map(({ handle }) => handle)).toEqual(["tees", "hats", "flags", "empty"]);
 });

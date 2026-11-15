@@ -96,7 +96,7 @@ The hero reads “this merch has your name on it”. Below it:
    in this row even when it is also featured in the spotlight.
 2. The spotlight shows the first listing in the `spotlight` collection, or the
    newest in-stock listing when no spotlight has been curated.
-3. Collection tiles lead to every published design collection. Each uses the
+3. Collection tiles lead to every published theme collection. Each uses the
    collection image or its leading listing's photo.
 
 `frontpage` and `spotlight` have no browsing tile or menu entry.
@@ -111,18 +111,30 @@ filter. RY-D’s lists the membership card sold at ryanmeetup.com. These handles
 shadow same-handle Shopify collections.
 
 The default **Recommended** order puts matching hand-picked Best Sellers first,
-then uses Shopify's best-selling order. On Apparel, the remaining listings follow
-T-shirts, hoodies/sweatshirts, hats, other goods, then flags; sales order breaks
-ties within each department. Newest and price sorts override recommendations.
-All matching products load before grouping, so each listing gets one card.
+then uses Shopify's best-selling order. Newest and price sorts override
+recommendations. All matching products load before grouping, so each listing
+gets one card.
 
-Shop all retains its design collection sections, with up to four **Popular
+Shopify collections are themes (I ❤️ RY, Not A Cult, …), never kinds of product.
+Apparel and Accessories split into garment groupings instead, built from each
+product's Shopify standard **Category** in
+[lib/garments.ts](lib/garments.ts): Apparel runs T-shirts, Hoodies &
+sweatshirts, Hats, then Kids; Accessories runs Pins, Bags, Mugs, Home, then
+Flags. Each grouping is a collapsible section anchored by its handle
+(`/collections/apparel#hats`), with no collection page of its own, and sorts
+apply within it. Uncategorized listings fall under **More Ryan goods**.
+`next.config.ts` redirects the retired garment collections to their grouping.
+
+Collections are ordered by their best-selling product everywhere they are listed:
+the Collections dropdown, the home page tiles, and the Shop all sections.
+
+Shop all retains its theme collection sections, with up to four **Popular
 picks** above them in the default order. Those picks are removed from the sections
-below. **More Ryan goods** holds products in no design collection. Type and size
+below. **More Ryan goods** holds products in no theme collection. Type and size
 filters also update the popular picks. Other sort choices apply within sections.
 
 Apparel and Accessories are links in the header. The **Collections** dropdown
-starts with **RY-D’s**, followed by published Shopify design collections and
+starts with **RY-D’s**, followed by published Shopify theme collections and
 **Shop all**. New Shopify collections appear within five minutes. Give each one
 an icon in `collectionIcons` in [lib/navigation.ts](lib/navigation.ts); otherwise
 it uses stacked boxes.
