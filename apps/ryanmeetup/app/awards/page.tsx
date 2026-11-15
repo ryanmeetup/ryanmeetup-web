@@ -1,7 +1,6 @@
 // Components
 import { Layout } from "@/components/navigation";
-import { AnchorNav } from "@/components/global";
-import { Divider, Heading, Text } from "@ryanmeetup/ui";
+import { AnchorNav, Divider, Heading, Text } from "@ryanmeetup/ui";
 import {
   FarthestRyan,
   Champion,

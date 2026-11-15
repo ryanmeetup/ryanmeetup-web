@@ -7,6 +7,5 @@ export * from "./List";
 export * from "./Breadcrumbs";
 export * from "./Backdrop";
 export * from "./HeroCard";
-export * from "./AnchorNav";
 export * from "./CollapsibleYearSection";
 export * from "./SearchIndicator";

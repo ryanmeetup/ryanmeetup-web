@@ -1,7 +1,6 @@
 // Components
 import { Layout } from "@/components/navigation";
-import { AnchorNav } from "@/components/global";
-import { Blurb, Divider, Text } from "@ryanmeetup/ui";
+import { AnchorNav, Blurb, Divider, Text } from "@ryanmeetup/ui";
 import { EventsContainer } from "@/components/events";
 import {
   FaRegNewspaper as News,
