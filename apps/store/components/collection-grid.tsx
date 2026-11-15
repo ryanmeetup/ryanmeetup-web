@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { useQueryParamState } from "@ryanmeetup/hooks";
-import { AnimatedCollapse, Button, DropdownSelect, EmptyState, SectionHeader } from "@ryanmeetup/ui";
+import { AnchorNav, AnimatedCollapse, Button, DropdownSelect, EmptyState, SectionHeader } from "@ryanmeetup/ui";
 import { FiArrowRight, FiChevronDown } from "react-icons/fi";
 import type { CatalogSections, CollectionSummary, ProductListing } from "@/lib/types";
 import { collectionHeading } from "@/lib/catalog-collections";
 import { getGarmentPath } from "@/lib/garments";
+import { getGarmentIcon } from "@/lib/navigation";
 import { defaultSort, parseSort, sortListings, sortOptions } from "@/lib/sort";
 import { ProductGrid } from "./product-grid";
 
@@ -48,6 +49,10 @@ export function CollectionGrid({ handle, products, sections, more = [] }: { hand
     ...(sections ?? []).map((section) => ({ ...section, products: arrangeSection(section.products) })),
     ...(sections?.length ? [{ collection: null, products: arrangeSection(more), grouping: false }] : []),
   ].filter((section) => section.products.length);
+  // Apparel and Accessories float a jump link for each garment grouping still showing.
+  const anchors = visibleSections.flatMap(({ collection, grouping }) =>
+    grouping && collection ? [{ href: `#${collection.handle}`, tooltip: collection.title, icon: getGarmentIcon(handle, collection.handle, "h-5 w-5") }] : [],
+  );
 
   return (
     <div className="space-y-6">
@@ -100,6 +105,8 @@ export function CollectionGrid({ handle, products, sections, more = [] }: { hand
       ) : (
         <ProductGrid products={visible} from={handle} />
       )}
+      {/* Fixed in place, so it sits last where the stack's spacing can't reach anything. */}
+      {anchors.length > 1 && <AnchorNav items={anchors} label="Jump to a grouping" />}
     </div>
   );
 }
