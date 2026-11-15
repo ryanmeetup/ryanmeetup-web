@@ -14,7 +14,7 @@ export default function NotFound() {
       <NotFoundCard
         title={<>Wrong aisle.<br />Right store.</>}
         description="We couldn’t find the page you’re looking for. Let’s get you back to the Ryan goods."
-        primaryAction={{ href: "/collections/all", label: "Shop all" }}
+        primaryAction={{ href: "/collections/all", label: "Shop All" }}
         secondaryAction={{ href: "/", label: "Store home" }}
         helpLink={{ href: "/contact", label: "Contact store support" }}
       />

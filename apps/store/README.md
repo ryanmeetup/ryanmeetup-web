@@ -106,9 +106,9 @@ The hero reads “this merch has your name on it”. Below it:
 `/collections/all`, `/apparel`, `/accessories`, and `/collections/ryd` are
 defined in [lib/catalog-collections.ts](lib/catalog-collections.ts). Apparel and
 Accessories are departments, so they live at the top level rather than under
-`/collections`, which is reserved for themes, RY-D’s, and Shop all; build any
+`/collections`, which is reserved for themes, RY-D’s, and Shop All; build any
 collection link with `getCollectionPath`. Apparel and Accessories
-search by Shopify Product type (`Apparel` or `Accessory`); Shop all has no type
+search by Shopify Product type (`Apparel` or `Accessory`); Shop All has no type
 filter. RY-D’s lists the membership card sold at ryanmeetup.com. These handles
 shadow same-handle Shopify collections.
 
@@ -130,19 +130,19 @@ and the old `/collections/apparel` and `/collections/accessories` URLs to the
 top level.
 
 Collections are ordered by their best-selling product everywhere they are listed:
-the Collections dropdown, the home page tiles, and the Shop all sections.
+the Collections dropdown, the home page tiles, and the Shop All sections.
 
-Shop all retains its theme collection sections, with up to four **Popular
-picks** above them in the default order. Those picks are removed from the sections
+Shop All retains its theme collection sections, with up to four **Popular
+Picks** above them in the default order. Those picks are removed from the sections
 below. **More Ryan Goods** holds products in no theme collection. Type and size
 filters also update the popular picks. Other sort choices apply within sections.
 
 The **Apparel** and **Accessories** dropdowns list their page's garment groupings
 from [lib/garments.ts](lib/garments.ts), each with its own page such as
-`/apparel/hats`, then **Shop all** for the whole type page. The type
+`/apparel/hats`, then **Shop All** for the whole type page. The type
 page keeps a section per grouping that links to the same garment page. Give a new grouping an icon in `garmentIcons` in
 [lib/navigation.ts](lib/navigation.ts). The **Collections** dropdown starts with **RY-D’s**, followed by published Shopify theme collections and
-**Shop all**. New Shopify collections appear within five minutes. Give each one
+**Shop All**. New Shopify collections appear within five minutes. Give each one
 an icon in `collectionIcons` in [lib/navigation.ts](lib/navigation.ts); otherwise
 it uses stacked boxes.
 

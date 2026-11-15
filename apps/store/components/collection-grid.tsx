@@ -38,7 +38,7 @@ export function CollectionGrid({ handle, products, sections, more = [] }: { hand
       ));
   const arrange = (listings: ProductListing[]) => sortListings(listings.filter(matches), sort);
   const visible = arrange(products);
-  // Shop all keeps its collection sections, with popular picks above them. Each pick
+  // Shop All keeps its collection sections, with Popular Picks above them. Each pick
   // appears once; choosing a different sort restores that order within sections.
   // Department pages open straight onto their garment groupings instead.
   const showPopular = sort === defaultSort && Boolean(sections?.length) && !sections?.some((section) => section.grouping);
@@ -94,7 +94,7 @@ export function CollectionGrid({ handle, products, sections, more = [] }: { hand
         <div className="space-y-12">
           {popular.length > 0 && (
             <section aria-labelledby="popular-picks">
-              <SectionHeader title={<span id="popular-picks">Popular picks</span>} />
+              <SectionHeader title={<span id="popular-picks">Popular Picks</span>} />
               <ProductGrid products={popular} from={handle} className="mt-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" />
             </section>
           )}
@@ -136,7 +136,7 @@ function CollapsibleCollection({ from, collection, grouping = false, products, e
         meta={`${products.length} item${products.length === 1 ? "" : "s"}`}
         actions={collection && (
           <Button.Link href={grouping ? getGarmentPath(from, collection.handle) : getCollectionPath(collection.handle)} size="md" variant="secondary" className="!w-full sm:!w-auto" rightIcon={<FiArrowRight />}>
-            {grouping ? `Shop all ${collection.title}` : "View collection"}
+            {grouping ? `Shop All ${collection.title}` : "View Collection"}
           </Button.Link>
         )}
       />

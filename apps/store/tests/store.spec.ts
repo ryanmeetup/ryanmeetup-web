@@ -133,8 +133,8 @@ test("apparel groups listings by garment, t-shirts first, and sorts within each 
   await expect(main.getByRole("button", { name: "T-Shirts" })).toBeVisible();
   await expect(main.getByRole("button", { name: "Hoodies & Sweatshirts" })).toBeVisible();
   // Each grouping links to its own garment page rather than to a theme collection.
-  await expect(main.getByRole("link", { name: "View collection" })).toHaveCount(0);
-  await expect(main.getByRole("link", { name: "Shop all T-Shirts" })).toHaveAttribute("href", "/apparel/t-shirts");
+  await expect(main.getByRole("link", { name: "View Collection" })).toHaveCount(0);
+  await expect(main.getByRole("link", { name: "Shop All T-Shirts" })).toHaveAttribute("href", "/apparel/t-shirts");
   await expect(titles).toHaveText(["Official Ryan Meetup Tee", "Name Tag Shirt", "Hello, My Name Is Ryan Sweatshirt"]);
 
   // A grouped listing is as new as its newest design.
@@ -438,15 +438,15 @@ test("apparel, accessories, and collections are header menus ending in shop all"
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/about");
   const mainNavigation = page.getByRole("navigation", { name: "Main navigation" });
-  await expect(mainNavigation.getByRole("link", { name: "Shop all" })).toHaveCount(0);
+  await expect(mainNavigation.getByRole("link", { name: "Shop All" })).toHaveCount(0);
   // The shared NavMenu opens on hover, as it does on ryanmeetup.com.
   await mainNavigation.getByRole("button", { name: "Collections" }).hover();
-  await expect(page.getByRole("link", { name: "Shop all" })).toHaveAttribute("href", "/collections/all");
+  await expect(page.getByRole("link", { name: "Shop All" })).toHaveAttribute("href", "/collections/all");
   await expect(page.getByRole("link", { name: /RY-D’s/ })).toHaveAttribute("href", "/collections/ryd");
   await page.mouse.move(0, 0);
   await mainNavigation.getByRole("button", { name: "Apparel" }).hover();
   await expect(page.getByRole("link", { name: /^Hats/ })).toHaveAttribute("href", "/apparel/hats");
-  await page.getByRole("link", { name: "Shop all Apparel" }).click();
+  await page.getByRole("link", { name: "Shop All Apparel" }).click();
   await expect(page).toHaveURL(/\/apparel$/);
 
   // Close the desktop popover before switching to the mobile navigation.
@@ -457,9 +457,9 @@ test("apparel, accessories, and collections are header menus ending in shop all"
   const mobileNavigation = page.getByRole("navigation", { name: "Mobile navigation" });
   const toggle = mobileNavigation.getByRole("button", { name: /^Collections/ });
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
-  await expect(mobileNavigation.getByRole("link", { name: "Shop all", exact: true })).toBeHidden();
+  await expect(mobileNavigation.getByRole("link", { name: "Shop All", exact: true })).toBeHidden();
   await toggle.click();
-  await mobileNavigation.getByRole("link", { name: "Shop all", exact: true }).click();
+  await mobileNavigation.getByRole("link", { name: "Shop All", exact: true }).click();
   await expect(page).toHaveURL(/\/collections\/all$/);
   await expect(mobileNavigation).toBeHidden();
 
@@ -511,7 +511,7 @@ test("store navigation and breadcrumbs use icons", async ({ page }) => {
     page
       .getByRole("navigation", { name: "Mobile navigation" })
       .locator("a svg"),
-  ).toHaveCount(15); // About and Contact, plus every menu link: 5 apparel, 6 accessories, RY-D’s, and Shop all
+  ).toHaveCount(15); // About and Contact, plus every menu link: 5 apparel, 6 accessories, RY-D’s, and Shop All
   await page.screenshot({
     path: "/private/tmp/store-mobile-navigation.png",
     fullPage: false,

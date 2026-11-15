@@ -4,7 +4,7 @@ import { getCollectionMenuRoutes, getDepartmentMenuRoutes, getStoreCollectionIco
 
 const collection = (handle: string, title: string, description = "") => ({ handle, title, description });
 
-test("the collections menu lists featured Shopify collections, then Shop all, without the other type pages", () => {
+test("the collections menu lists featured Shopify collections, then Shop All, without the other type pages", () => {
   const routes = getCollectionMenuRoutes([
     collection("all", "Collections"),
     collection("apparel", "Apparel"),
@@ -16,14 +16,14 @@ test("the collections menu lists featured Shopify collections, then Shop all, wi
     { href: "/collections/ryd", text: "RY-D’s", description: "Your official Ryan identification, made just for you." },
     { href: "/collections/i-heart-ry", text: "I ❤️ RY", description: "For all the Ryan lovers out there." },
     { href: "/collections/name-tag", text: "Name Tag", description: undefined },
-    { href: "/collections/all", text: "Shop all", description: "Official issue for Ryans, friends of Ryans, and the Ryan-curious." },
+    { href: "/collections/all", text: "Shop All", description: "Official issue for Ryans, friends of Ryans, and the Ryan-curious." },
   ]);
 });
 
-test("without Shopify collections the menu still offers RY-D’s and Shop all", () => {
+test("without Shopify collections the menu still offers RY-D’s and Shop All", () => {
   expect(getCollectionMenuRoutes([]).map(({ href, text }) => ({ href, text }))).toEqual([
     { href: "/collections/ryd", text: "RY-D’s" },
-    { href: "/collections/all", text: "Shop all" },
+    { href: "/collections/all", text: "Shop All" },
   ]);
 });
 
@@ -41,7 +41,7 @@ test("the apparel and accessories menus link each garment page, then the whole t
     { href: "/apparel/hoodies", text: "Hoodies & Sweatshirts" },
     { href: "/apparel/hats", text: "Hats" },
     { href: "/apparel/kids", text: "Kids" },
-    { href: "/apparel", text: "Shop all Apparel" },
+    { href: "/apparel", text: "Shop All Apparel" },
   ]);
   expect(getDepartmentMenuRoutes("accessories").map(({ href }) => href)).toEqual([
     "/accessories/pins",

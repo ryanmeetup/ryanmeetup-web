@@ -19,7 +19,7 @@ email links, and the checkout branding below.
 Shopify links to its own theme in places we don't control, such as the checkout
 logo, "Continue shopping" after an order, and the store link in emails. This
 snippet sends every theme page to the matching page here. Product, collection,
-policy, and cart paths line up one to one; Shopify search goes to Shop all, while
+policy, and cart paths line up one to one; Shopify search goes to Shop All, while
 Best Sellers and anything else go to the home page.
 
 In Shopify Admin → **Online Store → Themes → ⋯ → Edit code**, paste it as the

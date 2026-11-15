@@ -111,11 +111,11 @@ export default async function HomePage() {
         <section id="collections" aria-labelledby="home-collections" className="store-container scroll-mt-24 py-10 sm:py-14">
           <SectionHeader
             title={<span id="home-collections">Pick your Ryan lane</span>}
-            description="Every collection, one tap away. The full shelf lives on Shop all."
+            description="Every collection, one tap away. The full shelf lives on Shop All."
             meta="Collections"
             actions={
               <Button.Link href="/collections/all" size="md" variant="secondary" className="!w-full sm:!w-auto" rightIcon={<FiArrowRight />}>
-                Shop all
+                Shop All
               </Button.Link>
             }
           />

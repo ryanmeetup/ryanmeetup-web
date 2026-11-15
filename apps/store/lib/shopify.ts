@@ -316,7 +316,7 @@ async function getBestSellingHandles(): Promise<string[]> {
 
 // Membership handles only; a collection's first 250 products count toward its section.
 // Collections are ordered by their best-selling product, so the menu, the home tiles,
-// and Shop all lead with what sells rather than what sorts first alphabetically.
+// and Shop All lead with what sells rather than what sorts first alphabetically.
 async function getCollectionMemberships(): Promise<CollectionMembership[]> {
   const [data, bestSelling] = await Promise.all([
     storefrontRequest<{ collections: Connection<CollectionMembership> }>(
@@ -458,7 +458,7 @@ async function loadCollection(handle: string, memberships: CollectionMembership[
   // reappearing on every result page that contains a member.
   if (catalogCollection) {
     const collection = getCatalogCollectionSummary(catalogCollection);
-    // Shop all is broken up into the same collection sections as the home page.
+    // Shop All is broken up into the same collection sections as the home page.
     if (catalogCollection.productType === null) {
       const products = await getCatalogProducts(null);
       const listings = withExternalListings(handle, await getGroupedListings(products));

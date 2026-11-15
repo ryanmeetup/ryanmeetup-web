@@ -14,7 +14,7 @@ export const StoreProductIcon = FiTag;
 
 // Every shopping entry opens a menu. Apparel and Accessories list their garment pages,
 // then the whole type page; Collections lists the Shopify collections
-// being featured right now, then Shop all.
+// being featured right now, then Shop All.
 export const storeNavigation = [
   {
     href: "/about",
@@ -79,7 +79,7 @@ const garmentIcons: Record<string, IconType> = {
 
 export type StoreMenuCollection = Pick<CollectionSummary, "handle" | "title" | "description">;
 
-/** RY-D’s and featured Shopify collections, then Shop all; type pages have their own links. */
+/** RY-D’s and featured Shopify collections, then Shop All; type pages have their own links. */
 export function getCollectionMenuRoutes(collections: StoreMenuCollection[]): NavRoute[] {
   const shopAll = getCatalogCollection("all");
   const ryd = getCatalogCollection("ryd");
@@ -87,7 +87,7 @@ export function getCollectionMenuRoutes(collections: StoreMenuCollection[]): Nav
   return [
     ...(ryd ? [ryd] : []),
     ...featured,
-    ...(shopAll ? [{ ...shopAll, title: "Shop all" }] : []),
+    ...(shopAll ? [{ ...shopAll, title: "Shop All" }] : []),
   ].map(({ handle, title, description }) => ({
     href: getCollectionPath(handle),
     text: title,
@@ -109,7 +109,7 @@ export function getDepartmentMenuRoutes(department: string): NavRoute[] {
     })),
     {
       href: getCollectionPath(department),
-      text: `Shop all ${page.title}`,
+      text: `Shop All ${page.title}`,
       description: page.description,
       icon: getStoreCollectionIcon("all"),
     },

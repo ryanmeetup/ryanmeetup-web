@@ -11,8 +11,8 @@ export function CollectionLink({
   total?: number;
 }) {
   const label = total === undefined
-    ? "Shop collection"
-    : `Shop all ${total} item${total === 1 ? "" : "s"}`;
+    ? "Shop Collection"
+    : `Shop All ${total} Item${total === 1 ? "" : "s"}`;
 
   return (
     <Button.Link

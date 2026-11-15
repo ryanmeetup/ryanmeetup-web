@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 };
 
 // The header menu is on every page, including the error pages, so a Shopify outage
-// leaves the Collections menu with only Shop all instead of failing the layout.
+// leaves the Collections menu with only Shop All instead of failing the layout.
 async function getMenuCollections() {
   const collections = await getCollections().catch((error: unknown) => {
     console.error("Could not load collections for the header menu.", error);

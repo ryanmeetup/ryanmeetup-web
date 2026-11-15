@@ -232,7 +232,7 @@ Spotlight collection itself never gets a tile or a menu entry.
 5. Save, then add products to it.
 
 Its home page tile appears automatically. Tiles, the Collections menu, and the
-sections on Shop all are ordered by sales: the collection holding the store's
+sections on Shop All are ordered by sales: the collection holding the store's
 best-selling product comes first. Don't give a collection the handle `all`, `apparel`, `accessories`, or `ryd`;
 those addresses belong to the store's own catalog pages. The Collections
 dropdown always offers RY-D’s at `/collections/ryd`, where the membership card
