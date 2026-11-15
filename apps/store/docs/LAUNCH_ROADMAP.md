@@ -20,13 +20,14 @@ Last reviewed: 2026-11-14, against the code, Vercel, and the live Storefront API
   price high to low) in a readable `?sort=`, on every collection and type page.
 - Cart drawer and cart page backed by the Shopify cart API, refreshed from
   Shopify on load, cleared after checkout, and emptied on confirmation.
-- Shopify hosted checkout and a thank-you page.
+- Shopify hosted checkout and its Thank-you page; a checked-out cart clears on
+  the shopper's next store page load.
 - Judge.me product reviews, read and submitted server-side.
 - About (including shipping and returns), Contact, and the sitemap.
 - Policy pages at `/policies/<handle>` for each policy written in Shopify Admin,
   linked from the footer and listed in the sitemap.
 - **Your orders** links to Shopify's customer account (order status and
-  tracking) in the header, mobile menu, thank-you page, and Contact hints.
+  tracking) in the header, mobile menu, and Contact hints.
 - Sale prices: a compare-at price above the price in Shopify adds a **Sale**
   label and the struck-through original on cards, the product page, and cart
   lines.
@@ -70,8 +71,6 @@ Shopify Admin (no code):
       [custom-profile setup](SHIPPING_SETUP.md); Admin write access is still
       needed. Do not change the plan, retail prices, or product weights.
 - [ ] Every published variant mapped to a Printful SKU.
-- [ ] Checkout return URL set to `https://store.ryanmeetup.com/thank-you`. The
-      November 14 order did not land there after payment.
 - [ ] Email templates branded and their store links pointed at
       `https://store.ryanmeetup.com`
       ([steps](SHOPIFY_HOSTED_PAGES.md#2-point-the-emails-at-the-store)).
@@ -219,6 +218,7 @@ Record each finished or changed item here, newest first.
 
 | Date | Item | Change | Commit |
 | --- | --- | --- | --- |
+| 2026-11-14 | 4 | Closed the checkout return URL. Shopify has no setting that sends shoppers to another site after payment, and Thank-you page extensions can only show a link, not redirect. Shopify's Thank-you page now serves as the confirmation, its **Continue shopping** button reaches the store home page through the theme redirect, and the store already drops a checked-out cart on the next page load. Removed the unreachable `/thank-you` page and its cart-clearing helper; the Playwright test now covers clearing on any page. | — |
 | 2026-11-14 | — | Pruned `docs/`: removed the superseded Judge.me diagnostic, review handoff, setup audit, and parity checklist. Item 14 now carries the decisions, provider limits, and open work still in force. | — |
 | 2026-11-14 | 4 | Ryan confirmed Basic and chose conservative weight-based tiers to avoid subsidizing shipping. Audited 88 products and 1,878 variant weights and prepared custom-profile instructions and initial US name tag family tables. Checkout rates remain unchanged because Shopify Admin write access is unavailable. | — |
 | 2026-11-14 | 4 | Audited after Ryan's first successful production order. Done and removed: the store password (the Shopify domain now forwards to `checkout.ryanmeetup.com` instead of `/password`), payments, the theme redirect (theme pages refresh to the matching store.ryanmeetup.com page; `password.liquid` no longer matters with the password off), and the Shopify and Judge.me tokens in Vercel Production and Preview. Also removed the code launch switches and EmailJS setup, which were already ticked. Still open: Markets (the Storefront API lists only the US), the return URL (the order did not land on `/thank-you`), refund, tax, shipping rates, SKU mapping, and emails. | — |

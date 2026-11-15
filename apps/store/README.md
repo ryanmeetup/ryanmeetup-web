@@ -31,7 +31,7 @@ that EmailJS accepted the request.
 ## Shopify setup
 
 - Create public Storefront API access for products, collections, and carts.
-- Set the headless storefront domain and checkout return URL to `https://store.ryanmeetup.com/thank-you`.
+- After payment, shoppers stay on Shopify's own Thank-you page; Shopify has no setting to send them elsewhere. Its **Continue shopping** button reaches the store home page through the theme redirect, and the store drops a checked-out cart on the next page load.
 - Install/connect Printful in Shopify and map every Shopify variant to the matching Printful SKU.
 - To cancel an order, start in Printful, then refund in Shopify; see [docs/CANCELLING_ORDERS.md](docs/CANCELLING_ORDERS.md).
 - Brand checkout and customer accounts, redirect the Online Store theme here, and point the notification emails at the store; see [docs/SHOPIFY_HOSTED_PAGES.md](docs/SHOPIFY_HOSTED_PAGES.md).
@@ -88,7 +88,8 @@ products to one.
 
 ### Home page
 
-The hero reads “this merch has your name on it”. Below it:
+The hero reads “This merch has your name on it, Ryan” under a small
+“HELLO my name is Ryan” name tag. Below it:
 
 1. **Best Sellers** shows up to four listings from Shopify's built-in home page
    collection (`frontpage`), in its curated order. An empty or unpublished

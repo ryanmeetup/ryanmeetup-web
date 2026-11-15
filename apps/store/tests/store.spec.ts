@@ -39,8 +39,17 @@ test("cart lines move a listing member's title color into the options", async ({
 });
 
 test("returning from checkout empties the cart", async ({ page }) => {
-  await seedCart(page);
-  await page.goto("/thank-you");
+  // Shopify returns no cart once it has checked out, whichever store page the shopper lands on.
+  await page.route("**/api/cart", (route) => route.fulfill({ json: { cart: null } }));
+  const variant = superBlack.variants[0];
+  await page.addInitScript((cart) => localStorage.setItem("ryan-store-cart", JSON.stringify(cart)), {
+    id: "gid://shopify/Cart/checked-out",
+    checkoutUrl: "https://checkout.ryanmeetup.com/cart/c/checked-out",
+    totalQuantity: 2,
+    cost: { subtotalAmount: variant.price, totalAmount: variant.price },
+    lines: [{ id: "super-line", quantity: 2, merchandise: { ...variant, product: { handle: superBlack.handle, title: superBlack.title, tags: superBlack.tags } } }],
+  });
+  await page.goto("/");
   await expect.poll(() => page.evaluate(() => localStorage.getItem("ryan-store-cart"))).toBeNull();
   await expect(page.getByRole("button", { name: "Cart with 0 items" })).toBeVisible();
 });
@@ -532,7 +541,7 @@ for (const viewport of [
     await page.goto("/");
     await expect(
       page.getByRole("heading", {
-        name: "this merch has your name on it",
+        name: "This merch has your name on it, Ryan",
       }),
     ).toBeVisible();
     if (viewport.name === "mobile") {

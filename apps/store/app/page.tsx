@@ -1,6 +1,7 @@
 import {
   Button,
   Heading,
+  NameTag,
   RotatingGallery,
   SectionHeader,
   Text,
@@ -51,11 +52,12 @@ export default async function HomePage() {
           />
           <div className="relative grid items-center gap-12 lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)] lg:gap-14 xl:gap-20">
             <div>
+              <NameTag name="Ryan" size="sm" className="mb-8 ml-1 sm:mb-10" />
               <Heading
                 size="h1"
                 className="max-w-3xl text-5xl leading-[0.95] sm:text-6xl xl:text-7xl"
               >
-                this merch has your name on it
+                This merch has your name on it, Ryan
               </Heading>
               <Text className="mt-6 max-w-xl text-lg text-black/70 sm:text-xl dark:text-white/70">
                 Shirts, hats, and assorted goods for the world’s most organized
