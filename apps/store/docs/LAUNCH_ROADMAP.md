@@ -101,13 +101,8 @@ Printful-managed profiles keep base rates updated, but full multi-item cost
 coverage needs a separate solution, such as live rates on an eligible plan.
 Do not edit managed profiles directly; the next sync overwrites those edits.
 
-Ryan confirmed Basic and approved conservative custom weight tiers on November
-14. The public catalog contains 88 products and 1,878 variants, with different
-weights by size and category. [SHIPPING_SETUP.md](SHIPPING_SETUP.md) records the
-proposed calculation and initial US name tag family tables. These rates have
-not been applied; current credentials cannot change Shopify Admin or Printful
-settings. Profile mappings, additional-item costs, and maximum supported
-weights still need verification before activation.
+The fix, conservative weight-based tiers on Basic, is in
+[SHIPPING_SETUP.md](SHIPPING_SETUP.md) and not yet applied.
 
 Canada and UK test addresses returned no delivery groups, and available
 countries still listed only the US. This conflicts with the shipping policy's
@@ -177,12 +172,45 @@ fields. The store supports neither.
 **Problem.** Etsy shows a shop rating and only buyers can review. Here reviews are
 per product and anyone can submit.
 
-**Approach.** Show the overall Judge.me rating on the home and About pages.
-Product pages hand review collection to Shopify customer accounts, where
-Judge.me handles fulfilled purchases, photos, and review management. The
-domain mismatch is resolved; deployment and a fulfilled-order test remain.
-The separate web-review API is unverified and does not enforce purchase
-eligibility. See the [current integration audit](REVIEWS_SETUP.md).
+**Current state.** The provider is undecided. Judge.me is wired in, but its
+cost is in question: the features a headless store needs sit on paid plans.
+Until that's settled, treat the Judge.me-specific work below as provisional.
+Today, configured product pages send **Write a review** to the Shopify customer
+account, where Judge.me's account extensions collect reviews of fulfilled
+purchases, host photos, and offer **My Reviews** for edits. The JSON
+`POST /api/reviews` route still forwards unverified web reviews and returns 415
+for photos (see the [README](../README.md#judgeme-setup)). Individual ratings
+are whole stars, as Judge.me requires; averages show fractions.
+
+**Provider limits that shape the approach.** Judge.me's create-review API needs
+no authorization, accepts only whole 1–5 ratings, takes hosted photo URLs rather
+than files, and can't mark a review verified or edit it. Hiding our route
+therefore doesn't make reviews buyer-only. Judge.me's widgets for headless
+storefronts need the paid Awesome plan; the account is on the free plan.
+
+**Goal (Ryan, November 14).** Only buyers can review, and only products they
+bought. Nobody else can get a review published, so spam has no way in.
+
+**Remaining.**
+- Remove `POST /api/reviews`, which lets anyone submit. It contradicts the goal.
+- In Judge.me, stop publishing reviews that aren't from verified buyers.
+  Judge.me's own create endpoint is public, so closing our route alone doesn't
+  stop direct spam.
+- Decide the provider. The free plan appears to cover the goal: account
+  extensions collect from fulfilled orders, and our pages read reviews with the
+  private API, which worked on the free plan on November 6. Paid plans add
+  on-page widgets we don't use. Revisit only if a needed feature is paid.
+- Test the account flow with a fulfilled order: sign in, review with a photo,
+  publication, storefront display, and an edit through **My Reviews**. Don't
+  use the create API for test reviews; API-created reviews can't be deleted.
+- Show the overall shop rating on the home and About pages.
+- Compute the product summary from complete Judge.me totals. `lib/reviews.ts`
+  averages at most the first 20 reviews; keep counts and JSON-LD consistent.
+- Later: rating distribution, sorting, pagination, seller responses, and
+  delivery-timed review requests.
+
+**Done when.** The shop rating is visible, product summaries are accurate, and a
+real buyer's review with a photo appears on the product page.
 
 ## Log
 
@@ -190,6 +218,7 @@ Record each finished or changed item here, newest first.
 
 | Date | Item | Change | Commit |
 | --- | --- | --- | --- |
+| 2026-11-14 | — | Pruned `docs/`: removed the superseded Judge.me diagnostic, review handoff, setup audit, and parity checklist. Item 14 now carries the decisions, provider limits, and open work still in force. | — |
 | 2026-11-14 | 4 | Ryan confirmed Basic and chose conservative weight-based tiers to avoid subsidizing shipping. Audited 88 products and 1,878 variant weights and prepared custom-profile instructions and initial US name tag family tables. Checkout rates remain unchanged because Shopify Admin write access is unavailable. | — |
 | 2026-11-14 | 4 | Audited after Ryan's first successful production order. Done and removed: the store password (the Shopify domain now forwards to `checkout.ryanmeetup.com` instead of `/password`), payments, the theme redirect (theme pages refresh to the matching store.ryanmeetup.com page; `password.liquid` no longer matters with the password off), and the Shopify and Judge.me tokens in Vercel Production and Preview. Also removed the code launch switches and EmailJS setup, which were already ticked. Still open: Markets (the Storefront API lists only the US), the return URL (the order did not land on `/thank-you`), refund, tax, shipping rates, SKU mapping, and emails. | — |
 | 2026-11-14 | 9 | Clarified that shipping quotes may appear only in Shopify's hosted checkout. Removed the storefront rate estimator from launch scope; a processing/delivery summary remains optional polish. Shopify Markets and checkout shipping configuration remain in item 4. | — |
@@ -202,7 +231,7 @@ Record each finished or changed item here, newest first.
 | 2026-11-06 | 14 | Resolved Judge.me authentication with its registered shop domain, independent of the Shopify catalog domain. Product lookup, review reads, and media settings are verified. Added the storefront account handoff and published-photo display; fulfilled-order verification remains. | — |
 | 2026-11-05 | 14 | Closed the legacy anonymous review POST endpoint after confirming Judge.me's public API does not require authorization. Four security tests cover rejection, 30 concurrent spam attempts, and forged buyer claims without provider calls. A private Shopify purchase-authorized backend is the recommended next direction; no new storage is provisioned yet. | — |
 | 2026-11-05 | 14 | Built the shared product-review modal with mobile full-screen layout, preserved drafts, deliberate rating selection, and retryable submission errors. Removed the title field and hardened API input validation. Shopify sign-in and purchase enforcement still await the setup recorded in the handoff. | — |
-| 2026-11-05 | 14 | Recorded the live review integration audit and a Claude handoff. Modal reviews with Shopify sign-in/purchase history are the chosen direction; implementation awaits the Headless client details and a working local Judge.me credential. See [REVIEWS_SETUP.md](REVIEWS_SETUP.md) and [REVIEWS_HANDOFF.md](REVIEWS_HANDOFF.md). | — |
+| 2026-11-05 | 14 | Recorded the live review integration audit and a Claude handoff. Modal reviews with Shopify sign-in/purchase history are the chosen direction; implementation awaits the Headless client details and a working local Judge.me credential. | — |
 | 2026-11-04 | 4 | Refund, shipping, terms, and contact information policies written in Shopify, and the privacy policy updated for customer accounts and the no-returns rule. About's fine print now says all sales are final and links the shipping and refund policies when they exist; the cart page and drawer repeat "All sales are final" with a return policy link; the contact form's return topics became refund wording; and policy pages make store links relative. | — |
 | 2026-11-04 | 13 | Added a currency button to product price badges: USD → EUR → GBP → CAD → AUD. The preference persists across pages and reloads. Cached Frankfurter reference rates supply approximate display conversions; Shopify cart and checkout amounts remain in USD. Local-currency checkout through Markets remains deferred. | — |
 | 2026-11-04 | 4 | Etsy stays live alongside the store for now: `ryanmeetup.com/merch`, the main site's **Merch** link, and the Etsy listings are no longer launch work. Switch them when Ryan decides to retire Etsy. | — |

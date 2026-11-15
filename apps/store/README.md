@@ -271,8 +271,7 @@ fills. The custom photo chooser is hidden until separate photo hosting exists.
 The JSON `POST /api/reviews` route remains an unverified web-review forwarding
 endpoint; it does not prove purchase eligibility and rejects multipart requests
 with HTTP 415. The configured storefront's account handoff does not use it.
-See [the setup audit](docs/REVIEWS_SETUP.md) and
-[the parity checklist](docs/REVIEWS_PARITY.md) for the remaining integration work.
+Remaining review work is item 14 of the [launch roadmap](docs/LAUNCH_ROADMAP.md).
 
 1. In Shopify Admin, install **Judge.me Product Reviews** from the Shopify App Store.
 2. In Judge.me, open **Settings → Integrations → View API token** (under Developers) and copy the **Private API token**.
@@ -280,9 +279,9 @@ See [the setup audit](docs/REVIEWS_SETUP.md) and
 4. Set `JUDGEME_SHOP_DOMAIN` to the exact **Shop domain** in the same modal. For this store it is `9mf9bm-3f.myshopify.com`, while the working catalog connection uses `SHOPIFY_STORE_DOMAIN=ryan-meetup-store.myshopify.com`. Keep those separate. If `JUDGEME_SHOP_DOMAIN` is absent, the app falls back to `SHOPIFY_STORE_DOMAIN` for stores whose domains match.
 5. Redeploy. Reviews refresh every five minutes.
 
-Missing or invalid provider credentials currently appear as an empty review
-section. Authentication was resolved on November 6 by configuring Judge.me's
-registered domain separately. Live product lookup and review reads return 200;
-the account currently contains zero reviews. See the [authentication record](docs/JUDGEME_AUTH_DIAGNOSTIC.md).
+Missing or invalid provider credentials appear as an empty review section, so
+an empty section doesn't prove a product has no reviews. A 401 from Judge.me
+with valid-looking tokens usually means `JUDGEME_SHOP_DOMAIN` is missing or
+wrong.
 The public token is named `JUDGEME_PUBLIC_TOKEN`; the custom server-rendered
 review list currently uses only the private token.
