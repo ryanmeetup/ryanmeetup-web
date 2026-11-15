@@ -3,9 +3,9 @@
 import { useSyncExternalStore } from "react";
 import { FiMoon, FiSun } from "react-icons/fi";
 import { useTheme } from "next-themes";
-import { Tooltip } from "@ryanmeetup/ui";
+import { Button, Tooltip } from "@ryanmeetup/ui";
 
-export function ThemeToggle() {
+export function ThemeToggle({ variant = "icon" }: { variant?: "icon" | "menu" }) {
   const mounted = useSyncExternalStore(
     () => () => undefined,
     () => true,
@@ -16,7 +16,22 @@ export function ThemeToggle() {
   // Keep the server and first client render identical. The persisted theme is
   // only available in the browser, so do not use it for markup until mounted.
   const isDark = !mounted || resolvedTheme !== "light";
-  const label = isDark ? "Change to Light Mode" : "Change to Dark Mode";
+  const label = isDark ? "Change to light mode" : "Change to dark mode";
+
+  if (variant === "menu") {
+    return (
+      <Button
+        variant="secondary"
+        fullWidth
+        disabled={!mounted}
+        onClick={() => setTheme(isDark ? "light" : "dark")}
+        leftIcon={isDark ? <FiSun aria-hidden className="h-4 w-4" /> : <FiMoon aria-hidden className="h-4 w-4" />}
+        className="justify-start px-3 py-3"
+      >
+        {label}
+      </Button>
+    );
+  }
 
   return (
     <Tooltip content={label} placement="bottom" disabled={!mounted}>

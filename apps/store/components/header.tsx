@@ -130,13 +130,15 @@ export function Header({ collections, accountUrl }: { collections: StoreMenuColl
               <span className="hidden sm:inline">{open ? "Close" : "Menu"}</span>
             </button>
           </Tooltip>
-          <ThemeToggle />
+          <div className="hidden xl:block">
+            <ThemeToggle />
+          </div>
         </div>
       </div>
       {open && (
         <nav
           aria-label="Mobile navigation"
-          className="store-container relative grid gap-1 border-t border-black/10 py-3 xl:hidden dark:border-white/10"
+          className="store-container relative grid max-h-[calc(100dvh-4rem)] gap-1 overflow-y-auto overscroll-contain border-t border-black/10 py-3 xl:hidden dark:border-white/10"
         >
           {storeNavigation.map(({ description, icon: Icon, label, ...item }) =>
             "menu" in item ? (
@@ -216,6 +218,9 @@ export function Header({ collections, accountUrl }: { collections: StoreMenuColl
               </span>
             </a>
           )}
+          <div className="mt-2 border-t border-black/10 pt-3 dark:border-white/10">
+            <ThemeToggle variant="menu" />
+          </div>
         </nav>
       )}
     </header>

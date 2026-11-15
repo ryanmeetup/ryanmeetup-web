@@ -370,10 +370,10 @@ test("customer can switch between the Ryan Meetup light and dark themes", async 
 
   await page.goto("/");
   await expect(page.locator("html")).toHaveClass(/dark/);
-  await page.getByRole("button", { name: "Change to Light Mode" }).click();
+  await page.getByRole("button", { name: "Change to light mode" }).click();
   await expect(page.locator("html")).toHaveClass(/light/);
   await expect(
-    page.getByRole("button", { name: "Change to Dark Mode" }),
+    page.getByRole("button", { name: "Change to dark mode" }),
   ).toBeVisible();
   await page.reload();
   await expect(page.locator("html")).toHaveClass(/light/);
@@ -382,6 +382,33 @@ test("customer can switch between the Ryan Meetup light and dark themes", async 
     path: "/private/tmp/store-light.png",
     fullPage: true,
   });
+});
+
+test("mobile customers change themes inside the navigation menu", async ({ page }) => {
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.goto("/apparel");
+  const themeButton = page.getByRole("button", { name: "Change to light mode", exact: true });
+  await expect(themeButton).toBeHidden();
+
+  await page.getByRole("button", { name: "Open navigation" }).click();
+  const menu = page.getByRole("navigation", { name: "Mobile navigation" });
+  await menu.getByRole("button", { name: "Change to light mode" }).click();
+  await expect(page.locator("html")).toHaveClass(/light/);
+  await expect(menu.getByRole("button", { name: "Change to dark mode" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Close navigation" }).click();
+  await expect(page.getByRole("button", { name: "Change to dark mode" })).toBeHidden();
+  await page.reload();
+  await expect(page.locator("html")).toHaveClass(/light/);
+  await page.getByRole("button", { name: "Open navigation" }).click();
+  const darkButton = menu.getByRole("button", { name: "Change to dark mode" });
+  await darkButton.focus();
+  await darkButton.press("Enter");
+  await expect(page.locator("html")).toHaveClass(/dark/);
+
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await expect(menu).toBeHidden();
+  await expect(themeButton.filter({ visible: true })).toHaveCount(1);
 });
 
 test("customer can browse the merch hero gallery", async ({ page }) => {
