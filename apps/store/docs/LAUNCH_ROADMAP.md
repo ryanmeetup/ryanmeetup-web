@@ -202,9 +202,8 @@ bought. Nobody else can get a review published, so spam has no way in.
   extensions collect from fulfilled orders, and our pages read reviews with the
   private API, which worked on the free plan on November 6. Paid plans add
   on-page widgets we don't use. Revisit only if a needed feature is paid.
-- Test the account flow with a fulfilled order: sign in, review with a photo,
-  publication, storefront display, and an edit through **My Reviews**. Don't
-  use the create API for test reviews; API-created reviews can't be deleted.
+- Test the account flow with fulfilled order #1002, following
+  [REVIEWS_FIRST_ORDER_CHECK.md](REVIEWS_FIRST_ORDER_CHECK.md).
 - Show the overall shop rating on the home and About pages.
 - Compute the product summary from complete Judge.me totals. `lib/reviews.ts`
   averages at most the first 20 reviews; keep counts and JSON-LD consistent.
