@@ -5,6 +5,7 @@ import { Button } from "./Button";
 import { Card } from "./Card";
 import { Heading } from "./Heading";
 import { Kicker } from "./Kicker";
+import { NameTag } from "./NameTag";
 import { Pill } from "./Pill";
 import { Text } from "./Text";
 
@@ -68,15 +69,8 @@ export function NotFoundCard({
           </div>
         </div>
 
-        <div aria-hidden="true" className="pointer-events-none mx-auto w-full max-w-xs px-3 py-4 sm:max-w-sm xl:px-0">
-          <div className="-rotate-6 overflow-hidden rounded-2xl border-4 border-nametag bg-nametag text-center shadow-xl">
-            <div className="pb-3 pt-4 text-white">
-              <span className="block text-4xl font-bold leading-none tracking-caps-tight sm:text-5xl">HELLO</span>
-              <span className="mt-1 block text-sm font-semibold tracking-caps-tight">MY NAME IS</span>
-            </div>
-            <div className="bg-white px-4 py-5 font-cooper text-8xl leading-none tracking-wider text-black sm:py-6 sm:text-9xl">404</div>
-            <div className="h-5" />
-          </div>
+        <div className="mx-auto w-full max-w-xs px-3 py-4 sm:max-w-sm xl:px-0">
+          <NameTag name="404" />
         </div>
       </div>
 
