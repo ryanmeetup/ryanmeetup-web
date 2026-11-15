@@ -1,7 +1,9 @@
 # Shipping on Shopify Basic
 
-Status: **prepared, not applied**. Current connections cannot change Shopify
-Admin or Printful settings. Checkout shipping rates are unchanged.
+Status: **partly applied**. The US name tag shirt and hoodie tiers below are
+live; a November 15 quote check matched them for 1–3 and 10 shirts, 1–2
+hoodies, and a mixed cart. Other product families and international rates still
+need their own profiles.
 
 Ryan chose to keep Basic and use conservative weight-based tiers on November
 14, 2026. Shipping charges may appear entirely in hosted checkout. Do not change

@@ -57,26 +57,25 @@ Finished and dropped items leave the roadmap.
 - [ ] Done
 
 Shopify Admin (no code):
-- [ ] Cancel and refund the November 14 test order (#1001) following
-      [CANCELLING_ORDERS.md](CANCELLING_ORDERS.md), and settle its open
-      questions. Its confirmation email arrived; Shopify blocked the cancel
-      because Printful had already accepted it.
 - [ ] Markets cover every country the About page says we ship to. The
       Storefront API currently reports only the United States, and shoppers
       can't check out to a country outside an active market.
 - [ ] Tax collection configured for the regions shipped to.
 - [ ] Shipping charges cover Printful's costs for every region shipped to.
       Ryan chose to keep Basic and use conservative weight-based tiers, with
-      potentially higher charges for heavier carts. Apply and verify the
-      [custom-profile setup](SHIPPING_SETUP.md); Admin write access is still
-      needed. Do not change the plan, retail prices, or product weights.
-- [ ] Every published variant mapped to a Printful SKU.
+      potentially higher charges for heavier carts. US name tag shirts and
+      hoodies are live and quote exactly Printful's cost plus the holiday
+      allowance; other product families and international rates still need
+      the [custom-profile setup](SHIPPING_SETUP.md). Do not change the plan,
+      retail prices, or product weights.
 - [ ] Email templates branded and their store links pointed at
       `https://store.ryanmeetup.com`
       ([steps](SHOPIFY_HOSTED_PAGES.md#2-point-the-emails-at-the-store)).
 
 **Done when.** A real order placed on production is charged, taxed, shipped by
-Printful, and confirmed by email.
+Printful, and confirmed by email. The second real order (November 15) was
+charged and is in Printful fulfillment; repeat the check once Markets, tax,
+and the email templates are done.
 
 **Shipping audit, November 14.** Temporary Storefront API carts returned these
 standard shipping quotes for a public New York destination (USD):
@@ -218,6 +217,8 @@ Record each finished or changed item here, newest first.
 
 | Date | Item | Change | Commit |
 | --- | --- | --- | --- |
+| 2026-11-15 | 4 | Ryan cancelled and refunded test order #1001, then placed a second real order that is going through Printful fulfillment. Shipping tiers for US name tag shirts and hoodies verified live (1–3 and 10 shirts, 1–2 hoodies, and a mixed cart all match Printful's cost plus $0.40). | — |
+| 2026-11-15 | 4 | Removed Printful SKU mapping: all 1,878 published variants across 86 products carry a unique SKU in Printful's sync format (`<product>_<variant>`), none blank. Checkout and the customer-account sign-in page show the wordmark in the light scheme from [SHOPIFY_HOSTED_PAGES.md](SHOPIFY_HOSTED_PAGES.md#3-brand-checkout-and-customer-accounts); headings stay in Shopify's system font. | — |
 | 2026-11-14 | 4 | Closed the checkout return URL. Shopify has no setting that sends shoppers to another site after payment, and Thank-you page extensions can only show a link, not redirect. Shopify's Thank-you page now serves as the confirmation, its **Continue shopping** button reaches the store home page through the theme redirect, and the store already drops a checked-out cart on the next page load. Removed the unreachable `/thank-you` page and its cart-clearing helper; the Playwright test now covers clearing on any page. | — |
 | 2026-11-14 | — | Pruned `docs/`: removed the superseded Judge.me diagnostic, review handoff, setup audit, and parity checklist. Item 14 now carries the decisions, provider limits, and open work still in force. | — |
 | 2026-11-14 | 4 | Ryan confirmed Basic and chose conservative weight-based tiers to avoid subsidizing shipping. Audited 88 products and 1,878 variant weights and prepared custom-profile instructions and initial US name tag family tables. Checkout rates remain unchanged because Shopify Admin write access is unavailable. | — |
