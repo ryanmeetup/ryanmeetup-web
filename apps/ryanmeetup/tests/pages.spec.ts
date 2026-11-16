@@ -75,6 +75,11 @@ const redirectRoutes = [
   },
   { path: "/ryanday/join", location: "https://meet.google.com/smt-ubsk-aeo" },
   {
+    path: "/wild",
+    location:
+      "https://seatgeek.com/minnesota-wild-tickets/2-15-2027-saint-paul-minnesota-grand-casino-arena/nhl/18369618?sgo_ac=RYAN",
+  },
+  {
     path: "/whatsapp",
     location: "https://chat.whatsapp.com/LeI37a2AlMk0OmMfhXPNvq",
   },
