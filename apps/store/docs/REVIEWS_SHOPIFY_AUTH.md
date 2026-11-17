@@ -86,11 +86,27 @@ The live public metadata returned HTTP 200 from
 `client_secret_basic` support. This proves discovery only. See the
 [Customer Account authentication reference](https://shopify.dev/docs/api/customer/2026-10#discovery-endpoints).
 
+## Persistent storage
+
+Canonical migration `20261120130000_store_customer_auth_storage.sql` adds
+`store_customer_authorizations`, `store_customer_sessions`, and five private
+read/consume/rotate/revoke RPCs. RLS and explicit grants keep them inaccessible
+to anonymous visitors and Tasks members. The operations run as the invoker,
+with service-role access only. Authorization consumption retains a tombstone
+and erases its ciphertext; session revocation erases tokens and blocks stale
+refreshes through revision checks.
+
+The migration is applied and verified on **RMT**. Both tables were empty after
+verification. **PRD is pending**; use [the complete dashboard SQL and verification](../../tasks/docs/PRD_STORE_CUSTOMER_AUTH_SQL.md).
+No database secret was added to the storefront. The scoped backend interface
+still needs to be built; it must authenticate the calling service and pin its
+shop/client scope before using the trusted backend database client.
+
 ## Remaining gate
 
-Persist authorization attempts and buyer sessions in the shared backend with
-scoped store access; implement one-time callback consumption, token exchange,
-signed ID-token verification, renewal, and logout. Then prove a real buyer
-login and exact order-line access. Browser cookies must contain opaque
-identifiers; pending verifiers and buyer tokens remain server-side. Do not
-enable sign-in or collection before the storage and validation paths are ready.
+Wire private storage through that backend interface, then implement HTTP
+start/callback, token exchange, signed ID-token/nonce verification, renewal,
+logout, and expired-record cleanup. Prove a real buyer login and exact
+order-line access after the confidential client is configured. Browser cookies
+must contain only opaque identifiers; verifiers and tokens remain server-side.
+Do not enable sign-in or collection before these paths are ready.

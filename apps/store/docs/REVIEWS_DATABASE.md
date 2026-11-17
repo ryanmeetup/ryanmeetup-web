@@ -3,8 +3,10 @@
 November 17, 2026. Ryan chose to reuse the existing Ryan Meetup Tasks Supabase
 project as the beginning of a shared backend for all Ryan Meetup properties.
 This supersedes the earlier recommendation to provision a dedicated store
-project. A Shopify Customer Account API client and the custom review schema
-are still outstanding.
+project. Private authorization/session storage is now implemented in migration
+`20261120130000_store_customer_auth_storage.sql`. A Shopify Customer Account
+API client, scoped runtime interface, and review-content schema remain
+outstanding.
 
 ## Selected project and ownership
 
@@ -61,12 +63,17 @@ together. See [the database workflow](../../tasks/docs/DATABASE.md).
 
 ## App access and buyer identity
 
-Design a store-specific server role or narrowly authorized database interface
-for review access. Sharing the project does not mean copying Tasks' broad
+Use a narrowly authenticated backend interface for storefront access to the
+private service-role-only storage operations. That interface is the next
+integration chunk; the storefront has no shared admin credential or direct
+SQL login. Sharing the project does not mean copying Tasks' broad
 admin secret into every app. Supabase secret/service-role access bypasses RLS,
 so row policies alone would not constrain that credential. Verify inherited
 role and function privileges as well as table grants when implementing the
-boundary. [Roles](https://supabase.com/docs/guides/database/postgres/roles),
+boundary. The local audit found 32 public-schema functions executable through
+PUBLIC; Supabase also documents inherited PUBLIC privileges for SQL roles.
+Do not introduce a direct SQL login based on `NOINHERIT` alone, or change
+existing workspace grants to work around that inheritance. [Roles](https://supabase.com/docs/guides/database/postgres/roles),
 [RLS](https://supabase.com/docs/guides/database/postgres/row-level-security)
 
 Keep buyers on Shopify authentication with server-managed sessions. The current
@@ -78,8 +85,9 @@ a later deliberate change, with its own membership rules.
 
 Database tests must prove both directions of isolation: ordinary Tasks clients
 cannot read private review drafts or purchase references, and the store's
-runtime role cannot read or change private Tasks data or invoke Tasks-only
-privileged functions. Publishing reviews exposes only approved public fields.
+runtime interface cannot read or change private Tasks data or invoke
+Tasks-only privileged functions. The backend must pin shop/client scope before
+using the privileged database client. Publishing reviews exposes only approved public fields.
 
 ## What to store
 
@@ -138,5 +146,14 @@ and the staging option before deciding whether hosting needs to change.
    scoped runtime access there. Verify backups and rehearse import/cutover and
    rollback while Judge.me stays installed.
 
-This increment records the shared-backend decision. No database schema,
-storage bucket, deployment credential, or billing setting has been changed.
+Auth storage has landed as a canonical migration; see
+[the handoff](REVIEWS_HANDOFF.md) for per-instance rollout verification and
+[the PRD SQL block](../../tasks/docs/PRD_STORE_CUSTOMER_AUTH_SQL.md). No storage
+bucket, deployment credential, or billing setting has been changed.
+
+Use `node scripts/test-store-customer-auth.mjs` from `apps/tasks` for database
+validation. It creates a uniquely named test stack on separate ports, replays
+all migrations from empty, checks private access and encrypted persistence,
+then removes only its own stack. Never use a loopback `--db-url` to try to
+reset a second database inside the existing app stack: CLI v2.115.0 treats it
+as a default local-stack reset, ignoring the database name.

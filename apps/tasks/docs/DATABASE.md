@@ -16,7 +16,14 @@ The two-instance migration delivery policy below still applies. Store runtime
 connections and customer data target RMT only; PRD remains a separate personal
 instance. The [review database plan](../../store/docs/REVIEWS_DATABASE.md)
 records the boundary, including keeping Shopify buyers out of Tasks signup
-and membership provisioning. No review schema has been applied yet.
+and membership provisioning. Private customer authorization/session storage is
+implemented in `20261120130000_store_customer_auth_storage.sql` and applied to
+RMT; review-content tables remain outstanding. PRD's matching schema application
+is pending; use [the complete SQL and verification](PRD_STORE_CUSTOMER_AUTH_SQL.md).
+Use `node scripts/test-store-customer-auth.mjs` for isolated database and
+encrypted-persistence checks. It uses a separate stack/project and ports;
+loopback `--db-url` is not a safe way to isolate `supabase db reset` from the
+existing app stack in CLI v2.115.0.
 
 ## The short version
 
