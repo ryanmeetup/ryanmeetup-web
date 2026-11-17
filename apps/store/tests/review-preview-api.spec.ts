@@ -84,6 +84,33 @@ test("cross-origin and missing-origin attempts cannot change the preference", as
   }
 });
 
+test("origin checks support Next's internal host and HTTPS proxy protocol", async () => {
+  for (const protocol of ["http", "https"]) {
+    const response = await POST(new Request("http://localhost:3202/api/reviews/preview", {
+      method: "POST",
+      headers: {
+        Host: "preview.test:3202",
+        Origin: `${protocol}://preview.test:3202`,
+        "X-Forwarded-Proto": protocol,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ provider: "custom" }),
+    }));
+    expect(response.status).toBe(200);
+    expect(response.cookies.get(reviewPreviewCookie)?.secure).toBe(protocol === "https");
+  }
+});
+
+test("same-host requests with a different browser scheme are rejected", async () => {
+  const response = await POST(new Request("http://localhost:3202/api/reviews/preview", {
+    method: "POST",
+    headers: { Host: "preview.test", Origin: "http://preview.test", "X-Forwarded-Proto": "https", "Content-Type": "application/json" },
+    body: JSON.stringify({ provider: "custom" }),
+  }));
+  expect(response.status).toBe(403);
+  expect(response.headers.get("set-cookie")).toBeNull();
+});
+
 test("invalid and malformed choices are rejected without changing cookies", async () => {
   for (const provider of ["other", "", null, true, {}, ["custom"]]) {
     const response = await choose(provider);

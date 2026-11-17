@@ -10,7 +10,12 @@ function fail(error: string, status: number) {
 /** A browser preference for development/preview, never a production setting. */
 export async function POST(request: Request) {
   if (!isReviewPreviewEnabled()) return fail("Review testing is not enabled here.", 404);
-  if (request.headers.get("origin") !== new URL(request.url).origin) {
+  // Next may use its internal hostname in request.url. Match the browser's
+  // Host and the protocol supplied by Next's proxy headers instead.
+  const requestUrl = new URL(request.url);
+  const protocol = request.headers.get("x-forwarded-proto")?.split(",")[0].trim() ?? requestUrl.protocol.slice(0, -1);
+  const host = request.headers.get("host") ?? requestUrl.host;
+  if (!["http", "https"].includes(protocol) || request.headers.get("origin") !== `${protocol}://${host}`) {
     return fail("Change review mode from this storefront.", 403);
   }
   if (request.headers.get("content-type")?.split(";")[0].trim().toLowerCase() !== "application/json") {
@@ -29,7 +34,7 @@ export async function POST(request: Request) {
   response.cookies.set(reviewPreviewCookie, choice === "default" ? "" : choice, {
     httpOnly: true,
     sameSite: "lax",
-    secure: new URL(request.url).protocol === "https:",
+    secure: protocol === "https",
     path: "/",
     maxAge: choice === "default" ? 0 : 60 * 60 * 24,
   });
