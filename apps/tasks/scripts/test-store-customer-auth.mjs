@@ -1,0 +1,109 @@
+import { spawn, spawnSync } from "node:child_process";
+import { randomBytes } from "node:crypto";
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+// Reset only a separately named Supabase stack on separate ports.
+// The CLI treats a loopback --db-url as the default local stack, ignoring its
+// database name, so a second database in the app container is NOT isolation.
+const appRoot = fileURLToPath(new URL("../", import.meta.url));
+const projectId = `store-auth-test-${randomBytes(6).toString("hex")}`;
+const testRoot = mkdtempSync(join(tmpdir(), "store-customer-auth-"));
+const container = `supabase_db_${projectId}`;
+const database = "postgres";
+const migration = fileURLToPath(new URL("../supabase/migrations/20261120130000_store_customer_auth_storage.sql", import.meta.url));
+
+function run(command, args, input, inherit = false) {
+  const result = spawnSync(command, args, { cwd: appRoot, input, encoding: "utf8", stdio: inherit ? "inherit" : undefined, maxBuffer: 32 * 1024 * 1024 });
+  if (result.error) throw result.error;
+  if (result.status !== 0) throw new Error(result.stderr || result.stdout || `${command} failed (${result.status})`);
+  return result.stdout?.trim();
+}
+
+const sql = (text, target = database) => run("docker", ["exec", "-i", container, "psql", "-U", "supabase_admin", "-XAt", "-v", "ON_ERROR_STOP=1", "-d", target], text);
+
+function connection(name) {
+  const child = spawn("docker", ["exec", "-i", "-e", `PGAPPNAME=${name}`, container, "psql", "-U", "supabase_admin", "-XAt", "-v", "ON_ERROR_STOP=1", "-d", database]);
+  let stdout = "";
+  let stderr = "";
+  let ready;
+  const locked = new Promise((resolve) => { ready = resolve; });
+  child.stdout.on("data", (chunk) => { stdout += chunk; if (stdout.includes("store-test-locked")) ready(); });
+  child.stderr.on("data", (chunk) => { stderr += chunk; });
+  const exited = new Promise((resolve, reject) => {
+    child.on("error", reject);
+    child.on("close", (code) => resolve({ code, stdout, stderr }));
+  });
+  return { child, locked, exited };
+}
+
+async function race(first, second) {
+  const left = connection("store-auth-race-a");
+  left.child.stdin.write(`begin; set local role service_role; ${first};\n\\echo store-test-locked\n`);
+  await Promise.race([left.locked, left.exited.then((result) => { throw new Error(result.stderr || "First writer failed to lock"); })]);
+  const right = connection("store-auth-race-b");
+  right.child.stdin.end(`set role service_role; ${second};\n`);
+  try {
+    const deadline = Date.now() + 5000;
+    while (sql("select exists(select 1 from pg_stat_activity where application_name='store-auth-race-b' and wait_event_type='Lock')") !== "t") {
+      if (Date.now() > deadline) throw new Error("Second writer did not wait for the row lock");
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+  } finally {
+    left.child.stdin.end("commit;\n");
+  }
+  const results = await Promise.all([left.exited, right.exited]);
+  for (const result of results) if (result.code !== 0) throw new Error(result.stderr || "Concurrent writer failed");
+  const booleans = results.map((result) => result.stdout.split(/\r?\n/).filter((line) => line === "t" || line === "f").join(""));
+  if (booleans[0] !== "t" || booleans[1] !== "f") throw new Error(`Expected one winner and one rejection: ${booleans}`);
+}
+
+try {
+  cpSync(join(appRoot, "supabase"), join(testRoot, "supabase"), {
+    recursive: true,
+    filter: (source) => !source.includes("/.temp") && !source.includes("/.branches"),
+  });
+  const configPath = join(testRoot, "supabase/config.toml");
+  const config = readFileSync(configPath, "utf8")
+    .replace('project_id = "ryanmeetup-tasks"', `project_id = "${projectId}"`)
+    .replace("port = 54321", "port = 55421")
+    .replace("port = 54322", "port = 55422")
+    .replace("shadow_port = 54320", "shadow_port = 55420");
+  if (!config.startsWith(`project_id = "${projectId}"`) || projectId === "ryanmeetup-tasks") throw new Error("Refusing to use the app's Supabase project");
+  writeFileSync(configPath, config);
+  run("supabase", ["start", "--workdir", testRoot, "--exclude", "realtime,storage-api,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor"], undefined, true);
+  run("supabase", ["db", "reset", "--local", "--no-seed", "--yes", "--workdir", testRoot], undefined, true);
+  sql(readFileSync(migration, "utf8"));
+  console.log("PASS: full migration reset and idempotent auth migration replay");
+  run("supabase", ["test", "db", "--workdir", testRoot, join(appRoot, "tests/database/store-customer-auth.sql"), join(appRoot, "supabase/tests/access_control.sql")], undefined, true);
+  const integration = spawnSync("npx", ["playwright", "test", "tests/customer-account-storage.spec.ts", "--workers=1"], {
+    cwd: fileURLToPath(new URL("../../store/", import.meta.url)),
+    env: { ...process.env, STORE_AUTH_TEST_CONTAINER: container }, stdio: "inherit",
+  });
+  if (integration.error) throw integration.error;
+  if (integration.status !== 0) throw new Error("Encrypted storage integration checks failed");
+
+  const scope = "'123','client','https://shopify.com/authentication/123','https://store.test/api/reviews/auth/callback'";
+  sql(`insert into public.store_customer_authorizations(state_hash,browser_binding_hash,shop_id,client_id,issuer,redirect_uri,encrypted_flow)
+    values(repeat('a',64),repeat('b',64),${scope},'v1.test.'||repeat('a',48));`);
+  const consume = `select public.store_consume_customer_authorization(repeat('a',64),repeat('b',64),${scope})`;
+  await race(consume, consume);
+  console.log("PASS: competing callbacks consume one authorization exactly once");
+
+  sql(`insert into public.store_customer_sessions(session_hash,shop_id,client_id,issuer,subject,encrypted_tokens,access_expires_at,expires_at)
+    values(repeat('1',64),'123','client','https://shopify.com/authentication/123','buyer','v1.test.'||repeat('a',48),now()+interval '1 hour',now()+interval '1 day');`);
+  await race(
+    "select public.store_revoke_customer_session(repeat('1',64),'123','client','https://shopify.com/authentication/123')",
+    "select public.store_rotate_customer_session(repeat('1',64),'123','client','https://shopify.com/authentication/123',0,'v1.test.'||repeat('b',48),now()+interval '2 hours')",
+  );
+  if (sql("select revoked_at is not null and encrypted_tokens is null from public.store_customer_sessions where session_hash=repeat('1',64)") !== "t") throw new Error("A refresh revived revoked tokens");
+  console.log("PASS: logout racing token refresh keeps the session revoked");
+} finally {
+  try {
+    run("supabase", ["stop", "--project-id", projectId, "--no-backup", "--workdir", testRoot], undefined, true);
+  } finally {
+    rmSync(testRoot, { recursive: true, force: true });
+  }
+}

@@ -137,6 +137,31 @@ holds a row only for a page an app owner has configured.
   and Google routes require it in addition to RY-D, and the page hides its
   settings entry points without it.
 
+## Store customer authentication storage
+
+`store_customer_authorizations` and `store_customer_sessions` hold private
+Shopify authorization/session records for the shared Ryan Meetup backend.
+Both have RLS enabled, no anonymous/member grants or policies, and explicit
+service-role grants. Their five `store_*customer_*` RPCs are service-role-only,
+use an empty search path, and run as the invoker. They do not create Supabase
+Auth users, Tasks profiles, or workspace memberships.
+
+The storefront must not receive the Tasks admin key or a direct SQL login.
+Expose these operations only through a narrowly authenticated backend
+interface that pins the store's allowed shop/client scope before using the
+existing privileged backend client. That interface is still outstanding.
+Creating a new SQL role alone would inherit the project's PUBLIC privileges;
+`NOINHERIT` does not remove them. Existing workspace grants remain unchanged.
+
+Authorization secrets and buyer tokens are authenticated encrypted envelopes;
+only random browser identifiers are hashed into lookup keys. Consuming a flow
+checks browser, shop, client, issuer, callback, and expiry atomically, erases
+its envelope, and keeps a tombstone against repeat creation until cleanup.
+Session refresh compares its revision, preserves subject and absolute expiry,
+and cannot revive revoked sessions. Revocation erases the token envelope and
+advances the revision, so an in-flight stale refresh cannot overwrite logout.
+The store's encryption context additionally binds record identity and expiry.
+
 ## RY-D Verification
 
 RY-D review writes use service-role-only `ryd_change_submission`,
