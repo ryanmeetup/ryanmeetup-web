@@ -8,6 +8,8 @@ import { FiCalendar, FiCheck, FiUser } from "react-icons/fi";
 import type { Product, ReviewsData } from "@/lib/types";
 import type { ReviewPhoto } from "@/lib/review-photos";
 import type { ReviewAccount } from "@/lib/review-collection";
+import type { ReviewPreviewState } from "@/lib/review-provider";
+import { ReviewModeSwitch } from "./review-mode-switch";
 import { ReviewPhotosField } from "./review-photos-field";
 import { ReviewPhotoGallery } from "./review-photo-gallery";
 
@@ -27,7 +29,7 @@ function RatingSummary({ data, className = "" }: { data: ReviewsData; className?
   );
 }
 
-export function Reviews({ data, product, reviewAccount }: { data: ReviewsData; product: Pick<Product, "id" | "title" | "featuredImage">; reviewAccount: ReviewAccount | undefined }) {
+export function Reviews({ data, product, reviewAccount, reviewPreview }: { data: ReviewsData; product: Pick<Product, "id" | "title" | "featuredImage">; reviewAccount: ReviewAccount | undefined; reviewPreview?: ReviewPreviewState }) {
   const formId = useId();
   const ratingField = useRef<HTMLDivElement>(null);
   const [showForm, setShowForm] = useState(false);
@@ -89,6 +91,7 @@ export function Reviews({ data, product, reviewAccount }: { data: ReviewsData; p
 
   return (
     <section id="reviews" className="border-t border-black/10 py-16 dark:border-white/10 sm:py-20">
+      {reviewPreview && <ReviewModeSwitch preview={reviewPreview} />}
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <Heading size="h2" className="text-3xl sm:text-4xl">The Ryans have spoken</Heading>

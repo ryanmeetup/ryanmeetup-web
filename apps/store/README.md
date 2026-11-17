@@ -292,13 +292,31 @@ and `POST /api/reviews`. Set it in `.env.local` or the deployment environment:
 | `custom` | Custom integration under construction: unavailable reviews, disabled collection, and HTTP 503 on submissions. No Judge.me calls. |
 | Any other value | Unavailable reviews and closed submissions. Correct the setting. |
 
-Restart the dev server after changing it. For hosted testing, change the Preview
-environment and build a fresh deployment; leave Production on `judgeme`.
-Switch back to `judgeme` and restart/redeploy to restore the existing path.
+The **Review mode** dropdown above each product's review section lets you test
+both providers in one browser without restarting or redeploying:
+
+- Local `next dev`: the control appears automatically.
+- Vercel Preview: set server-only `REVIEWS_PREVIEW_ENABLED=true` and create a
+  fresh deployment to enable the control.
+- Vercel Production: the control and its endpoint are disabled, and browser
+  preferences are ignored even if the preview flag is accidentally enabled.
+
+Choose **Judge.me**, **Custom reviews**, or **Environment default**. Your
+selection lasts one day in that browser, follows product navigation and
+reloads, and applies to review reads, collection links, and submissions.
+Other browsers keep the environment default. Returning to **Environment
+default** removes the preference. Custom mode currently closes collection
+until buyer authentication and storage are ready.
+
+`REVIEWS_PROVIDER` still sets the environment default. Restart development or
+build a fresh deployment after changing that setting; browser selections need
+neither. Keep Production on `judgeme` during implementation.
+
 This does not change Judge.me's installation, hosted account extensions, or
 queued request emails. It is a testing switch, not a completed migration or
-rollback procedure after collecting custom reviews. Never prefix it with
-`NEXT_PUBLIC_` or select the write provider from browser input.
+rollback procedure after collecting custom reviews. Keep both configuration
+variables server-only. The preview endpoint accepts same-origin requests in
+allowed environments; ordinary submission fields cannot choose a provider.
 
 See the [rebuild plan](docs/REVIEWS_REBUILD.md) for the full replacement scope
 and the [implementation handoff](docs/REVIEWS_HANDOFF.md) for completed commits,

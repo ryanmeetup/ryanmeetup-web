@@ -16,6 +16,7 @@ import { getColorPreview } from "@/lib/product-colors";
 import { getProductGroupForMember, getProductHref, resolveProductDesignValue } from "@/lib/product-groups";
 import { getReviews } from "@/lib/reviews";
 import { getReviewAccount } from "@/lib/review-collection";
+import { getReviewPreview } from "@/lib/review-preview";
 import { cartOrigin, withProductOrigin } from "@/lib/product-origin";
 import { getCollections, getProduct, getProductHandles } from "@/lib/shopify";
 
@@ -57,9 +58,10 @@ export default async function ProductPage({ params, searchParams }: Props) {
   }
   const selectedDesign = product.designs?.find((design) => design.value === requestedDesign);
   const reviewProducts = product.designs?.map((design) => design.product) ?? [product];
-  const [reviewEntries, reviewAccount] = await Promise.all([
+  const [reviewEntries, reviewAccount, reviewPreview] = await Promise.all([
     Promise.all(reviewProducts.map(async (item) => [item.id, await getReviews(item.id)] as const)),
     getReviewAccount(),
+    getReviewPreview(),
   ]);
   const reviewsByProduct = Object.fromEntries(reviewEntries);
   const reviewCount = Object.values(reviewsByProduct).reduce((count, reviews) => count + reviews.count, 0);
@@ -88,11 +90,11 @@ export default async function ProductPage({ params, searchParams }: Props) {
       <NavSection href={typeCollection ? getCollectionPath(typeCollection.handle) : null} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema).replace(/</g, "\\u003c") }} />
       {product.designs ? (
-        <ProductGroupDetail title={product.title} handle={product.handle} breadcrumbs={breadcrumbs} designs={product.designs} defaultColor={product.defaultColor} reviewsByProduct={reviewsByProduct} reviewAccount={reviewAccount} />
+        <ProductGroupDetail title={product.title} handle={product.handle} breadcrumbs={breadcrumbs} designs={product.designs} defaultColor={product.defaultColor} reviewsByProduct={reviewsByProduct} reviewAccount={reviewAccount} reviewPreview={reviewPreview} />
       ) : (
         <>
           <ProductDetail product={product} breadcrumbs={breadcrumbs} initialColor={query.color} initialImage={getColorPreview(product, query.color)?.image} />
-          <Reviews data={reviewsByProduct[product.id]} product={product} reviewAccount={reviewAccount} />
+          <Reviews data={reviewsByProduct[product.id]} product={product} reviewAccount={reviewAccount} reviewPreview={reviewPreview} />
         </>
       )}
       <p className="sr-only">Price: {formatMoney(product.priceRange.minVariantPrice)}</p>
