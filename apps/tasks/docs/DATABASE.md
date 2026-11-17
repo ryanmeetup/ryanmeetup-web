@@ -12,29 +12,64 @@ RMT (`lvfaartgcpphuokoswcm`) is also the selected backend for store reviews and
 future Ryan Meetup properties. Store data belongs in new domain-owned tables
 and buckets with scoped app permissions. Keep one migration history here;
 do not start a competing store migration directory for this same project.
-The two-instance migration delivery policy below still applies. Store runtime
+Shared Tasks migrations reach both instances; RMT-only extensions are selected
+through `supabase/migration-scopes.json`. Store runtime
 connections and customer data target RMT only; PRD remains a separate personal
 instance. The [review database plan](../../store/docs/REVIEWS_DATABASE.md)
 records the boundary, including keeping Shopify buyers out of Tasks signup
 and membership provisioning. Private customer authorization/session storage is
 implemented in `20261120130000_store_customer_auth_storage.sql` and applied to
-RMT; review-content tables remain outstanding. PRD's matching schema application
-is pending; use [the complete SQL and verification](PRD_STORE_CUSTOMER_AUTH_SQL.md).
+RMT; review-content tables remain outstanding. This version is now explicitly
+**RMT-only**, so PRD does not need it. The
+[previous PRD SQL handoff is superseded](PRD_STORE_CUSTOMER_AUTH_SQL.md).
 Use `node scripts/test-store-customer-auth.mjs` for isolated database and
 encrypted-persistence checks. It uses a separate stack/project and ports;
 loopback `--db-url` is not a safe way to isolate `supabase db reset` from the
-existing app stack in CLI v2.115.0.
+existing app stack in CLI v2.115.0. Pass `--target prd` to validate the shared
+Tasks profile locally, without connecting to the hosted personal database.
+
+## Migration profiles
+
+Keep every applied file in `supabase/migrations` unchanged. The adjacent
+`migration-scopes.json` contains a list of `rmtOnly` versions. All other files
+are shared Tasks migrations. `store_`/`rmt_` migration filenames require an
+explicit registry entry so a new extension cannot silently land on PRD.
+
+| Profile | SQL |
+| --- | --- |
+| RMT | Shared Tasks migrations plus all declared Ryan Meetup extensions, in original version order. |
+| PRD | Shared Tasks migrations only. Excluded versions are neither required nor recorded as applied. |
+
+The existing RMT CLI directory still contains its complete history, including
+`20261120130000_store_customer_auth_storage.sql`; no rename, history repair, or
+database change is needed for this split. PRD's dashboard SQL generator selects
+its profile before computing missing versions, prerequisite guards, and history
+inserts. It defaults to PRD; `--target rmt` explicitly selects the complete RMT
+plan. Prefer the actual complete history list over the legacy highest-version
+shortcut, since gaps in either profile remain possible.
+
+If PRD already received an RMT-only migration, leave its objects and history
+alone. The planner ignores that known extension for PRD's prerequisites and
+future work. Do not drop tables or manufacture a skipped-version marker.
+An up-to-date plan writes only a harmless comment, replacing any stale output
+file that could otherwise still contain obsolete store SQL.
+
+Shared migrations must continue to work without extension tables on PRD.
+Run `node scripts/test-store-customer-auth.mjs` and the `--target prd` variant
+for isolated reset/access checks; run
+`node --test scripts/migration-plan.test.mjs scripts/build-catchup-sql.test.mjs`
+for planning/CLI regressions. The latter checks also run in CI.
 
 ## The short version
 
 - Every schema change is a migration file in `supabase/migrations`. **Never let
   a dashboard edit be the only record of a change, and never delete an applied
   migration file.** RMT receives the file with `supabase db push`; PRD is not
-  reachable from this machine and receives the same SQL through its dashboard
-  SQL Editor.
+  reachable from this machine and receives shared Tasks SQL through its
+  dashboard SQL Editor. RMT-only extensions never enter PRD's catch-up plan.
 - `20260731000000_baseline_schema.sql` reproduces the entire database from
   nothing. `supabase/seed.sql` adds the rows a workspace needs to be usable.
-- Verify any change with `supabase db reset` followed by
+- Verify any change with the isolated profile runner followed by
   `supabase db diff --linked`. For this schema that is not a formality — see
   "What verification caught".
 
@@ -288,15 +323,19 @@ like.
 ## Working on the schema
 
 1. Write a new migration in `supabase/migrations` with a timestamp after the
-   latest one. A migration that creates a table in `public` also grants it:
+   latest one. Add RMT-only versions to `supabase/migration-scopes.json`;
+   shared Tasks versions are the default. A migration that creates a table in
+   `public` also grants it:
    nothing is granted by default (see "New tables grant nothing" below), so a
    table without grants answers the Data API with `permission denied`.
-2. `supabase db reset` to apply it from empty, then `supabase db diff --linked`
-   to see exactly what it changes relative to production.
+2. Reset and test both profiles in isolated local stacks using the runner above,
+   then `supabase db diff --linked` to compare against RMT. Do not use the app's
+   existing local database as a disposable test database.
 3. Run `npm test`. (`npm run test:e2e` is hermetic and will not exercise it.)
 4. Commit the file. This is the step that was being skipped.
-5. Apply it to both projects. RMT is reachable from this machine, so run
-   `supabase db push` yourself. PRD is not, so hand Ryan the migration's SQL as
+5. Apply it to the projects in its scope. RMT is reachable from this machine,
+   so run `supabase db push` yourself. Shared migrations also reach PRD, which
+   is not reachable here, so hand Ryan the scoped catch-up SQL as
    one complete, paste-ready block for its dashboard SQL Editor, with a
    verification query and the result to expect.
 
@@ -341,17 +380,18 @@ workspace that is set up wrong, like
   PRD does not get CLI commands: hand over the SQL as one paste-ready block
   for its dashboard SQL Editor, with a verification query, stated explicitly
   as running on PRD. `scripts/build-catchup-sql.mjs` writes that block — every
-  migration the instance lacks, in one transaction, guarded so it refuses a
+  shared migration the instance lacks, in one transaction, guarded so it refuses a
   database it does not fit, ending with the rows that record it. **Pass it the
   history query's own output**, quoted, rather than a single version: a single
   version means "everything up to here is applied", which was true of PRD
   until it applied `20261003000000` on its own, and a block built that way
   would have carried a migration it already had. Verify the block before
-  handing it over, the same way the one on 2026-09-06 was, and reproduce the
-  instance's real history rather than a tidy prefix of it when it has a gap:
+  handing it over and reproduce the instance's real history rather than a tidy
+  prefix of it when it has a gap. In a temporary, uniquely named local stack
+  with separate ports and only PRD-profile migrations, the verification is:
 
   ```sh
-  supabase db reset --local --no-seed                        # every migration
+  supabase db reset --local --no-seed                        # shared profile
   pg_dump --schema-only --schema=public --schema=storage     # keep this dump
   supabase db reset --local --no-seed --version <its last ungapped version>
   psql -f <each migration it has beyond that>                # rebuild its gap
@@ -361,7 +401,7 @@ workspace that is set up wrong, like
 
   The 2026-09-10 block was verified that way, against a local database rebuilt
   to PRD's real history, `20261003000000` applied before its four predecessors
-  and all. The resulting schema matched a clean run of every migration exactly,
+  and all. The resulting schema matched a clean run of the shared profile exactly,
   so applying those four after it is safe.
 
   Never `--linked`: that resets RMT.
@@ -369,7 +409,7 @@ workspace that is set up wrong, like
 - **Ask PRD what it has rather than trusting this section.** Nothing in the
   repository records what PRD holds, and a note here is only true until the
   next migration lands. Run this in the PRD SQL Editor and compare against
-  `supabase/migrations`:
+  the shared profile selected from `supabase/migrations`:
 
   ```sql
   select string_agg(version, ', ' order by version)
@@ -379,9 +419,9 @@ workspace that is set up wrong, like
   A handover block should end by inserting its versions into that table, or
   the next reading of it is wrong again.
 
-- **Every migration must reach both projects.** A schema change applied to one
-  and not the other is the beginning of exactly the drift this document was
-  written to end.
+- **Every shared Tasks migration must reach both projects.** RMT-only versions
+  are intentional exclusions declared in the scope registry. Missing shared
+  schema remains drift; excluded store features do not require PRD history rows.
 
 ## The provisioning-contract drift
 

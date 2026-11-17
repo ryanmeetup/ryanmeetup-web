@@ -10,8 +10,9 @@ The [database plan](REVIEWS_DATABASE.md) records that decision and supersedes
 the earlier dedicated-project proposal. Keep local/Preview data isolated and
 the personal PRD instance separate. The Shopify Customer Account API client
 and review-content schema are still outstanding. Private customer auth storage
-has been applied to RMT as migration `20261120130000`; PRD is pending the
-dashboard block below. No deployment credentials or billing settings changed.
+has been applied to RMT as migration `20261120130000`. It is now RMT-only;
+PRD does not need its SQL or a skipped-version history marker. No deployment
+credentials or billing settings changed.
 Buyer sign-in configuration, discovery, and authorization/callback validation
 helpers now exist. They are not wired to an HTTP login flow. See
 [the Shopify auth setup and boundary](REVIEWS_SHOPIFY_AUTH.md).
@@ -28,7 +29,10 @@ helpers now exist. They are not wired to an HTTP login flow. See
 | `30bf8a50` | Add explicit confidential Customer Account client configuration, pinned-shop OpenID discovery, synthetic fixtures, and client setup instructions. | 7 configuration/discovery checks; TypeScript and changed-file ESLint passed. Live public discovery matched shop `71870054511`. No client secret or buyer token was used for discovery. |
 | `0f321b07` | Prepare server-side authorization attempts, opaque secure browser binding, state/nonce/S256, safe product return paths, and callback validation. No HTTP login flow enabled. | 10 authorization checks, including an RFC 7636 vector; combined 45 focused review/auth checks, changed-file ESLint, TypeScript, production build, and diff check passed. |
 | `37fa5c20` | Seal flow secrets and buyer tokens with AES-256-GCM, record-bound authenticated context, and explicit rotatable server keyrings. | 7 new encryption checks; combined 52 focused review/auth checks, changed-file ESLint, TypeScript, and store production build passed. |
-| `6cde7715` | Add private authorization/session tables and five invoker RPCs in the canonical migration history, plus an isolated test stack and encrypted storage integration checks. | Full reset and replay, 72 database/access assertions, 2 encrypted-persistence tests, and 2 concurrent-writer checks passed. Linked diff affected only the new store objects. RMT push and remote migration/RLS/grant verification passed; both tables empty. PRD pending manual SQL. |
+| `6cde7715` | Add private authorization/session tables and five invoker RPCs in the canonical migration history, plus an isolated test stack and encrypted storage integration checks. | Full reset and replay, 72 database/access assertions, 2 encrypted-persistence tests, and 2 concurrent-writer checks passed. Linked diff affected only the new store objects. RMT push and remote migration/RLS/grant verification passed; both tables empty. PRD was initially included in the handoff; the migration is now explicitly RMT-only. |
+| `4367cfd8` | Declare shared and RMT-only migration scopes without moving or changing applied SQL. | Scope validation rejects missing entries, duplicate versions, and invalid metadata. |
+| `63e38492` | Default dashboard catch-up SQL to PRD's shared profile, preserving gaps and leaving existing extension objects/history untouched. | 16 combined scope/planner checks passed, including stale-output replacement and CLI defaults. |
+| `e29cd515` | Validate each profile in its own disposable stack and run scope/planner checks in CI. | RMT: 72 SQL assertions, 2 encrypted-storage checks, and 2 concurrent-writer checks. PRD: 65 Tasks access assertions, no store objects, and exact shared history. Changed-script ESLint, diff check, and Tasks production build with live RMT contract preflight passed. |
 
 The final type-only tightening of `ReviewsData` was checked with `tsc --noEmit`
 after the successful production build. Both themes were browser-tested at 390,
@@ -47,9 +51,12 @@ Transfer those documents too if moving to a checkout that does not have them.
 RMT (`lvfaartgcpphuokoswcm`) has migration `20261120130000` recorded, two
 RLS-enabled tables, five service-role-only functions, no anonymous/member table
 reads, and zero stored auth/session rows as verified on November 17, 2026.
-PRD (`vjsnobmfsfrsnwukfaoq`) is not reachable from this machine and has **not**
-been verified. Give Ryan [the complete PRD SQL block and verification query](../../tasks/docs/PRD_STORE_CUSTOMER_AUTH_SQL.md);
-do not give him CLI instructions or claim its schema is applied.
+PRD (`vjsnobmfsfrsnwukfaoq`) does **not** need this RMT-only migration.
+The earlier [PRD SQL handoff](../../tasks/docs/PRD_STORE_CUSTOMER_AUTH_SQL.md)
+is superseded. Leave any already-applied PRD extension objects/history alone;
+no hosted rollback, deletion, or history repair is part of the scope split.
+PRD remains inaccessible from this machine; its shared Tasks changes still get
+complete dashboard SQL from the scoped catch-up planner.
 
 The first validation prototype passed a second database name on a loopback
 `--db-url` to `supabase db reset`. CLI v2.115.0 treated it as the default local
@@ -62,6 +69,12 @@ The committed test runner fixes this by copying canonical migrations into a
 temporary Supabase workspace with a unique `store-auth-test-*` project ID and
 separate 55420–55422 ports, testing there, and stopping/removing **only** its own
 stack. It never uses a second database name as isolation for the reset command.
+
+The migration-scope split changed no hosted database and left every canonical
+SQL file unchanged. Shared Tasks schema still reaches both instances. Only
+the declared RMT extensions are excluded from PRD's dashboard plan. Both clean
+profiles were tested locally; this does not claim access to the hosted PRD
+database. The old PRD store-auth SQL document now contains a superseded notice.
 
 ## Switch and current contracts
 
@@ -190,8 +203,10 @@ Shopify gate above; record its result before implementation depends on it.
 3. **Review storage baseline:** add store-owned tables/buckets to the existing
    **RMT** shared backend through the scoped backend interface, with isolated
    Preview data, shop/order/line uniqueness, approved/pending revisions, and
-   moderation audit. Keep migrations in `apps/tasks/supabase/migrations` and
-   follow the existing two-instance schema delivery policy. Store credentials
+   moderation audit. Keep immutable SQL in `apps/tasks/supabase/migrations`,
+   declare store versions in `supabase/migration-scopes.json`, and apply them
+   to RMT only. Shared Tasks migrations continue to reach both instances.
+   Store credentials
    and customer data target RMT only; PRD remains personal. See
    [the database plan](REVIEWS_DATABASE.md). Shopify buyers must not enter the
    Tasks Supabase signup/provisioning flow.
@@ -229,10 +244,13 @@ Database validation from `apps/tasks` (requires local Docker and Supabase CLI):
 
 ```sh
 node scripts/test-store-customer-auth.mjs
+node scripts/test-store-customer-auth.mjs --target prd
+node --test scripts/migration-plan.test.mjs scripts/build-catchup-sql.test.mjs
 ```
 
 The runner includes the storage integration tests, which intentionally skip in
-normal storefront test runs unless given its isolated test container. It
+normal storefront test runs unless given its isolated RMT test container. The
+PRD profile proves Tasks works without store objects/history; the RMT profile
 checks authorization consumption and logout/refresh races with real database
 connections, not a browser API stub.
 

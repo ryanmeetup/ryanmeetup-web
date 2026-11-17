@@ -10,6 +10,12 @@ instance is a Vercel project pointing at this repo with its own Supabase project
 and its own environment. Both deploy from `main`, so a feature shipped once
 lands everywhere.
 
+RMT now also hosts Ryan Meetup-only backend extensions such as store auth.
+`supabase/migration-scopes.json` keeps those out of PRD's shared Tasks profile.
+The original SQL files remain in one canonical history. Use the scoped
+dashboard SQL planner for PRD; no skipped extension history rows are needed.
+See [the migration profiles](DATABASE.md#migration-profiles).
+
 Two approaches were considered and rejected:
 
 - **A permission flag inside the existing database.** Personal data would live

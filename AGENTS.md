@@ -57,9 +57,10 @@ How to work with them:
   temporary diagnostic.** It fails silently — the app builds, signs in, and
   serves the other workspace's data under the wrong domain, and anything
   written lands in the wrong database. This has happened once already.
-- Every migration must be pushed to **both** projects. See "Supabase database
-  changes" below; a schema change applied to one and not the other is exactly
-  the drift that broke PRD's deploys.
+- Shared Tasks migrations must reach **both** projects. Ryan Meetup-only
+  extensions listed in `apps/tasks/supabase/migration-scopes.json` reach RMT
+  only. Use the scoped planner for PRD; never add fake history entries for
+  excluded extensions. See "Supabase database changes" below.
 - `NEXT_PUBLIC_*` values are inlined at build time, so a deployment keeps
   talking to whatever project it was built against. After changing environment
   variables, trigger a **fresh** deploy from `main` — redeploying an older one
@@ -84,10 +85,13 @@ Tasks workspace member. PRD remains a separate personal instance.
 
 Keep the canonical migration history in `apps/tasks/supabase/migrations` until
 it is deliberately moved with its tooling to a shared backend workspace. Do
-not introduce a competing store migration history for the same database. The
-existing requirement to deliver migrations to both Tasks instances still
-applies; store credentials, integration configuration, and customer data target
-RMT only. See `apps/store/docs/REVIEWS_DATABASE.md` for the current boundaries.
+not introduce a competing store migration history for the same database.
+`apps/tasks/supabase/migration-scopes.json` declares RMT-only versions; other
+migrations are shared. Store/shared-backend extensions use `store_` or `rmt_`
+filenames and require an explicit `rmtOnly` entry. Keep applied SQL immutable.
+PRD receives only shared Tasks migrations; existing RMT-only objects/history on
+PRD, if any, stay untouched. Store credentials, integration configuration, and
+customer data target RMT only. See `apps/store/docs/REVIEWS_DATABASE.md`.
 
 ## Before Making Changes
 
@@ -420,25 +424,37 @@ migration file.
 For a database change:
 
 1. Write a new file in `apps/tasks/supabase/migrations` with a timestamp after
-   the latest one. A new `public` table needs explicit `grant` statements in
+   the latest one. Declare Ryan Meetup-only versions in
+   `apps/tasks/supabase/migration-scopes.json`; shared Tasks migrations remain
+   the default and must not depend on excluded extension objects on PRD.
+   A new `public` table needs explicit `grant` statements in
    that same file; Supabase no longer grants new tables to the Data API roles.
    See "New tables grant nothing" in `apps/tasks/docs/DATABASE.md`.
-2. `supabase db reset` to apply it from empty, then
+2. Test both migration profiles from empty in isolated local stacks with
+   `node scripts/test-store-customer-auth.mjs` and its `--target prd` variant
+   from `apps/tasks`. The runner selects files before `supabase db reset`;
+   do not reset the existing app stack or use a loopback `--db-url` as isolation.
+   Then run
    `supabase db diff --linked --schema public` to see exactly what it changes
    relative to the linked project.
 3. Run the relevant unit and route tests. The Playwright suite runs against a
    stub and verifies nothing about the schema.
 4. Commit the file with the code that depends on it.
-5. Apply the migration to both instances using their supported paths:
+5. Apply the migration to every target in its scope:
    - **RMT** (`lvfaartgcpphuokoswcm`): this machine has CLI access. Run
      `supabase db push` yourself and verify the remote migration state.
-   - **PRD** (`vjsnobmfsfrsnwukfaoq`): Ryan does not have CLI access. Never
-     hand him `supabase link`, `supabase db push`, or other CLI instructions
+   - **PRD** (`vjsnobmfsfrsnwukfaoq`), **shared migrations only**: Ryan does not
+     have CLI access. Never hand him `supabase link`, `supabase db push`, or other CLI instructions
      for PRD. Give him the exact, complete SQL block to paste into the PRD
      Supabase dashboard's **SQL Editor**, followed by a concrete verification
      query and its expected result. Source that SQL from the committed
      migration, make it safe to re-run where practical, and state explicitly
      that it must be run against PRD rather than RMT.
+
+Use `apps/tasks/scripts/build-catchup-sql.mjs` to generate dashboard catch-up
+SQL from actual history. It defaults to PRD's shared-only profile; `--target rmt`
+includes extensions. Do not move/delete an applied migration, rewrite history,
+or mark an RMT-only version applied on PRD to silence migration tooling.
 
 Code that reads a table added by a migration that may not be applied yet can
 tolerate a missing relation through `isMissingRelation` in

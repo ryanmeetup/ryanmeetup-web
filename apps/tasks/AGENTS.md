@@ -51,9 +51,12 @@ Code is organized by responsibility:
   clients must not set those themselves. New owner-only tools belong here and
   in `lib/admin/admin-routes.ts`, not as another control in the header.
 - Schema changes are migrations in `supabase/migrations`, applied with
-  `supabase db push`. `20260731000000_baseline_schema.sql` reproduces the whole
+  `supabase db push` on RMT. `supabase/migration-scopes.json` lists RMT-only
+  extensions; all other migrations are shared Tasks schema. PRD receives the
+  scoped planner's shared-only dashboard SQL. Applied SQL files stay immutable.
+  `20260731000000_baseline_schema.sql` reproduces the whole
   database, and `supabase/seed.sql` seeds the rows a workspace needs; verify a
-  change with `supabase db reset` then `supabase db diff --linked`. Never change
+  change with the isolated profile runner then `supabase db diff --linked`. Never change
   the schema only in the dashboard, and never delete an applied migration file —
   doing that is what left 67 orphaned history rows and no baseline until now.
   See `docs/DATABASE.md`.
@@ -214,9 +217,12 @@ do not introduce a second competing name casually.
 
 Schema changes follow the repository policy in the root `AGENTS.md` under
 "Supabase database changes": every change is a committed migration file in
-`supabase/migrations`, verified with `supabase db reset` and `supabase db diff
---linked` before it is applied. Never apply a schema change by hand, and never
-delete an applied migration file. Keep changes idempotent where practical and
+`supabase/migrations`. Declare RMT-only versions in
+`supabase/migration-scopes.json`; `store_`/`rmt_` files require an explicit entry.
+Verify both profiles through the isolated test runner before applying a change,
+then use `supabase db diff --linked` for RMT. Never apply an RMT schema change
+only in the dashboard, and never delete an applied migration file. Keep changes
+idempotent where practical and
 document security-sensitive behavior in the access-control specification.
 `docs/DATABASE.md` has the full workflow and the history behind it.
 
@@ -232,8 +238,11 @@ split.
 - **PRD (`projects.ryanle.dev`, ref `vjsnobmfsfrsnwukfaoq`).** This machine's
   Supabase login has no access to that project, so `supabase link` and
   `supabase db push` cannot reach it. Never hand over CLI commands for PRD.
-  Give Ryan the exact SQL to paste into the PRD Supabase dashboard's **SQL
-  Editor** instead — copied from the committed migration, complete, runnable as
+  Only shared Tasks migrations apply here. Use `scripts/build-catchup-sql.mjs`
+  (PRD is its default target) to exclude RMT-only SQL and prerequisites. Never
+  fabricate applied versions for excluded extensions or remove already-applied
+  extension objects/history. Give Ryan the exact SQL to paste into the PRD
+  Supabase dashboard's **SQL Editor** instead — copied from the committed migration, complete, runnable as
   one block, and safe to re-run where practical. Include a separate verification
   query with the expected result, and say explicitly that both blocks run on
   PRD. Do not substitute a migration filename, repository link, prose summary,

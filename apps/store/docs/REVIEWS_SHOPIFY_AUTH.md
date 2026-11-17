@@ -97,7 +97,8 @@ and erases its ciphertext; session revocation erases tokens and blocks stale
 refreshes through revision checks.
 
 The migration is applied and verified on **RMT**. Both tables were empty after
-verification. **PRD is pending**; use [the complete dashboard SQL and verification](../../tasks/docs/PRD_STORE_CUSTOMER_AUTH_SQL.md).
+verification. This migration is **RMT-only**; PRD does not need it. The
+[previous PRD SQL handoff is superseded](../../tasks/docs/PRD_STORE_CUSTOMER_AUTH_SQL.md).
 No database secret was added to the storefront. The scoped backend interface
 still needs to be built; it must authenticate the calling service and pin its
 shop/client scope before using the trusted backend database client.

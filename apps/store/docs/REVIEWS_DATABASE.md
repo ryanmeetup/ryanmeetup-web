@@ -48,18 +48,23 @@ rebuild.
 Supabase supports a [local database and storage environment](https://supabase.com/docs/guides/local-development).
 Use the repository's existing `apps/tasks/supabase` workspace to test the
 combined database. Review tables, grants, policies, functions, and buckets
-belong in new versioned files in `apps/tasks/supabase/migrations`. Test reset
+belong in new versioned files in `apps/tasks/supabase/migrations`, declared
+RMT-only in the adjacent `migration-scopes.json`. Test reset
 from empty, linked diff, and database authorization/constraint tests before
 applying changes. Do not create `apps/store/supabase/migrations` for this same
 database.
 
-The repository currently delivers every migration to both Tasks instances.
-Follow that policy: apply to RMT through the existing CLI path and provide
-complete SQL plus verification for PRD's dashboard path. Schema parity does
-not imply enabling the store on PRD or copying review data there. Do not
-silently create an RMT-only migration branch. A future move to a shared backend
-workspace must move the history, configuration, checks, and rollout tooling
-together. See [the database workflow](../../tasks/docs/DATABASE.md).
+The scope registry separates shared Tasks schema from Ryan Meetup extensions
+without moving or changing applied SQL files. RMT receives both scopes. PRD
+receives only shared Tasks migrations through the catch-up generator's default
+profile. Store files use a `store_`/`rmt_` prefix and need an explicit `rmtOnly`
+entry; unknown or missing scope metadata fails planning.
+
+The existing auth migration `20261120130000` stays applied on RMT and is not
+required on PRD. No skipped history marker is added there. If PRD already has
+its objects/history, leave them untouched. The previous PRD paste block is
+superseded. Shared migrations must work without extension objects on PRD.
+See [the database workflow](../../tasks/docs/DATABASE.md#migration-profiles).
 
 ## App access and buyer identity
 
@@ -138,7 +143,7 @@ and the staging option before deciding whether hosting needs to change.
    target. Use store-owned environment variable names to make ownership clear.
 3. Add a small review migration to the canonical history, with explicit grants,
    ownership, revision, and publication constraints plus database tests. Follow
-   the existing two-instance schema rollout policy.
+   the RMT-only scope policy; shared Tasks changes still reach both instances.
 4. Connect Preview to the isolated test backend and exercise a buyer,
    moderator, and public-read flow. Custom mode remains closed until the
    dependencies work.
@@ -148,12 +153,15 @@ and the staging option before deciding whether hosting needs to change.
 
 Auth storage has landed as a canonical migration; see
 [the handoff](REVIEWS_HANDOFF.md) for per-instance rollout verification and
-[the PRD SQL block](../../tasks/docs/PRD_STORE_CUSTOMER_AUTH_SQL.md). No storage
+[the superseded PRD handoff](../../tasks/docs/PRD_STORE_CUSTOMER_AUTH_SQL.md). PRD
+does not need the store-auth migration. No storage
 bucket, deployment credential, or billing setting has been changed.
 
 Use `node scripts/test-store-customer-auth.mjs` from `apps/tasks` for database
 validation. It creates a uniquely named test stack on separate ports, replays
-all migrations from empty, checks private access and encrypted persistence,
-then removes only its own stack. Never use a loopback `--db-url` to try to
+the selected profile from empty, checks private access and encrypted persistence
+on RMT or Tasks access without store objects on PRD, then removes only its own
+stack. Use `--target prd` for the local PRD-shaped check. Never use a loopback
+`--db-url` to try to
 reset a second database inside the existing app stack: CLI v2.115.0 treats it
 as a default local-stack reset, ignoring the database name.
