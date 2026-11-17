@@ -1,39 +1,85 @@
-# Reviews database proposal
+# Reviews on the shared Ryan Meetup backend
 
-November 17, 2026. Ryan confirmed that neither a dedicated reviews database nor
-a Shopify Customer Account API client has been provisioned. This is a proposed
-setup, not a provisioned service or an approved recurring expense.
+November 17, 2026. Ryan chose to reuse the existing Ryan Meetup Tasks Supabase
+project as the beginning of a shared backend for all Ryan Meetup properties.
+This supersedes the earlier recommendation to provision a dedicated store
+project. A Shopify Customer Account API client and the custom review schema
+are still outstanding.
 
-## Recommended setup
+## Selected project and ownership
 
-Use a **dedicated Supabase project for the store** in Ryan Meetup's existing
-Supabase organization. It can hold review data and photos without a separate
-account or a standalone backend application. The existing Next.js store owns
-the server-side review API. Shopify remains responsible for buyer identity,
-products, orders, and fulfillment.
+Use **RMT**, project `lvfaartgcpphuokoswcm`, which currently backs
+`tasks.ryanmeetup.com`. Add new store-owned review tables and media buckets
+there. The existing Next.js store owns its review API. Shopify remains
+responsible for buyer identity, products, orders, and fulfillment.
 
-Keep it independent of both Tasks projects. Use store-specific server-only
-credentials and the store's own migrations. Choosing an existing organization
-does not mean sharing a database, users, or buckets with Tasks.
+The personal Tasks instance at `projects.ryanle.dev`, project
+`vjsnobmfsfrsnwukfaoq` (**PRD**), remains a separate deployment with its own
+credentials and data. The store targets RMT; neither Tasks instance changes
+which project it uses.
 
-| Environment | Proposed setup | Data |
+Keep review records in their own tables, for example a `store_reviews` family,
+with separate revision, moderation, and media ownership. Do not embed reviews
+in task records or extend Tasks access groups to every buyer. Choose final
+table names and constraints when implementing the schema after the Shopify
+feasibility gate.
+
+Sharing infrastructure is the first step. Shared person records, account
+linking, and cross-property staff access can follow through explicit
+interfaces as those capabilities are needed. Keep review business logic in
+the store initially; extract shared server code when another app consumes it.
+
+| Environment | Setup | Data |
 | --- | --- | --- |
-| Development | Local Supabase through its CLI and Docker | Synthetic buyers, orders, reviews, and photos. |
-| Vercel Preview | A dedicated test Supabase project, or an isolated Supabase branch once paid branching is useful | Synthetic fixtures and explicitly approved test accounts. |
-| Production | A dedicated store project, for example `ryanmeetup-store` | Real reviews and their minimal Shopify ownership references. |
+| Development | Local Supabase rebuilt from the existing canonical migrations | Synthetic Tasks and store fixtures. |
+| Vercel Preview | An isolated test environment for the shared backend, or an appropriate Supabase branch | Synthetic fixtures and explicitly approved test accounts. |
+| Production | Existing RMT project `lvfaartgcpphuokoswcm` | Existing Tasks data plus store-owned review records and media. |
 
-Match the hosted database region to the store's server runtime when
-provisioning. Map Vercel Production and Preview variables to their respective
-project identities and verify those identities before applying migrations or
-enabling submissions. The browser mode switch selects a review provider; it
-never changes which database a deployment uses.
+Configure each app's server connection explicitly and verify project identity
+before enabling submissions. Preview must not write to the production RMT
+database. The browser mode switch selects a review provider; it never changes
+which database a deployment uses. Judge.me remains the default during the
+rebuild.
+
+## One migration history
 
 Supabase supports a [local database and storage environment](https://supabase.com/docs/guides/local-development).
-We can write and test schema migrations there before creating paid hosting.
-Keep versioned migrations under the store's own `apps/store/supabase/migrations`
-when that workspace is introduced, and test rebuilding from empty. Apply the
-same reviewed migrations to the test and production store projects. Do not
-use Tasks' migration directory or linked-project state.
+Use the repository's existing `apps/tasks/supabase` workspace to test the
+combined database. Review tables, grants, policies, functions, and buckets
+belong in new versioned files in `apps/tasks/supabase/migrations`. Test reset
+from empty, linked diff, and database authorization/constraint tests before
+applying changes. Do not create `apps/store/supabase/migrations` for this same
+database.
+
+The repository currently delivers every migration to both Tasks instances.
+Follow that policy: apply to RMT through the existing CLI path and provide
+complete SQL plus verification for PRD's dashboard path. Schema parity does
+not imply enabling the store on PRD or copying review data there. Do not
+silently create an RMT-only migration branch. A future move to a shared backend
+workspace must move the history, configuration, checks, and rollout tooling
+together. See [the database workflow](../../tasks/docs/DATABASE.md).
+
+## App access and buyer identity
+
+Design a store-specific server role or narrowly authorized database interface
+for review access. Sharing the project does not mean copying Tasks' broad
+admin secret into every app. Supabase secret/service-role access bypasses RLS,
+so row policies alone would not constrain that credential. Verify inherited
+role and function privileges as well as table grants when implementing the
+boundary. [Roles](https://supabase.com/docs/guides/database/postgres/roles),
+[RLS](https://supabase.com/docs/guides/database/postgres/row-level-security)
+
+Keep buyers on Shopify authentication with server-managed sessions. The current
+Tasks `auth_user_profile` trigger calls `handle_new_user` when a Supabase Auth
+user is created; Tasks provisioning creates profiles and access-group
+membership. Do not create Supabase users for store buyers or open the existing
+invite-only signup flow as part of reviews. Shared customer/staff identity is
+a later deliberate change, with its own membership rules.
+
+Database tests must prove both directions of isolation: ordinary Tasks clients
+cannot read private review drafts or purchase references, and the store's
+runtime role cannot read or change private Tasks data or invoke Tasks-only
+privileged functions. Publishing reviews exposes only approved public fields.
 
 ## What to store
 
@@ -56,43 +102,41 @@ or Supabase sign-in flow. Review request email addresses and queue processing
 belong to the later email phase and should be minimized there.
 
 Keep browser clients behind the store's server API. Store access credentials
-remain server-only, with database grants and row access policies chosen in the
-schema implementation. Read APIs expose only approved public fields; buyers
-and staff have separate authenticated write paths.
+remain server-only. Buyers and staff have separate authenticated write paths;
+future shared staff identity does not automatically grant moderation rights.
 
 ## Photos and backups
 
-Use a private bucket for uploads awaiting validation and moderation. Publish
-only approved, re-encoded derivatives. Withdrawal, deletion, and abandoned
-upload cleanup must cover the corresponding objects as well as database rows.
+Use store-owned buckets in RMT, with private uploads awaiting validation and
+moderation. Keep their policies independent of task/project/category
+attachments. Publish only approved, re-encoded derivatives. Withdrawal,
+deletion, and abandoned upload cleanup must cover the corresponding objects
+as well as database rows.
 
 Back up images separately from database records: Supabase's database backups
 do **not** include Storage file contents. Document and test both restore paths
 before launch. [Backup coverage](https://supabase.com/docs/guides/platform/backups)
 
-## Cost and sequence
+## Rollout sequence
 
-As checked on November 17, 2026, the [pricing page](https://supabase.com/pricing)
-lists a Free plan with two active projects per account and pausing after one
-week of inactivity. It is suitable for a test project if a free slot is
-available. Pro starts at $25/month with the first project included; additional
-projects in a paid organization start at $10/month. Check the organization's
-actual plan and compute usage before budgeting. Object storage and bandwidth
-beyond allowances can add charges.
-
-The proposed sequence is:
+No additional production Supabase project is planned. Database, storage, and
+bandwidth usage will share RMT's capacity and allowances. Check actual usage
+and the staging option before deciding whether hosting needs to change.
 
 1. Finish the Shopify login and exact purchase-line feasibility check. It is
    still a gate before implementing the dependent custom submission service.
-2. Confirm the Supabase organization, available test project allowance, and
-   intended production region. Approve any recurring hosting cost when a
-   concrete project is ready to be created.
-3. Introduce the local store database workspace and a small schema migration
-   with ownership, revision, and publication constraints plus database tests.
-4. Connect Preview to test storage and exercise one buyer/moderator/public-read
-   flow. Custom mode remains closed until those dependencies work.
-5. Provision production before import/cutover, verify project identity and
-   backups, and rehearse migration plus rollback while Judge.me stays installed.
+2. Audit the existing RMT role/function grants and Tasks provisioning boundary,
+   then agree the store's restricted server connection and isolated Preview
+   target. Use store-owned environment variable names to make ownership clear.
+3. Add a small review migration to the canonical history, with explicit grants,
+   ownership, revision, and publication constraints plus database tests. Follow
+   the existing two-instance schema rollout policy.
+4. Connect Preview to the isolated test backend and exercise a buyer,
+   moderator, and public-read flow. Custom mode remains closed until the
+   dependencies work.
+5. Apply and verify the reviewed schema on RMT, then configure the store's
+   scoped runtime access there. Verify backups and rehearse import/cutover and
+   rollback while Judge.me stays installed.
 
-No hosted database, billing change, database schema, or storage bucket has been
-created as part of this proposal.
+This increment records the shared-backend decision. No database schema,
+storage bucket, deployment credential, or billing setting has been changed.

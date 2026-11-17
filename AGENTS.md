@@ -73,6 +73,22 @@ How to work with them:
 
 Fuller detail lives in `apps/tasks/docs/MULTI_INSTANCE.md`.
 
+## Shared Ryan Meetup backend
+
+Ryan's direction is to grow the existing **RMT** Supabase project
+(`lvfaartgcpphuokoswcm`) into a shared backend for Ryan Meetup properties,
+starting with store reviews. Add domain-owned tables and storage buckets to
+that project with explicit app permissions. Keep Shopify buyer identity
+separate from Tasks membership; a store buyer must not automatically become a
+Tasks workspace member. PRD remains a separate personal instance.
+
+Keep the canonical migration history in `apps/tasks/supabase/migrations` until
+it is deliberately moved with its tooling to a shared backend workspace. Do
+not introduce a competing store migration history for the same database. The
+existing requirement to deliver migrations to both Tasks instances still
+applies; store credentials, integration configuration, and customer data target
+RMT only. See `apps/store/docs/REVIEWS_DATABASE.md` for the current boundaries.
+
 ## Before Making Changes
 
 1. Inspect the relevant app and shared packages before adding a component,

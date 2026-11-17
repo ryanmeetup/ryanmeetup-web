@@ -3,11 +3,14 @@
 Updated November 17, 2026. Continue from this file and
 [REVIEWS_REBUILD.md](REVIEWS_REBUILD.md). Implementation has started; the custom
 review service is **not ready to collect reviews**. Judge.me remains the default.
-Ryan requested a browser testing control and confirmed that the Customer
-Account API client and separate reviews database have not been provisioned.
-The [database proposal](REVIEWS_DATABASE.md) recommends a dedicated store
-Supabase project, local development, and isolated hosted Preview data. No
-hosting expense or database provisioning has been approved or performed.
+Ryan requested a browser testing control. He then chose the existing **RMT**
+Tasks Supabase project (`lvfaartgcpphuokoswcm`) as the shared backend for Ryan
+Meetup properties, starting with new store-owned review tables and buckets.
+The [database plan](REVIEWS_DATABASE.md) records that decision and supersedes
+the earlier dedicated-project proposal. Keep local/Preview data isolated and
+the personal PRD instance separate. The Shopify Customer Account API client
+and custom review schema are still outstanding; no schema, credential, or
+billing changes have been applied.
 
 ## Completed chunks
 
@@ -76,7 +79,9 @@ API session, OAuth callback, or Customer Account API client configuration. Only
 existing environment **names** were inspected; no secrets were printed. The
 local configuration names include Storefront/Admin and Judge.me credentials,
 but no Customer Account API client or separate reviews database configuration.
-Ryan subsequently confirmed that neither has been provisioned.
+Ryan confirmed the Shopify client was not provisioned and chose to reuse the
+existing RMT database. The store's scoped connection and review schema are
+not implemented yet.
 
 Before connecting custom writes:
 
@@ -123,11 +128,14 @@ Shopify gate above; record its result before implementation depends on it.
 2. **Exact-line eligibility:** normalize proven Shopify fields and handle the
    edge cases above; recheck ownership and eligibility on every write. Hand
    off typed eligible/ineligible/sign-in-required/unavailable results.
-3. **Review storage baseline:** confirm a dedicated store database and isolated
-   preview data, then commit versioned migrations with shop/order/line
-   uniqueness, ownership, approved/pending revisions, and moderation audit.
-   Do not use either Tasks Supabase project. Dedicated Supabase is the current
-   recommendation; see [the proposal](REVIEWS_DATABASE.md) before provisioning.
+3. **Review storage baseline:** add store-owned tables/buckets to the existing
+   **RMT** shared backend with a restricted store runtime role, isolated
+   Preview data, shop/order/line uniqueness, approved/pending revisions, and
+   moderation audit. Keep migrations in `apps/tasks/supabase/migrations` and
+   follow the existing two-instance schema delivery policy. Store credentials
+   and customer data target RMT only; PRD remains personal. See
+   [the database plan](REVIEWS_DATABASE.md). Shopify buyers must not enter the
+   Tasks Supabase signup/provisioning flow.
 4. **Text-only vertical slice:** authenticated buyer submission with required
    whole-star rating/body, chosen public display name, idempotency, and pending
    status. Keep unmoderated content private. Ship staff authorization and

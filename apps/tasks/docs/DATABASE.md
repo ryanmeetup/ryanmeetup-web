@@ -6,6 +6,18 @@ and how to prove a change is correct before it reaches production.
 If you are standing up a second instance, read this first and then
 `docs/MULTI_INSTANCE.md`, which covers everything outside the database.
 
+## Shared Ryan Meetup backend direction
+
+RMT (`lvfaartgcpphuokoswcm`) is also the selected backend for store reviews and
+future Ryan Meetup properties. Store data belongs in new domain-owned tables
+and buckets with scoped app permissions. Keep one migration history here;
+do not start a competing store migration directory for this same project.
+The two-instance migration delivery policy below still applies. Store runtime
+connections and customer data target RMT only; PRD remains a separate personal
+instance. The [review database plan](../../store/docs/REVIEWS_DATABASE.md)
+records the boundary, including keeping Shopify buyers out of Tasks signup
+and membership provisioning. No review schema has been applied yet.
+
 ## The short version
 
 - Every schema change is a migration file in `supabase/migrations`. **Never let
