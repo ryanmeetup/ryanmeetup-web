@@ -300,7 +300,9 @@ queued request emails. It is a testing switch, not a completed migration or
 rollback procedure after collecting custom reviews. Never prefix it with
 `NEXT_PUBLIC_` or select the write provider from browser input.
 
-See the [rebuild plan](docs/REVIEWS_REBUILD.md) for the full replacement scope.
+See the [rebuild plan](docs/REVIEWS_REBUILD.md) for the full replacement scope
+and the [implementation handoff](docs/REVIEWS_HANDOFF.md) for completed commits,
+verification commands, and the next small chunks.
 
 ## Judge.me setup
 
