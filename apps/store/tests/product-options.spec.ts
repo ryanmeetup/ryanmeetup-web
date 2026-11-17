@@ -35,7 +35,8 @@ test("cart hides the placeholder while preserving real options and stored mercha
   await expect(main.getByText("Default option product", { exact: true })).toBeVisible();
   await expect(main.getByText("Default Title", { exact: true })).toHaveCount(0);
   await expect(main.getByText("Size: One size", { exact: true })).toBeVisible();
-  await expect(main.getByText("Size: S · Color: Black", { exact: true })).toBeVisible();
+  await expect(main.getByText("Size: S", { exact: true })).toBeVisible();
+  await expect(main.getByText("Color: Black", { exact: true })).toBeVisible();
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("ryan-store-cart")!))).toEqual(cart);
 });
 

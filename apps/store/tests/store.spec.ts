@@ -35,7 +35,8 @@ test("cart lines move a listing member's title color into the options", async ({
   const main = page.getByRole("main");
   await expect(main.getByText("Super Ryan Shirt", { exact: true })).toBeVisible();
   await expect(main.getByText(superBlack.title, { exact: true })).toHaveCount(0);
-  await expect(main.getByText(`Size: ${variant.selectedOptions[0].value} · Color: Black`, { exact: true })).toBeVisible();
+  await expect(main.getByText(`Size: ${variant.selectedOptions[0].value}`, { exact: true })).toBeVisible();
+  await expect(main.getByText("Color: Black", { exact: true })).toBeVisible();
 });
 
 test("returning from checkout empties the cart", async ({ page }) => {

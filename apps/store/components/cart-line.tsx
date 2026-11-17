@@ -30,7 +30,7 @@ export function CartLineItem({ line, compact = false, highlighted = false, from 
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <Link href={href} className={`block font-cooper tracking-wide hover:underline ${compact ? "text-lg" : "text-lg sm:text-xl"}`}>{title}</Link>
-            {options.length > 0 && <p className="mt-1 text-xs text-black/70 dark:text-white/70">{options.map((option) => `${option.name}: ${option.value}`).join(" · ")}</p>}
+            {options.length > 0 && <ul className="mt-1 space-y-0.5 text-xs text-black/70 dark:text-white/70">{options.map((option) => <li key={option.name}>{option.name}: {option.value}</li>)}</ul>}
           </div>
           <div className="shrink-0 text-right">
             {compareAtPrice && <SaleBadge className="mb-1.5" />}
