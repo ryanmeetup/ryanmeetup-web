@@ -122,9 +122,15 @@ export type Review = {
 };
 
 export type ReviewsData = {
+  status: "available";
   averageRating: number;
   count: number;
   reviews: Review[];
+} | {
+  status: "unavailable";
+  averageRating: 0;
+  count: 0;
+  reviews: [];
 };
 
 /** A policy written in Shopify Admin → Settings → Policies. `body` is HTML. */

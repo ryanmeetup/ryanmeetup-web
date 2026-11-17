@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { validateEmail } from "@ryanmeetup/utils";
 import { getJudgeMeShopDomain } from "@/lib/judgeme";
+import { getReviewProvider } from "@/lib/review-provider";
 
 const noStore = { "Cache-Control": "no-store" };
 
@@ -19,6 +20,9 @@ function text(value: unknown, max: number) {
  * somewhere to be hosted, since Judge.me only takes picture URLs.
  */
 export async function POST(request: Request) {
+  if (getReviewProvider() !== "judgeme") {
+    return fail("Review collection is temporarily unavailable. Please try again later.", 503);
+  }
   const shopDomain = getJudgeMeShopDomain();
   if (!shopDomain) return fail("Review submissions will open when Judge.me is connected.", 503);
 

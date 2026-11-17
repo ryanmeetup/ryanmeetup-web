@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { POST } from "../app/api/reviews/route";
 
 const originalFetch = globalThis.fetch;
+const originalProvider = process.env.REVIEWS_PROVIDER;
 const originalDomain = process.env.SHOPIFY_STORE_DOMAIN;
 const originalJudgeMeDomain = process.env.JUDGEME_SHOP_DOMAIN;
 let providerRequests: { url: string; body: Record<string, unknown> }[] = [];
@@ -10,6 +11,7 @@ let providerStatus = 200;
 const validReview = { name: "Ryan", email: "ryan@example.com", productId: "gid://shopify/Product/123", rating: 5, body: "Holding up great." };
 
 test.beforeEach(() => {
+  process.env.REVIEWS_PROVIDER = "judgeme";
   providerRequests = [];
   providerStatus = 200;
   process.env.SHOPIFY_STORE_DOMAIN = "reviews.test";
@@ -21,6 +23,8 @@ test.beforeEach(() => {
 });
 
 test.afterEach(() => {
+  if (originalProvider === undefined) delete process.env.REVIEWS_PROVIDER;
+  else process.env.REVIEWS_PROVIDER = originalProvider;
   globalThis.fetch = originalFetch;
   if (originalDomain === undefined) delete process.env.SHOPIFY_STORE_DOMAIN;
   else process.env.SHOPIFY_STORE_DOMAIN = originalDomain;

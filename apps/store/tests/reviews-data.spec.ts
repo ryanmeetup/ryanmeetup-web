@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { getReviews } from "../lib/reviews";
 
 const originalFetch = globalThis.fetch;
+const originalProvider = process.env.REVIEWS_PROVIDER;
 const originalToken = process.env.JUDGEME_PRIVATE_API_TOKEN;
 const originalDomain = process.env.SHOPIFY_STORE_DOMAIN;
 const originalJudgeMeDomain = process.env.JUDGEME_SHOP_DOMAIN;
@@ -9,12 +10,15 @@ const originalJudgeMeDomain = process.env.JUDGEME_SHOP_DOMAIN;
 const review = { id: 1, body: "Ryan merch in the wild.", created_at: "2026-11-05T12:00:00Z", rating: 4, reviewer: { name: "Ryan" }, hidden: false, curated: "ok" };
 
 test.beforeEach(() => {
+  process.env.REVIEWS_PROVIDER = "judgeme";
   process.env.JUDGEME_PRIVATE_API_TOKEN = "test-token";
   process.env.SHOPIFY_STORE_DOMAIN = "reviews.test";
   delete process.env.JUDGEME_SHOP_DOMAIN;
 });
 
 test.afterEach(() => {
+  if (originalProvider === undefined) delete process.env.REVIEWS_PROVIDER;
+  else process.env.REVIEWS_PROVIDER = originalProvider;
   globalThis.fetch = originalFetch;
   if (originalToken === undefined) delete process.env.JUDGEME_PRIVATE_API_TOKEN;
   else process.env.JUDGEME_PRIVATE_API_TOKEN = originalToken;

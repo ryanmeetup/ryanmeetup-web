@@ -2,10 +2,17 @@ import { expect, test } from "@playwright/test";
 import { getReviewAccount } from "../lib/review-collection";
 
 const originalFetch = globalThis.fetch;
+const originalProvider = process.env.REVIEWS_PROVIDER;
 const originalDomain = process.env.SHOPIFY_STORE_DOMAIN;
 const originalToken = process.env.SHOPIFY_STOREFRONT_API_TOKEN;
 
+test.beforeEach(() => {
+  process.env.REVIEWS_PROVIDER = "judgeme";
+});
+
 test.afterEach(() => {
+  if (originalProvider === undefined) delete process.env.REVIEWS_PROVIDER;
+  else process.env.REVIEWS_PROVIDER = originalProvider;
   globalThis.fetch = originalFetch;
   if (originalDomain === undefined) delete process.env.SHOPIFY_STORE_DOMAIN;
   else process.env.SHOPIFY_STORE_DOMAIN = originalDomain;

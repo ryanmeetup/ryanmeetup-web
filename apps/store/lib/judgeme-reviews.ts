@@ -16,6 +16,7 @@ type JudgeMeReview = {
 };
 
 const emptyReviews: ReviewsData = {
+  status: "available",
   averageRating: 0,
   count: 0,
   reviews: [],
@@ -62,6 +63,7 @@ export async function getJudgeMeReviews(productId: string): Promise<ReviewsData>
   const reviews = (payload.reviews ?? []).filter((review) => review.hidden === false && review.curated === "ok");
 
   return {
+    status: "available",
     count: reviews.length,
     averageRating: reviews.length
       ? reviews.reduce((total, review) => total + review.rating, 0) / reviews.length

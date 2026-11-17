@@ -16,6 +16,9 @@ const reviewPhotosEnabled = false;
 const emptyDraft ={ rating: null as number | null, body: "", name: "", email: "" };
 
 function RatingSummary({ data, className = "" }: { data: ReviewsData; className?: string }) {
+  if (data.status === "unavailable") {
+    return <Text className={`text-sm ${className}`}>Reviews are temporarily unavailable.</Text>;
+  }
   return (
     <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-black/70 dark:text-white/70 ${className}`}>
       <RatingStars rating={data.averageRating} />
@@ -144,7 +147,12 @@ export function Reviews({ data, product, reviewAccount }: { data: ReviewsData; p
         {error && <ErrorCallout>{error}</ErrorCallout>}
       </Modal>
 
-      {data.reviews.length ? (
+      {data.status === "unavailable" ? (
+        <div className="mt-8 rounded-2xl border border-dashed border-black/20 p-8 text-center dark:border-white/20">
+          <Heading size="h3" className="text-xl">Reviews are taking a short break</Heading>
+          <Text className="mt-2">We couldn&apos;t load reviews for this product. Please try again later.</Text>
+        </div>
+      ) : data.reviews.length ? (
         <ul aria-label="Customer reviews" className="mt-8 grid items-start gap-4 md:grid-cols-2">
           {data.reviews.map((review) => (
             <li key={review.id}>

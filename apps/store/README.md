@@ -281,6 +281,27 @@ individually, use a collection and keep their standalone pages.
 | Cart item or fulfillment is wrong | Confirm the selected underlying product and variant, then its Shopify/Printful sync. The listing tag only controls presentation. |
 | Preview differs from the live catalog | Without Shopify credentials, the app uses [lib/demo-data.ts](lib/demo-data.ts). Demo entries do not establish what is published in Shopify. |
 
+## Review provider switch
+
+`REVIEWS_PROVIDER` is the server-only switch for review reads, collection links,
+and `POST /api/reviews`. Set it in `.env.local` or the deployment environment:
+
+| Value | Behavior |
+| --- | --- |
+| `judgeme` (also the unset/blank default) | Existing Judge.me integration, account links, and demo composer. |
+| `custom` | Custom integration under construction: unavailable reviews, disabled collection, and HTTP 503 on submissions. No Judge.me calls. |
+| Any other value | Unavailable reviews and closed submissions. Correct the setting. |
+
+Restart the dev server after changing it. For hosted testing, change the Preview
+environment and build a fresh deployment; leave Production on `judgeme`.
+Switch back to `judgeme` and restart/redeploy to restore the existing path.
+This does not change Judge.me's installation, hosted account extensions, or
+queued request emails. It is a testing switch, not a completed migration or
+rollback procedure after collecting custom reviews. Never prefix it with
+`NEXT_PUBLIC_` or select the write provider from browser input.
+
+See the [rebuild plan](docs/REVIEWS_REBUILD.md) for the full replacement scope.
+
 ## Judge.me setup
 
 Install Judge.me in the same Shopify store and provide its private API token server-side. Published reviews and visible review photos are read during product-page rendering using the documented `X-Api-Token` header.
