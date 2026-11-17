@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Card, Heading, Kicker, Text } from "@ryanmeetup/ui";
 import { FiHash, FiMail, FiPackage } from "react-icons/fi";
 import { StoreContactForm } from "@/components/store-contact-form";
@@ -56,6 +57,17 @@ export default async function ContactPage({ searchParams }: Props) {
                 ))}
               </div>
             </Card>
+
+            <Text className="text-sm">
+              Shipping times, final sales, or privacy?{" "}
+              <Link
+                href="/policies"
+                className="rounded-sm font-semibold text-black underline decoration-black/30 underline-offset-4 transition hover:decoration-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:text-white dark:decoration-white/30 dark:hover:decoration-white dark:focus-visible:ring-white/40"
+              >
+                Our store policies
+              </Link>{" "}
+              may answer it before you hit send.
+            </Text>
           </div>
 
           <Card variant="solid" size="lg" className="bg-white/95 shadow-drop dark:border-white/15 dark:bg-black/80 sm:p-8">

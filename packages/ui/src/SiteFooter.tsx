@@ -12,6 +12,8 @@ export type SiteFooterLink = {
 
 export type SiteFooterSection = {
   title: string;
+  /** Makes the section title a link to a page that gathers the section's links. */
+  href?: string;
   links: SiteFooterLink[];
   columns?: 1 | 2;
 };
@@ -89,7 +91,10 @@ export function SiteFooter({
     // The same links the branded variant stacks into titled columns, laid out
     // as one inline row. Dropping them entirely was the old behavior and it
     // made the section titles silently meaningless at this size.
-    const inlineLinks = sections.flatMap((section) => section.links);
+    const inlineLinks = sections.flatMap((section) => [
+      ...(section.href ? [{ href: section.href, label: section.title }] : []),
+      ...section.links,
+    ]);
 
     return (
       <footer
@@ -207,7 +212,13 @@ export function SiteFooter({
                 id={`footer-${section.title.toLowerCase().replaceAll(" ", "-")}`}
                 className="mb-4 text-xs font-semibold uppercase tracking-caps-wide text-black/70 dark:text-white/70"
               >
-                {section.title}
+                {section.href ? (
+                  <Link href={section.href} className={`rounded-sm underline decoration-black/30 underline-offset-4 transition hover:text-black hover:decoration-current dark:decoration-white/30 dark:hover:text-white ${focusRing}`}>
+                    {section.title}
+                  </Link>
+                ) : (
+                  section.title
+                )}
               </h2>
               <ul
                 className={`grid gap-x-4 gap-y-2 text-sm font-medium text-black/70 dark:text-white/70 ${section.columns === 2 ? "grid-cols-2" : "grid-cols-1"}`}

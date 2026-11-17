@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Breadcrumbs, Heading, Kicker } from "@ryanmeetup/ui";
-import { FiFileText } from "react-icons/fi";
+import { FiBookOpen, FiFileText } from "react-icons/fi";
 import { decodeRouteHandle } from "@/lib/handles";
 import { buildPageMetadata, DEFAULT_IMAGE } from "@/lib/metadata";
 import { StoreHomeIcon } from "@/lib/navigation";
@@ -37,7 +37,7 @@ export default async function PolicyPage({ params }: Props) {
       {/* One centred reading column: legal copy keeps a readable measure
           without hugging the left edge of the wide store container. */}
       <div className="mx-auto max-w-3xl">
-        <Breadcrumbs variant="compact" crumbs={[{ href: "/", title: "Store", icon: <StoreHomeIcon aria-hidden className="shrink-0" /> }, { href: `/policies/${policy.handle}`, title: policy.title, current: true, icon: <FiFileText aria-hidden className="shrink-0" /> }]} />
+        <Breadcrumbs variant="compact" crumbs={[{ href: "/", title: "Store", icon: <StoreHomeIcon aria-hidden className="shrink-0" /> }, { href: "/policies", title: "Policies", icon: <FiBookOpen aria-hidden className="shrink-0" /> }, { href: `/policies/${policy.handle}`, title: policy.title, current: true, icon: <FiFileText aria-hidden className="shrink-0" /> }]} />
         <article className="mt-3 space-y-8">
           <Heading size="h1" className="text-4xl leading-[1.05] sm:text-5xl">{policy.title}</Heading>
           {/* Written in Shopify Admin → Settings → Policies and supplied by the Storefront API.

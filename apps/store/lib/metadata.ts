@@ -33,7 +33,7 @@ export function toMetaDescription(value: string, maxLength = 160) {
 }
 
 // Breaks become spaces so "Ryan.<br>Now" doesn't read as "Ryan.Now".
-function htmlToText(html: string) {
+export function htmlToText(html: string) {
   return html.replace(/<br\s*\/?>|<\/p>/gi, " ").replace(/<[^>]*>/g, "").replace(/&(#\d+|[a-z]+);/gi, (match, name: string) =>
     name.startsWith("#") ? String.fromCodePoint(Number(name.slice(1))) : entities[name.toLowerCase()] ?? match);
 }

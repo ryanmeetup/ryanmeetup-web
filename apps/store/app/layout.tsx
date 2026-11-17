@@ -65,7 +65,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             </CurrencyProvider>
             <RyanMeetupFooter
               homeHref="https://ryanmeetup.com"
-              sections={policyLinks.length ? [{ title: "Policies", links: policyLinks }] : []}
+              sections={policyLinks.length ? [{ title: "Policies", href: "/policies", links: policyLinks }] : []}
               followColumn={false}
               className="store-container"
             />
