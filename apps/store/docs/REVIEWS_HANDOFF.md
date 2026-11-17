@@ -11,6 +11,9 @@ the earlier dedicated-project proposal. Keep local/Preview data isolated and
 the personal PRD instance separate. The Shopify Customer Account API client
 and custom review schema are still outstanding; no schema, credential, or
 billing changes have been applied.
+Buyer sign-in configuration, discovery, and authorization/callback validation
+helpers now exist. They are not wired to an HTTP login flow. See
+[the Shopify auth setup and boundary](REVIEWS_SHOPIFY_AUTH.md).
 
 ## Completed chunks
 
@@ -21,6 +24,8 @@ billing changes have been applied.
 | `aaa5b3a6` | Add an environment-gated, per-browser preview cookie and same-origin preference endpoint; use the preference for both public reads and submissions. | Focused route/data tests and production build passed. Browser host/proxy handling is covered by a subsequent fix. |
 | `d6a36006` | Match preview request origins using the storefront Host and proxy protocol instead of Next's internal hostname. | 9 preference API checks, including local-host and HTTPS proxy regression cases; production build passed. |
 | `52dfaf0a` | Add the shared-dropdown browser control above product reviews, persistence/reset, grouped-product integration, and setup instructions. | All 11 switch browser checks passed across the main run and the focused rerun after scoping the error locator; 18 legacy browser checks passed, with the existing 6 photo checks skipped. Changed-file ESLint and production build passed. Light/dark screenshots inspected. |
+| `30bf8a50` | Add explicit confidential Customer Account client configuration, pinned-shop OpenID discovery, synthetic fixtures, and client setup instructions. | 7 configuration/discovery checks; TypeScript and changed-file ESLint passed. Live public discovery matched shop `71870054511`. No client secret or buyer token was used for discovery. |
+| `0f321b07` | Prepare server-side authorization attempts, opaque secure browser binding, state/nonce/S256, safe product return paths, and callback validation. No HTTP login flow enabled. | 10 authorization checks, including an RFC 7636 vector; combined 45 focused review/auth checks, changed-file ESLint, TypeScript, production build, and diff check passed. |
 
 The final type-only tightening of `ReviewsData` was checked with `tsc --noEmit`
 after the successful production build. Both themes were browser-tested at 390,
@@ -72,16 +77,32 @@ Keep Production on `judgeme`. This switch does not turn off Judge.me's hosted
 extensions or emails. It is not yet a rollback strategy once custom reviews
 are being collected. The rebuild plan owns that cutover procedure.
 
-## Next gate: prove Shopify identity and purchase access
+## Next gate: persist sessions and prove Shopify purchase access
 
-The repository has a hosted customer-account link but no customer-authenticated
-API session, OAuth callback, or Customer Account API client configuration. Only
-existing environment **names** were inspected; no secrets were printed. The
-local configuration names include Storefront/Admin and Judge.me credentials,
-but no Customer Account API client or separate reviews database configuration.
-Ryan confirmed the Shopify client was not provisioned and chose to reuse the
-existing RMT database. The store's scoped connection and review schema are
-not implemented yet.
+The repository now validates explicit Customer Account client configuration,
+discovers authentication endpoints, and prepares/validates authorization
+attempts. The hosted Judge.me account handoff remains the enabled buyer path.
+There is no HTTP start/callback endpoint, persistent attempt/session store,
+token exchange or signature verification, renewal, or logout yet.
+
+Public discovery was read successfully from
+`ryan-meetup-store.myshopify.com` on November 17, 2026. Its issuer matched
+`https://shopify.com/authentication/71870054511`, with S256 and
+`client_secret_basic` support. Only public metadata was read; no secrets were
+printed and no buyer login was attempted. The discovery response is not proof
+of installed client permissions or access to orders.
+
+Ryan confirmed the Shopify client has not been provisioned and chose to reuse
+the existing RMT database. The store's scoped database connection and review
+schema are not implemented yet. The required client environment variables and
+planned HTTPS callback path are in [the auth setup](REVIEWS_SHOPIFY_AUTH.md).
+
+The authorization helper returns a private record to persist before redirecting
+and an opaque browser cookie. Callback checks yield only an authorization code,
+not a logged-in buyer. The database adapter must atomically consume attempts
+once, and the callback must verify the signed ID token and nonce before saving
+a server-side session. Do not expose private attempt records or add a temporary
+in-memory production session store.
 
 Before connecting custom writes:
 
@@ -111,20 +132,30 @@ Before connecting custom writes:
    rules and tests. A whole-order fulfillment status alone does not establish
    eligibility for an individual line.
 
-**Gate status:** not passed. No live customer OAuth session or exact-line
-eligibility was exercised in this increment. Do not enable custom writes on
-the strength of the storefront tests. No missing Shopify field or permission
-has been established on the real installation yet; the client/session setup
-and live feasibility check are the next work.
+**Gate status:** public discovery passed; buyer identity/order eligibility is
+not passed. No live OAuth session or exact-line eligibility has been exercised.
+Do not enable custom writes on the strength of local helper tests. No missing
+Shopify field or permission has been established on the real installation yet;
+client setup, persistent sessions, and a live feasibility check are next.
+
+No GraphQL operation was introduced in these auth chunks. Shopify's GraphQL
+validator was attempted on the OAuth TypeScript file and rejected its `import`
+as GraphQL syntax; that checker does not validate this code. Validation here is
+TypeScript, ESLint, the security-focused local tests, the store build, and the
+public metadata check. Future GraphQL operations still need schema validation.
 
 ## Small next chunks
 
 Keep each item an independently verified Conventional Commit. Start with the
 Shopify gate above; record its result before implementation depends on it.
 
-1. **Customer sign-in:** configuration, safe return path, OAuth state/nonce,
-   callback, server-side token/session storage, expiry, and logout. Hand off
-   the session interface and auth fixtures.
+1. **Customer sign-in, remaining:** reuse the new config/discovery/authorization
+   helpers. First add scoped server storage for authorization attempts and
+   encrypted buyer tokens/sessions through the canonical database migration
+   workflow. Then add the HTTP start/callback with atomic attempt consumption,
+   token exchange, signed ID-token/nonce verification, expiry/renewal, and
+   logout. Record provider-mode gating and add route tests. Real login still
+   needs the confidential client from the setup document.
 2. **Exact-line eligibility:** normalize proven Shopify fields and handle the
    edge cases above; recheck ownership and eligibility on every write. Hand
    off typed eligible/ineligible/sign-in-required/unavailable results.
@@ -161,7 +192,7 @@ or change the production provider as part of one of the preparatory chunks.
 Run from `apps/store` unless noted. Unit/data tests do not need a server:
 
 ```sh
-npx playwright test tests/reviews-data.spec.ts tests/judgeme-domain.spec.ts tests/review-collection.spec.ts tests/reviews-api.spec.ts tests/review-provider.spec.ts tests/review-preview-api.spec.ts
+npx playwright test tests/customer-account-config.spec.ts tests/customer-account-authorization.spec.ts tests/reviews-data.spec.ts tests/judgeme-domain.spec.ts tests/review-collection.spec.ts tests/reviews-api.spec.ts tests/review-provider.spec.ts tests/review-preview-api.spec.ts
 npx tsc --noEmit
 git diff --check
 ```
