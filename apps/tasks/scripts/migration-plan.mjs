@@ -1,4 +1,4 @@
-import { cpSync, readFileSync, readdirSync } from "node:fs";
+import { cpSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -49,5 +49,8 @@ export function copyScopedMigrationSources(destination, target, source = supabas
       return dirname(path) !== join(source, "migrations") || included.has(basename(path));
     },
   });
+  writeFileSync(join(destination, "migration-scopes.json"), JSON.stringify({
+    rmtOnly: selected.filter(({ scope }) => scope === "rmt").map(({ version }) => version),
+  }, null, 2) + "\n");
   return selected;
 }

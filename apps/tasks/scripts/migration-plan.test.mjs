@@ -64,6 +64,8 @@ test("a scoped workspace omits RMT SQL and linked credentials without editing so
   assert.ok(!existsSync(join(destination, ".branches")));
   assert.ok(existsSync(join(source, "migrations", `${extension}_store_auth.sql`)));
   assert.equal(readFileSync(join(destination, "config.toml"), "utf8"), 'project_id = "fixture"\n');
+  assert.deepEqual(readMigrationCatalog(destination).map(({ version }) => version), [shared]);
+  assert.deepEqual(JSON.parse(readFileSync(join(source, "migration-scopes.json"), "utf8")), { rmtOnly: [extension] });
 });
 
 test("the applied store-auth migration is explicitly RMT-only in the real catalog", () => {

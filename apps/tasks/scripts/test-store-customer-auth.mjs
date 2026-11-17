@@ -1,14 +1,18 @@
 import { spawn, spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseArgs } from "node:util";
+import { copyScopedMigrationSources, migrationTarget } from "./migration-plan.mjs";
 
 // Reset only a separately named Supabase stack on separate ports.
 // The CLI treats a loopback --db-url as the default local stack, ignoring its
 // database name, so a second database in the app container is NOT isolation.
 const appRoot = fileURLToPath(new URL("../", import.meta.url));
+const { values } = parseArgs({ options: { target: { type: "string", default: "rmt" } } });
+const target = migrationTarget(values.target);
 const projectId = `store-auth-test-${randomBytes(6).toString("hex")}`;
 const testRoot = mkdtempSync(join(tmpdir(), "store-customer-auth-"));
 const container = `supabase_db_${projectId}`;
@@ -61,10 +65,7 @@ async function race(first, second) {
 }
 
 try {
-  cpSync(join(appRoot, "supabase"), join(testRoot, "supabase"), {
-    recursive: true,
-    filter: (source) => !source.includes("/.temp") && !source.includes("/.branches"),
-  });
+  const selected = copyScopedMigrationSources(join(testRoot, "supabase"), target);
   const configPath = join(testRoot, "supabase/config.toml");
   const config = readFileSync(configPath, "utf8")
     .replace('project_id = "ryanmeetup-tasks"', `project_id = "${projectId}"`)
@@ -75,31 +76,40 @@ try {
   writeFileSync(configPath, config);
   run("supabase", ["start", "--workdir", testRoot, "--exclude", "realtime,storage-api,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor"], undefined, true);
   run("supabase", ["db", "reset", "--local", "--no-seed", "--yes", "--workdir", testRoot], undefined, true);
-  sql(readFileSync(migration, "utf8"));
-  console.log("PASS: full migration reset and idempotent auth migration replay");
-  run("supabase", ["test", "db", "--workdir", testRoot, join(appRoot, "tests/database/store-customer-auth.sql"), join(appRoot, "supabase/tests/access_control.sql")], undefined, true);
-  const integration = spawnSync("npx", ["playwright", "test", "tests/customer-account-storage.spec.ts", "--workers=1"], {
-    cwd: fileURLToPath(new URL("../../store/", import.meta.url)),
-    env: { ...process.env, STORE_AUTH_TEST_CONTAINER: container }, stdio: "inherit",
-  });
-  if (integration.error) throw integration.error;
-  if (integration.status !== 0) throw new Error("Encrypted storage integration checks failed");
+  const applied = sql("select string_agg(version, ',' order by version) from supabase_migrations.schema_migrations");
+  if (applied !== selected.map(({ version }) => version).join(",")) throw new Error("Reset history does not match the selected migration profile");
+  if (target === "prd") {
+    const privateObjectsAbsent = sql("select to_regclass('public.store_customer_authorizations') is null and to_regclass('public.store_customer_sessions') is null and not exists(select 1 from pg_proc where pronamespace='public'::regnamespace and proname in ('store_get_customer_authorization','store_consume_customer_authorization','store_get_customer_session','store_rotate_customer_session','store_revoke_customer_session'))");
+    if (privateObjectsAbsent !== "t") throw new Error("RMT-only store objects leaked into the PRD profile");
+    run("supabase", ["test", "db", "--workdir", testRoot, join(appRoot, "supabase/tests/access_control.sql"), join(appRoot, "tests/database/guest-access.sql")], undefined, true);
+    console.log("PASS: PRD profile resets and supports Tasks without store auth objects or synthetic history");
+  } else {
+    sql(readFileSync(migration, "utf8"));
+    console.log("PASS: full migration reset and idempotent auth migration replay");
+    run("supabase", ["test", "db", "--workdir", testRoot, join(appRoot, "tests/database/store-customer-auth.sql"), join(appRoot, "supabase/tests/access_control.sql")], undefined, true);
+    const integration = spawnSync("npx", ["playwright", "test", "tests/customer-account-storage.spec.ts", "--workers=1"], {
+      cwd: fileURLToPath(new URL("../../store/", import.meta.url)),
+      env: { ...process.env, STORE_AUTH_TEST_CONTAINER: container }, stdio: "inherit",
+    });
+    if (integration.error) throw integration.error;
+    if (integration.status !== 0) throw new Error("Encrypted storage integration checks failed");
 
-  const scope = "'123','client','https://shopify.com/authentication/123','https://store.test/api/reviews/auth/callback'";
-  sql(`insert into public.store_customer_authorizations(state_hash,browser_binding_hash,shop_id,client_id,issuer,redirect_uri,encrypted_flow)
-    values(repeat('a',64),repeat('b',64),${scope},'v1.test.'||repeat('a',48));`);
-  const consume = `select public.store_consume_customer_authorization(repeat('a',64),repeat('b',64),${scope})`;
-  await race(consume, consume);
-  console.log("PASS: competing callbacks consume one authorization exactly once");
+    const scope = "'123','client','https://shopify.com/authentication/123','https://store.test/api/reviews/auth/callback'";
+    sql(`insert into public.store_customer_authorizations(state_hash,browser_binding_hash,shop_id,client_id,issuer,redirect_uri,encrypted_flow)
+      values(repeat('a',64),repeat('b',64),${scope},'v1.test.'||repeat('a',48));`);
+    const consume = `select public.store_consume_customer_authorization(repeat('a',64),repeat('b',64),${scope})`;
+    await race(consume, consume);
+    console.log("PASS: competing callbacks consume one authorization exactly once");
 
-  sql(`insert into public.store_customer_sessions(session_hash,shop_id,client_id,issuer,subject,encrypted_tokens,access_expires_at,expires_at)
-    values(repeat('1',64),'123','client','https://shopify.com/authentication/123','buyer','v1.test.'||repeat('a',48),now()+interval '1 hour',now()+interval '1 day');`);
-  await race(
-    "select public.store_revoke_customer_session(repeat('1',64),'123','client','https://shopify.com/authentication/123')",
-    "select public.store_rotate_customer_session(repeat('1',64),'123','client','https://shopify.com/authentication/123',0,'v1.test.'||repeat('b',48),now()+interval '2 hours')",
-  );
-  if (sql("select revoked_at is not null and encrypted_tokens is null from public.store_customer_sessions where session_hash=repeat('1',64)") !== "t") throw new Error("A refresh revived revoked tokens");
-  console.log("PASS: logout racing token refresh keeps the session revoked");
+    sql(`insert into public.store_customer_sessions(session_hash,shop_id,client_id,issuer,subject,encrypted_tokens,access_expires_at,expires_at)
+      values(repeat('1',64),'123','client','https://shopify.com/authentication/123','buyer','v1.test.'||repeat('a',48),now()+interval '1 hour',now()+interval '1 day');`);
+    await race(
+      "select public.store_revoke_customer_session(repeat('1',64),'123','client','https://shopify.com/authentication/123')",
+      "select public.store_rotate_customer_session(repeat('1',64),'123','client','https://shopify.com/authentication/123',0,'v1.test.'||repeat('b',48),now()+interval '2 hours')",
+    );
+    if (sql("select revoked_at is not null and encrypted_tokens is null from public.store_customer_sessions where session_hash=repeat('1',64)") !== "t") throw new Error("A refresh revived revoked tokens");
+    console.log("PASS: logout racing token refresh keeps the session revoked");
+  }
 } finally {
   try {
     run("supabase", ["stop", "--project-id", projectId, "--no-backup", "--workdir", testRoot], undefined, true);

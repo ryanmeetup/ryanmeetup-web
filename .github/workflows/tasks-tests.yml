@@ -32,6 +32,8 @@ jobs:
         run: npm run lint
       - name: Type-check tasks workspace
         run: npm run typecheck
+      - name: Validate shared and Ryan Meetup migration plans
+        run: node --test scripts/migration-plan.test.mjs scripts/build-catchup-sql.test.mjs
       - name: Test tasks workspace with coverage
         run: npm run test:coverage
       - name: Upload Tasks coverage report
