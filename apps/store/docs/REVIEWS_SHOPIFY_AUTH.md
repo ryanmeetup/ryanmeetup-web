@@ -41,6 +41,21 @@ been changed by this implementation.
   configured Shopify domain. It pins the issuer to the expected shop, requires
   HTTPS endpoints, S256 support, and confidential client authentication, and
   returns typed failures. It sends no client secret or buyer credentials.
+- `lib/customer-account/authorization.ts` prepares a ten-minute authorization
+  attempt with independent cryptographic state, nonce, S256 verifier, and
+  browser binding. The browser cookie contains only a random opaque value.
+  Product design/color/anchor return links are retained; external and API
+  return paths are rejected. Callback checks bind the code to the browser,
+  shop, client, redirect URI, and unexpired attempt. A `code_received` result
+  is not an authenticated buyer.
+
+Persist the private attempt **before** setting its cookie or redirecting. The
+storage adapter must load attempts by state hash and atomically consume a
+validated attempt once before code exchange; it must retire denied attempts
+too. Callback checks alone cannot prevent reuse without that atomic storage
+operation. Keep the verifier and nonce record private. An HTTP callback must
+not accept this record from the browser. Only one active authorization cookie
+is supported per browser; starting another sign-in replaces that binding.
 
 The live public metadata returned HTTP 200 from
 `ryan-meetup-store.myshopify.com` with issuer
