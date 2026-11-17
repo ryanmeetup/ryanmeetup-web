@@ -68,8 +68,8 @@ export default async function AboutPage() {
               Official goods. Unmistakably Ryan.
             </Heading>
             <Text className="max-w-3xl text-lg text-black/80 dark:text-white/80">
-              Ryan Meetup Store is the official shop of Ryan Meetup, the gathering of people named Ryan. New to the Ryanverse?{" "}
-              <a href="https://ryanmeetup.com/about" className={linkClassName}>Read the full story on RyanMeetup.com</a>.
+              Gear for Ryans and the people who love them. Every purchase helps make the next meetup happen. New to the Ryanverse?{" "}
+              <a href="https://ryanmeetup.com/about" className={linkClassName}>Get to know Ryan Meetup</a>.
             </Text>
           </header>
 
@@ -84,47 +84,49 @@ export default async function AboutPage() {
             />
           </div>
 
-          <section id="money" className={sectionClassName}>
-            <SectionTitle id="money">Every shirt keeps the meetups meeting.</SectionTitle>
-            <Text className="max-w-3xl">
-              Purchases help fund Ryan Meetup events, activities, and the organization behind them. Wear the shirt, fund the next gathering.
-            </Text>
-          </section>
+          <div className="grid gap-8 2xl:grid-cols-2 2xl:gap-x-10 2xl:gap-y-12">
+            <section id="money" className={sectionClassName}>
+              <SectionTitle id="money">Every shirt keeps the meetups meeting.</SectionTitle>
+              <Text className="max-w-3xl">
+                Purchases help fund Ryan Meetup events, activities, and the organization behind them. Wear the shirt, fund the next gathering.
+              </Text>
+            </section>
 
-          <section id="made" className={sectionClassName}>
-            <SectionTitle id="made">Designed by Ryan. Naturally.</SectionTitle>
-            <Text className="max-w-3xl">
-              Our designs come from Ryans. Look for designer credits on product pages to meet the Ryan behind a design.
-            </Text>
-          </section>
+            <section id="made" className={sectionClassName}>
+              <SectionTitle id="made">Designed by Ryan. Naturally.</SectionTitle>
+              <Text className="max-w-3xl">
+                All designs are made in-house by Ryan.
+              </Text>
+            </section>
 
-          <section id="for" className={sectionClassName}>
-            <SectionTitle id="for">You don’t have to be a Ryan.</SectionTitle>
-            <Text className="max-w-3xl">
-              Ryans, Ryan’s dads, friends of Ryans, and admirers from afar are all welcome here. Some designs are made specifically for the people who love a Ryan.
-            </Text>
-          </section>
+            <section id="for" className={sectionClassName}>
+              <SectionTitle id="for">You don’t have to be a Ryan.</SectionTitle>
+              <Text className="max-w-3xl">
+                Ryans, Ryan’s dads, friends of Ryans, and admirers from afar are all welcome here. Some designs are made specifically for the people who love a Ryan.
+              </Text>
+            </section>
 
-          <section id="shipping" className={sectionClassName}>
-            <SectionTitle id="shipping">The fine print.</SectionTitle>
-            <Text className="max-w-3xl">
-              We ship to most of the world. Shipping options and costs for your address appear at checkout, and tracking details arrive by email once your order is on its way.
-              {policyHandles.has("shipping-policy") && (
-                <>
-                  {" "}Production times, customs, and the rest are in our <Link href="/policies/shipping-policy" className={linkClassName}>shipping policy</Link>.
-                </>
-              )}
-            </Text>
-            <Text className="max-w-3xl">
-              <strong className="font-semibold text-black dark:text-white">All sales are final.</strong> We can’t accept returns or exchanges: orders ship from our fulfillment partner, and we have nowhere to receive a return or swap it from. If something arrives damaged, defective, or not what you ordered,{" "}
-              <Link href="/contact" className={linkClassName}>contact store support</Link> and we’ll make it right.
-              {policyHandles.has("refund-policy") && (
-                <>
-                  {" "}The details are in our <Link href="/policies/refund-policy" className={linkClassName}>return and refund policy</Link>.
-                </>
-              )}
-            </Text>
-          </section>
+            <section id="shipping" className={sectionClassName}>
+              <SectionTitle id="shipping">The fine print.</SectionTitle>
+              <Text className="max-w-3xl">
+                We ship to most of the world. Shipping options and costs for your address appear at checkout, and tracking details arrive by email once your order is on its way.
+                {policyHandles.has("shipping-policy") && (
+                  <>
+                    {" "}Production times, customs, and the rest are in our <Link href="/policies/shipping-policy" className={linkClassName}>shipping policy</Link>.
+                  </>
+                )}
+              </Text>
+              <Text className="max-w-3xl">
+                <strong className="font-semibold text-black dark:text-white">All sales are final.</strong> We can’t accept returns or exchanges: orders ship from our fulfillment partner, and we have nowhere to receive a return or swap it from. If something arrives damaged, defective, or not what you ordered,{" "}
+                <Link href="/contact" className={linkClassName}>contact store support</Link> and we’ll make it right.
+                {policyHandles.has("refund-policy") && (
+                  <>
+                    {" "}The details are in our <Link href="/policies/refund-policy" className={linkClassName}>return and refund policy</Link>.
+                  </>
+                )}
+              </Text>
+            </section>
+          </div>
         </article>
 
         <aside className="xl:order-first">
