@@ -3,8 +3,8 @@
 import Image from "next/image";
 import { useEffect, useId, useRef, useState } from "react";
 import type { FormEvent } from "react";
-import { Button, Card, ErrorCallout, FormStatus, Heading, Input, Modal, ModalActions, RatingStars, StarRating, Text, Textarea } from "@ryanmeetup/ui";
-import { FiCheck } from "react-icons/fi";
+import { Button, Card, ErrorCallout, FormStatus, Heading, Input, Modal, ModalActions, Pill, RatingStars, StarRating, Text, Textarea } from "@ryanmeetup/ui";
+import { FiCalendar, FiCheck, FiUser } from "react-icons/fi";
 import type { Product, ReviewsData } from "@/lib/types";
 import type { ReviewPhoto } from "@/lib/review-photos";
 import type { ReviewAccount } from "@/lib/review-collection";
@@ -17,9 +17,9 @@ const emptyDraft ={ rating: null as number | null, body: "", name: "", email: ""
 
 function RatingSummary({ data, className = "" }: { data: ReviewsData; className?: string }) {
   return (
-    <div className={`flex items-center gap-3 text-sm text-black/65 dark:text-white/65 ${className}`}>
+    <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-black/70 dark:text-white/70 ${className}`}>
       <RatingStars rating={data.averageRating} />
-      <span>{data.count ? `${data.averageRating.toFixed(1)} from ${data.count} review${data.count === 1 ? "" : "s"}` : "No reviews yet"}</span>
+      <span>{data.count ? `Average rating from ${data.count} review${data.count === 1 ? "" : "s"}` : "No reviews yet"}</span>
     </div>
   );
 }
@@ -86,23 +86,24 @@ export function Reviews({ data, product, reviewAccount }: { data: ReviewsData; p
 
   return (
     <section id="reviews" className="border-t border-black/10 py-16 dark:border-white/10 sm:py-20">
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <Heading size="h2" className="text-3xl sm:text-4xl">The Ryans have spoken</Heading>
           <RatingSummary data={data} className="mt-3" />
         </div>
-        {reviewAccount ? (
-          reviewAccount.url ? (
-            <Button.Link href={reviewAccount.url} prefetch={false} size="sm" variant="secondary" className="w-full sm:w-auto">Write a review</Button.Link>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-start lg:max-w-xs lg:items-end lg:text-right">
+          {reviewAccount ? (
+            reviewAccount.url ? (
+              <Button.Link href={reviewAccount.url} prefetch={false} size="sm" variant="secondary" className="w-full sm:w-auto">Write a review</Button.Link>
+            ) : (
+              <Button size="sm" variant="secondary" className="w-full sm:w-auto" disabled>Write a review</Button>
+            )
           ) : (
-            <Button size="sm" variant="secondary" className="w-full sm:w-auto" disabled>Write a review</Button>
-          )
-        ) : (
-          <Button size="sm" variant="secondary" className="w-full sm:w-auto" onClick={() => { setError(""); setShowForm(true); }}>Write a review</Button>
-        )}
+            <Button size="sm" variant="secondary" className="w-full sm:w-auto" onClick={() => { setError(""); setShowForm(true); }}>Write a review</Button>
+          )}
+          {reviewAccount && <Text className="text-sm">{reviewAccount.url ? "From your customer account" : "Review collection is temporarily unavailable. Please try again later."}</Text>}
+        </div>
       </div>
-
-      {reviewAccount && <Text className="mt-4 text-sm">{reviewAccount.url ? "Sign in to your customer account and choose a fulfilled order to review. You can add photos and manage your reviews there." : "Review collection is temporarily unavailable. Please try again later."}</Text>}
 
       <div role="status" aria-live="polite">
         {success && <FormStatus className="mt-6" title="Review received" icon={<FiCheck aria-hidden />}>Thanks for sharing your experience.</FormStatus>}
@@ -144,17 +145,27 @@ export function Reviews({ data, product, reviewAccount }: { data: ReviewsData; p
       </Modal>
 
       {data.reviews.length ? (
-        <div className="mt-8 grid gap-4 md:grid-cols-2">
+        <ul aria-label="Customer reviews" className="mt-8 grid items-start gap-4 md:grid-cols-2">
           {data.reviews.map((review) => (
-            <Card key={review.id} size="lg">
-              <div className="flex items-center justify-between gap-3"><RatingStars rating={review.rating} /><time className="text-xs text-black/50 dark:text-white/50" dateTime={review.createdAt}>{new Date(review.createdAt).toLocaleDateString("en-US", { month: "short", year: "numeric" })}</time></div>
-              {review.title && <Heading size="h3" className="mt-4 text-xl">{review.title}</Heading>}
-              <Text className="mt-2">{review.body}</Text>
-              {!!review.photoUrls?.length && <ReviewPhotoGallery urls={review.photoUrls} reviewerName={review.reviewerName} />}
-              <p className="mt-4 text-xs font-semibold uppercase tracking-caps">{review.reviewerName}{review.verified ? " · Verified buyer" : ""}</p>
-            </Card>
+            <li key={review.id}>
+              <Card size="lg" variant="outline">
+                <article aria-label={`Review by ${review.reviewerName}`} className="min-w-0">
+                  <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                    <RatingStars rating={review.rating} />
+                    <time className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs text-black/70 dark:text-white/70" dateTime={review.createdAt}><FiCalendar className="size-3.5 shrink-0" aria-hidden />{new Date(review.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}</time>
+                  </div>
+                  {review.title && <Heading size="h3" className="mt-3 break-words text-xl">{review.title}</Heading>}
+                  <Text className="mt-2 max-w-prose whitespace-pre-line break-words">{review.body}</Text>
+                  {!!review.photoUrls?.length && <ReviewPhotoGallery urls={review.photoUrls} reviewerName={review.reviewerName} />}
+                  <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <Text className="flex min-w-0 items-center gap-1.5 text-sm font-semibold"><FiUser className="size-3.5 shrink-0" aria-hidden /><span className="min-w-0 break-words">{review.reviewerName}</span></Text>
+                    {review.verified && <Pill variant="success" size="sm"><FiCheck className="shrink-0" aria-hidden />Verified review</Pill>}
+                  </div>
+                </article>
+              </Card>
+            </li>
           ))}
-        </div>
+        </ul>
       ) : (
         <div className="mt-8 rounded-2xl border border-dashed border-black/20 p-8 text-center dark:border-white/20">
           <Heading size="h3" className="text-xl">Be the first to report back</Heading>
