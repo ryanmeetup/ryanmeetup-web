@@ -60,7 +60,7 @@ const RydInfo = () => {
         </Text>
 
         <Text>
-          Please allow 4-5 weeks for delivery, as each card is made to order.
+          Please allow 6-8 weeks for delivery, as each card is made to order.
         </Text>
       </section>
 
