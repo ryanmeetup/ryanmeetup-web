@@ -3,6 +3,11 @@
 Updated November 17, 2026. Continue from this file and
 [REVIEWS_REBUILD.md](REVIEWS_REBUILD.md). Implementation has started; the custom
 review service is **not ready to collect reviews**. Judge.me remains the default.
+Ryan requested a browser testing control and confirmed that the Customer
+Account API client and separate reviews database have not been provisioned.
+The [database proposal](REVIEWS_DATABASE.md) recommends a dedicated store
+Supabase project, local development, and isolated hosted Preview data. No
+hosting expense or database provisioning has been approved or performed.
 
 ## Completed chunks
 
@@ -10,6 +15,9 @@ review service is **not ready to collect reviews**. Judge.me remains the default
 | --- | --- | --- |
 | `c2a620cd` | Extract existing Judge.me reads to `lib/judgeme-reviews.ts`; keep `lib/reviews.ts` as the storefront boundary. | Existing 14 data/route/collection checks and changed-file ESLint passed. |
 | `3ca1910b` | Add `REVIEWS_PROVIDER=judgeme\|custom`, coordinated read/collection/write selection, unavailable UI, closed custom submissions, and browser coverage. | 19 focused data/route checks; 9 custom browser/API checks; 18 existing demo browser checks passed, with the same 6 photo tests skipped because hosting remains disabled. Store production build, TypeScript, changed-file ESLint, and diff check passed. |
+| `aaa5b3a6` | Add an environment-gated, per-browser preview cookie and same-origin preference endpoint; use the preference for both public reads and submissions. | Focused route/data tests and production build passed. Browser host/proxy handling is covered by a subsequent fix. |
+| `d6a36006` | Match preview request origins using the storefront Host and proxy protocol instead of Next's internal hostname. | 9 preference API checks, including local-host and HTTPS proxy regression cases; production build passed. |
+| `52dfaf0a` | Add the shared-dropdown browser control above product reviews, persistence/reset, grouped-product integration, and setup instructions. | All 11 switch browser checks passed across the main run and the focused rerun after scoping the error locator; 18 legacy browser checks passed, with the existing 6 photo checks skipped. Changed-file ESLint and production build passed. Light/dark screenshots inspected. |
 
 The final type-only tightening of `ReviewsData` was checked with `tsc --noEmit`
 after the successful production build. Both themes were browser-tested at 390,
@@ -37,14 +45,27 @@ Transfer those documents too if moving to a checkout that does not have them.
   credentials, so the old demo composer cannot reopen.
 - `app/api/reviews/route.ts::POST` checks the provider before parsing or calling
   Judge.me. Custom/invalid modes return HTTP 503 with `Cache-Control: no-store`.
-  Browser query strings, cookies, headers, and body fields cannot override it.
+  Query strings, body fields, and arbitrary headers cannot choose a provider.
+  The dedicated preview cookie is accepted only when testing is enabled;
+  Vercel Production always ignores it.
+- `lib/review-preview.ts` resolves the current browser's read mode from Next's
+  request cookies. `app/api/reviews/preview/route.ts` sets or clears the
+  one-day HttpOnly preference after checking environment, origin, and choice.
+  Origin checks use Host/proxy protocol because Next can put an internal host
+  in `request.url`. The submission route reads cookie headers without consuming
+  the request body.
 - `lib/judgeme-reviews.ts` preserves existing Judge.me behavior, including its
   20-review summary limitation and empty-on-provider-error behavior. Fix those
   independently if desired; custom full-scope totals must not copy that design.
 
-Set the switch in `.env.local`, restart development, and test one mode at a
-time. For hosted testing use the Preview environment and a fresh build; keep
-Production on `judgeme`. This switch does not turn off Judge.me's hosted
+The **Review mode** dropdown above product reviews appears automatically in
+`next dev`. Enable it in Vercel Preview with `REVIEWS_PREVIEW_ENABLED=true`
+and a fresh deployment. Choose Judge.me, Custom reviews, or Environment
+default; selection refreshes the page's server data and persists across reloads
+and product navigation without changing other browsers. Environment default
+removes the preference. Vercel Production disables the UI and endpoint even if
+the preview flag is set. `REVIEWS_PROVIDER` remains the environment default.
+Keep Production on `judgeme`. This switch does not turn off Judge.me's hosted
 extensions or emails. It is not yet a rollback strategy once custom reviews
 are being collected. The rebuild plan owns that cutover procedure.
 
@@ -55,7 +76,7 @@ API session, OAuth callback, or Customer Account API client configuration. Only
 existing environment **names** were inspected; no secrets were printed. The
 local configuration names include Storefront/Admin and Judge.me credentials,
 but no Customer Account API client or separate reviews database configuration.
-This does not prove that infrastructure is absent in another environment.
+Ryan subsequently confirmed that neither has been provisioned.
 
 Before connecting custom writes:
 
@@ -105,7 +126,8 @@ Shopify gate above; record its result before implementation depends on it.
 3. **Review storage baseline:** confirm a dedicated store database and isolated
    preview data, then commit versioned migrations with shop/order/line
    uniqueness, ownership, approved/pending revisions, and moderation audit.
-   Do not use either Tasks Supabase project. Database choice is still open.
+   Do not use either Tasks Supabase project. Dedicated Supabase is the current
+   recommendation; see [the proposal](REVIEWS_DATABASE.md) before provisioning.
 4. **Text-only vertical slice:** authenticated buyer submission with required
    whole-star rating/body, chosen public display name, idempotency, and pending
    status. Keep unmoderated content private. Ship staff authorization and
@@ -131,7 +153,7 @@ or change the production provider as part of one of the preparatory chunks.
 Run from `apps/store` unless noted. Unit/data tests do not need a server:
 
 ```sh
-npx playwright test tests/reviews-data.spec.ts tests/judgeme-domain.spec.ts tests/review-collection.spec.ts tests/reviews-api.spec.ts tests/review-provider.spec.ts
+npx playwright test tests/reviews-data.spec.ts tests/judgeme-domain.spec.ts tests/review-collection.spec.ts tests/reviews-api.spec.ts tests/review-provider.spec.ts tests/review-preview-api.spec.ts
 npx tsc --noEmit
 git diff --check
 ```
@@ -165,3 +187,15 @@ Custom browser tests deliberately skip unless their process has
 `REVIEWS_PROVIDER=custom`. Never point tests that submit reviews at production.
 Local test commands do not prove Shopify OAuth, purchase eligibility, database
 constraints, moderation, or migration correctness.
+
+For the browser selector, start the built demo with Judge.me as default and
+`REVIEWS_PREVIEW_ENABLED=true` (same blank Shopify/Judge.me credentials as
+above), then run against that server:
+
+```sh
+REVIEWS_PROVIDER=judgeme REVIEWS_PREVIEW_ENABLED=true STORE_BASE_URL=http://127.0.0.1:3202 npx playwright test tests/review-mode-switch.spec.ts --workers=1
+```
+
+The browser-selector suite requires the same flag in its test process. It
+covers both themes and all four widths, switching/reset, persisted navigation,
+browser isolation, request failures, and submission-mode consistency.
