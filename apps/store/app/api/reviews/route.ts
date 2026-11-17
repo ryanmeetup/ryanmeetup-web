@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { validateEmail } from "@ryanmeetup/utils";
 import { getJudgeMeShopDomain } from "@/lib/judgeme";
-import { getReviewProvider } from "@/lib/review-provider";
+import { resolveReviewProvider, reviewPreviewCookie } from "@/lib/review-provider";
 
 const noStore = { "Cache-Control": "no-store" };
 
@@ -20,7 +20,10 @@ function text(value: unknown, max: number) {
  * somewhere to be hosted, since Judge.me only takes picture URLs.
  */
 export async function POST(request: Request) {
-  if (getReviewProvider() !== "judgeme") {
+  // Read cookies from headers without transferring the submission body stream.
+  const previewChoice = new NextRequest(request.url, { headers: request.headers }).cookies.get(reviewPreviewCookie)?.value;
+  const provider = resolveReviewProvider(previewChoice);
+  if (provider !== "judgeme") {
     return fail("Review collection is temporarily unavailable. Please try again later.", 503);
   }
   const shopDomain = getJudgeMeShopDomain();
