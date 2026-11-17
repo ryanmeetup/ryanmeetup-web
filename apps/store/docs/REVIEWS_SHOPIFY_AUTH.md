@@ -1,0 +1,58 @@
+# Shopify buyer sign-in implementation
+
+The custom review sign-in foundation is under construction. No sign-in entry
+point is enabled yet. Judge.me remains the default, and custom submissions
+remain closed. Configuration checks are not proof of a working buyer login.
+
+## Client setup
+
+Create a **confidential Customer Account API client** for this storefront in
+Shopify Admin → Headless → the storefront → Customer Account API settings.
+Use Shopify's [setup guide](https://shopify.dev/docs/storefronts/headless/building-with-the-customer-account-api/getting-started).
+Keep the client ID and secret in the store's server environment. Existing
+Admin and Judge.me credentials cannot substitute for this client.
+
+The expected callback path is `/api/reviews/auth/callback`. Register its exact
+HTTPS URL for the environment being tested. For production that would be
+`https://store.ryanmeetup.com/api/reviews/auth/callback`; Preview needs its own
+registered HTTPS URL, and local OAuth needs an HTTPS tunnel. The callback
+route itself is still outstanding, so registering the URL does not enable
+login today.
+
+| Server setting | Value |
+| --- | --- |
+| `SHOPIFY_STORE_DOMAIN` | Existing working canonical Shopify domain; discovery uses this, independently of Judge.me's domain. |
+| `SHOPIFY_CUSTOMER_ACCOUNT_SHOP_ID` | The numeric Shopify shop ID. Public discovery on this store returned `71870054511` on November 17, 2026. |
+| `SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_ID` | The Headless confidential client ID. |
+| `SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_SECRET` | That client's secret; keep server-only. |
+| `SHOPIFY_CUSTOMER_ACCOUNT_REDIRECT_URI` | The exact registered HTTPS callback URL. |
+
+Use separate client configuration for isolated test environments as needed.
+Verify the client's buyer/order permissions on the intended installation.
+No application credentials, signup settings, or callback registrations have
+been changed by this implementation.
+
+## Implemented boundary
+
+- `lib/customer-account/config.ts` validates explicit configuration and reports
+  missing/invalid setting names without including their values in diagnostics.
+  It does not borrow credentials from another integration.
+- `lib/customer-account/discovery.ts` reads public OpenID metadata from the
+  configured Shopify domain. It pins the issuer to the expected shop, requires
+  HTTPS endpoints, S256 support, and confidential client authentication, and
+  returns typed failures. It sends no client secret or buyer credentials.
+
+The live public metadata returned HTTP 200 from
+`ryan-meetup-store.myshopify.com` with issuer
+`https://shopify.com/authentication/71870054511`, S256, and
+`client_secret_basic` support. This proves discovery only. See the
+[Customer Account authentication reference](https://shopify.dev/docs/api/customer/2026-10#discovery-endpoints).
+
+## Remaining gate
+
+Persist authorization attempts and buyer sessions in the shared backend with
+scoped store access; implement one-time callback consumption, token exchange,
+signed ID-token verification, renewal, and logout. Then prove a real buyer
+login and exact order-line access. Browser cookies must contain opaque
+identifiers; pending verifiers and buyer tokens remain server-side. Do not
+enable sign-in or collection before the storage and validation paths are ready.

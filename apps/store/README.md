@@ -322,6 +322,11 @@ See the [rebuild plan](docs/REVIEWS_REBUILD.md) for the full replacement scope
 and the [implementation handoff](docs/REVIEWS_HANDOFF.md) for completed commits,
 verification commands, and the next small chunks.
 
+Buyer authentication for custom reviews is being built separately from the
+hosted Judge.me account handoff. The [Shopify sign-in setup](docs/REVIEWS_SHOPIFY_AUTH.md)
+lists the required Customer Account client settings and current implementation
+boundary. Its configuration/discovery helpers do not enable buyer login yet.
+
 ## Judge.me setup
 
 Install Judge.me in the same Shopify store and provide its private API token server-side. Published reviews and visible review photos are read during product-page rendering using the documented `X-Api-Token` header.
