@@ -411,11 +411,13 @@ test("mobile customers change themes inside the navigation menu", async ({ page 
   await expect(themeButton.filter({ visible: true })).toHaveCount(1);
 });
 
-test("customer can browse the merch hero gallery", async ({ page }) => {
+test("customer can shop from the hero", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByText("The Ryan merch table")).toBeVisible();
-  await page.getByRole("button", { name: "Show next photo" }).click();
-  await expect(page.getByText("Ryan’s Game Show")).toBeVisible();
+  const hero = page.getByRole("region", { name: "Ryan Meetup merch", exact: true });
+  await expect(hero.getByRole("heading", { level: 1 })).toHaveText("Merch with your name on it.");
+  await expect(hero.getByRole("link", { name: "Browse collections" })).toHaveAttribute("href", "#collections");
+  await hero.getByRole("link", { name: "Shop all merch" }).click();
+  await expect(page).toHaveURL(/\/collections\/all$/);
 });
 
 test("the home page opens doors to collections, spotlights one listing, and keeps favorites short", async ({ page }) => {

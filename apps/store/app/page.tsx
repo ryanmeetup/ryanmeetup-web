@@ -1,7 +1,6 @@
 import {
   Button,
   Heading,
-  RotatingGallery,
   SectionHeader,
   Text,
 } from "@ryanmeetup/ui";
@@ -14,82 +13,65 @@ import { getHomeCatalog } from "@/lib/shopify";
 
 export const revalidate = 300;
 
-const heroPhotos = [
-  {
-    src: "/hero/ryan-merch-table.jpg",
-    alt: "Ryans browsing official Ryan Meetup shirts and hats at a merch table",
-    title: "The Ryan merch table",
-  },
-  {
-    src: "/hero/ryans-game-show.jpg",
-    alt: "A crowd of Ryans wearing Ryan name-tag shirts at Ryan’s Game Show",
-    title: "Ryan’s Game Show",
-  },
-  {
-    src: "/hero/ryan-baseball-classic.jpg",
-    alt: "Ryans in event shirts cheering together at the Ryan Baseball Classic",
-    title: "Ryan Baseball Classic",
-  },
-  {
-    src: "/hero/rytoberfest.jpg",
-    alt: "A large group of Ryans wearing Ryan shirts at Rytoberfest",
-    title: "Rytoberfest",
-  },
-];
-
 // Four columns at xl and two below keep the four favorites in full rows.
 const gridColumns = "mt-8 sm:grid-cols-2 xl:grid-cols-4";
 
 export default async function HomePage() {
   const { spotlight, favorites, collections } = await getHomeCatalog();
   return (
-    <main className="flex flex-col gap-8 py-8 sm:gap-12 sm:py-12 lg:py-16">
-      <section className="store-container">
-        <div className="relative overflow-hidden rounded-4xl border border-black/10 bg-[#e9e3d6] px-5 py-8 shadow-xl sm:px-10 sm:py-12 lg:px-12 lg:py-14 xl:px-16 dark:border-white/10 dark:bg-[#151816]">
-          <div
-            aria-hidden
-            className="absolute inset-0 opacity-30 [background-image:radial-gradient(circle_at_center,rgba(0,0,0,0.16)_1px,transparent_1.5px)] [background-size:18px_18px] dark:opacity-20 dark:[background-image:radial-gradient(circle_at_center,rgba(255,255,255,0.22)_1px,transparent_1.5px)]"
-          />
-          <div className="relative grid items-center gap-12 lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)] lg:gap-14 xl:gap-20">
-            <div>
+    <main className="flex flex-col gap-8 py-6 sm:gap-12 sm:py-8 lg:py-10">
+      <section aria-label="Ryan Meetup merch" className="store-container">
+        <div className="overflow-hidden rounded-3xl bg-white/65 shadow-drop dark:bg-white/5">
+          <div className="grid items-start gap-6 p-5 sm:gap-8 sm:p-8 lg:grid-cols-2 lg:gap-10 xl:gap-12 xl:p-10">
+            <div className="relative min-w-0 text-left">
               <Image
                 src="/hero/ryan-name-tag.png"
                 alt=""
                 width={2264}
                 height={1442}
-                sizes="(min-width: 640px) 144px, 112px"
-                className="pointer-events-none mb-8 ml-1 h-auto w-28 -rotate-6 select-none drop-shadow-lg sm:mb-10 sm:w-36"
+                sizes="(min-width: 640px) 80px, 64px"
+                className="pointer-events-none mb-5 ml-1 h-auto w-16 -rotate-6 select-none sm:w-20"
               />
               <Heading
                 size="h1"
-                className="max-w-3xl text-5xl leading-[0.95] sm:text-6xl xl:text-7xl"
+                className="text-[clamp(1.5rem,7.5vw,1.875rem)] leading-tight sm:text-5xl lg:text-3xl xl:text-5xl"
               >
-                This merch has your name on it, Ryan
+                <span className="block">Merch with your{" "}</span>
+                <span className="block">name on it.</span>
               </Heading>
-              <Text className="mt-6 max-w-xl text-lg text-black/70 sm:text-xl dark:text-white/70">
-                Shirts, hats, and assorted goods for the world’s most organized
-                first name—field-tested by actual Ryans.
+              <Text className="mt-4 max-w-md text-base sm:text-lg">
+                Shirts, hats, and everyday goods for the world’s most organized
+                first name.
               </Text>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                 <Button.Link
                   href="/collections/all"
                   size="lg"
                   className="!w-full sm:!w-auto"
-                  rightIcon={<FiArrowRight />}
+                  rightIcon={<FiArrowRight aria-hidden />}
                 >
-                  Shop everything
+                  Shop all merch
                 </Button.Link>
                 <Button.Link
                   href="#collections"
                   size="lg"
-                  variant="secondary"
-                  className="!w-full sm:!w-auto"
+                  variant="ghost"
+                  className="!w-full underline decoration-black/30 underline-offset-4 hover:decoration-black sm:!w-auto dark:decoration-white/30 dark:hover:decoration-white"
                 >
                   Browse collections
                 </Button.Link>
               </div>
             </div>
-            <RotatingGallery items={heroPhotos} />
+            <div className="relative aspect-[4/3] overflow-hidden rounded-2xl sm:aspect-[2/1] lg:aspect-auto lg:h-full lg:min-h-80">
+              <Image
+                src="/hero/ryan-merch-table.jpg"
+                alt="Ryan Meetup shirts hanging above a merch table stocked with hats and tees"
+                fill
+                preload
+                sizes="(min-width: 1536px) calc((100vw - 576px) / 2), (min-width: 1280px) calc((100vw - 384px) / 2), (min-width: 1024px) calc((100vw - 360px) / 2), (min-width: 640px) calc(100vw - 96px), calc(100vw - 72px)"
+                className="object-cover object-left"
+              />
+            </div>
           </div>
         </div>
       </section>

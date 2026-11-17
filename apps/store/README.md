@@ -88,8 +88,10 @@ products to one.
 
 ### Home page
 
-The hero reads “This merch has your name on it, Ryan” under a small
-red-and-white Ryan name tag using the supplied brand artwork. Below it:
+The hero reads “Merch with your name on it.” beside a static merch-table photo,
+with a small red-and-white Ryan name tag using the supplied brand artwork.
+“Shop all merch” opens Shop All, and “Browse collections” jumps to the collection
+tiles. On mobile, the copy and shopping links come before the photo. Below it:
 
 1. **Best Sellers** shows up to four listings from Shopify's built-in home page
    collection (`frontpage`), in its curated order. An empty or unpublished
