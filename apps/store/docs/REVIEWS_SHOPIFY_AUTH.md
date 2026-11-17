@@ -57,6 +57,29 @@ operation. Keep the verifier and nonce record private. An HTTP callback must
 not accept this record from the browser. Only one active authorization cookie
 is supported per browser; starting another sign-in replaces that binding.
 
+## Encryption before persistence
+
+`lib/customer-account/secrets.ts` seals private flow data and buyer tokens with
+AES-256-GCM and a fresh IV. Authenticated context binds the ciphertext to its
+record, shop, client, issuer, expiry, and browser/callback or buyer/revision.
+Moving ciphertext between records or changing that context fails decryption.
+The database stores only opaque envelopes, never plaintext verifiers or tokens.
+
+Configure `STORE_CUSTOMER_ACCOUNT_ENCRYPTION_KEY_ID` and
+`STORE_CUSTOMER_ACCOUNT_ENCRYPTION_KEYS` server-side. The latter is a JSON
+object mapping IDs to **32-byte unpadded base64url** keys; the active ID must
+exist in that object. For example, use an ID such as `2026-11` and generate
+each key with `randomBytes(32).toString("base64url")` in Node. There is no
+development key or fallback to a Supabase/Shopify secret. Keep test and
+production keyrings separate and out of source control.
+
+On rotation, set a new active ID and retain previous IDs while their records
+are still needed. Removing an old key makes its envelopes unreadable. Session
+refresh seals against the **next** revision and new access-token expiry, then
+uses a database compare-and-swap; the absolute session expiry stays unchanged.
+Persist timestamp values at JavaScript millisecond precision so context
+reconstructed from database rows matches the original authenticated data.
+
 The live public metadata returned HTTP 200 from
 `ryan-meetup-store.myshopify.com` with issuer
 `https://shopify.com/authentication/71870054511`, S256, and
