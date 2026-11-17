@@ -45,6 +45,10 @@ import {
 import type { RydProductionAction } from "@/lib/ryd/bulk-operations";
 import { RydRemindDialog, RydSendDialog } from "./RydDialogs";
 import { RYD_DECISIONS } from "./RydOrderDialog";
+import {
+  RydBlankEmailButton,
+  RydBlankEmailDialog,
+} from "./RydBlankEmailDialog";
 import { RydCancelDialog } from "./RydCancelDialog";
 import { RydOrderTable } from "./RydOrderTable";
 import { RydProductionDialog } from "./RydProductionDialog";
@@ -246,6 +250,13 @@ export function RydOrdersSection({
       </Button>
     </>
   );
+  const blankEmailButton = (
+    <RydBlankEmailButton
+      selectedCount={selectedOrders.length}
+      disabled={searchPending || decisionPending}
+      onClick={() => setDialog("blank-email")}
+    />
+  );
   const cancelSelectedButton = (
     <Button
       type="button"
@@ -401,6 +412,7 @@ export function RydOrdersSection({
             onToggleAll={toggleAll}
           >
             {statusFilter !== "rejected" && emailSelectedButtons}
+            {blankEmailButton}
             {statusFilter !== "rejected" && cancelSelectedButton}
             {RYD_DECISIONS.filter(
               (decision) =>
@@ -432,6 +444,7 @@ export function RydOrdersSection({
             onToggleAll={toggleAll}
           >
             {emailSelectedButtons}
+            {blankEmailButton}
             {cancelSelectedButton}
           </RydSelectionBar>
         )}
@@ -529,6 +542,12 @@ export function RydOrdersSection({
             await actions.decideSelected("rejected");
             setDialog(null);
           }}
+          onClose={() => setDialog(null)}
+        />
+      )}
+      {dialog === "blank-email" && (
+        <RydBlankEmailDialog
+          orders={selectedOrders}
           onClose={() => setDialog(null)}
         />
       )}

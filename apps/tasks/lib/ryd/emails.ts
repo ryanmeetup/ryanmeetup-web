@@ -162,13 +162,13 @@ export function rydCancelledBuyerEmail({
   };
 }
 
-/** A link that opens the draft in the reviewer's mail app. */
+/** A link that opens the draft in the reviewer's mail app. A blank draft omits subject and body. */
 export function rydMailtoHref({
   to = [],
   bcc = [],
-  subject,
-  body,
-}: RydDraft & { to?: string[]; bcc?: string[] }) {
+  subject = "",
+  body = "",
+}: Partial<RydDraft> & { to?: string[]; bcc?: string[] }) {
   const recipients = (addresses: string[]) => [
     ...new Map(
       addresses
@@ -179,8 +179,9 @@ export function rydMailtoHref({
   const copied = recipients(bcc);
   const params = [
     copied.length ? `bcc=${encodeURIComponent(copied.join(","))}` : "",
-    `subject=${encodeURIComponent(subject)}`,
-    `body=${encodeURIComponent(body)}`,
+    subject ? `subject=${encodeURIComponent(subject)}` : "",
+    body ? `body=${encodeURIComponent(body)}` : "",
   ].filter(Boolean);
-  return `mailto:${recipients(to).map(encodeURIComponent).join(",")}?${params.join("&")}`;
+  const query = params.join("&");
+  return `mailto:${recipients(to).map(encodeURIComponent).join(",")}${query ? `?${query}` : ""}`;
 }

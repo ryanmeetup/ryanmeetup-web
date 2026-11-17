@@ -12,6 +12,7 @@ import {
   type RydBulkDecision,
   RYD_BULK_LIMIT,
   RYD_MAILTO_LIMIT,
+  rydBlankEmailGroups,
   rydBodyBytes,
   rydContactGroups,
   rydProductionGroups,
@@ -255,6 +256,43 @@ describe("bounded RY-D review groups", () => {
       expect(group.length).toBeLessThanOrEqual(RYD_BULK_LIMIT);
       expect(rydBodyBytes({ decisions: group })).toBeLessThanOrEqual(RYD_DECISION_BODY_BYTES);
       expect(rydBulkDecisionSchema({ decisions: group })).toEqual({ decisions: group });
+    }
+  });
+});
+
+describe("blank RY-D email groups", () => {
+  const buyer = (
+    displayEmail: string,
+    email = displayEmail.trim().toLowerCase(),
+  ) => ({
+    displayEmail,
+    email,
+  });
+
+  it("emails each buyer once, as typed, and skips unusable addresses", () => {
+    expect(
+      rydBlankEmailGroups([
+        buyer("Ryan@Example.com"),
+        buyer("ryan@example.com"),
+        buyer("not an email", "fox@example.com"),
+        buyer("", ""),
+        buyer("a@example.com,b@example.com", "a@example.com,b@example.com"),
+      ]),
+    ).toEqual([["Ryan@Example.com", "fox@example.com"]]);
+  });
+
+  it("splits large selections into links mail apps can open", () => {
+    const buyers = Array.from({ length: 250 }, (_, i) =>
+      buyer(`ryan.number.${i}@example.test`),
+    );
+    const groups = rydBlankEmailGroups(buyers);
+    expect(groups.length).toBeGreaterThan(1);
+    expect(groups.flat()).toEqual(buyers.map((row) => row.displayEmail));
+    for (const group of groups) {
+      expect(group.length).toBeLessThanOrEqual(RYD_BULK_LIMIT);
+      expect(rydMailtoHref({ bcc: group }).length).toBeLessThanOrEqual(
+        RYD_MAILTO_LIMIT,
+      );
     }
   });
 });

@@ -17,6 +17,7 @@ import {
 } from "@/lib/ryd/fulfillment-view";
 import { RYD_FULFILLMENT_LIMIT } from "@/lib/ryd/fulfillment";
 import type { RydQueue, RydQueueOrder } from "@/lib/ryd/queue-types";
+import { RydBlankEmailButton } from "./RydBlankEmailDialog";
 import { RydFulfillmentFilters } from "./RydFulfillmentFilters";
 import { RydSelectionBar } from "./RydSelection";
 import type { RydSelectionActions } from "./useRydSelectionActions";
@@ -189,6 +190,11 @@ export function RydProductionPanel({
               Done
             </Button>
           )}
+          <RydBlankEmailButton
+            selectedCount={selectedOrders.length}
+            disabled={busy}
+            onClick={() => actions.setDialog("blank-email")}
+          />
           {shows("sent-to-fulfillment", "in-production", "done") && (
             <Button
               type="button"

@@ -150,3 +150,28 @@ export function rydContactGroups(addresses: string[], draft = true) {
       : undefined,
   );
 }
+
+/**
+ * Blank Bcc drafts to every selected buyer, whatever the order's status. Each
+ * group's link stays short enough for mail apps to open; nothing is recorded.
+ */
+export function rydBlankEmailGroups(
+  orders: Pick<RydQueueOrder, "email" | "displayEmail">[],
+) {
+  const emails = new Map<string, string>();
+  for (const order of orders) {
+    // Address buyers as fulfillment typed it when that is still usable.
+    const email = isRydContactEmail(order.displayEmail)
+      ? order.displayEmail.trim()
+      : order.email.trim();
+    const key = normalizeEmail(email);
+    if (isRydContactEmail(email) && !emails.has(key)) emails.set(key, email);
+  }
+  return boundedGroups(
+    [...emails.values()],
+    (group) => ({ emails: group }),
+    (group) =>
+      group.length === 1 ||
+      rydMailtoHref({ bcc: group }).length <= RYD_MAILTO_LIMIT,
+  );
+}

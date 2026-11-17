@@ -153,4 +153,13 @@ describe("RY-D email drafts", () => {
       "mailto:ryan%2Bone%40example.com?bcc=ryan%40example.com&subject=Hello&body=Hi",
     );
   });
+
+  it("leaves a blank draft's subject and body out of the link", () => {
+    expect(rydMailtoHref({ bcc: ["a@example.com", "b@example.com"] })).toBe(
+      "mailto:?bcc=a%40example.com%2Cb%40example.com",
+    );
+    expect(rydMailtoHref({ to: ["a@example.com"] })).toBe(
+      "mailto:a%40example.com",
+    );
+  });
 });

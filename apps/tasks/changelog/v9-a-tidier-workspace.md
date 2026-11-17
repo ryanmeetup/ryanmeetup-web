@@ -73,6 +73,14 @@ a fulfillment partner. Guests reach only the pages and work granted to their
 tier or team. Projects, categories, and pages open to the workspace stay
 closed to them, and their sidebar shows only what they can open.
 
+### Email every selected RY-D buyer
+
+Bulk actions now include Blank email, in every view and fulfillment stage. It
+opens an empty email in your mail app with every selected buyer in Bcc,
+whatever their order's status, and lists each buyer once. A large selection is
+split into several emails so each one still opens. Nothing is recorded as
+contacted.
+
 ## Improved
 
 ### Create from the header

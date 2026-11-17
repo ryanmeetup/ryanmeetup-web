@@ -24,7 +24,8 @@ export type RydOrderDialogKind =
   | "remind"
   | "remind-selected"
   | "contacted-selected"
-  | "cancel-selected";
+  | "cancel-selected"
+  | "blank-email";
 
 /**
  * Bulk actions on the listed, selected orders: decide, cancel, email, and
