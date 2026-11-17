@@ -56,3 +56,10 @@ test("whole-star reviews retain fractional averages and support reviews without 
   expect(data.averageRating).toBe(4.5);
   expect(data.reviews.map((item) => item.photoUrls)).toEqual([[], []]);
 });
+
+test("verification badges follow Judge.me's documented statuses without treating email confirmation as proof", async () => {
+  const statuses = ["confirmed-buyer", "buyer", "verified-purchase", "semi-verified-purchase", "customer-account", "admin", "not-yet", "unconfirmed-buyer", "email", "nothing", "verified-buyer", "unknown", "", undefined];
+  providerReviews(statuses.map((verified, index) => ({ ...review, id: index + 1, verified })));
+  const data = await getReviews("gid://shopify/Product/123");
+  expect(data.reviews.filter((item) => item.verified).map((item) => item.id)).toEqual(["1", "2", "3", "4", "5", "6"]);
+});

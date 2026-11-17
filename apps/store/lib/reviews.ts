@@ -21,6 +21,18 @@ const emptyReviews: ReviewsData = {
   reviews: [],
 };
 
+// Judge.me's verified-review statuses include account authentication and manual
+// verification, so the storefront labels these "Verified review", not purchase.
+// https://judge.me/help/en/articles/8403775-verified-status-of-judge-me-reviews
+const verifiedReviewStatuses = new Set([
+  "confirmed-buyer",
+  "buyer",
+  "verified-purchase",
+  "semi-verified-purchase",
+  "customer-account",
+  "admin",
+]);
+
 function shopifyNumericId(id: string) {
   return id.split("/").at(-1)?.replace(/^demo-/, "") ?? id;
 }
@@ -61,7 +73,7 @@ export async function getReviews(productId: string): Promise<ReviewsData> {
       rating: review.rating,
       reviewerName: review.reviewer?.name ?? "Ryan customer",
       createdAt: review.created_at,
-      verified: review.verified === "buyer" || review.verified === "verified-buyer",
+      verified: verifiedReviewStatuses.has(review.verified ?? ""),
       photoUrls: Array.from(new Set((review.pictures ?? []).flatMap((picture) => {
         if (picture.hidden !== false) return [];
         const url = publishedReviewPhotoUrl(picture.urls?.huge) ?? publishedReviewPhotoUrl(picture.urls?.original);

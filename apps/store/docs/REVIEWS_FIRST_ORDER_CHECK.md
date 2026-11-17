@@ -22,8 +22,11 @@ because it includes a store-wide review that needs the paid plan.
 product by its Shopify product ID and reads up to 20 published reviews with the
 private API, cached for five minutes. It shows only reviews where `hidden` is
 false **and** `curated` is `ok`. A review that's still waiting for moderation
-won't appear, even though Judge.me has it. `verified` of `buyer` or
-`verified-buyer` shows the verified badge. The product page also adds
+won't appear, even though Judge.me has it. The documented verified statuses
+(`confirmed-buyer`, `buyer`, `verified-purchase`, `semi-verified-purchase`,
+`customer-account`, and `admin`) show a "Verified review" badge. Account
+authentication and manual verification do not necessarily prove a purchase,
+so the badge does not claim that. The product page also adds
 `aggregateRating` to its JSON-LD from those same reviews.
 
 ## Before starting
