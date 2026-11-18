@@ -4,7 +4,7 @@ import { apiError, databaseFailure, privateResponse } from "@/lib/server/api-res
 import { privilegedContext, readJson } from "@/lib/server/privileged-api";
 import { getStoreCustomerAuthScope } from "@/lib/server/store-customer-auth/scope";
 import { loadReviewModerationPage, moderateReview, saveReviewReply } from "@/lib/server/store-reviews/moderation";
-import { StoreReviewDatabaseError } from "@/lib/server/store-reviews/storage";
+import { StoreReviewDatabaseError } from "@/lib/server/store-reviews/errors";
 
 export const runtime = "nodejs";
 

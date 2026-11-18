@@ -1,5 +1,4 @@
 /** Private server-to-server contract. Never expose these records to a browser. */
-export const customerAuthBackendPath = "/api/store/customer-auth";
 
 export type CustomerAuthScope = {
   shopId: string;

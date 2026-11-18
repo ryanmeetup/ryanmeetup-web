@@ -1,5 +1,4 @@
 export {
-  customerAuthBackendPath,
   customerAuthCommandSchema,
   customerAuthScopeSchema,
   customerAuthResultSchema,
@@ -48,7 +47,6 @@ export {
   encodeBuyerReviewCursor,
   decodeReviewCursor,
   encodeReviewCursor,
-  reviewBackendPath,
   reviewCommandSchema,
   reviewResultSchema,
 } from "./review-backend";

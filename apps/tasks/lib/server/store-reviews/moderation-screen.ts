@@ -4,7 +4,7 @@ import { getAdminClient } from "@/lib/server/admin-client";
 import { getStoreCustomerAuthScope } from "@/lib/server/store-customer-auth/scope";
 import type { ModerationInitialState } from "@/lib/store-reviews/moderation";
 import { loadReviewModerationPage } from "./moderation";
-import { StoreReviewDatabaseError } from "./storage";
+import { StoreReviewDatabaseError } from "./errors";
 
 /** Call only after the workspace page loader has required app ownership. */
 export async function loadReviewModerationScreen(actor: string): Promise<ModerationInitialState> {

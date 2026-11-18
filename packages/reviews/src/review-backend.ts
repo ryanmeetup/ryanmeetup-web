@@ -16,7 +16,6 @@ import {
   type ReviewSubmission,
 } from "./content";
 
-export const reviewBackendPath = "/api/store/reviews";
 
 /** A purchased order line the storefront has verified with Shopify. */
 export type ReviewPurchase = {
