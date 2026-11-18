@@ -2,6 +2,7 @@ import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { customerAccountIssuer, publicHttpsUrl } from "./config";
 import type { CustomerAccountConfig } from "./config";
 import type { CustomerAccountEndpoints } from "./discovery";
+import { isCodeVerifier, isRandomProof } from "./formats";
 
 export const customerAuthorizationCookie = "__Host-store-customer-oauth";
 export const customerAuthorizationLifetime = 600;
@@ -49,7 +50,7 @@ export function reviewReturnPath(value: unknown): string {
 
 /** Safe lookup key for state or browser binding; reject oversized proofs early. */
 export function customerAuthorizationProofHash(value: unknown): string | null {
-  if (typeof value !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(value)) return null;
+  if (!isRandomProof(value)) return null;
   return createHash("sha256").update(value).digest("hex");
 }
 
@@ -138,7 +139,7 @@ export function validateCustomerAuthorizationCallback({ config, endpoints, attem
   }
   if (!attempt || reviewReturnPath(attempt.returnPath) !== attempt.returnPath || !Number.isSafeInteger(attempt.createdAt) ||
     !Number.isSafeInteger(attempt.expiresAt) || attempt.createdAt < 0 || attempt.expiresAt !== attempt.createdAt + customerAuthorizationLifetime * 1000 ||
-    !/^[A-Za-z0-9_-]{43}$/.test(attempt.nonce) || !/^[A-Za-z0-9_-]{64}$/.test(attempt.codeVerifier)) return { status: "invalid", reason: "transaction" };
+    !isRandomProof(attempt.nonce) || !isCodeVerifier(attempt.codeVerifier)) return { status: "invalid", reason: "transaction" };
   if (!Number.isSafeInteger(now) || attempt.createdAt > now || now >= attempt.expiresAt) return { status: "invalid", reason: "expired" };
   if (attempt.shopId !== config.shopId || attempt.clientId !== config.clientId || attempt.redirectUri !== config.redirectUri ||
     attempt.issuer !== endpoints.issuer || endpoints.issuer !== customerAccountIssuer(config.shopId)) return { status: "invalid", reason: "configuration_changed" };

@@ -1,5 +1,6 @@
 import { publicHttpsUrl } from "./config";
 import type { CustomerAccountConfig } from "./config";
+import { isMyshopifyDomain, isShopId, isTokenText } from "./formats";
 
 export const customerAccountApiVersion = "2026-10";
 
@@ -10,7 +11,7 @@ export class CustomerAccountApiError extends Error {
 export type CustomerAccountApiEndpoint = { url: string; shopId: string };
 
 function apiUrl(value: unknown, shopId: string): URL | null {
-  if (!/^[1-9][0-9]*$/.test(shopId)) return null;
+  if (!isShopId(shopId)) return null;
   const url = publicHttpsUrl(value);
   if (!url || url.hostname !== "shopify.com" || url.port || url.search ||
     !new RegExp(`^/${shopId}/account/customer/api/20[0-9]{2}-(01|04|07|10)/graphql$`).test(url.pathname)) return null;
@@ -22,7 +23,7 @@ function apiUrl(value: unknown, shopId: string): URL | null {
 
 /** Public discovery only. A token is never sent to a caller-selected host/shop. */
 export async function discoverCustomerAccountApi(config: Pick<CustomerAccountConfig, "shopDomain" | "shopId">, fetcher = fetch): Promise<CustomerAccountApiEndpoint | null> {
-  if (!/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/.test(config.shopDomain) || !/^[1-9][0-9]*$/.test(config.shopId)) return null;
+  if (!isMyshopifyDomain(config.shopDomain) || !isShopId(config.shopId)) return null;
   try {
     const response = await fetcher(`https://${config.shopDomain}/.well-known/customer-account-api`, {
       headers: { Accept: "application/json" }, cache: "no-store", redirect: "error", signal: AbortSignal.timeout(5000),
@@ -44,7 +45,7 @@ export function createCustomerAccountApi({ config, endpoint, accessToken, fetche
 }) {
   const url = apiUrl(endpoint.url, config.shopId);
   if (!url || url.href !== endpoint.url || endpoint.shopId !== config.shopId ||
-    !accessToken || accessToken.length > 16384 || !/^[\x21-\x7e]+$/u.test(accessToken)) throw new CustomerAccountApiError();
+    !isTokenText(accessToken)) throw new CustomerAccountApiError();
   const endpointUrl = url.href;
   return async function query(document: string, variables: Record<string, unknown>): Promise<unknown> {
     try {

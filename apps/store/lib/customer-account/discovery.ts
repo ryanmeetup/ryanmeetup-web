@@ -1,5 +1,6 @@
 import { customerAccountIssuer, publicHttpsUrl } from "./config";
 import type { CustomerAccountConfig } from "./config";
+import { isMyshopifyDomain, isShopId } from "./formats";
 
 export type CustomerAccountEndpoints = {
   issuer: string;
@@ -23,7 +24,7 @@ export type CustomerAccountDiscovery = {
  */
 export async function discoverCustomerAccountEndpoints(config: Pick<CustomerAccountConfig, "shopDomain" | "shopId">): Promise<CustomerAccountDiscovery> {
   // Also guard callers using this preflight before full client configuration.
-  if (!/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/.test(config.shopDomain) || !/^[1-9]\d*$/.test(config.shopId)) {
+  if (!isMyshopifyDomain(config.shopDomain) || !isShopId(config.shopId)) {
     return { status: "unavailable", reason: "invalid_metadata" };
   }
   let data: unknown;

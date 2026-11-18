@@ -1,6 +1,7 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { customerAccountIssuer, publicHttpsUrl } from "./config";
 import { customerAuthorizationLifetime } from "./authorization";
+import { isShopId } from "./formats";
 
 type CommonContext = {
   recordHash: string;
@@ -64,7 +65,7 @@ export function getCustomerAccountEncryptionKeys(env: Readonly<Record<string, st
 
 function associatedData(context: CustomerAccountSecretContext): Buffer {
   const timestamp = (value: number) => Number.isSafeInteger(value) && value >= 0;
-  if (!hashPattern.test(context.recordHash) || !/^[1-9][0-9]*$/.test(context.shopId) ||
+  if (!hashPattern.test(context.recordHash) || !isShopId(context.shopId) ||
     !context.clientId || context.clientId.length > 200 || context.issuer !== customerAccountIssuer(context.shopId) ||
     !timestamp(context.createdAt) || !timestamp(context.expiresAt) || context.expiresAt <= context.createdAt) throw new Error("Invalid secret context");
   const common = ["ryanmeetup:store:customer-account:v1", context.kind, context.recordHash, context.shopId, context.clientId, context.issuer, context.createdAt, context.expiresAt];

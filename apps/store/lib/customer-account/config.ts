@@ -1,4 +1,5 @@
 import { isIP } from "node:net";
+import { isMyshopifyDomain, isShopId } from "./formats";
 
 export const customerAccountCallbackPath = "/api/reviews/auth/callback";
 
@@ -52,8 +53,8 @@ export function getCustomerAccountConfiguration(env: Readonly<Record<string, str
     if (values[key] && !valid) invalid.push(key);
   };
 
-  check("SHOPIFY_STORE_DOMAIN", /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/.test(values.SHOPIFY_STORE_DOMAIN));
-  check("SHOPIFY_CUSTOMER_ACCOUNT_SHOP_ID", /^[1-9]\d*$/.test(values.SHOPIFY_CUSTOMER_ACCOUNT_SHOP_ID));
+  check("SHOPIFY_STORE_DOMAIN", isMyshopifyDomain(values.SHOPIFY_STORE_DOMAIN));
+  check("SHOPIFY_CUSTOMER_ACCOUNT_SHOP_ID", isShopId(values.SHOPIFY_CUSTOMER_ACCOUNT_SHOP_ID));
   check("SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_ID", /^[^\s:\u0000-\u001f\u007f]{1,200}$/u.test(values.SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_ID));
   check("SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_SECRET", values.SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_SECRET.length <= 4096 && !/[\u0000-\u001f\u007f]/u.test(values.SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_SECRET));
   const redirect = publicHttpsUrl(values.SHOPIFY_CUSTOMER_ACCOUNT_REDIRECT_URI);

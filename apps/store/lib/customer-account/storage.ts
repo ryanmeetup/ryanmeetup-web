@@ -7,6 +7,7 @@ import type { CustomerAuthorizationAttempt } from "./authorization";
 import { createCustomerAuthBackend, CustomerAuthBackendError } from "./backend";
 import { openCustomerAccountSecret, sealCustomerAccountSecret } from "./secrets";
 import type { CustomerAccountEncryptionKeys, CustomerAccountSecretContext } from "./secrets";
+import { isCodeVerifier, isRandomProof, isTokenText } from "./formats";
 
 export type CustomerAccountTokens = { accessToken: string; refreshToken: string; idToken: string };
 export type CustomerAccountSession = Omit<StoredCustomerSession, "encryptedTokens"> & { tokens: CustomerAccountTokens };
@@ -27,8 +28,7 @@ function parsePrivateJson(value: string | null): unknown {
 
 function validTokens(value: unknown): value is CustomerAccountTokens {
   const tokens = privateObject(value, ["accessToken", "refreshToken", "idToken"]);
-  return Boolean(tokens && [tokens.accessToken, tokens.refreshToken, tokens.idToken].every((token) =>
-    typeof token === "string" && token.length > 0 && token.length <= 16384 && /^[\x21-\x7e]+$/u.test(token)));
+  return Boolean(tokens && [tokens.accessToken, tokens.refreshToken, tokens.idToken].every(isTokenText));
 }
 
 export function createCustomerAccountStorage({ config, keyring, backend }: {
@@ -73,8 +73,7 @@ export function createCustomerAccountStorage({ config, keyring, backend }: {
       const row = await backend({ operation: "authorization.get", scope, stateHash, browserBindingHash });
       if (!row || row.stateHash !== stateHash || row.browserBindingHash !== browserBindingHash || row.createdAt > Date.now() || row.expiresAt <= Date.now()) return null;
       const flow = privateObject(parsePrivateJson(openCustomerAccountSecret(row.encryptedFlow, flowContext(row), keyring)), ["nonce", "codeVerifier", "returnPath"]);
-      if (!flow || typeof flow.nonce !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(flow.nonce) ||
-        typeof flow.codeVerifier !== "string" || !/^[A-Za-z0-9_-]{64}$/.test(flow.codeVerifier) ||
+      if (!flow || !isRandomProof(flow.nonce) || !isCodeVerifier(flow.codeVerifier) ||
         typeof flow.returnPath !== "string" || reviewReturnPath(flow.returnPath) !== flow.returnPath) return null;
       return { ...scope, stateHash, browserBindingHash, createdAt: row.createdAt, expiresAt: row.expiresAt,
         nonce: flow.nonce, codeVerifier: flow.codeVerifier, returnPath: flow.returnPath };

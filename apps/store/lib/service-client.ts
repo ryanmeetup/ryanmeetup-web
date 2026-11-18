@@ -1,4 +1,5 @@
 import { publicHttpsUrl } from "./customer-account/config";
+import { isRandomProof } from "./customer-account/formats";
 
 type Operation<Command> = Command extends { operation: infer Name extends string } ? Name : never;
 
@@ -22,7 +23,7 @@ export function createServiceClient<Command extends { operation: string }, Resul
   fetcher?: typeof fetch;
 }) {
   const url = publicHttpsUrl(origin);
-  if (!url || url.pathname !== "/" || url.search || url.port || !/^[A-Za-z0-9_-]{43}$/.test(token)) throw fail();
+  if (!url || url.pathname !== "/" || url.search || url.port || !isRandomProof(token)) throw fail();
   const endpoint = new URL(path, url.origin).href;
 
   return async function execute<Sent extends Command>(command: Sent): Promise<Results[Operation<Sent>]> {

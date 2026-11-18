@@ -5,6 +5,7 @@ import { customerAccountIssuer, publicHttpsUrl } from "./config";
 import type { CustomerAccountConfig } from "./config";
 import type { CustomerAccountEndpoints } from "./discovery";
 import type { CustomerAccountSession, CustomerAccountTokens } from "./storage";
+import { isCodeVerifier, isRandomProof, isTokenText } from "./formats";
 
 export class CustomerAccountTokenError extends Error {
   constructor() { super("Shopify sign-in could not be verified. Please try again."); }
@@ -16,8 +17,6 @@ export class CustomerAccountRefreshRejected extends CustomerAccountTokenError {}
 function sameProof(actual: string, expected: string) {
   return timingSafeEqual(createHash("sha256").update(actual).digest(), createHash("sha256").update(expected).digest());
 }
-
-const tokenText = (value: unknown): value is string => typeof value === "string" && value.length > 0 && value.length <= 16384 && /^[\x21-\x7e]+$/u.test(value);
 
 function audiences(value: unknown): string[] {
   const values = typeof value === "string" ? [value] : value;
@@ -70,8 +69,8 @@ export function createCustomerAccountTokenClient({ config, endpoints, fetcher = 
       if (refreshing && response.status === 400 && result.error === "invalid_grant") throw new CustomerAccountRefreshRejected();
       throw new CustomerAccountTokenError();
     }
-    if (!tokenText(result.access_token) || (result.refresh_token !== undefined && !tokenText(result.refresh_token)) ||
-      (result.id_token !== undefined && !tokenText(result.id_token)) ||
+    if (!isTokenText(result.access_token) || (result.refresh_token !== undefined && !isTokenText(result.refresh_token)) ||
+      (result.id_token !== undefined && !isTokenText(result.id_token)) ||
       typeof result.token_type !== "string" || result.token_type.toLowerCase() !== "bearer" ||
       typeof result.expires_in !== "number" || !Number.isSafeInteger(result.expires_in) || result.expires_in <= 0 || result.expires_in > 30 * 86400) throw new CustomerAccountTokenError();
     return { accessToken: result.access_token, refreshToken: result.refresh_token as string | undefined,
@@ -93,7 +92,7 @@ export function createCustomerAccountTokenClient({ config, endpoints, fetcher = 
       code: string; codeVerifier: string; nonce: string; now?: number;
     }): Promise<{ subject: string; tokens: CustomerAccountTokens; accessExpiresAt: number }> {
       try {
-        if (!tokenText(code) || !/^[A-Za-z0-9_-]{64}$/.test(codeVerifier) || !/^[A-Za-z0-9_-]{43}$/.test(nonce) || !Number.isSafeInteger(now) || now < 0) throw new CustomerAccountTokenError();
+        if (!isTokenText(code) || !isCodeVerifier(codeVerifier) || !isRandomProof(nonce) || !Number.isSafeInteger(now) || now < 0) throw new CustomerAccountTokenError();
         const body = new URLSearchParams({ grant_type: "authorization_code", client_id: config.clientId, redirect_uri: config.redirectUri, code, code_verifier: codeVerifier });
         const result = await requestTokens(body, now);
         if (!result.refreshToken || !result.idToken) throw new CustomerAccountTokenError();
@@ -110,14 +109,14 @@ export function createCustomerAccountTokenClient({ config, endpoints, fetcher = 
     /** Takes only a session loaded from authenticated encrypted server storage. */
     async refresh(session: CustomerAccountSession, now = Date.now()): Promise<{ tokens: CustomerAccountTokens; accessExpiresAt: number }> {
       try {
-        if (!tokenText(session.tokens.refreshToken) || !tokenText(session.tokens.idToken) || session.expiresAt <= now || session.createdAt > now) throw new CustomerAccountTokenError();
+        if (!isTokenText(session.tokens.refreshToken) || !isTokenText(session.tokens.idToken) || session.expiresAt <= now || session.createdAt > now) throw new CustomerAccountTokenError();
         // The original token was verified at sign-in and is protected by the
         // session envelope. Its expiry does not end the separate RP session.
         // Keep this original anchor across refreshes, even when new ID tokens
         // omit nonce/auth_time, so a later response can still be compared.
         const original = decodeJwt(session.tokens.idToken);
         if (!validIdentity(original, config) || original.sub !== session.subject ||
-          typeof original.nonce !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(original.nonce)) throw new CustomerAccountTokenError();
+          !isRandomProof(original.nonce)) throw new CustomerAccountTokenError();
         const result = await requestTokens(new URLSearchParams({ grant_type: "refresh_token", client_id: config.clientId, refresh_token: session.tokens.refreshToken }), now, true);
         if (result.idToken !== undefined) {
           const payload = await verifyIdentity(result.idToken, now, false);
