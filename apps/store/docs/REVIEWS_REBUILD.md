@@ -6,6 +6,12 @@ Shopify remains the source for buyer identity, orders, products, and fulfillment
 The existing Judge.me integration serves production until the replacement passes
 the cutover checks below. Implementation and launch are separate milestones.
 
+**Scope update, November 18, 2026:** Ryan deferred importing content from
+Judge.me. Import-related tasks below are inactive unless he requests them again.
+Next: finish buyer review management, configure and verify the real customer
+sign-in/purchase flow in an isolated preview, then validate the complete review
+lifecycle. Judge.me remains the default during this work.
+
 **Status, November 17, 2026:** Judge.me still serves production. Finished work
 is removed from this plan; [the handoff](REVIEWS_HANDOFF.md) records each landed
 commit and the next small chunks. Already in place: the server-side

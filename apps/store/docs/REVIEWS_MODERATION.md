@@ -229,17 +229,28 @@ Tasks local stack or use a second loopback database URL as supposed isolation.
 
 ## Next small chunk
 
-Start the **Judge.me import dry run** described in `REVIEWS_REBUILD.md`: inventory
-source reviews/replies/media, retain source identifiers, map products, and
-report duplicates, skipped test records, unmapped products, and discrepancies.
-Keep this first chunk read-only with no database import or provider cutover.
-Recheck current source contracts before designing imported-review storage;
-legacy records may not have the exact order-line identity required of new
-authenticated submissions. Keep already-applied SQL immutable.
+Ryan deferred Judge.me content imports on November 18, 2026. Do not start an
+import or import dry run unless he asks for it again. Keep Judge.me as the
+default provider and preserve the browser testing control.
+
+Finish the **buyer review-management flow** first. My reviews, edit/withdraw
+handlers, and `20261120150000_store_buyer_reviews.sql` already exist as unfinished
+work in the shared worktree. Review and complete that work in small commits;
+do not create a parallel implementation. Verify pending/published/hidden states,
+edits that preserve approved content, immediate withdrawal, and ownership
+isolation. Apply its committed RMT-only migration using the history-gap procedure
+above once it is ready.
+
+Then configure the real Shopify Customer Account client and an isolated preview
+backend. Prove buyer sign-in, exact purchased-line eligibility, token renewal,
+and logout with real provider responses. Test the complete buyer-to-moderator
+loop before opening collection: submit, approve, reply, edit/reapprove, and
+withdraw, including public rating totals. Photos can follow the working text
+review flow; they do not replace the live authentication/permission checks.
 
 The queue currently exposes only the ten most recent audit events; a complete
 history reader remains a separate chunk if needed. Live buyer collection still
 requires the Shopify Customer Account client, configured credentials, and real
 purchase/refresh verification described in `REVIEWS_SHOPIFY_AUTH.md` and
-`REVIEWS_PURCHASE_ELIGIBILITY.md`. Photos, imports, and
+`REVIEWS_PURCHASE_ELIGIBILITY.md`. Photos and
 production cutover remain separate chunks.

@@ -306,7 +306,8 @@ Shopify gate above; record its result before implementation depends on it.
    whole-star rating/body, chosen public display name, idempotency, and pending
    status. Keep unmoderated content private. Staff authorization and the
    publish/hide API, owner-facing queue, and official reply controls are
-   implemented. The next chunk is a read-only Judge.me import dry run.
+   implemented. Ryan deferred imports; the next chunk is to finish buyer
+   review management, then verify real customer sign-in and purchases in preview.
 5. **Public reads:** database-backed product scope, complete published totals
    independent of pagination, public field projection, and cache invalidation.
    Wire `getReviews` and matching JSON-LD without falling back to Judge.me.
