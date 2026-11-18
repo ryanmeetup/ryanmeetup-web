@@ -56,7 +56,7 @@ for (const theme of ["light", "dark"]) {
       await expect(dialog).toContainText("Shown publicly as Ryan Sample");
 
       await dialog.getByRole("radio", { name: "5 stars", exact: true }).check();
-      await dialog.getByLabel("Title").fill("  Fits like a Ryan ");
+      await dialog.getByLabel(/^Title/).fill("  Fits like a Ryan ");
       await dialog.getByLabel(/^Review/).fill("Washed it twice and the name tag still pops.");
       // The dialog element itself has no box; measure and capture its visible form.
       const submit = dialog.getByRole("button", { name: "Submit review", exact: true });
@@ -82,6 +82,24 @@ test("the sample buyer must pick a rating before submitting", async ({ page }) =
   await dialog.getByLabel(/^Review/).fill("No stars yet.");
   await dialog.getByRole("button", { name: "Submit review", exact: true }).click();
   await expect(dialog.getByText("Choose a rating before submitting your review.")).toBeVisible();
+});
+
+test("the sample buyer's only purchase is implied after switching from plain custom mode", async ({ page }) => {
+  test.skip(!browser, "Requires a demo server with browser review testing enabled.");
+  await page.goto(productPath);
+  // Plain custom mode mounts the composer closed; switching refreshes it without a remount.
+  await choose(page, "Custom reviews");
+  await choose(page, "Custom reviews, sample buyer");
+  const reviews = page.locator("#reviews");
+  await expect(reviews).toContainText("Sample buyer: nothing is saved.");
+  await reviews.getByRole("button", { name: "Write a review", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Write a review", exact: true });
+  await dialog.getByRole("radio", { name: "5 stars", exact: true }).check();
+  await dialog.getByLabel(/^Title/).fill("Super Ryan");
+  await dialog.getByLabel(/^Review/).fill("This was a good shirt!");
+  await dialog.getByRole("button", { name: "Submit review", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(reviews.getByRole("status").filter({ hasText: "Review received" })).toContainText("Sample review checked");
 });
 
 test("plain custom mode keeps the form closed", async ({ page }) => {

@@ -76,6 +76,10 @@ export function CustomReviewComposer({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const nameChoices = edit?.nameChoices ?? (ready ? REVIEW_NAME_STYLES.map((style) => ({ style, displayName: reviewDisplayName(style, ready.buyer) })) : []);
+  // A single purchase is implied. Access can change after mount (a review mode
+  // switch refreshes the page without remounting), so this is derived, not stored.
+  const lineId = ready?.purchases.some((purchase) => purchase.lineId === draft.lineId) ? draft.lineId
+    : ready?.purchases.length === 1 ? ready.purchases[0].lineId : "";
   const publicName = nameChoices.find((choice) => choice.style === draft.nameStyle)?.displayName ?? "";
 
   function close() {
@@ -87,7 +91,7 @@ export function CustomReviewComposer({
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!ready || pending) return;
-    if (!draft.lineId) return setError("Choose which purchase you're reviewing.");
+    if (!lineId) return setError("Choose which purchase you're reviewing.");
     if (!draft.rating) {
       setError("Choose a rating before submitting your review.");
       ratingField.current?.querySelector("input")?.focus();
@@ -98,7 +102,7 @@ export function CustomReviewComposer({
     setPending(true);
     setError("");
     try {
-      const result = await onSubmit({ ...review, lineId: draft.lineId });
+      const result = await onSubmit({ ...review, lineId });
       if (!result.ok) return setError(result.error);
       if (!edit) setDraft(freshDraft());
       onClose();
@@ -174,7 +178,7 @@ export function CustomReviewComposer({
             label="Purchase"
             variant="field"
             required
-            value={draft.lineId}
+            value={lineId}
             disabled={pending}
             onChange={(lineId) => setDraft((value) => ({ ...value, lineId }))}
             options={[{ value: "", label: "Choose a purchase" }, ...ready.purchases.map((purchase) => ({ value: purchase.lineId, label: purchase.label }))]}
