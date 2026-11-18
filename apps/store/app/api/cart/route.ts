@@ -1,19 +1,15 @@
 import { NextResponse } from "next/server";
+import { parseCartAction } from "@/lib/cart-action";
 import {
   addCartLine,
   createCart,
   getCart,
   isShopifyConfigured,
   removeCartLine,
+  ShopifyUserError,
   updateCartLine,
 } from "@/lib/shopify";
 import type { Cart } from "@/lib/types";
-
-type CartAction =
-  | { action: "get"; cartId: string }
-  | { action: "add"; cartId?: string; merchandiseId: string; quantity: number }
-  | { action: "update"; cartId: string; lineId: string; quantity: number }
-  | { action: "remove"; cartId: string; lineId: string };
 
 // A cart that has checked out or expired rejects every change. When a change fails and
 // Shopify no longer has the cart, fall back instead of leaving the shopper stuck with it.
@@ -26,36 +22,37 @@ async function withLiveCart(cartId: string, change: () => Promise<Cart>, fallbac
   }
 }
 
+async function runCartAction(body: NonNullable<ReturnType<typeof parseCartAction>>): Promise<Cart | null> {
+  switch (body.action) {
+    case "get":
+      return getCart(body.cartId);
+    case "add": {
+      const { cartId, merchandiseId, quantity } = body;
+      return cartId
+        ? withLiveCart(cartId, () => addCartLine(cartId, merchandiseId, quantity), () => createCart(merchandiseId, quantity))
+        : createCart(merchandiseId, quantity);
+    }
+    case "update":
+      return withLiveCart(body.cartId, () => updateCartLine(body.cartId, body.lineId, body.quantity), async () => null);
+    case "remove":
+      return withLiveCart(body.cartId, () => removeCartLine(body.cartId, body.lineId), async () => null);
+  }
+}
+
 export async function POST(request: Request) {
   if (!isShopifyConfigured()) {
     return NextResponse.json({ demo: true });
   }
 
+  const body = parseCartAction(await request.json().catch(() => null));
+  if (!body) return NextResponse.json({ error: "That cart change could not be read. Please refresh and try again." }, { status: 400 });
+
   try {
-    const body = (await request.json()) as CartAction;
-    if (body.action === "get") {
-      return NextResponse.json({ cart: await getCart(body.cartId) });
-    }
-    if (body.action === "add") {
-      const { cartId, merchandiseId, quantity } = body;
-      const cart = cartId
-        ? await withLiveCart(cartId, () => addCartLine(cartId, merchandiseId, quantity), () => createCart(merchandiseId, quantity))
-        : await createCart(merchandiseId, quantity);
-      return NextResponse.json({ cart });
-    }
-    if (body.action === "update") {
-      return NextResponse.json({
-        cart: await withLiveCart(body.cartId, () => updateCartLine(body.cartId, body.lineId, body.quantity), async () => null),
-      });
-    }
-    if (body.action === "remove") {
-      return NextResponse.json({
-        cart: await withLiveCart(body.cartId, () => removeCartLine(body.cartId, body.lineId), async () => null),
-      });
-    }
-    return NextResponse.json({ error: "Unknown cart action." }, { status: 400 });
+    return NextResponse.json({ cart: await runCartAction(body) });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Cart request failed.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    // Shopify's own refusals (stock limits, unavailable items) are written for shoppers.
+    if (error instanceof ShopifyUserError) return NextResponse.json({ error: error.message }, { status: 422 });
+    console.error("Cart request failed.", error);
+    return NextResponse.json({ error: "The cart couldn't be updated just now. Please try again." }, { status: 502 });
   }
 }

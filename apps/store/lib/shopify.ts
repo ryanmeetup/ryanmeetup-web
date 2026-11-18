@@ -117,6 +117,9 @@ const cartFragment = `
   }
 `;
 
+/** A cart change Shopify refused for a reason the shopper can act on, such as limited stock. */
+export class ShopifyUserError extends Error {}
+
 export function isShopifyConfigured() {
   return Boolean(
     process.env.SHOPIFY_STORE_DOMAIN &&
@@ -153,10 +156,13 @@ async function storefrontRequest<T>(
         ? { revalidate: options.revalidate, tags: [shopifyCatalogTag] }
         : undefined,
       cache: options.revalidate ? undefined : "no-store",
+      // A stalled Shopify call must not hold a page render or cart change open.
+      signal: AbortSignal.timeout(10_000),
     },
   );
 
-  const payload = (await response.json()) as {
+  // Gateways can answer with HTML; report the status rather than a JSON parse error.
+  const payload = (await response.json().catch(() => ({}))) as {
     data?: T;
     errors?: { message: string }[];
   };
@@ -589,7 +595,7 @@ type CartPayload = {
 
 function readCartPayload(payload: CartPayload): Cart {
   if (payload.userErrors.length) {
-    throw new Error(payload.userErrors.map((error) => error.message).join("; "));
+    throw new ShopifyUserError(payload.userErrors.map((error) => error.message).join("; "));
   }
   if (!payload.cart) throw new Error("Shopify did not return a cart.");
   return reshapeCart(payload.cart);
