@@ -50,7 +50,6 @@ and the live checkout.
 | # | Item | Priority | Status |
 | --- | --- | --- | --- |
 | 4 | [Shopify Admin setup](#4-shopify-admin-setup) | Blocker | In progress |
-| 17 | [Branded error pages](#17-branded-error-pages) | Polish | Not started |
 | 11 | [More from this shop](#11-more-from-this-shop) | Etsy parity | Not started |
 | 8 | [Note to seller and personalization](#8-note-to-seller-and-personalization) | Etsy parity | Not started |
 | 14 | [Shop-wide reviews and buyer-only reviews](#14-shop-wide-reviews-and-buyer-only-reviews) | Polish | In progress |
@@ -124,18 +123,6 @@ fields. The store supports neither.
 
 ## Polish
 
-### 17. Branded error pages
-
-- [ ] Done
-
-**Problem.** The store has no `error.tsx` or `global-error.tsx`, so a Shopify
-outage or timeout shows Next's plain default error page.
-
-**Approach.** Add both, using the shared not-found treatment, with a retry action
-and links to Shop all and Contact.
-
-**Done when.** A failed catalog request shows a branded page with a way to retry.
-
 ### 14. Shop-wide reviews and buyer-only reviews
 
 - [ ] Done
@@ -205,6 +192,7 @@ Record each finished or changed item here, newest first.
 
 | Date | Item | Change | Commit |
 | --- | --- | --- | --- |
+| 2026-11-17 | 17 | Done. `app/error.tsx` and `app/global-error.tsx` share a branded "Oops" name-tag page built on the shared `NotFoundCard`, which now accepts a badge, label, tag name, and button actions. **Try again** re-fetches the failed page; Shop All and store support are linked, with the error reference for support. Verified against an unreachable Shopify domain in both themes at 390 and 1280 px. | — |
 | 2026-11-15 | — | Reviewed the roadmap. Item 4 is now a next-steps table led by the Admin API scopes it is blocked on; the superseded November 14 shipping audit left (the live tiers replaced it). "Already in place" now covers branded checkout and accounts, payments, SKU mapping, and the name tag shipping tiers. Added item 17 for branded error pages, and moved item 9 under Polish to match its priority. | — |
 | 2026-11-15 | 4 | Ryan cancelled and refunded test order #1001, then placed a second real order that is going through Printful fulfillment. Shipping tiers for US name tag shirts and hoodies verified live (1–3 and 10 shirts, 1–2 hoodies, and a mixed cart all match Printful's cost plus $0.40). | — |
 | 2026-11-15 | 4 | Removed Printful SKU mapping: all 1,878 published variants across 86 products carry a unique SKU in Printful's sync format (`<product>_<variant>`), none blank. Checkout and the customer-account sign-in page show the wordmark in the light scheme from [SHOPIFY_HOSTED_PAGES.md](SHOPIFY_HOSTED_PAGES.md#3-brand-checkout-and-customer-accounts); headings stay in Shopify's system font. | — |
