@@ -52,6 +52,8 @@ const featuredCollectionHandle = "frontpage";
 // Without one, the newest listing takes the spot.
 const spotlightCollectionHandle = "spotlight";
 const favoritesLimit = 4;
+// Shopify seeds new collections with this copy; treat it as no description.
+const shopifyPlaceholderDescription = "This is a test description.";
 
 const imageFields = "url altText width height";
 const variantFields = `
@@ -320,23 +322,25 @@ async function getBestSellingHandles(): Promise<string[]> {
   return (products ?? []).map(({ handle }) => normalizeHandle(handle));
 }
 
-// Membership handles only; a collection's first 250 products count toward its section.
+// Membership handles only. Every collection is loaded, but only a collection's first 250
+// products count toward its section, which is far beyond any section's size.
 // Collections are ordered by their best-selling product, so the menu, the home tiles,
 // and Shop All lead with what sells rather than what sorts first alphabetically.
 async function getCollectionMemberships(): Promise<CollectionMembership[]> {
-  const [data, bestSelling] = await Promise.all([
-    storefrontRequest<{ collections: Connection<CollectionMembership> }>(
-      `query CollectionMemberships {
-        collections(first: 50, sortKey: TITLE) {
+  const [collections, bestSelling] = await Promise.all([
+    loadAllPages(async (after) => (await storefrontRequest<{ collections: PaginatedConnection<CollectionMembership> }>(
+      `query CollectionMemberships($after: String) {
+        collections(first: 50, after: $after, sortKey: TITLE) {
           edges { node { id handle title description image { url altText width height } products(first: 250) { edges { node { handle } } } } }
+          pageInfo { endCursor hasNextPage }
         }
       }`,
-      {},
+      { after },
       { revalidate: 300 },
-    ),
+    )).collections),
     getBestSellingHandles(),
   ]);
-  const memberships = data.collections.edges.map(({ node }) => ({
+  const memberships = (collections ?? []).map((node) => ({
     ...node,
     handle: normalizeHandle(node.handle),
     products: { edges: node.products.edges.map(({ node: product }) => ({ node: { handle: normalizeHandle(product.handle) } })) },
@@ -411,7 +415,7 @@ export async function getHomeCatalog(): Promise<HomeCatalog> {
         id: curated?.id ?? "featured",
         handle: featuredCollectionHandle,
         title: curated?.title || "Best Sellers",
-        description: description && description !== "This is a test description." ? description : "Popular picks, pulled straight from the official catalog.",
+        description: description && description !== shopifyPlaceholderDescription ? description : "Popular picks, pulled straight from the official catalog.",
         image: null,
       },
       products: featured.slice(0, favoritesLimit),
@@ -482,12 +486,14 @@ async function loadCollection(handle: string, memberships: CollectionMembership[
 }
 
 async function getShopifyCollectionHandles() {
-  const data = await storefrontRequest<{ collections: Connection<{ handle: string }> }>(
-    `query CollectionHandles { collections(first: 250) { edges { node { handle } } } }`,
-    {},
+  const collections = await loadAllPages(async (after) => (await storefrontRequest<{ collections: PaginatedConnection<{ handle: string }> }>(
+    `query CollectionHandles($after: String) {
+      collections(first: 250, after: $after) { edges { node { handle } } pageInfo { endCursor hasNextPage } }
+    }`,
+    { after },
     { revalidate: 300 },
-  );
-  return data.collections.edges.map(({ node }) => node.handle);
+  )).collections);
+  return (collections ?? []).map(({ handle }) => handle);
 }
 
 async function getShopifyCollection(handle: string): Promise<ProductPage | null> {

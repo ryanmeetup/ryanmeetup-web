@@ -39,9 +39,12 @@ function mockCatalog(failDiscovery = false, spotlight: { handle: string }[] = []
       data = { products: { edges: [mom, tee, dad, ryan].map(({ handle }) => ({ node: { handle } })), pageInfo: { endCursor: null, hasNextPage: false } } };
     } else if (request.query.includes("CollectionMemberships")) {
       const collection = (id: string, title: string, products: { handle: string }[]) => ({ node: { id, handle: id, title, description: "", image: null, products: { edges: products.map(({ handle }) => ({ node: { handle } })) } } });
-      data = { collections: { edges: [collection("apparel", "Shopify Apparel", [tee]), collection("frontpage", "Home page", [tee, dad]), collection("shirts", "Shirts", [mom]), collection("empty", "Empty", []), ...(spotlight.length ? [collection("spotlight", "Fresh off the press", spotlight)] : [])] } };
+      const all = [collection("apparel", "Shopify Apparel", [tee]), collection("frontpage", "Home page", [tee, dad]), collection("shirts", "Shirts", [mom]), collection("empty", "Empty", []), ...(spotlight.length ? [collection("spotlight", "Fresh off the press", spotlight)] : [])];
+      // Two pages, so a shop with more collections than one page still lists all of them.
+      const page = request.variables.after ? all.slice(2) : all.slice(0, 2);
+      data = { collections: { edges: page, pageInfo: { endCursor: "collections-page-1", hasNextPage: !request.variables.after } } };
     } else if (request.query.includes("CollectionHandles")) {
-      data = { collections: { edges: [{ node: { handle: "shirts" } }, { node: { handle: "i-❤️-ry" } }] } };
+      data = { collections: { edges: [{ node: { handle: "shirts" } }, { node: { handle: "i-❤️-ry" } }], pageInfo: { endCursor: null, hasNextPage: false } } };
     } else if (request.query.includes("query Collection(") && request.variables.handle === "i-❤️-ry") {
       data = { collection: { id: "heart", handle: "i-❤️-ry", title: "I ❤️ RY", description: "", image: null, products: { edges: [{ node: productNode(tee) }], pageInfo: { endCursor: null, hasNextPage: false } } } };
     } else if (request.query.includes("query Collection(")) {
@@ -148,8 +151,9 @@ test("type pages split into garment groupings from each product's Shopify catego
 });
 
 test("the type pages lead the collection list, shadow same-handle Shopify collections, and omit the home page collection", async () => {
-  mockCatalog();
+  const requests = mockCatalog();
   expect((await getCollections()).map((collection) => collection.title)).toEqual(["Collections", "Apparel", "Accessories", "RY-Ds", "Shirts", "Empty"]);
+  expect(requests.filter((request) => request.query.includes("CollectionMemberships")).map((request) => request.variables.after)).toEqual([null, "collections-page-1"]);
 });
 
 test("a collection whose Shopify handle has a heart emoji is served at its heart URL", async () => {
