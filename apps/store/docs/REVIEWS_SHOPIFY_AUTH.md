@@ -1,8 +1,9 @@
 # Shopify buyer sign-in implementation
 
-The custom review sign-in foundation is under construction. No sign-in entry
-point is enabled yet. Judge.me remains the default, and custom submissions
-remain closed. Configuration checks are not proof of a working buyer login.
+The custom review sign-in routes are implemented behind an explicit opt-in.
+They are disabled until the client, backend, keyring, and flag are configured.
+Judge.me remains the default, and custom submissions remain closed. Local
+checks are not proof of a working buyer login on the intended installation.
 
 ## Client setup
 
@@ -16,8 +17,9 @@ The expected callback path is `/api/reviews/auth/callback`. Register its exact
 HTTPS URL for the environment being tested. For production that would be
 `https://store.ryanmeetup.com/api/reviews/auth/callback`; Preview needs its own
 registered HTTPS URL, and local OAuth needs an HTTPS tunnel. The callback
-route itself is still outstanding, so registering the URL does not enable
-login today.
+route exists but remains gated. Registering the URL alone does not enable login
+or review collection. Register the storefront's HTTPS origin in the client's
+allowed JavaScript origins as well; the token exchange supplies that origin.
 
 | Server setting | Value |
 | --- | --- |
@@ -26,6 +28,9 @@ login today.
 | `SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_ID` | The Headless confidential client ID. |
 | `SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_SECRET` | That client's secret; keep server-only. |
 | `SHOPIFY_CUSTOMER_ACCOUNT_REDIRECT_URI` | The exact registered HTTPS callback URL. |
+| `STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED` | Explicit `true` opt-in; start/callback also require custom mode for that browser. |
+| `STORE_REVIEWS_BACKEND_URL` | HTTPS origin of the intended private auth backend, with no path/query. |
+| `STORE_REVIEWS_BACKEND_TOKEN` | The separate service token whose SHA-256 digest is configured on that backend. |
 
 Use separate client configuration for isolated test environments as needed.
 Verify the client's buyer/order permissions on the intended installation.
@@ -128,17 +133,37 @@ one-time consumption and revision-based refresh. Invalid proofs never trigger
 storage requests. Storage failures remain distinct from a missing session;
 upstream bodies and secrets never appear in thrown diagnostics.
 
-The store transport takes server-owned `origin` and `token` arguments. Its
-future runtime composition should read `STORE_REVIEWS_BACKEND_URL` and
-`STORE_REVIEWS_BACKEND_TOKEN`, alongside the existing Shopify config and
-encryption keyring. Use an isolated backend and token for Preview. No runtime
-credentials have been configured, and no sign-in entry point is enabled yet.
+`lib/customer-account/runtime.ts` reads the backend settings alongside the
+existing Shopify config and encryption keyring, independently of Judge.me's
+credentials. Use an isolated backend and token for Preview. No runtime
+credentials or enable flags have been configured by this implementation.
+
+## HTTP sign-in and review-session sign-out
+
+| Route | Behavior |
+| --- | --- |
+| `GET /api/reviews/auth/start?returnTo=...` | Persist an encrypted ten-minute attempt, set the opaque browser binding, then redirect to Shopify. Use normal navigation with prefetch disabled. |
+| `GET /api/reviews/auth/callback` | Validate state/browser/configuration, consume once, exchange and verify tokens, persist an encrypted session, then return to the original product link. A denial retires the attempt without creating a session. |
+| `POST /api/reviews/auth/logout` | Require the storefront's exact Origin, revoke the review session, then clear its cookie and the flow cookie. Remains usable after switching to Judge.me or disabling new sign-ins. |
+
+The session cookie is `__Host-store-customer-session`, a random opaque value
+with Secure, HttpOnly, SameSite=Lax, and Path=/ attributes. Only its hash is
+stored. The session has a seven-day absolute lifetime; access-token expiry is
+recorded separately and must be checked or refreshed before Shopify requests.
+The callback clears the authorization cookie on every outcome and sets no
+session cookie if verification or persistence fails. Responses are uncached
+and suppress referrers. Public host/proxy headers must match the registered
+HTTPS storefront; arbitrary return URLs cannot redirect away from it.
+
+Sign-out revokes the custom review session. It does not end the separate
+Shopify account session. It needs no discovery/token request and does not
+report success if backend revocation fails. No public session/token-read API
+or review-write access has been enabled.
 
 ## Remaining gate
 
-Compose the implemented private storage into HTTP start/callback, token
-exchange, signed ID-token/nonce verification, renewal,
-logout, and expired-record cleanup. Prove a real buyer login and exact
+Implement server-side session loading/renewal and expired-record cleanup.
+Prove a real buyer login through these routes and exact
 order-line access after the confidential client is configured. Browser cookies
 must contain only opaque identifiers; verifiers and tokens remain server-side.
 Do not enable sign-in or collection before these paths are ready.

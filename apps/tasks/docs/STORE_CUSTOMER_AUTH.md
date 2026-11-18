@@ -47,7 +47,7 @@ command includes the exact configured scope. Supported operations:
 - `session.create`, `session.get`, `session.rotate`, `session.revoke`.
 
 Requests use JSON and `Authorization: Bearer <service token>`, with no browser
-Origin or Fetch Metadata headers. There is no cookie authentication or CORS
+Origin or `Sec-Fetch-Site` headers. There is no cookie authentication or CORS
 grant. All responses use `Cache-Control: no-store`. The common JSON parser
 limits bodies to 96 KiB and rejects unknown keys. Database errors use structured
 responses and correlation IDs; private database error details are not logged.
@@ -59,7 +59,8 @@ servers. Session creation always starts at revision zero. Inserts never upsert
 or reopen consumed/revoked records. Consumption, refresh, and revocation use
 the existing atomic database functions. The backend does not decrypt tokens.
 
-This route is storage plumbing for the review sign-in flow. It does not
-implement Shopify token exchange, establish a buyer identity, or enable review
-submissions. The storefront still needs the start/callback and session lifecycle
-before collection can open.
+This route is storage plumbing for the review sign-in flow. The storefront now
+composes it into opt-in start/callback and sign-out routes and verifies Shopify
+tokens there. This backend does not decrypt tokens or establish buyer identity.
+Session renewal, purchase eligibility, and review writes remain outstanding;
+collection stays closed. See [the storefront auth setup](../../store/docs/REVIEWS_SHOPIFY_AUTH.md).

@@ -151,7 +151,7 @@ Expose these operations only through a narrowly authenticated backend
 interface that pins the store's allowed shop/client scope before using the
 existing privileged backend client. `POST /api/store/customer-auth` now owns
 this boundary. It requires an explicitly enabled, hashed service credential,
-rejects browser Origin/Fetch Metadata headers, and checks every request against
+rejects browser Origin/`Sec-Fetch-Site` headers, and checks every request against
 the configured shop, client, issuer, and callback. It accepts only seven fixed
 create/get/consume/rotate/revoke operations and selects explicit return columns.
 There is no arbitrary SQL, table, RPC, or Tasks-data access through this route.

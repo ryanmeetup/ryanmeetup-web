@@ -1,0 +1,210 @@
+import { expect, test } from "@playwright/test";
+import { exportJWK, generateKeyPair, SignJWT } from "jose";
+import type { JWK } from "jose";
+import { GET as start } from "../app/api/reviews/auth/start/route";
+import { GET as callback } from "../app/api/reviews/auth/callback/route";
+import { POST as logout } from "../app/api/reviews/auth/logout/route";
+import { customerAuthorizationCookie } from "../lib/customer-account/authorization";
+import { customerSessionCookie } from "../lib/customer-account/sign-in";
+import { customerAuthBackendFixture } from "./fixtures/customer-auth-backend";
+import { customerAccountConfig as config, customerAccountMetadata as metadata } from "./fixtures/customer-account";
+
+const configuration = {
+  STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED: "true", REVIEWS_PROVIDER: "custom", VERCEL_ENV: "preview", REVIEWS_PREVIEW_ENABLED: "true",
+  SHOPIFY_STORE_DOMAIN: config.shopDomain, SHOPIFY_CUSTOMER_ACCOUNT_SHOP_ID: config.shopId,
+  SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_ID: config.clientId, SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_SECRET: config.clientSecret,
+  SHOPIFY_CUSTOMER_ACCOUNT_REDIRECT_URI: config.redirectUri, STORE_REVIEWS_BACKEND_URL: "https://backend.test",
+  STORE_REVIEWS_BACKEND_TOKEN: "t".repeat(43), STORE_CUSTOMER_ACCOUNT_ENCRYPTION_KEY_ID: "test",
+  STORE_CUSTOMER_ACCOUNT_ENCRYPTION_KEYS: JSON.stringify({ test: Buffer.alloc(32, 7).toString("base64url") }),
+};
+const oldEnv = Object.fromEntries(Object.keys(configuration).map((key) => [key, process.env[key]]));
+const originalFetch = globalThis.fetch;
+let transport: ReturnType<typeof customerAuthBackendFixture>;
+let keypair: Awaited<ReturnType<typeof generateKeyPair>>;
+let jwk: JWK;
+let nonce: string;
+let tokenExchanges: number;
+let refuseTokens: boolean;
+let refuseStorage: boolean;
+let refuseDiscovery: boolean;
+let requests: string[];
+
+test.beforeAll(async () => {
+  keypair = await generateKeyPair("RS256");
+  jwk = { ...await exportJWK(keypair.publicKey), alg: "RS256", use: "sig", kid: "test" };
+});
+test.beforeEach(() => {
+  Object.assign(process.env, configuration);
+  transport = customerAuthBackendFixture();
+  nonce = ""; tokenExchanges = 0; refuseTokens = false; refuseStorage = false; refuseDiscovery = false; requests = [];
+  globalThis.fetch = async (input, init) => {
+    const url = String(input);
+    requests.push(url);
+    if (url.startsWith("https://backend.test/")) return refuseStorage ? new Response("private-storage-error", { status: 500 }) : transport.fetcher(input, init);
+    if (url === `https://${config.shopDomain}/.well-known/openid-configuration`) return refuseDiscovery ? new Response("provider down", { status: 503 }) : Response.json(metadata);
+    if (url === metadata.jwks_uri) return Response.json({ keys: [jwk] });
+    expect(url).toBe(metadata.token_endpoint);
+    tokenExchanges += 1;
+    expect(transport.requests.some(({ operation }) => operation === "authorization.consume")).toBe(true);
+    if (refuseTokens) return new Response("private-oauth-error", { status: 401 });
+    const id_token = await new SignJWT({ nonce }).setProtectedHeader({ alg: "RS256", kid: "test" })
+      .setIssuer(metadata.issuer).setAudience(config.clientId).setSubject("synthetic-buyer").setIssuedAt().setExpirationTime("1 hour").sign(keypair.privateKey);
+    return Response.json({ access_token: "private-access", refresh_token: "private-refresh", id_token, token_type: "Bearer", expires_in: 3600 });
+  };
+});
+test.afterEach(() => {
+  globalThis.fetch = originalFetch;
+  for (const [key, value] of Object.entries(oldEnv)) {
+    if (value === undefined) delete process.env[key]; else process.env[key] = value;
+  }
+});
+
+async function begin(headers: HeadersInit = {}) {
+  const response = await start(new Request("https://store.test/api/reviews/auth/start?returnTo=%2Fproducts%2Ftee%3Fcolor%3Dblue%23reviews", { headers }));
+  expect(response.status).toBe(303);
+  const authorization = new URL(response.headers.get("location")!);
+  nonce = authorization.searchParams.get("nonce")!;
+  const binding = response.cookies.get(customerAuthorizationCookie)!.value;
+  const state = authorization.searchParams.get("state")!;
+  return { response, authorization, binding, state };
+}
+const callbackRequest = (state: string, binding: string, query = "code=synthetic-code") => new Request(`${config.redirectUri}?${query}&state=${state}`, {
+  headers: { cookie: `${customerAuthorizationCookie}=${binding}` },
+});
+
+test("start persists encrypted state before redirecting and sets only an opaque secure cookie", async () => {
+  const { response, authorization, binding } = await begin();
+  expect(transport.requests.map(({ operation }) => operation)).toEqual(["authorization.create"]);
+  expect(authorization.origin).toBe("https://shopify.com");
+  expect(response.headers.get("cache-control")).toBe("no-store");
+  expect(response.headers.get("referrer-policy")).toBe("no-referrer");
+  const cookie = response.headers.get("set-cookie")!;
+  expect(cookie).toContain("HttpOnly"); expect(cookie).toContain("Secure"); expect(cookie).toContain("SameSite=lax"); expect(cookie).toContain("Path=/");
+  expect(binding).toMatch(/^[A-Za-z0-9_-]{43}$/);
+  expect(cookie).not.toContain(nonce);
+  expect(cookie).not.toContain("code_verifier");
+});
+
+test("callback verifies identity, persists an encrypted session, and restores the exact product link", async () => {
+  const { state, binding } = await begin();
+  const response = await callback(callbackRequest(state, binding));
+  expect(response.status).toBe(303);
+  expect(response.headers.get("location")).toBe("https://store.test/products/tee?color=blue#reviews");
+  expect(response.cookies.get(customerSessionCookie)?.value).toMatch(/^[A-Za-z0-9_-]{43}$/);
+  expect(response.cookies.get(customerAuthorizationCookie)?.value).toBe("");
+  expect(transport.requests.map(({ operation }) => operation)).toEqual(["authorization.create", "authorization.get", "authorization.consume", "session.create"]);
+  expect(JSON.stringify(transport.requests)).not.toContain("private-access");
+  expect(JSON.stringify(transport.requests)).not.toContain("private-refresh");
+  expect(response.headers.get("set-cookie")).not.toContain("private-access");
+  expect(tokenExchanges).toBe(1);
+});
+
+test("a reused or concurrently returned callback cannot exchange the code twice", async () => {
+  const { state, binding } = await begin();
+  const responses = await Promise.all([callback(callbackRequest(state, binding)), callback(callbackRequest(state, binding))]);
+  expect(responses.map(({ status }) => status).sort()).toEqual([303, 400]);
+  expect(tokenExchanges).toBe(1);
+  expect((await callback(callbackRequest(state, binding))).status).toBe(400);
+  expect(tokenExchanges).toBe(1);
+});
+
+test("the wrong browser and duplicate callback fields never exchange or consume an attempt", async () => {
+  const { state, binding } = await begin();
+  for (const request of [callbackRequest(state, "x".repeat(43)), callbackRequest(state, binding, "code=a&code=b"), callbackRequest(state, binding, `code=a&state=${state}`)]) {
+    const response = await callback(request);
+    expect(response.status).toBe(400);
+    expect(response.cookies.get(customerSessionCookie)).toBeUndefined();
+  }
+  expect(tokenExchanges).toBe(0);
+  expect(transport.requests.some(({ operation }) => operation === "authorization.consume")).toBe(false);
+});
+
+test("Shopify denial retires the valid attempt without a token exchange or buyer session", async () => {
+  const { state, binding } = await begin();
+  const response = await callback(callbackRequest(state, binding, "error=access_denied"));
+  expect(response.status).toBe(303);
+  expect(response.cookies.get(customerSessionCookie)).toBeUndefined();
+  expect(tokenExchanges).toBe(0);
+  expect(transport.requests.map(({ operation }) => operation)).toEqual(["authorization.create", "authorization.get", "authorization.consume"]);
+  expect((await callback(callbackRequest(state, binding))).status).toBe(400);
+});
+
+test("storage and token failures cannot set a session, redirect to Shopify, or leak upstream bodies", async () => {
+  refuseStorage = true;
+  const failedStart = await start(new Request("https://store.test/api/reviews/auth/start"));
+  expect(failedStart.status).toBe(503);
+  expect(failedStart.headers.get("location")).toBeNull();
+  expect(failedStart.cookies.get(customerAuthorizationCookie)).toBeUndefined();
+  refuseStorage = false;
+  const { state, binding } = await begin();
+  refuseTokens = true;
+  const failedCallback = await callback(callbackRequest(state, binding));
+  expect(failedCallback.status).toBe(503);
+  expect(failedCallback.cookies.get(customerSessionCookie)).toBeUndefined();
+  expect(await failedCallback.text()).not.toContain("private-oauth-error");
+  expect((await callback(callbackRequest(state, binding))).status).toBe(400);
+  expect(tokenExchanges).toBe(1);
+});
+
+test("Judge.me mode and missing configuration keep sign-in closed before any network calls", async () => {
+  for (const [key, value] of [["REVIEWS_PROVIDER", "judgeme"], ["STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED", "false"],
+    ["SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_SECRET", ""], ["STORE_REVIEWS_BACKEND_TOKEN", ""], ["STORE_CUSTOMER_ACCOUNT_ENCRYPTION_KEYS", "{}"]]) {
+    const previous = process.env[key]; process.env[key] = value;
+    expect((await start(new Request("https://store.test/api/reviews/auth/start"))).status).toBe(503);
+    process.env[key] = previous;
+  }
+  expect(requests).toEqual([]);
+});
+
+test("the browser switch enables custom sign-in in Preview and cannot override Vercel Production", async () => {
+  process.env.REVIEWS_PROVIDER = "judgeme";
+  await begin({ cookie: "store-review-preview=custom" });
+  requests = [];
+  process.env.VERCEL_ENV = "production";
+  expect((await start(new Request("https://store.test/api/reviews/auth/start", { headers: { cookie: "store-review-preview=custom" } }))).status).toBe(503);
+  expect(requests).toEqual([]);
+});
+
+test("start rejects cross-site navigation, wrong public hosts, and ambiguous return paths", async () => {
+  const rejectedHeaders: HeadersInit[] = [{ "sec-fetch-site": "cross-site" }, { host: "attacker.test" }, { origin: "https://attacker.test" }];
+  for (const headers of rejectedHeaders) {
+    expect((await start(new Request("https://store.test/api/reviews/auth/start", { headers }))).status).toBe(403);
+  }
+  expect((await start(new Request("https://store.test/api/reviews/auth/start?returnTo=/&returnTo=/products/tee"))).status).toBe(400);
+  expect(transport.requests).toEqual([]);
+  const safe = await start(new Request("https://store.test/api/reviews/auth/start?returnTo=https://attacker.test"));
+  expect(safe.status).toBe(303);
+});
+
+test("callbacks accept the configured public host behind a proxy and reject another host", async () => {
+  const { state, binding } = await begin();
+  const query = `?code=synthetic-code&state=${state}`;
+  const rejected = await callback(new Request(`http://internal:3002/api/reviews/auth/callback${query}`, { headers: { host: "attacker.test", "x-forwarded-proto": "https", cookie: `${customerAuthorizationCookie}=${binding}` } }));
+  expect(rejected.status).toBe(400);
+  expect(tokenExchanges).toBe(0);
+  const response = await callback(new Request(`http://internal:3002/api/reviews/auth/callback${query}`, { headers: { host: "store.test", "x-forwarded-proto": "https", cookie: `${customerAuthorizationCookie}=${binding}` } }));
+  expect(response.status).toBe(303);
+});
+
+test("review-session logout works after switching to Judge.me and when Shopify discovery is down", async () => {
+  const { state, binding } = await begin();
+  const signedIn = await callback(callbackRequest(state, binding));
+  const id = signedIn.cookies.get(customerSessionCookie)!.value;
+  process.env.REVIEWS_PROVIDER = "judgeme"; process.env.STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED = "false"; refuseDiscovery = true;
+  requests = [];
+  const response = await logout(new Request("https://store.test/api/reviews/auth/logout", { method: "POST", headers: { origin: "https://store.test", cookie: `${customerSessionCookie}=${id}` } }));
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual({ signedOut: true });
+  expect(response.cookies.get(customerSessionCookie)?.value).toBe("");
+  expect([...transport.sessions.values()]).toEqual([null]);
+  expect(requests).toEqual(["https://backend.test/api/store/customer-auth"]);
+});
+
+test("logout rejects cross-origin requests and preserves retry capability during storage failure", async () => {
+  expect((await logout(new Request("https://store.test/api/reviews/auth/logout", { method: "POST", headers: { origin: "https://attacker.test" } }))).status).toBe(403);
+  expect(transport.requests).toEqual([]);
+  refuseStorage = true;
+  const response = await logout(new Request("https://store.test/api/reviews/auth/logout", { method: "POST", headers: { origin: "https://store.test", cookie: `${customerSessionCookie}=${"s".repeat(43)}` } }));
+  expect(response.status).toBe(503);
+  expect(response.cookies.get(customerSessionCookie)).toBeUndefined();
+});
