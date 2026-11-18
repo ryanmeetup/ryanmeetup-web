@@ -1,210 +1,377 @@
-# Ryan Meetup Reviews rebuild
+# Ryan Meetup reviews rebuild
 
-This is the implementation plan for replacing Judge.me on `store.ryanmeetup.com`.
-The store will own review collection, publication, photos, replies, and emails.
-Shopify remains the source for buyer identity, orders, products, and fulfillment.
-The existing Judge.me integration serves production until the replacement passes
-the cutover checks below. Implementation and launch are separate milestones.
+Updated **November 18, 2026**, against committed source through `9f72bac5`,
+the working tree, focused automated checks, and the linked RMT migration history. This is the
+current implementation inventory and remaining launch plan. Completed work
+stays here so that an unproven live integration is not mistaken for missing code.
 
-**Scope update, November 18, 2026:** Ryan deferred importing content from
-Judge.me. Import-related tasks below are inactive unless he requests them again.
-Buyer review management is implemented; see [the checkpoint](REVIEWS_BUYER_MANAGEMENT.md).
-Next: configure and verify the real customer sign-in/purchase flow in an isolated
-preview, then validate the complete review lifecycle. Judge.me remains the default
-during this work.
+## Where we are
 
-**Status, November 17, 2026:** Judge.me still serves production. Finished work
-is removed from this plan; [the handoff](REVIEWS_HANDOFF.md) records each landed
-commit and the next small chunks. Already in place: the server-side
-`REVIEWS_PROVIDER` switch, a browser review mode for dev and Preview, isolated
-Judge.me reads, an `unavailable` read result and UI, closed custom submissions,
-the RMT database decision, Customer Account configuration and discovery,
-authorization and callback validation helpers, sealed tokens, and private
-auth/session storage (migration `20261120130000`, applied to RMT and explicitly
-excluded from PRD's shared profile). Nothing below is wired to a live buyer sign-in yet.
+The core **text-review system is implemented**: Shopify buyer sign-in and
+session code, exact purchased-line checks, submission, buyer editing and
+withdrawal, owner moderation, official reply management, and public reads with
+complete rating totals. Its six database migrations are applied to RMT.
 
-## Scope and sequence
+It is **not yet a launch-verified Judge.me replacement**. Real Shopify buyer
+authentication, client permissions, token renewal, purchase semantics, and the
+complete buyer-to-moderator lifecycle still need proof in an isolated HTTPS
+environment. Public reply rendering, public pagination, and grouped-product
+rating consistency also need work. Custom photo collection is not built.
 
-| Milestone | Deliverable | Estimate |
+Judge.me remains the code default and the last documented production provider.
+Custom sign-in/collection requires explicit configuration. This audit did not
+inspect deployed environment variables or perform a real buyer login; do not
+read the existence of routes or applied SQL as evidence that collection is live.
+No provider setting, credential, deployment, or review content was changed.
+
+**Judge.me content imports are deferred at Ryan's request (November 18).**
+There is no active import or import dry-run milestone. Review request emails,
+shop-wide discovery, and a native Shopify order-page shortcut remain Phase 2.
+The earlier 4–6 week figure was an initial estimate, not a current estimate of
+remaining effort; reassess after the live Shopify gate.
+
+## What exists today
+
+| Area | Implemented today | Limit or remaining work |
 | --- | --- | --- |
-| 0. Shopify feasibility | Provision the confidential Customer Account API client, then prove a real buyer sign-in, exact order-line ownership, fulfillment and variant data, and protected-data access on the intended installation. Check which Printful delivery events reach Shopify. Public discovery has passed; nothing else has. | 1–2 engineering days |
-| 1. Storefront replacement | Buyer submission and editing, photos, staff moderation and replies, product review cards and complete totals, migration and cutover. | 2–3 engineering weeks after the spike |
-| 2. Etsy-style discovery and collection | Shop-wide review history, product attribution, sort and filters, rating distribution, timed email requests, and optional apparel fit feedback. | 1–2 additional engineering weeks |
+| Provider selection | Server-owned `REVIEWS_PROVIDER`; blank defaults to `judgeme`. Browser selector supports Judge.me, custom, sample buyer, and reset. A concurrent worktree change restricts it to loopback hosts in local development or explicitly enabled local builds; all Vercel deployments, including Preview, refuse overrides. | Localhost restriction is in progress and was not covered by this audit's earlier test run. Hosted Preview uses deployment configuration. Sample mode checks input and saves nothing. |
+| Shopify sign-in | Start/callback routes; public discovery; PKCE, state, nonce and browser binding; confidential-client token exchange and signed ID-token validation. | Intended client configuration, permissions, and real buyer login remain unproven. |
+| Sessions | Opaque Secure/HttpOnly cookies, encrypted server persistence, seven-day absolute storefront session, access-token renewal, revision checks, and sign-out. | Live refresh rotation/reuse and recovery need evidence. No distributed refresh claim or expired-record cleanup job. |
+| Purchase checks | Product-level order discovery, owned-order/line verification, product and variant snapshots, current encrypted-session checks, and Shopify-derived buyer names. Used by both picker and submit. | Conservative refund/edit policy and bounded history; see below. Live order semantics/permissions remain unproven. |
+| Buyer composer | Whole stars 1–5, required text up to 5,000 characters, title up to 100, purchase picker, full name/first name and last initial/anonymous, exact public-name preview. | Text only. No custom photo picker/upload path. |
+| Submission | Same-origin `POST /api/reviews` custom branch; authenticates buyer, rechecks purchased line and builds identity/name server-side; creates a pending revision. | Configuration gates exist; opening collection still requires live validation. Judge.me mode still has its legacy unverified forwarding branch. |
+| Buyer management | Private `/reviews/mine` and `GET/POST /api/reviews/mine`; twenty-row pagination, all review states, edit/withdraw, account-switch and stale-write handling. Reviewed lines link here; withdrawn lines may be resubmitted. | Real Shopify-backed lifecycle still needs rehearsal. This is a storefront page, not a Shopify account extension. |
+| Persistence | Review, revision, reply and audit tables; one review per shop + order + line; transactional writes; separate pending and approved text; exact database-version checks. | Media tables/buckets and retention/export/removal workflows remain. |
+| Staff moderation | Tasks **Admin → Store reviews**, `/admin/reviews`; pending/published/hidden/all filters, paging, approve/reject/hide/restore, reasons, version conflicts and recent history. | Existing Tasks app owners only. No separate moderator role or full-history browser endpoint. |
+| Official replies | Owner create/edit/remove with normalized preview, atomic audit/version updates, and approved-only public backend projection. | **Not rendered by storefront cards:** the adapter drops `reply` and the storefront `Review` type has no reply field. |
+| Public reads | Approved active revisions only; complete count, average and star distribution; opaque backend paging cursor; unavailable state on failure. | Storefront requests only the first 20 and drops cursor, distribution, item attribution and edit timestamp. No public load-more UI. |
+| Product integration | Per-product reads, selected-design review switching, cards, rating summary, published-photo gallery and product JSON-LD. | Grouped-page JSON-LD combines all design totals while visible reviews show one design. Verification badge still says “Verified review.” |
+| Photos | Existing published-photo display/gallery and shared public photo contract, allowing up to five. | Custom SQL returns `photos: []`; image hosts currently cover Judge.me only. No custom upload, processing, moderation or cleanup pipeline. |
+| Support revocation | Service-role-only function to revoke every review session for one buyer, scoped to shop/client/issuer/subject. Applied to RMT. | Database operation only; no route or staff UI. Sign-out ends the review session and leaves the separate Shopify account session signed in. |
+| Automated coverage | Store HTTP/domain tests, Tasks contracts/routes, SQL isolation/concurrency checks, buyer and moderation browser fixtures, responsive/theme coverage, CI jobs. | Synthetic provider/browser coverage does not prove a live Shopify installation. |
 
-Budget **4–6 engineering weeks total** for one engineer, including rollout and
-validation. Shopify access and any migration exceptions can extend elapsed time.
-Phase 1 must stand on its own. The native Shopify order-page shortcut is a Phase 2
-enhancement after the storefront flow works. Video, incentives, public reviewer
-profiles, and Shop app syndication are outside this scope. Check existing Shop
-app sync before cutover because uninstalling Judge.me may affect it.
+## Architecture and ownership
 
-## Buyer and staff experience
+- **Shopify** owns buyer identity, products, orders and fulfillment. Store
+  buyers are not created as Supabase Auth users or Tasks workspace members.
+- **`apps/store`** owns Shopify authentication, encrypted token handling,
+  purchase eligibility, browser-facing review APIs, buyer UI and public cards.
+  Shopify purchase authorization is enforced here; the storage backend does
+  not independently query Shopify.
+- **`apps/tasks`** hosts the private backend at `POST /api/store/customer-auth`
+  and `POST /api/store/reviews`, plus the owner moderation page and
+  `GET/POST/PATCH /api/admin/reviews`. This already serves more than auth:
+  `authorizeStoreService` guards both storefront service routes with one
+  dedicated bearer credential and pinned scope. Staff use a separate Tasks
+  owner authorization boundary; that bearer never grants moderation access.
+- **`packages/reviews`** owns shared input, result, public/private projection
+  and cursor contracts. `packages/ui` supplies generic visual primitives.
+- **RMT Supabase `lvfaartgcpphuokoswcm`** stores private auth and review data.
+  Only the backend holds its Supabase secret. The store holds the restricted
+  service credential, not a direct database/service-role key. Public reads
+  cross the store server and allowlisted backend projection.
+- **PRD `vjsnobmfsfrsnwukfaoq`** remains a separate personal Tasks instance.
+  Store service configuration explicitly refuses it. Store migrations are
+  RMT-only; PRD needs no review SQL, fake history entries or borrowed credentials.
 
-- **Write a review** on a product page signs the buyer in with Shopify, returns
-  them to the original product, and lets them pick an eligible purchase for
-  that product. Show clear states for sign-in, no eligible purchase, already
-  reviewed, and Shopify temporarily unavailable. Keep the existing **Your
-  orders** navigation to Shopify.
-- Accept whole stars from 1–5, review text, an optional title, and up to five
-  optional photos. Let buyers preview attachments and choose how their name
-  appears, including anonymous. Make the preview use the exact public name.
-- **My reviews** shows pending, published, and hidden reviews belonging to the
-  signed-in buyer. They can edit or remove their own review. An edit creates a
-  pending revision while the last approved version stays public. Removing the
-  review withdraws it from the storefront and its totals immediately.
-- A staff page provides a moderation queue, publish/hide actions, an audit
-  history, and one editable official reply per review. Apply the same rules to
-  all ratings. Staff may remove inappropriate content or private information
-  from public view. Buyers control the wording and score of their own review.
-- Keep the current compact cards, image gallery, calendar and reviewer icons,
-  green verification badge, and labeled average. In Phase 2, link the shop-wide
-  average to a review page that shows the original product on each card. Label
-  that average as based on product reviews across the store. An independent
-  review of the shopping experience is a different feature.
+All database history remains in `apps/tasks/supabase/migrations`, with scope in
+`migration-scopes.json`. Do not create another migration history in the store.
+Preview requires an isolated database/backend, service token, encryption
+keyring and registered HTTPS callback. The browser provider selector does not
+isolate storage and must never be used as a substitute for that separation.
 
-## Purchase and publication rules
+### Database rollout, verified in this audit
 
-1. Use the Shopify Customer Account API with an authenticated, server-managed
-   session. Verify order ownership server-side and read the exact line's
-   Shopify product, variant, and current eligibility on submission. Product
-   IDs in the browser can guide navigation. The verified line determines what
-   the review is attached to.
-2. Start with paid, fulfilled physical lines. The feasibility spike must
-   confirm how the app identifies canceled lines, split fulfillment, and lines
-   fully refunded before fulfillment. A refund after a buyer receives the item
-   does not by itself invalidate their feedback. Use the spike's findings to
-   define eligibility tests before implementing the policy.
-3. Use a database uniqueness constraint on shop + order + line to enforce one
-   review per purchased line. Multiple units on one line share one review.
-   Retries should return the existing review or its status. A withdrawn
-   review can be resubmitted through the same record while eligible.
-4. Keep review attribution tied to the purchased Shopify product even if its
-   handle changes. Store a safe display snapshot of the purchased item and
-   variant when available. Use a single explicit review scope for each public
-   listing. Default to the exact selected product. Only combine equivalent
-   products under a deliberate catalog mapping, and attribute each review to
-   its original product. Visible totals and JSON-LD must use the same scope.
-5. Compute average and count from all published rows in that scope. Paginate
-   the visible list independently. Use the same inclusion rules for counts,
-   distribution, and structured data. Return the existing `unavailable` result
-   if the review store cannot be reached. Invalidate affected product and shop-wide
-   cache entries on publication, withdrawal, and reply changes.
+`supabase migration list --linked` on November 18 confirmed the following
+versions in RMT's remote history. The `20261120…` identifiers are migration
+versions, not the date of this status report. This is history verification;
+this audit did not rerun a schema diff or modify the database.
 
-## Proposed service boundaries
+| Migration version | File / capability | RMT |
+| --- | --- | --- |
+| `20261120130000` | `store_customer_auth_storage.sql`: encrypted authorization/session persistence and atomic operations | Applied |
+| `20261120140000` | `store_reviews.sql`: review content, revisions, replies, audit and public projections | Applied |
+| `20261120160000` | `store_review_moderation.sql`: owner-checked moderation and queue | Applied |
+| `20261120170000` | `store_review_replies.sql`: owner reply writes and compatible v2 staff projection | Applied |
+| `20261120180000` | `store_buyer_reviews.sql`: paginated buyer reads, reviewed-line lookup and version-checked writes | Applied |
+| `20261120190000` | `store_customer_session_revoke_buyer.sql`: revoke all sessions for a buyer | Applied |
 
-| Boundary | Contract agents should agree before implementation |
+The old `20261120150000` buyer-management draft was never applied or committed;
+the final version is `20261120180000`. Applied SQL stays immutable.
+
+## Current buyer and publication rules
+
+1. The product page derives access from the server session and current Shopify
+   purchases. It shows sign-in, no purchase, needs-help, already-reviewed,
+   unavailable, or ready states. A sample buyer is available only through the
+   permitted browser testing control and cannot save reviews.
+2. A new submission rechecks eligibility. The browser supplies a product hint,
+   selected line and review fields; it cannot choose the buyer, purchase
+   snapshot or arbitrary public name. Numeric Shopify IDs remain strings so
+   large IDs retain precision.
+3. The database enforces one review per purchased line. Multiple units on a
+   line share one review. Repeated submission reports that the record exists;
+   a withdrawn review is resubmitted through the same record and waits for
+   approval again. New publication after resubmission gets a fresh date.
+4. Pending reviews are private. Buyer edits create a pending revision while
+   the last approved version stays public. Rejecting an edit preserves that
+   approved version. Hidden reviews can be withdrawn, but not edited by the
+   buyer; staff approval alone does not restore a hidden review.
+5. Withdrawal immediately removes the review from subsequent public database
+   reads and totals. Staff cannot restore a buyer withdrawal. Hide/restore,
+   approval, reply and buyer writes use transactional audit/version handling.
+   Open storefront pages still need a reload to show the new data.
+6. Buyer and owner management compare the exact database timestamp, including
+   six fractional digits. Stale edits require a fresh decision. An uncertain
+   response never causes a blind automatic retry. Private session, order,
+   customer, draft and moderation data do not enter public review payloads.
+
+### Exact purchase policy implemented today
+
+Automatic eligibility currently requires an uncancelled, unedited paid order
+and a physical, non-gift-card line whose **entire quantity** has successful
+fulfillment and no refunded units. `SUCCESS` is treated as fulfillment; it
+does not prove delivery. A refund on another line can leave this line eligible.
+Fulfillment must identify this exact line; shipping another item is insufficient.
+
+Refunds on the reviewed line, edited orders and unverifiable facts are skipped
+with lasting reason codes and a buyer needs-help state/contact link. They do
+not close the entire review service indefinitely. Unpaid/unfulfilled lines
+can become eligible later. Provider, storage and inconsistent-snapshot failures
+stay unavailable and never become a successful empty purchase list.
+
+This is narrower than the desired policy: **a refund after receipt should not
+by itself disqualify feedback**. The current query cannot establish refund vs.
+receipt chronology, and there is no staff eligibility override workflow.
+Resolve that gap using live evidence before calling the policy complete.
+
+Limits are deliberate: order discovery reads at most ten pages of ten orders;
+an incomplete discovery remains unavailable. The whole product lookup has a
+30-query budget and keeps already fully verified recent lines if later
+candidate verification exhausts it; with none, that budget limit needs help.
+Owned-order verification paginates lines/fulfillments within ten requests,
+but each fulfillment's child lines stop at 50 and fail closed if more exist.
+Extend these bounds if live orders require it. See
+[the purchase checker](REVIEWS_PURCHASE_ELIGIBILITY.md) for the exact contracts.
+
+## What remains, in working order
+
+### 1. Configure and prove the live Shopify integration
+
+This is the next gate, not another rewrite of the existing auth or purchase code.
+
+- Provision/confirm the intended confidential Customer Account client and
+  permissions for buyer names and order access, including protected customer
+  data. Register the exact HTTPS callback and storefront origin for the test
+  environment. Existing Admin/Judge.me credentials cannot replace this client.
+- Configure an **isolated** HTTPS backend with the six migrations, pinned
+  shop/client/issuer/callback/project scope and dedicated service credential.
+  Configure the store's client secret, encryption keyring and backend URL/token.
+  Both `STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED` on the store and
+  `STORE_REVIEWS_CUSTOMER_AUTH_ENABLED` on the backend are explicit opt-ins;
+  custom mode is also required. See [auth setup](REVIEWS_SHOPIFY_AUTH.md) and
+  [backend setup](../../tasks/docs/STORE_CUSTOMER_AUTH.md) for exact setting names.
+- Prove real sign-in, return to the intended product, encrypted persistence,
+  access renewal, logout and account switching. Test refresh-token rotation,
+  reuse and uncertain responses across workers; current coalescing is only
+  within one process. Add a durable refresh claim if the provider requires it.
+- Record redacted exact-line/product/variant and ownership evidence for normal
+  orders, split fulfillment, unpaid/cancelled/edited orders, refunds before
+  fulfillment and after receipt, deleted products and other-account attempts.
+  Decide how legitimate refunded/edited purchases become reviewable.
+- Establish which Printful delivery events actually reach Shopify. Delivery
+  and the later review-request schedule remain unproven.
+
+Public discovery and offline schema validation already passed in earlier
+checkpoints. Neither establishes the intended client's real buyer permissions.
+
+### 2. Finish public storefront wiring
+
+- Carry `reply` through `lib/custom-reviews.ts`, `lib/types.ts` and the cards,
+  and render approved official replies with their public date. Backend reply
+  storage and the staff editor already exist.
+- Expose the backend cursor through a safe public/storefront boundary and add
+  pagination or load more. Today only the first 20 published reviews render,
+  even when the complete summary counts more. Buyer and staff pagination are
+  already implemented independently.
+- Make grouped listings' visible scope and JSON-LD agree. Today
+  `app/products/[handle]/page.tsx` sums every design's totals, while
+  `components/product-group-detail.tsx` shows the selected product's reviews.
+  Choose selected-product totals or an explicitly attributed combined view;
+  avoid publishing partial group totals if one product read fails.
+- Distinguish custom **Verified purchase** from legacy Judge.me **Verified
+  review** without upgrading the meaning of legacy verification.
+- Keep complete totals separate from the displayed page. The backend already
+  returns star distribution and attribution; distribution/filter UI belongs
+  to Phase 2. There is no custom review cache/invalidation layer today:
+  requests are uncached. If caching is introduced, invalidate on publication,
+  edits/withdrawal, hide/restore and reply changes.
+
+### 3. Rehearse the complete text-review lifecycle
+
+In the isolated environment, use a real buyer plus the authorized Tasks owner:
+sign in → choose exact purchase → submit → approve → display publicly → reply
+→ edit → keep approved text public → reapprove → withdraw. Check public totals,
+product scope and JSON-LD at every relevant transition. Also exercise rejection,
+hide/restore, duplicate/concurrent submission, stale editors, lost responses,
+another account's IDs, account switching and backend failure.
+
+Existing browser suites use synthetic encrypted sessions and transport fixtures.
+They are useful regression coverage, but the real Shopify-backed lifecycle
+has not been recorded as passing.
+
+### 4. Build the custom media pipeline
+
+The intended Phase 1 experience still includes up to five optional photos.
+Photos can follow the working text flow, but omitting them from launch would
+be an explicit scope decision, not a completed feature.
+
+- Buyer attachment selection, preview, removal and edit behavior.
+- Eligibility/ownership-bound, expiring upload authorization and private
+  store-owned storage in RMT, isolated from Tasks attachments and Preview.
+- Server validation of type, size and dimensions; re-encoding and metadata
+  removal; media records tied to the buyer/review/revision.
+- Staff media review and approved-only publication. Pending edit photos must
+  not leak or silently replace the approved set.
+- Cleanup of failed/abandoned uploads and removed/withdrawn media, plus an
+  appropriate custom image-host allowlist and `next/image` configuration.
+- Tested restore of image objects separately from database records.
+
+The existing gallery, public photo type and five-photo constant do not provide
+upload authorization or storage. No custom media bucket/migration exists yet.
+
+### 5. Complete operations and release preparation
+
+- Add bounded cleanup for expired auth attempts/session records and tombstones,
+  preserving replay/race protections. Revocation clears token ciphertext;
+  the all-sessions revocation function is not an expiry cleanup job.
+- Add review-specific abuse/rate controls for sign-in, buyer writes and future
+  uploads. Existing origin, validation, ownership and uniqueness checks do not
+  by themselves provide throttling.
+- Define and implement customer export/removal and retention procedures for
+  reviews, purchase references, revisions, audit records and future media.
+  Buyer withdrawal is not deletion or a complete data-removal workflow.
+- Verify monitoring, backend capacity, key rotation, backups and restore,
+  Preview isolation, and support procedures. Decide whether support needs a
+  staff UI for buyer-wide session revocation; the database function exists.
+- Decide whether review logout should also sign out of Shopify. It currently
+  leaves the separate Shopify session intact; global logout would also affect
+  checkout and needs the registered provider logout flow.
+- Finish the concrete cutover/rollback runbook below and verify the deployed
+  configuration. Keep Judge.me installed and serving its current path until
+  the release checks pass.
+
+## Phase 2 and deferred scope
+
+- **Shop-wide discovery:** review history with purchased-product attribution,
+  sorting/filtering, star distribution, and a shop-wide average clearly labeled
+  as product reviews across the store. Backend per-scope summaries are a
+  foundation; a shop-wide page and discovery controls are not built.
+- **Review requests:** verified fulfillment/delivery events, durable queue,
+  per-order/line deduplication, reconciliation of missing/out-of-order events,
+  eligibility recheck, already-reviewed suppression, opt-outs, mail provider,
+  templates, safe retries and the documented fulfillment-delay fallback.
+  The current Shopify webhook handles catalog invalidation, not review requests.
+- **Shopify account integration:** native order-page shortcut into the custom
+  storefront flow. Existing Judge.me account buttons are not this extension.
+- **Optional fit feedback** for apparel remains unimplemented.
+- **Judge.me content imports:** inactive unless Ryan requests them again.
+  Do not make an import/export dry run a launch dependency or import private
+  customer data into Git. Reopening this scope requires provenance, mapping,
+  deduplication, dates/publication state, media/reply handling and verification
+  rules; legacy verification must not automatically become verified purchase.
+- Video, incentives, public reviewer profiles and custom Shop app syndication
+  remain outside scope. Check the existing Judge.me/Shop dependency before
+  changing or uninstalling that integration.
+
+## Cutover and rollback, still to rehearse
+
+1. Pass the live buyer gate, public wiring checks, full lifecycle and agreed
+   media scope; complete operational preparation. Record the exact deployed
+   versions, environment/project identities and release owner.
+2. Decide how historical Judge.me reviews will be presented or retained while
+   imports are deferred. Custom reads deliberately do not merge/fall back to
+   Judge.me, so switching providers will not carry its history along.
+3. In the planned window, coordinate Judge.me collection and its queued request
+   emails, remove/redirect old entry points, and disable the legacy unverified
+   forwarding branch. Only then open the custom collection path and set the
+   production provider to `custom`. New request emails are a later feature.
+4. Keep Judge.me installed during the rollback window. Verify production buyer,
+   owner and public behavior plus complete totals. Rehearse a return to
+   Judge.me with custom writes stopped first and new custom reviews preserved;
+   record how those reviews and duplicate-line ownership will be reconciled.
+5. Remove Judge.me and its secrets only after rollback sign-off and checking
+   account extensions, queued emails and any Shop sync dependency.
+
+Do not install/uninstall Judge.me, change its emails, repoint credentials, or
+switch the production provider merely to test this plan.
+
+## Evidence and repeat validation
+
+**Rechecked for this November 18 audit:**
+
+- RMT linked remote history contains all six versions listed above.
+- Storefront auth, purchase, submission, buyer-management, provider and backend
+  checks: **155 passed, 2 skipped** across 21 selected spec files. The two
+  encrypted-storage integration tests intentionally require the isolated
+  database runner and were not executed in this audit. This run preceded the
+  concurrent localhost-only selector edits; it does not validate those edits.
+- Tasks auth/review/moderation contracts, routes and screen/client unit checks:
+  **51 passed across 7 files**.
+- Documentation links and `git diff --check` are checked for this edit.
+
+Earlier [buyer](REVIEWS_BUYER_MANAGEMENT.md) and
+[moderation](REVIEWS_MODERATION.md) checkpoints record isolated RMT/PRD SQL
+replays, concurrency checks, nine buyer and seventeen moderation browser
+scenarios, production builds, and light/dark inspection at
+390/1024/1280/1536px. Those are historical results, not fresh runs in this
+documentation-only audit. No live buyer/provider proof has been added here.
+
+Useful repeat commands:
+
+```sh
+# From apps/store: server-free domain/HTTP checks using synthetic transports.
+STORE_BASE_URL=http://127.0.0.1:39999 npx playwright test tests/customer-*.spec.ts tests/review-purchase-lookups.spec.ts tests/review-backend.spec.ts tests/custom-review-submission.spec.ts tests/my-review-actions.spec.ts tests/review-provider.spec.ts tests/review-collection.spec.ts tests/review-preview-api.spec.ts --workers=1
+
+# From apps/store: isolated synthetic buyer browser suite.
+npm run test:e2e:my-reviews
+
+# From apps/tasks: contracts and HTTP boundaries.
+npx vitest run tests/routes/store-customer-auth.test.ts tests/routes/store-reviews.test.ts tests/routes/store-review-moderation.test.ts tests/unit/customer-auth-contract.test.ts tests/unit/review-content-contract.test.ts tests/unit/review-moderation-client.test.ts tests/unit/review-moderation-screen.test.ts
+
+# From apps/tasks: isolated owner browser suite.
+npm run test:e2e:reviews
+
+# From apps/tasks, one profile at a time; requires Docker and Supabase CLI.
+node scripts/test-store-customer-auth.mjs
+node scripts/test-store-customer-auth.mjs --target prd
+node --test scripts/migration-plan.test.mjs scripts/build-catchup-sql.test.mjs
+```
+
+The placeholder `STORE_BASE_URL` suppresses automatic server startup for these
+server-free tests; it is not a deployed test target. Browser tests require
+their own fixture servers. Never point review-submitting tests at production
+or reset the existing local Tasks stack as an isolation shortcut.
+
+For code changes, also run changed-file ESLint, relevant type checks/builds,
+`git diff --check`, and responsive/theme inspection for affected UI. Do not
+disable the normal Tasks database-contract preflight to make a build pass.
+
+## Source map and supporting checkpoints
+
+| Concern | Source / checkpoint |
 | --- | --- |
-| Shopify access | Build on `lib/customer-account/` and the private auth storage: a scoped backend interface, sign-in start/callback with token exchange and signed ID-token/nonce verification, renewal, and logout. Then a server-only eligibility lookup keyed by order and line, with a typed result for eligible purchase, ineligible purchase, missing session, and provider failure. Fail closed on writes if ownership or eligibility cannot be checked. |
-| Review storage | Store-owned tables and buckets in the existing RMT Supabase project (`lvfaartgcpphuokoswcm`), the selected shared backend for Ryan Meetup properties. Keep immutable SQL in `apps/tasks/supabase/migrations`, declare store versions RMT-only in `supabase/migration-scopes.json`, and scope runtime access to the store's data. PRD stays a separate personal instance. Store review status, buyer ownership and purchase references, display snapshots, revisions, media references, official replies, and moderation history. Enforce unique purchase lines and migration source keys. Customer auth and review-content tables are applied; media buckets remain planned. See [the database decision](REVIEWS_DATABASE.md). |
-| Public reads | A server-only loader returns the scope, complete summary, page of public reviews, and paging cursor. Public data includes the selected display name, attribution, verification, approved media, and public reply. Order/customer identifiers, session data, staff notes, and draft content stay server-side. |
-| Media | Issue expiring upload permissions only after buyer eligibility is verified. Validate type, size, and dimensions on the server, re-encode images without metadata, and publish only approved derivatives. Tie uploads to the buyer and review. Prune abandoned uploads and revoke access to removed media. Keep object backups separate from database backups. |
-| Staff access | Use a separate staff identity and role, enforced on the server for every moderation or reply action. Record who acted and when. Keep production and preview credentials, data, and media isolated. |
-| Request emails | Phase 2 uses a durable queue seeded from verified Shopify fulfillment events. Deduplicate by order/line, reconcile missed and out-of-order events, and recheck eligibility before sending. Skip already-reviewed purchases and honor opt-outs. Links take buyers to Shopify sign-in and the eligible item. If confirmed delivery is unreliable, use the documented fulfillment-delay fallback. |
+| Provider and browser isolation | [`lib/review-provider.ts`](../lib/review-provider.ts), [`lib/review-preview.ts`](../lib/review-preview.ts) |
+| Shopify identity/session | [`lib/customer-account/`](../lib/customer-account), [auth setup](REVIEWS_SHOPIFY_AUTH.md), [backend setup](../../tasks/docs/STORE_CUSTOMER_AUTH.md) |
+| Purchases and composer access | [`lib/review-purchases.ts`](../lib/review-purchases.ts), [`lib/customer-account/review-lookups.ts`](../lib/customer-account/review-lookups.ts), [`lib/custom-review-access.ts`](../lib/custom-review-access.ts), [purchase checkpoint](REVIEWS_PURCHASE_ELIGIBILITY.md) |
+| Buyer submission | [`lib/custom-review-submission.ts`](../lib/custom-review-submission.ts), [`components/custom-review-composer.tsx`](../components/custom-review-composer.tsx), [`app/api/reviews/route.ts`](../app/api/reviews/route.ts) |
+| Buyer management | [`lib/my-review-actions.ts`](../lib/my-review-actions.ts), [`components/my-reviews.tsx`](../components/my-reviews.tsx), [buyer checkpoint](REVIEWS_BUYER_MANAGEMENT.md) |
+| Public adapter/cards | [`lib/custom-reviews.ts`](../lib/custom-reviews.ts), [`components/reviews.tsx`](../components/reviews.tsx), [`components/product-group-detail.tsx`](../components/product-group-detail.tsx), [`app/products/[handle]/page.tsx`](../app/products/%5Bhandle%5D/page.tsx) |
+| Backend/contracts | [`apps/tasks/lib/server/store-reviews/`](../../tasks/lib/server/store-reviews), [`packages/reviews/src/`](../../../packages/reviews/src) |
+| Owner moderation/replies | [moderation checkpoint](REVIEWS_MODERATION.md), [`apps/tasks/app/api/admin/reviews/route.ts`](../../tasks/app/api/admin/reviews/route.ts) |
+| Migration policy and infrastructure | [database decision](REVIEWS_DATABASE.md), [`apps/tasks/supabase/migrations/`](../../tasks/supabase/migrations), [multi-instance policy](../../tasks/docs/MULTI_INSTANCE.md) |
+| Earlier commit-by-commit history | [implementation handoff](REVIEWS_HANDOFF.md) |
 
-Buyer and admin operations should use separate authorization boundaries. Rate
-limit writes and upload attempts. Support a customer data export and removal
-workflow that covers reviews, media, and purchase references. Minimize retained
-order data. Use a server-side mail provider for review requests.
-
-## Agent workstreams and handoffs
-
-Choose one integration owner to maintain the shared contracts and merge order.
-Run the feasibility spike first. Once its results and the contract names/types
-are recorded, agents can work from shared fixtures while the backend lands.
-The integration owner resolves file overlap before assignments start.
-
-| Workstream | Owns | Depends on and hands off |
-| --- | --- | --- |
-| **A. Shopify identity and eligibility** | The remaining sign-in path (backend interface, start/callback, token exchange, renewal, logout), order-line matching, eligibility, and Phase 2 order events. | First out. Hand off verified fields and scopes, Printful delivery findings, and fixtures for eligible, wrong-account, canceled/refunded, and split orders. |
-| **B. Review data and media** | Store-owned schema and migrations, writes/revisions, media lifecycle, public query/summary, and shared types. | Agree contracts with A and the UI agents. Hand off migrations, server interfaces, fixture data, and tests for uniqueness and public/private separation. |
-| **C. Buyer and storefront UI** | Product-page handoff and shared UI reuse, review form, **My reviews**, cards, product-page scope, and shop-wide discovery in Phase 2. Own product-page integration and review JSON-LD. | Build against A/B fixtures. Hand off browser coverage for submit, edit, remove, photos, empty/error states, and grouped-product switching. |
-| **D. Staff, migration, and release** | Staff authentication and moderation, seller replies, Judge.me import tooling, staging comparison, cutover and rollback runbook. | Use B's schema and migration keys. Hand off a dry-run report with counts, skipped test rows, unmapped products, and media/reply discrepancies. |
-| **E. Review requests** | Phase 2 email worker, templates, suppression and opt-out handling, event reconciliation, and delivery/fulfillment fallback. | Use A's verified event contract and B's review lookup. Hand off tests for duplicate events, missed events, an already-reviewed item, and safe retry. |
-
-Start with these existing integration points:
-
-- **A** owns the replacement for [`lib/review-collection.ts`](../lib/review-collection.ts),
-  which returns no account link in custom mode today, builds on
-  [`lib/customer-account/`](../lib/customer-account), and isolates order events
-  from the current [catalog webhook](../lib/shopify-webhook.ts).
-- **B** owns the custom branch behind [`lib/reviews.ts`](../lib/reviews.ts). The
-  [provider switch](../lib/review-provider.ts) already routes custom reads there,
-  where they return `unavailable` until the database loader exists. B also owns
-  the review types in [`lib/types.ts`](../lib/types.ts). Coordinate the
-  submission contract with C. D owns retiring the legacy forwarding route.
-- **C** owns [`components/reviews.tsx`](../components/reviews.tsx),
-  [the photo UI](../components/review-photo-gallery.tsx), and
-  [the product page](../app/products/%5Bhandle%5D/page.tsx). Reuse existing components
-  where they fit. Add app-owned routes for **My reviews** and the Phase 2
-  shop-wide view alongside the existing storefront routes.
-- **D** owns the staff UI, import tooling, and the cutover changes to
-  [`app/api/reviews/route.ts`](../app/api/reviews/route.ts) in coordination with B.
-  That route already refuses custom-mode submissions with HTTP 503; Judge.me
-  forwarding stays live in Judge.me mode until cutover.
-- **E** owns a separate worker and queue for review emails. Reuse Shopify event
-  verification from A and eligibility/status contracts from A and B.
-
-A and B land the Shopify and persistence contracts before C/D wire production
-integrations. Run the migration dry run and browser checks in staging before
-changing the live submission path. Each handoff should state its commit or PR,
-interfaces and fixtures added, verification run, and open decisions. Keep work
-in small, coherent Conventional Commits. Pause implementation that depends on a
-failed spike gate, and record the exact missing Shopify permission or field in
-this document before refining scope.
-
-## Migration and cutover
-
-1. Export Judge.me reviews and available API metadata. Build a repeatable dry
-   run that maps Shopify product IDs, identifies duplicate or unmapped reviews,
-   excludes the known test review, and preserves original dates and publication
-   states. Keep hidden and pending material private. Copy approved photos to
-   our storage, and import public replies when they can be reliably matched.
-2. Judge.me's CSV does not include order IDs or verification status. Its API
-   exposes a verified status, but that can mean account or manual verification
-   rather than a purchase, which is why the storefront labels it **Verified
-   review**. Record imported provenance. Show **Verified purchase** on a legacy review only
-   when the exact purchase can be independently established. Keep import
-   artifacts containing private data out of Git.
-3. Compare staging totals, product assignments, photos, and replies with the
-   approved import. In the cutover window, stop Judge.me collection and queued
-   requests, capture and import the final changes, then set Production's
-   `REVIEWS_PROVIDER` to `custom` and enable any ready email jobs. Disable the old anonymous
-   `POST /api/reviews` forwarding behavior and remove Judge.me entry points.
-4. Keep Judge.me installed during the rollback window. If a rollback is needed,
-   disable the new submission and email paths before reopening the old ones.
-   Preserve reviews collected after cutover, and reconcile them before reopening
-   either path for affected buyers. Uninstall Judge.me and remove its secrets
-   only after verification and rollback sign-off.
-
-## Release checks
-
-- A buyer can sign in, review the exact purchased item, attach a photo, edit it,
-  and remove it. A second account cannot write or edit using the same order or
-  line ID. Two simultaneous submissions create one record. Tests cover a split
-  shipment and canceled and refunded eligibility edge cases.
-- Pending text and photos stay private. Publishing low and high ratings follows
-  the same rules. Approved reviews and seller replies appear on the intended
-  product, and edits, hides, and withdrawals update the public view and totals.
-- Complete counts and averages remain accurate with more than one page of
-  reviews. Grouped listings and JSON-LD agree. Read failures display an
-  unavailable state while product browsing and checkout still work.
-- Staging verifies an import replay, one end-to-end buyer and staff flow, and
-  rollback with reviews written after cutover. For Phase 2, verify that retried
-  or unordered order events cannot cause duplicate request emails.
-- Run lint, `git diff --check`, focused route/data tests, the store build, and
-  browser checks in light and dark mode at mobile and desktop widths. Confirm
-  the Shopify flow on a dev or test store with real Shopify authentication.
-
-## Cost and references
-
-The estimate assumes the existing Next.js/Vercel storefront, store-owned tables
-and object storage in the existing RMT Supabase shared backend, and scheduled
-email processing in Phase 2. Ryan chose to reuse that project on November 17,
-2026; no additional production database project is planned. Review usage shares
-the backend's capacity and allowances. Confirm capacity, media backups, Preview
-isolation, and email allowances before cutover. See [the database plan](REVIEWS_DATABASE.md).
-
-- [Shopify Customer Account API](https://shopify.dev/docs/storefronts/headless/building-with-the-customer-account-api), [order lookup](https://shopify.dev/docs/api/customer/latest/queries/order), [fulfillment](https://shopify.dev/docs/api/customer/latest/objects/fulfillment), and [protected customer data](https://shopify.dev/docs/apps/launch/protected-customer-data)
-- [Shopify order actions](https://shopify.dev/docs/api/customer-account-ui-extensions/latest/targets/order-actions) and [webhook delivery and reconciliation](https://shopify.dev/docs/apps/build/webhooks)
-- [Judge.me export fields](https://judge.me/help/en/articles/8236266-exporting-reviews) and [Shop review sync partners](https://help.shopify.com/en/manual/online-sales-channels/shop/product-reviews/sync-partner-apps)
-- [Supabase pricing](https://supabase.com/pricing), [storage backup limits](https://supabase.com/docs/guides/platform/backups), and [Judge.me pricing](https://judge.me/pricing)
+Some earlier handoffs still describe stages before purchase hooks or review
+content landed. Their configuration/security details remain useful; for the
+current completion status use this inventory and the source above.
