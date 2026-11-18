@@ -32,9 +32,9 @@ function event(value: unknown): ModerationEvent | null {
   return row as ModerationEvent;
 }
 function review(value: unknown): ModerationReview | null {
-  const row = object(value, ["id", "state", "createdAt", "updatedAt", "item", "pending", "published", "latest", "recentEvents", "reply"]);
+  const row = object(value, ["id", "state", "createdAt", "updatedAt", "item", "verifiedPurchase", "pending", "published", "latest", "recentEvents", "reply"]);
   if (!row || !parseUuid(row.id) || !["active", "hidden", "withdrawn"].includes(String(row.state)) ||
-    !isModerationTimestamp(row.createdAt) || !isModerationTimestamp(row.updatedAt)) return null;
+    !isModerationTimestamp(row.createdAt) || !isModerationTimestamp(row.updatedAt) || typeof row.verifiedPurchase !== "boolean") return null;
   const item = object(row.item, ["productId", "productTitle", "variantTitle"]);
   if (!item || typeof item.productId !== "string" || !/^[1-9][0-9]{0,19}$/.test(item.productId) ||
     !text(item.productTitle, 255) || (item.variantTitle !== null && !text(item.variantTitle, 255))) return null;
@@ -51,12 +51,13 @@ function review(value: unknown): ModerationReview | null {
     !isModerationTimestamp(reply.publishedAt) || !isModerationTimestamp(reply.updatedAt))) return null;
   return { id: row.id as string, state: row.state as ModerationReview["state"], createdAt: row.createdAt, updatedAt: row.updatedAt,
     item: { productId: item.productId, productTitle: item.productTitle, variantTitle: item.variantTitle },
+    verifiedPurchase: row.verifiedPurchase,
     pending, published, latest, recentEvents: events as ModerationEvent[],
     reply: reply ? { body: reply.body as string, publishedAt: reply.publishedAt as string, updatedAt: reply.updatedAt as string } : null };
 }
 
 export async function loadReviewModerationPage(admin: SupabaseClient, actor: string, shopId: string, query: ModerationQuery): Promise<ModerationPage> {
-  const { data, error } = await admin.rpc("store_review_moderation_page_v2", {
+  const { data, error } = await admin.rpc("store_review_moderation_page_v3", {
     p_actor: actor, p_shop_id: shopId, p_filter: query.filter, p_limit: 21,
     p_after_created_at: query.after?.createdAt ?? null, p_after_id: query.after?.id ?? null,
   });

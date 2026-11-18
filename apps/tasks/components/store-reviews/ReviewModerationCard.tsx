@@ -44,6 +44,7 @@ export function ReviewModerationCard({ review, disabled, staffNames, onSelect }:
         <div className="flex shrink-0 flex-wrap gap-2">
           <Pill size="sm" variant="neutral">{state}</Pill>
           {review.pending && review.published && <Pill size="sm" variant="neutral">Edit waiting</Pill>}
+          {!review.verifiedPurchase && <Pill size="sm" variant="neutral">No matching order</Pill>}
         </div>
       </div>
       <div className={`grid items-start gap-4 ${review.pending && review.published ? "xl:grid-cols-2" : ""}`}>

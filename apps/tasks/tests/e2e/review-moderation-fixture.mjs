@@ -6,7 +6,7 @@ export function createReviewModerationFixture(json, readBody, profile) {
   const revision = (n, rating, body) => ({ id: id(n + 100), rating, title: "Ryan approved", body, displayName: "Ryan Fixture", submittedAt: initialTime });
   function row(n, pending, published = null, state = "active") {
     return { reply: null, id: id(n), state, createdAt: `2026-11-18T12:00:${String(n).padStart(2, "0")}.123456Z`, updatedAt: initialTime,
-      item: { productId: "100", productTitle: `Fixture shirt ${n}`, variantTitle: "Black / M" },
+      item: { productId: "100", productTitle: `Fixture shirt ${n}`, variantTitle: "Black / M" }, verifiedPurchase: n !== 1,
       pending, published, latest: pending ?? published ?? revision(n, 4, "Withdrawn text."),
       recentEvents: [{ action: "submitted", actorKind: "buyer", actor: null, note: null, createdAt: initialTime }] };
   }
@@ -32,12 +32,12 @@ export function createReviewModerationFixture(json, readBody, profile) {
     if (url.pathname === "/__reviews/configure") { options = { ...options, ...await readBody(request) }; json(response, 200, { ok: true }); return true; }
     if (url.pathname === "/__reviews/state") { json(response, 200, { calls, reviews }); return true; }
     if (url.pathname === "/rest/v1/rpc/is_app_owner") { json(response, 200, isOwner()); return true; }
-    if (!["/rest/v1/rpc/store_review_moderation_page_v2", "/rest/v1/rpc/store_moderate_review", "/rest/v1/rpc/store_save_review_reply"].includes(url.pathname)) return false;
+    if (!["/rest/v1/rpc/store_review_moderation_page_v3", "/rest/v1/rpc/store_moderate_review", "/rest/v1/rpc/store_save_review_reply"].includes(url.pathname)) return false;
     const command = await readBody(request);
     if (!isOwner() || command.p_actor !== profile.id || command.p_shop_id !== "123" || request.headers.apikey !== "sb_secret_test") {
       json(response, 403, { code: "42501", message: "Owner required" }); return true;
     }
-    if (url.pathname.endsWith("store_review_moderation_page_v2")) {
+    if (url.pathname.endsWith("store_review_moderation_page_v3")) {
       if (options.failRead) { json(response, 500, { code: "P0001", message: "Synthetic read failure" }); return true; }
       const selected = reviews.filter((r) => command.p_filter === "all" ||
         (command.p_filter === "pending" && r.pending && r.state !== "withdrawn") ||

@@ -27,6 +27,8 @@ export type ModerationEvent = {
 export type ModerationReview = {
   id: string; state: "active" | "hidden" | "withdrawn";
   createdAt: string; updatedAt: string; item: PublicReviewItem;
+  /** False when the buyer had no matching order; the review still needs the same approval. */
+  verifiedPurchase: boolean;
   pending: ModerationRevision | null; published: ModerationRevision | null;
   latest: ModerationRevision; recentEvents: ModerationEvent[];
   reply: ModerationReply | null;

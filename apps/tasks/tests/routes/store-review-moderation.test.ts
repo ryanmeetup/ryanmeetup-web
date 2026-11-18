@@ -14,7 +14,7 @@ const time = "2026-11-18T12:00:00.123456Z";
 const scope = { shopId: "123", clientId: "client", issuer: "https://shopify.com/authentication/123", redirectUri: "https://store.test/api/reviews/auth/callback" };
 const revision = { id: revisionId, rating: 1, title: "Ryan approved", body: "Too small.", displayName: "Anonymous", submittedAt: time };
 const row = { reply: null, id: reviewId, state: "active", createdAt: time, updatedAt: time,
-  item: { productId: "100", productTitle: "Shirt", variantTitle: null }, pending: revision, published: null, latest: revision,
+  item: { productId: "100", productTitle: "Shirt", variantTitle: null }, verifiedPurchase: true, pending: revision, published: null, latest: revision,
   recentEvents: [{ action: "submitted", actorKind: "buyer", actor: null, note: null, createdAt: time }] };
 const decision = { action: "approve", reviewId, expectedUpdatedAt: time, revisionId, note: null };
 function post(body: unknown = decision, headers: HeadersInit = {}) {
@@ -73,7 +73,7 @@ describe("owner review moderation", () => {
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(response.headers.get("referrer-policy")).toBe("no-referrer");
     expect(await response.json()).toEqual({ reviews: [row], next: null });
-    expect(mocks.rpc).toHaveBeenCalledWith("store_review_moderation_page_v2", {
+    expect(mocks.rpc).toHaveBeenCalledWith("store_review_moderation_page_v3", {
       p_actor: actor, p_shop_id: "123", p_filter: "pending", p_limit: 21, p_after_created_at: null, p_after_id: null,
     });
   });
@@ -85,7 +85,7 @@ describe("owner review moderation", () => {
     expect(page.reviews).toHaveLength(20);
     expect(page.next).toEqual({ id: "00000000-0000-4000-8000-000000000020", createdAt: time });
     await GET(get(`?filter=published&afterCreatedAt=${encodeURIComponent(time)}&afterId=${reviewId}`));
-    expect(mocks.rpc).toHaveBeenLastCalledWith("store_review_moderation_page_v2", expect.objectContaining({ p_filter: "published", p_after_created_at: time, p_after_id: reviewId }));
+    expect(mocks.rpc).toHaveBeenLastCalledWith("store_review_moderation_page_v3", expect.objectContaining({ p_filter: "published", p_after_created_at: time, p_after_id: reviewId }));
   });
 
   it("rejects unknown fields, caller shops/actors, rating filters, and malformed cursor dates", async () => {

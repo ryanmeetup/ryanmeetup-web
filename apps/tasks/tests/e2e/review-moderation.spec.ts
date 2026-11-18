@@ -38,6 +38,9 @@ test("loads pending reviews on the server and compares a waiting edit with the a
   await page.goto("/admin/reviews");
   await expect(page).toHaveTitle(/Store reviews/);
   await expect(card(page, 1).getByRole("img", { name: "1 out of 5 stars" })).toBeVisible();
+  // A review written without a matching order is labelled in words, not only by colour.
+  await expect(card(page, 1)).toContainText("No matching order");
+  await expect(card(page, 2)).not.toContainText("No matching order");
   await expect(card(page, 2).getByRole("region", { name: "Waiting edit" })).toContainText("Updated after washing.");
   await expect(card(page, 2).getByRole("region", { name: "Published version" })).toContainText("Original approved text.");
   await expect(page.getByRole("navigation", { name: "Admin sections" }).getByRole("link", { name: "Store reviews" })).toHaveAttribute("aria-current", "page");
