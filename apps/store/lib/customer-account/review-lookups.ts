@@ -1,9 +1,9 @@
 import type { ReviewPurchase } from "@ryanmeetup/reviews";
-import type { ReviewEligibility, ReviewablePurchaseLine } from "../review-purchases";
+import type { ReviewEligibility, ReviewNoneReason, ReviewablePurchaseLine } from "../review-purchases";
 import { createCustomerAccountApi, discoverCustomerAccountApi } from "./api";
 import { readReviewBuyer, readReviewOrderCandidates } from "./buyer-reader";
 import { evaluateReviewPurchase } from "./purchase-eligibility";
-import type { EligibleReviewPurchase } from "./purchase-eligibility";
+import type { EligibleReviewPurchase, ReviewIneligibleReason } from "./purchase-eligibility";
 import { readCustomerPurchase } from "./purchase-reader";
 import { getCustomerAccountPersistence } from "./runtime";
 import { sameCustomerAccountSession } from "./storage";
@@ -30,6 +30,20 @@ export function reviewBackendPurchase(purchase: EligibleReviewPurchase): ReviewP
   return { orderId, lineId, productId, variantId, productTitle, variantTitle };
 }
 
+const lastingReasons = new Set<ReviewIneligibleReason | "history_limit">(["refunded", "edited", "unverifiable", "history_limit"]);
+
+/** The most useful thing to tell a buyer whose lines all failed the rules. */
+function noneReason(skipped: Set<ReviewIneligibleReason | "history_limit">): ReviewNoneReason {
+  if (skipped.has("unfulfilled") || skipped.has("unpaid")) return "not_shipped";
+  return [...skipped].some((reason) => lastingReasons.has(reason)) ? "needs_help" : "not_purchased";
+}
+
+/** Reason codes only: no order, line, product, or buyer identifier is logged. */
+function logLastingReasons(skipped: Set<ReviewIneligibleReason | "history_limit">) {
+  const reasons = [...skipped].filter((reason) => lastingReasons.has(reason)).sort();
+  if (reasons.length) console.info("Review purchase lines need a person to check.", { reasons });
+}
+
 async function context(session: CustomerAccountSession) {
   const persistence = getCustomerAccountPersistence();
   if (!persistence) return null;
@@ -45,6 +59,8 @@ async function context(session: CustomerAccountSession) {
   };
   return {
     query, shopId: persistence.config.shopId,
+    /** Readers swallow their own errors, so the budget is checked here, not caught. */
+    exhausted: () => requests > 30,
     async active() {
       const current = await persistence.storage.loadSessionByHash(stored.sessionHash);
       return Boolean(current && sameCustomerAccountSession(stored, current) && current.accessExpiresAt > Date.now());
@@ -52,7 +68,11 @@ async function context(session: CustomerAccountSession) {
   };
 }
 
-/** A product list for the picker and every write; no browser purchase is trusted. */
+/**
+ * A product list for the picker and every write; no browser purchase is trusted.
+ * Lines that fail the rules are skipped with a reason. Only a failed or
+ * inconsistent lookup is `unavailable`, since that can succeed on retry.
+ */
 export async function lookupReviewablePurchases(session: CustomerAccountSession, productId: string): Promise<ReviewEligibility> {
   if (!/^[1-9][0-9]{0,19}$/.test(productId)) return { status: "unavailable" };
   try {
@@ -63,16 +83,20 @@ export async function lookupReviewablePurchases(session: CustomerAccountSession,
     const productReference = `gid://shopify/Product/${productId}`;
     const purchases: ReviewablePurchaseLine[] = [];
     const seenLines = new Set<string>();
+    const skipped = new Set<ReviewIneligibleReason | "history_limit">();
     for (const candidate of discovery.orders) {
       if (candidate.completeLines && candidate.lines.every((line) => line.productId !== null && line.productId !== productReference)) continue;
       const read = await readCustomerPurchase(client.query, candidate.id);
+      // A long order history is lasting, not a provider failure. Every line
+      // already collected was fully verified, so the newest orders still count.
+      if (client.exhausted()) { skipped.add("history_limit"); break; }
       if (read.status !== "found" || read.purchase.buyerId !== discovery.buyer.id || read.purchase.updatedAt !== candidate.updatedAt) return { status: "unavailable" };
       for (const line of read.purchase.lines) {
-        if (line.productId === null) return { status: "unavailable" };
+        // A deleted product's line can't be this product; it no longer blocks the rest of the order.
         if (line.productId !== productReference) continue;
         const checked = evaluateReviewPurchase(read.purchase, { shopId: client.shopId, lineId: line.id, productId: productReference });
-        if (checked.status === "unavailable") return { status: "unavailable" };
-        if (checked.status !== "eligible") continue;
+        if (checked.status === "ineligible") { skipped.add(checked.reason); continue; }
+        if (checked.status !== "eligible") return { status: "unavailable" };
         const verified = reviewBackendPurchase(checked.purchase);
         if (!verified || verified.productId !== productId || seenLines.has(verified.lineId)) return { status: "unavailable" };
         seenLines.add(verified.lineId);
@@ -80,7 +104,10 @@ export async function lookupReviewablePurchases(session: CustomerAccountSession,
       }
     }
     if (!await client.active()) return { status: "unavailable" };
-    return purchases.length ? { status: "eligible", buyer: { firstName: discovery.buyer.firstName, lastName: discovery.buyer.lastName }, purchases } : { status: "none" };
+    logLastingReasons(skipped);
+    return purchases.length
+      ? { status: "eligible", buyer: { firstName: discovery.buyer.firstName, lastName: discovery.buyer.lastName }, purchases }
+      : { status: "none", reason: noneReason(skipped) };
   } catch { return { status: "unavailable" }; }
 }
 

@@ -6,12 +6,19 @@ import { lookupReviewBuyerName, lookupReviewablePurchases } from "./customer-acc
 export type ReviewablePurchaseLine = ReviewPurchase & { label: string };
 
 /**
+ * Why a buyer has nothing to review for a product. `not_shipped` will open on
+ * its own; `needs_help` covers lasting order states (a refund, an edit, data
+ * we can't verify, or a history too long to scan) that the store must resolve.
+ */
+export type ReviewNoneReason = "not_purchased" | "not_shipped" | "needs_help";
+
+/**
  * What Shopify says about a signed-in buyer and one product. `unavailable`
- * means the lookup itself failed, never "bought nothing".
+ * means the lookup itself failed and may succeed on retry, never "bought nothing".
  */
 export type ReviewEligibility =
   | { status: "eligible"; buyer: { firstName: string | null; lastName: string | null }; purchases: ReviewablePurchaseLine[] }
-  | { status: "none" }
+  | { status: "none"; reason: ReviewNoneReason }
   | { status: "unavailable" };
 
 export type ReviewEligibilityLookup = (session: CustomerAccountSession, productId: string) => Promise<ReviewEligibility>;

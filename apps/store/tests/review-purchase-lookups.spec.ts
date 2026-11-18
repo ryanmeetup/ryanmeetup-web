@@ -116,14 +116,14 @@ test("a newer stored session revision supplies its current access token", async 
 test("complete empty/unrelated histories and known unfulfilled purchases produce none", async () => {
   const { session } = await seed();
   orderReferences = [];
-  expect(await findReviewablePurchases(session, "102")).toEqual({ status: "none" });
+  expect(await findReviewablePurchases(session, "102")).toEqual({ status: "none", reason: "not_purchased" });
   orderReferences = [{ id: purchaseOrderId, updatedAt: purchase.order.updatedAt, lineItems: {
     nodes: [{ id: purchaseLineId, productId: "gid://shopify/Product/999" }], pageInfo: { hasNextPage: false, endCursor: null },
   } }];
-  expect(await findReviewablePurchases(session, "102")).toEqual({ status: "none" });
+  expect(await findReviewablePurchases(session, "102")).toEqual({ status: "none", reason: "not_purchased" });
   orderReferences[0].lineItems.nodes[0].productId = purchaseProductId;
   purchase.order.fulfillments.nodes[0].status = "PENDING";
-  expect(await findReviewablePurchases(session, "102")).toEqual({ status: "none" });
+  expect(await findReviewablePurchases(session, "102")).toEqual({ status: "none", reason: "not_shipped" });
 });
 
 test("matching lines beyond the candidate page are verified through the complete owned-order reader", async () => {
@@ -133,13 +133,37 @@ test("matching lines beyond the candidate page are verified through the complete
   expect((await findReviewablePurchases(session, "102")).status).toBe("eligible");
 });
 
-test("changed orders, customer mismatches, refunds, and incomplete histories remain unavailable", async () => {
+test("refunded and edited purchases need a person and log only reason codes", async () => {
+  const { session } = await seed();
+  const logged: unknown[][] = [];
+  const info = console.info;
+  console.info = (...args: unknown[]) => { logged.push(args); };
+  try {
+    purchase.order.financialStatus = "REFUNDED";
+    expect(await findReviewablePurchases(session, "102")).toEqual({ status: "none", reason: "needs_help" });
+    purchase = customerPurchasePage(); purchase.order.edited = true;
+    expect(await findReviewablePurchases(session, "102")).toEqual({ status: "none", reason: "needs_help" });
+  } finally { console.info = info; }
+  expect(logged).toEqual([
+    ["Review purchase lines need a person to check.", { reasons: ["refunded"] }],
+    ["Review purchase lines need a person to check.", { reasons: ["edited"] }],
+  ]);
+});
+
+test("a deleted product's line no longer blocks the rest of its order", async () => {
+  const { session } = await seed();
+  const deleted = structuredClone(purchase.order.lineItems.nodes[0]);
+  deleted.id = "gid://shopify/LineItem/909"; deleted.productId = null;
+  purchase.order.lineItems.nodes.push(deleted);
+  orderReferences[0].lineItems.nodes.push({ id: deleted.id, productId: null });
+  expect((await findReviewablePurchases(session, "102")).status).toBe("eligible");
+});
+
+test("changed orders, customer mismatches, and incomplete histories remain unavailable", async () => {
   const { session } = await seed();
   purchase.order.updatedAt = "2026-11-17T13:00:00Z";
   expect(await findReviewablePurchases(session, "102")).toEqual({ status: "unavailable" });
   purchase = customerPurchasePage(); purchase.customer.id = "other-buyer"; purchase.order.customer.id = "other-buyer";
-  expect(await findReviewablePurchases(session, "102")).toEqual({ status: "unavailable" });
-  purchase = customerPurchasePage(); purchase.order.financialStatus = "REFUNDED";
   expect(await findReviewablePurchases(session, "102")).toEqual({ status: "unavailable" });
   purchase = customerPurchasePage(); incomplete = true;
   expect(await findReviewablePurchases(session, "102")).toEqual({ status: "unavailable" });
@@ -185,9 +209,12 @@ test("the real submission route cannot save an unowned line or a failed/revoked 
   expect(reviewCommands).toEqual([]);
 });
 
-test("a large matching history stops at the query budget without returning a partial or empty success", async () => {
+test("a large matching history stops at the query budget and keeps the newest verified lines", async () => {
   const { session } = await seed(); manyOrders = true;
-  expect(await findReviewablePurchases(session, "102")).toEqual({ status: "unavailable" });
+  const result = await findReviewablePurchases(session, "102");
+  expect(result.status).toBe("eligible");
+  // Ten discovery pages leave twenty order reads, each fully verified.
+  if (result.status === "eligible") expect(result.purchases).toHaveLength(20);
   expect(requests.filter((url) => url === endpoint)).toHaveLength(30);
 });
 

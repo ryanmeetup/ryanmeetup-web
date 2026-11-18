@@ -73,7 +73,7 @@ test("sign-in, eligibility, and storage failures each get an honest answer", asy
   expect((await submitCustomReview(request(), setup({ sessionResult: { status: "sign_in_required" } }).deps)).status).toBe(401);
   expect((await submitCustomReview(request(), setup({ sessionResult: { status: "unavailable" } }).deps)).status).toBe(503);
   expect((await submitCustomReview(request(), setup({ eligibility: { status: "unavailable" } }).deps)).status).toBe(503);
-  expect((await submitCustomReview(request(), setup({ eligibility: { status: "none" } }).deps)).status).toBe(403);
+  expect((await submitCustomReview(request(), setup({ eligibility: { status: "none", reason: "not_purchased" } }).deps)).status).toBe(403);
   expect((await submitCustomReview(request(), { ...setup().deps, backend: null })).status).toBe(503);
   const failing = { ...setup().deps, backend: (async () => { throw new Error("down"); }) as Parameters<typeof submitCustomReview>[1]["backend"] };
   expect((await submitCustomReview(request(), failing)).status).toBe(503);
@@ -93,7 +93,10 @@ test("the form state follows the buyer's session and purchases", async () => {
   expect(await access({ status: "unavailable" })).toEqual({ status: "unavailable" });
   expect(await access({ status: "sign_in_required" })).toEqual({ status: "signed-out", signInUrl: reviewSignInUrl("/products/name-tag-shirt#reviews") });
   expect(reviewSignInUrl("/products/name-tag-shirt#reviews")).toBe("/api/reviews/auth/start?returnTo=%2Fproducts%2Fname-tag-shirt%23reviews");
-  expect(await access(signedIn, { status: "none" })).toEqual({ status: "no-purchase" });
+  expect(await access(signedIn, { status: "none", reason: "not_purchased" })).toEqual({ status: "no-purchase" });
+  expect(await access(signedIn, { status: "none", reason: "not_shipped" })).toEqual({ status: "no-purchase" });
+  // A lasting order state points the buyer at the store instead of "temporarily closed".
+  expect(await access(signedIn, { status: "none", reason: "needs_help" })).toEqual({ status: "needs-help" });
   expect(await access(signedIn, { status: "unavailable" })).toEqual({ status: "unavailable" });
   expect(await access(signedIn)).toEqual({ status: "ready", buyer: { firstName: "Ryan", lastName: "Le" }, purchases: [{ lineId: "1", label: purchase.label }], defaultNameStyle: "first-initial", sample: false });
   const reviewedLine = (status: BuyerReview["status"]) => ({ ...myReview, status });

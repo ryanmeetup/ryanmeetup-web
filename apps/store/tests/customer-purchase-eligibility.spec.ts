@@ -25,7 +25,7 @@ test("a supplied product or line cannot change the verified purchase attribution
   expect(evaluateReviewPurchase(data, { ...references, lineId: "another-line" })).toEqual({ status: "ineligible", reason: "not_found" });
   expect(evaluateReviewPurchase(data, { ...references, productId: "another-product" })).toEqual({ status: "ineligible", reason: "wrong_product" });
   data.lines[0].productId = null;
-  expect(evaluateReviewPurchase(data, references)).toEqual({ status: "unavailable" });
+  expect(evaluateReviewPurchase(data, references)).toEqual({ status: "ineligible", reason: "unverifiable" });
 });
 
 test("nullable purchased variants remain attributed to their original product and line", async () => {
@@ -66,23 +66,33 @@ test("split shipments qualify only after all units on the selected line are succ
   expect(result.status).toBe("eligible");
   if (result.status === "eligible") expect(result.purchase).toMatchObject({ quantity: 2, fulfilledQuantity: 2 });
   data.fulfillments.push({ ...second, id: "overcounted" });
-  expect(evaluateReviewPurchase(data, references)).toEqual({ status: "unavailable" });
+  expect(evaluateReviewPurchase(data, references)).toEqual({ status: "ineligible", reason: "unverifiable" });
 });
 
-test("unknown fulfillment facts, refunds, edits, and missing payment facts remain unavailable", async () => {
+test("refunds, edits, and unknown facts are lasting reasons, never a lookup failure", async () => {
   for (const status of [null, "UNRECOGNIZED_STATUS"]) {
     const data = await purchase(); data.fulfillments[0].status = status;
-    expect(evaluateReviewPurchase(data, references)).toEqual({ status: "unavailable" });
+    expect(evaluateReviewPurchase(data, references)).toEqual({ status: "ineligible", reason: "unverifiable" });
   }
   const missingQuantity = await purchase(); missingQuantity.fulfillments[0].lines[0].quantity = null;
-  expect(evaluateReviewPurchase(missingQuantity, references)).toEqual({ status: "unavailable" });
-  for (const status of [null, "REFUNDED", "PARTIALLY_REFUNDED", "FUTURE_STATUS"]) {
+  expect(evaluateReviewPurchase(missingQuantity, references)).toEqual({ status: "ineligible", reason: "unverifiable" });
+  for (const status of [null, "FUTURE_STATUS"]) {
     const data = await purchase(); data.financialStatus = status;
-    // Includes refunds after receipt: uncertainty is not permanent disqualification.
-    expect(evaluateReviewPurchase(data, references)).toEqual({ status: "unavailable" });
+    expect(evaluateReviewPurchase(data, references)).toEqual({ status: "ineligible", reason: "unverifiable" });
   }
-  const refundedLine = await purchase(); refundedLine.lines[0].refundableQuantity = 0;
-  expect(evaluateReviewPurchase(refundedLine, references)).toEqual({ status: "unavailable" });
+  const refunded = await purchase(); refunded.financialStatus = "REFUNDED";
+  expect(evaluateReviewPurchase(refunded, references)).toEqual({ status: "ineligible", reason: "refunded" });
+  const refundedLine = await purchase(); refundedLine.financialStatus = "PARTIALLY_REFUNDED"; refundedLine.lines[0].refundableQuantity = 0;
+  expect(evaluateReviewPurchase(refundedLine, references)).toEqual({ status: "ineligible", reason: "refunded" });
   const edited = await purchase(); edited.edited = true;
-  expect(evaluateReviewPurchase(edited, references)).toEqual({ status: "unavailable" });
+  expect(evaluateReviewPurchase(edited, references)).toEqual({ status: "ineligible", reason: "edited" });
+});
+
+test("a refund on a different line leaves this fully paid line eligible", async () => {
+  const data = await purchase(); data.financialStatus = "PARTIALLY_REFUNDED";
+  expect(evaluateReviewPurchase(data, references).status).toBe("eligible");
+});
+
+test("only an invalid shop configuration makes the rules unavailable", async () => {
+  expect(evaluateReviewPurchase(await purchase(), { ...references, shopId: "not-a-shop" })).toEqual({ status: "unavailable" });
 });

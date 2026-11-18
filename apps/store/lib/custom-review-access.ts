@@ -20,6 +20,8 @@ export type CustomReviewAccess =
   | { status: "unavailable" }
   | { status: "signed-out"; signInUrl: string }
   | { status: "no-purchase" }
+  /** Bought, but in a lasting state (refunded, edited, unverifiable) the store has to look at. */
+  | { status: "needs-help" }
   | { status: "reviewed" }
   | {
       status: "ready";
@@ -58,7 +60,7 @@ export async function getCustomReviewAccess({ productId, productPath, loadSessio
   if (session.status === "sign_in_required") return { status: "signed-out", signInUrl: reviewSignInUrl(`${productPath}#reviews`) };
   const eligibility = await findPurchases(session.session, id).catch(() => ({ status: "unavailable" as const }));
   if (eligibility.status === "unavailable") return { status: "unavailable" };
-  if (eligibility.status === "none") return { status: "no-purchase" };
+  if (eligibility.status === "none") return { status: eligibility.reason === "needs_help" ? "needs-help" : "no-purchase" };
   if (!eligibility.purchases.length) return { status: "no-purchase" };
   const lines = await reviewedLines(session.session.subject, eligibility.purchases.map((purchase) => purchase.lineId)).catch(() => null);
   if (!lines) return { status: "unavailable" };

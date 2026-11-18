@@ -36,6 +36,7 @@ const CLOSED_COPY: Record<Exclude<CustomReviewAccess["status"], "ready">, { titl
   unavailable: { title: "Reviews are closed for now", body: "Review collection is temporarily unavailable. Please try again later." },
   "signed-out": { title: "Sign in to review", body: "Reviews come from verified purchases. Sign in with the email you ordered with, and we'll bring you right back here." },
   "no-purchase": { title: "No purchase to review yet", body: "We couldn't find an order for this product on your account. Reviews open once your order has shipped." },
+  "needs-help": { title: "We need to check this order", body: "Your order for this product changed after checkout, like a refund or an edit, so we can't verify it automatically. Get in touch and we'll sort it out." },
   reviewed: { title: "You've already reviewed this", body: "Thanks for weighing in. Each purchase gets one review; edit or withdraw yours from My reviews." },
 };
 
@@ -129,6 +130,11 @@ export function CustomReviewComposer({
             <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
               <Button type="button" variant="secondary" size="md" className="w-full sm:w-auto" onClick={close}>Close</Button>
               <Button.Link href="/reviews/mine" size="md" className="w-full sm:w-auto">My reviews</Button.Link>
+            </div>
+          ) : access.status === "needs-help" ? (
+            <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
+              <Button type="button" variant="secondary" size="md" className="w-full sm:w-auto" onClick={close}>Close</Button>
+              <Button.Link href="/contact" size="md" className="w-full sm:w-auto">Contact us</Button.Link>
             </div>
           ) : access.status === "signed-out" ? (
             <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">

@@ -4,16 +4,7 @@ This implements the private Customer Account API boundary for checking a
 selected order line. It does not open collection or prove the intended
 installation's buyer/order permissions. Judge.me remains the default.
 
-## Completed chunks and handoff
-
-| Commit | Change | Verification |
-| --- | --- | --- |
-| `24cb311e` | Public shop API discovery, pinned/validated buyer-token transport, and the fixed purchase query. | 5 transport checks and offline Shopify Customer schema validation passed. |
-| `c4dcaa0d` | Owned-order projection with independent bounded line/fulfillment pagination and exact fulfillment-line links. | 8 ownership/pagination checks passed. |
-| `0d47d4eb` | Private exact-line eligibility plus session checks before and after an eligible lookup. | 7 rule checks and 6 runtime checks passed. Together with existing auth/renewal checks: 71 passed. Changed-file ESLint, TypeScript, diff check, and storefront production build passed. |
-| `2a6464f0` | Add authenticated private hash continuations, a persistence factory, and one shared immutable-session comparison for lookups. | Encrypted session tests cover valid continuations, invalid hashes, tampering, and revocation; auth/renewal regressions pass. |
-| `37cec0da` | Discover buyer names and complete bounded order/line candidates. | Both new GraphQL documents passed offline 2026-10 schema validation; 4 reader checks cover identity, pagination, malformed data, and incomplete history. |
-| `1d2ae6c2` | Replace the picker and buyer-name placeholders, normalize exact GID kinds, and connect the real submission route to the verified lookup. | 13 lookup/integration checks cover current stored tokens, forged caller fields, ownership, names, failures/revocation, full numeric precision, the request budget, and pending-review commands. Combined 73 focused checks, TypeScript, changed-file ESLint, diff check, and storefront production build passed. |
+## Handoff
 
 All buyer/provider data in these tests is synthetic, including the real-route
 tests' remote storage responses. No migration, hosted
@@ -32,7 +23,7 @@ media, and cutover remain separate workstreams in the main rebuild plan.
 Repeat the focused checks from `apps/store`:
 
 ```sh
-npx playwright test tests/customer-account-api.spec.ts tests/customer-purchase-reader.spec.ts tests/customer-purchase-eligibility.spec.ts tests/customer-purchase-runtime.spec.ts --workers=1
+npx playwright test tests/customer-account-api.spec.ts tests/customer-purchase-reader.spec.ts tests/customer-purchase-eligibility.spec.ts --workers=1
 npx playwright test tests/customer-buyer-reader.spec.ts tests/review-purchase-lookups.spec.ts tests/customer-account-backend.spec.ts --workers=1
 npx tsc --noEmit
 ```
@@ -85,36 +76,38 @@ unavailable. It never labels a truncated lookup as complete or reports that
 the buyer bought nothing because a page was omitted. Extend child pagination
 as a separate chunk if live orders require it.
 
-## Private eligibility entry point
+## Eligibility rules
 
-`review-purchase.ts::getReviewPurchaseEligibility(request, { orderId, lineId,
-productId })` loads/renews the opaque browser session, discovers the scoped
-Customer API, reads the complete owned purchase, and evaluates the exact line.
-Before returning an eligible attribution it rechecks the stored session, so a
-sign-out during the lookup cannot return an eligible result. A future write
-must call this server check again and enforce its own transactional session
-authorization; a prior page result or browser-supplied purchase is not proof.
+`purchase-eligibility.ts::evaluateReviewPurchase` judges one exact owned line.
+Only an invalid shop configuration makes it `unavailable`. Every fact about the
+order produces a verdict, so one unusual order cannot keep reviews "temporarily
+closed" for a buyer indefinitely.
 
-| Result | Meaning |
-| --- | --- |
-| `eligible` | Private attribution from Shopify for the selected owned line. No token, address, or email is returned. |
-| `ineligible` | The requested order/line/product does not qualify, with a narrow reason. |
-| `sign_in_required` | There is no active buyer session, including revocation during lookup. |
-| `unavailable` | Provider/storage failure, incomplete facts, or an ambiguous eligibility case. |
-
-The implemented initial subset is an uncancelled, unedited **paid order** with
-a physical non-gift-card line, no refunded units on that line, and successful
+The implemented subset is an uncancelled, unedited **paid order** with a
+physical non-gift-card line, no refunded units on that line, and successful
 fulfillment of all its units. Fulfillment quantities must point to that exact
 line; success elsewhere in the order cannot qualify it. Multiple units still
 produce one eligible line. A nullable variant remains attached to its verified
-product; a missing product is never replaced using a browser hint.
+product; a missing product is never replaced using a browser hint. A refund on
+a *different* line (`PARTIALLY_REFUNDED` with this line fully refundable)
+leaves this line eligible.
 
-`SUCCESS` means fulfilled, not proven delivered. Partial line fulfillment stays
-ineligible until the remaining units qualify. Edited orders, refunded financial
-statuses, refunded line quantities, unknown statuses/quantities, and inconsistent
-overcounts stay unavailable. A refund after receipt is **not** permanently
-disqualified: this query does not prove line-level refund/receipt chronology.
-Resolve that evidence and policy through the live spike before opening writes.
+| Reason | Meaning | Buyer sees |
+| --- | --- | --- |
+| `unfulfilled`, `unpaid` | Can still change. `SUCCESS` means fulfilled, not proven delivered. | "No purchase to review yet" |
+| `cancelled`, `not_physical`, `not_found`, `wrong_product` | Never reviewable. | "No purchase to review yet" |
+| `refunded` | Any refunded unit on this line, or a fully refunded order. The query cannot date a refund against delivery, so a person decides. | "We need to check this order", with a contact link |
+| `edited` | An order edit can move units between lines. | Same |
+| `unverifiable` | A deleted product, an unknown financial or fulfillment status, a missing quantity, or an overcount. | Same |
+
+The lookup collects these reasons across a product's lines and returns
+`{ status: "none", reason }` with `not_shipped`, `needs_help`, or
+`not_purchased`, preferring `not_shipped` because it resolves itself. It logs
+lasting reason codes (`refunded`, `edited`, `unverifiable`, `history_limit`)
+as `Review purchase lines need a person to check.` with no order, line,
+product, or buyer identifier. `unavailable` is reserved for failures that can
+succeed on retry: provider, storage, or session errors, and an order that
+changes or switches owner mid-lookup.
 
 ## Integration and live gate
 
@@ -151,10 +144,12 @@ first step. The hash continuation is not a public authentication mechanism.
 Candidate orders with a matching product, unknown attribution, or incomplete
 line references are verified through the owned-order reader and the same
 exact-line rules. The order's update timestamp and API customer must still
-match discovery. The operation allows at most thirty Customer API requests;
-exhaustion or ambiguous matching evidence returns unavailable, never an empty
-or partial successful history. An unambiguous completed scan with no qualifying
-line returns `none`.
+match discovery. The operation allows at most thirty Customer API requests. Orders are scanned
+newest first, so when the budget runs out the lookup keeps the lines it has
+already fully verified and records `history_limit`. With none found, that is
+`none` with `needs_help`, because a long history is lasting rather than
+transient. Ambiguous matching evidence still returns unavailable. A line whose
+product was deleted no longer blocks the rest of its order.
 
 Reference conversion accepts only the expected Shopify GID resource kind and
 keeps numeric IDs as strings, including full 64-bit values. Labels are
