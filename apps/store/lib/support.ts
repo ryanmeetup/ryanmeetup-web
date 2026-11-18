@@ -1,5 +1,7 @@
 // Customer-service helpers shared by the contact page (server) and its form (client).
 
+import { validateEmail } from "@ryanmeetup/utils";
+
 export type SupportPrefill = { order: string; email: string };
 
 /**
@@ -12,7 +14,7 @@ export function parseSupportPrefill(query: { order?: string | string[]; email?: 
   const email = first(query.email);
   return {
     order: /^[A-Za-z0-9-]{1,32}$/.test(order) ? `#${order}` : "",
-    email: email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : "",
+    email: validateEmail(email) ? email : "",
   };
 }
 

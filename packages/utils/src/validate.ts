@@ -1,4 +1,12 @@
-const validateEmail = (email: string) => /\S+@\S+\.\S+/.test(email);
+/**
+ * Whether the whole value is one plausible email address. Surrounding
+ * whitespace (such as from autofill) is ignored; anything else around the
+ * address is not.
+ */
+const validateEmail = (email: string) => {
+  const value = email.trim();
+  return value.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+};
 
 const isMoreThanTwoWeeksAgo = (dateString: string) => {
   const [month, day, yearValue] = dateString.split("/");
