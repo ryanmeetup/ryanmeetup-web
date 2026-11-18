@@ -1,4 +1,3 @@
-import { headers } from "next/headers";
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { Breadcrumbs, type Breadcrumb } from "@ryanmeetup/ui";
@@ -17,9 +16,7 @@ import { getColorPreview } from "@/lib/product-colors";
 import { getProductGroupForMember, getProductHref, resolveProductDesignValue } from "@/lib/product-groups";
 import { getReviews } from "@/lib/reviews";
 import { getReviewAccount } from "@/lib/review-collection";
-import { getCustomReviewAccess, type CustomReviewAccess } from "@/lib/custom-review-access";
-import { getCustomerAccountSession } from "@/lib/customer-account/runtime";
-import { findReviewablePurchases } from "@/lib/review-purchases";
+import { getCustomReviewAccessByProduct } from "@/lib/custom-review-access";
 import { getActiveReviewProvider, getReviewPreview } from "@/lib/review-preview";
 import { cartOrigin, withProductOrigin } from "@/lib/product-origin";
 import { getCollections, getProduct, getProductHandles } from "@/lib/shopify";
@@ -41,24 +38,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     canonical: `/products/${product.handle}`,
     image: product.featuredImage ? toMetadataImage(product.featuredImage, product.title) : DEFAULT_IMAGE,
   });
-}
-
-/** Session loading needs a Request; rebuild one from this page request's headers. */
-async function currentRequest(path: string) {
-  const incoming = await headers();
-  const host = incoming.get("host") ?? "localhost";
-  const protocol = incoming.get("x-forwarded-proto")?.split(",")[0].trim() ?? "https";
-  return new Request(`${protocol}://${host}${path}`, { headers: incoming });
-}
-
-/** One session load per page, then each listed product's own purchases. */
-async function getCustomReviewAccessByProduct(products: { id: string }[], productPath: string) {
-  const request = await currentRequest(productPath);
-  let session: ReturnType<typeof getCustomerAccountSession> | undefined;
-  const loadSession = () => (session ??= getCustomerAccountSession(request));
-  const entries = await Promise.all(products.map(async (item) =>
-    [item.id, await getCustomReviewAccess({ productId: item.id, productPath, loadSession, findPurchases: findReviewablePurchases })] as const));
-  return Object.fromEntries(entries) as Record<string, CustomReviewAccess>;
 }
 
 export default async function ProductPage({ params, searchParams }: Props) {

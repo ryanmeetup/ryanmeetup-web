@@ -1,7 +1,8 @@
 import { expect, test } from "@playwright/test";
-import type { ReviewCommand } from "@ryanmeetup/reviews";
+import type { BuyerReview, ReviewCommand } from "@ryanmeetup/reviews";
 import { submitCustomReview } from "../lib/custom-review-submission";
-import { getCustomReviewAccess, reviewSignInUrl } from "../lib/custom-review-access";
+import { getCustomReviewAccess } from "../lib/custom-review-access";
+import { reviewSignInUrl } from "../lib/review-sign-in";
 import type { CustomerSessionResult } from "../lib/customer-account/session";
 import type { CustomerAccountSession } from "../lib/customer-account/storage";
 import type { ReviewEligibility } from "../lib/review-purchases";
@@ -10,6 +11,11 @@ const session = { sessionHash: "a".repeat(64), subject: "synthetic-buyer", creat
 const signedIn: CustomerSessionResult = { status: "authenticated", session };
 const purchase = { orderId: "9000", lineId: "1", productId: "100", variantId: "200", productTitle: "Name Tag Shirt", variantTitle: "Black / M", label: "Order #1001 · Black / M" };
 const eligible: ReviewEligibility = { status: "eligible", buyer: { firstName: "Ryan", lastName: "Le" }, purchases: [purchase] };
+const myReview: BuyerReview = {
+  id: "3f1c2a4e-5b6d-4e7f-8a9b-0c1d2e3f4a5b", lineId: "1", item: { productId: "100", productTitle: "Name Tag Shirt", variantTitle: "Black / M" },
+  status: "pending", hasPendingEdit: false, publishedAt: null, createdAt: "2026-11-17T12:00:00.000000Z", updatedAt: "2026-11-17T12:00:00.000000Z",
+  current: { rating: 5, title: null, body: "Great shirt.", nameStyle: "first-initial", displayName: "Ryan L." },
+};
 const review = { productId: "gid://shopify/Product/100", lineId: "1", rating: 5, title: "  Big fan ", body: "Great shirt.", nameStyle: "first-initial" };
 
 function request(body: unknown = review, headers: HeadersInit = {}) {
@@ -81,12 +87,18 @@ test("retries and resubmissions report what already exists", async () => {
 
 test("the form state follows the buyer's session and purchases", async () => {
   const args = { productId: "gid://shopify/Product/100", productPath: "/products/name-tag-shirt" };
-  const access = (sessionResult: CustomerSessionResult, eligibility: ReviewEligibility = eligible) =>
-    getCustomReviewAccess({ ...args, loadSession: async () => sessionResult, findPurchases: async () => eligibility });
+  const access = (sessionResult: CustomerSessionResult, eligibility: ReviewEligibility = eligible, mine: BuyerReview[] | null = []) =>
+    getCustomReviewAccess({ ...args, loadSession: async () => sessionResult, findPurchases: async () => eligibility,
+      reviewedLines: async () => { if (!mine) throw new Error("down"); return mine.filter((review) => review.status !== "withdrawn").map((review) => review.lineId); } });
   expect(await access({ status: "unavailable" })).toEqual({ status: "unavailable" });
-  expect(await access({ status: "sign_in_required" })).toEqual({ status: "signed-out", signInUrl: reviewSignInUrl("/products/name-tag-shirt") });
-  expect(reviewSignInUrl("/products/name-tag-shirt")).toBe("/api/reviews/auth/start?returnTo=%2Fproducts%2Fname-tag-shirt%23reviews");
+  expect(await access({ status: "sign_in_required" })).toEqual({ status: "signed-out", signInUrl: reviewSignInUrl("/products/name-tag-shirt#reviews") });
+  expect(reviewSignInUrl("/products/name-tag-shirt#reviews")).toBe("/api/reviews/auth/start?returnTo=%2Fproducts%2Fname-tag-shirt%23reviews");
   expect(await access(signedIn, { status: "none" })).toEqual({ status: "no-purchase" });
   expect(await access(signedIn, { status: "unavailable" })).toEqual({ status: "unavailable" });
   expect(await access(signedIn)).toEqual({ status: "ready", buyer: { firstName: "Ryan", lastName: "Le" }, purchases: [{ lineId: "1", label: purchase.label }], defaultNameStyle: "first-initial", sample: false });
+  const reviewedLine = (status: BuyerReview["status"]) => ({ ...myReview, status });
+  expect(await access(signedIn, eligible, [reviewedLine("pending")])).toEqual({ status: "reviewed" });
+  expect(await access(signedIn, eligible, [reviewedLine("rejected")])).toEqual({ status: "reviewed" });
+  expect((await access(signedIn, eligible, [reviewedLine("withdrawn")])).status).toBe("ready");
+  expect(await access(signedIn, eligible, null)).toEqual({ status: "unavailable" });
 });
