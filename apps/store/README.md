@@ -13,6 +13,14 @@ npm run dev:store
 
 Copy `.env.example` to `.env.local` and add the development-store credentials. Without Shopify credentials, the app uses a small demo catalog and local cart; checkout and review submission remain disabled.
 
+### Tests
+
+```sh
+npm run test:e2e --workspace=@ryanmeetup/store
+```
+
+Playwright starts its own demo-catalog dev server on `localhost:3102` (override with `PLAYWRIGHT_PORT`) and builds into `.next-e2e`, so it runs beside `npm run dev:store` and never touches the live Shopify store in `.env.local`. To test a server you started yourself, such as a production build or a custom-reviews preview, set `STORE_BASE_URL`. Use `localhost` rather than `127.0.0.1`: Next's dev server refuses its scripts on `127.0.0.1`, so pages never become interactive. A few specs skip themselves unless the server is in the mode they need, such as connected to Shopify.
+
 ## Store support
 
 The `/contact` form uses `@ryanmeetup/contact` and the main Ryan Meetup site's
