@@ -60,6 +60,19 @@ select ok(not public.store_revoke_customer_session(repeat('1',64),'123','client'
 select is((select count(*) from public.store_get_customer_session(repeat('1',64),'123','client','https://shopify.com/authentication/123')),0::bigint,'revoked session cannot load');
 select ok(not public.store_rotate_customer_session(repeat('1',64),'123','client','https://shopify.com/authentication/123',2,'v1.test.'||repeat('d',48),now()+interval '4 hours'),'refresh cannot revive a revoked session');
 select ok((select encrypted_tokens is null from public.store_customer_sessions where session_hash=repeat('1',64)),'logout erases the token envelope');
+-- Support can end every session one buyer holds, and nothing else.
+insert into public.store_customer_sessions(session_hash,shop_id,client_id,issuer,subject,encrypted_tokens,access_expires_at,expires_at)
+values(repeat('2',64),'123','client','https://shopify.com/authentication/123','compromised','v1.test.'||repeat('a',48),now()+interval '1 hour',now()+interval '1 day'),
+  (repeat('3',64),'123','client','https://shopify.com/authentication/123','compromised','v1.test.'||repeat('a',48),now()+interval '1 hour',now()+interval '1 day'),
+  (repeat('4',64),'123','client','https://shopify.com/authentication/123','bystander','v1.test.'||repeat('a',48),now()+interval '1 hour',now()+interval '1 day'),
+  (repeat('5',64),'999','client','https://shopify.com/authentication/999','compromised','v1.test.'||repeat('a',48),now()+interval '1 hour',now()+interval '1 day');
+select is(public.store_revoke_customer_buyer_sessions('123','client','https://shopify.com/authentication/123','compromised'),2,'buyer-wide revocation ends every session that buyer holds');
+select ok((select bool_and(encrypted_tokens is null and revoked_at is not null and revision=1) from public.store_customer_sessions where session_hash in (repeat('2',64),repeat('3',64))),'each revoked session loses its tokens and bumps its revision');
+select ok((select encrypted_tokens is not null from public.store_customer_sessions where session_hash=repeat('4',64)),'another buyer stays signed in');
+select ok((select encrypted_tokens is not null from public.store_customer_sessions where session_hash=repeat('5',64)),'the same subject in another shop stays signed in');
+select is(public.store_revoke_customer_buyer_sessions('123','client','https://shopify.com/authentication/123','compromised'),0,'a retry has no additional effect');
+select ok(not has_function_privilege('anon','public.store_revoke_customer_buyer_sessions(text,text,text,text)','execute'),'anonymous clients cannot revoke buyer sessions');
+select ok(not has_function_privilege('authenticated','public.store_revoke_customer_buyer_sessions(text,text,text,text)','execute'),'Tasks members cannot revoke buyer sessions');
 select is((select count(*) from auth.users),0::bigint,'store identities create no Supabase Auth users');
 select is((select count(*) from public.profiles),0::bigint,'store identities create no Tasks profiles');
 

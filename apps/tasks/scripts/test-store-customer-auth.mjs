@@ -20,6 +20,7 @@ const database = "postgres";
 const migration = fileURLToPath(new URL("../supabase/migrations/20261120130000_store_customer_auth_storage.sql", import.meta.url));
 const reviewsMigration = fileURLToPath(new URL("../supabase/migrations/20261120140000_store_reviews.sql", import.meta.url));
 const buyerReviewsMigration = fileURLToPath(new URL("../supabase/migrations/20261120180000_store_buyer_reviews.sql", import.meta.url));
+const buyerSessionsMigration = fileURLToPath(new URL("../supabase/migrations/20261120190000_store_customer_session_revoke_buyer.sql", import.meta.url));
 
 function run(command, args, input, inherit = false) {
   const result = spawnSync(command, args, { cwd: appRoot, input, encoding: "utf8", stdio: inherit ? "inherit" : undefined, maxBuffer: 32 * 1024 * 1024 });
@@ -81,7 +82,7 @@ try {
   const applied = sql("select string_agg(version, ',' order by version) from supabase_migrations.schema_migrations");
   if (applied !== selected.map(({ version }) => version).join(",")) throw new Error("Reset history does not match the selected migration profile");
   if (target === "prd") {
-    const privateObjectsAbsent = sql("select to_regclass('public.store_customer_authorizations') is null and to_regclass('public.store_customer_sessions') is null and to_regclass('public.store_reviews') is null and not exists(select 1 from pg_proc where pronamespace='public'::regnamespace and proname like 'store_%review%') and not exists(select 1 from pg_proc where pronamespace='public'::regnamespace and proname in ('store_get_customer_authorization','store_consume_customer_authorization','store_get_customer_session','store_rotate_customer_session','store_revoke_customer_session'))");
+    const privateObjectsAbsent = sql("select to_regclass('public.store_customer_authorizations') is null and to_regclass('public.store_customer_sessions') is null and to_regclass('public.store_reviews') is null and not exists(select 1 from pg_proc where pronamespace='public'::regnamespace and proname like 'store_%review%') and not exists(select 1 from pg_proc where pronamespace='public'::regnamespace and proname in ('store_get_customer_authorization','store_consume_customer_authorization','store_get_customer_session','store_rotate_customer_session','store_revoke_customer_session','store_revoke_customer_buyer_sessions'))");
     if (privateObjectsAbsent !== "t") throw new Error("RMT-only store objects leaked into the PRD profile");
     run("supabase", ["test", "db", "--workdir", testRoot, join(appRoot, "supabase/tests/access_control.sql"), join(appRoot, "tests/database/guest-access.sql")], undefined, true);
     console.log("PASS: PRD profile resets and supports Tasks without store auth objects or synthetic history");
@@ -89,6 +90,7 @@ try {
     sql(readFileSync(migration, "utf8"));
     sql(readFileSync(reviewsMigration, "utf8"));
     sql(readFileSync(buyerReviewsMigration, "utf8"));
+    sql(readFileSync(buyerSessionsMigration, "utf8"));
     console.log("PASS: full migration reset and idempotent auth and review migration replay");
     run("supabase", ["test", "db", "--workdir", testRoot, join(appRoot, "tests/database/store-customer-auth.sql"), join(appRoot, "tests/database/store-reviews.sql"), join(appRoot, "tests/database/store-buyer-reviews.sql"), join(appRoot, "supabase/tests/access_control.sql")], undefined, true);
     const integration = spawnSync("npx", ["playwright", "test", "tests/customer-account-storage.spec.ts", "--workers=1"], {

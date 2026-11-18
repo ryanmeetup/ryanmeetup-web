@@ -140,6 +140,13 @@ with service-role access only. Authorization consumption retains a tombstone
 and erases its ciphertext; session revocation erases tokens and blocks stale
 refreshes through revision checks.
 
+To end every session one buyer holds (a compromised account or a support
+request), `20261120190000_store_customer_session_revoke_buyer.sql` adds
+`store_revoke_customer_buyer_sessions(shop_id, client_id, issuer, subject)`.
+Run it from the RMT SQL Editor; it returns how many sessions it ended and
+clears each one the same way a single sign-out does. It is RMT-only and is
+not yet reachable from any route.
+
 The migration is applied and verified on **RMT**. Both tables were empty after
 verification. This migration is **RMT-only**; PRD does not need it. The
 [previous PRD SQL handoff is superseded](../../tasks/docs/PRD_STORE_CUSTOMER_AUTH_SQL.md).
