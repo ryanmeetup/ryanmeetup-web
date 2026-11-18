@@ -213,8 +213,14 @@ refresh claim if that provider behavior requires serialization across workers.
 
 ## Remaining gate
 
-Implement expired-record cleanup. Prove a real buyer login and renewal
-through these routes and exact
+The [exact-line purchase checker](REVIEWS_PURCHASE_ELIGIBILITY.md) now uses
+this session loader and the pinned Customer API, with distinct eligible,
+ineligible, sign-in-required, and unavailable results. It is a private keyed
+checker; product-level order discovery and buyer-name adapters are still needed
+for the composer/submission hooks. Refund/edit chronology and live permission
+evidence remain outstanding.
+
+Implement expired-record cleanup. Prove a real buyer login, renewal, and
 order-line access after the confidential client is configured. Browser cookies
 must contain only opaque identifiers; verifiers and tokens remain server-side.
 Do not enable sign-in or collection before these paths are ready.

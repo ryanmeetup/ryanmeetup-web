@@ -4,6 +4,32 @@ This implements the private Customer Account API boundary for checking a
 selected order line. It does not open collection or prove the intended
 installation's buyer/order permissions. Judge.me remains the default.
 
+## Completed chunks and handoff
+
+| Commit | Change | Verification |
+| --- | --- | --- |
+| `24cb311e` | Public shop API discovery, pinned/validated buyer-token transport, and the fixed purchase query. | 5 transport checks and offline Shopify Customer schema validation passed. |
+| `c4dcaa0d` | Owned-order projection with independent bounded line/fulfillment pagination and exact fulfillment-line links. | 8 ownership/pagination checks passed. |
+| `0d47d4eb` | Private exact-line eligibility plus session checks before and after an eligible lookup. | 7 rule checks and 6 runtime checks passed. Together with existing auth/renewal checks: 71 passed. Changed-file ESLint, TypeScript, diff check, and storefront production build passed. |
+
+All buyer/provider data in these tests is synthetic. No migration, hosted
+database, client credential, enable flag, or provider default was changed by
+these purchase commits. Concurrent composer, submission, and buyer-management
+files were left with their owner. The shared `REVIEWS_HANDOFF.md` has active
+edits from that work; use this document for this checker's current handoff.
+
+Next small chunks: a product-level order/line discovery adapter for
+`findReviewablePurchases`, `findBuyerName`, and normalization into the numeric
+shared backend contract. Then connect those hooks, complete the live Shopify
+gate, and extend refund/edit evidence and child pagination as required.
+
+Repeat the focused checks from `apps/store`:
+
+```sh
+npx playwright test tests/customer-account-api.spec.ts tests/customer-purchase-reader.spec.ts tests/customer-purchase-eligibility.spec.ts tests/customer-purchase-runtime.spec.ts --workers=1
+npx tsc --noEmit
+```
+
 ## Customer API transport
 
 `lib/customer-account/api.ts` reads the canonical shop's public
