@@ -183,10 +183,38 @@ Shopify account session. It needs no discovery/token request and does not
 report success if backend revocation fails. No public session/token-read API
 or review-write access has been enabled.
 
+## Server-side session loading
+
+`runtime.ts::getCustomerAccountSession(request)` reads the opaque session
+cookie and returns `authenticated`, `sign_in_required`, or `unavailable`.
+The authenticated result contains private session/token data for server use;
+never put it in browser props or JSON. No session-read HTTP endpoint is added.
+The same custom-provider, explicit opt-in, and credential gates apply.
+
+Each load reads encrypted storage. Healthy access tokens require no Shopify
+discovery call. Within thirty seconds of access-token expiry, the loader
+rechecks the stored revision, requests renewal, saves through compare-and-swap,
+and rereads the committed encrypted result. It preserves buyer identity and
+absolute expiry. An expired or revoked session cannot be restored by renewal.
+
+Concurrent callers in one process share pending work for the same backend,
+shop/client/callback, and session. Only pending work is retained; sessions
+are never cached across requests. Every waiter rereads storage, including
+after a provider failure or an uncertain database response. A competing
+committed revision can win; uncommitted tokens are never returned. Missing
+sessions or definitive refresh rejection need sign-in, while storage/provider
+failures remain unavailable. No failure blindly revokes a concurrent winner.
+
+Separate workers can still make concurrent provider exchanges; there is no
+distributed refresh lock. Database CAS prevents overwrite/revival, but the
+intended client's rotation/reuse behavior and uncertain-exchange recovery
+still need live validation before enabling collection. Add a durable backend
+refresh claim if that provider behavior requires serialization across workers.
+
 ## Remaining gate
 
-Implement server-side session loading/renewal and expired-record cleanup.
-Prove a real buyer login through these routes and exact
+Implement expired-record cleanup. Prove a real buyer login and renewal
+through these routes and exact
 order-line access after the confidential client is configured. Browser cookies
 must contain only opaque identifiers; verifiers and tokens remain server-side.
 Do not enable sign-in or collection before these paths are ready.

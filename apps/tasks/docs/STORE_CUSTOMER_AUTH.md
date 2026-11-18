@@ -62,5 +62,7 @@ the existing atomic database functions. The backend does not decrypt tokens.
 This route is storage plumbing for the review sign-in flow. The storefront now
 composes it into opt-in start/callback and sign-out routes and verifies Shopify
 tokens there. This backend does not decrypt tokens or establish buyer identity.
-Session renewal, purchase eligibility, and review writes remain outstanding;
-collection stays closed. See [the storefront auth setup](../../store/docs/REVIEWS_SHOPIFY_AUTH.md).
+The storefront now also loads and renews sessions through the revision-based
+storage operation. Purchase eligibility, review writes, and live validation
+remain outstanding; collection stays closed. See
+[the storefront auth setup](../../store/docs/REVIEWS_SHOPIFY_AUTH.md).

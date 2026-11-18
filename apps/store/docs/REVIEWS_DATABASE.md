@@ -108,7 +108,8 @@ using the privileged database client. Publishing reviews exposes only approved p
 - Media ownership and processing/publication state; store the actual image
   files in object storage.
 - Server-managed Shopify sessions with the implemented encrypted token storage.
-  Session renewal remains outstanding. Staff identity and role checks remain
+  Session loading and renewal now use the scoped backend with revision checks.
+  Live client validation remains outstanding. Staff identity and role checks remain
   a separate authorization boundary.
 
 Do not mirror the order database or store shipping addresses and payment data.

@@ -7,16 +7,7 @@ import { POST as logout } from "../app/api/reviews/auth/logout/route";
 import { customerAuthorizationCookie } from "../lib/customer-account/authorization";
 import { customerSessionCookie } from "../lib/customer-account/sign-in";
 import { customerAuthBackendFixture } from "./fixtures/customer-auth-backend";
-import { customerAccountConfig as config, customerAccountMetadata as metadata } from "./fixtures/customer-account";
-
-const configuration = {
-  STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED: "true", REVIEWS_PROVIDER: "custom", VERCEL_ENV: "preview", REVIEWS_PREVIEW_ENABLED: "true",
-  SHOPIFY_STORE_DOMAIN: config.shopDomain, SHOPIFY_CUSTOMER_ACCOUNT_SHOP_ID: config.shopId,
-  SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_ID: config.clientId, SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_SECRET: config.clientSecret,
-  SHOPIFY_CUSTOMER_ACCOUNT_REDIRECT_URI: config.redirectUri, STORE_REVIEWS_BACKEND_URL: "https://backend.test",
-  STORE_REVIEWS_BACKEND_TOKEN: "t".repeat(43), STORE_CUSTOMER_ACCOUNT_ENCRYPTION_KEY_ID: "test",
-  STORE_CUSTOMER_ACCOUNT_ENCRYPTION_KEYS: JSON.stringify({ test: Buffer.alloc(32, 7).toString("base64url") }),
-};
+import { customerAccountConfig as config, customerAccountMetadata as metadata, customerAccountEnvironment as configuration } from "./fixtures/customer-account";
 const oldEnv = Object.fromEntries(Object.keys(configuration).map((key) => [key, process.env[key]]));
 const originalFetch = globalThis.fetch;
 let transport: ReturnType<typeof customerAuthBackendFixture>;
