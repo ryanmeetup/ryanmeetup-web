@@ -7,7 +7,7 @@ const review = {
   id: "3f1c2a4e-5b6d-4e7f-8a9b-0c1d2e3f4a5b", rating: 4, title: null, body: "Holding up well.", displayName: "Ryan L.",
   publishedAt: "2026-11-17T12:00:00.000Z", editedAt: null,
   item: { productId: "100", productTitle: "Name Tag Shirt", variantTitle: "Black / M" }, verifiedPurchase: true,
-  photos: [{ url: "https://cdn.example.test/a.webp", width: 800, height: 600 }], reply: null,
+  photos: [{ url: "https://judgeme.imgix.net/a.webp", width: 800, height: 600 }, { url: "https://cdn.example.test/b.webp", width: 800, height: 600 }], reply: null,
 };
 const page = { scope: { productIds: ["100"] }, summary: { count: 25, average: 4, distribution: { 1: 0, 2: 0, 3: 0, 4: 25, 5: 0 } }, reviews: [review], nextCursor: null };
 
@@ -59,11 +59,11 @@ test("unexpected, leaky, or failed responses become one generic error", async ()
   }
 });
 
-test("custom reads map a page to the storefront shape with complete totals", async () => {
+test("custom reads map a page to the storefront shape, keeping only renderable photo hosts", async () => {
   const backend = createReviewBackend({ origin: "https://backend.test", token, fetcher: transport({ data: page }).fetcher });
   expect(await getCustomReviews("gid://shopify/Product/100", backend)).toEqual({
     status: "available", averageRating: 4, count: 25,
-    reviews: [{ id: review.id, rating: 4, title: "", body: "Holding up well.", reviewerName: "Ryan L.", createdAt: review.publishedAt, verified: true, photoUrls: ["https://cdn.example.test/a.webp"] }],
+    reviews: [{ id: review.id, rating: 4, title: "", body: "Holding up well.", reviewerName: "Ryan L.", createdAt: review.publishedAt, verified: true, photoUrls: ["https://judgeme.imgix.net/a.webp"] }],
   });
 });
 
