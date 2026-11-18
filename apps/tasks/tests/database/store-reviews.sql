@@ -127,5 +127,79 @@ select is((select array_agg(action order by id) from public.store_review_events 
   'every buyer and staff action is recorded in order');
 select is((select note from public.store_review_events where action = 'hidden'), 'Contains a phone number', 'moderation notes are kept privately');
 
+-- --- authenticated owner moderation boundary --------------------------------------
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('00000000-0000-4000-8000-000000000901', 'review-owner@example.test', '{}'),
+  ('00000000-0000-4000-8000-000000000902', 'review-member@example.test', '{}'),
+  ('00000000-0000-4000-8000-000000000903', 'review-incomplete@example.test', '{}');
+set local session_replication_role = replica;
+update public.profiles set app_role = 'member', onboarding_completed = true
+where id in ('00000000-0000-4000-8000-000000000901', '00000000-0000-4000-8000-000000000902');
+update public.profiles set app_role = 'owner' where id in ('00000000-0000-4000-8000-000000000901', '00000000-0000-4000-8000-000000000903');
+set local session_replication_role = origin;
+create function pg_temp.moderate(review uuid, action text, revision uuid default null, note text default null, expected timestamptz default null)
+returns boolean language sql as $$
+  select public.store_moderate_review('00000000-0000-4000-8000-000000000901', '345', review,
+    coalesce(expected, (select updated_at from public.store_reviews where id = review)), action, revision, note);
+$$;
+create function pg_temp.queue(filter text default 'pending') returns setof jsonb language sql as $$
+  select * from public.store_review_moderation_page('00000000-0000-4000-8000-000000000901', '345', filter, 21);
+$$;
+grant select, insert, update on ids to service_role;
+set local role service_role;
+select lives_ok($$select public.store_require_review_owner('00000000-0000-4000-8000-000000000901')$$, 'the backend can use a current app owner');
+select throws_ok($$select public.store_require_review_owner('00000000-0000-4000-8000-000000000902')$$, '42501', null, 'a regular member cannot moderate');
+select throws_ok($$select public.store_require_review_owner('00000000-0000-4000-8000-000000000903')$$, '42501', null, 'an incomplete owner cannot moderate');
+select throws_ok($$select public.store_require_review_owner(null)$$, '42501', null, 'a missing actor cannot moderate');
+select throws_ok($$select * from public.store_review_moderation_page('00000000-0000-4000-8000-000000000902', '345', 'pending', 21)$$, '42501', null, 'private queue reads also recheck the actor');
+insert into ids select 'mod-low', review_id from pg_temp.submit('801', rating => 1::smallint, shop => '345');
+insert into ids select 'mod-high', review_id from pg_temp.submit('802', shop => '345');
+update public.store_reviews set created_at = now() - interval '1 day' where id = (select id from ids where name = 'mod-low');
+select is((select count(*) from pg_temp.queue()), 2::bigint, 'the queue includes low and high ratings');
+select is((select r->>'id' from pg_temp.queue() r limit 1), (select id::text from ids where name = 'mod-low'), 'oldest first, independent of rating');
+select is((select count(*) from public.store_review_moderation_page('00000000-0000-4000-8000-000000000901', '999', 'all', 21)), 0::bigint, 'staff reads pin the shop');
+select ok((select bool_and(r::text !~ 'customer_subject|buyer-a|order_id|9000') from pg_temp.queue() r), 'staff queue omits order and buyer identity');
+select is((select count(*) from public.store_review_moderation_page('00000000-0000-4000-8000-000000000901', '345', 'all', 21,
+  (select created_at from public.store_reviews where id = (select id from ids where name = 'mod-low')), (select id from ids where name = 'mod-low'))), 1::bigint, 'keyset paging excludes the cursor and retains the next row');
+select ok(not pg_temp.moderate((select id from ids where name = 'mod-low'), 'approve', pg_temp.pending((select id from ids where name = 'mod-high'))), 'a revision from another review cannot be approved');
+select ok(not pg_temp.moderate((select id from ids where name = 'mod-low'), 'approve', pg_temp.pending((select id from ids where name = 'mod-low')), expected => now() - interval '1 day'), 'a stale review version is refused');
+select throws_ok($$select pg_temp.moderate((select id from ids where name = 'mod-low'), 'reject', pg_temp.pending((select id from ids where name = 'mod-low')))$$, '22023', null, 'rejection requires a private reason');
+select ok(pg_temp.moderate((select id from ids where name = 'mod-low'), 'approve', pg_temp.pending((select id from ids where name = 'mod-low'))), 'an owner publishes a one-star review');
+select is((public.store_review_summary('345', array['100'])->>'average'), '1', 'the published low rating contributes to totals');
+select is((select count(*) from pg_temp.queue('published')), 1::bigint, 'published filter shows the live review');
+select is(public.store_edit_review((select id from ids where name = 'mod-low'), '345', 'buyer-a', 2::smallint, null, 'Updated low rating.', 'anonymous', 'Anonymous'), 'pending', 'a buyer edits a published review');
+insert into ids select 'mod-old-pending', pg_temp.pending(id) from ids where name = 'mod-low';
+select public.store_edit_review((select id from ids where name = 'mod-low'), '345', 'buyer-a', 3::smallint, null, 'Latest edit.', 'anonymous', 'Anonymous');
+select ok(not pg_temp.moderate((select id from ids where name = 'mod-low'), 'approve', (select id from ids where name = 'mod-old-pending')), 'a replaced pending revision is refused even with a current review version');
+select is((select r->'published'->>'rating' from pg_temp.queue() r where r->>'id'=(select id::text from ids where name='mod-low')), '1', 'the queue distinguishes public content from a waiting edit');
+select ok(pg_temp.moderate((select id from ids where name = 'mod-low'), 'reject', pg_temp.pending((select id from ids where name = 'mod-low')), 'Contains private information'), 'an owner rejects the edit with a reason');
+select is((public.store_review_summary('345', array['100'])->>'average'), '1', 'rejecting an edit keeps the approved rating');
+select throws_ok($$select pg_temp.moderate((select id from ids where name = 'mod-low'), 'hide')$$, '22023', null, 'hiding requires a reason');
+select ok(pg_temp.moderate((select id from ids where name = 'mod-low'), 'hide', note => 'Private information'), 'an owner hides the published review');
+select is((public.store_review_summary('345', array['100'])->>'count'), '0', 'hidden reviews leave public totals immediately');
+select is((select count(*) from pg_temp.queue('hidden')), 1::bigint, 'hidden reviews remain available to staff');
+select ok(pg_temp.moderate((select id from ids where name = 'mod-low'), 'restore'), 'an owner restores the review');
+select is((public.store_review_summary('345', array['100'])->>'count'), '1', 'restoring returns the public rating');
+select ok(not pg_temp.moderate((select id from ids where name = 'mod-low'), 'restore'), 'a repeated restore makes no second event');
+select ok((select bool_and(actor = '00000000-0000-4000-8000-000000000901') from public.store_review_events
+  where review_id = (select id from ids where name = 'mod-low') and actor_kind = 'staff'), 'staff audit actors come from the verified Tasks identity');
+select ok((select exists(select 1 from pg_temp.queue('all') r, jsonb_array_elements(r->'recentEvents') e
+  where r->>'id'=(select id::text from ids where name='mod-low') and e->>'note'='Private information')), 'staff see private reasons in recent history');
+select ok((select bool_and(r::text !~ 'Private information|00000000-0000-4000-8000-000000000901') from public.store_public_reviews('345', array['100'], 50) r), 'public reads contain no staff identity or reason');
+select public.store_withdraw_review((select id from ids where name = 'mod-low'), '345', 'buyer-a');
+select ok(not pg_temp.moderate((select id from ids where name = 'mod-low'), 'restore'), 'staff cannot restore buyer-withdrawn reviews');
+
+-- A failed required audit insert rolls the decision back, including its token.
+set local role postgres;
+create function pg_temp.fail_moderation_audit() returns trigger language plpgsql as $$
+  begin if new.note = 'simulate audit failure' then raise exception 'audit unavailable'; end if; return new; end;
+$$;
+create trigger test_moderation_audit_failure before insert on public.store_review_events for each row execute function pg_temp.fail_moderation_audit();
+set local role service_role;
+select throws_ok($$select pg_temp.moderate((select id from ids where name = 'mod-high'), 'reject', pg_temp.pending((select id from ids where name = 'mod-high')), 'simulate audit failure')$$, 'P0001', 'audit unavailable', 'audit failure refuses the whole moderation transaction');
+select ok(pg_temp.pending((select id from ids where name = 'mod-high')) is not null, 'failed audit leaves the pending revision intact');
+select is((select count(*) from public.store_review_events where review_id=(select id from ids where name='mod-high') and actor_kind='staff'), 0::bigint, 'failed audit leaves no partial staff history');
+set local role postgres;
+
 select * from finish();
 rollback;

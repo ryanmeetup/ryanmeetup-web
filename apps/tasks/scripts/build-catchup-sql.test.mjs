@@ -68,13 +68,14 @@ test("malformed history and ambiguous target names cannot generate SQL", () => {
   assert.throws(() => buildCatchupSql("20261101000000", { target: "production", catalog }), /rmt or prd/);
 });
 
-test("real PRD history excludes the applied RMT store migration", () => {
+test("real PRD history excludes every registered RMT extension", () => {
   const real = readMigrationCatalog();
   const held = selectMigrations(real, "prd").map(({ version }) => version).join(",");
   assert.equal(buildCatchupSql(held, { catalog: real }).pending.length, 0);
   const rmt = buildCatchupSql(held, { target: "rmt", catalog: real });
-  assert.deepEqual(rmt.pending.map(({ version }) => version), ["20261120130000"]);
+  assert.deepEqual(rmt.pending.map(({ version }) => version), real.filter(({ scope }) => scope === "rmt").map(({ version }) => version));
   assert.ok(rmt.sql.includes("create table if not exists public.store_customer_sessions"));
+  assert.ok(rmt.sql.includes("create or replace function public.store_moderate_review"));
 });
 
 test("the CLI defaults to PRD and replaces a stale output with a harmless no-op", (t) => {
