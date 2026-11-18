@@ -1,12 +1,12 @@
 import { validateEmail } from "@ryanmeetup/utils";
 import { getJudgeMeShopDomain } from "@/lib/judgeme";
-import { resolveReviewProvider, reviewPreviewCookie } from "@/lib/review-provider";
+import { resolveRequestReviewProvider } from "@/lib/review-provider";
 import { getCustomerAccountSession } from "@/lib/customer-account/runtime";
 import { submitCustomReview } from "@/lib/custom-review-submission";
 import { getReviewBackend } from "@/lib/review-backend";
 import { numericProductId } from "@/lib/custom-reviews";
 import { findReviewablePurchases } from "@/lib/review-purchases";
-import { hasJsonBody, isSameOriginRequest, privateJson, readCookie, readJsonObject } from "@/lib/request-guard";
+import { hasJsonBody, isSameOriginRequest, privateJson, readJsonObject } from "@/lib/request-guard";
 
 const fail = (error: string, status: number) => privateJson(status, { error });
 
@@ -22,7 +22,7 @@ function text(value: unknown, max: number) {
  * storefront's own pages may submit, so the route is not an open relay.
  */
 export async function POST(request: Request) {
-  const provider = resolveReviewProvider(readCookie(request, reviewPreviewCookie));
+  const provider = resolveRequestReviewProvider(request);
   if (provider === "custom") {
     return submitCustomReview(request, { loadSession: () => getCustomerAccountSession(request), findPurchases: findReviewablePurchases, backend: getReviewBackend() });
   }

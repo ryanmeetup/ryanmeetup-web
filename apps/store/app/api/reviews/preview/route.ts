@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { isReviewPreviewEnabled, parseReviewPreviewChoice, reviewPreviewCookie } from "@/lib/review-provider";
+import { isReviewPreviewEnabled, parseReviewPreviewChoice, requestHost, reviewPreviewCookie } from "@/lib/review-provider";
 import { hasJsonBody, isSameOriginRequest, privateHeaders, readJsonObject, requestOrigin } from "@/lib/request-guard";
 
 const fail = (status: number, body: { error: string }) => NextResponse.json(body, { status, headers: privateHeaders });
 
-/** A browser preference for development/preview, never a production setting. */
+/** A browser preference for localhost testing, never a deployed setting. */
 export async function POST(request: Request) {
-  if (!isReviewPreviewEnabled()) return fail(404, { error: "Review testing is not enabled here." });
+  if (!isReviewPreviewEnabled(requestHost(request))) return fail(404, { error: "Review testing is not enabled here." });
   if (!isSameOriginRequest(request)) return fail(403, { error: "Change review mode from this storefront." });
   if (!hasJsonBody(request)) return fail(415, { error: "Choose a review mode." });
   const choice = parseReviewPreviewChoice((await readJsonObject(request))?.provider);

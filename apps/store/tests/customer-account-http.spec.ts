@@ -147,11 +147,9 @@ test("Judge.me mode and missing configuration keep sign-in closed before any net
   expect(requests).toEqual([]);
 });
 
-test("the browser switch enables custom sign-in in Preview and cannot override Vercel Production", async () => {
+test("the browser switch cannot enable custom sign-in on a deployed host", async () => {
   process.env.REVIEWS_PROVIDER = "judgeme";
-  await begin({ cookie: "store-review-preview=custom" });
-  requests = [];
-  process.env.VERCEL_ENV = "production";
+  // Review testing is localhost-only, so a deployed storefront ignores the preference.
   expect((await start(new Request("https://store.test/api/reviews/auth/start", { headers: { cookie: "store-review-preview=custom" } }))).status).toBe(503);
   expect(requests).toEqual([]);
 });

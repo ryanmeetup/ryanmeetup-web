@@ -1,5 +1,5 @@
 import { readCookie } from "../request-guard";
-import { resolveReviewProvider, reviewPreviewCookie } from "../review-provider";
+import { resolveRequestReviewProvider } from "../review-provider";
 import { customerAccountIssuer, getCustomerAccountConfiguration } from "./config";
 import { discoverCustomerAccountEndpoints } from "./discovery";
 import { getCustomerAccountEncryptionKeys } from "./secrets";
@@ -26,7 +26,7 @@ export function getCustomerAccountPersistence({ logout = false } = {}) {
 
 /** Compose server credentials at request time; absent dependencies stay closed. */
 export function getCustomerAccountStorageService(request: Request, { logout = false } = {}) {
-  if (!logout && resolveReviewProvider(readCookie(request, reviewPreviewCookie)) !== "custom") return null;
+  if (!logout && resolveRequestReviewProvider(request) !== "custom") return null;
   return getCustomerAccountPersistence({ logout });
 }
 

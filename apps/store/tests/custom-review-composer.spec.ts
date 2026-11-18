@@ -10,10 +10,11 @@ test.describe("sample buyer preview choice", () => {
     expect(parseReviewPreviewChoice("custom-sample")).toBe("custom-sample");
     process.env.REVIEWS_PROVIDER = "judgeme";
     process.env.REVIEWS_PREVIEW_ENABLED = "true";
-    delete process.env.VERCEL_ENV;
-    expect(resolveReviewProvider("custom-sample")).toBe("custom");
-    process.env.VERCEL_ENV = "production";
-    expect(resolveReviewProvider("custom-sample")).toBe("judgeme");
+    delete process.env.VERCEL;
+    expect(resolveReviewProvider("custom-sample", "localhost:3102")).toBe("custom");
+    expect(resolveReviewProvider("custom-sample", "store.ryanmeetup.com")).toBe("judgeme");
+    process.env.VERCEL = "1";
+    expect(resolveReviewProvider("custom-sample", "localhost:3102")).toBe("judgeme");
   });
 });
 

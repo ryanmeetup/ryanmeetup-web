@@ -304,10 +304,11 @@ The **Review mode** dropdown above each product's review section lets you test
 both providers in one browser without restarting or redeploying:
 
 - Local `next dev`: the control appears automatically.
-- Vercel Preview: set server-only `REVIEWS_PREVIEW_ENABLED=true` and create a
-  fresh deployment to enable the control.
-- Vercel Production: the control and its endpoint are disabled, and browser
-  preferences are ignored even if the preview flag is accidentally enabled.
+- A local production build (`next start`): set `REVIEWS_PREVIEW_ENABLED=true`.
+- Everywhere else, the control, its endpoint, and the preference cookie are
+  off. It only answers requests addressed to `localhost`, `127.0.0.1`, or
+  `[::1]`, and never on a Vercel deployment (Preview included), even if the
+  flag is set or a request claims a localhost Host header.
 
 Choose **Judge.me**, **Custom reviews**, or **Environment default**. Your
 selection lasts one day in that browser, follows product navigation and

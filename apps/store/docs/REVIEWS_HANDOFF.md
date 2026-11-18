@@ -125,12 +125,12 @@ database. The old PRD store-auth SQL document now contains a superseded notice.
   independently if desired; custom full-scope totals must not copy that design.
 
 The **Review mode** dropdown above product reviews appears automatically in
-`next dev`. Enable it in Vercel Preview with `REVIEWS_PREVIEW_ENABLED=true`
-and a fresh deployment. Choose Judge.me, Custom reviews, or Environment
+`next dev`, and in a local production build with `REVIEWS_PREVIEW_ENABLED=true`.
+It is localhost-only: requests must be addressed to a loopback host, and no
+Vercel deployment honors it. Choose Judge.me, Custom reviews, or Environment
 default; selection refreshes the page's server data and persists across reloads
 and product navigation without changing other browsers. Environment default
-removes the preference. Vercel Production disables the UI and endpoint even if
-the preview flag is set. `REVIEWS_PROVIDER` remains the environment default.
+removes the preference. `REVIEWS_PROVIDER` remains the environment default.
 Keep Production on `judgeme`. This switch does not turn off Judge.me's hosted
 extensions or emails. It is not yet a rollback strategy once custom reviews
 are being collected. The rebuild plan owns that cutover procedure.
