@@ -273,5 +273,28 @@ select is(pg_temp.staff_v2((select id from ids where name='reply-fail'))->'reply
 select is((select updated_at from public.store_reviews where id=(select id from ids where name='reply-fail')),(select version from reply_versions where name='before-failure'),'failed audited writes preserve the original concurrency token');
 set local role postgres;
 
+-- --- reviews without a matching order ---------------------------------------------
+create function pg_temp.unverified(subject text default 'buyer-u', product text default '700', shop text default '345')
+returns table (review_id uuid, outcome text) language sql as $$
+  select * from public.store_submit_review(shop, subject, null, null, product, null, 'Ryan Hat', null, 4::smallint, 'Nice hat', 'Fits fine.', 'first-initial', 'Ryan U.');
+$$;
+insert into ids select 'unverified', review_id from pg_temp.unverified();
+select is((select outcome from pg_temp.unverified()), 'exists', 'one unverified review per buyer and product');
+select is((select count(*) from public.store_reviews where customer_subject = 'buyer-u'), 1::bigint, 'a retry adds no second unverified review');
+select is((select outcome from pg_temp.unverified(product => '701')), 'created', 'the same buyer can review another product');
+select is((select outcome from pg_temp.unverified('buyer-v')), 'created', 'another buyer can review the same product');
+select is((select order_id is null and line_id is null and variant_id is null from public.store_reviews where id = (select id from ids where name = 'unverified')), true, 'an unverified review stores no order details');
+select throws_ok($$select * from public.store_submit_review('345', 'buyer-u', '9000', null, '700', null, 'Ryan Hat', null, 4::smallint, 'T', 'B', 'full', 'Ryan')$$, '22023', null, 'an order without a line is refused');
+select throws_ok($$insert into public.store_reviews (shop_id, customer_subject, order_id, line_id, product_id, product_title) values ('345', 'x', null, '5', '700', 'Hat')$$, '23514', null, 'the table refuses half an order reference');
+select is(array(select public.store_buyer_reviewed_products('345', 'buyer-u', array['700', '701', '702'])), array['700', '701'], 'the composer can see which products were already reviewed without an order');
+select ok(public.store_decide_review_revision(pg_temp.pending((select id from ids where name = 'unverified')), '345', true, 'staff@ryanmeetup.com'), 'staff approve an unverified review like any other');
+select is((select (r ->> 'verifiedPurchase')::boolean from public.store_public_reviews('345', array['700'], 1) r), false, 'a published unverified review is not marked verified');
+select is((select (r ->> 'verifiedPurchase')::boolean from public.store_public_reviews('123', array['100'], 50) r limit 1), true, 'a review with a checked order is still verified');
+select is((select (r ->> 'verifiedPurchase')::boolean from public.store_review_moderation_page_v3('00000000-0000-4000-8000-000000000901', '345', 'all', 51) r where r ->> 'id' = (select id from ids where name = 'unverified')::text), false, 'staff see which reviews have no matching order');
+select ok(public.store_withdraw_review((select id from ids where name = 'unverified'), '345', 'buyer-u'), 'the buyer can withdraw it');
+select is(array(select public.store_buyer_reviewed_products('345', 'buyer-u', array['700'])), array[]::text[], 'a withdrawn review no longer counts');
+select is((select outcome from pg_temp.unverified()), 'resubmitted', 'and can write it again');
+select throws_ok($$select * from public.store_review_moderation_page_v3('00000000-0000-4000-8000-000000000902', '345', 'all', 20)$$, '42501', null, 'v3 staff reads recheck the owner');
+
 select * from finish();
 rollback;
