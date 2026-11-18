@@ -36,7 +36,7 @@ test.afterEach(() => {
 function submit() {
   return POST(new Request("https://store.test/api/reviews", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", Origin: "https://store.test" },
     body: JSON.stringify({ productId: "gid://shopify/Product/123", rating: 5, body: "Great gear.", name: "Ryan", email: "ryan@example.com" }),
   }));
 }
