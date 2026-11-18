@@ -16,7 +16,8 @@ credentials or billing settings changed.
 Buyer sign-in now has a private backend, encrypted persistence, verified token
 exchange, and gated HTTP start/callback/sign-out routes. Runtime credentials
 and the explicit opt-in remain unconfigured, and no live buyer login has been
-proved. Session loading/renewal and exact-line purchase access are next. See
+proved. Server-side session loading and renewal are now implemented; exact-line
+purchase access and expired-record cleanup are next. See
 [the Shopify auth setup and boundary](REVIEWS_SHOPIFY_AUTH.md).
 
 ## Completed chunks
@@ -40,6 +41,9 @@ proved. Session loading/renewal and exact-line purchase access are next. See
 | `c74426c4` | Connect encrypted flow/session persistence from the store using a separate scoped service credential. | 6 client/storage checks passed, including tampering, wrong keys/scope, invalid proofs, lost refresh races, and logout conflicts. No Supabase secret enters the storefront. |
 | `7e5c9e33` | Exchange confidential-client codes and verify RS256 ID tokens with `jose`, including issuer, audience, nonce, expiry, authorized party, and optional access-token hash. | 6 crypto checks with actual RSA-signed synthetic tokens passed, including wrong signatures/claims and malformed subject types. Public discovery advertises RS256. No live buyer token used. |
 | `9332175c` | Add opt-in sign-in start/callback and same-origin review-session sign-out; persist before redirects/session cookies and consume attempts before exchange. | 12 route/lifecycle checks passed, including concurrent callbacks, denial, backend failure, proxy host, and browser provider mode. Combined 74 focused storefront checks passed; final crypto/route rerun: 18 passed. Store production build, TypeScript, changed-file ESLint, and diff check passed. |
+| `44a7602f` | Add confidential refresh-token exchange, optional refreshed-ID verification, stable original identity, and a distinct definitive refresh rejection. | 7 refresh checks passed with real RSA-signed synthetic tokens; existing exchange and sign-in checks still pass. No private source was submitted to an external validator. |
+| `7f8bb197` | Load sessions with early renewal, pending-work coalescing, CAS persistence, and a fresh authoritative read after every renewal outcome. | 15 session checks cover concurrent callers, different scopes/backends, logout, cross-worker winners, uncertain write responses, immutable identity/lifetime, and expiry during exchange. |
+| `2191f773` | Compose private cookie/session loading into the existing runtime, with discovery deferred until renewal is needed. | 5 runtime checks exercise actual encryption/transport parsing against synthetic storage/provider responses. Combined 45 focused auth/renewal checks, TypeScript, changed-file ESLint, diff check, and Store production build passed. No schema, hosted database, deployment, credential, or provider setting changed. |
 
 The final type-only tightening of `ReviewsData` was checked with `tsc --noEmit`
 after the successful production build. Both themes were browser-tested at 390,
@@ -130,7 +134,7 @@ Keep Production on `judgeme`. This switch does not turn off Judge.me's hosted
 extensions or emails. It is not yet a rollback strategy once custom reviews
 are being collected. The rebuild plan owns that cutover procedure.
 
-## Next gate: renew sessions and prove Shopify purchase access
+## Next gate: prove Shopify purchase access
 
 The repository now validates explicit Customer Account client configuration,
 discovers authentication endpoints, and prepares/validates authorization
@@ -141,7 +145,20 @@ exchange codes, verify signed identity/nonce, and persist an encrypted session.
 Review-session sign-out revokes that session independently of Shopify logout.
 These routes require custom mode plus `STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED=true`
 and complete server configuration. They do not enable review submissions.
-Server-side session loading/renewal and expired-record cleanup remain outstanding.
+`getCustomerAccountSession(request)` now returns a private server result:
+`authenticated`, `sign_in_required`, or `unavailable`. It reads encrypted storage,
+renews near-expiry access through CAS, and never returns uncommitted renewal
+tokens. Healthy sessions need no Shopify discovery call. Do not serialize the
+authenticated session or tokens into browser props/JSON. Expired-record cleanup
+remains outstanding.
+
+Pending refresh work is shared within one process, scoped to backend and
+shop/client/callback/session. Separate workers can still exchange concurrently;
+CAS protects the database, while the intended provider's rotation/reuse and
+uncertain-exchange behavior still need live validation. Add a durable refresh
+claim if that behavior requires serialization across workers. A failure never
+blindly revokes a possible concurrent winner or retries a token exchange within
+the same request; any returned identity comes from a fresh stored revision.
 
 Public discovery was read successfully from
 `ryan-meetup-store.myshopify.com` on November 17, 2026. Its issuer matched
@@ -210,17 +227,17 @@ checks. Future GraphQL operations still need schema validation.
 Keep each item an independently verified Conventional Commit. Start with the
 Shopify gate above; record its result before implementation depends on it.
 
-1. **Customer sessions, remaining:** add a server-side loader that distinguishes
-   missing/sign-in-required from provider/storage failure. Check access-token
-   expiry before Shopify requests. Implement refresh through the existing
-   compare-and-swap storage operation; preserve subject and absolute expiry,
-   handle optional refreshed ID tokens correctly, and never revive revoked
-   sessions or reuse an unsafe refresh result after a lost race. Add expired
-   record cleanup separately. Real login still needs the confidential client,
-   isolated backend, keyring, and explicit opt-in from the setup document.
-2. **Exact-line eligibility:** normalize proven Shopify fields and handle the
-   edge cases above; recheck ownership and eligibility on every write. Hand
-   off typed eligible/ineligible/sign-in-required/unavailable results.
+1. **Live customer/session gate:** provision the intended confidential client
+   and isolated backend, configure the keyring and explicit opt-in, then prove
+   buyer login, renewal, and provider rotation/reuse behavior. Do not substitute
+   the synthetic tests for that evidence. Expired-record cleanup is a separate
+   small backend chunk.
+2. **Exact-line eligibility:** use `getCustomerAccountSession(request)` before
+   Customer Account queries; preserve sign-in-required versus unavailable.
+   Normalize proven Shopify fields and handle the edge cases above; recheck
+   ownership and eligibility on every write. Hand off typed
+   eligible/ineligible/sign-in-required/unavailable results. Do not modify the
+   other agent's composer/sample-buyer work without coordinating.
 3. **Review storage baseline:** add store-owned tables/buckets to the existing
    **RMT** shared backend through the scoped backend interface, with isolated
    Preview data, shop/order/line uniqueness, approved/pending revisions, and
@@ -256,7 +273,7 @@ or change the production provider as part of one of the preparatory chunks.
 Run from `apps/store` unless noted. Unit/data tests do not need a server:
 
 ```sh
-npx playwright test tests/customer-account-config.spec.ts tests/customer-account-authorization.spec.ts tests/customer-account-secrets.spec.ts tests/customer-account-backend.spec.ts tests/customer-account-tokens.spec.ts tests/customer-account-http.spec.ts tests/reviews-data.spec.ts tests/judgeme-domain.spec.ts tests/review-collection.spec.ts tests/reviews-api.spec.ts tests/review-provider.spec.ts tests/review-preview-api.spec.ts
+npx playwright test tests/customer-account-config.spec.ts tests/customer-account-authorization.spec.ts tests/customer-account-secrets.spec.ts tests/customer-account-backend.spec.ts tests/customer-account-tokens.spec.ts tests/customer-account-refresh.spec.ts tests/customer-account-session.spec.ts tests/customer-account-session-runtime.spec.ts tests/customer-account-http.spec.ts tests/reviews-data.spec.ts tests/judgeme-domain.spec.ts tests/review-collection.spec.ts tests/reviews-api.spec.ts tests/review-provider.spec.ts tests/review-preview-api.spec.ts
 npx tsc --noEmit
 git diff --check
 ```
