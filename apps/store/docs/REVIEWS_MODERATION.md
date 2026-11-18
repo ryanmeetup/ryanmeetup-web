@@ -1,7 +1,8 @@
 # Review moderation handoff
 
 Updated November 18, 2026. The private moderation database boundary, Tasks API,
-and owner-facing queue at **Admin → Store reviews** are implemented.
+and owner-facing queue at **Admin → Store reviews** are implemented, including
+official public replies.
 Judge.me remains the storefront default and the browser testing switch is
 unchanged. No application deployment or collection flag was changed here.
 
@@ -17,11 +18,17 @@ unchanged. No application deployment or collection flag was changed here.
   confirmation dialogs, private history, page-access tests, and release note.
 - `45e2c3df` — isolated browser fixture, 13 interaction/layout scenarios, and
   the `test:e2e:reviews` script wired into Tasks CI.
+- `ef819f54` — owner-checked official reply transaction and compatible v2 staff
+  projection, with database checks.
+- `d131ab48` — private reply PATCH endpoint and shared reply-text normalization.
+- `98f11a16` — reply editor, exact public preview, removal confirmation, and
+  browser coverage (the suite now has 17 scenarios).
 
 The screen requires an existing Tasks app-owner session, checks ownership before
 loading review data, and redirects demo preview away. An unconfigured backend
 (including PRD) shows an explicit unavailable state without constructing a
-review admin client. No SQL or environment changes were needed for the screen.
+review admin client. The original queue needed no additional SQL; reply controls
+use the RMT-only migration below. No environment values were changed.
 
 The initial queue loads in the Server Component; subsequent filtering, paging,
 and refresh use the owner-only API. Confirmations show the exact revision being
@@ -33,13 +40,14 @@ acknowledgement never triggers a blind retry. A confirmed save whose reload
 fails is reported as saved, with further decisions blocked until a fresh read.
 
 UI ownership is split between the admin page client and
-`apps/tasks/components/store-reviews/{ReviewModerationQueue,ReviewModerationCard,ReviewModerationDialog,useReviewModeration}`.
+`apps/tasks/components/store-reviews/{ReviewModerationQueue,ReviewModerationCard,ReviewModerationDialog,ReviewReplyDialog,useReviewModeration}`.
 The initial server projection lives in
 `apps/tasks/lib/server/store-reviews/moderation-screen.ts`.
 
-The SQL is committed at
-`apps/tasks/supabase/migrations/20261120160000_store_review_moderation.sql` and
-registered as RMT-only. It builds on the existing review-content migration
+The SQL is committed in `20261120160000_store_review_moderation.sql` and
+`20261120170000_store_review_replies.sql` under
+`apps/tasks/supabase/migrations`, both registered as RMT-only. They build on the
+existing review-content migration
 `20261120140000`; it has no dependency on the unfinished buyer-list migration.
 
 ## API and behavior
@@ -62,7 +70,8 @@ query keys, duplicate parameters, or partial cursors are accepted.
 
 Each row has the product/variant snapshot, state, exact `createdAt`/`updatedAt`,
 separate `pending` and `published` revisions, its `latest` revision, and up to
-ten recent audit events. Order IDs and customer subjects are omitted. Buyer
+ten recent audit events. It also includes a nullable `reply` with its body and
+exact `publishedAt`/`updatedAt` timestamps. Order IDs and customer subjects are omitted. Buyer
 event actors are null. Staff identities and reasons stay private. The complete
 history remains in the existing private revision/event tables; there is no
 full-history browser endpoint yet.
@@ -102,6 +111,33 @@ Request validation/types live in
 `apps/tasks/lib/store-reviews/moderation.ts`. The server projection/operations
 live in `apps/tasks/lib/server/store-reviews/moderation.ts`.
 
+### Official reply writes
+
+`PATCH /api/admin/reviews` accepts exactly `reviewId`, `expectedUpdatedAt`, and
+`body`. A nonempty string sets/updates the public reply; only an explicit null
+removes it. Empty strings, missing bodies, and caller-provided authors/shops are
+refused. The shared `reviewReplyBodySchema` normalizes whitespace, line endings,
+control characters, and Unicode before checking the 2,000-character limit.
+
+The editor previews that exact normalized text before sending it. Unchanged
+replies cannot be resaved. Only reviews with an approved revision can receive
+a reply; withdrawn reviews refuse writes. Preparing or changing a hidden reply
+never restores the review. Edits preserve the reply's first published date.
+
+`store_save_review_reply` rechecks the owner and exact review version, takes the
+review row lock, delegates the reply/audit write to the canonical private
+function, and advances the review's timestamp atomically. A failed audit rolls
+back reply creation, replacement, or deletion. Reply changes also invalidate
+stale publication decisions. The audit records actors/actions/times; prior
+reply bodies are not kept as separate revisions.
+
+`store_review_moderation_page_v2` reads the review version, reply, revisions, and
+events from one statement snapshot. The original v1 function is unchanged so
+older deployed strict response parsers keep working. Current staff code uses
+v2. The public storefront reply projection remains only body/published date;
+it never exposes staff identifiers or private concurrency fields. Neither reply
+writes nor staff reads are exposed through the storefront service bearer.
+
 ## Database rollout
 
 The moderation migration was applied to RMT (`lvfaartgcpphuokoswcm`) after an
@@ -116,6 +152,12 @@ can read the queue, a missing actor is denied with 42501, and a decision against
 a nonexistent review returns false. Verification created no buyer, review, or
 audit data and changed no review content.
 
+The reply extension `20261120170000` was also applied to RMT from a committed
+snapshot whose dry run selected only that migration. Its post-push linked diff
+reported no schema changes. Live checks confirmed the v2 owner read works and
+missing-review/actor reply writes are refused, without creating or changing any
+review, reply, buyer, or audit content. PRD needs no SQL for this extension.
+
 The uncommitted `20261120150000_store_buyer_reviews.sql` and its scope entry are
 preserved in the worktree and were deliberately **not applied**. RMT therefore
 has a deliberate history gap at that version. When its owner finishes and
@@ -129,6 +171,22 @@ functions, tables, and synthetic migration-history records. Do not apply store
 extensions or RMT credentials to PRD.
 
 ## Validation
+
+Official reply checkpoint:
+
+- All 17 browser scenarios passed, including the previous moderation flows,
+  exact normalized public preview, create/edit/remove, unchanged and oversized
+  input, literal HTML rendering, hidden replies, stale editors, and lost reply
+  acknowledgements. Reply editor/preview screenshots were inspected in both
+  themes; checks cover 390/1024/1280/1536 widths.
+- All 19 focused unit/API tests passed, including pinned owner/shop, exact
+  timestamps, explicit-null removal, Unicode limits, and private failures.
+- RMT's isolated runner passed 231 pgTAP assertions plus the existing encrypted
+  storage and callback/logout race checks. PRD passed 65 access checks and
+  excluded every store extension. All 16 migration-planner checks passed.
+- Changed-file ESLint, Tasks TypeScript, and `git diff --check` passed. Normal
+  Tasks and storefront production builds passed; the Tasks build retained its
+  real database contract check. Browser checks use only the synthetic fixture.
 
 Screen checkpoint:
 
@@ -171,18 +229,17 @@ Tasks local stack or use a second loopback database URL as supposed isolation.
 
 ## Next small chunk
 
-Add official reply controls as a separate backend/UI slice. The existing
-`store_set_review_reply` RPC is service-only and takes an arbitrary staff label;
-do not expose it directly through the buyer service credential. Add an RMT-only
-owner-checked transactional wrapper, preserving exact review-version checks and
-atomic audit recording, then include the current reply in the staff projection.
-Use a focused editor for creating, editing, and removing the reply. Replies are
-public content, so confirm the exact text and handle stale/lost responses like
-publication decisions. Keep already-applied SQL immutable.
+Start the **Judge.me import dry run** described in `REVIEWS_REBUILD.md`: inventory
+source reviews/replies/media, retain source identifiers, map products, and
+report duplicates, skipped test records, unmapped products, and discrepancies.
+Keep this first chunk read-only with no database import or provider cutover.
+Recheck current source contracts before designing imported-review storage;
+legacy records may not have the exact order-line identity required of new
+authenticated submissions. Keep already-applied SQL immutable.
 
 The queue currently exposes only the ten most recent audit events; a complete
 history reader remains a separate chunk if needed. Live buyer collection still
 requires the Shopify Customer Account client, configured credentials, and real
 purchase/refresh verification described in `REVIEWS_SHOPIFY_AUTH.md` and
-`REVIEWS_PURCHASE_ELIGIBILITY.md`. Photos, official reply controls, imports, and
+`REVIEWS_PURCHASE_ELIGIBILITY.md`. Photos, imports, and
 production cutover remain separate chunks.

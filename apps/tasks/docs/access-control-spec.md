@@ -173,7 +173,7 @@ The store's encryption context additionally binds record identity and expiry.
 
 ## Store review moderation
 
-`GET/POST /api/admin/reviews` is a Tasks app-owner boundary, separate from the
+`GET/POST/PATCH /api/admin/reviews` is a Tasks app-owner boundary, separate from the
 storefront service credential and Shopify buyer identity. Reads and writes
 require `privilegedContext({ owner: true })`; the enabled backend configuration
 pins the shop and Supabase project and always refuses PRD. Request bodies cannot
@@ -206,6 +206,20 @@ Replaced edits, stale views, and withdrawn reviews cannot receive a decision.
 Rejecting an edit preserves the approved version; approving a hidden edit never
 restores it. Public reads and rating totals exclude hidden/withdrawn reviews and
 never include staff identities or notes.
+
+Official replies use `store_save_review_reply`, a service-only invoker function
+that rechecks the owner, shop, approved review, nonwithdrawn state, and exact
+review timestamp under the same review-first lock order. Set/update/remove and
+their required audit event commit together, and every successful reply change
+advances the review version. Hidden reviews remain hidden. Blank strings cannot
+remove a reply: the HTTP boundary requires an explicit null and normalizes
+nonempty public text through the shared reply contract. Staff identity is taken
+from the authenticated Tasks actor, never a browser field.
+
+The reply-aware staff projection is `store_review_moderation_page_v2`. It reads
+reply and review version from one snapshot; v1 stays unchanged for older
+deployments. No table or RPC privileges are widened, the public reply shape is
+unchanged, and the storefront service credential cannot authorize these writes.
 
 ## RY-D Verification
 
