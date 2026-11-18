@@ -9,6 +9,9 @@ import type { Product, ReviewsData } from "@/lib/types";
 import type { ReviewPhoto } from "@/lib/review-photos";
 import type { ReviewAccount } from "@/lib/review-collection";
 import type { ReviewPreviewState } from "@/lib/review-provider";
+import type { CustomReviewAccess } from "@/lib/custom-review-access";
+import { CustomReviewComposer, type CustomReviewResult } from "./custom-review-composer";
+import type { ReviewSubmission } from "@ryanmeetup/reviews";
 import { ReviewModeSwitch } from "./review-mode-switch";
 import { ReviewPhotosField } from "./review-photos-field";
 import { ReviewPhotoGallery } from "./review-photo-gallery";
@@ -29,7 +32,20 @@ function RatingSummary({ data, className = "" }: { data: ReviewsData; className?
   );
 }
 
-export function Reviews({ data, product, reviewAccount, reviewPreview }: { data: ReviewsData; product: Pick<Product, "id" | "title" | "featuredImage">; reviewAccount: ReviewAccount | undefined; reviewPreview?: ReviewPreviewState }) {
+/** Sample reviews are checked against the shared rules, then dropped. */
+async function submitCustomReview(review: ReviewSubmission & { lineId: string; productId: string }, sample: boolean): Promise<CustomReviewResult> {
+  if (sample) return { ok: true, message: "Sample review checked. Nothing was saved; a real review would wait for approval." };
+  const response = await fetch("/api/reviews", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(review),
+  });
+  const payload = (await response.json().catch(() => null)) as { error?: unknown } | null;
+  if (!response.ok) return { ok: false, error: typeof payload?.error === "string" ? payload.error : "Your review could not be submitted. Please try again." };
+  return { ok: true, message: "Thanks! Your review is waiting for approval." };
+}
+
+export function Reviews({ data, product, reviewAccount, reviewPreview, customAccess }: { data: ReviewsData; product: Pick<Product, "id" | "title" | "featuredImage">; reviewAccount: ReviewAccount | undefined; reviewPreview?: ReviewPreviewState; customAccess?: CustomReviewAccess }) {
   const formId = useId();
   const ratingField = useRef<HTMLDivElement>(null);
   const [showForm, setShowForm] = useState(false);
@@ -41,6 +57,8 @@ export function Reviews({ data, product, reviewAccount, reviewPreview }: { data:
   const busy = loading || preparingPhotos;
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customMessage, setCustomMessage] = useState("");
 
   useEffect(() => {
     const current = new Set(photos.map((photo) => photo.previewUrl));
@@ -98,7 +116,9 @@ export function Reviews({ data, product, reviewAccount, reviewPreview }: { data:
           <RatingSummary data={data} className="mt-3" />
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-start lg:max-w-xs lg:items-end lg:text-right">
-          {reviewAccount ? (
+          {customAccess ? (
+            <Button size="sm" variant="secondary" className="w-full sm:w-auto" disabled={customAccess.status === "unavailable"} onClick={() => { setCustomMessage(""); setCustomOpen(true); }}>Write a review</Button>
+          ) : reviewAccount ? (
             reviewAccount.url ? (
               <Button.Link href={reviewAccount.url} prefetch={false} size="sm" variant="secondary" className="w-full sm:w-auto">Write a review</Button.Link>
             ) : (
@@ -107,15 +127,33 @@ export function Reviews({ data, product, reviewAccount, reviewPreview }: { data:
           ) : (
             <Button size="sm" variant="secondary" className="w-full sm:w-auto" onClick={() => { setError(""); setShowForm(true); }}>Write a review</Button>
           )}
-          {reviewAccount && <Text className="text-sm">{reviewAccount.url ? "From your customer account" : "Review collection is temporarily unavailable. Please try again later."}</Text>}
+          {customAccess ? (
+            customAccess.status === "unavailable" ? <Text className="text-sm">Review collection is temporarily unavailable. Please try again later.</Text>
+              : customAccess.status === "ready" && customAccess.sample ? <Text className="text-sm">Sample buyer: nothing is saved.</Text>
+                : <Text className="text-sm">For verified purchases</Text>
+          ) : reviewAccount && <Text className="text-sm">{reviewAccount.url ? "From your customer account" : "Review collection is temporarily unavailable. Please try again later."}</Text>}
         </div>
       </div>
 
       <div role="status" aria-live="polite">
         {success && <FormStatus className="mt-6" title="Review received" icon={<FiCheck aria-hidden />}>Thanks for sharing your experience.</FormStatus>}
+        {customMessage && <FormStatus className="mt-6" title="Review received" icon={<FiCheck aria-hidden />}>{customMessage}</FormStatus>}
       </div>
+      {customAccess && (
+        <CustomReviewComposer
+          access={customAccess}
+          product={product}
+          open={customOpen}
+          onClose={() => setCustomOpen(false)}
+          onSubmit={async (review) => {
+            const result = await submitCustomReview({ ...review, productId: product.id }, customAccess.status === "ready" && customAccess.sample);
+            if (result.ok) setCustomMessage(result.message);
+            return result;
+          }}
+        />
+      )}
       <Modal
-        open={showForm && reviewAccount === undefined}
+        open={showForm && reviewAccount === undefined && !customAccess}
         setIsOpen={setShowForm}
         title="Write a review"
         size="lg"

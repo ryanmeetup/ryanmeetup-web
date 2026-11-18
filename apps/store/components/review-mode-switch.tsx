@@ -11,7 +11,7 @@ export function ReviewModeSwitch({ preview }: { preview: ReviewPreviewState }) {
   const [refreshing, startTransition] = useTransition();
   const [error, setError] = useState("");
   const pending = saving || refreshing;
-  const label = preview.provider === "judgeme" ? "Judge.me" : preview.provider === "custom" ? "custom reviews" : "an unavailable review mode";
+  const label = preview.choice === "custom-sample" ? "custom reviews with a sample buyer" : preview.provider === "judgeme" ? "Judge.me" : preview.provider === "custom" ? "custom reviews" : "an unavailable review mode";
 
   async function changeMode(provider: string) {
     if (pending) return;
@@ -48,11 +48,12 @@ export function ReviewModeSwitch({ preview }: { preview: ReviewPreviewState }) {
               { value: "default", label: "Environment default" },
               { value: "judgeme", label: "Judge.me" },
               { value: "custom", label: "Custom reviews" },
+              { value: "custom-sample", label: "Custom reviews, sample buyer" },
             ]}
           />
           <Text className="text-sm" role="status" aria-live="polite">{pending ? "Switching review mode…" : `Using ${label}. Only this browser is affected.`}</Text>
         </div>
-        <Text className="text-sm">Custom reviews are in progress; submissions are currently closed in that mode.</Text>
+        <Text className="text-sm">{preview.choice === "custom-sample" ? "The sample buyer can try the review form. Nothing is saved." : "Custom reviews are in progress; submissions are currently closed in that mode."}</Text>
         {error && <ErrorCallout>{error}</ErrorCallout>}
       </Card>
     </aside>

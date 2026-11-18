@@ -1,5 +1,6 @@
 export type ReviewProvider = "judgeme" | "custom";
-export type ReviewPreviewChoice = ReviewProvider | "default";
+/** `custom-sample` is custom reviews with a pretend signed-in buyer, for trying the composer before sign-in exists. */
+export type ReviewPreviewChoice = ReviewProvider | "custom-sample" | "default";
 export type ReviewPreviewState = {
   choice: ReviewPreviewChoice;
   provider: ReviewProvider | null;
@@ -14,7 +15,7 @@ export function isReviewPreviewEnabled() {
 }
 
 export function parseReviewPreviewChoice(value: unknown): ReviewPreviewChoice | null {
-  return value === "judgeme" || value === "custom" || value === "default" ? value : null;
+  return value === "judgeme" || value === "custom" || value === "custom-sample" || value === "default" ? value : null;
 }
 
 /** Server-only configuration, shared by reads, collection, and submission. */
@@ -29,6 +30,6 @@ export function getReviewProvider(): ReviewProvider | null {
 /** Cookie preference is effective only in an explicitly allowed environment. */
 export function resolveReviewProvider(previewChoice?: string): ReviewProvider | null {
   const choice = parseReviewPreviewChoice(previewChoice);
-  if (isReviewPreviewEnabled() && choice && choice !== "default") return choice;
+  if (isReviewPreviewEnabled() && choice && choice !== "default") return choice === "custom-sample" ? "custom" : choice;
   return getReviewProvider();
 }

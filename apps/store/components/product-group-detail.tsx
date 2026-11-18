@@ -8,11 +8,12 @@ import { getColorOption, getColorPreview, getColorSlug, getColorValue, getImageC
 import { getProductGallery } from "@/lib/product-gallery";
 import type { ProductDesign, ReviewsData, StoreImage } from "@/lib/types";
 import type { ReviewAccount } from "@/lib/review-collection";
+import type { CustomReviewAccess } from "@/lib/custom-review-access";
 import type { ReviewPreviewState } from "@/lib/review-provider";
 import { ProductDetail } from "./product-detail";
 import { Reviews } from "./reviews";
 
-export function ProductGroupDetail({ title, handle, breadcrumbs, designs, defaultColor, reviewsByProduct, reviewAccount, reviewPreview }: {
+export function ProductGroupDetail({ title, handle, breadcrumbs, designs, defaultColor, reviewsByProduct, reviewAccount, reviewPreview, customReviewAccessByProduct }: {
   title: string;
   breadcrumbs?: ReactNode;
   handle: string;
@@ -21,6 +22,7 @@ export function ProductGroupDetail({ title, handle, breadcrumbs, designs, defaul
   reviewsByProduct: Record<string, ReviewsData>;
   reviewAccount: ReviewAccount | undefined;
   reviewPreview?: ReviewPreviewState;
+  customReviewAccessByProduct?: Record<string, CustomReviewAccess>;
 }) {
   const searchParams = useSearchParams();
   const navigationFocus = useRef<string | null>(null);
@@ -106,7 +108,7 @@ export function ProductGroupDetail({ title, handle, breadcrumbs, designs, defaul
           );
         }}
       />
-      <Reviews key={`reviews-${selected.product.id}`} data={reviewsByProduct[selected.product.id]} product={selected.product} reviewAccount={reviewAccount} reviewPreview={reviewPreview} />
+      <Reviews key={`reviews-${selected.product.id}`} data={reviewsByProduct[selected.product.id]} product={selected.product} reviewAccount={reviewAccount} reviewPreview={reviewPreview} customAccess={customReviewAccessByProduct?.[selected.product.id]} />
     </>
   );
 }

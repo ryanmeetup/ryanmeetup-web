@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { Breadcrumbs, type Breadcrumb } from "@ryanmeetup/ui";
@@ -16,7 +17,10 @@ import { getColorPreview } from "@/lib/product-colors";
 import { getProductGroupForMember, getProductHref, resolveProductDesignValue } from "@/lib/product-groups";
 import { getReviews } from "@/lib/reviews";
 import { getReviewAccount } from "@/lib/review-collection";
-import { getReviewPreview } from "@/lib/review-preview";
+import { getCustomReviewAccess, type CustomReviewAccess } from "@/lib/custom-review-access";
+import { getCustomerAccountSession } from "@/lib/customer-account/runtime";
+import { findReviewablePurchases } from "@/lib/review-purchases";
+import { getActiveReviewProvider, getReviewPreview } from "@/lib/review-preview";
 import { cartOrigin, withProductOrigin } from "@/lib/product-origin";
 import { getCollections, getProduct, getProductHandles } from "@/lib/shopify";
 
@@ -39,6 +43,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   });
 }
 
+/** Session loading needs a Request; rebuild one from this page request's headers. */
+async function currentRequest(path: string) {
+  const incoming = await headers();
+  const host = incoming.get("host") ?? "localhost";
+  const protocol = incoming.get("x-forwarded-proto")?.split(",")[0].trim() ?? "https";
+  return new Request(`${protocol}://${host}${path}`, { headers: incoming });
+}
+
+/** One session load per page, then each listed product's own purchases. */
+async function getCustomReviewAccessByProduct(products: { id: string }[], productPath: string) {
+  const request = await currentRequest(productPath);
+  let session: ReturnType<typeof getCustomerAccountSession> | undefined;
+  const loadSession = () => (session ??= getCustomerAccountSession(request));
+  const entries = await Promise.all(products.map(async (item) =>
+    [item.id, await getCustomReviewAccess({ productId: item.id, productPath, loadSession, findPurchases: findReviewablePurchases })] as const));
+  return Object.fromEntries(entries) as Record<string, CustomReviewAccess>;
+}
+
 export default async function ProductPage({ params, searchParams }: Props) {
   const handle = decodeRouteHandle((await params).handle);
   const product = await getProduct(handle);
@@ -58,10 +80,11 @@ export default async function ProductPage({ params, searchParams }: Props) {
   }
   const selectedDesign = product.designs?.find((design) => design.value === requestedDesign);
   const reviewProducts = product.designs?.map((design) => design.product) ?? [product];
-  const [reviewEntries, reviewAccount, reviewPreview] = await Promise.all([
+  const [reviewEntries, reviewAccount, reviewPreview, customReviewAccess] = await Promise.all([
     Promise.all(reviewProducts.map(async (item) => [item.id, await getReviews(item.id)] as const)),
     getReviewAccount(),
     getReviewPreview(),
+    getActiveReviewProvider().then((provider) => (provider === "custom" ? getCustomReviewAccessByProduct(reviewProducts, `/products/${product.handle}`) : undefined)),
   ]);
   const reviewsByProduct = Object.fromEntries(reviewEntries);
   const reviewCount = Object.values(reviewsByProduct).reduce((count, reviews) => count + reviews.count, 0);
@@ -90,11 +113,11 @@ export default async function ProductPage({ params, searchParams }: Props) {
       <NavSection href={typeCollection ? getCollectionPath(typeCollection.handle) : null} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema).replace(/</g, "\\u003c") }} />
       {product.designs ? (
-        <ProductGroupDetail title={product.title} handle={product.handle} breadcrumbs={breadcrumbs} designs={product.designs} defaultColor={product.defaultColor} reviewsByProduct={reviewsByProduct} reviewAccount={reviewAccount} reviewPreview={reviewPreview} />
+        <ProductGroupDetail title={product.title} handle={product.handle} breadcrumbs={breadcrumbs} designs={product.designs} defaultColor={product.defaultColor} reviewsByProduct={reviewsByProduct} reviewAccount={reviewAccount} reviewPreview={reviewPreview} customReviewAccessByProduct={customReviewAccess} />
       ) : (
         <>
           <ProductDetail product={product} breadcrumbs={breadcrumbs} initialColor={query.color} initialImage={getColorPreview(product, query.color)?.image} />
-          <Reviews data={reviewsByProduct[product.id]} product={product} reviewAccount={reviewAccount} reviewPreview={reviewPreview} />
+          <Reviews data={reviewsByProduct[product.id]} product={product} reviewAccount={reviewAccount} reviewPreview={reviewPreview} customAccess={customReviewAccess?.[product.id]} />
         </>
       )}
       <p className="sr-only">Price: {formatMoney(product.priceRange.minVariantPrice)}</p>

@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { validateEmail } from "@ryanmeetup/utils";
 import { getJudgeMeShopDomain } from "@/lib/judgeme";
 import { resolveReviewProvider, reviewPreviewCookie } from "@/lib/review-provider";
+import { getCustomerAccountSession } from "@/lib/customer-account/runtime";
+import { submitCustomReview } from "@/lib/custom-review-submission";
+import { getReviewBackend } from "@/lib/review-backend";
+import { findReviewablePurchases } from "@/lib/review-purchases";
 
 const noStore = { "Cache-Control": "no-store" };
 
@@ -23,6 +27,9 @@ export async function POST(request: Request) {
   // Read cookies from headers without transferring the submission body stream.
   const previewChoice = new NextRequest(request.url, { headers: request.headers }).cookies.get(reviewPreviewCookie)?.value;
   const provider = resolveReviewProvider(previewChoice);
+  if (provider === "custom") {
+    return submitCustomReview(request, { loadSession: () => getCustomerAccountSession(request), findPurchases: findReviewablePurchases, backend: getReviewBackend() });
+  }
   if (provider !== "judgeme") {
     return fail("Review collection is temporarily unavailable. Please try again later.", 503);
   }
