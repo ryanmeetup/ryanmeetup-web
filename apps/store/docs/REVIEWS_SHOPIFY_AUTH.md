@@ -32,6 +32,22 @@ Verify the client's buyer/order permissions on the intended installation.
 No application credentials, signup settings, or callback registrations have
 been changed by this implementation.
 
+## Verified token exchange
+
+`lib/customer-account/tokens.ts` exchanges codes through the discovered HTTPS
+token endpoint with confidential-client Basic authentication and the original
+PKCE verifier. `jose` verifies RS256 signatures against the discovered public
+JWKS, the shop issuer, client audience, expiry/issued time, authorized party,
+and the original nonce. If an access-token hash is supplied it must match.
+Unsigned, tampered, wrong-scope, or malformed tokens cannot establish identity.
+The intended confidential Headless client must return a refresh token; an app
+client without one remains unavailable. Token/JWKS requests reject redirects,
+have timeouts, and never log upstream response bodies or claims.
+
+The shop's public discovery advertised RS256 on November 17, 2026. The local
+checks sign synthetic tokens with an actual RSA key and verify both valid and
+invalid claims. No live buyer token or real client secret has been used.
+
 ## Implemented boundary
 
 - `lib/customer-account/config.ts` validates explicit configuration and reports
