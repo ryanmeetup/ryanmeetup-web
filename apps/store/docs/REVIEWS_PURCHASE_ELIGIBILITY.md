@@ -111,6 +111,22 @@ Resolve that evidence and policy through the live spike before opening writes.
 
 ## Integration and live gate
 
+### Buyer and order discovery
+
+`buyer-queries.ts` adds `ReviewBuyer` and `ReviewOrderCandidates`, both validated
+offline against the pinned 2026-10 schema with telemetry disabled. Customer
+names are protected customer data and still need the intended client's access.
+The reader projects only the customer ID and nullable first/last names;
+whitespace is normalized, and missing names are not fabricated.
+
+The order query reads ten customer orders per page, sorted by descending ID,
+with up to fifty line references each. The Customer API documents no product-ID
+filter on `customer.orders`, so the code does not invent one. Order/name/customer
+identity, duplicate IDs, and cursor progress are checked across the complete
+bounded history. After ten pages it returns unavailable, never a partial or
+empty success. Incomplete child line references are marked for complete
+owned-order verification rather than silently skipped.
+
 This is a keyed order/line checker, not the product-level list expected by
 `review-purchases.ts::findReviewablePurchases`. That listing adapter and
 `findBuyerName` are still pending. They must enumerate the buyer's orders,
