@@ -34,7 +34,7 @@ remaining effort; reassess after the live Shopify gate.
 
 | Area | Implemented today | Limit or remaining work |
 | --- | --- | --- |
-| Provider selection | Server-owned `REVIEWS_PROVIDER`; blank defaults to `judgeme`. Browser selector supports Judge.me, custom, test buyer, and reset. It works only on loopback hosts in local development or explicitly enabled local builds; all Vercel deployments, including Preview, refuse overrides. | Hosted Preview uses deployment configuration. The test buyer skips Shopify sign-in and the purchase lookup but saves real reviews to RMT, one synthetic order line per product, under subject `local-test-buyer`. |
+| Provider selection | Server-owned `REVIEWS_PROVIDER`; blank defaults to `judgeme`. Browser selector supports Judge.me, custom, and reset. It works only on loopback hosts in local development or explicitly enabled local builds; all Vercel deployments, including Preview, refuse overrides. | Hosted Preview uses deployment configuration. |
 | Shopify sign-in | Start/callback routes; public discovery; PKCE, state, nonce and browser binding; confidential-client token exchange and signed ID-token validation. | Intended client configuration, permissions, and real buyer login remain unproven. |
 | Sessions | Opaque Secure/HttpOnly cookies, encrypted server persistence, seven-day absolute storefront session, access-token renewal, revision checks, and sign-out. | Live refresh rotation/reuse and recovery need evidence. No distributed refresh claim or expired-record cleanup job. |
 | Purchase checks | Product-level order discovery, owned-order/line verification, product and variant snapshots, current encrypted-session checks, and Shopify-derived buyer names. Used by both picker and submit. | Conservative refund/edit policy and bounded history; see below. Live order semantics/permissions remain unproven. |
@@ -102,8 +102,8 @@ the final version is `20261120180000`. Applied SQL stays immutable.
 
 1. The product page derives access from the server session and current Shopify
    purchases. It shows sign-in, no purchase, needs-help, already-reviewed,
-   unavailable, or ready states. A test buyer is available only through the
-   localhost testing control; its reviews are saved and moderated like any other.
+   unavailable, or ready states. Writing a review always needs a real
+   Shopify sign-in; there is no pretend buyer.
 2. A new submission rechecks eligibility. The browser supplies a product hint,
    selected line and review fields; it cannot choose the buyer, purchase
    snapshot or arbitrary public name. Numeric Shopify IDs remain strings so
@@ -329,11 +329,11 @@ Useful repeat commands:
 # From apps/store: server-free domain/HTTP checks using synthetic transports.
 STORE_BASE_URL=http://127.0.0.1:39999 npx playwright test tests/customer-*.spec.ts tests/review-purchase-lookups.spec.ts tests/review-backend.spec.ts tests/custom-review-submission.spec.ts tests/my-review-actions.spec.ts tests/review-provider.spec.ts tests/review-collection.spec.ts tests/review-preview-api.spec.ts --workers=1
 
-# From apps/store: isolated synthetic buyer browser suite.
+# From apps/store: isolated synthetic buyer browser suites (composer and My reviews).
 npm run test:e2e:my-reviews
 
 # From apps/tasks: contracts and HTTP boundaries.
-npx vitest run tests/routes/store-customer-auth.test.ts tests/routes/store-reviews.test.ts tests/routes/store-review-moderation.test.ts tests/unit/customer-auth-contract.test.ts tests/unit/review-content-contract.test.ts tests/unit/review-moderation-client.test.ts tests/unit/review-moderation-screen.test.ts
+npx vitest run tests/routes/store-review-moderation.test.ts tests/unit/customer-auth-contract.test.ts tests/unit/review-content-contract.test.ts tests/unit/review-moderation-client.test.ts tests/unit/review-moderation-screen.test.ts
 
 # From apps/tasks: isolated owner browser suite.
 npm run test:e2e:reviews

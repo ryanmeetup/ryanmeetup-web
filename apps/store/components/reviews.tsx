@@ -103,8 +103,7 @@ export function Reviews({ data, product, reviewAccount, reviewPreview, customAcc
           )}
           {customAccess ? (
             customAccess.status === "unavailable" ? <Text className="text-sm">Review collection is temporarily unavailable. Please try again later.</Text>
-              : customAccess.status === "ready" && customAccess.testBuyer ? <Text className="text-sm">Test buyer: reviews are saved and wait for approval.</Text>
-                : <Text className="text-sm">For verified purchases</Text>
+              : <Text className="text-sm">For verified purchases</Text>
           ) : reviewAccount && <Text className="text-sm">{reviewAccount.url ? "From your customer account" : "Review collection is temporarily unavailable. Please try again later."}</Text>}
         </div>
       </div>

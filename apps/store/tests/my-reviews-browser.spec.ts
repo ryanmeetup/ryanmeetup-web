@@ -1,30 +1,9 @@
-import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
-import { createCustomerAccountStorage } from "../lib/customer-account/storage";
-import { createCustomerAuthBackend } from "../lib/customer-account/backend";
-import { createClient } from "@supabase/supabase-js";
-import { customerAccountIssuer } from "../lib/customer-account/config";
-import { customerAccountConfig } from "./fixtures/customer-account";
-import { fakeSupabaseKey } from "./fixtures/customer-auth-backend";
+import { expect, test, type Page } from "@playwright/test";
+import { configure, fixture, reset, signIn, state } from "./fixtures/buyer-browser";
 
-const fixture=`http://127.0.0.1:${process.env.MY_REVIEWS_FIXTURE_PORT??54359}`;
 const id=(n:number)=>`00000000-0000-4000-8000-${String(n).padStart(12,"0")}`;
 const card=(page:Page,n:number)=>page.getByTestId(`my-review-${id(n)}`);
-const state=async(request:APIRequestContext)=>(await request.get(`${fixture}/__state`)).json();
-async function reset(request:APIRequestContext,options:object={}){expect((await request.post(`${fixture}/__reset`,{data:options})).ok()).toBeTruthy();}
-async function configure(request:APIRequestContext,options:object){expect((await request.post(`${fixture}/__configure`,{data:options})).ok()).toBeTruthy();}
-
-/** Mint only synthetic, encrypted sessions using the real private storage contract. */
-async function signIn(page:Page,request:APIRequestContext,baseURL:string,subject="buyer-a"){
-  const scope={shopId:customerAccountConfig.shopId,clientId:customerAccountConfig.clientId,issuer:customerAccountIssuer(customerAccountConfig.shopId),redirectUri:customerAccountConfig.redirectUri};
-  const backend=createCustomerAuthBackend({database:createClient(fixture,fakeSupabaseKey,{auth:{persistSession:false}}),scope});
-  const storage=createCustomerAccountStorage({config:customerAccountConfig,keyring:{activeKeyId:"test",keys:new Map([["test",Buffer.alloc(32,7)]])},backend});
-  const created=await storage.createSession({subject,tokens:{accessToken:"synthetic-access",refreshToken:"synthetic-refresh",idToken:"synthetic-id"},accessExpiresAt:Date.now()+3600000,expiresAt:Date.now()+86400000});
-  // Chromium treats localhost as trustworthy; mint the host cookie with a
-  // secure origin so its __Host- invariants are checked before local navigation.
-  const cookieOrigin = new URL(baseURL); cookieOrigin.protocol = "https:";
-  await page.context().addCookies([{name:"__Host-store-customer-session",value:created.id,url:cookieOrigin.origin,secure:true,httpOnly:true,sameSite:"Lax"}]);
-}
-test.beforeEach(async({page,request,baseURL})=>{await reset(request);await signIn(page,request,baseURL!);});
+test.beforeEach(async({page,request,baseURL})=>{await reset(request);await signIn(page,baseURL!);});
 
 test("shows only the signed-in buyer's statuses and allowed actions",async({page})=>{
   await page.goto("/reviews/mine");await expect(page.getByRole("heading",{name:"My reviews",exact:true})).toBeVisible();
@@ -92,13 +71,13 @@ test("a confirmed edit with failed reload remains saved and blocks further decis
   await expect(card(page,1)).toContainText("Confirmed edit.");expect((await state(request)).calls).toHaveLength(1);
 });
 test("pages beyond 100 reviews and never merges another buyer's page",async({page,request,baseURL})=>{
-  await reset(request,{many:true});await signIn(page,request,baseURL!);await page.goto("/reviews/mine");
+  await reset(request,{many:true});await signIn(page,baseURL!);await page.goto("/reviews/mine");
   await expect(page.locator("article[data-testid^='my-review-']")).toHaveCount(20);
   for(let pageNumber=0;pageNumber<6;pageNumber++)await page.getByRole("button",{name:"Load more reviews",exact:true}).click();
   await expect(page.locator("article[data-testid^='my-review-']")).toHaveCount(125);
   await expect(page.getByRole("button",{name:"Load more reviews",exact:true})).toHaveCount(0);
   await page.getByRole("button",{name:"Refresh reviews",exact:true}).click();await expect(page.locator("article[data-testid^='my-review-']")).toHaveCount(20);
-  await signIn(page,request,baseURL!,"buyer-b");await page.getByRole("button",{name:"Load more reviews",exact:true}).click();
+  await signIn(page,baseURL!,"buyer-b");await page.getByRole("button",{name:"Load more reviews",exact:true}).click();
   await expect(page.locator("article[data-testid^='my-review-']")).toHaveCount(1);await expect(card(page,201)).toBeVisible();await expect(card(page,1)).toHaveCount(0);
 });
 test("forged edits, expired sessions, and Judge.me mode cannot change buyer reviews",async({page,request,baseURL})=>{
@@ -107,12 +86,12 @@ test("forged edits, expired sessions, and Judge.me mode cannot change buyer revi
   const forged=await page.request.post("/api/reviews/mine",{headers:{Origin:baseURL!},data:{action:"withdraw",reviewId:foreign.id,expectedUpdatedAt:foreign.updatedAt}});expect(forged.status()).toBe(404);
   await request.post(`${fixture}/__revoke`);await page.getByRole("button",{name:"Refresh reviews",exact:true}).click();
   await expect(page.locator("article[data-testid^='my-review-']")).toHaveCount(0);await expect(page.getByRole("link",{name:"Sign in",exact:true})).toBeVisible();
-  await signIn(page,request,baseURL!);await page.context().addCookies([{name:"store-review-preview",value:"judgeme",url:baseURL!}]);
+  await signIn(page,baseURL!);await page.context().addCookies([{name:"store-review-preview",value:"judgeme",url:baseURL!}]);
   await page.goto("/reviews/mine");await expect(page.getByRole("heading",{name:"My reviews",exact:true})).toHaveCount(0);
   expect((await page.request.get("/api/reviews/mine")).status()).toBe(503);expect((await state(request)).calls).toHaveLength(0);
 });
 test("fits the private list and editor across mobile/desktop boundaries in both themes",async({page,request,baseURL},testInfo)=>{
-  await reset(request,{longText:true});await signIn(page,request,baseURL!);
+  await reset(request,{longText:true});await signIn(page,baseURL!);
   for(const theme of ["light","dark"]){
     await page.addInitScript((value)=>localStorage.setItem("theme",value),theme);
     for(const width of [390,1024,1280,1536]){

@@ -1,8 +1,7 @@
 import { readCookie } from "./request-guard";
 
 export type ReviewProvider = "judgeme" | "custom";
-/** `custom-test` is custom reviews with a pretend signed-in buyer whose reviews are saved for real. */
-export type ReviewPreviewChoice = ReviewProvider | "custom-test" | "default";
+export type ReviewPreviewChoice = ReviewProvider | "default";
 export type ReviewPreviewState = {
   choice: ReviewPreviewChoice;
   provider: ReviewProvider | null;
@@ -34,7 +33,7 @@ export function isReviewPreviewConfigured() {
 }
 
 export function parseReviewPreviewChoice(value: unknown): ReviewPreviewChoice | null {
-  return value === "judgeme" || value === "custom" || value === "custom-test" || value === "default" ? value : null;
+  return value === "judgeme" || value === "custom" || value === "default" ? value : null;
 }
 
 /** Server-only configuration, shared by reads, collection, and submission. */
@@ -49,7 +48,7 @@ export function getReviewProvider(): ReviewProvider | null {
 /** Cookie preference is effective only where review testing is allowed. */
 export function resolveReviewProvider(previewChoice: string | undefined, host: string | null | undefined): ReviewProvider | null {
   const choice = parseReviewPreviewChoice(previewChoice);
-  if (isReviewPreviewEnabled(host) && choice && choice !== "default") return choice === "custom-test" ? "custom" : choice;
+  if (isReviewPreviewEnabled(host) && choice && choice !== "default") return choice;
   return getReviewProvider();
 }
 

@@ -6,7 +6,6 @@ import { submitCustomReview } from "@/lib/custom-review-submission";
 import { getReviewBackend } from "@/lib/review-backend";
 import { numericProductId } from "@/lib/custom-reviews";
 import { findReviewablePurchases } from "@/lib/review-purchases";
-import { findTestBuyerPurchases, isTestBuyerRequest, loadTestBuyerSession } from "@/lib/review-test-buyer";
 import { hasJsonBody, isSameOriginRequest, privateJson, readJsonObject } from "@/lib/request-guard";
 
 const fail = (error: string, status: number) => privateJson(status, { error });
@@ -25,9 +24,6 @@ function text(value: unknown, max: number) {
 export async function POST(request: Request) {
   const provider = resolveRequestReviewProvider(request);
   if (provider === "custom") {
-    if (isTestBuyerRequest(request)) {
-      return submitCustomReview(request, { loadSession: loadTestBuyerSession, findPurchases: findTestBuyerPurchases, backend: getReviewBackend() });
-    }
     return submitCustomReview(request, { loadSession: () => getCustomerAccountSession(request), findPurchases: findReviewablePurchases, backend: getReviewBackend() });
   }
   if (provider !== "judgeme") {

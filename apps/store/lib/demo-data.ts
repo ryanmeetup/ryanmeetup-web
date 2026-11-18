@@ -10,8 +10,8 @@ const image = (url: string, altText: string) => ({
 
 /**
  * A stable, numeric product ID for a demo handle, in a range real Shopify IDs
- * don't use (they are 13 digits today). Numeric, so custom reviews and the
- * local test buyer work on the demo catalog the same way as on a live one.
+ * don't use (they are 13 digits today). Numeric, so custom reviews work on the
+ * demo catalog the same way as on a live one.
  */
 export function demoProductId(handle: string) {
   let hash = 0x811c9dc5;

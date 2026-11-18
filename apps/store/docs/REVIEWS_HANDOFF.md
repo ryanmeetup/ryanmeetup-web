@@ -238,8 +238,9 @@ than duplicating them, and coordinate before changing them.
 - **Composer:** `components/custom-review-composer.tsx` and
   `lib/custom-review-access.ts`. It renders unavailable, signed-out,
   no-purchase, reviewed, and ready states. `getCustomReviewAccess()` returns
-  `unavailable` except for the localhost-only **Custom reviews, test buyer**
-  mode (`lib/review-test-buyer.ts`), which saves real reviews to RMT.
+  `unavailable` until buyer sign-in is configured; there is no pretend
+  buyer. Browser tests sign in a synthetic buyer instead
+  (`tests/review-composer-browser.spec.ts`).
   Exact-line eligibility should replace that function's body with the real
   session and purchase lookup. Real submissions currently POST to
   `/api/reviews`, which still returns 503 in custom mode. Browser tests:

@@ -31,6 +31,7 @@ function review(name,a){
   const owned=records.filter((r)=>r.subject===a.p_subject);
   if(name==="store_review_summary")return {count:0,average:0,distribution:{1:0,2:0,3:0,4:0,5:0}};
   if(name==="store_public_reviews")return [];
+  if(name==="store_buyer_reviewed_lines"&&options.failReviewedLines)return null;
   if(name==="store_buyer_reviewed_lines")return owned.filter((r)=>r.value.status!=="withdrawn"&&a.p_line_ids.includes(r.value.lineId)).map((r)=>r.value.lineId);
   if(name==="store_buyer_reviews"){
     let rows=owned.map((r)=>r.value).sort((x,y)=>y.createdAt.localeCompare(x.createdAt)||y.id.localeCompare(x.id));
@@ -68,6 +69,17 @@ function review(name,a){
   return operation==="review.edit"?"pending":"withdrawn";
 }
 
+/** Shopify Customer API answers: the buyer, plus one configurable purchase (`options.purchase`). */
+function customerApi(query){
+  const buyer={id:"gid://shopify/Customer/123",firstName:"Ryan",lastName:"Fixture"};
+  const purchase=options.purchase;
+  const none={hasNextPage:false,endCursor:null};
+  if(query.includes("ReviewOrderCandidates"))return {customer:{...buyer,orders:{nodes:purchase?[{id:purchase.order.id,updatedAt:purchase.order.updatedAt,
+    lineItems:{nodes:purchase.order.lineItems.nodes.map(({id,productId})=>({id,productId})),pageInfo:none}}]:[],pageInfo:none}}};
+  if(query.includes("ReviewPurchase"))return {customer:{id:buyer.id},order:purchase?{...purchase.order,customer:{id:buyer.id}}:null};
+  return {customer:buyer};
+}
+
 createServer(async(req,res)=>{
   try {
     const url=new URL(req.url,"http://fixture.test");
@@ -77,7 +89,7 @@ createServer(async(req,res)=>{
     if(url.pathname==="/__state")return json(res,200,{calls,records});
     if(url.pathname==="/__revoke"){sessions.clear();return json(res,200,{ok:true});}
     if(url.pathname==="/__discovery")return json(res,200,{graphql_api:"https://shopify.com/123456/account/customer/api/2026-10/graphql"});
-    if(url.pathname==="/__customer")return json(res,200,{data:{customer:{id:"gid://shopify/Customer/123",firstName:"Ryan",lastName:"Fixture"}}});
+    if(url.pathname==="/__customer")return json(res,200,{data:customerApi((await body(req)).query??"")});
     if(req.headers.apikey!==key)return json(res,401,{message:"Synthetic Supabase key required"});
     const args=await body(req);
     if(url.pathname==="/rest/v1/store_customer_sessions"){sessions.set(args.session_hash,{...args,revision:0});return json(res,201);}
