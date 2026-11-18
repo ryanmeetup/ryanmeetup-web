@@ -13,8 +13,10 @@ and review-content schema are still outstanding. Private customer auth storage
 has been applied to RMT as migration `20261120130000`. It is now RMT-only;
 PRD does not need its SQL or a skipped-version history marker. No deployment
 credentials or billing settings changed.
-Buyer sign-in configuration, discovery, and authorization/callback validation
-helpers now exist. They are not wired to an HTTP login flow. See
+Buyer sign-in now has a private backend, encrypted persistence, verified token
+exchange, and gated HTTP start/callback/sign-out routes. Runtime credentials
+and the explicit opt-in remain unconfigured, and no live buyer login has been
+proved. Session loading/renewal and exact-line purchase access are next. See
 [the Shopify auth setup and boundary](REVIEWS_SHOPIFY_AUTH.md).
 
 ## Completed chunks
@@ -33,6 +35,11 @@ helpers now exist. They are not wired to an HTTP login flow. See
 | `4367cfd8` | Declare shared and RMT-only migration scopes without moving or changing applied SQL. | Scope validation rejects missing entries, duplicate versions, and invalid metadata. |
 | `63e38492` | Default dashboard catch-up SQL to PRD's shared profile, preserving gaps and leaving existing extension objects/history untouched. | 16 combined scope/planner checks passed, including stale-output replacement and CLI defaults. |
 | `e29cd515` | Validate each profile in its own disposable stack and run scope/planner checks in CI. | RMT: 72 SQL assertions, 2 encrypted-storage checks, and 2 concurrent-writer checks. PRD: 65 Tasks access assertions, no store objects, and exact shared history. Changed-script ESLint, diff check, and Tasks production build with live RMT contract preflight passed. |
+| `156c6e83` | Share private auth command/result contracts through `@ryanmeetup/reviews`, with explicit dependency/transpilation integration. | Contract checks reject scope changes, extra privileges, plaintext, impossible timestamps, and malformed responses. |
+| `bf571f9a` | Add a disabled-by-default, service-authenticated backend restricted to seven store auth operations. Pin its scope/project and always reject PRD. | Backend routes, contract, and common parser: 20 checks passed. Changed-file ESLint, TypeScript, and Tasks production build with RMT contract preflight passed. No schema or hosted state changed. |
+| `c74426c4` | Connect encrypted flow/session persistence from the store using a separate scoped service credential. | 6 client/storage checks passed, including tampering, wrong keys/scope, invalid proofs, lost refresh races, and logout conflicts. No Supabase secret enters the storefront. |
+| `7e5c9e33` | Exchange confidential-client codes and verify RS256 ID tokens with `jose`, including issuer, audience, nonce, expiry, authorized party, and optional access-token hash. | 6 crypto checks with actual RSA-signed synthetic tokens passed, including wrong signatures/claims and malformed subject types. Public discovery advertises RS256. No live buyer token used. |
+| `9332175c` | Add opt-in sign-in start/callback and same-origin review-session sign-out; persist before redirects/session cookies and consume attempts before exchange. | 12 route/lifecycle checks passed, including concurrent callbacks, denial, backend failure, proxy host, and browser provider mode. Combined 74 focused storefront checks passed; final crypto/route rerun: 18 passed. Store production build, TypeScript, changed-file ESLint, and diff check passed. |
 
 The final type-only tightening of `ReviewsData` was checked with `tsc --noEmit`
 after the successful production build. Both themes were browser-tested at 390,
@@ -45,6 +52,14 @@ credentials were changed. RMT received the committed auth-storage migration.
 Existing uncommitted changes to `docs/LAUNCH_ROADMAP.md` and the
 untracked `docs/REVIEWS_REBUILD.md` predated these commits and remain unstaged.
 Transfer those documents too if moving to a checkout that does not have them.
+Other agents also have concurrent catalog, error-page, review-content, and
+composer changes in the worktree. They were not included in these auth commits;
+coordinate before editing their files or committing broader directory scopes.
+
+Automatic approval review rejected the external Shopify validator because it
+would upload private OAuth TypeScript source without authorization. No source
+was sent and no external validation is claimed. Local signed-token, route,
+type, lint, and production-build checks are the applicable evidence here.
 
 ## Storage rollout and local test incident
 
@@ -115,35 +130,40 @@ Keep Production on `judgeme`. This switch does not turn off Judge.me's hosted
 extensions or emails. It is not yet a rollback strategy once custom reviews
 are being collected. The rebuild plan owns that cutover procedure.
 
-## Next gate: persist sessions and prove Shopify purchase access
+## Next gate: renew sessions and prove Shopify purchase access
 
 The repository now validates explicit Customer Account client configuration,
 discovers authentication endpoints, and prepares/validates authorization
 attempts. The hosted Judge.me account handoff remains the enabled buyer path.
-Private encrypted attempt/session database storage now exists. There is no
-scoped backend HTTP interface, buyer start/callback endpoint, token exchange
-or signature verification, renewal orchestration, or browser logout yet.
+Private encrypted storage is connected through a narrowly authenticated
+backend HTTP interface. Buyer start/callback now consume attempts once,
+exchange codes, verify signed identity/nonce, and persist an encrypted session.
+Review-session sign-out revokes that session independently of Shopify logout.
+These routes require custom mode plus `STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED=true`
+and complete server configuration. They do not enable review submissions.
+Server-side session loading/renewal and expired-record cleanup remain outstanding.
 
 Public discovery was read successfully from
 `ryan-meetup-store.myshopify.com` on November 17, 2026. Its issuer matched
 `https://shopify.com/authentication/71870054511`, with S256 and
-`client_secret_basic` support. Only public metadata was read; no secrets were
+`client_secret_basic` and RS256 support. Only public metadata was read; no secrets were
 printed and no buyer login was attempted. The discovery response is not proof
 of installed client permissions or access to orders.
 
 Ryan confirmed the Shopify client has not been provisioned and chose to reuse
-the existing RMT database. The store's scoped backend interface and review
-content schema are not implemented yet. The required client environment variables and
-planned HTTPS callback path are in [the auth setup](REVIEWS_SHOPIFY_AUTH.md).
+the existing RMT database. The scoped backend interface is implemented;
+review-content persistence and purchase eligibility remain outstanding.
+The required environment variables, backend setup, and HTTPS callback path
+are in [the auth setup](REVIEWS_SHOPIFY_AUTH.md).
 
 The authorization helper returns a private record to persist before redirecting
 and an opaque browser cookie. Callback checks yield only an authorization code,
-not a logged-in buyer. Use `store_consume_customer_authorization` for one-time
-consumption after validation. The callback must verify the signed ID token and
-nonce before saving an encrypted session. Do not expose private attempt
+not a logged-in buyer. The HTTP callback uses `store_consume_customer_authorization`
+after validation, verifies the signed ID token and nonce, then saves an
+encrypted session before setting its cookie. Preserve that order. Do not expose private attempt
 records, copy Tasks' admin key into the storefront, or add a temporary in-memory
 production session store. A direct SQL role would inherit the project's PUBLIC
-privileges; implement the scoped backend service interface instead.
+privileges; keep using the scoped backend service interface instead.
 
 Before connecting custom writes:
 
@@ -177,26 +197,27 @@ Before connecting custom writes:
 not passed. No live OAuth session or exact-line eligibility has been exercised.
 Do not enable custom writes on the strength of local helper tests. No missing
 Shopify field or permission has been established on the real installation yet;
-client setup, scoped runtime access, and a live feasibility check are next.
+client/backend configuration and a live feasibility check are next.
 
-No GraphQL operation was introduced in these auth chunks. Shopify's GraphQL
-validator was attempted on the OAuth TypeScript file and rejected its `import`
-as GraphQL syntax; that checker does not validate this code. Validation here is
-TypeScript, ESLint, the security-focused local tests, the store build, and the
-public metadata check. Future GraphQL operations still need schema validation.
+No GraphQL operation was introduced in these auth chunks. Shopify's validator
+accepts GraphQL operations and does not validate OAuth TypeScript. The external
+source upload was blocked as described above. Validation here is TypeScript,
+ESLint, security-focused local tests, production builds, and public metadata
+checks. Future GraphQL operations still need schema validation.
 
 ## Small next chunks
 
 Keep each item an independently verified Conventional Commit. Start with the
 Shopify gate above; record its result before implementation depends on it.
 
-1. **Customer sign-in, remaining:** reuse the config/discovery/authorization,
-   encryption, private storage tables, and one-time/CAS RPCs. First add a
-   service-authenticated backend interface restricted to these operations and
-   the configured store shop/client. Then add HTTP start/callback with atomic attempt consumption,
-   token exchange, signed ID-token/nonce verification, expiry/renewal, and
-   logout. Record provider-mode gating and add route tests. Real login still
-   needs the confidential client from the setup document.
+1. **Customer sessions, remaining:** add a server-side loader that distinguishes
+   missing/sign-in-required from provider/storage failure. Check access-token
+   expiry before Shopify requests. Implement refresh through the existing
+   compare-and-swap storage operation; preserve subject and absolute expiry,
+   handle optional refreshed ID tokens correctly, and never revive revoked
+   sessions or reuse an unsafe refresh result after a lost race. Add expired
+   record cleanup separately. Real login still needs the confidential client,
+   isolated backend, keyring, and explicit opt-in from the setup document.
 2. **Exact-line eligibility:** normalize proven Shopify fields and handle the
    edge cases above; recheck ownership and eligibility on every write. Hand
    off typed eligible/ineligible/sign-in-required/unavailable results.
@@ -235,9 +256,15 @@ or change the production provider as part of one of the preparatory chunks.
 Run from `apps/store` unless noted. Unit/data tests do not need a server:
 
 ```sh
-npx playwright test tests/customer-account-config.spec.ts tests/customer-account-authorization.spec.ts tests/customer-account-secrets.spec.ts tests/reviews-data.spec.ts tests/judgeme-domain.spec.ts tests/review-collection.spec.ts tests/reviews-api.spec.ts tests/review-provider.spec.ts tests/review-preview-api.spec.ts
+npx playwright test tests/customer-account-config.spec.ts tests/customer-account-authorization.spec.ts tests/customer-account-secrets.spec.ts tests/customer-account-backend.spec.ts tests/customer-account-tokens.spec.ts tests/customer-account-http.spec.ts tests/reviews-data.spec.ts tests/judgeme-domain.spec.ts tests/review-collection.spec.ts tests/reviews-api.spec.ts tests/review-provider.spec.ts tests/review-preview-api.spec.ts
 npx tsc --noEmit
 git diff --check
+```
+
+Private backend route/parser/contract checks from `apps/tasks`:
+
+```sh
+npx vitest run tests/routes/store-customer-auth.test.ts tests/unit/customer-auth-contract.test.ts tests/unit/request.test.ts
 ```
 
 Database validation from `apps/tasks` (requires local Docker and Supabase CLI):

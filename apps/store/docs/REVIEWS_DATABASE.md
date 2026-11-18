@@ -69,8 +69,10 @@ See [the database workflow](../../tasks/docs/DATABASE.md#migration-profiles).
 ## App access and buyer identity
 
 Use a narrowly authenticated backend interface for storefront access to the
-private service-role-only storage operations. That interface is the next
-integration chunk; the storefront has no shared admin credential or direct
+private service-role-only storage operations. The auth-storage interface is
+implemented at `POST /api/store/customer-auth`, with separate service credentials
+and pinned shop/client/callback scope. See [its setup](../../tasks/docs/STORE_CUSTOMER_AUTH.md).
+Review-content operations remain outstanding. The storefront has no shared admin credential or direct
 SQL login. Sharing the project does not mean copying Tasks' broad
 admin secret into every app. Supabase secret/service-role access bypasses RLS,
 so row policies alone would not constrain that credential. Verify inherited
@@ -105,8 +107,8 @@ using the privileged database client. Publishing reviews exposes only approved p
   state, official replies, and moderation audit history.
 - Media ownership and processing/publication state; store the actual image
   files in object storage.
-- Server-managed Shopify sessions with appropriate token protection once the
-  authentication design is implemented. Staff identity and role checks remain
+- Server-managed Shopify sessions with the implemented encrypted token storage.
+  Session renewal remains outstanding. Staff identity and role checks remain
   a separate authorization boundary.
 
 Do not mirror the order database or store shipping addresses and payment data.
