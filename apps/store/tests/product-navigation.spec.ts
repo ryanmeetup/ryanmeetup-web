@@ -30,7 +30,7 @@ test("floating photo controls wrap across designs and keep keyboard focus", asyn
 
 test("arrow shortcuts browse photos without taking over product fields or modified keys", async ({ page }) => {
   await page.goto("/products/name-tag-shirt");
-  await expect(page.getByRole("button", { name: "Change to Light Mode" })).toHaveCSS("pointer-events", "auto");
+  await expect(page.getByRole("button", { name: "Change to light mode" })).toHaveCSS("pointer-events", "auto");
   const gallery = page.getByRole("region", { name: "Product gallery" });
   const status = gallery.getByRole("status");
 
@@ -64,7 +64,7 @@ test("single-photo products omit navigation and leave arrow keys alone", async (
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/products/ryan-meetup-tee");
-  await expect(page.getByRole("button", { name: "Change to Light Mode" })).toHaveCSS("pointer-events", "auto");
+  await expect(page.getByRole("button", { name: "Change to light mode" })).toHaveCSS("pointer-events", "auto");
   const gallery = page.getByRole("region", { name: "Product gallery" });
   const image = gallery.getByRole("img");
   const original = await image.getAttribute("src");

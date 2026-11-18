@@ -40,6 +40,9 @@ test("cart lines move a listing member's title color into the options", async ({
 });
 
 test("returning from checkout empties the cart", async ({ page }) => {
+  // Demo carts live only in the browser, so there is no Shopify cart to sync against.
+  const { demo } = await (await page.request.post("/api/cart", { data: {} })).json();
+  test.skip(demo === true, "Requires a store server connected to Shopify.");
   // Shopify returns no cart once it has checked out, whichever store page the shopper lands on.
   await page.route("**/api/cart", (route) => route.fulfill({ json: { cart: null } }));
   const variant = superBlack.variants[0];
@@ -230,7 +233,7 @@ test("name tag gallery shows every design and thumbnails choose the matching car
   await expect(ryanPhoto).toHaveAttribute("aria-pressed", "false");
   await expect(gallery.getByRole("button")).toHaveCount(2);
   await page.getByRole("button", { name: "Add to cart", exact: true }).click();
-  await expect(page.getByText("Added to cart", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /^Added to cart/ })).toBeVisible();
   await keepShopping(page);
   const cart = await page.evaluate(() => JSON.parse(localStorage.getItem("ryan-store-cart")!));
   expect(cart.lines[0].merchandise.id).toBe("gid://shopify/ProductVariant/demo-ryans-dad-name-tag-shirt-0");
@@ -260,7 +263,7 @@ test("name tag designs share one listing and add their own merchandise to the ca
   const firstImage = await page.locator('main img').first().getAttribute("src");
 
   await page.getByRole("button", { name: "Add to cart" }).click();
-  await expect(page.getByText("Added to cart", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /^Added to cart/ })).toBeVisible();
   await keepShopping(page);
   await page.getByLabel("Style").click();
   await page.getByRole("option", { name: "Ryan’s Dad", exact: true }).click();
@@ -272,7 +275,7 @@ test("name tag designs share one listing and add their own merchandise to the ca
   await expect(page.locator('main img').first()).not.toHaveAttribute("src", firstImage!);
   await expect(page.getByRole("button", { name: "Add to cart" })).toBeVisible();
   await page.getByRole("button", { name: "Add to cart" }).click();
-  await expect(page.getByText("Added to cart", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /^Added to cart/ })).toBeVisible();
   await keepShopping(page);
 
   await page.goto("/cart");
@@ -282,8 +285,8 @@ test("name tag designs share one listing and add their own merchandise to the ca
     "gid://shopify/ProductVariant/demo-ryans-dad-name-tag-shirt-0",
   ]);
   const main = page.getByRole("main");
-  await expect(main.locator('a[href="/products/name-tag-shirt?design=ryan"]', { hasText: "Name Tag Shirt" })).toHaveCount(1);
-  await expect(main.locator('a[href="/products/name-tag-shirt?design=ryans-dad-name-tag-shirt"]', { hasText: "Name Tag Shirt" })).toHaveCount(1);
+  await expect(main.locator('a[href="/products/name-tag-shirt?design=ryan&from=cart"]', { hasText: "Name Tag Shirt" })).toHaveCount(1);
+  await expect(main.locator('a[href="/products/name-tag-shirt?design=ryans-dad-name-tag-shirt&from=cart"]', { hasText: "Name Tag Shirt" })).toHaveCount(1);
   await expect(main).toContainText("Style: Ryan’s Dad");
   await expect(page.getByText("$42.00", { exact: true })).toBeVisible();
   expect(renderingErrors).toEqual([]);
@@ -333,7 +336,7 @@ test("customer can browse a product and manage the preview cart", async ({
     page.getByRole("heading", { name: "Official Ryan Meetup Tee" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Add to cart" }).click();
-  await expect(page.getByText("Added to cart", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /^Added to cart/ })).toBeVisible();
 
   await page.goto("/cart");
   await expect(page.getByRole("heading", { name: "Your cart" })).toBeVisible();
@@ -603,7 +606,7 @@ for (const viewport of [
     await page.goto("/");
     await expect(
       page.getByRole("heading", {
-        name: "This merch has your name on it, Ryan",
+        name: "Merch with your name on it.",
       }),
     ).toBeVisible();
     if (viewport.name === "mobile") {

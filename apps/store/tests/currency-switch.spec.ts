@@ -67,7 +67,7 @@ test("keyboard currency selection converts both sale prices and leaves cart mone
   await expect(currency).toBeFocused();
 
   await page.getByRole("main").getByRole("button", { name: "Add to cart" }).click();
-  await expect(page.getByRole("dialog", { name: /^Added to cart/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /^Added to cart/ })).toBeVisible();
   const cart = await page.evaluate(() => JSON.parse(localStorage.getItem("ryan-store-cart")!));
   expect(cart.lines[0].merchandise.price).toEqual({ amount: "26.00", currencyCode: "USD" });
   expect(cart.lines[0].merchandise.compareAtPrice).toEqual({ amount: "32.00", currencyCode: "USD" });

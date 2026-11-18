@@ -10,7 +10,12 @@ for (const viewport of [
   test(`product gallery stays compact and reachable at ${viewport.width}×${viewport.height}`, async ({ page }) => {
     await page.setViewportSize(viewport);
     await page.goto("/products/name-tag-shirt");
-    await expect(page.getByRole("button", { name: "Change to Light Mode" })).toHaveCSS("pointer-events", "auto");
+    // Header controls stay clickable above the gallery. Below xl the theme toggle
+    // lives in the navigation menu, so check the menu button there instead.
+    const headerControl = viewport.width >= 1280
+      ? page.getByRole("button", { name: "Change to light mode" })
+      : page.getByRole("button", { name: "Open navigation" });
+    await expect(headerControl).toHaveCSS("pointer-events", "auto");
     const gallery = page.getByRole("region", { name: "Product gallery" });
     const strip = gallery.getByRole("group", { name: "Product photos" });
     const photos = strip.getByRole("button");
@@ -28,20 +33,22 @@ for (const viewport of [
     expect(rows).toBe(1);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 
+    // The breadcrumbs ride above the gallery, so their shared column is what sticks.
+    const column = gallery.locator("..");
     if (viewport.width >= 1024) {
-      await expect(gallery).toHaveCSS("position", "sticky");
-      const bounds = await gallery.boundingBox();
+      await expect(column).toHaveCSS("position", "sticky");
+      const bounds = await column.boundingBox();
       expect(bounds!.height + 112).toBeLessThan(viewport.height);
       const details = await page.getByRole("heading", { name: "Name Tag Shirt", exact: true }).locator("..").boundingBox();
       if (details!.height > bounds!.height + 2) {
-        // Scroll within the available right-column content, keeping the gallery
-        // clear of the site header. Short descriptions need no sticky interval.
+        // Scroll within the available right-column content, keeping the sticky
+        // column clear of the site header. Short descriptions need no sticky interval.
         const top = bounds!.y - 112 + (details!.height - bounds!.height) / 2;
         await page.evaluate((top) => window.scrollTo({ top, behavior: "instant" }), top);
-        await expect.poll(async () => (await gallery.boundingBox())!.y).toBeCloseTo(112, 0);
+        await expect.poll(async () => (await column.boundingBox())!.y).toBeCloseTo(112, 0);
       }
     } else {
-      await expect(gallery).toHaveCSS("position", "static");
+      await expect(column).toHaveCSS("position", "static");
     }
 
     await gallery.getByRole("button", { name: "Previous photo", exact: true }).click();
