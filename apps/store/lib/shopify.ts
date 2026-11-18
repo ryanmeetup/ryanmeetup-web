@@ -529,6 +529,21 @@ export async function getProduct(handle: string): Promise<ProductListing | null>
   return getShopifyProduct(resolveProductHandle(handle));
 }
 
+/**
+ * A product's current title from its numeric Shopify ID, or null when no such
+ * product exists. Used as the snapshot on a review written without an order.
+ */
+export async function getProductTitleById(productId: string): Promise<string | null> {
+  const id = `gid://shopify/Product/${productId}`;
+  if (!isShopifyConfigured()) return demoProducts.find((product) => product.id === id)?.title ?? null;
+  const data = await storefrontRequest<{ product: { title: string } | null }>(
+    `query ProductTitle($id: ID!) { product(id: $id) { title } }`,
+    { id },
+    { revalidate: 300 },
+  );
+  return data.product?.title ?? null;
+}
+
 async function getShopifyProduct(handle: string): Promise<Product | null> {
   if (!isShopifyConfigured()) {
     return demoProducts.find((product) => product.handle === handle) ?? null;

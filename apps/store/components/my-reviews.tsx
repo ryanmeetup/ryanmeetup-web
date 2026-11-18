@@ -60,7 +60,7 @@ export function MyReviews({ initial }: { initial: MyReviewView | null }) {
     </div>
     {mine.view?.page.nextCursor && <Button className="w-full sm:w-auto" variant="secondary" disabled={mine.pending} onClick={()=>void mine.load(true)}>Load more reviews</Button>}
     {editing && <CustomReviewComposer key={`${editing.id}-${editing.updatedAt}`} open
-      access={{status:"ready",buyer:{firstName:null,lastName:null},purchases:[{lineId:editing.lineId,label:editing.item.variantTitle ? `${editing.item.productTitle} · ${editing.item.variantTitle}`:editing.item.productTitle}],defaultNameStyle:editing.current.nameStyle}}
+      access={{status:"ready",account:{email:null},buyer:{firstName:null,lastName:null},purchases:editing.lineId?[{lineId:editing.lineId,label:editing.item.variantTitle ? `${editing.item.productTitle} · ${editing.item.variantTitle}`:editing.item.productTitle}]:[],defaultNameStyle:editing.current.nameStyle}}
       product={{title:editing.item.productTitle,featuredImage:null}}
       edit={{initial:editing.current,nameChoices:buyerReviewNameChoices(editing,mine.view?.buyerName??null)}}
       onClose={mine.dismiss} onSubmit={(review)=>mine.save(editing,{rating:review.rating,title:review.title,body:review.body,nameStyle:review.nameStyle})} />}

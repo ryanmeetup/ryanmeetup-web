@@ -69,6 +69,10 @@ async function executeStoreReview(admin: SupabaseClient, shopId: string, command
       data = { reviews: page, nextCursor: reviews.length > 20 && last ? encodeBuyerReviewCursor({ id:last.id,createdAt:last.createdAt }) : null };
       break;
     }
+    case "reviews.reviewedProducts":
+      data = check(await admin.rpc("store_buyer_reviewed_products", { p_shop_id: shopId, p_subject: command.subject, p_product_ids: command.productIds }));
+      if (!Array.isArray(data) || data.some((product) => !command.productIds.includes(product))) throw new ReviewBackendError();
+      break;
     case "reviews.reviewedLines":
       data = check(await admin.rpc("store_buyer_reviewed_lines", { p_shop_id:shopId,p_subject:command.subject,p_line_ids:command.lineIds }));
       if (!Array.isArray(data) || data.some((line) => !command.lineIds.includes(line))) throw new ReviewBackendError();

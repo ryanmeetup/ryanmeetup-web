@@ -34,10 +34,8 @@ const NAME_STYLE_LABELS: Record<ReviewNameStyle, string> = {
 /** What each state says when there's no form to show. */
 const CLOSED_COPY: Record<Exclude<CustomReviewAccess["status"], "ready">, { title: string; body: string }> = {
   unavailable: { title: "Reviews are closed for now", body: "Review collection is temporarily unavailable. Please try again later." },
-  "signed-out": { title: "Sign in to review", body: "Reviews come from verified purchases. Sign in with the email you ordered with, and we'll bring you right back here." },
-  "no-purchase": { title: "No purchase to review yet", body: "We couldn't find an order for this product on your account. Reviews open once your order has shipped." },
-  "needs-help": { title: "We need to check this order", body: "Your order for this product changed after checkout, like a refund or an edit, so we can't verify it automatically. Get in touch and we'll sort it out." },
-  reviewed: { title: "You've already reviewed this", body: "Thanks for weighing in. Each purchase gets one review; edit or withdraw yours from My reviews." },
+  "signed-out": { title: "Sign in to review", body: "Sign in with your store account and we'll bring you right back here. Use the email you ordered with, and your review gets a Verified badge." },
+  reviewed: { title: "You've already reviewed this", body: "Thanks for weighing in. Edit or withdraw your review from My reviews." },
 };
 
 type Draft = { lineId: string; rating: number | null; title: string; body: string; nameStyle: ReviewNameStyle };
@@ -59,7 +57,8 @@ export function CustomReviewComposer({
   product: Pick<Product, "title"> & { featuredImage: Product["featuredImage"] | null };
   open: boolean;
   onClose: () => void;
-  onSubmit: (review: ReviewSubmission & { lineId: string }) => Promise<CustomReviewResult>;
+  /** `lineId` is null for a review written without a matching order. */
+  onSubmit: (review: ReviewSubmission & { lineId: string | null }) => Promise<CustomReviewResult>;
   edit?: CustomReviewEdit;
 }) {
   const formId = useId();
@@ -91,7 +90,8 @@ export function CustomReviewComposer({
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!ready || pending) return;
-    if (!lineId) return setError("Choose which purchase you're reviewing.");
+    const verified = ready.purchases.length > 0;
+    if (verified && !lineId) return setError("Choose which purchase you're reviewing.");
     if (!draft.rating) {
       setError("Choose a rating before submitting your review.");
       ratingField.current?.querySelector("input")?.focus();
@@ -102,7 +102,7 @@ export function CustomReviewComposer({
     setPending(true);
     setError("");
     try {
-      const result = await onSubmit({ ...review, lineId });
+      const result = await onSubmit({ ...review, lineId: verified ? lineId : null });
       if (!result.ok) return setError(result.error);
       if (!edit) setDraft(freshDraft());
       onClose();
@@ -135,11 +135,7 @@ export function CustomReviewComposer({
               <Button type="button" variant="secondary" size="md" className="w-full sm:w-auto" onClick={close}>Close</Button>
               <Button.Link href="/reviews/mine" size="md" className="w-full sm:w-auto">My reviews</Button.Link>
             </div>
-          ) : access.status === "needs-help" ? (
-            <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
-              <Button type="button" variant="secondary" size="md" className="w-full sm:w-auto" onClick={close}>Close</Button>
-              <Button.Link href="/contact" size="md" className="w-full sm:w-auto">Contact us</Button.Link>
-            </div>
+
           ) : access.status === "signed-out" ? (
             <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
               <Button type="button" variant="secondary" size="md" className="w-full sm:w-auto" onClick={close}>Not now</Button>
@@ -183,8 +179,10 @@ export function CustomReviewComposer({
             onChange={(lineId) => setDraft((value) => ({ ...value, lineId }))}
             options={[{ value: "", label: "Choose a purchase" }, ...ready.purchases.map((purchase) => ({ value: purchase.lineId, label: purchase.label }))]}
           />
+        ) : ready.purchases.length ? (
+          <Text className="text-sm wrap-anywhere">Reviewing <span className="font-semibold">{ready.purchases[0].label}</span></Text>
         ) : (
-          <Text className="text-sm wrap-anywhere">Reviewing <span className="font-semibold">{ready.purchases[0]?.label}</span></Text>
+          <Text className="text-sm">We didn&apos;t find an order for this on your account, so your review shows without the Verified badge.</Text>
         )}
         <div ref={ratingField} onInvalid={() => setError("Choose a rating before submitting your review.")}>
           <StarRating label="Rating" name={`${formId}-rating`} step={1} required disabled={pending} value={draft.rating} onChange={(rating) => setDraft((value) => ({ ...value, rating }))} />

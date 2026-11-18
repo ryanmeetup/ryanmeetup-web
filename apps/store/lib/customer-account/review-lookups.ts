@@ -1,4 +1,4 @@
-import type { ReviewPurchase } from "@ryanmeetup/reviews";
+import type { VerifiedReviewPurchase } from "@ryanmeetup/reviews";
 import type { ReviewEligibility, ReviewNoneReason, ReviewablePurchaseLine } from "../review-purchases";
 import { createCustomerAccountApi, discoverCustomerAccountApi } from "./api";
 import { readReviewBuyer, readReviewOrderCandidates } from "./buyer-reader";
@@ -18,7 +18,7 @@ function label(value: string) {
 }
 
 /** Keep reference kinds explicit and IDs as strings, including 64-bit values. */
-export function reviewBackendPurchase(purchase: EligibleReviewPurchase): ReviewPurchase | null {
+export function reviewBackendPurchase(purchase: EligibleReviewPurchase): VerifiedReviewPurchase | null {
   const orderId = numericId(purchase.orderId, "Order");
   const lineId = numericId(purchase.lineId, "LineItem");
   const productId = numericId(purchase.productId, "Product");

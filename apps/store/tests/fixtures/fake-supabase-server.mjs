@@ -31,6 +31,7 @@ function review(name,a){
   const owned=records.filter((r)=>r.subject===a.p_subject);
   if(name==="store_review_summary")return {count:0,average:0,distribution:{1:0,2:0,3:0,4:0,5:0}};
   if(name==="store_public_reviews")return [];
+  if(name==="store_buyer_reviewed_products")return [...new Set(owned.filter((r)=>r.value.lineId===null&&r.value.status!=="withdrawn"&&a.p_product_ids.includes(r.value.item.productId)).map((r)=>r.value.item.productId))];
   if(name==="store_buyer_reviewed_lines"&&options.failReviewedLines)return null;
   if(name==="store_buyer_reviewed_lines")return owned.filter((r)=>r.value.status!=="withdrawn"&&a.p_line_ids.includes(r.value.lineId)).map((r)=>r.value.lineId);
   if(name==="store_buyer_reviews"){
@@ -42,7 +43,8 @@ function review(name,a){
   if(name==="store_submit_review"){
     const purchase={orderId:a.p_order_id,lineId:a.p_line_id,productId:a.p_product_id,variantId:a.p_variant_id,productTitle:a.p_product_title,variantTitle:a.p_variant_title};
     calls.push({operation:"review.submit",subject:a.p_subject,purchase,submission:submission(a),displayName:a.p_display_name});
-    if(owned.some((r)=>r.value.lineId===a.p_line_id))return [{review_id:null,outcome:"exists"}];
+    const same=(r)=>a.p_line_id===null?r.value.lineId===null&&r.value.item.productId===a.p_product_id:r.value.lineId===a.p_line_id;
+    if(owned.some(same))return [{review_id:null,outcome:"exists"}];
     const created=row(500+ ++tick,"pending",a.p_subject);
     Object.assign(created.value,{lineId:a.p_line_id,item:{productId:a.p_product_id,productTitle:a.p_product_title,variantTitle:a.p_variant_title},
       current:{...submission(a),displayName:a.p_display_name}});

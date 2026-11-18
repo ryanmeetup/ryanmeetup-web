@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { reviewCommandSchema } from "@ryanmeetup/reviews";
 import { createReviewBackend, ReviewBackendError } from "../lib/review-backend";
 import { getCustomReviews, numericProductId } from "../lib/custom-reviews";
 import { getStoreDatabase } from "../lib/store-database";
@@ -46,6 +47,22 @@ test("a page read runs the fixed RPCs for the configured shop", async () => {
   expect(calls.map(({ name }) => name).sort()).toEqual(["store_public_reviews", "store_review_summary"]);
   expect(calls.every(({ args }) => args.p_shop_id === shopId)).toBe(true);
   expect(calls.find(({ name }) => name === "store_public_reviews")?.args).toMatchObject({ p_product_ids: ["100"], p_limit: 21 });
+});
+
+test("a review without a matching order sends no order details, and reviewed products come from their own RPC", async () => {
+  const submission = { rating: 4, title: "Gift", body: "Wearing it weekly.", nameStyle: "first-initial" } as const;
+  const product = { productId: "100", variantId: null, productTitle: "Name Tag Shirt", variantTitle: null };
+  const submit = (purchase: object) => reviewCommandSchema({ operation: "review.submit", subject: "buyer", purchase, submission, displayName: "Ryan L." });
+  expect(submit({ ...product, orderId: null, lineId: null })).not.toBeNull();
+  expect(submit({ ...product, orderId: "9000", lineId: "1" })).not.toBeNull();
+  for (const half of [{ orderId: "9000", lineId: null }, { orderId: null, lineId: "1" }, { orderId: null, lineId: null, variantId: "200" }, { orderId: null, lineId: null, variantTitle: "Black / M" }]) {
+    expect(submit({ ...product, orderId: null, lineId: null, ...half })).toBeNull();
+  }
+  const { calls, backend } = database({ store_buyer_reviewed_products: [["100"]] });
+  expect(await backend({ operation: "reviews.reviewedProducts", subject: "buyer", productIds: ["100", "101"] })).toEqual(["100"]);
+  expect(calls).toEqual([{ name: "store_buyer_reviewed_products", args: { p_shop_id: shopId, p_subject: "buyer", p_product_ids: ["100", "101"] } }]);
+  // A product the page didn't ask about is an unexpected row, not an answer.
+  await expect(database({ store_buyer_reviewed_products: [["999"]] }).backend({ operation: "reviews.reviewedProducts", subject: "buyer", productIds: ["100"] })).rejects.toThrow(ReviewBackendError);
 });
 
 test("malformed commands never reach the database", async () => {

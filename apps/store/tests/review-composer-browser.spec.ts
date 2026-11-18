@@ -27,7 +27,7 @@ async function choose(page: Page, name: string) {
 async function openComposer(page: Page) {
   await page.goto(productPath);
   const reviews = page.locator("#reviews");
-  await expect(reviews).toContainText("For verified purchases");
+  await expect(reviews).toContainText("Signed in as your store account");
   await reviews.getByRole("button", { name: "Write a review", exact: true }).click();
   return { reviews, dialog: page.getByRole("dialog", { name: "Write a review", exact: true }) };
 }
@@ -82,7 +82,7 @@ test("a reviewed purchase can't be reviewed again", async ({ page, baseURL }) =>
   await expect(dialog).toHaveCount(0);
   await page.reload();
   await reviews.getByRole("button", { name: "Write a review", exact: true }).click();
-  await expect(page.getByRole("dialog", { name: "You've already reviewed this", exact: true }).getByText("Each purchase gets one review")).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "You've already reviewed this", exact: true }).getByText("Edit or withdraw your review")).toBeVisible();
 });
 
 test("the buyer must pick a rating and give a title before submitting", async ({ page, baseURL }) => {
@@ -107,7 +107,7 @@ test("a single purchase stays implied when access changes without a remount", as
   await expect(reviews).toContainText("Review collection is temporarily unavailable.");
   await configure(request, { failReviewedLines: false });
   await choose(page, "Environment default");
-  await expect(reviews).toContainText("For verified purchases");
+  await expect(reviews).toContainText("Signed in as your store account");
   await reviews.getByRole("button", { name: "Write a review", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Write a review", exact: true });
   await dialog.getByRole("radio", { name: "5 stars", exact: true }).check();
@@ -116,6 +116,53 @@ test("a single purchase stays implied when access changes without a remount", as
   await dialog.getByRole("button", { name: "Submit review", exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await expect(reviews.getByRole("status").filter({ hasText: "Review received" })).toContainText("Thanks! Your review is waiting for approval.");
+});
+
+test("a signed-in buyer without a matching order writes an unverified review", async ({ page, request, baseURL }) => {
+  await configure(request, { purchase: null });
+  await signIn(page, baseURL!);
+  const { reviews, dialog } = await openComposer(page);
+  await expect(dialog).toContainText("We didn't find an order for this on your account, so your review shows without the Verified badge.");
+  await expect(dialog.getByRole("button", { name: /^Purchase/ })).toHaveCount(0);
+  await expect(dialog).toContainText("Shown publicly as Ryan F.");
+  await dialog.getByRole("radio", { name: "4 stars", exact: true }).check();
+  await dialog.getByLabel(/^Title/).fill("Got it as a gift");
+  await dialog.getByLabel(/^Review/).fill("Didn't buy it myself, still wearing it every week.");
+  await dialog.getByRole("button", { name: "Submit review", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(reviews.getByRole("status").filter({ hasText: "Review received" })).toContainText("Thanks! Your review is waiting for approval.");
+  const { calls } = await state(request);
+  expect(calls).toEqual([expect.objectContaining({
+    operation: "review.submit", subject: "buyer-a", displayName: "Ryan F.",
+    purchase: { orderId: null, lineId: null, productId: demoProductId("ryan-meetup-tee").split("/").at(-1), variantId: null, productTitle: "Official Ryan Meetup Tee", variantTitle: null },
+  })]);
+  // One unverified review per product.
+  await page.reload();
+  await reviews.getByRole("button", { name: "Write a review", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "You've already reviewed this", exact: true }).getByText("Edit or withdraw your review")).toBeVisible();
+});
+
+test("a signed-in buyer can see who they are and sign out", async ({ page, request, baseURL }) => {
+  await signIn(page, baseURL!);
+  await page.goto(productPath);
+  const reviews = page.locator("#reviews");
+  await expect(reviews).toContainText("Signed in as your store account");
+  // The real logout route checks the registered storefront origin, which this
+  // localhost suite can't present (see customer-account-http.spec.ts). Answer
+  // it the way the server does: end the session cookie and report success.
+  let signOuts = 0;
+  await page.route("**/api/reviews/auth/logout", async (route) => {
+    expect(route.request().method()).toBe("POST");
+    signOuts += 1;
+    await page.context().clearCookies({ name: "__Host-store-customer-session" });
+    await route.fulfill({ json: { signedOut: true } });
+  });
+  await reviews.getByRole("button", { name: "Sign out", exact: true }).click();
+  await expect(reviews).not.toContainText("Signed in as");
+  await reviews.getByRole("button", { name: "Write a review", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Sign in to review", exact: true }).getByRole("link", { name: "Sign in", exact: true })).toBeVisible();
+  expect(signOuts).toBe(1);
+  expect((await state(request)).calls).toEqual([]);
 });
 
 test("a signed-out visitor is asked to sign in", async ({ page }) => {

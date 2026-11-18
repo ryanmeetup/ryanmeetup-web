@@ -59,6 +59,7 @@ export type {
   ReviewCursor,
   ReviewOperation,
   ReviewPurchase,
+  VerifiedReviewPurchase,
   ReviewResults,
   ReviewSubmitOutcome,
 } from "./review-backend";

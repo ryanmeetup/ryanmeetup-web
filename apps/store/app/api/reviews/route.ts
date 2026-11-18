@@ -5,7 +5,8 @@ import { getCustomerAccountSession } from "@/lib/customer-account/runtime";
 import { submitCustomReview } from "@/lib/custom-review-submission";
 import { getReviewBackend } from "@/lib/review-backend";
 import { numericProductId } from "@/lib/custom-reviews";
-import { findReviewablePurchases } from "@/lib/review-purchases";
+import { findBuyerName, findReviewablePurchases } from "@/lib/review-purchases";
+import { getProductTitleById } from "@/lib/shopify";
 import { hasJsonBody, isSameOriginRequest, privateJson, readJsonObject } from "@/lib/request-guard";
 
 const fail = (error: string, status: number) => privateJson(status, { error });
@@ -24,7 +25,10 @@ function text(value: unknown, max: number) {
 export async function POST(request: Request) {
   const provider = resolveRequestReviewProvider(request);
   if (provider === "custom") {
-    return submitCustomReview(request, { loadSession: () => getCustomerAccountSession(request), findPurchases: findReviewablePurchases, backend: getReviewBackend() });
+    return submitCustomReview(request, {
+      loadSession: () => getCustomerAccountSession(request), findPurchases: findReviewablePurchases,
+      findBuyerName, findProductTitle: getProductTitleById, backend: getReviewBackend(),
+    });
   }
   if (provider !== "judgeme") {
     return fail("Review collection is temporarily unavailable. Please try again later.", 503);

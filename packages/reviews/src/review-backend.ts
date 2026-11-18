@@ -1,9 +1,9 @@
 /**
- * Private server-to-server contract between the storefront and the review
- * backend. The storefront sends only what it has already verified: the buyer's
- * Shopify subject from their session, and the purchased line from Shopify.
- * The backend pins the shop from its own configuration. Never expose these
- * commands to a browser.
+ * Private contract between the storefront server and review storage. The
+ * storefront sends only what it has already verified: the buyer's Shopify
+ * subject from their session, and the purchased line from Shopify, or no line
+ * for a review without a matching order. Storage pins the shop from its own
+ * configuration. Never expose these commands to a browser.
  */
 
 import {
@@ -17,15 +17,22 @@ import {
 } from "./content";
 
 
-/** A purchased order line the storefront has verified with Shopify. */
+/**
+ * What a review is written against. A purchased order line the storefront has
+ * verified with Shopify carries its order and line; a signed-in buyer with no
+ * matching order reviews the product alone, with both set to null and no variant.
+ */
 export type ReviewPurchase = {
-  orderId: string;
-  lineId: string;
+  orderId: string | null;
+  lineId: string | null;
   productId: string;
   variantId: string | null;
   productTitle: string;
   variantTitle: string | null;
 };
+
+/** A purchased line found in the buyer's Shopify orders: always has its order and line. */
+export type VerifiedReviewPurchase = ReviewPurchase & { orderId: string; lineId: string };
 
 /** How a buyer's own review stands, in words they can act on. */
 export type BuyerReviewStatus = "pending" | "published" | "rejected" | "hidden" | "withdrawn";
@@ -33,7 +40,8 @@ export type BuyerReviewStatus = "pending" | "published" | "rejected" | "hidden" 
 /** One of the signed-in buyer's own reviews, for "My reviews". Never public. */
 export type BuyerReview = {
   id: string;
-  lineId: string;
+  /** Null when the review was written without a matching order. */
+  lineId: string | null;
   item: PublicReviewItem;
   status: BuyerReviewStatus;
   /** Published, with a newer edit waiting for approval. */
@@ -55,7 +63,9 @@ export type ReviewCommand =
   | { operation: "reviews.page"; productIds: string[]; limit: number; cursor: string | null }
   | { operation: "reviews.mine"; subject: string; cursor: string | null }
   | { operation: "review.mine"; subject: string; reviewId: string }
-  | { operation: "reviews.reviewedLines"; subject: string; lineIds: string[] };
+  | { operation: "reviews.reviewedLines"; subject: string; lineIds: string[] }
+  /** Products the buyer already reviewed without a matching order. */
+  | { operation: "reviews.reviewedProducts"; subject: string; productIds: string[] };
 export type ReviewOperation = ReviewCommand["operation"];
 
 export type ReviewSubmitOutcome = "created" | "exists" | "resubmitted" | "forbidden";
@@ -68,6 +78,7 @@ export type ReviewResults = {
   "reviews.mine": BuyerReviewPage;
   "review.mine": BuyerReview | null;
   "reviews.reviewedLines": string[];
+  "reviews.reviewedProducts": string[];
 };
 
 function exactObject(value: unknown, keys: readonly string[]): Record<string, unknown> | null {
@@ -86,8 +97,9 @@ const singleLine = (value: unknown, max: number): value is string =>
 
 function purchaseSchema(value: unknown): ReviewPurchase | null {
   const purchase = exactObject(value, ["orderId", "lineId", "productId", "variantId", "productTitle", "variantTitle"]);
-  return purchase && numericId(purchase.orderId) && numericId(purchase.lineId) && numericId(purchase.productId) &&
-    (purchase.variantId === null || numericId(purchase.variantId)) && singleLine(purchase.productTitle, 255) &&
+  const unverified = purchase && purchase.orderId === null && purchase.lineId === null;
+  return purchase && (unverified ? purchase.variantId === null && purchase.variantTitle === null : numericId(purchase.orderId) && numericId(purchase.lineId)) &&
+    numericId(purchase.productId) && (purchase.variantId === null || numericId(purchase.variantId)) && singleLine(purchase.productTitle, 255) &&
     (purchase.variantTitle === null || singleLine(purchase.variantTitle, 255))
     ? (purchase as ReviewPurchase) : null;
 }
@@ -132,6 +144,11 @@ export function reviewCommandSchema(value: unknown): ReviewCommand | null {
       const command = exactObject(value, ["operation", "subject", "reviewId"]);
       return command && subject(command.subject) && uuid(command.reviewId) ? (command as ReviewCommand) : null;
     }
+    case "reviews.reviewedProducts": {
+      const command = exactObject(value, ["operation", "subject", "productIds"]);
+      return command && subject(command.subject) && Array.isArray(command.productIds) && command.productIds.length > 0 && command.productIds.length <= 50 &&
+        command.productIds.every(numericId) && new Set(command.productIds).size === command.productIds.length ? (command as ReviewCommand) : null;
+    }
     case "reviews.reviewedLines": {
       const command = exactObject(value, ["operation", "subject", "lineIds"]);
       return command && subject(command.subject) && Array.isArray(command.lineIds) && command.lineIds.length > 0 && command.lineIds.length <= 2000 &&
@@ -153,7 +170,7 @@ function buyerReviewSchema(value: unknown): BuyerReview | null {
   const review = exactObject(value, ["id", "lineId", "item", "status", "hasPendingEdit", "publishedAt", "createdAt", "updatedAt", "current"]);
   const item = review && exactObject(review.item, ["productId", "productTitle", "variantTitle"]);
   const current = review && exactObject(review.current, ["rating", "title", "body", "nameStyle", "displayName"]);
-  return review && item && current && uuid(review.id) && numericId(review.lineId) &&
+  return review && item && current && uuid(review.id) && (review.lineId === null || numericId(review.lineId)) &&
     numericId(item.productId) && singleLine(item.productTitle,255) && (item.variantTitle === null || singleLine(item.variantTitle,255)) &&
     ["pending","published","rejected","hidden","withdrawn"].includes(review.status as string) &&
     typeof review.hasPendingEdit === "boolean" && (!review.hasPendingEdit || review.status === "published") &&
@@ -192,6 +209,8 @@ export function reviewResultSchema<Operation extends ReviewOperation>(operation:
     valid = data === null || buyerReviewSchema(data) !== null;
   } else if (operation === "reviews.reviewedLines") {
     valid = Array.isArray(data) && data.length <= 2000 && data.every(numericId) && new Set(data).size === data.length;
+  } else if (operation === "reviews.reviewedProducts") {
+    valid = Array.isArray(data) && data.length <= 50 && data.every(numericId) && new Set(data).size === data.length;
   }
   return valid ? { data: data as ReviewResults[Operation] } : null;
 }
