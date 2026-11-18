@@ -43,6 +43,9 @@ export type {
   ReviewSummary,
 } from "./content";
 export {
+  buyerReviewTimestamp,
+  decodeBuyerReviewCursor,
+  encodeBuyerReviewCursor,
   decodeReviewCursor,
   encodeReviewCursor,
   reviewBackendPath,
@@ -50,6 +53,10 @@ export {
   reviewResultSchema,
 } from "./review-backend";
 export type {
+  BuyerReview,
+  BuyerReviewStatus,
+  BuyerReviewPage,
+  BuyerReviewCursor,
   ReviewCommand,
   ReviewCursor,
   ReviewOperation,

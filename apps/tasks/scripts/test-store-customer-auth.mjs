@@ -19,6 +19,7 @@ const container = `supabase_db_${projectId}`;
 const database = "postgres";
 const migration = fileURLToPath(new URL("../supabase/migrations/20261120130000_store_customer_auth_storage.sql", import.meta.url));
 const reviewsMigration = fileURLToPath(new URL("../supabase/migrations/20261120140000_store_reviews.sql", import.meta.url));
+const buyerReviewsMigration = fileURLToPath(new URL("../supabase/migrations/20261120180000_store_buyer_reviews.sql", import.meta.url));
 
 function run(command, args, input, inherit = false) {
   const result = spawnSync(command, args, { cwd: appRoot, input, encoding: "utf8", stdio: inherit ? "inherit" : undefined, maxBuffer: 32 * 1024 * 1024 });
@@ -87,8 +88,9 @@ try {
   } else {
     sql(readFileSync(migration, "utf8"));
     sql(readFileSync(reviewsMigration, "utf8"));
+    sql(readFileSync(buyerReviewsMigration, "utf8"));
     console.log("PASS: full migration reset and idempotent auth and review migration replay");
-    run("supabase", ["test", "db", "--workdir", testRoot, join(appRoot, "tests/database/store-customer-auth.sql"), join(appRoot, "tests/database/store-reviews.sql"), join(appRoot, "supabase/tests/access_control.sql")], undefined, true);
+    run("supabase", ["test", "db", "--workdir", testRoot, join(appRoot, "tests/database/store-customer-auth.sql"), join(appRoot, "tests/database/store-reviews.sql"), join(appRoot, "tests/database/store-buyer-reviews.sql"), join(appRoot, "supabase/tests/access_control.sql")], undefined, true);
     const integration = spawnSync("npx", ["playwright", "test", "tests/customer-account-storage.spec.ts", "--workers=1"], {
       cwd: fileURLToPath(new URL("../../store/", import.meta.url)),
       env: { ...process.env, STORE_AUTH_TEST_CONTAINER: container }, stdio: "inherit",

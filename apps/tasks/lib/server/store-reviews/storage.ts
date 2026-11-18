@@ -1,8 +1,8 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { decodeReviewCursor, encodeReviewCursor, publicReviewPageSchema, reviewResultSchema } from "@ryanmeetup/reviews";
-import type { PublicReview, ReviewCommand } from "@ryanmeetup/reviews";
+import { decodeBuyerReviewCursor, encodeBuyerReviewCursor, decodeReviewCursor, encodeReviewCursor, publicReviewPageSchema, reviewResultSchema } from "@ryanmeetup/reviews";
+import type { BuyerReview, PublicReview, ReviewCommand } from "@ryanmeetup/reviews";
 
 export class StoreReviewDatabaseError extends Error {
   constructor(readonly code?: string) { super("Store review storage failed."); }
@@ -34,14 +34,41 @@ export async function executeStoreReview(admin: SupabaseClient, shopId: string, 
     }
     case "review.edit": {
       const { submission } = command;
-      data = check(await admin.rpc("store_edit_review", {
-        p_review_id: command.reviewId, p_shop_id: shopId, p_subject: command.subject, p_rating: submission.rating,
+      data = check(await admin.rpc("store_edit_buyer_review", {
+        p_review_id: command.reviewId, p_shop_id: shopId, p_subject: command.subject, p_expected_updated_at: command.expectedUpdatedAt, p_rating: submission.rating,
         p_title: submission.title, p_body: submission.body, p_name_style: submission.nameStyle, p_display_name: command.displayName,
       }));
       break;
     }
     case "review.withdraw":
-      data = check(await admin.rpc("store_withdraw_review", { p_review_id: command.reviewId, p_shop_id: shopId, p_subject: command.subject }));
+      data = check(await admin.rpc("store_withdraw_buyer_review", { p_review_id: command.reviewId, p_shop_id: shopId, p_subject: command.subject, p_expected_updated_at: command.expectedUpdatedAt }));
+      break;
+    case "review.mine": {
+      const rows = check(await admin.rpc("store_buyer_reviews", { p_shop_id: shopId, p_subject: command.subject, p_review_id: command.reviewId, p_limit: 1 }));
+      if (!Array.isArray(rows) || rows.length > 1 || (rows.length === 1 && rows[0]?.id !== command.reviewId)) throw new StoreReviewDatabaseError();
+      data = rows[0] ?? null;
+      break;
+    }
+    case "reviews.mine": {
+      const after = command.cursor ? decodeBuyerReviewCursor(command.cursor) : null;
+      const rows = check(await admin.rpc("store_buyer_reviews", { p_shop_id: shopId, p_subject: command.subject, p_limit: 21,
+        p_after_created_at: after?.createdAt ?? null, p_after_id: after?.id ?? null }));
+      if (!Array.isArray(rows) || rows.length > 21) throw new StoreReviewDatabaseError();
+      // Validate the extra row before it can influence a private cursor.
+      const reviews: BuyerReview[] = [];
+      for (const row of rows) {
+        const parsed = reviewResultSchema("review.mine", { data: row });
+        if (!parsed?.data) throw new StoreReviewDatabaseError();
+        reviews.push(parsed.data);
+      }
+      const page = reviews.slice(0,20);
+      const last = page.at(-1);
+      data = { reviews: page, nextCursor: reviews.length > 20 && last ? encodeBuyerReviewCursor({ id:last.id,createdAt:last.createdAt }) : null };
+      break;
+    }
+    case "reviews.reviewedLines":
+      data = check(await admin.rpc("store_buyer_reviewed_lines", { p_shop_id:shopId,p_subject:command.subject,p_line_ids:command.lineIds }));
+      if (!Array.isArray(data) || data.some((line) => !command.lineIds.includes(line))) throw new StoreReviewDatabaseError();
       break;
     case "reviews.page": {
       const after = command.cursor ? decodeReviewCursor(command.cursor) : null;
