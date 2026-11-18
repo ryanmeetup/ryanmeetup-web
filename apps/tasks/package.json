@@ -19,8 +19,9 @@
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "test:e2e:ryd": "playwright test --config=playwright.ryd.config.ts",
+    "test:e2e:reviews": "playwright test --config=playwright.reviews.config.ts",
     "test:e2e": "playwright test",
-    "test:ci": "npm run typecheck && npm run test:coverage && npm run test:e2e && npm run test:e2e:ryd"
+    "test:ci": "npm run typecheck && npm run test:coverage && npm run test:e2e && npm run test:e2e:ryd && npm run test:e2e:reviews"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

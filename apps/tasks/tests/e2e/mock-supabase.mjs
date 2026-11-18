@@ -1,5 +1,6 @@
 import { createServer } from "node:http";
 import { createRydFixture } from "./ryd-fixture.mjs";
+import { createReviewModerationFixture } from "./review-moderation-fixture.mjs";
 
 const port = Number(process.env.PLAYWRIGHT_SUPABASE_PORT ?? 54329);
 
@@ -123,6 +124,9 @@ const ryd =
     ? createRydFixture(json, readBody, profile)
     : null;
 
+const reviewModeration = process.env.PLAYWRIGHT_STORE_REVIEWS_FIXTURE === "1"
+  ? createReviewModerationFixture(json, readBody, profile) : null;
+
 const server = createServer(async (request, response) => {
   const url = new URL(request.url ?? "/", `http://${request.headers.host}`);
   const signedIn = (request.headers.authorization ?? "").includes(".");
@@ -145,6 +149,7 @@ const server = createServer(async (request, response) => {
   }
 
   if (ryd && (await ryd(request, response, url, { single, signedIn }))) return;
+  if (reviewModeration && (await reviewModeration(request, response, url))) return;
 
   if (url.pathname === "/rest/v1/instance_settings") {
     json(response, 200, {});
