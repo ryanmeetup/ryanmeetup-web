@@ -199,3 +199,20 @@ test("logout rejects cross-origin requests and preserves retry capability during
   expect(response.status).toBe(503);
   expect(response.cookies.get(customerSessionCookie)).toBeUndefined();
 });
+
+test("failed sign-in navigations land on an explanation page instead of raw JSON", async () => {
+  const html = { accept: "text/html,application/xhtml+xml" };
+  const blocked = await start(new Request("https://store.test/api/reviews/auth/start", { headers: { ...html, "sec-fetch-site": "cross-site" } }));
+  expect(blocked.status).toBe(303);
+  expect(blocked.headers.get("location")).toBe("/reviews/sign-in?problem=blocked");
+  const { state, binding } = await begin();
+  await callback(callbackRequest(state, binding));
+  const replayed = callbackRequest(state, binding);
+  replayed.headers.set("accept", html.accept);
+  const expired = await callback(replayed);
+  expect(expired.headers.get("location")).toBe("/reviews/sign-in?problem=expired");
+  expect(expired.cookies.get(customerAuthorizationCookie)?.value).toBe("");
+  process.env.STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED = "false";
+  const unavailable = await start(new Request("https://store.test/api/reviews/auth/start", { headers: html }));
+  expect(unavailable.headers.get("location")).toBe("/reviews/sign-in?problem=unavailable");
+});

@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { readCookie } from "../request-guard";
 import { resolveReviewProvider, reviewPreviewCookie } from "../review-provider";
 import { customerAccountIssuer, getCustomerAccountConfiguration } from "./config";
 import { discoverCustomerAccountEndpoints } from "./discovery";
@@ -26,8 +26,7 @@ export function getCustomerAccountPersistence({ logout = false } = {}) {
 
 /** Compose server credentials at request time; absent dependencies stay closed. */
 export function getCustomerAccountStorageService(request: Request, { logout = false } = {}) {
-  const preview = new NextRequest(request.url, { headers: request.headers }).cookies.get(reviewPreviewCookie)?.value;
-  if (!logout && resolveReviewProvider(preview) !== "custom") return null;
+  if (!logout && resolveReviewProvider(readCookie(request, reviewPreviewCookie)) !== "custom") return null;
   return getCustomerAccountPersistence({ logout });
 }
 
@@ -44,7 +43,7 @@ export async function getCustomerSignInService(request: Request): Promise<Custom
 export async function getCustomerAccountSession(request: Request): Promise<CustomerSessionResult> {
   const persistence = getCustomerAccountStorageService(request);
   if (!persistence) return { status: "unavailable" };
-  const id = new NextRequest(request.url, { headers: request.headers }).cookies.get(customerSessionCookie)?.value;
+  const id = readCookie(request, customerSessionCookie);
   const { config, storage } = persistence;
   const load = createCustomerSessionLoader({
     storage, backendOrigin: process.env.STORE_REVIEWS_BACKEND_URL ?? "",
