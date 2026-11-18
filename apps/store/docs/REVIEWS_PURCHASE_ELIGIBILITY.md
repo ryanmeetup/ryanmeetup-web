@@ -11,11 +11,16 @@ installation's buyer/order permissions. Judge.me remains the default.
 | `24cb311e` | Public shop API discovery, pinned/validated buyer-token transport, and the fixed purchase query. | 5 transport checks and offline Shopify Customer schema validation passed. |
 | `c4dcaa0d` | Owned-order projection with independent bounded line/fulfillment pagination and exact fulfillment-line links. | 8 ownership/pagination checks passed. |
 | `0d47d4eb` | Private exact-line eligibility plus session checks before and after an eligible lookup. | 7 rule checks and 6 runtime checks passed. Together with existing auth/renewal checks: 71 passed. Changed-file ESLint, TypeScript, diff check, and storefront production build passed. |
+| `2a6464f0` | Add authenticated private hash continuations, a persistence factory, and one shared immutable-session comparison for lookups. | Encrypted session tests cover valid continuations, invalid hashes, tampering, and revocation; auth/renewal regressions pass. |
+| `37cec0da` | Discover buyer names and complete bounded order/line candidates. | Both new GraphQL documents passed offline 2026-10 schema validation; 4 reader checks cover identity, pagination, malformed data, and incomplete history. |
+| `1d2ae6c2` | Replace the picker and buyer-name placeholders, normalize exact GID kinds, and connect the real submission route to the verified lookup. | 13 lookup/integration checks cover current stored tokens, forged caller fields, ownership, names, failures/revocation, full numeric precision, the request budget, and pending-review commands. Combined 73 focused checks, TypeScript, changed-file ESLint, diff check, and storefront production build passed. |
 
-All buyer/provider data in these tests is synthetic. No migration, hosted
+All buyer/provider data in these tests is synthetic, including the real-route
+tests' remote storage responses. No migration, hosted
 database, client credential, enable flag, or provider default was changed by
 these purchase commits. Concurrent composer, submission, and buyer-management
-files were left with their owner. The shared `REVIEWS_HANDOFF.md` has active
+files were left with their owner; the two existing lookup placeholders and
+their related type aliases were completed here. The shared `REVIEWS_HANDOFF.md` has active
 edits from that work; use this document for this checker's current handoff.
 
 The product-level `findReviewablePurchases` and `findBuyerName` hooks are now
