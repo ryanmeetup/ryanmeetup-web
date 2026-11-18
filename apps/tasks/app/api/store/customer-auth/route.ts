@@ -2,13 +2,13 @@ import { NextResponse } from "next/server";
 import { customerAuthCommandSchema } from "@/lib/api-schema";
 import { apiError, databaseFailure, privateResponse } from "@/lib/server/api-response";
 import { readJson } from "@/lib/server/request";
-import { authorizeStoreCustomerAuth } from "@/lib/server/store-customer-auth/authorization";
+import { authorizeStoreService } from "@/lib/server/store-service-authorization";
 import { CustomerAuthDatabaseError, executeStoreCustomerAuth } from "@/lib/server/store-customer-auth/storage";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  const authorization = authorizeStoreCustomerAuth(request);
+  const authorization = authorizeStoreService(request);
   if ("response" in authorization) return privateResponse(authorization.response);
   const parsed = await readJson(request, customerAuthCommandSchema, { source: "service", maxBytes: 96 * 1024 });
   if ("response" in parsed) return privateResponse(parsed.response);

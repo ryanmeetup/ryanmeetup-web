@@ -254,7 +254,8 @@ than duplicating them, and coordinate before changing them.
 - **Review backend interface:** `POST /api/store/reviews` in Tasks
   (`lib/server/store-reviews/storage.ts`), contract in
   `packages/reviews/src/review-backend.ts`. It reuses
-  `authorizeStoreCustomerAuth` (same service token, pinned shop, PRD refused)
+  `authorizeStoreService` (`lib/server/store-service-authorization.ts`: one
+  service token for every store route, pinned shop, PRD refused)
   and offers `review.submit`, `review.edit`, `review.withdraw`, and
   `reviews.page` with opaque cursors. The storefront passes the verified
   session subject and purchased line; the backend never takes a shop from the
