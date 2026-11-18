@@ -186,7 +186,10 @@ and suppress referrers. Public host/proxy headers must match the registered
 HTTPS storefront; arbitrary return URLs cannot redirect away from it.
 
 Sign-out revokes the custom review session. It does not end the separate
-Shopify account session. It needs no discovery/token request and does not
+Shopify account session: the discovered `end_session_endpoint` is not called.
+Calling it means redirecting the browser there with an `id_token_hint` and a
+post-logout URI registered on the Customer Account client, and it would also
+sign the buyer out of Shopify checkout. That is an open product decision. It needs no discovery/token request and does not
 report success if backend revocation fails. No public session/token-read API
 or review-write access has been enabled.
 
