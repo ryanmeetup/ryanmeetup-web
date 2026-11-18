@@ -11,6 +11,11 @@ import type { CustomerAccountEncryptionKeys, CustomerAccountSecretContext } from
 export type CustomerAccountTokens = { accessToken: string; refreshToken: string; idToken: string };
 export type CustomerAccountSession = Omit<StoredCustomerSession, "encryptedTokens"> & { tokens: CustomerAccountTokens };
 
+export function sameCustomerAccountSession(first: CustomerAccountSession, second: CustomerAccountSession) {
+  return first.sessionHash === second.sessionHash && first.subject === second.subject &&
+    first.createdAt === second.createdAt && first.expiresAt === second.expiresAt && second.revision >= first.revision;
+}
+
 function privateObject(value: unknown, keys: string[]): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).every((key) => keys.includes(key))
     ? value as Record<string, unknown> : null;
@@ -40,6 +45,16 @@ export function createCustomerAccountStorage({ config, keyring, backend }: {
     kind: "session", ...scope, recordHash: row.sessionHash, subject: row.subject,
     createdAt: row.createdAt, expiresAt: row.expiresAt, accessExpiresAt: row.accessExpiresAt, revision: row.revision,
   });
+
+  async function loadSessionByHash(sessionHash: unknown): Promise<CustomerAccountSession | null> {
+    if (typeof sessionHash !== "string" || !/^[a-f0-9]{64}$/.test(sessionHash)) return null;
+    const row = await backend({ operation: "session.get", scope, sessionHash });
+    if (!row || row.sessionHash !== sessionHash || row.createdAt > Date.now() || row.expiresAt <= Date.now()) return null;
+    const tokens = parsePrivateJson(openCustomerAccountSecret(row.encryptedTokens, sessionContext(row), keyring));
+    if (!validTokens(tokens)) return null;
+    return { sessionHash: row.sessionHash, subject: row.subject, createdAt: row.createdAt, expiresAt: row.expiresAt,
+      accessExpiresAt: row.accessExpiresAt, revision: row.revision, tokens };
+  }
 
   return {
     async saveAuthorization(attempt: CustomerAuthorizationAttempt) {
@@ -84,14 +99,12 @@ export function createCustomerAccountStorage({ config, keyring, backend }: {
 
     async loadSession(id: unknown): Promise<CustomerAccountSession | null> {
       const sessionHash = customerAuthorizationProofHash(id);
-      if (!sessionHash) return null;
-      const row = await backend({ operation: "session.get", scope, sessionHash });
-      if (!row || row.sessionHash !== sessionHash || row.createdAt > Date.now() || row.expiresAt <= Date.now()) return null;
-      const tokens = parsePrivateJson(openCustomerAccountSecret(row.encryptedTokens, sessionContext(row), keyring));
-      if (!validTokens(tokens)) return null;
-      return { sessionHash: row.sessionHash, subject: row.subject, createdAt: row.createdAt, expiresAt: row.expiresAt,
-        accessExpiresAt: row.accessExpiresAt, revision: row.revision, tokens };
+      return sessionHash ? loadSessionByHash(sessionHash) : null;
     },
+
+    // Server-only continuation of an already authenticated session. This is
+    // never accepted as a browser sign-in credential or exposed in a route.
+    loadSessionByHash,
 
     async rotateSession(session: CustomerAccountSession, tokens: CustomerAccountTokens, accessExpiresAt: number) {
       if (!validTokens(tokens)) throw new CustomerAuthBackendError();

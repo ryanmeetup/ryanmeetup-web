@@ -11,10 +11,9 @@ import type { CustomerSignInService } from "./sign-in";
 import { createCustomerSessionLoader } from "./session";
 import type { CustomerSessionResult } from "./session";
 
-/** Compose server credentials at request time; absent dependencies stay closed. */
-export function getCustomerAccountStorageService(request: Request, { logout = false } = {}) {
-  const preview = new NextRequest(request.url, { headers: request.headers }).cookies.get(reviewPreviewCookie)?.value;
-  if (!logout && (process.env.STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED !== "true" || resolveReviewProvider(preview) !== "custom")) return null;
+/** Server persistence only; callers must separately establish buyer authority. */
+export function getCustomerAccountPersistence({ logout = false } = {}) {
+  if (!logout && process.env.STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED !== "true") return null;
   const configuration = getCustomerAccountConfiguration();
   const encryption = getCustomerAccountEncryptionKeys();
   if (configuration.status !== "configured" || encryption.status !== "configured") return null;
@@ -23,6 +22,13 @@ export function getCustomerAccountStorageService(request: Request, { logout = fa
     const config = configuration.config;
     return { config, storage: createCustomerAccountStorage({ config, keyring: encryption.keyring, backend }) };
   } catch { return null; }
+}
+
+/** Compose server credentials at request time; absent dependencies stay closed. */
+export function getCustomerAccountStorageService(request: Request, { logout = false } = {}) {
+  const preview = new NextRequest(request.url, { headers: request.headers }).cookies.get(reviewPreviewCookie)?.value;
+  if (!logout && resolveReviewProvider(preview) !== "custom") return null;
+  return getCustomerAccountPersistence({ logout });
 }
 
 export async function getCustomerSignInService(request: Request): Promise<CustomerSignInService | null> {

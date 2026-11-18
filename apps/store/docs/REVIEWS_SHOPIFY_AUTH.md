@@ -205,6 +205,15 @@ committed revision can win; uncommitted tokens are never returned. Missing
 sessions or definitive refresh rejection need sign-in, while storage/provider
 failures remain unavailable. No failure blindly revokes a concurrent winner.
 
+Server continuations such as purchase/name lookups use
+`storage.loadSessionByHash` to reread an already authenticated session under
+the configured shop/client scope. It checks and decrypts the same record as
+cookie-based loading. The hash is never accepted as a public sign-in credential;
+browser routes still authenticate the opaque HttpOnly cookie. Continuations
+compare immutable identity/lifetime and use the current stored token, then
+recheck the session before returning results. The persistence factory alone
+does not establish buyer authority.
+
 Separate workers can still make concurrent provider exchanges; there is no
 distributed refresh lock. Database CAS prevents overwrite/revival, but the
 intended client's rotation/reuse behavior and uncertain-exchange recovery

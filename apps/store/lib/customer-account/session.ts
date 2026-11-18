@@ -1,6 +1,7 @@
 import type { CustomerAuthScope } from "@ryanmeetup/reviews";
 import { customerAuthorizationProofHash } from "./authorization";
 import type { CustomerAccountSession, CustomerAccountStorage } from "./storage";
+import { sameCustomerAccountSession } from "./storage";
 import { CustomerAccountRefreshRejected } from "./tokens";
 import type { CustomerAccountTokenClient } from "./tokens";
 
@@ -16,11 +17,6 @@ type Renewal = "finished" | "rejected" | "unavailable";
 const renewals = new Map<string, Promise<Renewal>>();
 const renewalWindow = 30_000;
 
-function sameSession(first: CustomerAccountSession, second: CustomerAccountSession) {
-  return first.sessionHash === second.sessionHash && first.subject === second.subject &&
-    first.createdAt === second.createdAt && first.expiresAt === second.expiresAt && second.revision >= first.revision;
-}
-
 export function createCustomerSessionLoader({ storage, refresh, scope, backendOrigin, now = Date.now }: {
   storage: Pick<CustomerAccountStorage, "loadSession" | "rotateSession">;
   refresh: CustomerAccountTokenClient["refresh"];
@@ -34,7 +30,7 @@ export function createCustomerSessionLoader({ storage, refresh, scope, backendOr
       // have renewed or revoked the record since this caller's first read.
       const latest = await storage.loadSession(id);
       if (!latest) return "finished";
-      if (!sameSession(previous, latest)) return "unavailable";
+      if (!sameCustomerAccountSession(previous, latest)) return "unavailable";
       if (latest.revision > previous.revision || latest.accessExpiresAt > now() + renewalWindow || latest.expiresAt <= now()) return "finished";
       const renewed = await refresh(latest, now());
       if (renewed.accessExpiresAt <= now()) return "unavailable";
@@ -70,7 +66,7 @@ export function createCustomerSessionLoader({ storage, refresh, scope, backendOr
       // Another process may have won, or logout may have erased the envelope.
       const current = await storage.loadSession(id);
       if (!current || current.expiresAt <= now() || current.createdAt > now()) return { status: "sign_in_required" };
-      if (!sameSession(session, current)) return { status: "unavailable" };
+      if (!sameCustomerAccountSession(session, current)) return { status: "unavailable" };
       if (current.revision > session.revision && current.accessExpiresAt > now()) return { status: "authenticated", session: current };
       return { status: outcome === "rejected" && current.revision === session.revision ? "sign_in_required" : "unavailable" };
     } catch { return { status: "unavailable" }; }

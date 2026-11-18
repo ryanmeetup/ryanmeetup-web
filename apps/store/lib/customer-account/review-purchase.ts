@@ -4,6 +4,7 @@ import { evaluateReviewPurchase } from "./purchase-eligibility";
 import type { ReviewPurchaseEligibility } from "./purchase-eligibility";
 import { customerPurchaseId, readCustomerPurchase } from "./purchase-reader";
 import { getCustomerAccountSession } from "./runtime";
+import { sameCustomerAccountSession } from "./storage";
 
 /** Server authorization boundary for a future review write, not a browser proof. */
 export async function getReviewPurchaseEligibility(request: Request, references: {
@@ -29,9 +30,7 @@ export async function getReviewPurchaseEligibility(request: Request, references:
     // session before returning authorization, without accepting browser proofs.
     const current = await getCustomerAccountSession(request);
     if (current.status !== "authenticated") return { status: current.status };
-    if (current.session.sessionHash !== identity.session.sessionHash || current.session.subject !== identity.session.subject ||
-      current.session.createdAt !== identity.session.createdAt || current.session.expiresAt !== identity.session.expiresAt ||
-      current.session.revision < identity.session.revision) return { status: "unavailable" };
+    if (!sameCustomerAccountSession(identity.session, current.session)) return { status: "unavailable" };
     return result;
   } catch { return { status: "unavailable" }; }
 }

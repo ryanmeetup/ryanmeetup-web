@@ -82,6 +82,21 @@ test("invalid browser proofs never trigger storage access", async () => {
   expect(requests).toEqual([]);
 });
 
+test("server continuations reread only the matching encrypted session hash", async () => {
+  const { storage, requests, sessions } = fixture();
+  const now = Date.now() - 1000;
+  const { id, session } = await storage.createSession({ subject: "buyer", tokens, now, expiresAt: now + 86400_000, accessExpiresAt: now + 3600_000 });
+  requests.length = 0;
+  for (const hash of [undefined, "", id, "bad", "x".repeat(10000)]) expect(await storage.loadSessionByHash(hash)).toBeNull();
+  expect(requests).toEqual([]);
+  expect(await storage.loadSessionByHash(session.sessionHash)).toEqual(session);
+  const row = sessions.get(session.sessionHash)!;
+  sessions.set(session.sessionHash, { ...row, subject: "another-buyer" });
+  expect(await storage.loadSessionByHash(session.sessionHash)).toBeNull();
+  sessions.set(session.sessionHash, null);
+  expect(await storage.loadSessionByHash(session.sessionHash)).toBeNull();
+});
+
 test("backend failures and malformed responses remain unavailable, with no upstream secret in errors", async () => {
   const request = { operation: "session.get", scope: { shopId: config.shopId, clientId: config.clientId, issuer: metadata.issuer, redirectUri: config.redirectUri }, sessionHash: "a".repeat(64) } as const;
   const fetchers: (typeof fetch)[] = [
