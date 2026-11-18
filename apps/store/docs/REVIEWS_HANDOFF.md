@@ -256,7 +256,7 @@ than duplicating them, and coordinate before changing them.
   `reviews.page` with opaque cursors. The storefront passes the verified
   session subject and purchased line; the backend never takes a shop from the
   caller. Staff moderation now has separate owner-only Tasks endpoints at
-  `GET/POST /api/admin/reviews`; the queue screen remains the next chunk. See
+  `GET/POST /api/admin/reviews`, with the owner queue at `/admin/reviews`. See
   [the moderation handoff](REVIEWS_MODERATION.md). Tests: `apps/tasks/tests/routes/store-reviews.test.ts`.
 - **Custom reads (chunk 5):** `lib/review-backend.ts` (client, same
   `STORE_REVIEWS_BACKEND_URL`/`_TOKEN`) and `lib/custom-reviews.ts`.
@@ -305,7 +305,8 @@ Shopify gate above; record its result before implementation depends on it.
 4. **Text-only vertical slice:** authenticated buyer submission with required
    whole-star rating/body, chosen public display name, idempotency, and pending
    status. Keep unmoderated content private. Staff authorization and the
-   publish/hide API are implemented; the owner-facing queue is the next chunk.
+   publish/hide API and owner-facing queue are implemented; official reply
+   controls are the next small chunk.
 5. **Public reads:** database-backed product scope, complete published totals
    independent of pagination, public field projection, and cache invalidation.
    Wire `getReviews` and matching JSON-LD without falling back to Judge.me.

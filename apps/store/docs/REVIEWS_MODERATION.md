@@ -1,7 +1,7 @@
 # Review moderation handoff
 
-Updated November 18, 2026. This checkpoint implements the private moderation
-database boundary and Tasks API. The owner-facing screen is the next chunk.
+Updated November 18, 2026. The private moderation database boundary, Tasks API,
+and owner-facing queue at **Admin → Store reviews** are implemented.
 Judge.me remains the storefront default and the browser testing switch is
 unchanged. No application deployment or collection flag was changed here.
 
@@ -11,6 +11,31 @@ unchanged. No application deployment or collection flag was changed here.
   concurrency checks, queue projection, and database tests.
 - `652b5a1e` — owner-only `GET/POST /api/admin/reviews`, strict request/response
   contracts, shared backend scope checks, and route tests.
+- `fdf847da` — browser read/write operations, exact cursor preservation, and
+  shared action labels/availability.
+- `380afcf3` — `/admin/reviews`, server-loaded pending queue, comparison cards,
+  confirmation dialogs, private history, page-access tests, and release note.
+- `45e2c3df` — isolated browser fixture, 13 interaction/layout scenarios, and
+  the `test:e2e:reviews` script wired into Tasks CI.
+
+The screen requires an existing Tasks app-owner session, checks ownership before
+loading review data, and redirects demo preview away. An unconfigured backend
+(including PRD) shows an explicit unavailable state without constructing a
+review admin client. No SQL or environment changes were needed for the screen.
+
+The initial queue loads in the Server Component; subsequent filtering, paging,
+and refresh use the owner-only API. Confirmations show the exact revision being
+decided. While saving, the reason, confirm/cancel controls, dismissal, and other
+decisions are disabled. Success reloads the current filter from its first page.
+Conflicts close the dialog and load the new text for a deliberate new decision.
+Unknown write outcomes clear stale rows and require a manual refresh; a lost
+acknowledgement never triggers a blind retry. A confirmed save whose reload
+fails is reported as saved, with further decisions blocked until a fresh read.
+
+UI ownership is split between the admin page client and
+`apps/tasks/components/store-reviews/{ReviewModerationQueue,ReviewModerationCard,ReviewModerationDialog,useReviewModeration}`.
+The initial server projection lives in
+`apps/tasks/lib/server/store-reviews/moderation-screen.ts`.
 
 The SQL is committed at
 `apps/tasks/supabase/migrations/20261120160000_store_review_moderation.sql` and
@@ -105,6 +130,30 @@ extensions or RMT credentials to PRD.
 
 ## Validation
 
+Screen checkpoint:
+
+- All 13 browser scenarios passed: one-star publication, rejecting an edit
+  without replacing approved text, private reasons/history, hide/restore,
+  approval while hidden, buyer withdrawals, stale edits, pending-save guards,
+  lost acknowledgements, saved-but-failed refreshes, pagination, member/demo
+  denial, and responsive content.
+- Inspected queue and dialog screenshots in light/dark themes. Layout checks
+  cover 390/1024/1280/1536 widths; long unbroken product names, display names,
+  and review text also fit. The two layout scenarios were rechecked after
+  aligning shorter approved versions at the top beside longer waiting edits.
+- All 18 focused unit/API tests passed, covering page ownership, demo/disabled
+  guards, private initial-load failures, transport behavior, admin routing, and
+  the existing moderation API boundary.
+- Changed-file ESLint, Tasks TypeScript, `git diff --check`, and the normal
+  production build with its RMT database contract check passed.
+- Run `npm run test:e2e:reviews --workspace=@ryanmeetup/tasks` for the isolated
+  screen suite. It uses only synthetic credentials/project data and dedicated
+  ports (app 3120, transport 54349), with no live Shopify calls. Its process-only
+  transport shim preserves the production HTTPS/project-scope checks. The
+  ordinary Tasks browser suite excludes this separately configured spec.
+
+Earlier database/API checkpoint (no SQL changed for the screen):
+
 - 28 focused Tasks route tests passed, including nine new moderation tests.
 - The RMT isolated runner passed 196 pgTAP checks, two encrypted-storage tests,
   and the existing competing-callback/logout-refresh checks. That total includes
@@ -115,8 +164,6 @@ extensions or RMT credentials to PRD.
   now checks all registered RMT extensions instead of hardcoding only the first.
 - Tasks TypeScript, changed-file ESLint, `git diff --check`, and the production
   build with its normal RMT database contract check passed.
-- No layout changed in this checkpoint; browser visual testing is pending with
-  the admin screen.
 
 Use the isolated runner in `apps/tasks/scripts/test-store-customer-auth.mjs`
 for future database checks, one profile at a time. Never reset the existing
@@ -124,19 +171,17 @@ Tasks local stack or use a second loopback database URL as supposed isolation.
 
 ## Next small chunk
 
-Add `/admin/reviews` using `loadWorkspacePage({ owner: true })`, the established
-`AdminPageShell` and `PageHeader`, and the admin route registry. Load the initial
-page on the server; use the existing mutation helpers for decisions. Keep the
-page explicitly unavailable in demo mode and when store integration is disabled.
+Add official reply controls as a separate backend/UI slice. The existing
+`store_set_review_reply` RPC is service-only and takes an arbitrary staff label;
+do not expose it directly through the buyer service credential. Add an RMT-only
+owner-checked transactional wrapper, preserving exact review-version checks and
+atomic audit recording, then include the current reply in the staff projection.
+Use a focused editor for creating, editing, and removing the reply. Replies are
+public content, so confirm the exact text and handle stale/lost responses like
+publication decisions. Keep already-applied SQL immutable.
 
-Use `DropdownSelect` for the queue filter. Show waiting content beside its
-approved version when there is an edit, with clear hidden/withdrawn status and
-the recent history. Collect required private reasons for hide/reject. Disable
-decisions while saving, announce success/errors, and reload on conflicts. Avoid
-optimistic publication: render the server-confirmed result.
-
-Then validate the screen at mobile and 1024/1280/1536 desktop widths in both
-themes and add a user-facing Tasks release note. Live buyer collection still
+The queue currently exposes only the ten most recent audit events; a complete
+history reader remains a separate chunk if needed. Live buyer collection still
 requires the Shopify Customer Account client, configured credentials, and real
 purchase/refresh verification described in `REVIEWS_SHOPIFY_AUTH.md` and
 `REVIEWS_PURCHASE_ELIGIBILITY.md`. Photos, official reply controls, imports, and

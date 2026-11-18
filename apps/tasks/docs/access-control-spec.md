@@ -181,6 +181,13 @@ choose an actor or shop. Browser writes use the normal same-origin, bounded JSON
 schema boundary. Every response is private and uncached; database failures expose
 only safe messages and correlation IDs.
 
+`/admin/reviews` checks the same owner authority through `loadWorkspacePage`
+before loading its initial private queue on the server. Demo preview redirects
+away; disabled integration shows an unavailable state without querying review
+storage. Browser decisions wait for a confirmed transaction, then reload. Stale
+or uncertain outcomes never automatically repeat a write, and an unavailable
+refresh removes stale decision controls until a fresh read succeeds.
+
 The RMT-only `store_review_moderation_page` and `store_moderate_review` functions
 are invoker functions with empty search paths and service-role-only execute
 grants. Both call `store_require_review_owner`, which rechecks and share-locks
