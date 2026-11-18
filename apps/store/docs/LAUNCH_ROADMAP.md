@@ -127,6 +127,11 @@ fields. The store supports neither.
 
 - [ ] Done
 
+The [reviews rebuild plan](REVIEWS_REBUILD.md) defines the scope, agent
+handoffs, and release gates for a first-party replacement. The notes below
+describe the existing Judge.me flow and its outstanding checks while that
+replacement is being evaluated.
+
 **Problem.** Etsy shows a shop rating and only buyers can review. Here reviews are
 per product and anyone can submit.
 

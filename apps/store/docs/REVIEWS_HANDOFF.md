@@ -53,9 +53,7 @@ the tests passed when run with those permissions.
 
 No application deployment, Shopify installation, email queue, or deployment
 credentials were changed. RMT received the committed auth-storage migration.
-Existing uncommitted changes to `docs/LAUNCH_ROADMAP.md` and the
-untracked `docs/REVIEWS_REBUILD.md` predated these commits and remain unstaged.
-Transfer those documents too if moving to a checkout that does not have them.
+`docs/REVIEWS_REBUILD.md` and its roadmap link are now committed.
 Other agents also have concurrent catalog, error-page, review-content, and
 composer changes in the worktree. They were not included in these auth commits;
 coordinate before editing their files or committing broader directory scopes.
