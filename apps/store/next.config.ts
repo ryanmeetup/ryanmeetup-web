@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 import { reviewPhotoHosts } from "./lib/review-photo-hosts";
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["@ryanmeetup/contact", "@ryanmeetup/hooks", "@ryanmeetup/metadata", "@ryanmeetup/ui", "@ryanmeetup/utils"],
+  transpilePackages: ["@ryanmeetup/contact", "@ryanmeetup/hooks", "@ryanmeetup/metadata", "@ryanmeetup/reviews", "@ryanmeetup/ui", "@ryanmeetup/utils"],
   // Garment collections retired in Shopify now live as garment pages under their
   // department, and the departments moved from /collections to the top level.
   async redirects() {

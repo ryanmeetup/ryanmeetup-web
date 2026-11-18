@@ -30,6 +30,7 @@
     "@next/env": "16.4.6",
     "@ryanmeetup/brand": "^0.1.0",
     "@ryanmeetup/hooks": "*",
+    "@ryanmeetup/reviews": "*",
     "@ryanmeetup/ui": "^0.1.0",
     "@ryanmeetup/utils": "^0.1.0",
     "@supabase/ssr": "^0.12.7",

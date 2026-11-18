@@ -20,6 +20,7 @@ const nextConfig: NextConfig = {
   transpilePackages: [
     "@ryanmeetup/brand",
     "@ryanmeetup/hooks",
+    "@ryanmeetup/reviews",
     "@ryanmeetup/ui",
     "@ryanmeetup/utils",
   ],

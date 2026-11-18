@@ -24,6 +24,8 @@ business logic into a generic package.
   configures it once with its site name and origin in a local
   `buildPageMetadata`, and every page's title, canonical, Open Graph, and
   Twitter tags come from that.
+- `packages/reviews`: private review-domain contracts shared by the store and
+  its backend. Customer auth records and credentials never belong in browser props.
 - `packages/sponsors`: shared sponsor-domain components.
 - `packages/utils`: framework-agnostic shared utilities.
 
