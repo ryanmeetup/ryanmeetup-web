@@ -18,15 +18,17 @@ these purchase commits. Concurrent composer, submission, and buyer-management
 files were left with their owner. The shared `REVIEWS_HANDOFF.md` has active
 edits from that work; use this document for this checker's current handoff.
 
-Next small chunks: a product-level order/line discovery adapter for
-`findReviewablePurchases`, `findBuyerName`, and normalization into the numeric
-shared backend contract. Then connect those hooks, complete the live Shopify
-gate, and extend refund/edit evidence and child pagination as required.
+The product-level `findReviewablePurchases` and `findBuyerName` hooks are now
+connected to this implementation, including typed platform-ID normalization
+for the numeric backend contract. Next: complete the live Shopify gate and
+extend refund/edit evidence and child pagination as required. Moderation,
+media, and cutover remain separate workstreams in the main rebuild plan.
 
 Repeat the focused checks from `apps/store`:
 
 ```sh
 npx playwright test tests/customer-account-api.spec.ts tests/customer-purchase-reader.spec.ts tests/customer-purchase-eligibility.spec.ts tests/customer-purchase-runtime.spec.ts --workers=1
+npx playwright test tests/customer-buyer-reader.spec.ts tests/review-purchase-lookups.spec.ts tests/customer-account-backend.spec.ts --workers=1
 npx tsc --noEmit
 ```
 
@@ -127,13 +129,43 @@ bounded history. After ten pages it returns unavailable, never a partial or
 empty success. Incomplete child line references are marked for complete
 owned-order verification rather than silently skipped.
 
-This is a keyed order/line checker, not the product-level list expected by
-`review-purchases.ts::findReviewablePurchases`. That listing adapter and
-`findBuyerName` are still pending. They must enumerate the buyer's orders,
-reuse the owned exact-line checks, and normalize platform references into the
-shared backend's numeric `ReviewPurchase` contract. Do not guess an order from
-a product ID or fabricate buyer names. The concurrent composer/submission
-work is preserved; this chunk does not replace those hooks or enable writes.
+### Connected picker, submission, and buyer names
+
+`review-purchases.ts` now delegates both existing hooks to
+`customer-account/review-lookups.ts`, so the product composer, submission
+route, and buyer-name changes in My reviews share the verified implementation.
+The existing hook signatures and the rest of those features are preserved.
+
+The adapter rereads the encrypted session by its private hash and compares
+subject, creation time, absolute expiry, and revision before using the current
+stored access token. Caller-supplied token fields are ignored. It checks the
+session again after the lookup; revocation or a storage error cannot return
+eligible purchases or names. Session loading/renewal remains the caller's
+first step. The hash continuation is not a public authentication mechanism.
+
+Candidate orders with a matching product, unknown attribution, or incomplete
+line references are verified through the owned-order reader and the same
+exact-line rules. The order's update timestamp and API customer must still
+match discovery. The operation allows at most thirty Customer API requests;
+exhaustion or ambiguous matching evidence returns unavailable, never an empty
+or partial successful history. An unambiguous completed scan with no qualifying
+line returns `none`.
+
+Reference conversion accepts only the expected Shopify GID resource kind and
+keeps numeric IDs as strings, including full 64-bit values. Labels are
+normalized to the backend's length/whitespace contract; IDs and labels are
+never invented from a product hint. Returned data contains verified purchase
+snapshots and safe order/variant labels, without session tokens or customer
+account IDs. The buyer-name hook returns the Customer API's nullable names,
+and null on lookup/session failure. The shared display-name helper still owns
+full-name, initial, and anonymous formatting.
+
+End-to-end route tests exercise the real custom submission handler through
+synthetic encrypted storage and Shopify responses. They verify a pending
+`review.submit` command with the stored subject, owned purchase, and selected
+public name, and no review command for an unowned line, provider failure, or
+revocation. No production submission, credential, enable flag, or Judge.me
+setting was changed.
 
 Before collection opens, configure the confidential client and isolated
 backend, prove real buyer access with `customer_read_orders` and protected
