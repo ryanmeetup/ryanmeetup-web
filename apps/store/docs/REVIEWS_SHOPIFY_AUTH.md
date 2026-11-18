@@ -53,6 +53,29 @@ The shop's public discovery advertised RS256 on November 17, 2026. The local
 checks sign synthetic tokens with an actual RSA key and verify both valid and
 invalid claims. No live buyer token or real client secret has been used.
 
+## Refresh-token exchange
+
+`tokens.ts::refresh` uses the confidential client's discovered token endpoint.
+A refresh response can omit its ID token or a replacement refresh token.
+When an ID token is present, its signature, issuer, audience, subject, issue
+time, expiry, authorized party, and optional access-token hash are verified.
+Its nonce and original authentication time, when present, must match the
+original identity. These rules follow the
+[OpenID Connect refresh response specification](https://openid.net/specs/openid-connect-core-1_0.html#RefreshTokenResponse).
+
+The encrypted session keeps the original verified ID token as an identity
+anchor across renewals, including after that token's expiry. This lets later
+responses be compared even when intervening ID tokens omit nonce/authentication
+time. Only a record loaded from authenticated encrypted server storage may
+be passed to this operation. Decoding that original anchor does not accept a
+new identity or a browser-supplied token.
+
+Only an HTTP 400 `invalid_grant` produces `CustomerAccountRefreshRejected`.
+Client-configuration failures, outages, malformed responses, and verification
+errors remain unavailable. Diagnostics never include provider response bodies
+or token material. Actual refresh/rotation behavior still needs a live client
+check; all token tests use synthetic responses and real test signatures.
+
 ## Implemented boundary
 
 - `lib/customer-account/config.ts` validates explicit configuration and reports
