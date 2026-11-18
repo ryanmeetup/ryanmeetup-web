@@ -22,6 +22,9 @@ const emptyReviews: ReviewsData = {
   reviews: [],
 };
 
+/** Judge.me couldn't be read. Never shown as "no reviews yet". */
+const unavailableReviews: ReviewsData = { status: "unavailable", averageRating: 0, count: 0, reviews: [] };
+
 // Judge.me's verified-review statuses include account authentication and manual
 // verification, so the storefront labels these "Verified review", not purchase.
 // https://judge.me/help/en/articles/8403775-verified-status-of-judge-me-reviews
@@ -38,7 +41,21 @@ function shopifyNumericId(id: string) {
   return id.split("/").at(-1)?.replace(/^demo-/, "") ?? id;
 }
 
+/**
+ * Published Judge.me reviews for one product. A product Judge.me has never
+ * seen has no reviews; any other failure, including a slow or malformed
+ * response, is reported as unavailable instead of failing the product page.
+ */
 export async function getJudgeMeReviews(productId: string): Promise<ReviewsData> {
+  try {
+    return await loadJudgeMeReviews(productId);
+  } catch (error) {
+    console.error("Could not load Judge.me reviews.", error instanceof Error ? error.message : error);
+    return unavailableReviews;
+  }
+}
+
+async function loadJudgeMeReviews(productId: string): Promise<ReviewsData> {
   const token = process.env.JUDGEME_PRIVATE_API_TOKEN;
   const shopDomain = getJudgeMeShopDomain();
   if (!token || !shopDomain || productId.includes("/demo-")) return emptyReviews;
@@ -46,9 +63,10 @@ export async function getJudgeMeReviews(productId: string): Promise<ReviewsData>
   const lookupUrl = new URL("https://api.judge.me/api/v1/products/-1");
   lookupUrl.searchParams.set("shop_domain", shopDomain);
   lookupUrl.searchParams.set("external_id", shopifyNumericId(productId));
-  const requestOptions = { headers: { "X-Api-Token": token }, next: { revalidate: 300 } };
-  const productResponse = await fetch(lookupUrl, requestOptions);
-  if (!productResponse.ok) return emptyReviews;
+  const requestOptions = () => ({ headers: { "X-Api-Token": token }, next: { revalidate: 300 }, signal: AbortSignal.timeout(5000) });
+  const productResponse = await fetch(lookupUrl, requestOptions());
+  if (productResponse.status === 404) return emptyReviews;
+  if (!productResponse.ok) return unavailableReviews;
   const productPayload = (await productResponse.json()) as { product?: { id: number } };
   if (!productPayload.product?.id) return emptyReviews;
 
@@ -57,8 +75,8 @@ export async function getJudgeMeReviews(productId: string): Promise<ReviewsData>
   reviewsUrl.searchParams.set("product_id", String(productPayload.product.id));
   reviewsUrl.searchParams.set("published", "true");
   reviewsUrl.searchParams.set("per_page", "20");
-  const reviewsResponse = await fetch(reviewsUrl, requestOptions);
-  if (!reviewsResponse.ok) return emptyReviews;
+  const reviewsResponse = await fetch(reviewsUrl, requestOptions());
+  if (!reviewsResponse.ok) return unavailableReviews;
   const payload = (await reviewsResponse.json()) as { reviews?: JudgeMeReview[] };
   const reviews = (payload.reviews ?? []).filter((review) => review.hidden === false && review.curated === "ok");
 

@@ -67,3 +67,19 @@ test("verification badges follow Judge.me's documented statuses without treating
   const data = await getReviews("gid://shopify/Product/123");
   expect(data.reviews.filter((item) => item.verified).map((item) => item.id)).toEqual(["1", "2", "3", "4", "5", "6"]);
 });
+
+test("a product Judge.me has never seen has no reviews, but an outage is reported as unavailable", async () => {
+  globalThis.fetch = async () => new Response("{}", { status: 404 });
+  expect(await getReviews("gid://shopify/Product/123")).toMatchObject({ status: "available", count: 0 });
+  for (const failure of [
+    async () => new Response("down", { status: 503 }),
+    async () => new Response("<html>gateway</html>", { status: 200 }),
+    async () => { throw new TypeError("fetch failed"); },
+  ]) {
+    globalThis.fetch = failure;
+    expect(await getReviews("gid://shopify/Product/123")).toMatchObject({ status: "unavailable", count: 0, reviews: [] });
+  }
+  let calls = 0;
+  globalThis.fetch = async () => (++calls === 1 ? Response.json({ product: { id: 42 } }) : new Response("down", { status: 500 }));
+  expect((await getReviews("gid://shopify/Product/123")).status).toBe("unavailable");
+});
