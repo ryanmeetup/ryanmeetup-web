@@ -40,8 +40,11 @@ export function reviewReturnPath(value: unknown): string {
   try {
     const url = new URL(value, "https://return.invalid");
     const path = decodeURIComponent(url.pathname);
-    const productPath = /^\/products\/[\p{L}\p{N}][\p{L}\p{N}_-]*\/?$/u.test(path);
-    if (url.origin !== "https://return.invalid" || !(productPath || path === "/reviews/mine" || path === "/")) return "/";
+    // Any storefront page, so header sign-in returns shoppers where they were;
+    // never an API route or a build asset.
+    // The URL parser has already resolved dot segments; refuse empty segments and encoded tricks.
+    const page = /^\/(?:[\p{L}\p{N}._~-]+\/?)*$/u.test(path);
+    if (url.origin !== "https://return.invalid" || !page || /^\/(?:api|_next)(?:\/|$)/.test(path)) return "/";
     return `${url.pathname}${url.search}${url.hash}`;
   } catch {
     return "/";

@@ -1,5 +1,4 @@
 import { readCookie } from "../request-guard";
-import { resolveRequestReviewProvider } from "../review-provider";
 import { customerAccountIssuer, getCustomerAccountConfiguration } from "./config";
 import { discoverCustomerAccountEndpoints } from "./discovery";
 import { getCustomerAccountEncryptionKeys } from "./secrets";
@@ -27,13 +26,12 @@ export function getCustomerAccountPersistence({ logout = false } = {}) {
 }
 
 /** Compose server credentials at request time; absent dependencies stay closed. */
-export function getCustomerAccountStorageService(request: Request, { logout = false } = {}) {
-  if (!logout && resolveRequestReviewProvider(request) !== "custom") return null;
+export function getCustomerAccountStorageService({ logout = false } = {}) {
   return getCustomerAccountPersistence({ logout });
 }
 
-export async function getCustomerSignInService(request: Request): Promise<CustomerSignInService | null> {
-  const persistence = getCustomerAccountStorageService(request);
+export async function getCustomerSignInService(): Promise<CustomerSignInService | null> {
+  const persistence = getCustomerAccountStorageService();
   if (!persistence) return null;
   const discovered = await discoverCustomerAccountEndpoints(persistence.config);
   if (discovered.status !== "available") return null;
@@ -43,7 +41,7 @@ export async function getCustomerSignInService(request: Request): Promise<Custom
 
 /** Server use only. Healthy sessions do not depend on Shopify discovery. */
 export async function getCustomerAccountSession(request: Request): Promise<CustomerSessionResult> {
-  const persistence = getCustomerAccountStorageService(request);
+  const persistence = getCustomerAccountStorageService();
   if (!persistence) return { status: "unavailable" };
   const id = readCookie(request, customerSessionCookie);
   const { config, storage } = persistence;

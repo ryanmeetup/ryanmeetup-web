@@ -42,7 +42,7 @@ test.afterEach(() => {
 const request = (id = "") => new Request("https://store.test/api/reviews/eligibility", { headers: { cookie: `${customerSessionCookie}=${id}` } });
 async function seed(expired = true) {
   const now = Date.now();
-  const persistence = getCustomerAccountStorageService(request());
+  const persistence = getCustomerAccountStorageService();
   if (!persistence) throw new Error("Synthetic storage unavailable");
   const idToken = await new SignJWT({ nonce: "n".repeat(43) }).setProtectedHeader({ alg: "RS256", kid: "test" })
     .setIssuer(metadata.issuer).setAudience(config.clientId).setSubject("synthetic-buyer")
@@ -99,9 +99,12 @@ test("definitive rejection needs sign-in while discovery and storage failures re
   expect(await getCustomerAccountSession(request(id))).toEqual({ status: "unavailable" });
 });
 
-test("Judge.me, disabled sign-in, and missing server configuration never load private sessions", async () => {
-  const { id } = await seed();
-  for (const [key, value] of [["REVIEWS_PROVIDER", "judgeme"], ["STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED", "false"], ["SUPABASE_SECRET_KEY", ""]]) {
+test("sign-in doesn't depend on the review provider, but disabled sign-in and missing configuration load no session", async () => {
+  const { id, session } = await seed(false);
+  process.env.REVIEWS_PROVIDER = "judgeme";
+  expect(await getCustomerAccountSession(request(id))).toEqual({ status: "authenticated", session });
+  requests = [];
+  for (const [key, value] of [["STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED", "false"], ["SUPABASE_SECRET_KEY", ""]]) {
     const previous = process.env[key]; process.env[key] = value;
     expect(await getCustomerAccountSession(request(id))).toEqual({ status: "unavailable" });
     process.env[key] = previous;

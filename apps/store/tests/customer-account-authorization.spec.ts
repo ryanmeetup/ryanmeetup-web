@@ -20,11 +20,14 @@ function flow() {
   return { config, endpoints, attempt: prepared.attempt, callbackUrl: url.href, browserBinding: prepared.cookie.value, now: now + 1000 };
 }
 
-test("authorization preserves a product's design, color and anchor without permitting external redirects", () => {
+test("sign-in returns to any storefront page, keeping its query and anchor, but never an external or internal route", () => {
   expect(reviewReturnPath(returnTo)).toBe(returnTo);
   expect(reviewReturnPath("/reviews/mine")).toBe("/reviews/mine");
   expect(reviewReturnPath("/products/ryan-shirt/")).toBe("/products/ryan-shirt/");
-  for (const unsafe of [undefined, null, "https://other.test", "//other.test", "/\\other.test", "/products/a\nLocation: bad", "/api/reviews", "/products/../api", "/products/%2f%2fevil.test", "/products/%252f%252fevil.test", "/products/%5cevil", "/products/%00", "/products/%ZZ", " ", `/${"a".repeat(2048)}`]) {
+  expect(reviewReturnPath("/")).toBe("/");
+  expect(reviewReturnPath("/apparel/hats?sort=new")).toBe("/apparel/hats?sort=new");
+  expect(reviewReturnPath("/collections/ryd#top")).toBe("/collections/ryd#top");
+  for (const unsafe of [undefined, null, "https://other.test", "//other.test", "/\\other.test", "/products/a\nLocation: bad", "/api/reviews", "/api", "/_next/static/x.js", "/products/../api", "/products//evil.test", "/products/%2f%2fevil.test", "/products/%252f%252fevil.test", "/products/%5cevil", "/products/%00", "/products/%ZZ", " ", `/${"a".repeat(2048)}`]) {
     expect(reviewReturnPath(unsafe)).toBe("/");
   }
 });

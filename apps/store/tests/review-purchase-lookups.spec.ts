@@ -71,7 +71,7 @@ test.afterEach(() => {
   for (const [key, value] of Object.entries(oldEnv)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
 });
 async function seed() {
-  const persistence = getCustomerAccountStorageService(new Request("https://store.test/"));
+  const persistence = getCustomerAccountStorageService();
   if (!persistence) throw new Error("Synthetic persistence unavailable");
   const now = Date.now() - 1000;
   const created = await persistence.storage.createSession({ now, subject: "opaque-buyer-subject", expiresAt: now + 86400_000, accessExpiresAt: now + 3600_000,

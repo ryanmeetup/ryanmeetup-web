@@ -137,8 +137,8 @@ test("storage and token failures cannot set a session, redirect to Shopify, or l
   expect(tokenExchanges).toBe(1);
 });
 
-test("Judge.me mode and missing configuration keep sign-in closed before any network calls", async () => {
-  for (const [key, value] of [["REVIEWS_PROVIDER", "judgeme"], ["STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED", "false"],
+test("disabled sign-in and missing configuration keep sign-in closed before any network calls", async () => {
+  for (const [key, value] of [["STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED", "false"],
     ["SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_SECRET", ""], ["SUPABASE_SECRET_KEY", ""], ["STORE_CUSTOMER_ACCOUNT_ENCRYPTION_KEYS", "{}"]]) {
     const previous = process.env[key]; process.env[key] = value;
     expect((await start(new Request("https://store.test/api/reviews/auth/start"))).status).toBe(503);
@@ -147,11 +147,34 @@ test("Judge.me mode and missing configuration keep sign-in closed before any net
   expect(requests).toEqual([]);
 });
 
-test("the browser switch cannot enable custom sign-in on a deployed host", async () => {
+test("shoppers can sign in from the header whatever the review provider", async () => {
   process.env.REVIEWS_PROVIDER = "judgeme";
-  // Review testing is localhost-only, so a deployed storefront ignores the preference.
-  expect((await start(new Request("https://store.test/api/reviews/auth/start", { headers: { cookie: "store-review-preview=custom" } }))).status).toBe(503);
-  expect(requests).toEqual([]);
+  const response = await start(new Request("https://store.test/api/reviews/auth/start?returnTo=%2Fapparel%2Fhats"));
+  expect(response.status).toBe(303);
+  expect(response.headers.get("location")).toMatch(/^https:\/\/shopify\.com\/authentication\/123456\/oauth\/authorize\?/);
+  expect(transport.requests.map(({ operation }) => operation)).toEqual(["authorization.create"]);
+});
+
+test("in development, sign-in started on localhost hops to the registered address; production refuses it", async () => {
+  const env = process.env as Record<string, string | undefined>;
+  const previous = env.NODE_ENV;
+  const local = () => new Request("http://localhost:3002/api/reviews/auth/start?returnTo=%2Fapparel", { headers: { host: "localhost:3002" } });
+  try {
+    env.NODE_ENV = "development";
+    const hop = await start(local());
+    expect(hop.status).toBe(303);
+    expect(hop.headers.get("location")).toBe("https://store.test/api/reviews/auth/start?returnTo=%2Fapparel");
+    // A non-loopback host is still refused, even in development.
+    expect((await start(new Request("https://store.test/api/reviews/auth/start", { headers: { host: "attacker.test" } }))).status).toBe(403);
+    // Production never hops (here the synthetic loopback database is refused first, so it's a 503).
+    env.NODE_ENV = "production";
+    const refused = await start(local());
+    expect(refused.status).not.toBe(303);
+    expect(refused.headers.get("location")).toBeNull();
+  } finally {
+    env.NODE_ENV = previous;
+  }
+  expect(transport.requests).toEqual([]);
 });
 
 test("start rejects cross-site navigation, wrong public hosts, and ambiguous return paths", async () => {
