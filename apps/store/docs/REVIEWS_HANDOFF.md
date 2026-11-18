@@ -222,6 +222,61 @@ source upload was blocked as described above. Validation here is TypeScript,
 ESLint, security-focused local tests, production builds, and public metadata
 checks. Future GraphQL operations still need schema validation.
 
+## Parallel work by Claude (uncommitted, November 17)
+
+Built alongside the sign-in work; not yet committed. Build on these rather
+than duplicating them, and coordinate before changing them.
+
+- **Content contract:** `packages/reviews/src/content.ts`, exported from
+  `@ryanmeetup/reviews`. Submission normalization (`reviewSubmissionSchema`),
+  the exact public name (`reviewDisplayName`), complete totals
+  (`summarizeReviewRatings`), and strict public payload checks
+  (`publicReviewSchema`, `publicReviewPageSchema`). Tests:
+  `apps/tasks/tests/unit/review-content-contract.test.ts`.
+- **Composer:** `components/custom-review-composer.tsx` and
+  `lib/custom-review-access.ts`. It renders unavailable, signed-out,
+  no-purchase, reviewed, and ready states. `getCustomReviewAccess()` returns
+  `unavailable` except for the preview-only **Custom reviews, sample buyer**
+  mode, which checks a review against the contract and saves nothing.
+  Exact-line eligibility should replace that function's body with the real
+  session and purchase lookup. Real submissions currently POST to
+  `/api/reviews`, which still returns 503 in custom mode. Browser tests:
+  `tests/custom-review-composer.spec.ts`.
+- **Review storage (chunk 3), local only:** migration
+  `20261120140000_store_reviews.sql`, declared RMT-only. Reviews, revisions
+  (one pending at a time; approved stays public during an edit), one reply,
+  an audit log, and service-role functions for submit, edit, withdraw,
+  approve/reject, hide/restore, reply, the public page, and totals. 71 pgTAP
+  assertions in `tests/database/store-reviews.sql` run from
+  `scripts/test-store-customer-auth.mjs`. Both RMT and PRD profiles pass. **Not
+  pushed to RMT**. Photos and buckets are a later chunk.
+- **Review backend interface:** `POST /api/store/reviews` in Tasks
+  (`lib/server/store-reviews/storage.ts`), contract in
+  `packages/reviews/src/review-backend.ts`. It reuses
+  `authorizeStoreCustomerAuth` (same service token, pinned shop, PRD refused)
+  and offers `review.submit`, `review.edit`, `review.withdraw`, and
+  `reviews.page` with opaque cursors. The storefront passes the verified
+  session subject and purchased line; the backend never takes a shop from the
+  caller. Staff moderation is not exposed yet; it needs a separate staff
+  identity. Tests: `apps/tasks/tests/routes/store-reviews.test.ts`.
+- **Custom reads (chunk 5):** `lib/review-backend.ts` (client, same
+  `STORE_REVIEWS_BACKEND_URL`/`_TOKEN`) and `lib/custom-reviews.ts`.
+  `getReviews` in custom mode now reads the published page and complete
+  totals, so product JSON-LD follows them; any failure stays `unavailable`.
+  No caching or invalidation yet. Tests: `tests/review-backend.spec.ts`.
+- **Submission and buyer states, waiting on eligibility:** `lib/review-purchases.ts`
+  defines `ReviewEligibility` and `findReviewablePurchases(session, productId)`,
+  which returns `unavailable` until exact-line eligibility replaces its body.
+  That is the only function the eligibility chunk needs to implement: return
+  the buyer's name and their paid, fulfilled lines for the numeric product ID,
+  each a `ReviewPurchase` plus a display label. Everything around it is built:
+  `getCustomReviewAccess` turns the session and purchases into the composer
+  state (signed-out links to `/api/reviews/auth/start?returnTo=…#reviews`),
+  and custom-mode `POST /api/reviews` (`lib/custom-review-submission.ts`)
+  checks origin and input, loads the session, rechecks the chosen line,
+  builds the public name server-side, and calls `review.submit`. Tests:
+  `tests/custom-review-submission.spec.ts`.
+
 ## Small next chunks
 
 Keep each item an independently verified Conventional Commit. Start with the
