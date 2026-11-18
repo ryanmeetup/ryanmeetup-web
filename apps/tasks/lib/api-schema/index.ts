@@ -31,4 +31,4 @@ export {
 } from "./ryd";
 
 export { parseUuid } from "./shared";
-export { customerAuthCommandSchema } from "@ryanmeetup/reviews";
+export { customerAuthCommandSchema, reviewCommandSchema } from "@ryanmeetup/reviews";

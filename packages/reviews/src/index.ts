@@ -41,3 +41,18 @@ export type {
   ReviewSubmission,
   ReviewSummary,
 } from "./content";
+export {
+  decodeReviewCursor,
+  encodeReviewCursor,
+  reviewBackendPath,
+  reviewCommandSchema,
+  reviewResultSchema,
+} from "./review-backend";
+export type {
+  ReviewCommand,
+  ReviewCursor,
+  ReviewOperation,
+  ReviewPurchase,
+  ReviewResults,
+  ReviewSubmitOutcome,
+} from "./review-backend";
