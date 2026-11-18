@@ -195,6 +195,112 @@ test("denies regular members and redirects demo preview away from moderation", a
   await expect(page.getByRole("heading", { name: "Store reviews", exact: true })).toHaveCount(0);
 });
 
+test("previews, creates, updates, and removes the official reply without changing the pending edit", async ({ page, request }) => {
+  await signIn(page); await page.goto("/admin/reviews");
+  await expect(card(page, 1).getByRole("button", { name: /Write reply/ })).toHaveCount(0);
+  await queue(page, "Published");
+  await card(page, 2).getByRole("button", { name: "Write reply for Fixture shirt 2" }).click();
+  let dialog = page.getByRole("dialog", { name: "Write reply", exact: true });
+  await expect(dialog.getByLabel("Official reply")).toHaveAttribute("required", "");
+  await expect(dialog.getByRole("button", { name: "Review reply", exact: true })).toBeDisabled();
+  await dialog.getByLabel("Official reply").fill("x".repeat(2001));
+  await expect(dialog.getByRole("alert")).toContainText("2,000 characters");
+  await dialog.getByLabel("Official reply").fill("  Thanks, Ryan!\n\n\n<b>We hear you.</b>  ");
+  await dialog.getByRole("button", { name: "Review reply", exact: true }).click();
+  dialog = page.getByRole("dialog", { name: "Publish reply", exact: true });
+  await expect(dialog.getByRole("region", { name: "Reply preview" })).toHaveText("Thanks, Ryan!\n\n<b>We hear you.</b>");
+  await expect(dialog.locator("b")).toHaveCount(0);
+  expect((await state(request)).calls).toHaveLength(0);
+  await dialog.getByRole("button", { name: "Back to edit" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Review reply", exact: true }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Publish reply", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(card(page, 2).getByRole("region", { name: "Official reply" })).toContainText("Thanks, Ryan!");
+  await expect(card(page, 2)).toContainText("Updated after washing.");
+  let saved = await state(request);
+  expect(saved.calls[0]).toMatchObject({ p_body: "Thanks, Ryan!\n\n<b>We hear you.</b>", p_expected_updated_at: "2026-11-18T12:00:00.123456Z" });
+  const firstPublishedAt = saved.reviews.find((r: { id: string }) => r.id === id(2)).reply.publishedAt;
+  await card(page, 2).getByRole("button", { name: "Edit reply for Fixture shirt 2" }).click();
+  dialog = page.getByRole("dialog", { name: "Edit reply", exact: true });
+  await expect(dialog.getByRole("button", { name: "Review reply", exact: true })).toBeDisabled();
+  await dialog.getByLabel("Official reply").fill("Updated public reply.");
+  await dialog.getByRole("button", { name: "Review reply", exact: true }).click();
+  await page.getByRole("dialog", { name: "Update reply", exact: true }).getByRole("button", { name: "Update reply", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(card(page, 2).getByRole("region", { name: "Official reply" })).toContainText("Updated public reply.");
+  saved = await state(request);
+  expect(saved.reviews.find((r: { id: string }) => r.id === id(2)).reply.publishedAt).toBe(firstPublishedAt);
+  await card(page, 2).getByRole("button", { name: "Remove reply for Fixture shirt 2" }).click();
+  await expect(page.getByRole("dialog").getByRole("region", { name: "Reply being removed" })).toHaveText("Updated public reply.");
+  await page.getByRole("dialog").getByRole("button", { name: "Cancel", exact: true }).click();
+  expect((await state(request)).calls).toHaveLength(2);
+  await card(page, 2).getByRole("button", { name: "Remove reply for Fixture shirt 2" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Remove reply", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(card(page, 2)).toContainText("No official reply yet.");
+  expect((await state(request)).calls[2].p_body).toBeNull();
+  await card(page, 2).getByRole("button", { name: /Recent history/ }).click();
+  await expect(card(page, 2)).toContainText("Reply removed");
+});
+
+test("a reply on a hidden review stays hidden and a stale editor cannot overwrite a newer reply", async ({ page, request }) => {
+  await signIn(page); await page.goto("/admin/reviews"); await queue(page, "Hidden");
+  await card(page, 3).getByRole("button", { name: "Write reply for Fixture shirt 3" }).click();
+  await expect(page.getByRole("dialog")).toContainText("The review stays hidden.");
+  await page.getByRole("dialog").getByLabel("Official reply").fill("A hidden reply.");
+  await page.getByRole("button", { name: "Review reply", exact: true }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Publish reply", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(card(page, 3)).toContainText("A hidden reply.");
+  expect((await state(request)).reviews.find((r: { id: string }) => r.id === id(3)).state).toBe("hidden");
+  await configure(request, { replyConflictOnce: true });
+  await card(page, 3).getByRole("button", { name: "Edit reply for Fixture shirt 3" }).click();
+  await page.getByRole("dialog").getByLabel("Official reply").fill("A stale reply.");
+  await page.getByRole("button", { name: "Review reply", exact: true }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Update reply", exact: true }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "read the latest text" })).toBeVisible();
+  await expect(card(page, 3)).toContainText("A newer staff reply.");
+  await expect(card(page, 3)).not.toContainText("A stale reply.");
+  expect((await state(request)).calls).toHaveLength(2);
+});
+
+test("a lost reply acknowledgement blocks further writes until refresh", async ({ page, request }) => {
+  await signIn(page); await page.goto("/admin/reviews"); await queue(page, "Published");
+  await page.route("**/api/admin/reviews", async (route) => {
+    if (route.request().method() === "PATCH") { await route.fetch(); await route.abort("failed"); }
+    else await route.continue();
+  });
+  await card(page, 2).getByRole("button", { name: "Write reply for Fixture shirt 2" }).click();
+  await page.getByRole("dialog").getByLabel("Official reply").fill("Saved once.");
+  await page.getByRole("button", { name: "Review reply", exact: true }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Publish reply", exact: true }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "could not confirm this decision" })).toBeVisible();
+  await expect(page.locator("article[data-testid^='review-']")).toHaveCount(0);
+  expect((await state(request)).calls).toHaveLength(1);
+  await page.getByRole("button", { name: "Refresh queue" }).click();
+  await expect(card(page, 2)).toContainText("Saved once.");
+  expect((await state(request)).calls).toHaveLength(1);
+});
+
+test("fits reply editing and public preview at mobile and desktop boundaries in both themes", async ({ page }, testInfo) => {
+  await signIn(page);
+  for (const theme of ["light", "dark"]) {
+    await page.addInitScript((value) => localStorage.setItem("theme", value), theme);
+    for (const width of [390, 1024, 1280, 1536]) {
+      await page.setViewportSize({ width, height: 1000 }); await page.goto("/admin/reviews"); await queue(page, "Published");
+      await card(page, 2).getByRole("button", { name: "Write reply for Fixture shirt 2" }).click();
+      const field = page.getByRole("dialog").getByLabel("Official reply");
+      await expect(field).toBeFocused(); await field.fill("Ryan".repeat(80));
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      await page.screenshot({ path: testInfo.outputPath(`reply-editor-${theme}-${width}.png`) });
+      await page.getByRole("button", { name: "Review reply", exact: true }).click();
+      await expect(page.getByRole("dialog").getByRole("region", { name: "Reply preview" })).toHaveText("Ryan".repeat(80));
+      if (width === 390 || width === 1280) await page.screenshot({ path: testInfo.outputPath(`reply-preview-${theme}-${width}.png`) });
+      await page.getByRole("dialog").getByRole("button", { name: "Cancel", exact: true }).click();
+    }
+  }
+});
+
 test("fits mobile and desktop boundary widths in both themes", async ({ page }, testInfo) => {
   await signIn(page);
   for (const theme of ["light", "dark"]) {

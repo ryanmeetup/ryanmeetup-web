@@ -6,6 +6,7 @@ import type { ModerationInitialState } from "@/lib/store-reviews/moderation";
 import { useReviewModeration } from "./useReviewModeration";
 import { ReviewModerationCard } from "./ReviewModerationCard";
 import { ReviewModerationDialog } from "./ReviewModerationDialog";
+import { ReviewReplyDialog } from "./ReviewReplyDialog";
 
 export function ReviewModerationQueue({ initial, staffNames }: { initial: ModerationInitialState; staffNames: Record<string, string> }) {
   const queue = useReviewModeration(initial);
@@ -29,7 +30,11 @@ export function ReviewModerationQueue({ initial, staffNames }: { initial: Modera
       {queue.page?.reviews.length === 0 && <EmptyState message={queue.filter === "pending" ? "No reviews waiting for a decision" : "No reviews in this queue"} />}
     </div>
     {queue.page?.next && <Button className="w-full sm:w-auto" variant="secondary" disabled={Boolean(queue.busy || queue.selection)} onClick={() => void queue.load(queue.filter, true)}>Load more reviews</Button>}
-    {queue.selection && <ReviewModerationDialog key={`${queue.selection.review.id}-${queue.selection.action}`} selection={queue.selection}
-      saving={Boolean(queue.busy)} onClose={queue.dismiss} onSubmit={queue.decide} />}
+    {queue.selection && (queue.selection.action === "reply-set" || queue.selection.action === "reply-remove" ?
+      <ReviewReplyDialog key={`${queue.selection.review.id}-${queue.selection.action}`} review={queue.selection.review}
+        remove={queue.selection.action === "reply-remove"} saving={Boolean(queue.busy)} onClose={queue.dismiss} onSubmit={queue.decide} /> :
+      <ReviewModerationDialog key={`${queue.selection.review.id}-${queue.selection.action}`}
+        selection={{ action: queue.selection.action, review: queue.selection.review }}
+        saving={Boolean(queue.busy)} onClose={queue.dismiss} onSubmit={queue.decide} />)}
   </div>;
 }

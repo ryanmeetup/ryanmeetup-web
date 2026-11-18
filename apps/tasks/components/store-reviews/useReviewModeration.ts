@@ -2,11 +2,11 @@
 
 import { useRef, useState } from "react";
 import { ApiMutationError } from "@/lib/mutation-client";
-import { fetchModerationPage, saveModerationDecision } from "@/lib/store-reviews/moderation-client";
-import { moderationActionLabel, reviewModerationActions } from "@/lib/store-reviews/moderation";
-import type { ModerationAction, ModerationFilter, ModerationInitialState, ModerationPage, ModerationReview } from "@/lib/store-reviews/moderation";
+import { fetchModerationPage, saveModerationDecision, saveOfficialReply } from "@/lib/store-reviews/moderation-client";
+import { moderationActionLabel, reviewModerationActions, reviewReplyActions } from "@/lib/store-reviews/moderation";
+import type { ModerationFilter, ModerationInitialState, ModerationPage, ModerationReview, StaffReviewAction } from "@/lib/store-reviews/moderation";
 
-export type ModerationSelection = { action: ModerationAction; review: ModerationReview };
+export type ModerationSelection = { action: StaffReviewAction; review: ModerationReview };
 
 export function useReviewModeration(initial: ModerationInitialState) {
   const [page, setPage] = useState<ModerationPage | null>(initial.status === "ready" ? initial.page : null);
@@ -35,19 +35,25 @@ export function useReviewModeration(initial: ModerationInitialState) {
     } finally { active.current = false; setBusy(null); }
   }
 
-  function select(review: ModerationReview, action: ModerationAction) {
-    if (!disabled && !active.current && reviewModerationActions(review).includes(action)) setSelection({ review, action });
+  function select(review: ModerationReview, action: StaffReviewAction) {
+    const allowed: StaffReviewAction[] = [...reviewModerationActions(review), ...reviewReplyActions(review)];
+    if (!disabled && !active.current && allowed.includes(action)) setSelection({ review, action });
   }
   function dismiss() { if (!active.current) setSelection(null); }
 
   async function decide(note: string | null) {
     if (!selection || active.current || disabled) return;
     const { review, action } = selection;
+    if (action === "reply-set" && !note) return;
     active.current = true; setBusy("saving"); setError(""); setMessage("");
     let outcome: "saved" | "conflict" | "unknown" = "unknown";
     try {
-      await saveModerationDecision({ action, reviewId: review.id, expectedUpdatedAt: review.updatedAt,
-        revisionId: action === "approve" || action === "reject" ? review.pending!.id : null, note });
+      if (action === "reply-set" || action === "reply-remove") {
+        await saveOfficialReply({ reviewId: review.id, expectedUpdatedAt: review.updatedAt, body: action === "reply-remove" ? null : note });
+      } else {
+        await saveModerationDecision({ action, reviewId: review.id, expectedUpdatedAt: review.updatedAt,
+          revisionId: action === "approve" || action === "reject" ? review.pending!.id : null, note });
+      }
       outcome = "saved";
     } catch (failure) {
       if (failure instanceof ApiMutationError && failure.code === "CONFLICT") outcome = "conflict";

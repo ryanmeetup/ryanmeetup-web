@@ -1,7 +1,7 @@
 "use client";
 
 import { mutate, parseMutationResponse } from "@/lib/mutation-client";
-import type { ModerationCursor, ModerationDecision, ModerationFilter, ModerationPage } from "./moderation";
+import type { ModerationCursor, ModerationDecision, ModerationFilter, ModerationPage, ReviewReplyCommand } from "./moderation";
 
 export async function fetchModerationPage(filter: ModerationFilter, after: ModerationCursor | null = null): Promise<ModerationPage> {
   const params = new URLSearchParams({ filter });
@@ -15,4 +15,9 @@ export async function fetchModerationPage(filter: ModerationFilter, after: Moder
 export async function saveModerationDecision(decision: ModerationDecision) {
   const result = await mutate<{ saved: boolean }>("/api/admin/reviews", { method: "POST", body: JSON.stringify(decision) });
   if (result.saved !== true) throw new Error("The decision could not be confirmed.");
+}
+
+export async function saveOfficialReply(command: ReviewReplyCommand) {
+  const result = await mutate<{ saved: boolean }>("/api/admin/reviews", { method: "PATCH", body: JSON.stringify(command) });
+  if (result.saved !== true) throw new Error("The reply could not be confirmed.");
 }

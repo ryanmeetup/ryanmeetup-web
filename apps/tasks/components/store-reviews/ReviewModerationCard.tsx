@@ -1,11 +1,11 @@
 "use client";
 
 import { useId, useState } from "react";
-import { FiChevronDown, FiEye, FiEyeOff } from "react-icons/fi";
+import { FiChevronDown, FiEdit2, FiEye, FiEyeOff, FiMessageSquare, FiTrash2 } from "react-icons/fi";
 import { AnimatedCollapse, Button, Card, Heading, IconButton, Kicker, Pill, RatingStars, Text } from "@ryanmeetup/ui";
 import { formatTimestamp } from "@/lib/date-format";
-import { moderationActionLabel, reviewModerationActions } from "@/lib/store-reviews/moderation";
-import type { ModerationAction, ModerationReview, ModerationRevision } from "@/lib/store-reviews/moderation";
+import { moderationActionLabel, reviewModerationActions, reviewReplyActions } from "@/lib/store-reviews/moderation";
+import type { ModerationReview, ModerationRevision, StaffReviewAction } from "@/lib/store-reviews/moderation";
 
 const eventLabels: Record<string, string> = {
   submitted: "Submitted", resubmitted: "Resubmitted", edited: "Edit submitted", withdrawn: "Withdrawn",
@@ -27,7 +27,7 @@ export function ModerationVersion({ revision, label }: { revision: ModerationRev
 
 export function ReviewModerationCard({ review, disabled, staffNames, onSelect }: {
   review: ModerationReview; disabled: boolean; staffNames: Record<string, string>;
-  onSelect: (review: ModerationReview, action: ModerationAction) => void;
+  onSelect: (review: ModerationReview, action: StaffReviewAction) => void;
 }) {
   const [historyOpen, setHistoryOpen] = useState(false);
   const historyId = useId();
@@ -62,6 +62,23 @@ export function ReviewModerationCard({ review, disabled, staffNames, onSelect }:
             {moderationActionLabel(action, review)}
           </Button>)}
       </div>}
+      {(review.reply || reviewReplyActions(review).length > 0) && <section aria-label="Official reply" className="space-y-3 border-t border-black/10 pt-4 dark:border-white/10">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Heading size="h3" variant="normal" className="text-sm font-semibold">Official reply</Heading>
+          <div className="flex gap-2">
+            {reviewReplyActions(review).map((action) => <IconButton key={action} size="md"
+              label={`${moderationActionLabel(action, review)} for ${review.item.productTitle}`} disabled={disabled}
+              variant={action === "reply-remove" ? "danger" : "subtle"} onClick={() => onSelect(review, action)}>
+              {action === "reply-remove" ? <FiTrash2 aria-hidden /> : review.reply ? <FiEdit2 aria-hidden /> : <FiMessageSquare aria-hidden />}
+            </IconButton>)}
+          </div>
+        </div>
+        {review.reply ? <>
+          <Text className="whitespace-pre-wrap text-sm wrap-anywhere">{review.reply.body}</Text>
+          <Text className="text-xs">Updated <time dateTime={review.reply.updatedAt}>{formatTimestamp(review.reply.updatedAt)}</time></Text>
+        </> : <Text className="text-sm">No official reply yet.</Text>}
+        {review.state !== "active" && <Text className="text-xs">This reply is not public while the review is {review.state}.</Text>}
+      </section>}
       <div className="border-t border-black/10 pt-3 dark:border-white/10">
         <Button variant="ghost" size="xs" aria-expanded={historyOpen} aria-controls={historyId}
           rightIcon={<FiChevronDown aria-hidden className={`transition-transform motion-reduce:transition-none ${historyOpen ? "rotate-180" : ""}`} />}

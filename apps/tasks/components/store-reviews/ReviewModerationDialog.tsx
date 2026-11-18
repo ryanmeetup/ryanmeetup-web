@@ -3,11 +3,11 @@
 import { useId, useState } from "react";
 import { Modal, ModalActions, Text, Textarea } from "@ryanmeetup/ui";
 import { moderationActionLabel, moderationReasonRequired } from "@/lib/store-reviews/moderation";
-import type { ModerationSelection } from "./useReviewModeration";
+import type { ModerationAction, ModerationReview } from "@/lib/store-reviews/moderation";
 import { ModerationVersion } from "./ReviewModerationCard";
 
 export function ReviewModerationDialog({ selection, saving, onClose, onSubmit }: {
-  selection: ModerationSelection; saving: boolean; onClose: () => void; onSubmit: (note: string | null) => Promise<void>;
+  selection: { action: ModerationAction; review: ModerationReview }; saving: boolean; onClose: () => void; onSubmit: (note: string | null) => Promise<void>;
 }) {
   const [note, setNote] = useState("");
   const id = useId();
