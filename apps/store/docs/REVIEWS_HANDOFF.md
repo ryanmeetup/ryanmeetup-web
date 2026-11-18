@@ -1,6 +1,6 @@
 # Custom reviews implementation handoff
 
-Updated November 17, 2026. Continue from this file and
+Updated November 18, 2026. Continue from this file and
 [REVIEWS_REBUILD.md](REVIEWS_REBUILD.md). Implementation has started; the custom
 review service is **not ready to collect reviews**. Judge.me remains the default.
 Ryan requested a browser testing control. He then chose the existing **RMT**
@@ -9,15 +9,16 @@ Meetup properties, starting with new store-owned review tables and buckets.
 The [database plan](REVIEWS_DATABASE.md) records that decision and supersedes
 the earlier dedicated-project proposal. Keep local/Preview data isolated and
 the personal PRD instance separate. The Shopify Customer Account API client
-and review-content schema are still outstanding. Private customer auth storage
+and live buyer verification are still outstanding. Review content and moderation
+storage are applied to RMT; see [the moderation checkpoint](REVIEWS_MODERATION.md). Private customer auth storage
 has been applied to RMT as migration `20261120130000`. It is now RMT-only;
 PRD does not need its SQL or a skipped-version history marker. No deployment
 credentials or billing settings changed.
 Buyer sign-in now has a private backend, encrypted persistence, verified token
 exchange, and gated HTTP start/callback/sign-out routes. Runtime credentials
 and the explicit opt-in remain unconfigured, and no live buyer login has been
-proved. Server-side session loading and renewal are now implemented; exact-line
-purchase access and expired-record cleanup are next. See
+proved. Session loading, renewal, and bounded exact-line purchase lookups are
+implemented. Live feasibility checks and expired-record cleanup remain. See
 [the Shopify auth setup and boundary](REVIEWS_SHOPIFY_AUTH.md).
 
 ## Completed chunks
@@ -246,8 +247,7 @@ than duplicating them, and coordinate before changing them.
   an audit log, and service-role functions for submit, edit, withdraw,
   approve/reject, hide/restore, reply, the public page, and totals. 71 pgTAP
   assertions in `tests/database/store-reviews.sql` run from
-  `scripts/test-store-customer-auth.mjs`. Both RMT and PRD profiles pass. **Not
-  pushed to RMT**. Photos and buckets are a later chunk.
+  `scripts/test-store-customer-auth.mjs`. Both RMT and PRD profiles pass. **Applied to RMT**. Photos and buckets are a later chunk.
 - **Review backend interface:** `POST /api/store/reviews` in Tasks
   (`lib/server/store-reviews/storage.ts`), contract in
   `packages/reviews/src/review-backend.ts`. It reuses
@@ -255,8 +255,9 @@ than duplicating them, and coordinate before changing them.
   and offers `review.submit`, `review.edit`, `review.withdraw`, and
   `reviews.page` with opaque cursors. The storefront passes the verified
   session subject and purchased line; the backend never takes a shop from the
-  caller. Staff moderation is not exposed yet; it needs a separate staff
-  identity. Tests: `apps/tasks/tests/routes/store-reviews.test.ts`.
+  caller. Staff moderation now has separate owner-only Tasks endpoints at
+  `GET/POST /api/admin/reviews`; the queue screen remains the next chunk. See
+  [the moderation handoff](REVIEWS_MODERATION.md). Tests: `apps/tasks/tests/routes/store-reviews.test.ts`.
 - **Custom reads (chunk 5):** `lib/review-backend.ts` (client, same
   `STORE_REVIEWS_BACKEND_URL`/`_TOKEN`) and `lib/custom-reviews.ts`.
   `getReviews` in custom mode now reads the published page and complete
@@ -303,8 +304,8 @@ Shopify gate above; record its result before implementation depends on it.
    Tasks Supabase signup/provisioning flow.
 4. **Text-only vertical slice:** authenticated buyer submission with required
    whole-star rating/body, chosen public display name, idempotency, and pending
-   status. Keep unmoderated content private. Ship staff authorization and
-   publish/hide actions in the next small commit.
+   status. Keep unmoderated content private. Staff authorization and the
+   publish/hide API are implemented; the owner-facing queue is the next chunk.
 5. **Public reads:** database-backed product scope, complete published totals
    independent of pagination, public field projection, and cache invalidation.
    Wire `getReviews` and matching JSON-LD without falling back to Judge.me.
