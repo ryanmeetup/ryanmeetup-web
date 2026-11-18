@@ -17,6 +17,15 @@ overview:
 
 ## New
 
+### Moderate store reviews
+
+App owners can review buyer submissions from Admin → Store reviews when the
+store integration is enabled. Compare a waiting edit with its approved version,
+publish or reject it, and hide or restore published reviews. Hiding and rejecting
+require a private reason, kept with the decision history. If another person or
+the buyer changes a review while it is open, the queue refreshes before another
+decision. Buyer withdrawals stay withdrawn.
+
 ### Save a focused task view
 
 Save your current task filters, exclusions, sort order, and board or list layout
