@@ -1,5 +1,7 @@
 # Custom reviews implementation handoff
 
+Latest buyer checkpoint: [My reviews, edit, and withdrawal](REVIEWS_BUYER_MANAGEMENT.md).
+
 Updated November 18, 2026. Continue from this file and
 [REVIEWS_REBUILD.md](REVIEWS_REBUILD.md). Implementation has started; the custom
 review service is **not ready to collect reviews**. Judge.me remains the default.
@@ -167,8 +169,9 @@ printed and no buyer login was attempted. The discovery response is not proof
 of installed client permissions or access to orders.
 
 Ryan confirmed the Shopify client has not been provisioned and chose to reuse
-the existing RMT database. The scoped backend interface is implemented;
-review-content persistence and purchase eligibility remain outstanding.
+the existing RMT database. The scoped backend, review-content persistence, and purchase eligibility are
+implemented with synthetic coverage; real client and purchase verification
+remain outstanding.
 The required environment variables, backend setup, and HTTPS callback path
 are in [the auth setup](REVIEWS_SHOPIFY_AUTH.md).
 
@@ -276,53 +279,40 @@ than duplicating them, and coordinate before changing them.
   builds the public name server-side, and calls `review.submit`. Tests:
   `tests/custom-review-submission.spec.ts`.
 
+- **My reviews (chunk 6), completed:** private twenty-row pagination,
+  edit/withdraw with exact database versions, session/ownership checks, and
+  product-picker integration are committed. RMT migration `20261120180000`
+  is applied; PRD needs no SQL. See [the buyer checkpoint](REVIEWS_BUYER_MANAGEMENT.md)
+  for small commits, browser coverage, rollout evidence, and the next live gate.
+
 ## Small next chunks
 
-Keep each item an independently verified Conventional Commit. Start with the
-Shopify gate above; record its result before implementation depends on it.
+Buyer management is completed; its small commits and verification are in
+[the buyer checkpoint](REVIEWS_BUYER_MANAGEMENT.md). Review content, public reads,
+owner moderation, and official replies are implemented with synthetic coverage.
+The remaining gate is real provider evidence before collection opens.
 
-1. **Live customer/session gate:** provision the intended confidential client
-   and isolated backend, configure the keyring and explicit opt-in, then prove
-   buyer login, renewal, and provider rotation/reuse behavior. Do not substitute
-   the synthetic tests for that evidence. Expired-record cleanup is a separate
-   small backend chunk.
-2. **Exact-line eligibility:** use `getCustomerAccountSession(request)` before
-   Customer Account queries; preserve sign-in-required versus unavailable.
-   Normalize proven Shopify fields and handle the edge cases above; recheck
-   ownership and eligibility on every write. Hand off typed
-   eligible/ineligible/sign-in-required/unavailable results. Do not modify the
-   other agent's composer/sample-buyer work without coordinating.
-3. **Review storage baseline:** add store-owned tables/buckets to the existing
-   **RMT** shared backend through the scoped backend interface, with isolated
-   Preview data, shop/order/line uniqueness, approved/pending revisions, and
-   moderation audit. Keep immutable SQL in `apps/tasks/supabase/migrations`,
-   declare store versions in `supabase/migration-scopes.json`, and apply them
-   to RMT only. Shared Tasks migrations continue to reach both instances.
-   Store credentials
-   and customer data target RMT only; PRD remains personal. See
-   [the database plan](REVIEWS_DATABASE.md). Shopify buyers must not enter the
-   Tasks Supabase signup/provisioning flow.
-4. **Text-only vertical slice:** authenticated buyer submission with required
-   whole-star rating/body, chosen public display name, idempotency, and pending
-   status. Keep unmoderated content private. Staff authorization and the
-   publish/hide API, owner-facing queue, and official reply controls are
-   implemented. Ryan deferred imports; the next chunk is to finish buyer
-   review management, then verify real customer sign-in and purchases in preview.
-5. **Public reads:** database-backed product scope, complete published totals
-   independent of pagination, public field projection, and cache invalidation.
-   Wire `getReviews` and matching JSON-LD without falling back to Judge.me.
-6. **Buyer management:** My reviews, pending edits that preserve the last
-   approved version, immediate withdrawal, and resubmission on the same line.
-7. **Media and replies:** separate commits for verified upload authorization,
-   server validation/re-encoding and cleanup, approved images, and audited
-   official replies. The existing browser photo preparation is not server
-   validation or storage.
-8. **Import and cutover rehearsal:** repeatable Judge.me dry run, product mapping,
-   counts/photos/replies comparison, provenance/verification handling, and
-   rollback with post-cutover reviews. Email collection is Phase 2.
+1. **Live customer/session gate:** provision the intended confidential Shopify
+   client and an isolated HTTPS preview backend. Configure the server keyring,
+   pinned scope, and explicit opt-in. Prove buyer login, renewal, provider token
+   rotation/reuse behavior, and logout. Never substitute synthetic tests for
+   that evidence or use PRD credentials.
+2. **Purchase and lifecycle verification:** check real orders, exact line/product/
+   variant ownership, fulfillment and refund cases. Prove submit → approve →
+   reply → edit/reapprove → withdraw, including public rating totals and an
+   account switch between requests. Keep all Preview records isolated.
+3. **Expired auth-record cleanup:** add a bounded backend cleanup task for expired
+   attempts/session tombstones independently of the live buyer test.
+4. **Media:** verified upload authorization, server type/size/dimension checks,
+   re-encoding, approved-only publication, and abandoned/removed media cleanup.
+   Existing browser photo preparation is not server validation or storage.
+5. **Cutover rehearsal:** define rollback and ownership of new reviews before
+   changing the production provider. Judge.me content imports and import dry
+   runs remain deferred unless Ryan requests them again. Request emails remain
+   Phase 2.
 
 Do not install/uninstall Judge.me, repoint credentials, turn off its emails,
-or change the production provider as part of one of the preparatory chunks.
+or change the production provider as part of these preparatory chunks.
 
 ## Repeat verification
 

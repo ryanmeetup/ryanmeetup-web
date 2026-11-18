@@ -171,6 +171,33 @@ and cannot revive revoked sessions. Revocation erases the token envelope and
 advances the revision, so an in-flight stale refresh cannot overwrite logout.
 The store's encryption context additionally binds record identity and expiry.
 
+## Store buyer review management
+
+The storefront's `/reviews/mine` and `GET/POST /api/reviews/mine` use its encrypted
+Shopify customer session, never Tasks membership. Custom mode and configured
+sign-in are required. Browser mutations require the storefront origin and a
+bounded JSON body. Reads also refuse cross-site/same-site browser requests.
+The server rechecks the same immutable session after reads and immediately
+before dispatching a write; subject, shop, and public name are never accepted
+from the browser. Browser results omit session material, customer subjects,
+order IDs, staff actors, and private moderation notes. A one-way session equality
+marker prevents merging lists when sign-in changes between pages.
+
+The service-only, invoker, empty-search-path `store_buyer_reviews` projection
+filters by configured shop and verified subject, with bounded creation-time
+keyset pagination or an exact review ID. `store_buyer_reviewed_lines` filters
+only requested purchased lines in that same scope. The private service route
+permits only explicit commands and validates exact return projections. It always
+refuses PRD and grants no Tasks membership or direct table privileges.
+
+`store_edit_buyer_review` and `store_withdraw_buyer_review` recheck shop/subject
+and the exact expected timestamp under the review row lock, then delegate to
+the canonical atomic revision/audit transactions. Edits preserve approved public
+content; hidden reviews cannot be edited. Withdrawal removes public content and
+rating totals, and repeating an already completed withdrawal creates no new
+write/event. Uncertain outcomes clear stale controls and never retry a mutation
+automatically. These functions are in RMT-only migration `20261120180000`.
+
 ## Store review moderation
 
 `GET/POST/PATCH /api/admin/reviews` is a Tasks app-owner boundary, separate from the

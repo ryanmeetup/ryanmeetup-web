@@ -8,9 +8,10 @@ the cutover checks below. Implementation and launch are separate milestones.
 
 **Scope update, November 18, 2026:** Ryan deferred importing content from
 Judge.me. Import-related tasks below are inactive unless he requests them again.
-Next: finish buyer review management, configure and verify the real customer
-sign-in/purchase flow in an isolated preview, then validate the complete review
-lifecycle. Judge.me remains the default during this work.
+Buyer review management is implemented; see [the checkpoint](REVIEWS_BUYER_MANAGEMENT.md).
+Next: configure and verify the real customer sign-in/purchase flow in an isolated
+preview, then validate the complete review lifecycle. Judge.me remains the default
+during this work.
 
 **Status, November 17, 2026:** Judge.me still serves production. Finished work
 is removed from this plan; [the handoff](REVIEWS_HANDOFF.md) records each landed
@@ -94,7 +95,7 @@ app sync before cutover because uninstalling Judge.me may affect it.
 | Boundary | Contract agents should agree before implementation |
 | --- | --- |
 | Shopify access | Build on `lib/customer-account/` and the private auth storage: a scoped backend interface, sign-in start/callback with token exchange and signed ID-token/nonce verification, renewal, and logout. Then a server-only eligibility lookup keyed by order and line, with a typed result for eligible purchase, ineligible purchase, missing session, and provider failure. Fail closed on writes if ownership or eligibility cannot be checked. |
-| Review storage | Store-owned tables and buckets in the existing RMT Supabase project (`lvfaartgcpphuokoswcm`), the selected shared backend for Ryan Meetup properties. Keep immutable SQL in `apps/tasks/supabase/migrations`, declare store versions RMT-only in `supabase/migration-scopes.json`, and scope runtime access to the store's data. PRD stays a separate personal instance. Store review status, buyer ownership and purchase references, display snapshots, revisions, media references, official replies, and moderation history. Enforce unique purchase lines and migration source keys. Customer auth tables exist; review content tables and buckets do not. See [the database decision](REVIEWS_DATABASE.md). |
+| Review storage | Store-owned tables and buckets in the existing RMT Supabase project (`lvfaartgcpphuokoswcm`), the selected shared backend for Ryan Meetup properties. Keep immutable SQL in `apps/tasks/supabase/migrations`, declare store versions RMT-only in `supabase/migration-scopes.json`, and scope runtime access to the store's data. PRD stays a separate personal instance. Store review status, buyer ownership and purchase references, display snapshots, revisions, media references, official replies, and moderation history. Enforce unique purchase lines and migration source keys. Customer auth and review-content tables are applied; media buckets remain planned. See [the database decision](REVIEWS_DATABASE.md). |
 | Public reads | A server-only loader returns the scope, complete summary, page of public reviews, and paging cursor. Public data includes the selected display name, attribution, verification, approved media, and public reply. Order/customer identifiers, session data, staff notes, and draft content stay server-side. |
 | Media | Issue expiring upload permissions only after buyer eligibility is verified. Validate type, size, and dimensions on the server, re-encode images without metadata, and publish only approved derivatives. Tie uploads to the buyer and review. Prune abandoned uploads and revoke access to removed media. Keep object backups separate from database backups. |
 | Staff access | Use a separate staff identity and role, enforced on the server for every moderation or reply action. Record who acted and when. Keep production and preview credentials, data, and media isolated. |

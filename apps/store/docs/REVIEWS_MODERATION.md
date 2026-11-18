@@ -48,7 +48,7 @@ The SQL is committed in `20261120160000_store_review_moderation.sql` and
 `20261120170000_store_review_replies.sql` under
 `apps/tasks/supabase/migrations`, both registered as RMT-only. They build on the
 existing review-content migration
-`20261120140000`; it has no dependency on the unfinished buyer-list migration.
+`20261120140000`; buyer management is a later independent extension.
 
 ## API and behavior
 
@@ -103,7 +103,9 @@ A successful decision returns `{ "saved": true }`. The canonical state change
 and staff audit event commit in one transaction. Rejection keeps the previous
 approved version public. Hiding removes the review and its rating from public
 reads immediately. Approval of a hidden edit keeps the review hidden until a
-separate restore. Staff cannot restore a buyer withdrawal. Responses are
+separate restore. Staff cannot restore a buyer withdrawal. A buyer who
+resubmits a withdrawn review starts over: its publish date is cleared and set
+again when staff approve the new text, so it sorts as a new review. Responses are
 uncached and database error details never leave the server.
 
 Request validation/types live in
@@ -158,13 +160,10 @@ reported no schema changes. Live checks confirmed the v2 owner read works and
 missing-review/actor reply writes are refused, without creating or changing any
 review, reply, buyer, or audit content. PRD needs no SQL for this extension.
 
-The uncommitted `20261120150000_store_buyer_reviews.sql` and its scope entry are
-preserved in the worktree and were deliberately **not applied**. RMT therefore
-has a deliberate history gap at that version. When its owner finishes and
-commits it, inspect an RMT `db push --include-all --dry-run` plan before applying
-it with `--include-all`, since its version precedes the applied moderation
-migration. Never mark it applied without executing it and never modify the
-already-applied moderation SQL.
+Buyer management is now applied as `20261120180000_store_buyer_reviews.sql`.
+The old `20261120150000` draft was never applied or committed and was moved
+before completion. No `--include-all` or fake history entry was needed. See
+[the buyer checkpoint](REVIEWS_BUYER_MANAGEMENT.md) for the committed rollout.
 
 PRD needs no SQL for this chunk. Its isolated profile excludes these store
 functions, tables, and synthetic migration-history records. Do not apply store
@@ -233,15 +232,12 @@ Ryan deferred Judge.me content imports on November 18, 2026. Do not start an
 import or import dry run unless he asks for it again. Keep Judge.me as the
 default provider and preserve the browser testing control.
 
-Finish the **buyer review-management flow** first. My reviews, edit/withdraw
-handlers, and `20261120150000_store_buyer_reviews.sql` already exist as unfinished
-work in the shared worktree. Review and complete that work in small commits;
-do not create a parallel implementation. Verify pending/published/hidden states,
-edits that preserve approved content, immediate withdrawal, and ownership
-isolation. Apply its committed RMT-only migration using the history-gap procedure
-above once it is ready.
+The **buyer review-management flow** is completed in small commits, including
+pagination, edits that preserve approved content, immediate withdrawal, and
+ownership isolation. Its committed RMT-only migration is applied. See
+[the buyer checkpoint](REVIEWS_BUYER_MANAGEMENT.md).
 
-Then configure the real Shopify Customer Account client and an isolated preview
+Next configure the real Shopify Customer Account client and an isolated preview
 backend. Prove buyer sign-in, exact purchased-line eligibility, token renewal,
 and logout with real provider responses. Test the complete buyer-to-moderator
 loop before opening collection: submit, approve, reply, edit/reapprove, and
