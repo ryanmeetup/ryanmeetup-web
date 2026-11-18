@@ -18,6 +18,7 @@ test.describe("sample buyer preview choice", () => {
   });
 });
 
+// Each test gets fresh cookies, so no test needs to reset the review mode afterwards.
 const browser = process.env.REVIEWS_PREVIEW_ENABLED === "true";
 // The demo catalog's tee by default; set REVIEW_TEST_PRODUCT to test against a live catalog.
 const productPath = `${process.env.REVIEW_TEST_PRODUCT ?? "/products/ryan-meetup-tee"}#reviews`;
@@ -68,7 +69,6 @@ for (const theme of ["light", "dark"]) {
       await dialog.getByRole("button", { name: "Submit review", exact: true }).click();
       await expect(dialog).toHaveCount(0);
       await expect(reviews.getByRole("status").filter({ hasText: "Review received" })).toContainText("Sample review checked. Nothing was saved");
-      await choose(page, "Environment default");
     });
   }
 }
@@ -82,9 +82,6 @@ test("the sample buyer must pick a rating before submitting", async ({ page }) =
   await dialog.getByLabel(/^Review/).fill("No stars yet.");
   await dialog.getByRole("button", { name: "Submit review", exact: true }).click();
   await expect(dialog.getByText("Choose a rating before submitting your review.")).toBeVisible();
-  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
-  await expect(dialog).toHaveCount(0);
-  await choose(page, "Environment default");
 });
 
 test("plain custom mode keeps the form closed", async ({ page }) => {
@@ -93,5 +90,4 @@ test("plain custom mode keeps the form closed", async ({ page }) => {
   await choose(page, "Custom reviews");
   await expect(page.locator("#reviews").getByRole("button", { name: "Write a review", exact: true })).toBeDisabled();
   await expect(page.locator("#reviews")).toContainText("Review collection is temporarily unavailable.");
-  await choose(page, "Environment default");
 });
