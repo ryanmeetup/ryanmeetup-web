@@ -21,7 +21,7 @@ export type CustomReviewResult = { ok: true; message: string } | { ok: false; er
 
 /** Editing an existing review: start from what the buyer wrote, and offer only names the server can build. */
 export type CustomReviewEdit = {
-  initial: { rating: number; title: string | null; body: string; nameStyle: ReviewNameStyle };
+  initial: { rating: number; title: string; body: string; nameStyle: ReviewNameStyle };
   nameChoices: { style: ReviewNameStyle; displayName: string }[];
 };
 
@@ -97,8 +97,8 @@ export function CustomReviewComposer({
       ratingField.current?.querySelector("input")?.focus();
       return;
     }
-    const review = reviewSubmissionSchema({ rating: draft.rating, title: draft.title || null, body: draft.body, nameStyle: draft.nameStyle });
-    if (!review) return setError(`Write your review in ${REVIEW_BODY_MAX.toLocaleString("en-US")} characters or fewer, and keep any title under ${REVIEW_TITLE_MAX}.`);
+    const review = reviewSubmissionSchema({ rating: draft.rating, title: draft.title, body: draft.body, nameStyle: draft.nameStyle });
+    if (!review) return setError(`Give your review a title of up to ${REVIEW_TITLE_MAX} characters, and write it in ${REVIEW_BODY_MAX.toLocaleString("en-US")} characters or fewer.`);
     setPending(true);
     setError("");
     try {
@@ -189,7 +189,7 @@ export function CustomReviewComposer({
         <div ref={ratingField} onInvalid={() => setError("Choose a rating before submitting your review.")}>
           <StarRating label="Rating" name={`${formId}-rating`} step={1} required disabled={pending} value={draft.rating} onChange={(rating) => setDraft((value) => ({ ...value, rating }))} />
         </div>
-        <Input label="Title" name={`${formId}-title`} maxLength={REVIEW_TITLE_MAX} placeholder="Sum it up, Ryan" value={draft.title} onChange={(event) => setDraft((value) => ({ ...value, title: event.target.value }))} />
+        <Input label="Title" name={`${formId}-title`} required maxLength={REVIEW_TITLE_MAX} placeholder="Sum it up, Ryan" value={draft.title} onChange={(event) => setDraft((value) => ({ ...value, title: event.target.value }))} />
         <Textarea id={`${formId}-body`} label="Review" name="body" required maxLength={REVIEW_BODY_MAX} placeholder="The good, the bad, the very Ryan. How's it fitting, and how's it holding up?" value={draft.body} onChange={(event) => setDraft((value) => ({ ...value, body: event.target.value }))} />
         <div className="space-y-2">
           <DropdownSelect

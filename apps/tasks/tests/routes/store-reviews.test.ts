@@ -10,10 +10,10 @@ const token = "t".repeat(43);
 const scope = { shopId: "123456", clientId: "test-client", issuer: "https://shopify.com/authentication/123456", redirectUri: "https://store.test/api/reviews/auth/callback" };
 const reviewId = "3f1c2a4e-5b6d-4e7f-8a9b-0c1d2e3f4a5b";
 const purchase = { orderId: "9000", lineId: "1", productId: "100", variantId: "200", productTitle: "Name Tag Shirt", variantTitle: "Black / M" };
-const submission = { rating: 5, title: null, body: "Great shirt.", nameStyle: "first-initial" };
+const submission = { rating: 5, title: "Ryan approved", body: "Great shirt.", nameStyle: "first-initial" };
 const submit = { operation: "review.submit", subject: "synthetic-buyer", purchase, submission, displayName: "Ryan L." };
 const publicReview = (id: string, publishedAt: string) => ({
-  id, rating: 5, title: null, body: "Great shirt.", displayName: "Ryan L.", publishedAt, editedAt: null,
+  id, rating: 5, title: "Ryan approved", body: "Great shirt.", displayName: "Ryan L.", publishedAt, editedAt: null,
   item: { productId: "100", productTitle: "Name Tag Shirt", variantTitle: "Black / M" }, verifiedPurchase: true, photos: [], reply: null,
 });
 const summary = (count: number) => ({ count, average: count ? 5 : 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: count } });

@@ -28,19 +28,19 @@ const summary = summarizeReviewRatings([5, 4, 5]);
 const page = { scope: { productIds: ["8123456789"] }, summary, reviews: [review], nextCursor: null };
 
 describe("review submissions", () => {
-  it("cleans text, keeps paragraphs, and turns a blank title into none", () => {
+  it("cleans text and keeps paragraphs", () => {
     expect(
-      reviewSubmissionSchema({ rating: 4, title: "   ", body: "  Line one  \r\n\r\n\r\n\r\nLine\u0007 two ", nameStyle: "first-initial" }),
-    ).toEqual({ rating: 4, title: null, body: "Line one\n\nLine two", nameStyle: "first-initial" });
+      reviewSubmissionSchema({ rating: 4, title: " Solid ", body: "  Line one  \r\n\r\n\r\n\r\nLine\u0007 two ", nameStyle: "first-initial" }),
+    ).toEqual({ rating: 4, title: "Solid", body: "Line one\n\nLine two", nameStyle: "first-initial" });
     expect(reviewSubmissionSchema({ rating: 5, title: "  Big\tfan ", body: "Yes", nameStyle: "full" })?.title).toBe("Big fan");
   });
 
-  it("accepts only whole stars, a real body, a known name style, and no extra fields", () => {
-    const valid = { rating: 3, title: null, body: "Fine", nameStyle: "anonymous" };
+  it("accepts only whole stars, a real title and body, a known name style, and no extra fields", () => {
+    const valid = { rating: 3, title: "Fine", body: "Fine", nameStyle: "anonymous" };
     expect(reviewSubmissionSchema(valid)).not.toBeNull();
     for (const change of [
       { rating: 0 }, { rating: 4.5 }, { rating: "5" }, { body: " \n " }, { body: "x".repeat(REVIEW_BODY_MAX + 1) },
-      { title: "t".repeat(101) }, { nameStyle: "email" }, { productId: "8123456789" }, { verifiedPurchase: true },
+      { title: null }, { title: "   " }, { title: "t".repeat(101) }, { nameStyle: "email" }, { productId: "8123456789" }, { verifiedPurchase: true },
     ]) {
       expect(reviewSubmissionSchema({ ...valid, ...change })).toBeNull();
     }
@@ -48,7 +48,7 @@ describe("review submissions", () => {
   });
 
   it("counts characters as people do, so emoji don't eat the limit twice", () => {
-    expect(reviewSubmissionSchema({ rating: 5, title: null, body: "🎉".repeat(REVIEW_BODY_MAX), nameStyle: "full" })).not.toBeNull();
+    expect(reviewSubmissionSchema({ rating: 5, title: "🎉", body: "🎉".repeat(REVIEW_BODY_MAX), nameStyle: "full" })).not.toBeNull();
   });
 });
 

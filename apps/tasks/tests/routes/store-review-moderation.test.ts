@@ -12,7 +12,7 @@ const reviewId = "00000000-0000-4000-8000-000000000001";
 const revisionId = "00000000-0000-4000-8000-000000000002";
 const time = "2026-11-18T12:00:00.123456Z";
 const scope = { shopId: "123", clientId: "client", issuer: "https://shopify.com/authentication/123", redirectUri: "https://store.test/api/reviews/auth/callback" };
-const revision = { id: revisionId, rating: 1, title: null, body: "Too small.", displayName: "Anonymous", submittedAt: time };
+const revision = { id: revisionId, rating: 1, title: "Ryan approved", body: "Too small.", displayName: "Anonymous", submittedAt: time };
 const row = { reply: null, id: reviewId, state: "active", createdAt: time, updatedAt: time,
   item: { productId: "100", productTitle: "Shirt", variantTitle: null }, pending: revision, published: null, latest: revision,
   recentEvents: [{ action: "submitted", actorKind: "buyer", actor: null, note: null, createdAt: time }] };

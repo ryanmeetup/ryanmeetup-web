@@ -25,7 +25,7 @@ export function toReviewsData(page: PublicReviewPage): ReviewsData {
       return {
         id: review.id,
         rating: review.rating,
-        title: review.title ?? "",
+        title: review.title,
         body: review.body,
         reviewerName: review.displayName,
         createdAt: review.publishedAt,

@@ -16,7 +16,7 @@ select is_empty($$select p.proname::text from pg_proc p where p.pronamespace = '
 -- --- helpers --------------------------------------------------------------------
 create function pg_temp.submit(line text, subject text default 'buyer-a', rating smallint default 5, body text default 'Great shirt.', product text default '100', shop text default '123')
 returns table (review_id uuid, outcome text) language sql as $$
-  select * from public.store_submit_review(shop, subject, '9000', line, product, '200', 'Name Tag Shirt', 'Black / M', rating, null, body, 'first-initial', 'Ryan L.');
+  select * from public.store_submit_review(shop, subject, '9000', line, product, '200', 'Name Tag Shirt', 'Black / M', rating, 'Solid', body, 'first-initial', 'Ryan L.');
 $$;
 create function pg_temp.pending(review uuid) returns uuid language sql as $$
   select id from public.store_review_revisions where review_id = review and status = 'pending';
@@ -54,11 +54,11 @@ select ok(not public.store_decide_review_revision(pg_temp.pending((select id fro
 
 -- --- edits keep the approved version public ------------------------------------
 select is(public.store_edit_review((select id from ids where name = 'a'), '123', 'buyer-a', 4::smallint, 'Update', 'Faded a little after ten washes.', 'full', 'Ryan Le'), 'pending', 'the owner can edit');
-select is(public.store_edit_review((select id from ids where name = 'a'), '123', 'buyer-b', 1::smallint, null, 'Hijack', 'full', 'X'), 'not_found', 'another account cannot edit');
+select is(public.store_edit_review((select id from ids where name = 'a'), '123', 'buyer-b', 1::smallint, 'Solid', 'Hijack', 'full', 'X'), 'not_found', 'another account cannot edit');
 select is((select r ->> 'body' from public.store_public_reviews('123', array['100'], 1) r), 'Great shirt.', 'the approved version stays public while an edit waits');
-select is(public.store_edit_review((select id from ids where name = 'a'), '123', 'buyer-a', 4::smallint, null, 'Faded a little after ten washes, still love it.', 'full', 'Ryan Le'), 'pending', 'a second edit replaces the first');
+select is(public.store_edit_review((select id from ids where name = 'a'), '123', 'buyer-a', 4::smallint, 'Solid', 'Faded a little after ten washes, still love it.', 'full', 'Ryan Le'), 'pending', 'a second edit replaces the first');
 select is((select count(*) from public.store_review_revisions where review_id = (select id from ids where name = 'a') and status = 'pending'), 1::bigint, 'only one edit waits at a time');
-select throws_ok($$insert into public.store_review_revisions (review_id, rating, body, name_style, display_name) select id, 3, 'x', 'full', 'Ryan' from ids where name = 'a'$$, '23505', null, 'the database refuses a second pending revision');
+select throws_ok($$insert into public.store_review_revisions (review_id, rating, title, body, name_style, display_name) select id, 3, 'x', 'x', 'full', 'Ryan' from ids where name = 'a'$$, '23505', null, 'the database refuses a second pending revision');
 select ok(public.store_decide_review_revision(pg_temp.pending((select id from ids where name = 'a')), '123', true, 'staff'), 'staff approve the edit');
 select is((select r ->> 'body' from public.store_public_reviews('123', array['100'], 1) r), 'Faded a little after ten washes, still love it.', 'the approved edit replaces the public text');
 select ok((select r ->> 'editedAt' is not null from public.store_public_reviews('123', array['100'], 1) r), 'an approved edit is marked edited');
@@ -86,7 +86,7 @@ select ok(not public.store_withdraw_review((select id from ids where name = 'a')
 select ok(public.store_withdraw_review((select id from ids where name = 'a'), '123', 'buyer-a'), 'the owner can withdraw');
 select is(pg_temp.public_count(), 0::bigint, 'withdrawal removes the review immediately');
 select is(pg_temp.summary_count(), 0::bigint, 'withdrawal removes it from the totals');
-select is(public.store_edit_review((select id from ids where name = 'a'), '123', 'buyer-a', 5::smallint, null, 'Back again', 'full', 'Ryan Le'), 'closed', 'a withdrawn review cannot be edited');
+select is(public.store_edit_review((select id from ids where name = 'a'), '123', 'buyer-a', 5::smallint, 'Solid', 'Back again', 'full', 'Ryan Le'), 'closed', 'a withdrawn review cannot be edited');
 select ok(not public.store_set_review_reply((select id from ids where name = 'a'), '123', 'Hello?', 'staff'), 'staff cannot reply to a withdrawn review');
 select is((select outcome from pg_temp.submit('1', body => 'Changed my mind, it is great.')), 'resubmitted', 'a withdrawn review can be resubmitted on the same line');
 select is((select count(*) from public.store_reviews where line_id = '1'), 1::bigint, 'resubmission reuses the record');
@@ -97,7 +97,7 @@ select is((select r ->> 'body' from public.store_public_reviews('123', array['10
 -- --- paging and scope ------------------------------------------------------------
 do $$ declare v_review uuid; begin
   for i in 10..14 loop
-    select review_id into v_review from public.store_submit_review('123', 'buyer-' || i, '9000', i::text, '100', null, 'Name Tag Shirt', null, 3::smallint, null, 'Fine.', 'anonymous', 'Anonymous');
+    select review_id into v_review from public.store_submit_review('123', 'buyer-' || i, '9000', i::text, '100', null, 'Name Tag Shirt', null, 3::smallint, 'Solid', 'Fine.', 'anonymous', 'Anonymous');
     perform public.store_decide_review_revision(
       (select id from public.store_review_revisions where review_id = v_review and status = 'pending'), '123', true, 'staff');
   end loop;
@@ -118,7 +118,8 @@ select throws_ok($$select * from pg_temp.submit('50', rating => 6::smallint)$$, 
 select throws_ok($$select * from pg_temp.submit('51', body => repeat('x', 5001))$$, '23514', null, 'review text has a length limit');
 select throws_ok($$select * from pg_temp.submit('52', body => '  padded  ')$$, '23514', null, 'review text must arrive trimmed');
 select throws_ok($$select * from pg_temp.submit('53', body => '')$$, '23514', null, 'review text is required');
-select throws_ok($$select * from public.store_submit_review('123', 'buyer-a', 'gid://shopify/Order/1', '54', '100', null, 'Shirt', null, 5::smallint, null, 'Hi', 'full', 'Ryan')$$, '23514', null, 'order IDs are stored as plain numbers');
+select throws_ok($$select * from public.store_submit_review('123', 'buyer-a', '9000', '55', '100', null, 'Shirt', null, 5::smallint, null, 'Hi', 'full', 'Ryan')$$, '23502', null, 'a review title is required');
+select throws_ok($$select * from public.store_submit_review('123', 'buyer-a', 'gid://shopify/Order/1', '54', '100', null, 'Shirt', null, 5::smallint, 'Solid', 'Hi', 'full', 'Ryan')$$, '23514', null, 'order IDs are stored as plain numbers');
 select ok((select count(*) = 0 from public.store_reviews where line_id in ('50', '51', '52', '53')), 'a refused submission leaves no partial review');
 
 -- --- audit ------------------------------------------------------------------------
@@ -167,9 +168,9 @@ select throws_ok($$select pg_temp.moderate((select id from ids where name = 'mod
 select ok(pg_temp.moderate((select id from ids where name = 'mod-low'), 'approve', pg_temp.pending((select id from ids where name = 'mod-low'))), 'an owner publishes a one-star review');
 select is((public.store_review_summary('345', array['100'])->>'average'), '1', 'the published low rating contributes to totals');
 select is((select count(*) from pg_temp.queue('published')), 1::bigint, 'published filter shows the live review');
-select is(public.store_edit_review((select id from ids where name = 'mod-low'), '345', 'buyer-a', 2::smallint, null, 'Updated low rating.', 'anonymous', 'Anonymous'), 'pending', 'a buyer edits a published review');
+select is(public.store_edit_review((select id from ids where name = 'mod-low'), '345', 'buyer-a', 2::smallint, 'Solid', 'Updated low rating.', 'anonymous', 'Anonymous'), 'pending', 'a buyer edits a published review');
 insert into ids select 'mod-old-pending', pg_temp.pending(id) from ids where name = 'mod-low';
-select public.store_edit_review((select id from ids where name = 'mod-low'), '345', 'buyer-a', 3::smallint, null, 'Latest edit.', 'anonymous', 'Anonymous');
+select public.store_edit_review((select id from ids where name = 'mod-low'), '345', 'buyer-a', 3::smallint, 'Solid', 'Latest edit.', 'anonymous', 'Anonymous');
 select ok(not pg_temp.moderate((select id from ids where name = 'mod-low'), 'approve', (select id from ids where name = 'mod-old-pending')), 'a replaced pending revision is refused even with a current review version');
 select is((select r->'published'->>'rating' from pg_temp.queue() r where r->>'id'=(select id::text from ids where name='mod-low')), '1', 'the queue distinguishes public content from a waiting edit');
 select ok(pg_temp.moderate((select id from ids where name = 'mod-low'), 'reject', pg_temp.pending((select id from ids where name = 'mod-low')), 'Contains private information'), 'an owner rejects the edit with a reason');
@@ -241,7 +242,7 @@ select ok(pg_temp.reply((select id from ids where name='reply'), 'A reply while 
 select is((public.store_review_summary('345',array['100'])->>'count'), '0', 'saving a hidden reply never publishes its review');
 select ok(pg_temp.moderate((select id from ids where name='reply'), 'restore'), 'the review is restored separately');
 select is((select r->'reply'->>'body' from public.store_public_reviews('345',array['100'],50) r where r->>'id'=(select id::text from ids where name='reply')), 'A reply while hidden.', 'restore reveals the current approved reply');
-select public.store_edit_review((select id from ids where name='reply'),'345','buyer-a',4::smallint,null,'A waiting buyer edit.','anonymous','Anonymous');
+select public.store_edit_review((select id from ids where name='reply'),'345','buyer-a',4::smallint, 'Solid', 'A waiting buyer edit.','anonymous','Anonymous');
 insert into reply_versions select 'before-remove', updated_at from public.store_reviews where id=(select id from ids where name='reply');
 select ok(pg_temp.reply((select id from ids where name='reply'),null), 'an owner removes the reply');
 select is(pg_temp.staff_v2((select id from ids where name='reply'))->'reply','null'::jsonb,'removal is reflected in the staff queue');

@@ -9,7 +9,7 @@ select ok(not has_function_privilege('authenticated', 'public.store_buyer_review
 select ok(has_function_privilege('service_role', 'public.store_buyer_reviews(text,text,integer,timestamptz,uuid,uuid)', 'execute'), 'the backend can');
 
 create function pg_temp.submit(line text, subject text default 'buyer-a', body text default 'First take.') returns uuid language sql as $$
-  select review_id from public.store_submit_review('123', subject, '9000', line, '100', null, 'Name Tag Shirt', 'Black / M', 5::smallint, null, body, 'first-initial', 'Ryan L.');
+  select review_id from public.store_submit_review('123', subject, '9000', line, '100', null, 'Name Tag Shirt', 'Black / M', 5::smallint, 'Solid', body, 'first-initial', 'Ryan L.');
 $$;
 create function pg_temp.pending(review uuid) returns uuid language sql as $$
   select id from public.store_review_revisions where review_id = review and status = 'pending';
@@ -68,12 +68,12 @@ select is((select count(*) from public.store_buyer_reviewed_lines('999','buyer-a
 
 create temp table versions (name text primary key, at timestamptz);
 insert into versions select 'before-edit',updated_at from public.store_reviews where id=(select id from ids where name='published');
-select is(public.store_edit_buyer_review((select id from ids where name='published'),'123','buyer-b',(select at from versions where name='before-edit'),4::smallint,null,'Hijack','anonymous','Anonymous'),'not_found','another buyer cannot edit a known ID');
-select is(public.store_edit_buyer_review((select id from ids where name='published'),'123','buyer-a',(select at from versions where name='before-edit'),4::smallint,null,'Latest buyer text.','anonymous','Anonymous'),'pending','a current buyer editor saves a pending revision');
-select is(public.store_edit_buyer_review((select id from ids where name='published'),'123','buyer-a',(select at from versions where name='before-edit'),1::smallint,null,'Stale editor','anonymous','Anonymous'),'conflict','an old editor cannot overwrite a newer edit');
+select is(public.store_edit_buyer_review((select id from ids where name='published'),'123','buyer-b',(select at from versions where name='before-edit'),4::smallint, 'Solid', 'Hijack','anonymous','Anonymous'),'not_found','another buyer cannot edit a known ID');
+select is(public.store_edit_buyer_review((select id from ids where name='published'),'123','buyer-a',(select at from versions where name='before-edit'),4::smallint, 'Solid', 'Latest buyer text.','anonymous','Anonymous'),'pending','a current buyer editor saves a pending revision');
+select is(public.store_edit_buyer_review((select id from ids where name='published'),'123','buyer-a',(select at from versions where name='before-edit'),1::smallint, 'Solid', 'Stale editor','anonymous','Anonymous'),'conflict','an old editor cannot overwrite a newer edit');
 select is(public.store_withdraw_buyer_review((select id from ids where name='published'),'123','buyer-a',(select at from versions where name='before-edit')),'conflict','a stale view cannot withdraw changed content');
 select is((select r->>'body' from public.store_public_reviews('123',array['100'],50) r where r->>'id'=(select id::text from ids where name='published')),'First take.','buyer editing leaves approved public content unchanged');
-select is(public.store_edit_buyer_review((select id from ids where name='hidden'),'123','buyer-a',(select updated_at from public.store_reviews where id=(select id from ids where name='hidden')),5::smallint,null,'Circumvent hide','anonymous','Anonymous'),'closed','a buyer cannot edit around a staff hide');
+select is(public.store_edit_buyer_review((select id from ids where name='hidden'),'123','buyer-a',(select updated_at from public.store_reviews where id=(select id from ids where name='hidden')),5::smallint, 'Solid', 'Circumvent hide','anonymous','Anonymous'),'closed','a buyer cannot edit around a staff hide');
 select is(public.store_withdraw_buyer_review((select id from ids where name='published'),'123','buyer-b',(select updated_at from public.store_reviews where id=(select id from ids where name='published'))),'not_found','another buyer cannot withdraw a known ID');
 select is(public.store_withdraw_buyer_review((select id from ids where name='published'),'123','buyer-a',(select updated_at from public.store_reviews where id=(select id from ids where name='published'))),'withdrawn','a current view can withdraw a review');
 select is((public.store_review_summary('123',array['100'])->>'count'),'0','withdrawal removes the review from public totals immediately');
@@ -91,7 +91,7 @@ create function pg_temp.fail_buyer_audit() returns trigger language plpgsql as $
   end;
 $$;
 create trigger fail_buyer_audit before insert on public.store_review_events for each row execute function pg_temp.fail_buyer_audit();
-select throws_ok($$select public.store_edit_buyer_review((select id from ids where name='rollback'),'123','buyer-a',(select at from versions where name='rollback'),2::smallint,null,'Cannot save','anonymous','Anonymous')$$,'P0001','buyer audit unavailable','a failed audit rolls back an edit');
+select throws_ok($$select public.store_edit_buyer_review((select id from ids where name='rollback'),'123','buyer-a',(select at from versions where name='rollback'),2::smallint, 'Solid', 'Cannot save','anonymous','Anonymous')$$,'P0001','buyer audit unavailable','a failed audit rolls back an edit');
 select throws_ok($$select public.store_withdraw_buyer_review((select id from ids where name='rollback'),'123','buyer-a',(select at from versions where name='rollback'))$$,'P0001','buyer audit unavailable','a failed audit rolls back withdrawal');
 select is((select state from public.store_reviews where id=(select id from ids where name='rollback')),'active','failed withdrawal preserves active state');
 select is((select updated_at from public.store_reviews where id=(select id from ids where name='rollback')),(select at from versions where name='rollback'),'failed writes preserve the concurrency token');

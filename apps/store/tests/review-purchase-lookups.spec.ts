@@ -85,7 +85,7 @@ async function seed() {
 function submit(id: string, lineId = "101") {
   return POST(new Request("https://store.test/api/reviews", { method: "POST", headers: {
     "content-type": "application/json", origin: "https://store.test", cookie: `__Host-store-customer-session=${id}`,
-  }, body: JSON.stringify({ productId: purchaseProductId, lineId, rating: 5, title: null, body: "Great tee.", nameStyle: "first-initial" }) }));
+  }, body: JSON.stringify({ productId: purchaseProductId, lineId, rating: 5, title: "Ryan approved", body: "Great tee.", nameStyle: "first-initial" }) }));
 }
 
 test("the picker returns only owned qualifying lines and exact normalized backend references", async () => {
@@ -193,7 +193,7 @@ test("the real custom submission route rechecks Shopify and saves verified IDs a
   expect(await response.json()).toEqual({ status: "pending" });
   expect(reviewCommands).toEqual([{ operation: "review.submit", subject: "opaque-buyer-subject",
     purchase: { orderId: "100", lineId: "101", productId: "102", variantId: "104", productTitle: "Ryan tee", variantTitle: "Blue / M" },
-    submission: { rating: 5, title: null, body: "Great tee.", nameStyle: "first-initial" }, displayName: "Ryan L.",
+    submission: { rating: 5, title: "Ryan approved", body: "Great tee.", nameStyle: "first-initial" }, displayName: "Ryan L.",
   }]);
   expect(requests).toContain(endpoint);
   expect(requests.at(-1)).toBe("https://backend.test/api/store/reviews");

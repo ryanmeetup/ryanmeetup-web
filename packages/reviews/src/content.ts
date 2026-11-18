@@ -24,7 +24,7 @@ export const REVIEW_NAME_STYLES: readonly ReviewNameStyle[] = ["full", "first-in
 /** What a signed-in buyer sends. The purchased line is chosen separately and verified server-side. */
 export type ReviewSubmission = {
   rating: ReviewRating;
-  title: string | null;
+  title: string;
   body: string;
   nameStyle: ReviewNameStyle;
 };
@@ -43,7 +43,7 @@ export type PublicReviewItem = {
 export type PublicReview = {
   id: string;
   rating: ReviewRating;
-  title: string | null;
+  title: string;
   body: string;
   displayName: string;
   publishedAt: string;
@@ -130,17 +130,17 @@ export function reviewReplyBodySchema(value: unknown): string | null {
 
 /**
  * Normalizes a buyer's submission, or returns null when it can't be accepted.
- * Whitespace and control characters are cleaned before limits are checked, and
- * a blank title becomes null.
+ * Whitespace and control characters are cleaned before limits are checked; the
+ * title and body are both required.
  */
 export function reviewSubmissionSchema(value: unknown): ReviewSubmission | null {
   const input = exactObject(value, ["rating", "title", "body", "nameStyle"]);
   if (!input || !isRating(input.rating) || !isNameStyle(input.nameStyle)) return null;
-  if (typeof input.body !== "string" || (input.title !== null && typeof input.title !== "string")) return null;
+  if (typeof input.body !== "string" || typeof input.title !== "string") return null;
   const body = cleanText(input.body, true);
-  const title = input.title === null ? "" : cleanText(input.title, false);
-  if (!body || characters(body) > REVIEW_BODY_MAX || characters(title) > REVIEW_TITLE_MAX) return null;
-  return { rating: input.rating, title: title || null, body, nameStyle: input.nameStyle };
+  const title = cleanText(input.title, false);
+  if (!body || !title || characters(body) > REVIEW_BODY_MAX || characters(title) > REVIEW_TITLE_MAX) return null;
+  return { rating: input.rating, title, body, nameStyle: input.nameStyle };
 }
 
 /**
@@ -194,7 +194,7 @@ function replySchema(value: unknown): PublicReviewReply | null {
 export function publicReviewSchema(value: unknown): PublicReview | null {
   const review = exactObject(value, ["id", "rating", "title", "body", "displayName", "publishedAt", "editedAt", "item", "verifiedPurchase", "photos", "reply"]);
   if (!review || !isUuid(review.id) || !isRating(review.rating) || typeof review.verifiedPurchase !== "boolean") return null;
-  if (!(review.title === null || isCleanText(review.title, REVIEW_TITLE_MAX, false))) return null;
+  if (!isCleanText(review.title, REVIEW_TITLE_MAX, false)) return null;
   if (!isCleanText(review.body, REVIEW_BODY_MAX, true) || !isCleanText(review.displayName, REVIEW_DISPLAY_NAME_MAX, false)) return null;
   if (!isIsoDate(review.publishedAt) || !(review.editedAt === null || isIsoDate(review.editedAt))) return null;
   if (!itemSchema(review.item) || !(review.reply === null || replySchema(review.reply))) return null;

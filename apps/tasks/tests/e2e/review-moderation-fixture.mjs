@@ -3,7 +3,7 @@ export function createReviewModerationFixture(json, readBody, profile) {
   const id = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
   const initialTime = "2026-11-18T12:00:00.123456Z";
   let tick, reviews, calls, options;
-  const revision = (n, rating, body) => ({ id: id(n + 100), rating, title: null, body, displayName: "Ryan Fixture", submittedAt: initialTime });
+  const revision = (n, rating, body) => ({ id: id(n + 100), rating, title: "Ryan approved", body, displayName: "Ryan Fixture", submittedAt: initialTime });
   function row(n, pending, published = null, state = "active") {
     return { reply: null, id: id(n), state, createdAt: `2026-11-18T12:00:${String(n).padStart(2, "0")}.123456Z`, updatedAt: initialTime,
       item: { productId: "100", productTitle: `Fixture shirt ${n}`, variantTitle: "Black / M" },

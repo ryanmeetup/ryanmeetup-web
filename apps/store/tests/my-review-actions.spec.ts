@@ -13,8 +13,8 @@ const reviewId="3f1c2a4e-5b6d-4e7f-8a9b-0c1d2e3f4a5b";
 const version="2026-11-17T12:00:00.123456Z";
 const mine:BuyerReview={id:reviewId,lineId:"1",item:{productId:"100",productTitle:"Name Tag Shirt",variantTitle:null},
   status:"published",hasPendingEdit:false,publishedAt:"2026-11-17T12:00:00.123Z",createdAt:version,updatedAt:version,
-  current:{rating:5,title:null,body:"Great shirt.",nameStyle:"first-initial",displayName:"Ryan L."}};
-const edit={action:"edit",reviewId,expectedUpdatedAt:version,rating:4,title:null,body:"  Faded a little. ",nameStyle:"first-initial"};
+  current:{rating:5,title:"Ryan approved",body:"Great shirt.",nameStyle:"first-initial",displayName:"Ryan L."}};
+const edit={action:"edit",reviewId,expectedUpdatedAt:version,rating:4,title:"Ryan approved",body:"  Faded a little. ",nameStyle:"first-initial"};
 function request(body:unknown,headers:HeadersInit={}) {
   return new Request("https://store.test/api/reviews/mine",{method:"POST",headers:{"content-type":"application/json",origin:"https://store.test",host:"store.test","x-forwarded-proto":"https",...headers},body:JSON.stringify(body)});
 }
@@ -39,7 +39,7 @@ test("an edit keeps its stored public name and exact version, then waits for app
   expect(response.status).toBe(200);expect(await response.json()).toEqual({status:"pending"});
   expect(commands[0]).toEqual({operation:"review.mine",subject:"synthetic-buyer",reviewId});
   expect(commands.at(-1)).toEqual({operation:"review.edit",subject:"synthetic-buyer",reviewId,expectedUpdatedAt:version,
-    submission:{rating:4,title:null,body:"Faded a little.",nameStyle:"first-initial"},displayName:"Ryan L."});
+    submission:{rating:4,title:"Ryan approved",body:"Faded a little.",nameStyle:"first-initial"},displayName:"Ryan L."});
 });
 test("anonymous names work without Shopify; changing named styles requires a verified current name",async()=>{
   const anon=setup();expect((await handleMyReviewAction(request({...edit,nameStyle:"anonymous"}),anon.deps)).status).toBe(200);

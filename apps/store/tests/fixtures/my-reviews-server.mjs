@@ -5,7 +5,7 @@ const id=(n)=>`00000000-0000-4000-8000-${String(n).padStart(12,"0")}`;
 const stamp=(n)=>new Date(Date.UTC(2026,10,18,12,0,n)).toISOString().replace(".000Z",".123456Z");
 let records,sessions,calls,options,tick;
 function row(n,status="pending",subject="buyer-a") {
-  const content={rating:4,title:null,body:`Review ${n}.`,nameStyle:"first-initial",displayName:"Ryan F."};
+  const content={rating:4,title:"Ryan approved",body:`Review ${n}.`,nameStyle:"first-initial",displayName:"Ryan F."};
   return {subject,published:status==="published"?{...content,body:"Approved original text."}:null,
     value:{id:id(n),lineId:String(n),item:{productId:"100",productTitle:`Fixture shirt ${n}`,variantTitle:"Black / M"},status,
       hasPendingEdit:status==="published",publishedAt:status==="published"?stamp(1000-n).slice(0,23)+"Z":null,

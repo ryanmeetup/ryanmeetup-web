@@ -102,6 +102,20 @@ test("the sample buyer's only purchase is implied after switching from plain cus
   await expect(reviews.getByRole("status").filter({ hasText: "Review received" })).toContainText("Sample review checked");
 });
 
+test("the sample buyer must give the review a title", async ({ page }) => {
+  test.skip(!browser, "Requires a demo server with browser review testing enabled.");
+  await page.goto(productPath);
+  await choose(page, "Custom reviews, sample buyer");
+  await page.locator("#reviews").getByRole("button", { name: "Write a review", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Write a review", exact: true });
+  await expect(dialog.getByLabel(/^Title/)).toHaveAttribute("required", "");
+  await dialog.getByRole("radio", { name: "5 stars", exact: true }).check();
+  await dialog.getByLabel(/^Title/).fill("   ");
+  await dialog.getByLabel(/^Review/).fill("No headline.");
+  await dialog.getByRole("button", { name: "Submit review", exact: true }).click();
+  await expect(dialog.getByText(/^Give your review a title/)).toBeVisible();
+});
+
 test("plain custom mode keeps the form closed", async ({ page }) => {
   test.skip(!browser, "Requires a demo server with browser review testing enabled.");
   await page.goto(productPath);
