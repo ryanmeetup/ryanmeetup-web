@@ -1,10 +1,10 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { reviewSubmissionSchema } from "@ryanmeetup/reviews";
+import { reviewReplyBodySchema, reviewSubmissionSchema } from "@ryanmeetup/reviews";
 import { parseUuid } from "@/lib/api-schema";
 import { isModerationTimestamp } from "@/lib/store-reviews/moderation";
-import type { ModerationDecision, ModerationEvent, ModerationPage, ModerationQuery, ModerationReview, ModerationRevision } from "@/lib/store-reviews/moderation";
+import type { ModerationDecision, ModerationEvent, ModerationPage, ModerationQuery, ModerationReview, ModerationRevision, ReviewReplyCommand } from "@/lib/store-reviews/moderation";
 import { StoreReviewDatabaseError } from "./storage";
 
 function object(value: unknown, keys: string[]): Record<string, unknown> | null {
@@ -32,7 +32,7 @@ function event(value: unknown): ModerationEvent | null {
   return row as ModerationEvent;
 }
 function review(value: unknown): ModerationReview | null {
-  const row = object(value, ["id", "state", "createdAt", "updatedAt", "item", "pending", "published", "latest", "recentEvents"]);
+  const row = object(value, ["id", "state", "createdAt", "updatedAt", "item", "pending", "published", "latest", "recentEvents", "reply"]);
   if (!row || !parseUuid(row.id) || !["active", "hidden", "withdrawn"].includes(String(row.state)) ||
     !isModerationTimestamp(row.createdAt) || !isModerationTimestamp(row.updatedAt)) return null;
   const item = object(row.item, ["productId", "productTitle", "variantTitle"]);
@@ -46,13 +46,17 @@ function review(value: unknown): ModerationReview | null {
     (row.state === "withdrawn" && (pending || published))) return null;
   const events = row.recentEvents.map(event);
   if (events.some((entry) => !entry)) return null;
+  const reply = row.reply === null ? null : object(row.reply, ["body", "publishedAt", "updatedAt"]);
+  if (row.reply !== null && (!reply || !reviewReplyBodySchema(reply.body) || reviewReplyBodySchema(reply.body) !== reply.body ||
+    !isModerationTimestamp(reply.publishedAt) || !isModerationTimestamp(reply.updatedAt))) return null;
   return { id: row.id as string, state: row.state as ModerationReview["state"], createdAt: row.createdAt, updatedAt: row.updatedAt,
     item: { productId: item.productId, productTitle: item.productTitle, variantTitle: item.variantTitle },
-    pending, published, latest, recentEvents: events as ModerationEvent[] };
+    pending, published, latest, recentEvents: events as ModerationEvent[],
+    reply: reply ? { body: reply.body as string, publishedAt: reply.publishedAt as string, updatedAt: reply.updatedAt as string } : null };
 }
 
 export async function loadReviewModerationPage(admin: SupabaseClient, actor: string, shopId: string, query: ModerationQuery): Promise<ModerationPage> {
-  const { data, error } = await admin.rpc("store_review_moderation_page", {
+  const { data, error } = await admin.rpc("store_review_moderation_page_v2", {
     p_actor: actor, p_shop_id: shopId, p_filter: query.filter, p_limit: 21,
     p_after_created_at: query.after?.createdAt ?? null, p_after_id: query.after?.id ?? null,
   });
@@ -69,6 +73,16 @@ export async function moderateReview(admin: SupabaseClient, actor: string, shopI
   const { data, error } = await admin.rpc("store_moderate_review", {
     p_actor: actor, p_shop_id: shopId, p_review_id: decision.reviewId, p_expected_updated_at: decision.expectedUpdatedAt,
     p_action: decision.action, p_revision_id: decision.revisionId, p_note: decision.note,
+  });
+  if (error) throw new StoreReviewDatabaseError(error.code);
+  if (typeof data !== "boolean") throw new StoreReviewDatabaseError();
+  return data;
+}
+
+export async function saveReviewReply(admin: SupabaseClient, actor: string, shopId: string, command: ReviewReplyCommand): Promise<boolean> {
+  const { data, error } = await admin.rpc("store_save_review_reply", {
+    p_actor: actor, p_shop_id: shopId, p_review_id: command.reviewId,
+    p_expected_updated_at: command.expectedUpdatedAt, p_body: command.body,
   });
   if (error) throw new StoreReviewDatabaseError(error.code);
   if (typeof data !== "boolean") throw new StoreReviewDatabaseError();

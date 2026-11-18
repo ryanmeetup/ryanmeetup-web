@@ -121,6 +121,13 @@ function isHttpsUrl(value: unknown): value is string {
 
 // --- buyer input -------------------------------------------------------------
 
+/** Normalize an official public reply, or reject empty/oversized content. */
+export function reviewReplyBodySchema(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const body = cleanText(value, true);
+  return body && characters(body) <= REVIEW_REPLY_MAX ? body : null;
+}
+
 /**
  * Normalizes a buyer's submission, or returns null when it can't be accepted.
  * Whitespace and control characters are cleaned before limits are checked, and

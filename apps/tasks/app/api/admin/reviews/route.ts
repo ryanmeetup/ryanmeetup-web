@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { storeReviewModerationQuery, storeReviewModerationSchema } from "@/lib/api-schema";
+import { storeReviewModerationQuery, storeReviewModerationSchema, storeReviewReplySchema } from "@/lib/api-schema";
 import { apiError, databaseFailure } from "@/lib/server/api-response";
 import { privilegedContext, readJson } from "@/lib/server/privileged-api";
 import { getStoreCustomerAuthScope } from "@/lib/server/store-customer-auth/scope";
-import { loadReviewModerationPage, moderateReview } from "@/lib/server/store-reviews/moderation";
+import { loadReviewModerationPage, moderateReview, saveReviewReply } from "@/lib/server/store-reviews/moderation";
 import { StoreReviewDatabaseError } from "@/lib/server/store-reviews/storage";
 
 export const runtime = "nodejs";
@@ -50,5 +50,17 @@ export async function POST(request: Request) {
     const changed = await moderateReview(authorized.admin, authorized.user.id, authorized.shopId, parsed.data);
     return privateResponse(changed ? NextResponse.json({ saved: true }) :
       apiError(409, "CONFLICT", "This review changed. Refresh the queue before deciding."));
+  } catch (error) { return failure(request, error); }
+}
+
+export async function PATCH(request: Request) {
+  const authorized = await context();
+  if ("response" in authorized) return privateResponse(authorized.response);
+  const parsed = await readJson(request, storeReviewReplySchema, { maxBytes: 12 * 1024 });
+  if ("response" in parsed) return privateResponse(parsed.response);
+  try {
+    const changed = await saveReviewReply(authorized.admin, authorized.user.id, authorized.shopId, parsed.data);
+    return privateResponse(changed ? NextResponse.json({ saved: true }) :
+      apiError(409, "CONFLICT", "This review or reply changed. Refresh the queue before editing it."));
   } catch (error) { return failure(request, error); }
 }

@@ -3,6 +3,8 @@ import type { PublicReviewItem, ReviewRating } from "@ryanmeetup/reviews";
 export const MODERATION_FILTERS = ["pending", "published", "hidden", "all"] as const;
 export type ModerationFilter = (typeof MODERATION_FILTERS)[number];
 export type ModerationAction = "approve" | "reject" | "hide" | "restore";
+export type ReplyAction = "reply-set" | "reply-remove";
+export type StaffReviewAction = ModerationAction | ReplyAction;
 export type ModerationCursor = { createdAt: string; id: string };
 export type ModerationQuery = { filter: ModerationFilter; after: ModerationCursor | null };
 export type ModerationDecision = {
@@ -12,6 +14,8 @@ export type ModerationDecision = {
   revisionId: string | null;
   note: string | null;
 };
+export type ReviewReplyCommand = { reviewId: string; expectedUpdatedAt: string; body: string | null };
+export type ModerationReply = { body: string; publishedAt: string; updatedAt: string };
 export type ModerationRevision = {
   id: string; rating: ReviewRating; title: string | null; body: string;
   displayName: string; submittedAt: string;
@@ -25,6 +29,7 @@ export type ModerationReview = {
   createdAt: string; updatedAt: string; item: PublicReviewItem;
   pending: ModerationRevision | null; published: ModerationRevision | null;
   latest: ModerationRevision; recentEvents: ModerationEvent[];
+  reply: ModerationReply | null;
 };
 export type ModerationPage = { reviews: ModerationReview[]; next: ModerationCursor | null };
 export type ModerationInitialState =
@@ -44,12 +49,19 @@ export function moderationReasonRequired(action: ModerationAction) {
   return action === "reject" || action === "hide";
 }
 
-export function moderationActionLabel(action: ModerationAction, review: ModerationReview) {
+export function reviewReplyActions(review: ModerationReview): ReplyAction[] {
+  if (review.state === "withdrawn" || !review.published) return [];
+  return review.reply ? ["reply-set", "reply-remove"] : ["reply-set"];
+}
+
+export function moderationActionLabel(action: StaffReviewAction, review: ModerationReview) {
   switch (action) {
     case "approve": return review.state === "hidden" ? "Approve revision" : review.published ? "Publish edit" : "Publish review";
     case "reject": return review.published ? "Reject edit" : "Reject review";
     case "hide": return "Hide review";
     case "restore": return review.published ? "Restore review" : "Unhide review";
+    case "reply-set": return review.reply ? "Edit reply" : "Write reply";
+    case "reply-remove": return "Remove reply";
   }
 }
 

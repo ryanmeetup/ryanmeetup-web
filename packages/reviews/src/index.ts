@@ -25,6 +25,7 @@ export {
   publicReviewPageSchema,
   publicReviewSchema,
   reviewDisplayName,
+  reviewReplyBodySchema,
   reviewSubmissionSchema,
   summarizeReviewRatings,
 } from "./content";

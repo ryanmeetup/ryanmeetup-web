@@ -31,5 +31,5 @@ export {
 } from "./ryd";
 
 export { parseUuid } from "./shared";
-export { storeReviewModerationSchema, storeReviewModerationQuery } from "./store-review-moderation";
+export { storeReviewModerationSchema, storeReviewModerationQuery, storeReviewReplySchema } from "./store-review-moderation";
 export { customerAuthCommandSchema, reviewCommandSchema } from "@ryanmeetup/reviews";

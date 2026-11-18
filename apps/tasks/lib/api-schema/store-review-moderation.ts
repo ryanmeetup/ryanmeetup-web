@@ -1,6 +1,15 @@
-import type { ModerationDecision, ModerationQuery } from "@/lib/store-reviews/moderation";
+import { reviewReplyBodySchema } from "@ryanmeetup/reviews";
+import type { ModerationDecision, ModerationQuery, ReviewReplyCommand } from "@/lib/store-reviews/moderation";
 import { isModerationFilter, isModerationTimestamp } from "@/lib/store-reviews/moderation";
 import { isUuid, objectWithKeys } from "./shared";
+
+export function storeReviewReplySchema(value: unknown): ReviewReplyCommand | null {
+  const input = objectWithKeys(value, ["reviewId", "expectedUpdatedAt", "body"]);
+  if (!input || !isUuid(input.reviewId) || !isModerationTimestamp(input.expectedUpdatedAt)) return null;
+  const body = input.body === null ? null : reviewReplyBodySchema(input.body);
+  if (input.body !== null && body === null) return null;
+  return { reviewId: input.reviewId, expectedUpdatedAt: input.expectedUpdatedAt, body };
+}
 
 export function storeReviewModerationSchema(value: unknown): ModerationDecision | null {
   const input = objectWithKeys(value, ["action", "reviewId", "expectedUpdatedAt", "revisionId", "note"]);

@@ -5,7 +5,7 @@ export function createReviewModerationFixture(json, readBody, profile) {
   let tick, reviews, calls, options;
   const revision = (n, rating, body) => ({ id: id(n + 100), rating, title: null, body, displayName: "Ryan Fixture", submittedAt: initialTime });
   function row(n, pending, published = null, state = "active") {
-    return { id: id(n), state, createdAt: `2026-11-18T12:00:${String(n).padStart(2, "0")}.123456Z`, updatedAt: initialTime,
+    return { reply: null, id: id(n), state, createdAt: `2026-11-18T12:00:${String(n).padStart(2, "0")}.123456Z`, updatedAt: initialTime,
       item: { productId: "100", productTitle: `Fixture shirt ${n}`, variantTitle: "Black / M" },
       pending, published, latest: pending ?? published ?? revision(n, 4, "Withdrawn text."),
       recentEvents: [{ action: "submitted", actorKind: "buyer", actor: null, note: null, createdAt: initialTime }] };
@@ -32,12 +32,12 @@ export function createReviewModerationFixture(json, readBody, profile) {
     if (url.pathname === "/__reviews/configure") { options = { ...options, ...await readBody(request) }; json(response, 200, { ok: true }); return true; }
     if (url.pathname === "/__reviews/state") { json(response, 200, { calls, reviews }); return true; }
     if (url.pathname === "/rest/v1/rpc/is_app_owner") { json(response, 200, isOwner()); return true; }
-    if (!["/rest/v1/rpc/store_review_moderation_page", "/rest/v1/rpc/store_moderate_review"].includes(url.pathname)) return false;
+    if (!["/rest/v1/rpc/store_review_moderation_page_v2", "/rest/v1/rpc/store_moderate_review", "/rest/v1/rpc/store_save_review_reply"].includes(url.pathname)) return false;
     const command = await readBody(request);
     if (!isOwner() || command.p_actor !== profile.id || command.p_shop_id !== "123" || request.headers.apikey !== "sb_secret_test") {
       json(response, 403, { code: "42501", message: "Owner required" }); return true;
     }
-    if (url.pathname.endsWith("store_review_moderation_page")) {
+    if (url.pathname.endsWith("store_review_moderation_page_v2")) {
       if (options.failRead) { json(response, 500, { code: "P0001", message: "Synthetic read failure" }); return true; }
       const selected = reviews.filter((r) => command.p_filter === "all" ||
         (command.p_filter === "pending" && r.pending && r.state !== "withdrawn") ||
@@ -50,6 +50,12 @@ export function createReviewModerationFixture(json, readBody, profile) {
     calls.push(command);
     const r = reviews.find((entry) => entry.id === command.p_review_id);
     const advance = () => `2026-11-18T12:01:00.${String(++tick).padStart(6, "0")}Z`;
+    const isReply = url.pathname.endsWith("store_save_review_reply");
+    if (isReply && options.replyConflictOnce && r) {
+      options.replyConflictOnce = false;
+      r.reply = { body: "A newer staff reply.", publishedAt: initialTime, updatedAt: advance() }; r.updatedAt = r.reply.updatedAt;
+      json(response, 200, false); return true;
+    }
     if (options.conflictOnce && r) {
       options.conflictOnce = false;
       r.pending = revision(90, 2, "The buyer replaced this text."); r.latest = r.pending; r.updatedAt = advance();
@@ -59,13 +65,17 @@ export function createReviewModerationFixture(json, readBody, profile) {
       (["approve", "reject"].includes(command.p_action) && r.pending?.id !== command.p_revision_id)) {
       json(response, 200, false); return true;
     }
-    if (command.p_action === "approve") { r.published = r.pending; r.pending = null; }
+    if (isReply) {
+      if (!r.published || (r.reply?.body ?? null) === command.p_body) { json(response, 200, false); return true; }
+      r.reply = command.p_body === null ? null : { body: command.p_body, publishedAt: r.reply?.publishedAt ?? advance(), updatedAt: advance() };
+    }
+    else if (command.p_action === "approve") { r.published = r.pending; r.pending = null; }
     else if (command.p_action === "reject") { r.pending = null; }
     else if (command.p_action === "hide") { r.state = "hidden"; }
     else if (command.p_action === "restore") { r.state = "active"; }
     r.updatedAt = advance();
-    r.recentEvents.unshift({ action: { approve: "approved", reject: "rejected", hide: "hidden", restore: "restored" }[command.p_action],
-      actorKind: "staff", actor: profile.id, note: command.p_note, createdAt: r.updatedAt });
+    r.recentEvents.unshift({ action: isReply ? (command.p_body === null ? "reply_removed" : "reply_set") : { approve: "approved", reject: "rejected", hide: "hidden", restore: "restored" }[command.p_action],
+      actorKind: "staff", actor: profile.id, note: command.p_note ?? null, createdAt: r.updatedAt });
     if (options.failReadAfterSave) options.failRead = true;
     json(response, 200, true); return true;
   };
