@@ -1,3 +1,8 @@
+import type { Cart } from "./types";
+
+/** Shown when a cart change fails without a reason written for shoppers. */
+export const cartUnavailableMessage = "The cart couldn't be updated just now. Please try again.";
+
 export type CartAction =
   | { action: "get"; cartId: string }
   | { action: "add"; cartId?: string; merchandiseId: string; quantity: number }
@@ -38,4 +43,18 @@ export function parseCartAction(value: unknown): CartAction | null {
     default:
       return null;
   }
+}
+
+/**
+ * The cart from an /api/cart response; null means Shopify no longer has it
+ * (it checked out or expired). Failures throw a message fit for shoppers:
+ * the server's own wording, or a generic one, never a parser error from a
+ * gateway's HTML page.
+ */
+export async function readCartResponse(response: Response): Promise<Cart | null> {
+  const data = (await response.json().catch(() => ({}))) as { cart?: Cart | null; error?: unknown };
+  if (!response.ok || data.cart === undefined) {
+    throw new Error(typeof data.error === "string" && data.error ? data.error : cartUnavailableMessage);
+  }
+  return data.cart;
 }

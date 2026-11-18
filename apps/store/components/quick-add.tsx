@@ -7,6 +7,7 @@ import { getColorOption, getColorPreview, getColorSlug, getKnownSwatch, getListi
 import { getVariantForImage } from "@/lib/product-gallery";
 import { findVariant, getSelections, isDefaultTitleOption } from "@/lib/product-options";
 import type { ProductListing, ProductVariant } from "@/lib/types";
+import { cartUnavailableMessage } from "@/lib/cart-action";
 import { useCart } from "./cart-provider";
 
 /**
@@ -43,7 +44,7 @@ export function QuickAdd({ product, href }: { product: ProductListing; href: str
     try {
       await addItem(target, variant, 1);
     } catch (caught) {
-      toast.error(caught instanceof Error ? caught.message : "Cart update failed.");
+      toast.error(caught instanceof Error ? caught.message : cartUnavailableMessage);
     } finally {
       setLoading(false);
     }

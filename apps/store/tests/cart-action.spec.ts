@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { maxCartLineQuantity, parseCartAction } from "../lib/cart-action";
+import { cartUnavailableMessage, maxCartLineQuantity, parseCartAction, readCartResponse } from "../lib/cart-action";
 
 const cartId = "gid://shopify/Cart/c1-abc?key=secret";
 const lineId = "gid://shopify/CartLine/line-1?cart=c1-abc";
@@ -24,4 +24,19 @@ test("junk quantities, foreign IDs, and malformed bodies never reach Shopify", (
   expect(parseCartAction({ action: "get", cartId: `${cartId}\n` })).toBeNull();
   expect(parseCartAction({ action: "get", cartId: `gid://shopify/Cart/${"x".repeat(600)}` })).toBeNull();
   for (const body of [null, [], "get", { action: "delete", cartId }]) expect(parseCartAction(body)).toBeNull();
+});
+
+test("cart responses yield the cart, or a message written for shoppers", async () => {
+  const cart = { id: cartId, checkoutUrl: "", lines: [], totalQuantity: 0, cost: { subtotalAmount: { amount: "0", currencyCode: "USD" }, totalAmount: { amount: "0", currencyCode: "USD" } } };
+  expect(await readCartResponse(Response.json({ cart }))).toEqual(cart);
+  expect(await readCartResponse(Response.json({ cart: null }))).toBeNull();
+  await expect(readCartResponse(Response.json({ error: "Only 2 left in stock." }, { status: 422 }))).rejects.toThrow("Only 2 left in stock.");
+  for (const response of [
+    new Response("<html>Bad gateway</html>", { status: 502 }),
+    new Response("<html>ok?</html>", { status: 200 }),
+    Response.json({}, { status: 500 }),
+    Response.json({ error: { code: 1 } }, { status: 500 }),
+  ]) {
+    await expect(readCartResponse(response)).rejects.toThrow(cartUnavailableMessage);
+  }
 });

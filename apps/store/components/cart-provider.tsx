@@ -1,10 +1,12 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { cartUnavailableMessage, readCartResponse } from "@/lib/cart-action";
 import { parseStoredCart } from "@/lib/stored-cart";
 import type { Cart, CartLine, Product, ProductVariant } from "@/lib/types";
 
 const storageKey = "ryan-store-cart";
+
 
 type CartContextValue = {
   addItem: (product: Product, variant: ProductVariant, quantity: number) => Promise<void>;
@@ -77,11 +79,10 @@ export function CartProvider({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
+    }).catch(() => {
+      throw new Error(cartUnavailableMessage);
     });
-    // A null cart means Shopify no longer has it: it checked out or expired.
-    const data = (await response.json()) as { cart?: Cart | null; error?: string };
-    if (!response.ok || data.cart === undefined) throw new Error(data.error || "Cart update failed.");
-    return data.cart;
+    return readCartResponse(response);
   }, []);
 
   const startChange = useCallback(() => {
@@ -167,7 +168,7 @@ export function CartProvider({
         setJustAdded(variant.id);
         setDrawerOpenState(true);
       } catch (caught) {
-        setError(caught instanceof Error ? caught.message : "Cart update failed.");
+        setError(caught instanceof Error ? caught.message : cartUnavailableMessage);
         throw caught;
       } finally {
         setLoading(false);
@@ -187,7 +188,7 @@ export function CartProvider({
           saveCart(demoCart((cart?.lines ?? []).map((line) => (line.id === lineId ? { ...line, quantity } : line))));
         }
       } catch (caught) {
-        setError(caught instanceof Error ? caught.message : "Cart update failed.");
+        setError(caught instanceof Error ? caught.message : cartUnavailableMessage);
       } finally {
         setLoading(false);
       }
@@ -206,7 +207,7 @@ export function CartProvider({
           saveCart(lines.length ? demoCart(lines) : null);
         }
       } catch (caught) {
-        setError(caught instanceof Error ? caught.message : "Cart update failed.");
+        setError(caught instanceof Error ? caught.message : cartUnavailableMessage);
       } finally {
         setLoading(false);
       }
