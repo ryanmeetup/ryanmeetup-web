@@ -96,7 +96,7 @@ export function CollectionGrid({ handle, products, sections, more = [] }: { hand
           {popular.length > 0 && (
             <section aria-labelledby="popular-picks">
               <SectionHeader align="left" title={<span id="popular-picks">Popular Picks</span>} />
-              <ProductGrid products={popular} from={handle} className="mt-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" />
+              <ProductGrid products={popular} from={handle} className="mt-6" />
             </section>
           )}
           {visibleSections.map(({ collection, products: sectionProducts, grouping }, index) => (

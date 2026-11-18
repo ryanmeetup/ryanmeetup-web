@@ -2,20 +2,24 @@ import Image from "next/image";
 import { FiArrowRight } from "react-icons/fi";
 import { getStoreCollectionIcon } from "@/lib/navigation";
 import { MediaCard } from "./media-card";
+import { MerchGrid } from "./merch-grid";
 import type { HomeCollectionTile } from "@/lib/shopify";
 import { getCollectionPath } from "@/lib/catalog-collections";
 
 /** Doorways into each collection rather than its products, so the home page stays a front door. */
-// Columns come from the caller so the tiles share the best sellers' grid on the home page.
-export function HomeCollectionTiles({ tiles, className = "" }: { tiles: HomeCollectionTile[]; className?: string }) {
+// Shares the best sellers' even-row grid on the home page.
+export function HomeCollectionTiles({ tiles, className }: { tiles: HomeCollectionTile[]; className?: string }) {
   return (
-    <ul className={`grid grid-cols-1 gap-5 ${className}`}>
-      {tiles.map(({ collection, image, total }) => (
-        <li key={collection.id}>
+    <MerchGrid
+      evenRows
+      className={className}
+      items={tiles.map(({ collection, image, total }) => ({
+        key: collection.id,
+        card: (
           <MediaCard
             href={getCollectionPath(collection.handle)}
             media={image ? (
-              <Image src={image.url} alt="" fill sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw" className="object-contain" />
+              <Image src={image.url} alt="" fill sizes="(max-width: 1024px) 50vw, 33vw" className="object-contain" />
             ) : (
               <div aria-hidden className="grid h-full place-items-center text-5xl text-black/15 dark:text-white/15">{getStoreCollectionIcon(collection.handle)}</div>
             )}
@@ -27,8 +31,8 @@ export function HomeCollectionTiles({ tiles, className = "" }: { tiles: HomeColl
               <FiArrowRight aria-hidden className="h-4 w-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
             </span>
           </MediaCard>
-        </li>
-      ))}
-    </ul>
+        ),
+      }))}
+    />
   );
 }

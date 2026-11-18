@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Tooltip } from "@ryanmeetup/ui";
 import { getListingSale } from "@/lib/money";
 import { getListingColorPreviews } from "@/lib/product-colors";
@@ -13,12 +13,33 @@ import { PriceBadge } from "./price-badge";
 import { QuickAdd } from "./quick-add";
 import { SaleBadge } from "./sale-badge";
 
-const visibleSwatches = 5;
+// A swatch button is h-8 w-8 beside a gap-1; the "+N" link takes about one slot.
+const swatchSlot = 32;
+const swatchGap = 4;
+// Until the row is measured, show this many; the row never wraps, so extras clip rather than drop a line.
+const initialSwatches = 5;
+
+/** How many slots of a single swatch row fit in `width`. */
+function countSlots(width: number) {
+  return Math.max(1, Math.floor((width + swatchGap) / (swatchSlot + swatchGap)));
+}
 
 /** `from` is the collection the card is listed on, named in the product page's breadcrumb. */
 export function ProductCard({ product, eager = false, from }: { product: ProductListing; eager?: boolean; from?: string }) {
   const colors = getListingColorPreviews(product);
-  const swatches = colors.filter((preview) => preview.swatch && preview.image).slice(0, visibleSwatches);
+  const swatchRow = useRef<HTMLDivElement>(null);
+  const [slots, setSlots] = useState<number | null>(null);
+  useEffect(() => {
+    const row = swatchRow.current;
+    if (!row) return;
+    const observer = new ResizeObserver(([entry]) => setSlots(countSlots(entry.contentRect.width)));
+    observer.observe(row);
+    return () => observer.disconnect();
+  }, []);
+  const candidates = colors.filter((preview) => preview.swatch && preview.image);
+  const capacity = slots ?? initialSwatches;
+  // Keep one slot for "+N" whenever anything is left out of the row.
+  const swatches = candidates.slice(0, colors.length > capacity ? capacity - 1 : capacity);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const color = colors.find((preview) => preview.href === selectedColor);
   const image = color?.image ?? product.featuredImage;
@@ -37,9 +58,9 @@ export function ProductCard({ product, eager = false, from }: { product: Product
           alt={color ? `${product.title} in ${color.label ?? color.value}` : image.altText || product.title}
           fill
           loading={eager ? "eager" : "lazy"}
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+          sizes="(max-width: 1024px) 50vw, 33vw"
           // Off-Shopify images are cutouts rather than framed mockups, so give them room.
-          className={`object-contain ${product.externalUrl ? "p-8 sm:p-10" : ""}`}
+          className={`object-contain ${product.externalUrl ? "p-5 sm:p-10" : ""}`}
         />
       ) : (
         <div className="grid h-full place-items-center font-cooper text-5xl text-black/10 dark:text-white/10">R</div>
@@ -57,8 +78,9 @@ export function ProductCard({ product, eager = false, from }: { product: Product
       }
       title={<>{product.title}{product.externalUrl && <span className="sr-only"> (opens in a new tab)</span>}</>}
       after={<>
+      {/* One row only; padding inside the clip keeps focus and pressed rings visible. */}
       {colors.length > 0 && (
-        <div role="group" aria-label={`${product.title} colors`} className="-mt-2 flex flex-wrap items-center gap-1 px-3 pb-3 sm:-mt-3 sm:px-4 sm:pb-4">
+        <div ref={swatchRow} role="group" aria-label={`${product.title} colors`} className="mx-2.5 -mt-2.5 mb-2.5 flex flex-nowrap items-center gap-1 overflow-hidden p-0.5 sm:mx-3.5 sm:-mt-3.5 sm:mb-3.5">
           {swatches.map((preview) => {
             const pressed = preview.href === color?.href;
             return (
@@ -68,7 +90,7 @@ export function ProductCard({ product, eager = false, from }: { product: Product
                   aria-label={`Preview ${preview.label ?? preview.value}`}
                   aria-pressed={pressed}
                   onClick={() => setSelectedColor(pressed ? null : preview.href)}
-                  className={`grid h-8 w-8 place-items-center rounded-full transition hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40 dark:hover:bg-white/10 dark:focus-visible:ring-white/40 ${pressed ? "ring-2 ring-black dark:ring-white" : ""}`}
+                  className={`grid h-8 w-8 shrink-0 place-items-center rounded-full transition hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40 dark:hover:bg-white/10 dark:focus-visible:ring-white/40 ${pressed ? "ring-2 ring-black dark:ring-white" : ""}`}
                 >
                   <span
                     aria-hidden
@@ -80,7 +102,7 @@ export function ProductCard({ product, eager = false, from }: { product: Product
             );
           })}
           {hiddenColors > 0 && (
-            <Link href={withProductOrigin(`/products/${product.handle}`, from)} className="rounded-sm px-1 text-xs font-semibold text-black/70 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40 dark:text-white/70 dark:hover:text-white dark:focus-visible:ring-white/40">
+            <Link href={withProductOrigin(`/products/${product.handle}`, from)} className="shrink-0 rounded-sm px-1 text-xs font-semibold text-black/70 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40 dark:text-white/70 dark:hover:text-white dark:focus-visible:ring-white/40">
               +{hiddenColors}<span className="sr-only"> more colors</span>
             </Link>
           )}

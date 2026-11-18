@@ -13,9 +13,6 @@ import { getHomeCatalog } from "@/lib/shopify";
 
 export const revalidate = 300;
 
-// Four columns at xl and two below keep the four favorites in full rows.
-const gridColumns = "mt-8 sm:grid-cols-2 xl:grid-cols-4";
-
 export default async function HomePage() {
   const { spotlight, favorites, collections } = await getHomeCatalog();
   return (
@@ -89,7 +86,7 @@ export default async function HomePage() {
               </Button.Link>
             )}
           />
-          <ProductGrid products={favorites.products} eagerCount={0} className={gridColumns} />
+          <ProductGrid products={favorites.products} eagerCount={0} evenRows className="mt-8" />
         </section>
       )}
 
@@ -112,7 +109,7 @@ export default async function HomePage() {
               </Button.Link>
             }
           />
-          <HomeCollectionTiles tiles={collections} className={gridColumns} />
+          <HomeCollectionTiles tiles={collections} className="mt-8" />
         </section>
       )}
     </main>

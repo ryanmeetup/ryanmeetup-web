@@ -43,8 +43,8 @@ export function MediaCard({
             {media}
             {badges}
           </div>
-          <div className="flex flex-1 flex-col gap-2 p-4 sm:p-5">
-            <h3 className="flex items-center gap-2 font-cooper text-lg leading-tight tracking-wide text-black sm:text-xl dark:text-white">{title}</h3>
+          <div className="flex flex-1 flex-col gap-2 p-3 sm:p-5">
+            <h3 className="flex items-center gap-2 font-cooper text-base leading-tight tracking-wide text-black sm:text-xl dark:text-white">{title}</h3>
             {children}
           </div>
         </Link>
