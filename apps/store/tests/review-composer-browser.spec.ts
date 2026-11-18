@@ -27,7 +27,7 @@ async function choose(page: Page, name: string) {
 async function openComposer(page: Page) {
   await page.goto(productPath);
   const reviews = page.locator("#reviews");
-  await expect(reviews).toContainText("Signed in as your store account");
+  await expect(reviews.getByText("Your store account", { exact: true })).toBeVisible();
   await reviews.getByRole("button", { name: "Write a review", exact: true }).click();
   return { reviews, dialog: page.getByRole("dialog", { name: "Write a review", exact: true }) };
 }
@@ -107,7 +107,7 @@ test("a single purchase stays implied when access changes without a remount", as
   await expect(reviews).toContainText("Review collection is temporarily unavailable.");
   await configure(request, { failReviewedLines: false });
   await choose(page, "Environment default");
-  await expect(reviews).toContainText("Signed in as your store account");
+  await expect(reviews.getByText("Your store account", { exact: true })).toBeVisible();
   await reviews.getByRole("button", { name: "Write a review", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Write a review", exact: true });
   await dialog.getByRole("radio", { name: "5 stars", exact: true }).check();
@@ -146,7 +146,12 @@ test("a signed-in buyer can see who they are and sign out", async ({ page, reque
   await signIn(page, baseURL!);
   await page.goto(productPath);
   const reviews = page.locator("#reviews");
-  await expect(reviews).toContainText("Signed in as your store account");
+  await expect(reviews.getByText("Your store account", { exact: true })).toBeVisible();
+  for (const theme of ["light", "dark"]) {
+    await page.evaluate((value) => { localStorage.setItem("theme", value); document.documentElement.classList.toggle("dark", value === "dark"); }, theme);
+    await reviews.scrollIntoViewIfNeeded();
+    await reviews.locator("div").filter({ has: page.getByRole("button", { name: "Write a review", exact: true }) }).last().screenshot({ path: `/private/tmp/store-review-account-${theme}.png` });
+  }
   // The real logout route checks the registered storefront origin, which this
   // localhost suite can't present (see customer-account-http.spec.ts). Answer
   // it the way the server does: end the session cookie and report success.
@@ -158,7 +163,7 @@ test("a signed-in buyer can see who they are and sign out", async ({ page, reque
     await route.fulfill({ json: { signedOut: true } });
   });
   await reviews.getByRole("button", { name: "Sign out", exact: true }).click();
-  await expect(reviews).not.toContainText("Signed in as");
+  await expect(reviews.getByRole("button", { name: "Sign out", exact: true })).toHaveCount(0);
   await reviews.getByRole("button", { name: "Write a review", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "Sign in to review", exact: true }).getByRole("link", { name: "Sign in", exact: true })).toBeVisible();
   expect(signOuts).toBe(1);

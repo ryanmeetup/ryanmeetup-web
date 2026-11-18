@@ -56,7 +56,7 @@ test("a review without a matching order sends no order details, and reviewed pro
   expect(submit({ ...product, orderId: null, lineId: null })).not.toBeNull();
   expect(submit({ ...product, orderId: "9000", lineId: "1" })).not.toBeNull();
   for (const half of [{ orderId: "9000", lineId: null }, { orderId: null, lineId: "1" }, { orderId: null, lineId: null, variantId: "200" }, { orderId: null, lineId: null, variantTitle: "Black / M" }]) {
-    expect(submit({ ...product, orderId: null, lineId: null, ...half })).toBeNull();
+    expect(submit({ ...product, ...half })).toBeNull();
   }
   const { calls, backend } = database({ store_buyer_reviewed_products: [["100"]] });
   expect(await backend({ operation: "reviews.reviewedProducts", subject: "buyer", productIds: ["100", "101"] })).toEqual(["100"]);
