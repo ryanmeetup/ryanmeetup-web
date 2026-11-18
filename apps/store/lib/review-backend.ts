@@ -36,6 +36,8 @@ export function createReviewBackend({ origin, token, fetcher = fetch }: { origin
   };
 }
 
+export type ReviewBackend = ReturnType<typeof createReviewBackend>;
+
 /** The configured backend, or null when review storage isn't set up here. */
 export function getReviewBackend() {
   try {

@@ -1,40 +1,22 @@
 import { NextResponse } from "next/server";
 import { isReviewPreviewEnabled, parseReviewPreviewChoice, reviewPreviewCookie } from "@/lib/review-provider";
+import { hasJsonBody, isSameOriginRequest, privateHeaders, readJsonObject, requestOrigin } from "@/lib/request-guard";
 
-const noStore = { "Cache-Control": "no-store" };
-
-function fail(error: string, status: number) {
-  return NextResponse.json({ error }, { status, headers: noStore });
-}
+const fail = (status: number, body: { error: string }) => NextResponse.json(body, { status, headers: privateHeaders });
 
 /** A browser preference for development/preview, never a production setting. */
 export async function POST(request: Request) {
-  if (!isReviewPreviewEnabled()) return fail("Review testing is not enabled here.", 404);
-  // Next may use its internal hostname in request.url. Match the browser's
-  // Host and the protocol supplied by Next's proxy headers instead.
-  const requestUrl = new URL(request.url);
-  const protocol = request.headers.get("x-forwarded-proto")?.split(",")[0].trim() ?? requestUrl.protocol.slice(0, -1);
-  const host = request.headers.get("host") ?? requestUrl.host;
-  if (!["http", "https"].includes(protocol) || request.headers.get("origin") !== `${protocol}://${host}`) {
-    return fail("Change review mode from this storefront.", 403);
-  }
-  if (request.headers.get("content-type")?.split(";")[0].trim().toLowerCase() !== "application/json") {
-    return fail("Choose a review mode.", 415);
-  }
-  let payload: unknown;
-  try {
-    payload = await request.json();
-  } catch {
-    return fail("Choose a review mode.", 400);
-  }
-  const choice = parseReviewPreviewChoice(payload && typeof payload === "object" && "provider" in payload ? payload.provider : undefined);
-  if (!choice) return fail("Choose a review mode.", 400);
+  if (!isReviewPreviewEnabled()) return fail(404, { error: "Review testing is not enabled here." });
+  if (!isSameOriginRequest(request)) return fail(403, { error: "Change review mode from this storefront." });
+  if (!hasJsonBody(request)) return fail(415, { error: "Choose a review mode." });
+  const choice = parseReviewPreviewChoice((await readJsonObject(request))?.provider);
+  if (!choice) return fail(400, { error: "Choose a review mode." });
 
-  const response = NextResponse.json({ success: true }, { headers: noStore });
+  const response = NextResponse.json({ success: true }, { headers: privateHeaders });
   response.cookies.set(reviewPreviewCookie, choice === "default" ? "" : choice, {
     httpOnly: true,
     sameSite: "lax",
-    secure: protocol === "https",
+    secure: requestOrigin(request)?.startsWith("https:") ?? false,
     path: "/",
     maxAge: choice === "default" ? 0 : 60 * 60 * 24,
   });

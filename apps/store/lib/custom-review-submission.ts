@@ -1,21 +1,11 @@
 import { reviewDisplayName, reviewSubmissionSchema } from "@ryanmeetup/reviews";
-import type { ReviewCommand, ReviewResults } from "@ryanmeetup/reviews";
 import type { CustomerSessionResult } from "./customer-account/session";
 import { numericProductId } from "./custom-reviews";
+import { hasJsonBody, isSameOriginRequest, privateJson as reply, readJsonObject } from "./request-guard";
+import type { ReviewBackend } from "./review-backend";
 import type { ReviewEligibilityLookup } from "./review-purchases";
 
-const privateHeaders = { "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" };
-const reply = (status: number, body: Record<string, unknown>) => Response.json(body, { status, headers: privateHeaders });
 const unavailable = () => reply(503, { error: "Review collection is temporarily unavailable. Please try again later." });
-
-type Backend = <Command extends ReviewCommand>(command: Command) => Promise<ReviewResults[Command["operation"]]>;
-
-function sameOrigin(request: Request) {
-  const url = new URL(request.url);
-  const protocol = request.headers.get("x-forwarded-proto")?.split(",")[0].trim() ?? url.protocol.slice(0, -1);
-  const host = request.headers.get("host") ?? url.host;
-  return request.headers.get("origin") === `${protocol}://${host}` && request.headers.get("sec-fetch-site") !== "cross-site";
-}
 
 /**
  * Saves a signed-in buyer's review of one purchased line. The browser sends
@@ -25,21 +15,13 @@ function sameOrigin(request: Request) {
 export async function submitCustomReview(request: Request, { loadSession, findPurchases, backend }: {
   loadSession: () => Promise<CustomerSessionResult>;
   findPurchases: ReviewEligibilityLookup;
-  backend: Backend | null;
+  backend: ReviewBackend | null;
 }): Promise<Response> {
   if (!backend) return unavailable();
-  if (!sameOrigin(request)) return reply(403, { error: "Submit reviews from this storefront." });
-  if (request.headers.get("content-type")?.split(";")[0].trim().toLowerCase() !== "application/json") {
-    return reply(415, { error: "Your review could not be read. Please try again." });
-  }
-  let input: Record<string, unknown>;
-  try {
-    const parsed: unknown = await request.json();
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error();
-    input = parsed as Record<string, unknown>;
-  } catch {
-    return reply(400, { error: "Your review could not be read. Please try again." });
-  }
+  if (!isSameOriginRequest(request)) return reply(403, { error: "Submit reviews from this storefront." });
+  if (!hasJsonBody(request)) return reply(415, { error: "Your review could not be read. Please try again." });
+  const input = await readJsonObject(request);
+  if (!input) return reply(400, { error: "Your review could not be read. Please try again." });
   const { productId, lineId, ...fields } = input;
   const submission = reviewSubmissionSchema(fields);
   const product = typeof productId === "string" ? numericProductId(productId) : null;

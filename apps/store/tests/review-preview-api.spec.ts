@@ -36,7 +36,7 @@ function choose(provider: unknown, origin: string | null = "https://store.test")
 function submit(cookie?: string) {
   return submitReview(new Request("https://store.test/api/reviews", {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...(cookie ? { Cookie: cookie } : {}) },
+    headers: { "Content-Type": "application/json", Origin: "https://store.test", ...(cookie ? { Cookie: cookie } : {}) },
     body: JSON.stringify({ productId: "gid://shopify/Product/123", rating: 5, body: "Great gear.", name: "Ryan", email: "ryan@example.com" }),
   }));
 }

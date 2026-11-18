@@ -32,10 +32,10 @@ test.afterEach(() => {
   else process.env.JUDGEME_SHOP_DOMAIN = originalJudgeMeDomain;
 });
 
-function submit(body: unknown, contentType = "application/json") {
+function submit(body: unknown, contentType = "application/json", headers: Record<string, string> = {}) {
   return POST(new Request("https://store.test/api/reviews", {
     method: "POST",
-    headers: { "Content-Type": contentType },
+    headers: { "Content-Type": contentType, Origin: "https://store.test", ...headers },
     body: typeof body === "string" ? body : JSON.stringify(body),
   }));
 }
@@ -73,6 +73,17 @@ test("incomplete or out-of-range reviews are rejected before Judge.me", async ()
   for (const malformed of [null, [], true]) {
     expect((await submit(malformed)).status).toBe(400);
   }
+  expect(providerRequests).toHaveLength(0);
+});
+
+test("only this storefront's pages can relay a review to Judge.me", async () => {
+  const attempts: Record<string, string>[] = [{ Origin: "https://spam.test" }, { "Sec-Fetch-Site": "cross-site" }];
+  for (const headers of attempts) {
+    const response = await submit(validReview, "application/json", headers);
+    expect(response.status).toBe(403);
+  }
+  const missing = await POST(new Request("https://store.test/api/reviews", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(validReview) }));
+  expect(missing.status).toBe(403);
   expect(providerRequests).toHaveLength(0);
 });
 
