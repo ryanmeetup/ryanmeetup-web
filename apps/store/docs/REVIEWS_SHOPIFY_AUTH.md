@@ -99,14 +99,29 @@ refreshes through revision checks.
 The migration is applied and verified on **RMT**. Both tables were empty after
 verification. This migration is **RMT-only**; PRD does not need it. The
 [previous PRD SQL handoff is superseded](../../tasks/docs/PRD_STORE_CUSTOMER_AUTH_SQL.md).
-No database secret was added to the storefront. The scoped backend interface
-still needs to be built; it must authenticate the calling service and pin its
-shop/client scope before using the trusted backend database client.
+No database secret was added to the storefront. The private
+`POST /api/store/customer-auth` backend now authenticates the calling service,
+pins its shop/client/callback scope, and exposes only the seven auth-storage
+operations. See [backend configuration](../../tasks/docs/STORE_CUSTOMER_AUTH.md).
+
+`lib/customer-account/backend.ts` calls that endpoint over HTTPS with a
+separate service token, no redirects, no caching, and a five-second timeout.
+`lib/customer-account/storage.ts` seals flows/tokens before transmitting them,
+reconstructs authenticated encryption context when loading, and preserves
+one-time consumption and revision-based refresh. Invalid proofs never trigger
+storage requests. Storage failures remain distinct from a missing session;
+upstream bodies and secrets never appear in thrown diagnostics.
+
+The store transport takes server-owned `origin` and `token` arguments. Its
+future runtime composition should read `STORE_REVIEWS_BACKEND_URL` and
+`STORE_REVIEWS_BACKEND_TOKEN`, alongside the existing Shopify config and
+encryption keyring. Use an isolated backend and token for Preview. No runtime
+credentials have been configured, and no sign-in entry point is enabled yet.
 
 ## Remaining gate
 
-Wire private storage through that backend interface, then implement HTTP
-start/callback, token exchange, signed ID-token/nonce verification, renewal,
+Compose the implemented private storage into HTTP start/callback, token
+exchange, signed ID-token/nonce verification, renewal,
 logout, and expired-record cleanup. Prove a real buyer login and exact
 order-line access after the confidential client is configured. Browser cookies
 must contain only opaque identifiers; verifiers and tokens remain server-side.
