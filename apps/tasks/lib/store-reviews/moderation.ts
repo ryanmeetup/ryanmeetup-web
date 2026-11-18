@@ -27,6 +27,31 @@ export type ModerationReview = {
   latest: ModerationRevision; recentEvents: ModerationEvent[];
 };
 export type ModerationPage = { reviews: ModerationReview[]; next: ModerationCursor | null };
+export type ModerationInitialState =
+  | { status: "ready"; page: ModerationPage }
+  | { status: "disabled" }
+  | { status: "error" };
+
+export function reviewModerationActions(review: ModerationReview): ModerationAction[] {
+  if (review.state === "withdrawn") return [];
+  return [
+    ...(review.pending ? ["approve", "reject"] as const : []),
+    ...(review.state === "hidden" ? ["restore"] as const : review.published ? ["hide"] as const : []),
+  ];
+}
+
+export function moderationReasonRequired(action: ModerationAction) {
+  return action === "reject" || action === "hide";
+}
+
+export function moderationActionLabel(action: ModerationAction, review: ModerationReview) {
+  switch (action) {
+    case "approve": return review.state === "hidden" ? "Approve revision" : review.published ? "Publish edit" : "Publish review";
+    case "reject": return review.published ? "Reject edit" : "Reject review";
+    case "hide": return "Hide review";
+    case "restore": return review.published ? "Restore review" : "Unhide review";
+  }
+}
 
 export function isModerationFilter(value: unknown): value is ModerationFilter {
   return MODERATION_FILTERS.includes(value as ModerationFilter);
