@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { parseStoredCart } from "@/lib/stored-cart";
 import type { Cart, CartLine, Product, ProductVariant } from "@/lib/types";
 
 const storageKey = "ryan-store-cart";
@@ -108,8 +109,7 @@ export function CartProvider({
   useEffect(() => {
     function readStored() {
       try {
-        const stored = window.localStorage.getItem(storageKey);
-        return stored ? (JSON.parse(stored) as Cart) : null;
+        return parseStoredCart(window.localStorage.getItem(storageKey));
       } catch {
         return null;
       }
