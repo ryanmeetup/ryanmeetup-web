@@ -1,17 +1,11 @@
 import { NextResponse } from "next/server";
 import { reviewCommandSchema } from "@/lib/api-schema";
-import { databaseFailure } from "@/lib/server/api-response";
+import { databaseFailure, privateResponse } from "@/lib/server/api-response";
 import { readJson } from "@/lib/server/request";
 import { authorizeStoreCustomerAuth } from "@/lib/server/store-customer-auth/authorization";
 import { executeStoreReview, StoreReviewDatabaseError } from "@/lib/server/store-reviews/storage";
 
 export const runtime = "nodejs";
-
-function privateResponse(response: NextResponse) {
-  response.headers.set("Cache-Control", "no-store");
-  response.headers.set("Referrer-Policy", "no-referrer");
-  return response;
-}
 
 /**
  * Private review storage for the storefront server. It shares the store

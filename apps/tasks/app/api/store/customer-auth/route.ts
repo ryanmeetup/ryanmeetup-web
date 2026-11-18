@@ -1,17 +1,11 @@
 import { NextResponse } from "next/server";
 import { customerAuthCommandSchema } from "@/lib/api-schema";
-import { apiError, databaseFailure } from "@/lib/server/api-response";
+import { apiError, databaseFailure, privateResponse } from "@/lib/server/api-response";
 import { readJson } from "@/lib/server/request";
 import { authorizeStoreCustomerAuth } from "@/lib/server/store-customer-auth/authorization";
 import { CustomerAuthDatabaseError, executeStoreCustomerAuth } from "@/lib/server/store-customer-auth/storage";
 
 export const runtime = "nodejs";
-
-function privateResponse(response: NextResponse) {
-  response.headers.set("Cache-Control", "no-store");
-  response.headers.set("Referrer-Policy", "no-referrer");
-  return response;
-}
 
 export async function POST(request: Request) {
   const authorization = authorizeStoreCustomerAuth(request);

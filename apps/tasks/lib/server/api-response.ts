@@ -31,6 +31,13 @@ export function apiError(
   return NextResponse.json({ code, error }, { status, headers });
 }
 
+/** Marks a response carrying private records: never cached, never referred onward. */
+export function privateResponse<Response extends NextResponse>(response: Response) {
+  response.headers.set("Cache-Control", "no-store");
+  response.headers.set("Referrer-Policy", "no-referrer");
+  return response;
+}
+
 export const authRequired = () =>
   apiError(401, "AUTH_REQUIRED", "Sign in to continue.");
 

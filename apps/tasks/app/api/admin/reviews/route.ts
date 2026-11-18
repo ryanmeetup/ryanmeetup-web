@@ -1,18 +1,12 @@
 import { NextResponse } from "next/server";
 import { storeReviewModerationQuery, storeReviewModerationSchema, storeReviewReplySchema } from "@/lib/api-schema";
-import { apiError, databaseFailure } from "@/lib/server/api-response";
+import { apiError, databaseFailure, privateResponse } from "@/lib/server/api-response";
 import { privilegedContext, readJson } from "@/lib/server/privileged-api";
 import { getStoreCustomerAuthScope } from "@/lib/server/store-customer-auth/scope";
 import { loadReviewModerationPage, moderateReview, saveReviewReply } from "@/lib/server/store-reviews/moderation";
 import { StoreReviewDatabaseError } from "@/lib/server/store-reviews/storage";
 
 export const runtime = "nodejs";
-
-function privateResponse(response: NextResponse) {
-  response.headers.set("Cache-Control", "no-store");
-  response.headers.set("Referrer-Policy", "no-referrer");
-  return response;
-}
 
 async function context() {
   // A storefront service credential never authorizes staff operations.
