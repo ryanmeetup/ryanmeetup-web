@@ -238,8 +238,8 @@ than duplicating them, and coordinate before changing them.
 - **Composer:** `components/custom-review-composer.tsx` and
   `lib/custom-review-access.ts`. It renders unavailable, signed-out,
   no-purchase, reviewed, and ready states. `getCustomReviewAccess()` returns
-  `unavailable` except for the preview-only **Custom reviews, sample buyer**
-  mode, which checks a review against the contract and saves nothing.
+  `unavailable` except for the localhost-only **Custom reviews, test buyer**
+  mode (`lib/review-test-buyer.ts`), which saves real reviews to RMT.
   Exact-line eligibility should replace that function's body with the real
   session and purchase lookup. Real submissions currently POST to
   `/api/reviews`, which still returns 503 in custom mode. Browser tests:
@@ -251,19 +251,18 @@ than duplicating them, and coordinate before changing them.
   approve/reject, hide/restore, reply, the public page, and totals. 71 pgTAP
   assertions in `tests/database/store-reviews.sql` run from
   `scripts/test-store-customer-auth.mjs`. Both RMT and PRD profiles pass. **Applied to RMT**. Photos and buckets are a later chunk.
-- **Review backend interface:** `POST /api/store/reviews` in Tasks
-  (`lib/server/store-reviews/storage.ts`), contract in
-  `packages/reviews/src/review-backend.ts`. It reuses
-  `authorizeStoreService` (`lib/server/store-service-authorization.ts`: one
-  service token for every store route, pinned shop, PRD refused)
+- **Review storage access:** the store's `lib/review-backend.ts`, which talks
+  to RMT directly (the Tasks `POST /api/store/reviews` relay was removed on
+  November 18, 2026), contract in `packages/reviews/src/review-backend.ts`. It
+  pins the configured shop, refuses any project but RMT,
   and offers `review.submit`, `review.edit`, `review.withdraw`, and
   `reviews.page` with opaque cursors. The storefront passes the verified
   session subject and purchased line; the backend never takes a shop from the
   caller. Staff moderation now has separate owner-only Tasks endpoints at
   `GET/POST/PATCH /api/admin/reviews`, with the owner queue at `/admin/reviews`. See
-  [the moderation handoff](REVIEWS_MODERATION.md). Tests: `apps/tasks/tests/routes/store-reviews.test.ts`.
-- **Custom reads (chunk 5):** `lib/review-backend.ts` (client, same
-  `STORE_REVIEWS_BACKEND_URL`/`_TOKEN`) and `lib/custom-reviews.ts`.
+  [the moderation handoff](REVIEWS_MODERATION.md). Tests: `apps/store/tests/review-backend.spec.ts`.
+- **Custom reads (chunk 5):** `lib/review-backend.ts` (`SUPABASE_URL`/
+  `SUPABASE_SECRET_KEY`) and `lib/custom-reviews.ts`.
   `getReviews` in custom mode now reads the published page and complete
   totals, so product JSON-LD follows them; any failure stays `unavailable`.
   No caching or invalidation yet. Tests: `tests/review-backend.spec.ts`.

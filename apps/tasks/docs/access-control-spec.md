@@ -146,19 +146,13 @@ service-role grants. Their five `store_*customer_*` RPCs are service-role-only,
 use an empty search path, and run as the invoker. They do not create Supabase
 Auth users, Tasks profiles, or workspace memberships.
 
-The storefront must not receive the Tasks admin key or a direct SQL login.
-Expose these operations only through a narrowly authenticated backend
-interface that pins the store's allowed shop/client scope before using the
-existing privileged backend client. `POST /api/store/customer-auth` now owns
-this boundary. It requires an explicitly enabled, hashed service credential,
-rejects browser Origin/`Sec-Fetch-Site` headers, and checks every request against
-the configured shop, client, issuer, and callback. It accepts only seven fixed
-create/get/consume/rotate/revoke operations and selects explicit return columns.
-There is no arbitrary SQL, table, RPC, or Tasks-data access through this route.
-It defaults to the RMT project, supports an explicitly pinned isolated backend,
-and always refuses PRD. Missing configuration denies access before the admin
-client is constructed. Service requests use the common JSON size/schema/error
-boundary; browser routes retain their existing same-origin checks.
+The storefront server uses RMT's Supabase secret key directly (decided
+November 18, 2026, replacing the earlier `POST /api/store/customer-auth` and
+`POST /api/store/reviews` relays). That key bypasses RLS project-wide, so it
+lives only in the store's server environment. The store pins the configured
+shop, client, issuer, and callback, runs only seven fixed auth operations and
+the fixed review RPCs, selects explicit return columns, and refuses any
+project but RMT, so PRD can't be configured. It has no direct SQL login.
 Creating a new SQL role alone would inherit the project's PUBLIC privileges;
 `NOINHERIT` does not remove them. Existing workspace grants remain unchanged.
 
@@ -201,7 +195,7 @@ automatically. These functions are in RMT-only migration `20261120180000`.
 ## Store review moderation
 
 `GET/POST/PATCH /api/admin/reviews` is a Tasks app-owner boundary, separate from the
-storefront service credential and Shopify buyer identity. Reads and writes
+storefront's database access and Shopify buyer identity. Reads and writes
 require `privilegedContext({ owner: true })`; the enabled backend configuration
 pins the shop and Supabase project and always refuses PRD. Request bodies cannot
 choose an actor or shop. Browser writes use the normal same-origin, bounded JSON
@@ -246,7 +240,7 @@ from the authenticated Tasks actor, never a browser field.
 The reply-aware staff projection is `store_review_moderation_page_v2`. It reads
 reply and review version from one snapshot; v1 stays unchanged for older
 deployments. No table or RPC privileges are widened, the public reply shape is
-unchanged, and the storefront service credential cannot authorize these writes.
+unchanged, and the moderation endpoints accept only a Tasks owner session.
 
 ## RY-D Verification
 

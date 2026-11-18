@@ -34,7 +34,7 @@ remaining effort; reassess after the live Shopify gate.
 
 | Area | Implemented today | Limit or remaining work |
 | --- | --- | --- |
-| Provider selection | Server-owned `REVIEWS_PROVIDER`; blank defaults to `judgeme`. Browser selector supports Judge.me, custom, sample buyer, and reset. A concurrent worktree change restricts it to loopback hosts in local development or explicitly enabled local builds; all Vercel deployments, including Preview, refuse overrides. | Localhost restriction is in progress and was not covered by this audit's earlier test run. Hosted Preview uses deployment configuration. Sample mode checks input and saves nothing. |
+| Provider selection | Server-owned `REVIEWS_PROVIDER`; blank defaults to `judgeme`. Browser selector supports Judge.me, custom, test buyer, and reset. It works only on loopback hosts in local development or explicitly enabled local builds; all Vercel deployments, including Preview, refuse overrides. | Hosted Preview uses deployment configuration. The test buyer skips Shopify sign-in and the purchase lookup but saves real reviews to RMT, one synthetic order line per product, under subject `local-test-buyer`. |
 | Shopify sign-in | Start/callback routes; public discovery; PKCE, state, nonce and browser binding; confidential-client token exchange and signed ID-token validation. | Intended client configuration, permissions, and real buyer login remain unproven. |
 | Sessions | Opaque Secure/HttpOnly cookies, encrypted server persistence, seven-day absolute storefront session, access-token renewal, revision checks, and sign-out. | Live refresh rotation/reuse and recovery need evidence. No distributed refresh claim or expired-record cleanup job. |
 | Purchase checks | Product-level order discovery, owned-order/line verification, product and variant snapshots, current encrypted-session checks, and Shopify-derived buyer names. Used by both picker and submit. | Conservative refund/edit policy and bounded history; see below. Live order semantics/permissions remain unproven. |
@@ -58,26 +58,25 @@ remaining effort; reassess after the live Shopify gate.
   purchase eligibility, browser-facing review APIs, buyer UI and public cards.
   Shopify purchase authorization is enforced here; the storage backend does
   not independently query Shopify.
-- **`apps/tasks`** hosts the private backend at `POST /api/store/customer-auth`
-  and `POST /api/store/reviews`, plus the owner moderation page and
-  `GET/POST/PATCH /api/admin/reviews`. This already serves more than auth:
-  `authorizeStoreService` guards both storefront service routes with one
-  dedicated bearer credential and pinned scope. Staff use a separate Tasks
-  owner authorization boundary; that bearer never grants moderation access.
+- **`apps/tasks`** hosts the owner moderation page and
+  `GET/POST/PATCH /api/admin/reviews`, behind the Tasks owner authorization
+  boundary. It no longer relays storefront reads or writes.
 - **`packages/reviews`** owns shared input, result, public/private projection
   and cursor contracts. `packages/ui` supplies generic visual primitives.
 - **RMT Supabase `lvfaartgcpphuokoswcm`** stores private auth and review data.
-  Only the backend holds its Supabase secret. The store holds the restricted
-  service credential, not a direct database/service-role key. Public reads
-  cross the store server and allowlisted backend projection.
+  The store server connects to it directly with `SUPABASE_URL` and
+  `SUPABASE_SECRET_KEY` (`lib/store-database.ts`), through fixed RPCs only, and
+  checks every command and result against the shared contracts. The key is
+  server-only; public reads still pass the allowlisted public projection.
 - **PRD `vjsnobmfsfrsnwukfaoq`** remains a separate personal Tasks instance.
-  Store service configuration explicitly refuses it. Store migrations are
+  The store accepts only RMT's URL (or loopback outside production), so PRD
+  can't be configured. Store migrations are
   RMT-only; PRD needs no review SQL, fake history entries or borrowed credentials.
 
 All database history remains in `apps/tasks/supabase/migrations`, with scope in
 `migration-scopes.json`. Do not create another migration history in the store.
-Preview requires an isolated database/backend, service token, encryption
-keyring and registered HTTPS callback. The browser provider selector does not
+Preview requires an isolated database, encryption keyring and registered HTTPS
+callback. The browser provider selector does not
 isolate storage and must never be used as a substitute for that separation.
 
 ### Database rollout, verified in this audit
@@ -103,8 +102,8 @@ the final version is `20261120180000`. Applied SQL stays immutable.
 
 1. The product page derives access from the server session and current Shopify
    purchases. It shows sign-in, no purchase, needs-help, already-reviewed,
-   unavailable, or ready states. A sample buyer is available only through the
-   permitted browser testing control and cannot save reviews.
+   unavailable, or ready states. A test buyer is available only through the
+   localhost testing control; its reviews are saved and moderated like any other.
 2. A new submission rechecks eligibility. The browser supplies a product hint,
    selected line and review fields; it cannot choose the buyer, purchase
    snapshot or arbitrary public name. Numeric Shopify IDs remain strings so
@@ -164,13 +163,10 @@ This is the next gate, not another rewrite of the existing auth or purchase code
   permissions for buyer names and order access, including protected customer
   data. Register the exact HTTPS callback and storefront origin for the test
   environment. Existing Admin/Judge.me credentials cannot replace this client.
-- Configure an **isolated** HTTPS backend with the six migrations, pinned
-  shop/client/issuer/callback/project scope and dedicated service credential.
-  Configure the store's client secret, encryption keyring and backend URL/token.
-  Both `STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED` on the store and
-  `STORE_REVIEWS_CUSTOMER_AUTH_ENABLED` on the backend are explicit opt-ins;
-  custom mode is also required. See [auth setup](REVIEWS_SHOPIFY_AUTH.md) and
-  [backend setup](../../tasks/docs/STORE_CUSTOMER_AUTH.md) for exact setting names.
+- Configure the store's client secret, encryption keyring, `SUPABASE_URL` and
+  `SUPABASE_SECRET_KEY`. `STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED` is an
+  explicit opt-in, and custom mode is also required. See
+  [auth setup](REVIEWS_SHOPIFY_AUTH.md) for exact setting names.
 - Prove real sign-in, return to the intended product, encrypted persistence,
   access renewal, logout and account switching. Test refresh-token rotation,
   reuse and uncertain responses across workers; current coalescing is only
@@ -362,7 +358,7 @@ disable the normal Tasks database-contract preflight to make a build pass.
 | Concern | Source / checkpoint |
 | --- | --- |
 | Provider and browser isolation | [`lib/review-provider.ts`](../lib/review-provider.ts), [`lib/review-preview.ts`](../lib/review-preview.ts) |
-| Shopify identity/session | [`lib/customer-account/`](../lib/customer-account), [auth setup](REVIEWS_SHOPIFY_AUTH.md), [backend setup](../../tasks/docs/STORE_CUSTOMER_AUTH.md) |
+| Shopify identity/session | [`lib/customer-account/`](../lib/customer-account), [auth setup](REVIEWS_SHOPIFY_AUTH.md), [`lib/store-database.ts`](../lib/store-database.ts) |
 | Purchases and composer access | [`lib/review-purchases.ts`](../lib/review-purchases.ts), [`lib/customer-account/review-lookups.ts`](../lib/customer-account/review-lookups.ts), [`lib/custom-review-access.ts`](../lib/custom-review-access.ts), [purchase checkpoint](REVIEWS_PURCHASE_ELIGIBILITY.md) |
 | Buyer submission | [`lib/custom-review-submission.ts`](../lib/custom-review-submission.ts), [`components/custom-review-composer.tsx`](../components/custom-review-composer.tsx), [`app/api/reviews/route.ts`](../app/api/reviews/route.ts) |
 | Buyer management | [`lib/my-review-actions.ts`](../lib/my-review-actions.ts), [`components/my-reviews.tsx`](../components/my-reviews.tsx), [buyer checkpoint](REVIEWS_BUYER_MANAGEMENT.md) |

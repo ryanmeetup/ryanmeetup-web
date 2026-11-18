@@ -25,7 +25,9 @@ business logic into a generic package.
   `buildPageMetadata`, and every page's title, canonical, Open Graph, and
   Twitter tags come from that.
 - `packages/reviews`: private review-domain contracts shared by the store and
-  its backend. Customer auth records and credentials never belong in browser props.
+  Tasks moderation. The store server reads and writes review data in RMT
+  directly; its Supabase secret, customer auth records, and credentials never
+  belong in browser props.
 - `packages/sponsors`: shared sponsor-domain components.
 - `packages/utils`: framework-agnostic shared utilities.
 

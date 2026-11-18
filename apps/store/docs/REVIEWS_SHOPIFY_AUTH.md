@@ -29,8 +29,8 @@ allowed JavaScript origins as well; the token exchange supplies that origin.
 | `SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_SECRET` | That client's secret; keep server-only. |
 | `SHOPIFY_CUSTOMER_ACCOUNT_REDIRECT_URI` | The exact registered HTTPS callback URL. |
 | `STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED` | Explicit `true` opt-in; start/callback also require custom mode for that browser. |
-| `STORE_REVIEWS_BACKEND_URL` | HTTPS origin of the intended private auth backend, with no path/query. |
-| `STORE_REVIEWS_BACKEND_TOKEN` | The separate service token whose SHA-256 digest is configured on that backend. |
+| `SUPABASE_URL` | `https://lvfaartgcpphuokoswcm.supabase.co` (RMT). Any other project is refused. |
+| `SUPABASE_SECRET_KEY` | RMT's Supabase secret key; keep server-only. |
 
 Use separate client configuration for isolated test environments as needed.
 Verify the client's buyer/order permissions on the intended installation.
@@ -150,22 +150,27 @@ not yet reachable from any route.
 The migration is applied and verified on **RMT**. Both tables were empty after
 verification. This migration is **RMT-only**; PRD does not need it. The
 [previous PRD SQL handoff is superseded](../../tasks/docs/PRD_STORE_CUSTOMER_AUTH_SQL.md).
-No database secret was added to the storefront. The private
-`POST /api/store/customer-auth` backend now authenticates the calling service,
-pins its shop/client/callback scope, and exposes only the seven auth-storage
-operations. See [backend configuration](../../tasks/docs/STORE_CUSTOMER_AUTH.md).
+The store connects to RMT directly with the Supabase secret key
+(`SUPABASE_URL`, `SUPABASE_SECRET_KEY`; `lib/store-database.ts`). This was a
+deliberate choice on November 18, 2026, replacing the earlier Tasks relay and
+its scoped service token. The tradeoff: that key bypasses RLS for the whole
+RMT project, Tasks data included, so a compromised storefront server would
+expose it. The store limits itself to fixed tables and RPCs, validates every
+command and result, and accepts only RMT's URL (loopback outside production),
+so PRD can't be configured.
 
-`lib/customer-account/backend.ts` calls that endpoint over HTTPS with a
-separate service token, no redirects, no caching, and a five-second timeout.
+`lib/customer-account/backend.ts` runs the seven auth-storage operations
+against those tables and RPCs, pinned to the configured shop, client, issuer
+and callback, and refuses stale or future-dated records before writing.
 `lib/customer-account/storage.ts` seals flows/tokens before transmitting them,
 reconstructs authenticated encryption context when loading, and preserves
 one-time consumption and revision-based refresh. Invalid proofs never trigger
 storage requests. Storage failures remain distinct from a missing session;
 upstream bodies and secrets never appear in thrown diagnostics.
 
-`lib/customer-account/runtime.ts` reads the backend settings alongside the
+`lib/customer-account/runtime.ts` reads the database settings alongside the
 existing Shopify config and encryption keyring, independently of Judge.me's
-credentials. Use an isolated backend and token for Preview. No runtime
+credentials. Preview needs its own database and keyring. No runtime
 credentials or enable flags have been configured by this implementation.
 
 ## HTTP sign-in and review-session sign-out

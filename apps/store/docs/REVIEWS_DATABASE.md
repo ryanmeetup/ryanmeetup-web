@@ -68,13 +68,15 @@ See [the database workflow](../../tasks/docs/DATABASE.md#migration-profiles).
 
 ## App access and buyer identity
 
-Use a narrowly authenticated backend interface for storefront access to the
-private service-role-only storage operations. The auth-storage interface is
-implemented at `POST /api/store/customer-auth`, with separate service credentials
-and pinned shop/client/callback scope. See [its setup](../../tasks/docs/STORE_CUSTOMER_AUTH.md).
-Review-content operations remain outstanding. The storefront has no shared admin credential or direct
-SQL login. Sharing the project does not mean copying Tasks' broad
-admin secret into every app. Supabase secret/service-role access bypasses RLS,
+The store connects to RMT directly with the Supabase secret key
+(`SUPABASE_URL`, `SUPABASE_SECRET_KEY`; `lib/store-database.ts`). This was a
+deliberate choice on November 18, 2026, replacing the earlier Tasks relay and
+its scoped service token. The tradeoff: that key bypasses RLS for the whole
+RMT project, Tasks data included, so a compromised storefront server would
+expose it. The store limits itself to fixed tables and RPCs, validates every
+command and result, and accepts only RMT's URL (loopback outside production),
+so PRD can't be configured.
+The storefront has no direct SQL login. Supabase secret/service-role access bypasses RLS,
 so row policies alone would not constrain that credential. Verify inherited
 role and function privileges as well as table grants when implementing the
 boundary. The local audit found 32 public-schema functions executable through
