@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { standardSecurityHeaders } from "@ryanmeetup/utils";
 import { reviewPhotoHosts } from "./lib/review-photo-hosts";
 
 const nextConfig: NextConfig = {
@@ -17,11 +18,15 @@ const nextConfig: NextConfig = {
       { source: "/collections/:department(apparel|accessories)/:garment*", destination: "/:department/:garment*", permanent: true },
     ];
   },
+  async headers() {
+    return [{ source: "/:path*", headers: [...standardSecurityHeaders] }];
+  },
   images: {
     remotePatterns: [
       ...reviewPhotoHosts.map((hostname) => ({ protocol: "https" as const, hostname })),
       { protocol: "https", hostname: "cdn.shopify.com" },
-      { protocol: "https", hostname: "images.unsplash.com" },
+      // Demo catalog photos only; a connected store never optimizes Unsplash images.
+      ...(process.env.SHOPIFY_STORE_DOMAIN && process.env.SHOPIFY_STOREFRONT_API_TOKEN ? [] : [{ protocol: "https" as const, hostname: "images.unsplash.com" }]),
     ],
   },
 };

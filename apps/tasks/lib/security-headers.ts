@@ -34,22 +34,4 @@ export function contentSecurityPolicy(nonce: string, supabaseUrl?: string) {
   ].join("; ");
 }
 
-export const standardSecurityHeaders = [
-  {
-    key: "Referrer-Policy",
-    value: "strict-origin-when-cross-origin",
-  },
-  {
-    key: "Permissions-Policy",
-    value:
-      "camera=(), geolocation=(), microphone=(), payment=(), usb=(), browsing-topics=()",
-  },
-  {
-    key: "X-Content-Type-Options",
-    value: "nosniff",
-  },
-  {
-    key: "X-Frame-Options",
-    value: "DENY",
-  },
-] as const;
+export { standardSecurityHeaders } from "@ryanmeetup/utils";
