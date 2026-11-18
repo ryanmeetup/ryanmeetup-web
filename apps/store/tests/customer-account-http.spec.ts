@@ -6,7 +6,7 @@ import { GET as callback } from "../app/api/reviews/auth/callback/route";
 import { POST as logout } from "../app/api/reviews/auth/logout/route";
 import { customerAuthorizationCookie } from "../lib/customer-account/authorization";
 import { customerSessionCookie } from "../lib/customer-account/sign-in";
-import { customerAuthBackendFixture } from "./fixtures/customer-auth-backend";
+import { customerAuthBackendFixture, fakeSupabaseUrl } from "./fixtures/customer-auth-backend";
 import { customerAccountConfig as config, customerAccountMetadata as metadata, customerAccountEnvironment as configuration } from "./fixtures/customer-account";
 const oldEnv = Object.fromEntries(Object.keys(configuration).map((key) => [key, process.env[key]]));
 const originalFetch = globalThis.fetch;
@@ -31,7 +31,7 @@ test.beforeEach(() => {
   globalThis.fetch = async (input, init) => {
     const url = String(input);
     requests.push(url);
-    if (url.startsWith("https://backend.test/")) return refuseStorage ? new Response("private-storage-error", { status: 500 }) : transport.fetcher(input, init);
+    if (url.startsWith(fakeSupabaseUrl)) return refuseStorage ? new Response("private-storage-error", { status: 500 }) : transport.fetcher(input, init);
     if (url === `https://${config.shopDomain}/.well-known/openid-configuration`) return refuseDiscovery ? new Response("provider down", { status: 503 }) : Response.json(metadata);
     if (url === metadata.jwks_uri) return Response.json({ keys: [jwk] });
     expect(url).toBe(metadata.token_endpoint);
@@ -139,7 +139,7 @@ test("storage and token failures cannot set a session, redirect to Shopify, or l
 
 test("Judge.me mode and missing configuration keep sign-in closed before any network calls", async () => {
   for (const [key, value] of [["REVIEWS_PROVIDER", "judgeme"], ["STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED", "false"],
-    ["SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_SECRET", ""], ["STORE_REVIEWS_BACKEND_TOKEN", ""], ["STORE_CUSTOMER_ACCOUNT_ENCRYPTION_KEYS", "{}"]]) {
+    ["SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_SECRET", ""], ["SUPABASE_SECRET_KEY", ""], ["STORE_CUSTOMER_ACCOUNT_ENCRYPTION_KEYS", "{}"]]) {
     const previous = process.env[key]; process.env[key] = value;
     expect((await start(new Request("https://store.test/api/reviews/auth/start"))).status).toBe(503);
     process.env[key] = previous;
@@ -186,7 +186,7 @@ test("review-session logout works after switching to Judge.me and when Shopify d
   expect(await response.json()).toEqual({ signedOut: true });
   expect(response.cookies.get(customerSessionCookie)?.value).toBe("");
   expect([...transport.sessions.values()]).toEqual([null]);
-  expect(requests).toEqual(["https://backend.test/api/store/customer-auth"]);
+  expect(requests.map((url) => url.split("?")[0])).toEqual([`${fakeSupabaseUrl}/rest/v1/rpc/store_revoke_customer_session`]);
 });
 
 test("logout rejects cross-origin requests and preserves retry capability during storage failure", async () => {

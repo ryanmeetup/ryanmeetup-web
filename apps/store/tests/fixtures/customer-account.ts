@@ -1,4 +1,5 @@
 import type { CustomerAccountConfig } from "../../lib/customer-account/config";
+import { fakeSupabaseEnvironment } from "./customer-auth-backend";
 
 /** Synthetic configuration and public metadata; never use a real client secret. */
 export const customerAccountConfig: CustomerAccountConfig = {
@@ -24,7 +25,6 @@ export const customerAccountEnvironment = {
   STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED: "true", REVIEWS_PROVIDER: "custom", VERCEL_ENV: "preview", REVIEWS_PREVIEW_ENABLED: "true",
   SHOPIFY_STORE_DOMAIN: customerAccountConfig.shopDomain, SHOPIFY_CUSTOMER_ACCOUNT_SHOP_ID: customerAccountConfig.shopId,
   SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_ID: customerAccountConfig.clientId, SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_SECRET: customerAccountConfig.clientSecret,
-  SHOPIFY_CUSTOMER_ACCOUNT_REDIRECT_URI: customerAccountConfig.redirectUri, STORE_REVIEWS_BACKEND_URL: "https://backend.test",
-  STORE_REVIEWS_BACKEND_TOKEN: "t".repeat(43), STORE_CUSTOMER_ACCOUNT_ENCRYPTION_KEY_ID: "test",
+  SHOPIFY_CUSTOMER_ACCOUNT_REDIRECT_URI: customerAccountConfig.redirectUri, ...fakeSupabaseEnvironment, STORE_CUSTOMER_ACCOUNT_ENCRYPTION_KEY_ID: "test",
   STORE_CUSTOMER_ACCOUNT_ENCRYPTION_KEYS: JSON.stringify({ test: Buffer.alloc(32, 7).toString("base64url") }),
 };

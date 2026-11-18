@@ -12,16 +12,16 @@ export type CustomerSessionResult =
   | { status: "unavailable" };
 
 type Renewal = "finished" | "rejected" | "unavailable";
-// Pending work only, never a session cache. Include backend and complete client
-// scope so separate test backends or Shopify clients cannot share work.
+// Pending work only, never a session cache. Include the database and complete client
+// scope so separate test databases or Shopify clients cannot share work.
 const renewals = new Map<string, Promise<Renewal>>();
 const renewalWindow = 30_000;
 
-export function createCustomerSessionLoader({ storage, refresh, scope, backendOrigin, now = Date.now }: {
+export function createCustomerSessionLoader({ storage, refresh, scope, databaseUrl, now = Date.now }: {
   storage: Pick<CustomerAccountStorage, "loadSession" | "rotateSession">;
   refresh: CustomerAccountTokenClient["refresh"];
   scope: CustomerAuthScope;
-  backendOrigin: string;
+  databaseUrl: string;
   now?: () => number;
 }) {
   async function renew(id: string, previous: CustomerAccountSession): Promise<Renewal> {
@@ -52,7 +52,7 @@ export function createCustomerSessionLoader({ storage, refresh, scope, backendOr
       if (!session || session.expiresAt <= now() || session.createdAt > now()) return { status: "sign_in_required" };
       if (session.sessionHash !== sessionHash) return { status: "unavailable" };
       if (session.accessExpiresAt > now() + renewalWindow) return { status: "authenticated", session };
-      const key = JSON.stringify([backendOrigin, scope.shopId, scope.clientId, scope.issuer, scope.redirectUri, sessionHash]);
+      const key = JSON.stringify([databaseUrl, scope.shopId, scope.clientId, scope.issuer, scope.redirectUri, sessionHash]);
       let work = renewals.get(key);
       if (!work) {
         work = renew(id, session);

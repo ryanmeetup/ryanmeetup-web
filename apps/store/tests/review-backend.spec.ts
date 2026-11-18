@@ -1,8 +1,10 @@
 import { expect, test } from "@playwright/test";
 import { createReviewBackend, ReviewBackendError } from "../lib/review-backend";
 import { getCustomReviews, numericProductId } from "../lib/custom-reviews";
+import { getStoreDatabase } from "../lib/store-database";
+import { demoProducts, isDemoProductId } from "../lib/demo-data";
+import { fakeSupabase, supabaseCall, type SupabaseCall } from "./fixtures/customer-auth-backend";
 
-const token = "t".repeat(43);
 const review = {
   id: "3f1c2a4e-5b6d-4e7f-8a9b-0c1d2e3f4a5b", rating: 4, title: "Ryan approved", body: "Holding up well.", displayName: "Ryan L.",
   publishedAt: "2026-11-17T12:00:00.000Z", editedAt: null,
@@ -11,48 +13,57 @@ const review = {
 };
 const page = { scope: { productIds: ["100"] }, summary: { count: 25, average: 4, distribution: { 1: 0, 2: 0, 3: 0, 4: 25, 5: 0 } }, reviews: [review], nextCursor: null };
 
-function transport(body: unknown, status = 200) {
-  const requests: { url: string; init: RequestInit }[] = [];
-  const fetcher = (async (url: string, init: RequestInit) => {
-    requests.push({ url, init });
+const shopId = "123456";
+
+/** Answers the two read RPCs from fixed bodies, recording each call. */
+function database(responses: Record<string, [unknown, number?]> = { store_review_summary: [page.summary], store_public_reviews: [[review]] }) {
+  const calls: SupabaseCall[] = [];
+  const client = fakeSupabase(async (input, init) => {
+    const call = supabaseCall(input, init);
+    if (!call) throw new Error("Unexpected test request");
+    calls.push(call);
+    const [body, status = 200] = responses[call.name] ?? [{ code: "PGRST202", message: "unknown function" }, 404];
     return new Response(typeof body === "string" ? body : JSON.stringify(body), { status });
-  }) as unknown as typeof fetch;
-  return { requests, fetcher };
+  });
+  return { calls, backend: createReviewBackend({ database: client, shopId }) };
 }
 
-test("only an HTTPS backend origin and a well-formed service token are accepted", () => {
-  for (const origin of ["http://backend.test", "https://localhost", "https://127.0.0.1", "https://backend.test/path", "https://backend.test:8443", ""]) {
-    expect(() => createReviewBackend({ origin, token })).toThrow(ReviewBackendError);
-  }
-  expect(() => createReviewBackend({ origin: "https://backend.test", token: "short" })).toThrow(ReviewBackendError);
+test("the store database is RMT only, with loopback allowed outside production", () => {
+  const key = "synthetic-supabase-secret";
+  expect(getStoreDatabase({ NODE_ENV: "production", SUPABASE_URL: "https://lvfaartgcpphuokoswcm.supabase.co", SUPABASE_SECRET_KEY: key })).not.toBeNull();
+  for (const env of [
+    { NODE_ENV: "production", SUPABASE_URL: "https://vjsnobmfsfrsnwukfaoq.supabase.co", SUPABASE_SECRET_KEY: key },
+    { NODE_ENV: "production", SUPABASE_URL: "https://example.supabase.co", SUPABASE_SECRET_KEY: key },
+    { NODE_ENV: "production", SUPABASE_URL: "http://127.0.0.1:54321", SUPABASE_SECRET_KEY: key },
+    { NODE_ENV: "production", SUPABASE_URL: "https://lvfaartgcpphuokoswcm.supabase.co", SUPABASE_SECRET_KEY: "" },
+  ]) expect(getStoreDatabase(env as NodeJS.ProcessEnv)).toBeNull();
+  expect(getStoreDatabase({ NODE_ENV: "development", SUPABASE_URL: "http://127.0.0.1:54321", SUPABASE_SECRET_KEY: key } as NodeJS.ProcessEnv)).not.toBeNull();
 });
 
-test("commands go to the private endpoint with the service credential", async () => {
-  const { requests, fetcher } = transport({ data: page });
-  const backend = createReviewBackend({ origin: "https://backend.test", token, fetcher });
+test("a page read runs the fixed RPCs for the configured shop", async () => {
+  const { calls, backend } = database();
   expect(await backend({ operation: "reviews.page", productIds: ["100"], limit: 20, cursor: null })).toEqual(page);
-  expect(requests[0].url).toBe("https://backend.test/api/store/reviews");
-  expect((requests[0].init.headers as Record<string, string>).Authorization).toBe(`Bearer ${token}`);
-  expect(requests[0].init.redirect).toBe("error");
+  expect(calls.map(({ name }) => name).sort()).toEqual(["store_public_reviews", "store_review_summary"]);
+  expect(calls.every(({ args }) => args.p_shop_id === shopId)).toBe(true);
+  expect(calls.find(({ name }) => name === "store_public_reviews")?.args).toMatchObject({ p_product_ids: ["100"], p_limit: 21 });
 });
 
-test("malformed commands never leave the server", async () => {
-  const { requests, fetcher } = transport({ data: page });
-  const backend = createReviewBackend({ origin: "https://backend.test", token, fetcher });
+test("malformed commands never reach the database", async () => {
+  const { calls, backend } = database();
   // @ts-expect-error -- an operation outside the contract
   await expect(backend({ operation: "review.approve" })).rejects.toThrow(ReviewBackendError);
   await expect(backend({ operation: "reviews.page", productIds: ["gid://shopify/Product/1"], limit: 20, cursor: null })).rejects.toThrow(ReviewBackendError);
-  expect(requests).toHaveLength(0);
+  expect(calls).toHaveLength(0);
 });
 
 test("unexpected, leaky, or failed responses become one generic error", async () => {
-  for (const [body, status] of [
-    [{ data: { ...page, reviews: [{ ...review, customerEmail: "ryan@example.com" }] } }, 200],
-    [{ data: { ...page, summary: { ...page.summary, count: 3 } } }, 200],
-    ["not json", 200],
-    [{ error: "private database detail" }, 500],
-  ] as const) {
-    const backend = createReviewBackend({ origin: "https://backend.test", token, fetcher: transport(body, status).fetcher });
+  for (const responses of [
+    { store_review_summary: [page.summary], store_public_reviews: [[{ ...review, customerEmail: "ryan@example.com" }]] },
+    { store_review_summary: [{ ...page.summary, count: 3 }], store_public_reviews: [[review]] },
+    { store_review_summary: ["not json"], store_public_reviews: [[review]] },
+    { store_review_summary: [{ code: "XX000", message: "private database detail" }, 500], store_public_reviews: [[review]] },
+  ] as Record<string, [unknown, number?]>[]) {
+    const { backend } = database(responses);
     const error = await backend({ operation: "reviews.page", productIds: ["100"], limit: 20, cursor: null }).catch((caught: Error) => caught);
     expect(error).toBeInstanceOf(ReviewBackendError);
     expect((error as Error).message).toBe("Review storage is temporarily unavailable.");
@@ -60,8 +71,7 @@ test("unexpected, leaky, or failed responses become one generic error", async ()
 });
 
 test("custom reads map a page to the storefront shape, keeping only renderable photo hosts", async () => {
-  const backend = createReviewBackend({ origin: "https://backend.test", token, fetcher: transport({ data: page }).fetcher });
-  expect(await getCustomReviews("gid://shopify/Product/100", backend)).toEqual({
+  expect(await getCustomReviews("gid://shopify/Product/100", database().backend)).toEqual({
     status: "available", averageRating: 4, count: 25,
     reviews: [{ id: review.id, rating: 4, title: "Ryan approved", body: "Holding up well.", reviewerName: "Ryan L.", createdAt: review.publishedAt, verified: true, photoUrls: ["https://judgeme.imgix.net/a.webp"] }],
   });
@@ -70,9 +80,19 @@ test("custom reads map a page to the storefront shape, keeping only renderable p
 test("custom reads report unavailable instead of an empty success", async () => {
   const unavailable = { status: "unavailable", averageRating: 0, count: 0, reviews: [] };
   expect(await getCustomReviews("gid://shopify/Product/100", null)).toEqual(unavailable);
-  expect(await getCustomReviews("not-a-product", createReviewBackend({ origin: "https://backend.test", token, fetcher: transport({ data: page }).fetcher }))).toEqual(unavailable);
-  const failing = createReviewBackend({ origin: "https://backend.test", token, fetcher: transport({ error: "down" }, 503).fetcher });
+  expect(await getCustomReviews("not-a-product", database().backend)).toEqual(unavailable);
+  const failing = database({ store_review_summary: [{ message: "down" }, 503], store_public_reviews: [{ message: "down" }, 503] }).backend;
   expect(await getCustomReviews("gid://shopify/Product/100", failing)).toEqual(unavailable);
   expect(numericProductId("gid://shopify/Product/8123456789")).toBe("8123456789");
   expect(numericProductId("demo-1")).toBeNull();
+});
+
+test("demo products have unique numeric IDs, so custom reviews work on the demo catalog", () => {
+  const ids = demoProducts.map(({ id }) => id);
+  expect(new Set(ids).size).toBe(ids.length);
+  for (const id of ids) {
+    expect(numericProductId(id)).toMatch(/^9\d{10}$/);
+    expect(isDemoProductId(id)).toBe(true);
+  }
+  expect(isDemoProductId("gid://shopify/Product/8123456789")).toBe(false);
 });

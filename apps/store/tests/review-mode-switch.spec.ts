@@ -22,7 +22,8 @@ for (const theme of ["light", "dark"]) {
       await choose(page, "Custom reviews");
       await expect(testing).toContainText("Using custom reviews.");
       await expect(trigger).toBeDisabled();
-      await expect(page.locator("#reviews")).toContainText("Reviews are temporarily unavailable.");
+      // Reviews load from the database, but writing waits for Shopify sign-in.
+      await expect(page.locator("#reviews")).toContainText("Review collection is temporarily unavailable.");
       await page.reload();
       await expect(testing).toContainText("Using custom reviews.");
       await expect(trigger).toBeDisabled();
@@ -34,7 +35,7 @@ for (const theme of ["light", "dark"]) {
       await choose(page, "Judge.me");
       await expect(testing).toContainText("Using Judge.me.");
       await expect(trigger).toBeEnabled();
-      await expect(page.locator("#reviews")).not.toContainText("Reviews are temporarily unavailable.");
+      await expect(page.locator("#reviews")).not.toContainText("Review collection is temporarily unavailable.");
       await choose(page, "Environment default");
       await expect(page.getByRole("button", { name: /^Review mode/ })).toContainText("Environment default");
       await expect.poll(async () => (await page.context().cookies()).some((cookie) => cookie.name === "store-review-preview")).toBe(false);
@@ -74,7 +75,8 @@ test("the browser preference also closes direct submissions in custom mode", asy
   await page.goto("/products/ryan-meetup-tee#reviews");
   await choose(page, "Custom reviews");
   const response = await page.request.post("/api/reviews", {
-    data: { productId: "gid://shopify/Product/123", rating: 5, body: "Test", name: "Ryan", email: "ryan@example.com" },
+    headers: { origin: new URL(page.url()).origin },
+    data: { productId: "gid://shopify/Product/123", lineId: "1", rating: 5, title: "Test", body: "Test", nameStyle: "first-initial" },
   });
   expect(response.status()).toBe(503);
   expect(await response.json()).toEqual({ error: "Review collection is temporarily unavailable. Please try again later." });

@@ -1,22 +1,23 @@
 import { expect, test } from "@playwright/test";
-import { customerAuthBackendFixture } from "./fixtures/customer-auth-backend";
+import { customerAuthBackendFixture, fakeSupabase } from "./fixtures/customer-auth-backend";
 import { createCustomerAuthBackend, CustomerAuthBackendError } from "../lib/customer-account/backend";
 import { createCustomerAccountStorage } from "../lib/customer-account/storage";
 import { prepareCustomerAuthorization } from "../lib/customer-account/authorization";
 import { getCustomerAccountEncryptionKeys } from "../lib/customer-account/secrets";
 import { customerAccountConfig as config, customerAccountMetadata as metadata } from "./fixtures/customer-account";
 
-const token = "t".repeat(43);
 const encryption = getCustomerAccountEncryptionKeys({ STORE_CUSTOMER_ACCOUNT_ENCRYPTION_KEY_ID: "test", STORE_CUSTOMER_ACCOUNT_ENCRYPTION_KEYS: JSON.stringify({ test: Buffer.alloc(32, 7).toString("base64url") }) });
 if (encryption.status !== "configured") throw new Error("Synthetic keyring unavailable");
 const keyring = encryption.keyring;
 const tokens = { accessToken: "private-access", refreshToken: "private-refresh", idToken: "private-id-token" };
+const scope = { shopId: config.shopId, clientId: config.clientId, issuer: metadata.issuer, redirectUri: config.redirectUri };
 const endpoints = { issuer: metadata.issuer, authorizationEndpoint: metadata.authorization_endpoint, tokenEndpoint: metadata.token_endpoint, logoutEndpoint: metadata.end_session_endpoint, jwksUri: metadata.jwks_uri };
 
 function fixture() {
   const transport = customerAuthBackendFixture();
-  const backend = createCustomerAuthBackend({ origin: "https://backend.test", token, fetcher: transport.fetcher });
-  return { ...transport, storage: createCustomerAccountStorage({ config, keyring, backend }) };
+  const database = fakeSupabase(transport.fetcher);
+  const backend = createCustomerAuthBackend({ database, scope });
+  return { ...transport, database, storage: createCustomerAccountStorage({ config, keyring, backend }) };
 }
 
 test("authorization persistence sends only hashes and ciphertext, survives reload, and consumes once", async () => {
@@ -55,7 +56,7 @@ test("session persistence uses an opaque identifier, encrypts tokens, and handle
 });
 
 test("tampered, expired, moved, or unreadable records cannot become a buyer session", async () => {
-  const { storage, sessions } = fixture();
+  const { storage, sessions, database } = fixture();
   const now = Date.now() - 1000;
   const { id, session } = await storage.createSession({ subject: "buyer", tokens, now, expiresAt: now + 86400_000, accessExpiresAt: now + 3600_000 });
   const row = sessions.get(session.sessionHash)!;
@@ -65,10 +66,11 @@ test("tampered, expired, moved, or unreadable records cannot become a buyer sess
   }
   sessions.set(session.sessionHash, row);
   const otherKey = { activeKeyId: "new", keys: new Map([["new", Buffer.alloc(32, 8)]]) };
-  const storageWithNewKey = createCustomerAccountStorage({ config, keyring: otherKey, backend: createCustomerAuthBackend({ origin: "https://backend.test", token, fetcher: async () => Response.json({ data: row }) }) });
+  const storageWithNewKey = createCustomerAccountStorage({ config, keyring: otherKey, backend: createCustomerAuthBackend({ database, scope }) });
   expect(await storageWithNewKey.loadSession(id)).toBeNull();
+  // The synthetic database ignores the client, so only the encryption context can refuse the moved row.
   const anotherScope = createCustomerAccountStorage({ config: { ...config, clientId: "other-client" }, keyring,
-    backend: createCustomerAuthBackend({ origin: "https://backend.test", token, fetcher: async () => Response.json({ data: row }) }) });
+    backend: createCustomerAuthBackend({ database, scope: { ...scope, clientId: "other-client" } }) });
   expect(await anotherScope.loadSession(id)).toBeNull();
 });
 
@@ -97,26 +99,32 @@ test("server continuations reread only the matching encrypted session hash", asy
   expect(await storage.loadSessionByHash(session.sessionHash)).toBeNull();
 });
 
-test("backend failures and malformed responses remain unavailable, with no upstream secret in errors", async () => {
-  const request = { operation: "session.get", scope: { shopId: config.shopId, clientId: config.clientId, issuer: metadata.issuer, redirectUri: config.redirectUri }, sessionHash: "a".repeat(64) } as const;
+test("database failures and malformed rows remain unavailable, with no private detail in errors", async () => {
+  const request = { operation: "session.get", scope, sessionHash: "a".repeat(64) } as const;
   const fetchers: (typeof fetch)[] = [
-    async () => new Response("private-upstream-error", { status: 500 }),
-    async () => Response.json({ data: null, secret: "must-not-leak" }),
-    async () => Response.json({ data: true }),
+    async () => Response.json({ code: "XX000", message: "private-upstream-error" }, { status: 500 }),
+    async () => Response.json([{ session_hash: "a".repeat(64), secret: "must-not-leak" }]),
+    async () => Response.json(true),
     async () => new Response("not-json"),
-    async () => { throw new Error(token); },
+    async () => { throw new Error("private-network-error"); },
   ];
   for (const fetcher of fetchers) {
-    const backend = createCustomerAuthBackend({ origin: "https://backend.test", token, fetcher });
-    await expect(backend(request)).rejects.toThrow("Customer sign-in storage is temporarily unavailable.");
+    const backend = createCustomerAuthBackend({ database: fakeSupabase(fetcher), scope });
+    const failure = await backend(request).then(() => null, (error: unknown) => error);
+    expect(failure).toBeInstanceOf(CustomerAuthBackendError);
+    expect(String((failure as Error).message)).toBe("Customer sign-in storage is temporarily unavailable.");
   }
-  const backend = createCustomerAuthBackend({ origin: "https://backend.test", token, fetcher: async () => Response.json({ data: null }) });
+  const backend = createCustomerAuthBackend({ database: fakeSupabase(async () => Response.json([])), scope });
   expect(await backend(request)).toBeNull();
 });
 
-test("unsafe backend locations and borrowed database secrets cannot configure the transport", () => {
-  for (const origin of ["http://backend.test", "https://user:pass@backend.test", "https://backend.test/other", "https://backend.test/?token=secret", "https://127.0.0.1", "https://localhost"]) {
-    expect(() => createCustomerAuthBackend({ origin, token })).toThrow(CustomerAuthBackendError);
-  }
-  expect(() => createCustomerAuthBackend({ origin: "https://backend.test", token: "supabase-service-key" })).toThrow(CustomerAuthBackendError);
+test("another client's scope and stale records are refused before reaching the database", async () => {
+  const { database, requests } = fixture();
+  const backend = createCustomerAuthBackend({ database, scope });
+  await expect(backend({ operation: "session.get", scope: { ...scope, clientId: "other-client" }, sessionHash: "a".repeat(64) })).rejects.toBeInstanceOf(CustomerAuthBackendError);
+  const now = Date.now();
+  const record = { sessionHash: "b".repeat(64), subject: "buyer", encryptedTokens: "v1.x.y.z", createdAt: now - 2000, expiresAt: now - 1000, accessExpiresAt: now - 1000 };
+  await expect(backend({ operation: "session.create", scope, record })).rejects.toBeInstanceOf(CustomerAuthBackendError);
+  await expect(backend({ operation: "session.create", scope, record: { ...record, createdAt: now + 60_000, expiresAt: now + 120_000, accessExpiresAt: now + 90_000 } })).rejects.toBeInstanceOf(CustomerAuthBackendError);
+  expect(requests).toEqual([]);
 });

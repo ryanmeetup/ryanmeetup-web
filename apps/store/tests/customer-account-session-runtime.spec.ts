@@ -2,7 +2,10 @@ import { expect, test } from "@playwright/test";
 import { generateKeyPair, SignJWT } from "jose";
 import { getCustomerAccountSession, getCustomerAccountStorageService } from "../lib/customer-account/runtime";
 import { customerSessionCookie } from "../lib/customer-account/sign-in";
-import { customerAuthBackendFixture } from "./fixtures/customer-auth-backend";
+import { createCustomerAuthBackend } from "../lib/customer-account/backend";
+import { getCustomerAccountEncryptionKeys } from "../lib/customer-account/secrets";
+import { createCustomerAccountStorage } from "../lib/customer-account/storage";
+import { customerAuthBackendFixture, fakeSupabase, fakeSupabaseUrl } from "./fixtures/customer-auth-backend";
 import { customerAccountConfig as config, customerAccountMetadata as metadata, customerAccountEnvironment as configuration } from "./fixtures/customer-account";
 
 const oldEnv = Object.fromEntries(Object.keys(configuration).map((key) => [key, process.env[key]]));
@@ -20,7 +23,7 @@ test.beforeEach(() => {
   transport = customerAuthBackendFixture(); requests = []; rejectGrant = false; failDiscovery = false; failStorage = false; refreshes = 0;
   globalThis.fetch = async (input, init) => {
     const url = String(input); requests.push(url);
-    if (url === "https://backend.test/api/store/customer-auth") return failStorage ? new Response("private-backend-error", { status: 500 }) : transport.fetcher(input, init);
+    if (url.startsWith(fakeSupabaseUrl)) return failStorage ? new Response("private-backend-error", { status: 500 }) : transport.fetcher(input, init);
     if (url === `https://${config.shopDomain}/.well-known/openid-configuration`) return failDiscovery ? new Response("provider down", { status: 503 }) : Response.json(metadata);
     expect(url).toBe(metadata.token_endpoint);
     expect((init?.body as URLSearchParams).get("grant_type")).toBe("refresh_token");
@@ -46,7 +49,12 @@ async function seed(expired = true) {
     .setIssuedAt(Math.floor(now / 1000) - 7200).setExpirationTime(Math.floor(now / 1000) - 3600).sign(keypair.privateKey);
   // Seed a historical encrypted row in the fake backend, simulating time that
   // has passed since sign-in. This does not test a live backend create request.
-  const created = await persistence.storage.createSession({ subject: "synthetic-buyer", now: now - 7200_000,
+  const encryption = getCustomerAccountEncryptionKeys(configuration);
+  if (encryption.status !== "configured") throw new Error("Synthetic keyring unavailable");
+  const scope = { shopId: config.shopId, clientId: config.clientId, issuer: metadata.issuer, redirectUri: config.redirectUri };
+  const backend = createCustomerAuthBackend({ database: fakeSupabase(transport.fetcher), scope, now: () => now - 7200_000 });
+  const storage = createCustomerAccountStorage({ config: persistence.config, keyring: encryption.keyring, backend });
+  const created = await storage.createSession({ subject: "synthetic-buyer", now: now - 7200_000,
     expiresAt: now + 86400_000, accessExpiresAt: now + (expired ? -3600_000 : 3600_000),
     tokens: { accessToken: "old-private-access", refreshToken: "old-private-refresh", idToken } });
   requests = []; transport.requests.length = 0;
@@ -62,7 +70,7 @@ test("a healthy encrypted session loads during a Shopify outage without discover
   const { id, session } = await seed(false);
   failDiscovery = true;
   expect(await getCustomerAccountSession(request(id))).toEqual({ status: "authenticated", session });
-  expect(requests).toEqual(["https://backend.test/api/store/customer-auth"]);
+  expect(requests.map((url) => url.split("?")[0])).toEqual([`${fakeSupabaseUrl}/rest/v1/rpc/store_get_customer_session`]);
   expect(transport.requests.map(({ operation }) => operation)).toEqual(["session.get"]);
 });
 
@@ -93,7 +101,7 @@ test("definitive rejection needs sign-in while discovery and storage failures re
 
 test("Judge.me, disabled sign-in, and missing server configuration never load private sessions", async () => {
   const { id } = await seed();
-  for (const [key, value] of [["REVIEWS_PROVIDER", "judgeme"], ["STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED", "false"], ["STORE_REVIEWS_BACKEND_TOKEN", ""]]) {
+  for (const [key, value] of [["REVIEWS_PROVIDER", "judgeme"], ["STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED", "false"], ["SUPABASE_SECRET_KEY", ""]]) {
     const previous = process.env[key]; process.env[key] = value;
     expect(await getCustomerAccountSession(request(id))).toEqual({ status: "unavailable" });
     process.env[key] = previous;

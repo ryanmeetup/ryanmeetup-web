@@ -10,6 +10,8 @@ const origin = `http://localhost:${port}`;
 // STORE_BASE_URL points the suite at a server you started yourself, such as a
 // production build or a custom-reviews preview, instead of starting one.
 const baseURL = process.env.STORE_BASE_URL || origin;
+// Review storage goes to a synthetic Supabase, never the RMT project in .env.local.
+const fakeSupabasePort = Number(process.env.FAKE_SUPABASE_PORT ?? 54360);
 
 export default defineConfig({
   testDir: "./tests",
@@ -21,7 +23,12 @@ export default defineConfig({
     baseURL,
     trace: "retain-on-failure",
   },
-  webServer: process.env.STORE_BASE_URL ? undefined : {
+  webServer: process.env.STORE_BASE_URL ? undefined : [{
+    command: "node tests/fixtures/fake-supabase-server.mjs",
+    url: `http://127.0.0.1:${fakeSupabasePort}/health`,
+    reuseExistingServer: false,
+    env: { FAKE_SUPABASE_PORT: String(fakeSupabasePort) },
+  }, {
     command: `npm run dev -- --port ${port}`,
     url: origin,
     reuseExistingServer: !process.env.CI,
@@ -35,6 +42,9 @@ export default defineConfig({
       JUDGEME_SHOP_DOMAIN: "",
       JUDGEME_PUBLIC_TOKEN: "",
       JUDGEME_PRIVATE_API_TOKEN: "",
+      SUPABASE_URL: `http://127.0.0.1:${fakeSupabasePort}`,
+      SUPABASE_SECRET_KEY: "synthetic-supabase-secret",
+      SHOPIFY_CUSTOMER_ACCOUNT_SHOP_ID: "123456",
     },
-  },
+  }],
 });

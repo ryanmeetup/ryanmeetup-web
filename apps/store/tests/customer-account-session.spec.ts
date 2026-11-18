@@ -26,7 +26,7 @@ function fixture(accessExpiresAt = now - 1000) {
     },
   };
   const refresh: CustomerAccountTokenClient["refresh"] = async () => { refreshes += 1; return { tokens: nextTokens, accessExpiresAt: now + 3600_000 }; };
-  return { id, storage, refresh, load: createCustomerSessionLoader({ scope, backendOrigin: "https://backend.test", storage, refresh, now: () => now }),
+  return { id, storage, refresh, load: createCustomerSessionLoader({ scope, databaseUrl: "http://127.0.0.1:54398", storage, refresh, now: () => now }),
     get row() { return row; }, set row(value) { row = value; }, get counts() { return { reads, rotations, refreshes }; } };
 }
 function deferred() {
@@ -69,7 +69,7 @@ test("same-process callers share one pending refresh across independently compos
   const entered = deferred(); const released = deferred();
   let refreshes = 0;
   const refresh: CustomerAccountTokenClient["refresh"] = async () => { refreshes += 1; entered.resolve(); await released.promise; return { tokens: nextTokens, accessExpiresAt: now + 3600_000 }; };
-  const options = { scope, backendOrigin: "https://backend.test", storage: state.storage, refresh, now: () => now };
+  const options = { scope, databaseUrl: "http://127.0.0.1:54398", storage: state.storage, refresh, now: () => now };
   const first = createCustomerSessionLoader(options)(state.id);
   await entered.promise;
   const second = createCustomerSessionLoader(options)(state.id);
@@ -97,14 +97,14 @@ test("a winner between the initial read and refresh recheck avoids another provi
   expect(state.counts.rotations).toBe(0);
 });
 
-test("pending work is isolated by backend and client scope", async () => {
+test("pending work is isolated by database and client scope", async () => {
   const state = fixture();
   const entered = deferred(); const released = deferred();
   let refreshes = 0;
   const refresh: CustomerAccountTokenClient["refresh"] = async () => { refreshes += 1; if (refreshes === 3) entered.resolve(); await released.promise; return { tokens: nextTokens, accessExpiresAt: now + 3600_000 }; };
-  const options = { scope, backendOrigin: "https://backend.test", storage: state.storage, refresh, now: () => now };
+  const options = { scope, databaseUrl: "http://127.0.0.1:54398", storage: state.storage, refresh, now: () => now };
   const pending = [createCustomerSessionLoader(options)(state.id),
-    createCustomerSessionLoader({ ...options, backendOrigin: "https://another-backend.test" })(state.id),
+    createCustomerSessionLoader({ ...options, databaseUrl: "http://127.0.0.1:54399" })(state.id),
     createCustomerSessionLoader({ ...options, scope: { ...scope, clientId: "another-client" } })(state.id)];
   await entered.promise;
   released.resolve();
@@ -115,7 +115,7 @@ test("pending work is isolated by backend and client scope", async () => {
 test("logout during refresh keeps the session missing and discards the newly issued tokens", async () => {
   const state = fixture();
   const refresh: CustomerAccountTokenClient["refresh"] = async () => { state.row = null; return { tokens: nextTokens, accessExpiresAt: now + 3600_000 }; };
-  const load = createCustomerSessionLoader({ scope, backendOrigin: "https://backend.test", storage: state.storage, refresh, now: () => now });
+  const load = createCustomerSessionLoader({ scope, databaseUrl: "http://127.0.0.1:54398", storage: state.storage, refresh, now: () => now });
   expect(await load(state.id)).toEqual({ status: "sign_in_required" });
   expect(state.row).toBeNull();
 });
@@ -127,7 +127,7 @@ test("a cross-process CAS winner is authoritative and a losing refresh result is
     state.row = { ...state.row!, revision: 1, tokens: winningTokens, accessExpiresAt: now + 7200_000 };
     return { tokens: nextTokens, accessExpiresAt: now + 3600_000 };
   };
-  const load = createCustomerSessionLoader({ scope, backendOrigin: "https://backend.test", storage: state.storage, refresh, now: () => now });
+  const load = createCustomerSessionLoader({ scope, databaseUrl: "http://127.0.0.1:54398", storage: state.storage, refresh, now: () => now });
   const result = await load(state.id);
   expect(result).toEqual({ status: "authenticated", session: state.row });
   expect(JSON.stringify(result)).not.toContain("new-access");
@@ -141,7 +141,7 @@ test("a competing refresh can win despite this request receiving invalid_grant o
       state.row = { ...state.row!, revision: 1, tokens: nextTokens, accessExpiresAt: now + 3600_000 };
       throw failure;
     };
-    const load = createCustomerSessionLoader({ scope, backendOrigin: "https://backend.test", storage: state.storage, refresh, now: () => now });
+    const load = createCustomerSessionLoader({ scope, databaseUrl: "http://127.0.0.1:54398", storage: state.storage, refresh, now: () => now });
     expect(await load(state.id)).toEqual({ status: "authenticated", session: state.row });
   }
 });
@@ -149,7 +149,7 @@ test("a competing refresh can win despite this request receiving invalid_grant o
 test("provider rejection needs sign-in; provider/storage failures stay unavailable without retrying old tokens", async () => {
   for (const failure of [new CustomerAccountRefreshRejected(), new CustomerAccountTokenError(), new Error("private-storage-failure")]) {
     const state = fixture(); let calls = 0;
-    const load = createCustomerSessionLoader({ scope, backendOrigin: "https://backend.test", storage: state.storage,
+    const load = createCustomerSessionLoader({ scope, databaseUrl: "http://127.0.0.1:54398", storage: state.storage,
       refresh: async () => { calls += 1; throw failure; }, now: () => now });
     const expected = failure instanceof CustomerAccountRefreshRejected ? "sign_in_required" : "unavailable";
     expect(await load(state.id)).toEqual({ status: expected });
@@ -164,7 +164,7 @@ test("provider rejection needs sign-in; provider/storage failures stay unavailab
 
 test("failed refresh work is evicted and a later request can recover", async () => {
   const state = fixture(); let calls = 0;
-  const load = createCustomerSessionLoader({ scope, backendOrigin: "https://backend.test", storage: state.storage,
+  const load = createCustomerSessionLoader({ scope, databaseUrl: "http://127.0.0.1:54398", storage: state.storage,
     refresh: async () => { calls += 1; if (calls === 1) throw new CustomerAccountTokenError(); return { tokens: nextTokens, accessExpiresAt: now + 3600_000 }; }, now: () => now });
   expect(await load(state.id)).toEqual({ status: "unavailable" });
   expect((await load(state.id)).status).toBe("authenticated");
@@ -191,7 +191,7 @@ test("absolute expiry during the provider exchange prevents persistence or authe
   const state = fixture();
   state.row = { ...state.row!, expiresAt: now + 1000 };
   let clock = now;
-  const load = createCustomerSessionLoader({ scope, backendOrigin: "https://backend.test", storage: state.storage,
+  const load = createCustomerSessionLoader({ scope, databaseUrl: "http://127.0.0.1:54398", storage: state.storage,
     now: () => clock, refresh: async () => { clock += 2000; return { tokens: nextTokens, accessExpiresAt: now + 3600_000 }; } });
   expect(await load(state.id)).toEqual({ status: "sign_in_required" });
   expect(state.counts.rotations).toBe(0);
@@ -204,11 +204,11 @@ test("identity/absolute-expiry changes and unusable refreshes fail closed", asyn
       state.row = { ...state.row!, ...change, revision: 1, accessExpiresAt: now + 3600_000 };
       return { tokens: nextTokens, accessExpiresAt: now + 3600_000 };
     };
-    const load = createCustomerSessionLoader({ scope, backendOrigin: "https://backend.test", storage: state.storage, refresh, now: () => now });
+    const load = createCustomerSessionLoader({ scope, databaseUrl: "http://127.0.0.1:54398", storage: state.storage, refresh, now: () => now });
     expect(await load(state.id)).toEqual({ status: "unavailable" });
   }
   const state = fixture();
-  const load = createCustomerSessionLoader({ scope, backendOrigin: "https://backend.test", storage: state.storage,
+  const load = createCustomerSessionLoader({ scope, databaseUrl: "http://127.0.0.1:54398", storage: state.storage,
     refresh: async () => ({ tokens: nextTokens, accessExpiresAt: now }), now: () => now });
   expect(await load(state.id)).toEqual({ status: "unavailable" });
   expect(state.counts.rotations).toBe(0);

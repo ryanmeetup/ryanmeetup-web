@@ -3,6 +3,7 @@ import { resolveRequestReviewProvider } from "../review-provider";
 import { customerAccountIssuer, getCustomerAccountConfiguration } from "./config";
 import { discoverCustomerAccountEndpoints } from "./discovery";
 import { getCustomerAccountEncryptionKeys } from "./secrets";
+import { getStoreDatabase } from "../store-database";
 import { createCustomerAuthBackend } from "./backend";
 import { createCustomerAccountStorage } from "./storage";
 import { createCustomerAccountTokenClient } from "./tokens";
@@ -17,11 +18,12 @@ export function getCustomerAccountPersistence({ logout = false } = {}) {
   const configuration = getCustomerAccountConfiguration();
   const encryption = getCustomerAccountEncryptionKeys();
   if (configuration.status !== "configured" || encryption.status !== "configured") return null;
-  try {
-    const backend = createCustomerAuthBackend({ origin: process.env.STORE_REVIEWS_BACKEND_URL ?? "", token: process.env.STORE_REVIEWS_BACKEND_TOKEN ?? "" });
-    const config = configuration.config;
-    return { config, storage: createCustomerAccountStorage({ config, keyring: encryption.keyring, backend }) };
-  } catch { return null; }
+  const database = getStoreDatabase();
+  if (!database) return null;
+  const config = configuration.config;
+  const scope = { shopId: config.shopId, clientId: config.clientId, issuer: customerAccountIssuer(config.shopId), redirectUri: config.redirectUri };
+  const backend = createCustomerAuthBackend({ database, scope });
+  return { config, storage: createCustomerAccountStorage({ config, keyring: encryption.keyring, backend }) };
 }
 
 /** Compose server credentials at request time; absent dependencies stay closed. */
@@ -46,7 +48,7 @@ export async function getCustomerAccountSession(request: Request): Promise<Custo
   const id = readCookie(request, customerSessionCookie);
   const { config, storage } = persistence;
   const load = createCustomerSessionLoader({
-    storage, backendOrigin: process.env.STORE_REVIEWS_BACKEND_URL ?? "",
+    storage, databaseUrl: process.env.SUPABASE_URL ?? "",
     scope: { shopId: config.shopId, clientId: config.clientId, issuer: customerAccountIssuer(config.shopId), redirectUri: config.redirectUri },
     refresh: async (session, now) => {
       const discovered = await discoverCustomerAccountEndpoints(config);

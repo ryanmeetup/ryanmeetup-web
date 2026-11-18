@@ -1,7 +1,10 @@
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
 import { createCustomerAccountStorage } from "../lib/customer-account/storage";
 import { createCustomerAuthBackend } from "../lib/customer-account/backend";
+import { createClient } from "@supabase/supabase-js";
+import { customerAccountIssuer } from "../lib/customer-account/config";
 import { customerAccountConfig } from "./fixtures/customer-account";
+import { fakeSupabaseKey } from "./fixtures/customer-auth-backend";
 
 const fixture=`http://127.0.0.1:${process.env.MY_REVIEWS_FIXTURE_PORT??54359}`;
 const id=(n:number)=>`00000000-0000-4000-8000-${String(n).padStart(12,"0")}`;
@@ -12,10 +15,8 @@ async function configure(request:APIRequestContext,options:object){expect((await
 
 /** Mint only synthetic, encrypted sessions using the real private storage contract. */
 async function signIn(page:Page,request:APIRequestContext,baseURL:string,subject="buyer-a"){
-  const backend=createCustomerAuthBackend({origin:"https://backend.test",token:"t".repeat(43),fetcher:async(input,init)=>{
-    const response=await request.post(`${fixture}${new URL(String(input)).pathname}`,{headers:Object.fromEntries(new Headers(init?.headers)),data:JSON.parse(String(init?.body))});
-    return new Response(await response.text(),{status:response.status(),headers:{"content-type":"application/json"}});
-  }});
+  const scope={shopId:customerAccountConfig.shopId,clientId:customerAccountConfig.clientId,issuer:customerAccountIssuer(customerAccountConfig.shopId),redirectUri:customerAccountConfig.redirectUri};
+  const backend=createCustomerAuthBackend({database:createClient(fixture,fakeSupabaseKey,{auth:{persistSession:false}}),scope});
   const storage=createCustomerAccountStorage({config:customerAccountConfig,keyring:{activeKeyId:"test",keys:new Map([["test",Buffer.alloc(32,7)]])},backend});
   const created=await storage.createSession({subject,tokens:{accessToken:"synthetic-access",refreshToken:"synthetic-refresh",idToken:"synthetic-id"},accessExpiresAt:Date.now()+3600000,expiresAt:Date.now()+86400000});
   // Chromium treats localhost as trustworthy; mint the host cookie with a

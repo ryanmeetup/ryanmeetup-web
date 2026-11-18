@@ -1,11 +1,9 @@
 import { expect, test } from "@playwright/test";
-import { reviewCommandSchema } from "@ryanmeetup/reviews";
-import type { ReviewCommand } from "@ryanmeetup/reviews";
 import { POST } from "../app/api/reviews/route";
 import { findBuyerName, findReviewablePurchases } from "../lib/review-purchases";
 import { reviewBackendPurchase } from "../lib/customer-account/review-lookups";
 import { getCustomerAccountStorageService } from "../lib/customer-account/runtime";
-import { customerAuthBackendFixture } from "./fixtures/customer-auth-backend";
+import { customerAuthBackendFixture, fakeSupabaseUrl, supabaseCall } from "./fixtures/customer-auth-backend";
 import { customerAccountConfig as config, customerAccountEnvironment as configuration } from "./fixtures/customer-account";
 import { customerPurchasePage, purchaseBuyerId, purchaseOrderId, purchaseLineId, purchaseProductId } from "./fixtures/customer-purchase";
 
@@ -19,11 +17,11 @@ let orderReferences: { id: string; updatedAt: string; lineItems: { nodes: { id: 
 let buyer: { id: string; firstName: string | null; lastName: string | null };
 let rejectQuery: boolean; let revokeOnQuery: boolean; let incomplete: boolean; let failStorage: boolean;
 let expectedAccess: string;
-let reviewCommands: ReviewCommand[];
+let reviewCalls: Record<string, unknown>[];
 let manyOrders: boolean;
 test.beforeEach(() => {
   Object.assign(process.env, configuration);
-  transport = customerAuthBackendFixture(); requests = []; purchase = customerPurchasePage(); reviewCommands = []; manyOrders = false;
+  transport = customerAuthBackendFixture(); requests = []; purchase = customerPurchasePage(); reviewCalls = []; manyOrders = false;
   buyer = { id: purchaseBuyerId, firstName: "Ryan", lastName: "Le" };
   orderReferences = [{ id: purchaseOrderId, updatedAt: purchase.order.updatedAt, lineItems: {
     nodes: [{ id: purchaseLineId, productId: purchaseProductId }], pageInfo: { hasNextPage: false, endCursor: null },
@@ -31,13 +29,12 @@ test.beforeEach(() => {
   rejectQuery = false; revokeOnQuery = false; incomplete = false; failStorage = false; expectedAccess = "stored-private-access";
   globalThis.fetch = async (input, init) => {
     const url = String(input); requests.push(url);
-    if (url === "https://backend.test/api/store/customer-auth") return failStorage ? new Response("private-storage-error", { status: 500 }) : transport.fetcher(input, init);
-    if (url === "https://backend.test/api/store/reviews") {
-      const command = reviewCommandSchema(JSON.parse(String(init?.body)));
-      if (!command || command.operation !== "review.submit") throw new Error("Unexpected review test command");
-      reviewCommands.push(command);
-      return Response.json({ data: { reviewId: "3f1c2a4e-5b6d-4e7f-8a9b-0c1d2e3f4a5b", outcome: "created" } });
+    const call = supabaseCall(input, init);
+    if (call?.name === "store_submit_review") {
+      reviewCalls.push(call.args);
+      return Response.json([{ review_id: "3f1c2a4e-5b6d-4e7f-8a9b-0c1d2e3f4a5b", outcome: "created" }]);
     }
+    if (call) return failStorage ? Response.json({ code: "XX000", message: "private-storage-error" }, { status: 500 }) : transport.fetcher(input, init);
     if (url === `https://${config.shopDomain}/.well-known/customer-account-api`) return Response.json({ graphql_api: endpoint });
     expect(url).toBe(endpoint);
     expect(new Headers(init?.headers).get("authorization")).toBe(expectedAccess);
@@ -191,12 +188,12 @@ test("the real custom submission route rechecks Shopify and saves verified IDs a
   const response = await submit(id);
   expect(response.status).toBe(200);
   expect(await response.json()).toEqual({ status: "pending" });
-  expect(reviewCommands).toEqual([{ operation: "review.submit", subject: "opaque-buyer-subject",
-    purchase: { orderId: "100", lineId: "101", productId: "102", variantId: "104", productTitle: "Ryan tee", variantTitle: "Blue / M" },
-    submission: { rating: 5, title: "Ryan approved", body: "Great tee.", nameStyle: "first-initial" }, displayName: "Ryan L.",
+  expect(reviewCalls).toEqual([{ p_shop_id: config.shopId, p_subject: "opaque-buyer-subject",
+    p_order_id: "100", p_line_id: "101", p_product_id: "102", p_variant_id: "104", p_product_title: "Ryan tee", p_variant_title: "Blue / M",
+    p_rating: 5, p_title: "Ryan approved", p_body: "Great tee.", p_name_style: "first-initial", p_display_name: "Ryan L.",
   }]);
   expect(requests).toContain(endpoint);
-  expect(requests.at(-1)).toBe("https://backend.test/api/store/reviews");
+  expect(requests.at(-1)).toBe(`${fakeSupabaseUrl}/rest/v1/rpc/store_submit_review`);
 });
 
 test("the real submission route cannot save an unowned line or a failed/revoked lookup", async () => {
@@ -206,7 +203,7 @@ test("the real submission route cannot save an unowned line or a failed/revoked 
   expect((await submit(id)).status).toBe(503);
   rejectQuery = false; revokeOnQuery = true;
   expect((await submit(id)).status).toBe(503);
-  expect(reviewCommands).toEqual([]);
+  expect(reviewCalls).toEqual([]);
 });
 
 test("a large matching history stops at the query budget and keeps the newest verified lines", async () => {
@@ -225,7 +222,7 @@ test("expired sessions, missing configuration, and storage/provider failures can
   failStorage = false; rejectQuery = true;
   expect(await findReviewablePurchases(session, "102")).toEqual({ status: "unavailable" });
   rejectQuery = false;
-  for (const [key, value] of [["STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED", "false"], ["STORE_REVIEWS_BACKEND_TOKEN", ""]]) {
+  for (const [key, value] of [["STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED", "false"], ["SUPABASE_SECRET_KEY", ""]]) {
     const old = process.env[key]; process.env[key] = value;
     expect(await findReviewablePurchases(session, "102")).toEqual({ status: "unavailable" });
     expect(await findBuyerName(session)).toBeNull();

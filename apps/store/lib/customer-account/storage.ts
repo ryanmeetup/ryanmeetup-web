@@ -4,7 +4,8 @@ import { customerAccountIssuer } from "./config";
 import type { CustomerAccountConfig } from "./config";
 import { customerAuthorizationProofHash, reviewReturnPath } from "./authorization";
 import type { CustomerAuthorizationAttempt } from "./authorization";
-import { createCustomerAuthBackend, CustomerAuthBackendError } from "./backend";
+import { CustomerAuthBackendError } from "./backend";
+import type { CustomerAuthBackend } from "./backend";
 import { openCustomerAccountSecret, sealCustomerAccountSecret } from "./secrets";
 import type { CustomerAccountEncryptionKeys, CustomerAccountSecretContext } from "./secrets";
 import { isCodeVerifier, isRandomProof, isTokenText } from "./formats";
@@ -34,7 +35,7 @@ function validTokens(value: unknown): value is CustomerAccountTokens {
 export function createCustomerAccountStorage({ config, keyring, backend }: {
   config: CustomerAccountConfig;
   keyring: CustomerAccountEncryptionKeys;
-  backend: ReturnType<typeof createCustomerAuthBackend>;
+  backend: CustomerAuthBackend;
 }) {
   const scope: CustomerAuthScope = { shopId: config.shopId, clientId: config.clientId, issuer: customerAccountIssuer(config.shopId), redirectUri: config.redirectUri };
   const flowContext = (row: StoredCustomerAuthorization): CustomerAccountSecretContext => ({

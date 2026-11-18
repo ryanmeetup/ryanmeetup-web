@@ -1,0 +1,91 @@
+// Synthetic Supabase REST for store browser tests. It answers only the store's
+// fixed review and sign-in calls, in the database's row shape, and never
+// connects to Supabase or Shopify.
+import { createServer } from "node:http";
+const port=Number(process.env.FAKE_SUPABASE_PORT??54359);
+const key="synthetic-supabase-secret";
+const id=(n)=>`00000000-0000-4000-8000-${String(n).padStart(12,"0")}`;
+const stamp=(n)=>new Date(Date.UTC(2026,10,18,12,0,n)).toISOString().replace(".000Z",".123456Z");
+let records,sessions,calls,options,tick;
+function row(n,status="pending",subject="buyer-a") {
+  const content={rating:4,title:"Ryan approved",body:`Review ${n}.`,nameStyle:"first-initial",displayName:"Ryan F."};
+  return {subject,published:status==="published"?{...content,body:"Approved original text."}:null,
+    value:{id:id(n),lineId:String(n),item:{productId:"100",productTitle:`Fixture shirt ${n}`,variantTitle:"Black / M"},status,
+      hasPendingEdit:status==="published",publishedAt:status==="published"?stamp(1000-n).slice(0,23)+"Z":null,
+      createdAt:stamp(1000-n),updatedAt:stamp(1000-n),current:content}};
+}
+function reset(config={}) {
+  options=config;sessions=new Map();calls=[];tick=0;
+  records=config.many?Array.from({length:125},(_,i)=>row(i+1)):[row(1),row(2,"published"),row(3,"rejected"),row(4,"hidden"),row(5,"withdrawn"),row(201,"published","buyer-b")];
+  if(config.many)records.push(row(201,"published","buyer-b"));
+  if(config.empty)records=[];
+  if(config.longText){records[1].value.item.productTitle="Ryan".repeat(50);records[1].value.current.body="Review".repeat(150);}
+}
+reset();
+const json=(res,status,data)=>{res.writeHead(status,{"content-type":"application/json"});res.end(data===undefined?"":JSON.stringify(data));};
+async function body(req){let text="";for await(const chunk of req)text+=chunk;return text?JSON.parse(text):{};}
+const submission=(a)=>({rating:a.p_rating,title:a.p_title,body:a.p_body,nameStyle:a.p_name_style});
+
+/** Buyer review RPCs, mirroring the database functions' outcomes. */
+function review(name,a){
+  const owned=records.filter((r)=>r.subject===a.p_subject);
+  if(name==="store_review_summary")return {count:0,average:0,distribution:{1:0,2:0,3:0,4:0,5:0}};
+  if(name==="store_public_reviews")return [];
+  if(name==="store_buyer_reviewed_lines")return owned.filter((r)=>r.value.status!=="withdrawn"&&a.p_line_ids.includes(r.value.lineId)).map((r)=>r.value.lineId);
+  if(name==="store_buyer_reviews"){
+    let rows=owned.map((r)=>r.value).sort((x,y)=>y.createdAt.localeCompare(x.createdAt)||y.id.localeCompare(x.id));
+    if(a.p_review_id)rows=rows.filter((r)=>r.id===a.p_review_id);
+    if(a.p_after_created_at)rows=rows.filter((r)=>r.createdAt<a.p_after_created_at||(r.createdAt===a.p_after_created_at&&r.id<a.p_after_id));
+    return rows.slice(0,a.p_limit);
+  }
+  if(name==="store_submit_review"){
+    const purchase={orderId:a.p_order_id,lineId:a.p_line_id,productId:a.p_product_id,variantId:a.p_variant_id,productTitle:a.p_product_title,variantTitle:a.p_variant_title};
+    calls.push({operation:"review.submit",subject:a.p_subject,purchase,submission:submission(a),displayName:a.p_display_name});
+    if(owned.some((r)=>r.value.lineId===a.p_line_id))return [{review_id:null,outcome:"exists"}];
+    const created=row(500+ ++tick,"pending",a.p_subject);
+    Object.assign(created.value,{lineId:a.p_line_id,item:{productId:a.p_product_id,productTitle:a.p_product_title,variantTitle:a.p_variant_title},
+      current:{...submission(a),displayName:a.p_display_name}});
+    records.push(created);
+    return [{review_id:created.value.id,outcome:"created"}];
+  }
+  const operation=name==="store_edit_buyer_review"?"review.edit":name==="store_withdraw_buyer_review"?"review.withdraw":null;
+  if(!operation)return undefined;
+  calls.push({operation,subject:a.p_subject,reviewId:a.p_review_id,expectedUpdatedAt:a.p_expected_updated_at,
+    ...(operation==="review.edit"?{submission:submission(a),displayName:a.p_display_name}:{})});
+  const record=owned.find((r)=>r.value.id===a.p_review_id);
+  if(!record)return "not_found";
+  if(options.conflictOnce){options.conflictOnce=false;record.value.updatedAt=stamp(2000+ ++tick);record.value.current.body="A newer buyer edit.";return "conflict";}
+  if(record.value.updatedAt!==a.p_expected_updated_at)return "conflict";
+  if(operation==="review.edit"){
+    if(["hidden","withdrawn"].includes(record.value.status))return "closed";
+    record.value.current={...submission(a),displayName:a.p_display_name};
+    record.value.hasPendingEdit=Boolean(record.published);record.value.status=record.published?"published":"pending";
+  }else{
+    record.value.status="withdrawn";record.value.hasPendingEdit=false;record.published=null;
+  }
+  record.value.updatedAt=stamp(2000+ ++tick);
+  if(options.failReadAfterSave)options.failRead=true;
+  return operation==="review.edit"?"pending":"withdrawn";
+}
+
+createServer(async(req,res)=>{
+  try {
+    const url=new URL(req.url,"http://fixture.test");
+    if(url.pathname==="/health")return json(res,200,{ok:true});
+    if(url.pathname==="/__reset"){reset(await body(req));return json(res,200,{ok:true});}
+    if(url.pathname==="/__configure"){options={...options,...await body(req)};return json(res,200,{ok:true});}
+    if(url.pathname==="/__state")return json(res,200,{calls,records});
+    if(url.pathname==="/__revoke"){sessions.clear();return json(res,200,{ok:true});}
+    if(url.pathname==="/__discovery")return json(res,200,{graphql_api:"https://shopify.com/123456/account/customer/api/2026-10/graphql"});
+    if(url.pathname==="/__customer")return json(res,200,{data:{customer:{id:"gid://shopify/Customer/123",firstName:"Ryan",lastName:"Fixture"}}});
+    if(req.headers.apikey!==key)return json(res,401,{message:"Synthetic Supabase key required"});
+    const args=await body(req);
+    if(url.pathname==="/rest/v1/store_customer_sessions"){sessions.set(args.session_hash,{...args,revision:0});return json(res,201);}
+    const name=url.pathname.replace(/^\/rest\/v1\/rpc\//,"");
+    if(name==="store_get_customer_session"){const s=sessions.get(args.p_session_hash);return json(res,200,s?[s]:[]);}
+    if(name==="store_revoke_customer_session")return json(res,200,sessions.delete(args.p_session_hash));
+    if(options.failRead&&name==="store_buyer_reviews")return json(res,503,{message:"Synthetic read failure"});
+    const result=review(name,args);
+    return result===undefined?json(res,404,{code:"PGRST202",message:"No fixture function"}):json(res,200,result);
+  }catch{return json(res,500,{message:"Synthetic fixture failed"});}
+}).listen(port,"127.0.0.1");

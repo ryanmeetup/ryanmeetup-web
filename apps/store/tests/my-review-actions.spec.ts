@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { encodeBuyerReviewCursor, reviewCommandSchema } from "@ryanmeetup/reviews";
 import type { BuyerReview, ReviewCommand } from "@ryanmeetup/reviews";
 import { handleMyReviewAction, handleMyReviewPage, loadMyReviewPage } from "../lib/my-review-actions";
-import { createReviewBackend } from "../lib/review-backend";
+import type { ReviewBackend } from "../lib/review-backend";
 import { buyerReviewNameChoices, myReviewViewSchema } from "../lib/my-review-view";
 import type { CustomerSessionResult } from "../lib/customer-account/session";
 import type { CustomerAccountSession } from "../lib/customer-account/storage";
@@ -22,14 +22,14 @@ function setup({sessions=[signedIn],name=null as {firstName:string;lastName:stri
   editOutcome="pending",withdrawOutcome="withdrawn"}: {sessions?:CustomerSessionResult[];name?:{firstName:string;lastName:string}|null;existing?:BuyerReview|null;editOutcome?:"pending"|"closed"|"conflict"|"not_found";withdrawOutcome?:"withdrawn"|"conflict"|"not_found"}={}) {
   const commands:ReviewCommand[]=[];
   let loads=0;
-  const backend=createReviewBackend({origin:"https://backend.test",token:"t".repeat(43),fetcher:async(_input,init)=>{
-    const command=reviewCommandSchema(JSON.parse(String(init?.body)));
+  // Command-level storage fake; the database mapping itself is covered in review-backend.spec.ts.
+  const backend=(async(sent:ReviewCommand)=>{
+    const command=reviewCommandSchema(sent);
     if(!command)throw new Error("Invalid outgoing command");
     commands.push(command);
-    const data=command.operation==="review.mine"?existing:command.operation==="reviews.mine"?{reviews:existing?[existing]:[],nextCursor:null}:
+    return command.operation==="review.mine"?existing:command.operation==="reviews.mine"?{reviews:existing?[existing]:[],nextCursor:null}:
       command.operation==="review.edit"?editOutcome:command.operation==="review.withdraw"?withdrawOutcome:null;
-    return Response.json({data});
-  }});
+  }) as ReviewBackend;
   return {commands,deps:{loadSession:async()=>sessions[Math.min(loads++,sessions.length-1)],findBuyerName:async()=>name,backend}};
 }
 const writes=(commands:ReviewCommand[])=>commands.filter((c)=>c.operation==="review.edit"||c.operation==="review.withdraw");
