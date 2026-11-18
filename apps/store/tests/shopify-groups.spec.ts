@@ -144,10 +144,10 @@ test("type pages split into garment groupings from each product's Shopify catego
   const apparel = await getCollection("apparel");
   expect(apparel?.sections?.map(({ collection, products, grouping }) => [collection.handle, products.map(({ handle }) => handle), grouping])).toEqual([["t-shirts", [tee.handle, "name-tag-shirt"], true]]);
   expect(apparel?.more).toEqual([]);
-  // RY-D has no Shopify category, so Accessories has nothing to group and lists it plainly.
+  // RY-D has no Shopify category; the RY-Ds grouping places it by listing handle and leads Accessories.
   const accessories = await getCollection("accessories");
-  expect(accessories?.sections).toEqual([]);
-  expect(accessories?.more?.map(({ handle }) => handle)).toEqual(["ryd"]);
+  expect(accessories?.sections?.map(({ collection, products, grouping }) => [collection.handle, products.map(({ handle }) => handle), grouping])).toEqual([["ryd", ["ryd"], true]]);
+  expect(accessories?.more).toEqual([]);
 });
 
 test("the type pages lead the collection list, shadow same-handle Shopify collections, and omit the home page collection", async () => {

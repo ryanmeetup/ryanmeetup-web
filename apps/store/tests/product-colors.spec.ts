@@ -165,31 +165,32 @@ test("unresolved colors and missing photos remain available through the more-col
   expect(getListingColorPreviews(onlyOneKnownColor).map((preview) => preview.value)).toEqual(["Black", "Plum"]);
 });
 
-test("a mixed listing previews size-only styles and every native color from a later style", () => {
+// Super Ryan Shirt opens on Royal, so the member offering Royal leads its listing.
+test("a mixed listing previews size-only styles and every native color, default color's style first", () => {
   const [listing] = groupProductListings([superBlack, superBlue, superRed]);
   const previews = getListingColorPreviews(listing);
-  expect(previews.map(({ value }) => value)).toEqual(["Black", "Royal", "Sapphire", "White", "Red"]);
+  expect(previews.map(({ value }) => value)).toEqual(["Royal", "Sapphire", "White", "Black", "Red"]);
   expect(previews.map(({ href }) => href)).toEqual([
-    "/products/super-ryan-shirt?design=super-ryan-shirt",
     "/products/super-ryan-shirt?design=super-ryan-blue&color=royal",
     "/products/super-ryan-shirt?design=super-ryan-blue&color=sapphire",
     "/products/super-ryan-shirt?design=super-ryan-blue&color=white",
+    "/products/super-ryan-shirt?design=super-ryan-shirt",
     "/products/super-ryan-shirt?design=super-ryan-red",
   ]);
-  for (const preview of previews.slice(1, 4)) {
+  for (const preview of previews.slice(0, 3)) {
     expect(preview.image).toEqual(getColorPreview(superBlue, preview.slug)?.image);
     expect(preview.swatch).toBeTruthy();
   }
 });
 
-test("a listing of color one-offs and multicolor members is chosen by color alone", () => {
+test("a listing of color one-offs and multicolor members is chosen by color alone, default color's member first", () => {
   const [listing] = groupProductListings([superBlack, { ...superBlue, title: "Super Ryan Shirt" }, superRed]);
   expect(getListingColors(listing.designs!)?.map(({ color, design }) => [color, design])).toEqual([
-    ["Black", "super-ryan-shirt"],
-    ["Red", "super-ryan-red"],
     ["Royal", "super-ryan-blue"],
     ["Sapphire", "super-ryan-blue"],
     ["White", "super-ryan-blue"],
+    ["Black", "super-ryan-shirt"],
+    ["Red", "super-ryan-red"],
   ]);
 });
 
