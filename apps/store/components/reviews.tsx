@@ -11,7 +11,6 @@ import type { ReviewPreviewState } from "@/lib/review-provider";
 import type { CustomReviewAccess } from "@/lib/custom-review-access";
 import { CustomReviewComposer, type CustomReviewResult } from "./custom-review-composer";
 import type { ReviewSubmission } from "@ryanmeetup/reviews";
-import { ReviewAccountLine } from "./review-account-line";
 import { ReviewModeSwitch } from "./review-mode-switch";
 import { ReviewPhotoGallery } from "./review-photo-gallery";
 
@@ -103,10 +102,7 @@ export function Reviews({ data, product, reviewAccount, reviewPreview, customAcc
             <Button size="sm" variant="secondary" className="w-full sm:w-auto" onClick={() => { setError(""); setShowForm(true); }}>Write a review</Button>
           )}
           {customAccess ? (
-            <>
-              {customAccess.status === "unavailable" && <Text className="text-sm">Review collection is temporarily unavailable. Please try again later.</Text>}
-              {customAccess.status !== "signed-out" && customAccess.account && <ReviewAccountLine account={customAccess.account} />}
-            </>
+            customAccess.status === "unavailable" && <Text className="text-sm">Review collection is temporarily unavailable. Please try again later.</Text>
           ) : reviewAccount && <Text className="text-sm">{reviewAccount.url ? "From your customer account" : "Review collection is temporarily unavailable. Please try again later."}</Text>}
         </div>
       </div>

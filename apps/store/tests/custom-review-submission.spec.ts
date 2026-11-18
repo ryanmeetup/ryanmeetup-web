@@ -11,7 +11,6 @@ import type { ReviewEligibility } from "../lib/review-purchases";
 const part = (value: object) => Buffer.from(JSON.stringify(value)).toString("base64url");
 const idToken = `${part({ alg: "RS256" })}.${part({ sub: "synthetic-buyer", email: "ryan@example.com" })}.signature`;
 const session = { sessionHash: "a".repeat(64), subject: "synthetic-buyer", createdAt: 1, expiresAt: 2, accessExpiresAt: 2, revision: 0, tokens: { accessToken: "a", refreshToken: "r", idToken } } as CustomerAccountSession;
-const account = { email: "ryan@example.com" };
 const signedIn: CustomerSessionResult = { status: "authenticated", session };
 const purchase = { orderId: "9000", lineId: "1", productId: "100", variantId: "200", productTitle: "Name Tag Shirt", variantTitle: "Black / M", label: "Order #1001 · Black / M" };
 const eligible: ReviewEligibility = { status: "eligible", buyer: { firstName: "Ryan", lastName: "Le" }, purchases: [purchase] };
@@ -131,16 +130,16 @@ test("the form state follows the buyer's session and purchases", async () => {
     getCustomReviewAccess({ ...args, loadSession: async () => sessionResult, findPurchases: async () => eligibility, findBuyerName: async () => name,
       reviewedLines: async () => { if (!mine) throw new Error("down"); return mine.filter((review) => review.status !== "withdrawn").flatMap((review) => review.lineId ? [review.lineId] : []); },
       reviewedProducts: async () => { if (!products) throw new Error("down"); return products; } });
-  expect(await access({ status: "unavailable" })).toEqual({ status: "unavailable", account: null });
+  expect(await access({ status: "unavailable" })).toEqual({ status: "unavailable" });
   expect(await access({ status: "sign_in_required" })).toEqual({ status: "signed-out", signInUrl: reviewSignInUrl("/products/name-tag-shirt#reviews") });
   expect(reviewSignInUrl("/products/name-tag-shirt#reviews")).toBe("/api/reviews/auth/start?returnTo=%2Fproducts%2Fname-tag-shirt%23reviews");
-  expect(await access(signedIn, { status: "unavailable" })).toEqual({ status: "unavailable", account });
-  expect(await access(signedIn)).toEqual({ status: "ready", account, buyer: { firstName: "Ryan", lastName: "Le" }, purchases: [{ lineId: "1", label: purchase.label }], defaultNameStyle: "first-initial" });
+  expect(await access(signedIn, { status: "unavailable" })).toEqual({ status: "unavailable" });
+  expect(await access(signedIn)).toEqual({ status: "ready", buyer: { firstName: "Ryan", lastName: "Le" }, purchases: [{ lineId: "1", label: purchase.label }], defaultNameStyle: "first-initial" });
   const reviewedLine = (status: BuyerReview["status"]) => ({ ...myReview, status });
-  expect(await access(signedIn, eligible, [reviewedLine("pending")])).toEqual({ status: "reviewed", account });
-  expect(await access(signedIn, eligible, [reviewedLine("rejected")])).toEqual({ status: "reviewed", account });
+  expect(await access(signedIn, eligible, [reviewedLine("pending")])).toEqual({ status: "reviewed" });
+  expect(await access(signedIn, eligible, [reviewedLine("rejected")])).toEqual({ status: "reviewed" });
   expect((await access(signedIn, eligible, [reviewedLine("withdrawn")])).status).toBe("ready");
-  expect(await access(signedIn, eligible, null)).toEqual({ status: "unavailable", account });
+  expect(await access(signedIn, eligible, null)).toEqual({ status: "unavailable" });
 });
 
 test("without a matching order, a signed-in buyer can still write one unverified review", async () => {
@@ -149,9 +148,9 @@ test("without a matching order, a signed-in buyer can still write one unverified
     getCustomReviewAccess({ ...args, findPurchases: async () => eligibility, findBuyerName: async () => name,
       reviewedProducts: async () => { if (!products) throw new Error("down"); return products; } });
   for (const reason of ["not_purchased", "not_shipped", "needs_help"] as const) {
-    expect(await access({ status: "none", reason })).toEqual({ status: "ready", account, buyer: { firstName: "Ryan", lastName: null }, purchases: [], defaultNameStyle: "first-initial" });
+    expect(await access({ status: "none", reason })).toEqual({ status: "ready", buyer: { firstName: "Ryan", lastName: null }, purchases: [], defaultNameStyle: "first-initial" });
   }
-  expect(await access(notBought, { products: ["100"] })).toEqual({ status: "reviewed", account });
-  expect(await access(notBought, { products: null })).toEqual({ status: "unavailable", account });
-  expect(await access(notBought, { name: null })).toEqual({ status: "unavailable", account });
+  expect(await access(notBought, { products: ["100"] })).toEqual({ status: "reviewed" });
+  expect(await access(notBought, { products: null })).toEqual({ status: "unavailable" });
+  expect(await access(notBought, { name: null })).toEqual({ status: "unavailable" });
 });

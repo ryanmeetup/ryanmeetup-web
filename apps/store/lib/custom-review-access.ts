@@ -5,16 +5,12 @@ import { reviewSignInUrl } from "./review-sign-in";
 import { currentRequest } from "./request-from-headers";
 import { getReviewBackend } from "./review-backend";
 import { findBuyerName, findReviewablePurchases } from "./review-purchases";
-import { customerAccountEmail } from "./customer-account/identity";
 import type { CustomerSessionResult } from "./customer-account/session";
 import type { CustomerAccountSession } from "./customer-account/storage";
 import type { ReviewEligibilityLookup } from "./review-purchases";
 
 /** One purchased order line the buyer can review. The label is safe to show; the ID is opaque. */
 export type ReviewablePurchase = { lineId: string; label: string };
-
-/** Who is signed in, for the buyer's own eyes only. */
-export type ReviewAccount = { email: string | null };
 
 type BuyerName = { firstName: string | null; lastName: string | null };
 
@@ -25,12 +21,11 @@ type BuyerName = { firstName: string | null; lastName: string | null };
  * one review of the product, which shows without the Verified badge.
  */
 export type CustomReviewAccess =
-  | { status: "unavailable"; account: ReviewAccount | null }
+  | { status: "unavailable" }
   | { status: "signed-out"; signInUrl: string }
-  | { status: "reviewed"; account: ReviewAccount }
+  | { status: "reviewed" }
   | {
       status: "ready";
-      account: ReviewAccount;
       buyer: BuyerName;
       /** The buyer's unreviewed matching order lines; empty means a review without a matching order. */
       purchases: ReviewablePurchase[];
@@ -53,23 +48,22 @@ export async function getCustomReviewAccess({ productId, productPath, loadSessio
   reviewedProducts: (subject: string, productIds: string[]) => Promise<string[]>;
 }): Promise<CustomReviewAccess> {
   const id = numericProductId(productId);
-  if (!id) return { status: "unavailable", account: null };
+  if (!id) return { status: "unavailable" };
   const session = await loadSession().catch((): CustomerSessionResult => ({ status: "unavailable" }));
-  if (session.status === "unavailable") return { status: "unavailable", account: null };
+  if (session.status === "unavailable") return { status: "unavailable" };
   if (session.status === "sign_in_required") return { status: "signed-out", signInUrl: reviewSignInUrl(`${productPath}#reviews`) };
-  const account: ReviewAccount = { email: customerAccountEmail(session.session) };
   const subject = session.session.subject;
   const eligibility = await findPurchases(session.session, id).catch(() => ({ status: "unavailable" as const }));
-  if (eligibility.status === "unavailable") return { status: "unavailable", account };
+  if (eligibility.status === "unavailable") return { status: "unavailable" };
 
   if (eligibility.status === "eligible" && eligibility.purchases.length) {
     const lines = await reviewedLines(subject, eligibility.purchases.map((purchase) => purchase.lineId)).catch(() => null);
-    if (!lines) return { status: "unavailable", account };
+    if (!lines) return { status: "unavailable" };
     // A withdrawn review can be resubmitted on the same line; anything else counts as reviewed.
     const reviewed = new Set(lines);
     const open = eligibility.purchases.filter((purchase) => !reviewed.has(purchase.lineId));
-    if (!open.length) return { status: "reviewed", account };
-    return { status: "ready", account, buyer: eligibility.buyer, purchases: open.map(({ lineId, label }) => ({ lineId, label })), defaultNameStyle: "first-initial" };
+    if (!open.length) return { status: "reviewed" };
+    return { status: "ready", buyer: eligibility.buyer, purchases: open.map(({ lineId, label }) => ({ lineId, label })), defaultNameStyle: "first-initial" };
   }
 
   // No matching order (or one the store would have to check by hand): one unverified review per product.
@@ -77,9 +71,9 @@ export async function getCustomReviewAccess({ productId, productPath, loadSessio
     reviewedProducts(subject, [id]).catch(() => null),
     findBuyerName(session.session).catch(() => null),
   ]);
-  if (!products || !buyer) return { status: "unavailable", account };
-  if (products.includes(id)) return { status: "reviewed", account };
-  return { status: "ready", account, buyer, purchases: [], defaultNameStyle: "first-initial" };
+  if (!products || !buyer) return { status: "unavailable" };
+  if (products.includes(id)) return { status: "reviewed" };
+  return { status: "ready", buyer, purchases: [], defaultNameStyle: "first-initial" };
 }
 
 /**

@@ -27,7 +27,6 @@ async function choose(page: Page, name: string) {
 async function openComposer(page: Page) {
   await page.goto(productPath);
   const reviews = page.locator("#reviews");
-  await expect(reviews.getByText("Your store account", { exact: true })).toBeVisible();
   await reviews.getByRole("button", { name: "Write a review", exact: true }).click();
   return { reviews, dialog: page.getByRole("dialog", { name: "Write a review", exact: true }) };
 }
@@ -107,7 +106,6 @@ test("a single purchase stays implied when access changes without a remount", as
   await expect(reviews).toContainText("Review collection is temporarily unavailable.");
   await configure(request, { failReviewedLines: false });
   await choose(page, "Environment default");
-  await expect(reviews.getByText("Your store account", { exact: true })).toBeVisible();
   await reviews.getByRole("button", { name: "Write a review", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Write a review", exact: true });
   await dialog.getByRole("radio", { name: "5 stars", exact: true }).check();
@@ -142,16 +140,22 @@ test("a signed-in buyer without a matching order writes an unverified review", a
   await expect(page.getByRole("dialog", { name: "You've already reviewed this", exact: true }).getByText("Edit or withdraw your review")).toBeVisible();
 });
 
-test("a signed-in buyer can see who they are and sign out", async ({ page, request, baseURL }) => {
+test("the header account menu signs a shopper in from any page and out again", async ({ page, request, baseURL }) => {
+  // Signed out: the menu offers sign-in that comes back to this page.
+  await page.goto("/apparel");
+  await page.getByRole("button", { name: "Account", exact: true }).click();
+  await expect(page.getByRole("menuitem", { name: "Sign in" })).toHaveAttribute("href", "/api/reviews/auth/start?returnTo=%2Fapparel");
+  await page.keyboard.press("Escape");
+
   await signIn(page, baseURL!);
   await page.goto(productPath);
-  const reviews = page.locator("#reviews");
-  await expect(reviews.getByText("Your store account", { exact: true })).toBeVisible();
-  for (const theme of ["light", "dark"]) {
-    await page.evaluate((value) => { localStorage.setItem("theme", value); document.documentElement.classList.toggle("dark", value === "dark"); }, theme);
-    await reviews.scrollIntoViewIfNeeded();
-    await reviews.locator("div").filter({ has: page.getByRole("button", { name: "Write a review", exact: true }) }).last().screenshot({ path: `/private/tmp/store-review-account-${theme}.png` });
-  }
+  const account = page.getByRole("button", { name: "Account, signed in as your store account", exact: true });
+  await account.click();
+  await expect(page.getByRole("menuitem", { name: "My reviews" })).toHaveAttribute("href", "/reviews/mine");
+  await expect(page.getByRole("menuitem", { name: "Sign in" })).toHaveCount(0);
+  // The reviews section no longer repeats who is signed in.
+  await expect(page.locator("#reviews").getByRole("button", { name: "Sign out" })).toHaveCount(0);
+
   // The real logout route checks the registered storefront origin, which this
   // localhost suite can't present (see customer-account-http.spec.ts). Answer
   // it the way the server does: end the session cookie and report success.
@@ -162,9 +166,9 @@ test("a signed-in buyer can see who they are and sign out", async ({ page, reque
     await page.context().clearCookies({ name: "__Host-store-customer-session" });
     await route.fulfill({ json: { signedOut: true } });
   });
-  await reviews.getByRole("button", { name: "Sign out", exact: true }).click();
-  await expect(reviews.getByRole("button", { name: "Sign out", exact: true })).toHaveCount(0);
-  await reviews.getByRole("button", { name: "Write a review", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Sign out" }).click();
+  await expect(page.getByRole("button", { name: "Account", exact: true })).toBeVisible();
+  await page.locator("#reviews").getByRole("button", { name: "Write a review", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "Sign in to review", exact: true }).getByRole("link", { name: "Sign in", exact: true })).toBeVisible();
   expect(signOuts).toBe(1);
   expect((await state(request)).calls).toEqual([]);

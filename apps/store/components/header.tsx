@@ -3,16 +3,14 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
-import { FiChevronDown, FiMenu, FiPackage, FiShoppingBag, FiX } from "react-icons/fi";
+import { FiChevronDown, FiMenu, FiShoppingBag, FiX } from "react-icons/fi";
 import { AnimatedCollapse, NavMenu, Tooltip, Wordmark } from "@ryanmeetup/ui";
 import { getCollectionMenuRoutes, getDepartmentMenuRoutes, storeNavigation } from "@/lib/navigation";
 import type { StoreMenuCollection } from "@/lib/navigation";
+import { AccountMenu } from "./account-menu";
 import { useCart } from "./cart-provider";
 import { useNavSection } from "./nav-section";
 import { ThemeToggle } from "./theme-toggle";
-
-// Shopify's customer account, where a shopper finds order status and tracking.
-const accountLabel = "Your orders";
 
 export function Header({ collections, accountUrl }: { collections: StoreMenuCollection[]; accountUrl: string | null }) {
   const [open, setOpen] = useState(false);
@@ -76,24 +74,11 @@ export function Header({ collections, accountUrl }: { collections: StoreMenuColl
             )}
           </div>
         </nav>
-        {/* Narrower widths move orders into the menu, and the labels drop
-            wherever they would wrap the wordmark or push the main navigation into
-            scrolling. Breakpoints sit on wrappers so they win over inline-flex. */}
+        {/* Labels drop wherever they would wrap the wordmark or push the main
+            navigation into scrolling. Breakpoints sit on wrappers so they win
+            over inline-flex. The account menu holds sign-in and Shopify orders. */}
         <div className="ml-auto flex flex-none items-center gap-2 sm:gap-4 xl:gap-2">
-          {accountUrl && (
-            <div className="hidden md:block">
-              <Tooltip content={accountLabel} placement="bottom">
-                <a
-                  href={accountUrl}
-                  aria-label={accountLabel}
-                  className="inline-flex h-10 w-10 items-center justify-center gap-2 rounded-full border border-black/15 bg-white/70 text-xs font-semibold tracking-wide shadow-sm transition hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 md:w-auto md:px-4 xl:w-10 xl:px-0 dark:border-white/20 dark:bg-white/10 dark:hover:bg-white/15 dark:focus-visible:ring-white/40"
-                >
-                  <FiPackage aria-hidden className="text-base" />
-                  <span aria-hidden className="hidden md:inline xl:hidden">{accountLabel}</span>
-                </a>
-              </Tooltip>
-            </div>
-          )}
+          <AccountMenu accountUrl={accountUrl} />
           {/* Opens the drawer rather than /cart: the page still works but stays
               unlinked while we hear which of the two shoppers prefer. */}
           <Tooltip content="View cart" placement="bottom">
@@ -203,20 +188,6 @@ export function Header({ collections, accountUrl }: { collections: StoreMenuColl
                 </span>
               </Link>
             ),
-          )}
-          {accountUrl && (
-            <a
-              href={accountUrl}
-              className="grid grid-cols-[auto_1fr] items-start gap-3 rounded-xl border border-black/10 bg-white/70 px-3 py-3 text-sm shadow-sm transition hover:-translate-y-0.5 hover:border-black/20 hover:bg-black/5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:border-white/15 dark:bg-white/5 dark:hover:border-white/30 dark:hover:bg-white/10 dark:focus-visible:ring-white/40"
-            >
-              <FiPackage aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>
-                <span className="block font-semibold tracking-wide">{accountLabel}</span>
-                <span className="mt-1 block text-xs font-normal leading-relaxed text-black/70 dark:text-white/70">
-                  Order status and tracking, no inbox archaeology required.
-                </span>
-              </span>
-            </a>
           )}
           <div className="mt-2 border-t border-black/10 pt-3 dark:border-white/10">
             <ThemeToggle variant="menu" />
