@@ -171,6 +171,35 @@ and cannot revive revoked sessions. Revocation erases the token envelope and
 advances the revision, so an in-flight stale refresh cannot overwrite logout.
 The store's encryption context additionally binds record identity and expiry.
 
+## Store review moderation
+
+`GET/POST /api/admin/reviews` is a Tasks app-owner boundary, separate from the
+storefront service credential and Shopify buyer identity. Reads and writes
+require `privilegedContext({ owner: true })`; the enabled backend configuration
+pins the shop and Supabase project and always refuses PRD. Request bodies cannot
+choose an actor or shop. Browser writes use the normal same-origin, bounded JSON
+schema boundary. Every response is private and uncached; database failures expose
+only safe messages and correlation IDs.
+
+The RMT-only `store_review_moderation_page` and `store_moderate_review` functions
+are invoker functions with empty search paths and service-role-only execute
+grants. Both call `store_require_review_owner`, which rechecks and share-locks
+the actor's onboarded owner profile for the transaction. No direct buyer/member
+table grants, moderation RPC access, or additional workspace memberships result.
+
+The queue includes all ratings, oldest first, with bounded keyset pagination.
+Its explicit projection distinguishes waiting and approved revisions, omits
+order IDs and customer subjects, and includes at most ten recent audit events.
+Buyer event identities are omitted. Full revision/event history stays in the
+private tables. Publishing, rejecting, hiding, and restoring use the canonical
+review transactions and commit their audit events atomically. Hiding and
+rejecting require a private reason. The app-authenticated actor, exact review
+timestamp, and selected pending revision are checked under a review row lock.
+Replaced edits, stale views, and withdrawn reviews cannot receive a decision.
+Rejecting an edit preserves the approved version; approving a hidden edit never
+restores it. Public reads and rating totals exclude hidden/withdrawn reviews and
+never include staff identities or notes.
+
 ## RY-D Verification
 
 RY-D review writes use service-role-only `ryd_change_submission`,

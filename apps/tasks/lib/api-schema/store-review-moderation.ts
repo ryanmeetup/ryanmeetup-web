@@ -1,0 +1,28 @@
+import type { ModerationDecision, ModerationQuery } from "@/lib/store-reviews/moderation";
+import { isModerationFilter, isModerationTimestamp } from "@/lib/store-reviews/moderation";
+import { isUuid, objectWithKeys } from "./shared";
+
+export function storeReviewModerationSchema(value: unknown): ModerationDecision | null {
+  const input = objectWithKeys(value, ["action", "reviewId", "expectedUpdatedAt", "revisionId", "note"]);
+  if (!input || typeof input.action !== "string" || !["approve", "reject", "hide", "restore"].includes(input.action) ||
+    !isUuid(input.reviewId) || !isModerationTimestamp(input.expectedUpdatedAt) ||
+    (input.revisionId !== null && !isUuid(input.revisionId)) ||
+    (input.note !== null && typeof input.note !== "string")) return null;
+  const action = input.action as ModerationDecision["action"];
+  if ((action === "approve" || action === "reject") !== (input.revisionId !== null)) return null;
+  const note = typeof input.note === "string" ? input.note.trim() || null : null;
+  if ((note && ([...note].length > 1000 || /[\u0000-\u0008\u000b-\u001f\u007f]/u.test(note))) ||
+    ((action === "hide" || action === "reject") && !note)) return null;
+  return { action, reviewId: input.reviewId, expectedUpdatedAt: input.expectedUpdatedAt, revisionId: input.revisionId, note };
+}
+
+export function storeReviewModerationQuery(params: URLSearchParams): ModerationQuery | null {
+  if ([...params.keys()].some((key) => !["filter", "afterCreatedAt", "afterId"].includes(key) || params.getAll(key).length !== 1)) return null;
+  const filter = params.get("filter") ?? "pending";
+  if (!isModerationFilter(filter)) return null;
+  const createdAt = params.get("afterCreatedAt");
+  const id = params.get("afterId");
+  if (createdAt === null && id === null) return { filter, after: null };
+  if (!isModerationTimestamp(createdAt) || !isUuid(id)) return null;
+  return { filter, after: { createdAt, id } };
+}
