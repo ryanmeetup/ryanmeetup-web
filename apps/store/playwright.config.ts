@@ -13,6 +13,7 @@ const baseURL = process.env.STORE_BASE_URL || origin;
 
 export default defineConfig({
   testDir: "./tests",
+  testIgnore: "my-reviews-browser.spec.ts",
   fullyParallel: false,
   retries: 0,
   reporter: "line",

@@ -1,0 +1,41 @@
+name: Store buyer review tests
+
+on:
+  pull_request:
+    paths:
+      - "apps/store/**"
+      - "packages/**"
+      - "package-lock.json"
+      - ".github/workflows/store-review-tests.yml"
+  push:
+    branches: [main]
+
+concurrency:
+  group: store-review-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  buyer-reviews:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/store
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+        working-directory: .
+      - run: npx playwright install --with-deps chromium
+      - name: Test buyer HTTP and backend contracts
+        run: npx playwright test tests/my-review-actions.spec.ts tests/custom-review-submission.spec.ts tests/review-backend.spec.ts --workers=1
+      - name: Test buyer review management against isolated transports
+        run: npm run test:e2e:my-reviews
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: store-buyer-review-results
+          path: apps/store/test-results
+          retention-days: 7

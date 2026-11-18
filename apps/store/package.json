@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:my-reviews": "playwright test --config=playwright.my-reviews.config.ts"
   },
   "dependencies": {
     "@ryanmeetup/brand": "*",
