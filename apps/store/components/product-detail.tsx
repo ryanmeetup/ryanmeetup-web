@@ -150,7 +150,12 @@ export function ProductDetail({ product, title = product.title, breadcrumbs, des
 
   async function handleAdd() {
     if (!variant?.availableForSale) return;
-    await addItem(product, variant, Number(quantity));
+    try {
+      await addItem(product, variant, Number(quantity));
+    } catch {
+      // The cart keeps the error, and the callout below shows it.
+      return;
+    }
     setAdded(true);
     window.setTimeout(() => setAdded(false), 2200);
   }
