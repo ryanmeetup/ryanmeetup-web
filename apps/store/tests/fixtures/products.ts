@@ -1,4 +1,4 @@
-import { demoProducts } from "../../lib/demo-data";
+import { demoProductId, demoProducts } from "../../lib/demo-data";
 import type { Product, StoreImage } from "../../lib/types";
 
 export const ryan = demoProducts.find((product) => product.handle === "ryan-name-tag-shirt")!;
@@ -57,7 +57,7 @@ const momImage = { ...dad.featuredImage!, url: "https://cdn.shopify.com/test/rya
 // A new Shopify product that has no entry in the storefront's group configuration.
 export const mom: Product = {
   ...dad,
-  id: "gid://shopify/Product/demo-ryans-mom",
+  id: demoProductId("ryans-mom-nametag-shirt"),
   handle: "ryans-mom-nametag-shirt",
   title: "Ryan's Mom Nametag Shirt",
   description: "A name tag shirt for Ryan’s mom.",

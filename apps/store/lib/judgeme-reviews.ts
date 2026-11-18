@@ -1,5 +1,6 @@
 import type { ReviewsData } from "./types";
 import { publishedReviewPhotoUrl } from "./review-photo-hosts";
+import { isDemoProductId } from "./demo-data";
 import { getJudgeMeShopDomain } from "./judgeme";
 
 type JudgeMeReview = {
@@ -58,7 +59,7 @@ export async function getJudgeMeReviews(productId: string): Promise<ReviewsData>
 async function loadJudgeMeReviews(productId: string): Promise<ReviewsData> {
   const token = process.env.JUDGEME_PRIVATE_API_TOKEN;
   const shopDomain = getJudgeMeShopDomain();
-  if (!token || !shopDomain || productId.includes("/demo-")) return emptyReviews;
+  if (!token || !shopDomain || isDemoProductId(productId)) return emptyReviews;
 
   const lookupUrl = new URL("https://api.judge.me/api/v1/products/-1");
   lookupUrl.searchParams.set("shop_domain", shopDomain);

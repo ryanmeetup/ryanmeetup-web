@@ -8,6 +8,17 @@ const image = (url: string, altText: string) => ({
   height: 1500,
 });
 
+/**
+ * A stable, numeric product ID for a demo handle, in a range real Shopify IDs
+ * don't use (they are 13 digits today). Numeric, so custom reviews and the
+ * local test buyer work on the demo catalog the same way as on a live one.
+ */
+export function demoProductId(handle: string) {
+  let hash = 0x811c9dc5;
+  for (const character of handle) hash = Math.imul(hash ^ character.charCodeAt(0), 0x01000193) >>> 0;
+  return `gid://shopify/Product/9${String(hash).padStart(10, "0")}`;
+}
+
 const makeProduct = (input: {
   handle: string;
   title: string;
@@ -25,7 +36,7 @@ const makeProduct = (input: {
   const productImage = image(input.imageUrl, input.title);
   const sizes = input.type === "Accessory" ? ["One size"] : ["S", "M", "L", "XL", "2XL"];
   return {
-    id: `gid://shopify/Product/demo-${input.handle}`,
+    id: demoProductId(input.handle),
     handle: input.handle,
     title: input.title,
     description: input.description,
@@ -131,3 +142,10 @@ export const demoProducts: Product[] = [
 ];
 
 export const demoCollections: CollectionSummary[] = catalogCollections.map(getCatalogCollectionSummary);
+
+const demoProductIds = new Set(demoProducts.map((product) => product.id));
+
+/** Demo products exist only in this repository, so no review provider knows them. */
+export function isDemoProductId(id: string) {
+  return demoProductIds.has(id);
+}
