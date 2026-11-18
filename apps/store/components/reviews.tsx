@@ -1,24 +1,20 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useId, useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { Button, Card, ErrorCallout, FormStatus, Heading, Input, Modal, ModalActions, Pill, RatingStars, StarRating, Text, Textarea } from "@ryanmeetup/ui";
 import { FiCalendar, FiCheck, FiUser } from "react-icons/fi";
 import type { Product, ReviewsData } from "@/lib/types";
-import type { ReviewPhoto } from "@/lib/review-photos";
 import type { ReviewAccount } from "@/lib/review-collection";
 import type { ReviewPreviewState } from "@/lib/review-provider";
 import type { CustomReviewAccess } from "@/lib/custom-review-access";
 import { CustomReviewComposer, type CustomReviewResult } from "./custom-review-composer";
 import type { ReviewSubmission } from "@ryanmeetup/reviews";
 import { ReviewModeSwitch } from "./review-mode-switch";
-import { ReviewPhotosField } from "./review-photos-field";
 import { ReviewPhotoGallery } from "./review-photo-gallery";
 
-// Judge.me only accepts hosted picture URLs, and review photos have no host yet.
-const reviewPhotosEnabled = false;
-const emptyDraft ={ rating: null as number | null, body: "", name: "", email: "" };
+const emptyDraft = { rating: null as number | null, body: "", name: "", email: "" };
 
 function RatingSummary({ data, className = "" }: { data: ReviewsData; className?: string }) {
   if (data.status === "unavailable") {
@@ -51,25 +47,14 @@ export function Reviews({ data, product, reviewAccount, reviewPreview, customAcc
   const [showForm, setShowForm] = useState(false);
   const [draft, setDraft] = useState(emptyDraft);
   const [loading, setLoading] = useState(false);
-  const [photos, setPhotos] = useState<ReviewPhoto[]>([]);
-  const [preparingPhotos, setPreparingPhotos] = useState(false);
-  const photoUrls = useRef(new Set<string>());
-  const busy = loading || preparingPhotos;
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [customOpen, setCustomOpen] = useState(false);
   const [customMessage, setCustomMessage] = useState("");
 
-  useEffect(() => {
-    const current = new Set(photos.map((photo) => photo.previewUrl));
-    photoUrls.current.forEach((url) => { if (!current.has(url)) URL.revokeObjectURL(url); });
-    photoUrls.current = current;
-  }, [photos]);
-  useEffect(() => () => photoUrls.current.forEach((url) => URL.revokeObjectURL(url)), []);
-
   async function submitReview(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy || reviewAccount !== undefined) return;
+    if (loading || reviewAccount !== undefined) return;
     if (!draft.rating) {
       setError("Choose a rating before submitting your review.");
       ratingField.current?.querySelector("input")?.focus();
@@ -78,18 +63,10 @@ export function Reviews({ data, product, reviewAccount, reviewPreview, customAcc
     setLoading(true);
     setError("");
     try {
-      const fields = { ...draft, productId: product.id, rating: Number(draft.rating) };
-      let body: string | FormData = JSON.stringify(fields);
-      if (photos.length) {
-        const form = new FormData();
-        Object.entries(fields).forEach(([key, value]) => form.set(key, String(value)));
-        photos.forEach((photo) => form.append("photos", photo.file));
-        body = form;
-      }
       const response = await fetch("/api/reviews", {
         method: "POST",
-        headers: photos.length ? undefined : { "Content-Type": "application/json" },
-        body,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...draft, productId: product.id, rating: Number(draft.rating) }),
       });
       const payload = (await response.json()) as { error?: unknown; success?: unknown } | null;
       if (!response.ok || payload?.success !== true) {
@@ -98,7 +75,6 @@ export function Reviews({ data, product, reviewAccount, reviewPreview, customAcc
       }
       setSuccess(true);
       setDraft(emptyDraft);
-      setPhotos([]);
       setShowForm(false);
     } catch {
       setError("Your review could not be submitted. Please try again.");
@@ -158,12 +134,12 @@ export function Reviews({ data, product, reviewAccount, reviewPreview, customAcc
         title="Write a review"
         size="lg"
         description="Tell other Ryans how it went."
-        closable={!busy}
+        closable={!loading}
         formId={formId}
         onSubmit={submitReview}
         bodyClassName="space-y-5"
         panelClassName="max-sm:fixed max-sm:inset-0 max-sm:m-0 max-sm:h-dvh max-sm:!max-h-dvh max-sm:rounded-none max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)]"
-        actions={<ModalActions onCancel={() => setShowForm(false)} confirmForm={formId} confirmLabel="Submit review" pending={busy} pendingLabel={preparingPhotos ? "Preparing photos" : "Submitting"} />}
+        actions={<ModalActions onCancel={() => setShowForm(false)} confirmForm={formId} confirmLabel="Submit review" pending={loading} pendingLabel="Submitting" />}
       >
         <div className="flex items-center gap-4 rounded-xl border border-black/10 p-3 dark:border-white/10">
           {product.featuredImage && <Image src={product.featuredImage.url} alt="" width={64} height={64} sizes="64px" className="h-16 w-16 shrink-0 rounded-lg object-cover" />}
@@ -172,10 +148,10 @@ export function Reviews({ data, product, reviewAccount, reviewPreview, customAcc
             <RatingSummary data={data} className="mt-1 flex-wrap gap-x-2 gap-y-1" />
           </div>
         </div>
-        <fieldset disabled={busy} aria-busy={busy} className="min-w-0 space-y-5">
+        <fieldset disabled={loading} aria-busy={loading} className="min-w-0 space-y-5">
           <legend className="sr-only">Your review</legend>
           <div ref={ratingField} onInvalid={() => setError("Choose a rating before submitting your review.")}>
-            <StarRating label="Rating" name={`${formId}-rating`} step={1} required disabled={busy} value={draft.rating} onChange={(rating) => setDraft((value) => ({ ...value, rating }))} />
+            <StarRating label="Rating" name={`${formId}-rating`} step={1} required disabled={loading} value={draft.rating} onChange={(rating) => setDraft((value) => ({ ...value, rating }))} />
           </div>
           <Textarea id={`${formId}-body`} label="Review" name="body" required maxLength={5000} placeholder="The good, the bad, the very Ryan. Tell us how it's holding up. We read every review." value={draft.body} onChange={(event) => setDraft((value) => ({ ...value, body: event.target.value }))} />
           <div className="grid gap-5 sm:grid-cols-2">
@@ -183,7 +159,6 @@ export function Reviews({ data, product, reviewAccount, reviewPreview, customAcc
             <Input label="Email" name={`${formId}-email`} type="email" required maxLength={254} autoComplete="email" placeholder="Your email address" value={draft.email} onChange={(event) => setDraft((value) => ({ ...value, email: event.target.value }))} />
           </div>
           <Text className="text-sm">Your display name and review will be public. Your email stays private. If your review flags a problem with your order, that&apos;s where we&apos;ll reach out to sort it.</Text>
-          {reviewPhotosEnabled && <ReviewPhotosField name={`${formId}-photos`} photos={photos} onChange={setPhotos} pending={preparingPhotos} onPendingChange={setPreparingPhotos} disabled={loading} />}
         </fieldset>
         {error && <ErrorCallout>{error}</ErrorCallout>}
       </Modal>

@@ -1,14 +1,6 @@
 import { expect, test } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
 import { dad, tee } from "./fixtures/products";
-import { readFileSync } from "node:fs";
-
-const photoBuffer = readFileSync("public/hero/ryan-merch-table.jpg");
-const photoFile = (name = "merch.jpg") => ({ name, mimeType: "image/jpeg", buffer: photoBuffer });
-// Mirrors `reviewPhotosEnabled` in components/reviews.tsx: the photo field is
-// hidden until review photos have a host Judge.me can read from.
-const photosEnabled = false;
-const photoTest = photosEnabled ? test : test.skip;
 
 async function openReview(page: Page) {
   await page.goto("/products/ryan-meetup-tee");
@@ -137,75 +129,6 @@ test("touch selects full stars", async ({ browser, baseURL }) => {
   await context.close();
 });
 
-photoTest("photos can be added, removed, selected again, and kept with a closed draft", async ({ page }) => {
-  const dialog = await openReview(page);
-  const picker = dialog.getByLabel("Photos", { exact: true });
-  await expect(picker).not.toHaveAttribute("required");
-  await picker.setInputFiles([photoFile(), photoFile("ryans-shirt.jpg")]);
-  await expect(dialog.getByRole("list", { name: "Review photos", exact: true }).getByRole("img")).toHaveCount(2);
-  await expect(dialog.getByRole("status", { name: "Photo attachment status", exact: true })).toHaveText("2 of 5 photos added");
-  await dialog.getByRole("button", { name: "Remove merch.jpg", exact: true }).click();
-  await expect(dialog.getByRole("img", { name: "Review photo: merch.jpg", exact: true })).toHaveCount(0);
-  await picker.setInputFiles(photoFile());
-  await expect(dialog.getByRole("status", { name: "Photo attachment status", exact: true })).toHaveText("2 of 5 photos added");
-  await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: "Write a review", exact: true }).click();
-  await expect(dialog.getByRole("list", { name: "Review photos", exact: true }).getByRole("img")).toHaveCount(2);
-  await picker.setInputFiles(photoFile());
-  await expect(dialog.getByRole("status", { name: "Photo attachment status", exact: true })).toHaveText("2 of 5 photos added");
-});
-
-photoTest("prepared photo bytes submit with the review, survive rejection, and clear on success", async ({ page }) => {
-  let attempts = 0;
-  let submitted: FormData | undefined;
-  await page.route("**/api/reviews", async (route) => {
-    attempts += 1;
-    expect(route.request().headers()["content-type"]).toMatch(/^multipart\/form-data; boundary=/);
-    const bytes = route.request().postDataBuffer();
-    submitted = await new Response(bytes ? new Uint8Array(bytes) : null, { headers: { "Content-Type": route.request().headers()["content-type"] } }).formData();
-    await route.fulfill(attempts === 1 ? { status: 403, json: { error: "Review submission is not connected yet." } } : { json: { success: true } });
-  });
-  const dialog = await openReview(page);
-  await fillReview(dialog);
-  await dialog.getByLabel("Photos", { exact: true }).setInputFiles(photoFile());
-  const preview = dialog.getByRole("img", { name: "Review photo: merch.jpg", exact: true });
-  await expect(preview).toBeVisible();
-  await expect(preview).toHaveJSProperty("complete", true);
-  const dimensions = await preview.evaluate((image: HTMLImageElement) => [image.naturalWidth, image.naturalHeight]);
-  expect(Math.max(...dimensions)).toBeLessThanOrEqual(1600);
-  await dialog.getByRole("button", { name: "Submit review", exact: true }).click();
-  await expect(dialog.getByRole("alert")).toContainText("not connected yet");
-  await expect(preview).toBeVisible();
-  expect(submitted?.get("rating")).toBe("4");
-  expect(submitted?.get("productId")).toBe(tee.id);
-  const uploaded = submitted?.get("photos") as File;
-  expect(uploaded.type).toBe("image/jpeg");
-  expect(uploaded.size).toBeGreaterThan(0);
-  expect(uploaded.size).toBeLessThanOrEqual(700 * 1024);
-  expect(Buffer.from(await uploaded.arrayBuffer()).subarray(0, 2).toString("hex")).toBe("ffd8");
-  await dialog.getByRole("button", { name: "Submit review", exact: true }).click();
-  await expect(dialog).toHaveCount(0);
-  await page.getByRole("button", { name: "Write a review", exact: true }).click();
-  await expect(dialog.getByRole("list", { name: "Review photos", exact: true })).toHaveCount(0);
-});
-
-for (const invalid of ["format", "size", "count", "corrupt"] as const) {
-  photoTest(`photo ${invalid} validation preserves the existing images`, async ({ page }) => {
-    const dialog = await openReview(page);
-    const picker = dialog.getByLabel("Photos", { exact: true });
-    await picker.setInputFiles(photoFile());
-    await expect(dialog.getByRole("status", { name: "Photo attachment status", exact: true })).toHaveText("1 of 5 photos added");
-    const files = invalid === "format" ? { name: "notes.txt", mimeType: "text/plain", buffer: Buffer.from("nope") }
-      : invalid === "size" ? { name: "large.jpg", mimeType: "image/jpeg", buffer: Buffer.alloc(10 * 1024 * 1024 + 1) }
-      : invalid === "count" ? Array.from({ length: 5 }, (_, index) => photoFile(`extra-${index}.jpg`))
-      : { name: "corrupt.jpg", mimeType: "image/jpeg", buffer: Buffer.from("not an image") };
-    await picker.setInputFiles(files);
-    await expect(dialog.getByRole("alert")).toContainText(invalid === "format" ? "Choose JPG" : invalid === "size" ? "10 MB" : invalid === "count" ? "up to 5" : "couldn't open");
-    await expect(dialog.getByRole("img", { name: "Review photo: merch.jpg", exact: true })).toBeVisible();
-    await expect(dialog.getByRole("list", { name: "Review photos", exact: true }).getByRole("img")).toHaveCount(1);
-  });
-}
-
 for (const failure of ["network", "invalid-json", "rejection"] as const) {
   test(`a ${failure} error keeps the draft and allows another attempt`, async ({ page }) => {
     let attempts = 0;
@@ -248,10 +171,6 @@ for (const theme of ["light", "dark"]) {
       await page.setViewportSize({ width, height: 844 });
       const dialog = await openReview(page);
       await dialog.getByRole("radio", { name: "4 stars", exact: true }).check();
-      if (photosEnabled) {
-        await dialog.getByLabel("Photos", { exact: true }).setInputFiles(photoFile());
-        await expect(dialog.getByRole("img", { name: "Review photo: merch.jpg", exact: true })).toBeVisible();
-      }
       await dialog.getByRole("textbox", { name: /^Review/ }).focus();
       const submit = dialog.getByRole("button", { name: "Submit review", exact: true });
       const bounds = await dialog.locator("form").boundingBox();
