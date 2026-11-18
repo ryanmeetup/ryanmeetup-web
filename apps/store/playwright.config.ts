@@ -45,6 +45,10 @@ export default defineConfig({
       SUPABASE_URL: `http://127.0.0.1:${fakeSupabasePort}`,
       SUPABASE_SECRET_KEY: "synthetic-supabase-secret",
       SHOPIFY_CUSTOMER_ACCOUNT_SHOP_ID: "123456",
+      // The suite assumes Judge.me as the environment default and sign-in
+      // closed, whatever local review testing .env.local turns on.
+      REVIEWS_PROVIDER: "",
+      STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED: "",
     },
   }],
 });
