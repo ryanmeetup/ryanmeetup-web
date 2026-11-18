@@ -1,9 +1,8 @@
 import { reviewDisplayName, reviewSubmissionSchema } from "@ryanmeetup/reviews";
-import type { CustomerSessionResult } from "./customer-account/session";
 import { numericProductId } from "./custom-reviews";
 import { hasJsonBody, isSameOriginRequest, privateJson as reply, readJsonObject } from "./request-guard";
 import type { ReviewBackend } from "./review-backend";
-import type { ReviewEligibilityLookup } from "./review-purchases";
+import type { ReviewBuyerSession, ReviewEligibility } from "./review-purchases";
 
 const unavailable = () => reply(503, { error: "Review collection is temporarily unavailable. Please try again later." });
 
@@ -12,9 +11,9 @@ const unavailable = () => reply(503, { error: "Review collection is temporarily 
  * only the line it chose and the review; the buyer's identity, the purchase
  * details, and the public name all come from the server.
  */
-export async function submitCustomReview(request: Request, { loadSession, findPurchases, backend }: {
-  loadSession: () => Promise<CustomerSessionResult>;
-  findPurchases: ReviewEligibilityLookup;
+export async function submitCustomReview<Session extends { subject: string }>(request: Request, { loadSession, findPurchases, backend }: {
+  loadSession: () => Promise<ReviewBuyerSession<Session>>;
+  findPurchases: (session: Session, productId: string) => Promise<ReviewEligibility>;
   backend: ReviewBackend | null;
 }): Promise<Response> {
   if (!backend) return unavailable();
@@ -29,7 +28,7 @@ export async function submitCustomReview(request: Request, { loadSession, findPu
     return reply(400, { error: "Please complete every required field." });
   }
 
-  const session = await loadSession().catch((): CustomerSessionResult => ({ status: "unavailable" }));
+  const session = await loadSession().catch((): ReviewBuyerSession<Session> => ({ status: "unavailable" }));
   if (session.status === "unavailable") return unavailable();
   if (session.status === "sign_in_required") return reply(401, { error: "Sign in to review your purchase." });
 

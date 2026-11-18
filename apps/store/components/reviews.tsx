@@ -28,9 +28,7 @@ function RatingSummary({ data, className = "" }: { data: ReviewsData; className?
   );
 }
 
-/** Sample reviews are checked against the shared rules, then dropped. */
-async function submitCustomReview(review: ReviewSubmission & { lineId: string; productId: string }, sample: boolean): Promise<CustomReviewResult> {
-  if (sample) return { ok: true, message: "Sample review checked. Nothing was saved; a real review would wait for approval." };
+async function submitCustomReview(review: ReviewSubmission & { lineId: string; productId: string }): Promise<CustomReviewResult> {
   const response = await fetch("/api/reviews", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -105,7 +103,7 @@ export function Reviews({ data, product, reviewAccount, reviewPreview, customAcc
           )}
           {customAccess ? (
             customAccess.status === "unavailable" ? <Text className="text-sm">Review collection is temporarily unavailable. Please try again later.</Text>
-              : customAccess.status === "ready" && customAccess.sample ? <Text className="text-sm">Sample buyer: nothing is saved.</Text>
+              : customAccess.status === "ready" && customAccess.testBuyer ? <Text className="text-sm">Test buyer: reviews are saved and wait for approval.</Text>
                 : <Text className="text-sm">For verified purchases</Text>
           ) : reviewAccount && <Text className="text-sm">{reviewAccount.url ? "From your customer account" : "Review collection is temporarily unavailable. Please try again later."}</Text>}
         </div>
@@ -122,7 +120,7 @@ export function Reviews({ data, product, reviewAccount, reviewPreview, customAcc
           open={customOpen}
           onClose={() => setCustomOpen(false)}
           onSubmit={async (review) => {
-            const result = await submitCustomReview({ ...review, productId: product.id }, customAccess.status === "ready" && customAccess.sample);
+            const result = await submitCustomReview({ ...review, productId: product.id });
             if (result.ok) setCustomMessage(result.message);
             return result;
           }}

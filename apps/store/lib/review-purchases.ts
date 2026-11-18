@@ -23,6 +23,12 @@ export type ReviewEligibility =
 
 export type ReviewEligibilityLookup = (session: CustomerAccountSession, productId: string) => Promise<ReviewEligibility>;
 
+/** A buyer's session as review access and submission see it: a real Shopify session or the local test buyer. */
+export type ReviewBuyerSession<Session> =
+  | { status: "authenticated"; session: Session }
+  | { status: "sign_in_required" }
+  | { status: "unavailable" };
+
 /**
  * Exact-line eligibility from the Shopify Customer Account API: the buyer's
  * paid, fulfilled lines for this product, rechecked on every write.

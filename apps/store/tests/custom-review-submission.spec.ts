@@ -98,7 +98,7 @@ test("the form state follows the buyer's session and purchases", async () => {
   // A lasting order state points the buyer at the store instead of "temporarily closed".
   expect(await access(signedIn, { status: "none", reason: "needs_help" })).toEqual({ status: "needs-help" });
   expect(await access(signedIn, { status: "unavailable" })).toEqual({ status: "unavailable" });
-  expect(await access(signedIn)).toEqual({ status: "ready", buyer: { firstName: "Ryan", lastName: "Le" }, purchases: [{ lineId: "1", label: purchase.label }], defaultNameStyle: "first-initial", sample: false });
+  expect(await access(signedIn)).toEqual({ status: "ready", buyer: { firstName: "Ryan", lastName: "Le" }, purchases: [{ lineId: "1", label: purchase.label }], defaultNameStyle: "first-initial", testBuyer: false });
   const reviewedLine = (status: BuyerReview["status"]) => ({ ...myReview, status });
   expect(await access(signedIn, eligible, [reviewedLine("pending")])).toEqual({ status: "reviewed" });
   expect(await access(signedIn, eligible, [reviewedLine("rejected")])).toEqual({ status: "reviewed" });
