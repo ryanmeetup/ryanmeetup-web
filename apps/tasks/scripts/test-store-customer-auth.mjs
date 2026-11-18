@@ -18,6 +18,7 @@ const testRoot = mkdtempSync(join(tmpdir(), "store-customer-auth-"));
 const container = `supabase_db_${projectId}`;
 const database = "postgres";
 const migration = fileURLToPath(new URL("../supabase/migrations/20261120130000_store_customer_auth_storage.sql", import.meta.url));
+const reviewsMigration = fileURLToPath(new URL("../supabase/migrations/20261120140000_store_reviews.sql", import.meta.url));
 
 function run(command, args, input, inherit = false) {
   const result = spawnSync(command, args, { cwd: appRoot, input, encoding: "utf8", stdio: inherit ? "inherit" : undefined, maxBuffer: 32 * 1024 * 1024 });
@@ -79,14 +80,15 @@ try {
   const applied = sql("select string_agg(version, ',' order by version) from supabase_migrations.schema_migrations");
   if (applied !== selected.map(({ version }) => version).join(",")) throw new Error("Reset history does not match the selected migration profile");
   if (target === "prd") {
-    const privateObjectsAbsent = sql("select to_regclass('public.store_customer_authorizations') is null and to_regclass('public.store_customer_sessions') is null and not exists(select 1 from pg_proc where pronamespace='public'::regnamespace and proname in ('store_get_customer_authorization','store_consume_customer_authorization','store_get_customer_session','store_rotate_customer_session','store_revoke_customer_session'))");
+    const privateObjectsAbsent = sql("select to_regclass('public.store_customer_authorizations') is null and to_regclass('public.store_customer_sessions') is null and to_regclass('public.store_reviews') is null and not exists(select 1 from pg_proc where pronamespace='public'::regnamespace and proname like 'store_%review%') and not exists(select 1 from pg_proc where pronamespace='public'::regnamespace and proname in ('store_get_customer_authorization','store_consume_customer_authorization','store_get_customer_session','store_rotate_customer_session','store_revoke_customer_session'))");
     if (privateObjectsAbsent !== "t") throw new Error("RMT-only store objects leaked into the PRD profile");
     run("supabase", ["test", "db", "--workdir", testRoot, join(appRoot, "supabase/tests/access_control.sql"), join(appRoot, "tests/database/guest-access.sql")], undefined, true);
     console.log("PASS: PRD profile resets and supports Tasks without store auth objects or synthetic history");
   } else {
     sql(readFileSync(migration, "utf8"));
-    console.log("PASS: full migration reset and idempotent auth migration replay");
-    run("supabase", ["test", "db", "--workdir", testRoot, join(appRoot, "tests/database/store-customer-auth.sql"), join(appRoot, "supabase/tests/access_control.sql")], undefined, true);
+    sql(readFileSync(reviewsMigration, "utf8"));
+    console.log("PASS: full migration reset and idempotent auth and review migration replay");
+    run("supabase", ["test", "db", "--workdir", testRoot, join(appRoot, "tests/database/store-customer-auth.sql"), join(appRoot, "tests/database/store-reviews.sql"), join(appRoot, "supabase/tests/access_control.sql")], undefined, true);
     const integration = spawnSync("npx", ["playwright", "test", "tests/customer-account-storage.spec.ts", "--workers=1"], {
       cwd: fileURLToPath(new URL("../../store/", import.meta.url)),
       env: { ...process.env, STORE_AUTH_TEST_CONTAINER: container }, stdio: "inherit",
