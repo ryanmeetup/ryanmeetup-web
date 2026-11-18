@@ -52,6 +52,54 @@ unavailable. It never labels a truncated lookup as complete or reports that
 the buyer bought nothing because a page was omitted. Extend child pagination
 as a separate chunk if live orders require it.
 
+## Private eligibility entry point
+
+`review-purchase.ts::getReviewPurchaseEligibility(request, { orderId, lineId,
+productId })` loads/renews the opaque browser session, discovers the scoped
+Customer API, reads the complete owned purchase, and evaluates the exact line.
+Before returning an eligible attribution it rechecks the stored session, so a
+sign-out during the lookup cannot return an eligible result. A future write
+must call this server check again and enforce its own transactional session
+authorization; a prior page result or browser-supplied purchase is not proof.
+
+| Result | Meaning |
+| --- | --- |
+| `eligible` | Private attribution from Shopify for the selected owned line. No token, address, or email is returned. |
+| `ineligible` | The requested order/line/product does not qualify, with a narrow reason. |
+| `sign_in_required` | There is no active buyer session, including revocation during lookup. |
+| `unavailable` | Provider/storage failure, incomplete facts, or an ambiguous eligibility case. |
+
+The implemented initial subset is an uncancelled, unedited **paid order** with
+a physical non-gift-card line, no refunded units on that line, and successful
+fulfillment of all its units. Fulfillment quantities must point to that exact
+line; success elsewhere in the order cannot qualify it. Multiple units still
+produce one eligible line. A nullable variant remains attached to its verified
+product; a missing product is never replaced using a browser hint.
+
+`SUCCESS` means fulfilled, not proven delivered. Partial line fulfillment stays
+ineligible until the remaining units qualify. Edited orders, refunded financial
+statuses, refunded line quantities, unknown statuses/quantities, and inconsistent
+overcounts stay unavailable. A refund after receipt is **not** permanently
+disqualified: this query does not prove line-level refund/receipt chronology.
+Resolve that evidence and policy through the live spike before opening writes.
+
+## Integration and live gate
+
+This is a keyed order/line checker, not the product-level list expected by
+`review-purchases.ts::findReviewablePurchases`. That listing adapter and
+`findBuyerName` are still pending. They must enumerate the buyer's orders,
+reuse the owned exact-line checks, and normalize platform references into the
+shared backend's numeric `ReviewPurchase` contract. Do not guess an order from
+a product ID or fabricate buyer names. The concurrent composer/submission
+work is preserved; this chunk does not replace those hooks or enable writes.
+
+Before collection opens, configure the confidential client and isolated
+backend, prove real buyer access with `customer_read_orders` and protected
+customer data approval, and record redacted cases for other-account orders,
+split fulfillment, edits/cancellations, and refunds before/after receipt.
+Printful delivery-event behavior is still unproven. Local schema validation
+and synthetic tests do not satisfy that installation-specific gate.
+
 References: [Customer API discovery and authentication](https://shopify.dev/docs/api/customer/2026-10),
 [Order](https://shopify.dev/docs/api/customer/2026-10/objects/Order),
 [LineItem](https://shopify.dev/docs/api/customer/2026-10/objects/LineItem),
