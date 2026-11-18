@@ -201,5 +201,76 @@ select ok(pg_temp.pending((select id from ids where name = 'mod-high')) is not n
 select is((select count(*) from public.store_review_events where review_id=(select id from ids where name='mod-high') and actor_kind='staff'), 0::bigint, 'failed audit leaves no partial staff history');
 set local role postgres;
 
+-- --- official replies through the owner boundary ---------------------------------
+create function pg_temp.reply(review uuid, body text, expected timestamptz default null) returns boolean language sql as $$
+  select public.store_save_review_reply('00000000-0000-4000-8000-000000000901', '345', review,
+    coalesce(expected, (select updated_at from public.store_reviews where id = review)), body);
+$$;
+create function pg_temp.staff_v2(review uuid) returns jsonb language sql as $$
+  select r from public.store_review_moderation_page_v2('00000000-0000-4000-8000-000000000901', '345', 'all', 51) r where r->>'id'=review::text;
+$$;
+create temp table reply_versions (name text primary key, version timestamptz);
+grant select, insert on reply_versions to service_role;
+set local role service_role;
+select throws_ok($$select * from public.store_review_moderation_page_v2('00000000-0000-4000-8000-000000000902', '345', 'all', 20)$$, '42501', null, 'reply-aware staff reads recheck the owner');
+select throws_ok($$select public.store_save_review_reply('00000000-0000-4000-8000-000000000902', '345', gen_random_uuid(), now(), 'Hi')$$, '42501', null, 'a member cannot write an official reply');
+insert into ids select 'reply', review_id from pg_temp.submit('803', shop => '345');
+select ok(not pg_temp.reply((select id from ids where name='reply'), 'Too early'), 'pending-only reviews cannot receive official replies');
+select ok(pg_temp.moderate((select id from ids where name='reply'), 'approve', pg_temp.pending((select id from ids where name='reply'))), 'the review is approved before replying');
+insert into reply_versions select 'before-create', updated_at from public.store_reviews where id=(select id from ids where name='reply');
+select ok(pg_temp.reply((select id from ids where name='reply'), 'Thanks for the feedback!'), 'an owner creates the official reply');
+select ok((select updated_at > (select version from reply_versions where name='before-create') from public.store_reviews where id=(select id from ids where name='reply')), 'reply creation advances the review version');
+select is((select author from public.store_review_replies where review_id=(select id from ids where name='reply')), '00000000-0000-4000-8000-000000000901', 'reply authorship uses the verified Tasks actor');
+select is(pg_temp.staff_v2((select id from ids where name='reply'))->'reply'->>'body', 'Thanks for the feedback!', 'staff read the current official reply');
+select ok(pg_temp.staff_v2((select id from ids where name='reply'))->'reply'->>'updatedAt' ~ '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$', 'staff reply timestamps retain microseconds');
+select ok(not exists(select 1 from pg_temp.queue('all') r where r ? 'reply'), 'the original staff projection remains compatible with older deployed code');
+select is((select r->'reply'->>'body' from public.store_public_reviews('345',array['100'],50) r where r->>'id'=(select id::text from ids where name='reply')), 'Thanks for the feedback!', 'the official reply appears in the public projection');
+select is((select array_agg(key order by key) from public.store_public_reviews('345',array['100'],50) r, jsonb_object_keys(r->'reply') key where r->>'id'=(select id::text from ids where name='reply')), array['body','publishedAt'], 'public replies omit actor and internal version fields');
+select is(public.store_review_summary('345',array['100'])->>'average', '5', 'a reply does not change the review rating');
+select ok(not pg_temp.reply((select id from ids where name='reply'), 'Thanks for the feedback!'), 'an unchanged reply creates no duplicate decision');
+select is((select count(*) from public.store_review_events where review_id=(select id from ids where name='reply') and action='reply_set'), 1::bigint, 'one reply write makes one required audit event');
+insert into reply_versions select 'before-edit', updated_at from public.store_reviews where id=(select id from ids where name='reply');
+select ok(pg_temp.reply((select id from ids where name='reply'), 'Updated official reply.'), 'an owner updates the reply');
+select ok(not pg_temp.reply((select id from ids where name='reply'), null, (select version from reply_versions where name='before-edit')), 'an old editor cannot remove a newer reply');
+select is(pg_temp.staff_v2((select id from ids where name='reply'))->'reply'->>'body', 'Updated official reply.', 'a stale removal preserves the newer reply');
+select ok(not public.store_save_review_reply('00000000-0000-4000-8000-000000000901','999',(select id from ids where name='reply'),(select updated_at from public.store_reviews where id=(select id from ids where name='reply')),'Wrong shop'), 'the reply write pins the shop');
+select throws_ok($$select pg_temp.reply((select id from ids where name='reply'),'')$$,'22023',null,'an empty string cannot accidentally remove a reply');
+select throws_ok($$select pg_temp.reply((select id from ids where name='reply'),repeat('x',2001))$$,'22023',null,'reply storage enforces the 2000-character limit');
+select ok(pg_temp.moderate((select id from ids where name='reply'), 'hide', note=>'Review held privately'), 'staff hide the review');
+select ok(pg_temp.reply((select id from ids where name='reply'), 'A reply while hidden.'), 'staff can prepare a reply on a hidden approved review');
+select is((public.store_review_summary('345',array['100'])->>'count'), '0', 'saving a hidden reply never publishes its review');
+select ok(pg_temp.moderate((select id from ids where name='reply'), 'restore'), 'the review is restored separately');
+select is((select r->'reply'->>'body' from public.store_public_reviews('345',array['100'],50) r where r->>'id'=(select id::text from ids where name='reply')), 'A reply while hidden.', 'restore reveals the current approved reply');
+select public.store_edit_review((select id from ids where name='reply'),'345','buyer-a',4::smallint,null,'A waiting buyer edit.','anonymous','Anonymous');
+insert into reply_versions select 'before-remove', updated_at from public.store_reviews where id=(select id from ids where name='reply');
+select ok(pg_temp.reply((select id from ids where name='reply'),null), 'an owner removes the reply');
+select is(pg_temp.staff_v2((select id from ids where name='reply'))->'reply','null'::jsonb,'removal is reflected in the staff queue');
+select ok(not pg_temp.moderate((select id from ids where name='reply'),'approve',pg_temp.pending((select id from ids where name='reply')),expected=>(select version from reply_versions where name='before-remove')), 'a reply change also invalidates stale publication decisions');
+select ok(not pg_temp.reply((select id from ids where name='reply'),null), 'repeated removal creates no new event');
+select public.store_withdraw_review((select id from ids where name='reply'),'345','buyer-a');
+select ok(not pg_temp.reply((select id from ids where name='reply'),'Cannot revive a withdrawal'), 'an owner cannot reply to a buyer-withdrawn review');
+
+-- The reply change, review token, and required audit entry roll back together.
+insert into ids select 'reply-fail', review_id from pg_temp.submit('809',shop=>'345');
+select pg_temp.moderate((select id from ids where name='reply-fail'),'approve',pg_temp.pending((select id from ids where name='reply-fail')));
+select pg_temp.reply((select id from ids where name='reply-fail'),'Original reply.');
+insert into reply_versions select 'before-failure', updated_at from public.store_reviews where id=(select id from ids where name='reply-fail');
+set local role postgres;
+create function pg_temp.fail_reply_audit() returns trigger language plpgsql as $$
+  begin
+    if new.action in ('reply_set','reply_removed') and exists(select 1 from public.store_reviews r where r.id=new.review_id and r.line_id='809') then
+      raise exception 'reply audit unavailable';
+    end if;
+    return new;
+  end;
+$$;
+create trigger test_reply_audit_failure before insert on public.store_review_events for each row execute function pg_temp.fail_reply_audit();
+set local role service_role;
+select throws_ok($$select pg_temp.reply((select id from ids where name='reply-fail'),'Uncommitted reply.')$$,'P0001','reply audit unavailable','a failed reply audit refuses the entire update');
+select throws_ok($$select pg_temp.reply((select id from ids where name='reply-fail'),null)$$,'P0001','reply audit unavailable','a failed removal audit refuses the entire deletion');
+select is(pg_temp.staff_v2((select id from ids where name='reply-fail'))->'reply'->>'body','Original reply.','failed audited writes preserve the original reply');
+select is((select updated_at from public.store_reviews where id=(select id from ids where name='reply-fail')),(select version from reply_versions where name='before-failure'),'failed audited writes preserve the original concurrency token');
+set local role postgres;
+
 select * from finish();
 rollback;
