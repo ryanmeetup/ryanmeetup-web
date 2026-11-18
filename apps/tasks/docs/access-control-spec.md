@@ -149,7 +149,16 @@ Auth users, Tasks profiles, or workspace memberships.
 The storefront must not receive the Tasks admin key or a direct SQL login.
 Expose these operations only through a narrowly authenticated backend
 interface that pins the store's allowed shop/client scope before using the
-existing privileged backend client. That interface is still outstanding.
+existing privileged backend client. `POST /api/store/customer-auth` now owns
+this boundary. It requires an explicitly enabled, hashed service credential,
+rejects browser Origin/Fetch Metadata headers, and checks every request against
+the configured shop, client, issuer, and callback. It accepts only seven fixed
+create/get/consume/rotate/revoke operations and selects explicit return columns.
+There is no arbitrary SQL, table, RPC, or Tasks-data access through this route.
+It defaults to the RMT project, supports an explicitly pinned isolated backend,
+and always refuses PRD. Missing configuration denies access before the admin
+client is constructed. Service requests use the common JSON size/schema/error
+boundary; browser routes retain their existing same-origin checks.
 Creating a new SQL role alone would inherit the project's PUBLIC privileges;
 `NOINHERIT` does not remove them. Existing workspace grants remain unchanged.
 

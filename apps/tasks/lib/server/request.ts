@@ -13,12 +13,18 @@ type ParsedJson<T> =
 export async function readJson<T>(
   request: Request,
   schema: ApiSchema<T>,
-  { maxBytes = MAX_JSON_BYTES }: { maxBytes?: number } = {},
+  { maxBytes = MAX_JSON_BYTES, source = "browser" }: {
+    maxBytes?: number;
+    /** Service routes must authorize their bearer credential before parsing. */
+    source?: "browser" | "service";
+  } = {},
 ): Promise<ParsedJson<T>> {
   const origin = request.headers.get("origin");
   let originAllowed = false;
   try {
-    originAllowed = isAllowedTasksRequestOrigin(origin);
+    originAllowed = source === "service"
+      ? origin === null && !request.headers.has("sec-fetch-site")
+      : isAllowedTasksRequestOrigin(origin);
   } catch {
     // Invalid application URL configuration is handled as a rejected origin.
   }
@@ -27,7 +33,7 @@ export async function readJson<T>(
       response: apiError(
         403,
         "ORIGIN_REJECTED",
-        "This request did not come from the Tasks app.",
+        source === "service" ? "This request origin is not allowed." : "This request did not come from the Tasks app.",
       ),
     } as const;
   }

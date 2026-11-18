@@ -61,6 +61,16 @@ describe("readJson", () => {
     });
   });
 
+  it("allows service parsing only without browser headers and keeps the default browser origin gate", async () => {
+    const service = () => new Request("https://tasks.test/api/service", { method: "POST", headers: { "content-type": "application/json" }, body: '{"name":"Ryan"}' });
+    await expect(readJson(service(), schema, { source: "service" })).resolves.toEqual({ data: { name: "Ryan" } });
+    await expect(responseBody(await readJson(service(), schema))).resolves.toMatchObject({ status: 403 });
+    await expect(responseBody(await readJson(request('{"name":"Ryan"}'), schema, { source: "service" }))).resolves.toMatchObject({ status: 403 });
+    const browser = service();
+    browser.headers.set("sec-fetch-site", "same-origin");
+    await expect(responseBody(await readJson(browser, schema, { source: "service" }))).resolves.toMatchObject({ status: 403 });
+  });
+
   it("rejects non-JSON media types before reading the body", async () => {
     vi.stubEnv("NODE_ENV", "development");
     const result = await readJson(
