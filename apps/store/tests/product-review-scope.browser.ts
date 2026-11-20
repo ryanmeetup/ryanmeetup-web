@@ -113,3 +113,30 @@ test("pausing custom collection keeps published reviews readable and refuses buy
   await page.reload();
   await expect(page.locator("#reviews")).toContainText("Average rating from 25 reviews");
 });
+
+test("approved review photos use the uncached Store route and an old URL is revoked", async ({ page, request, baseURL }, testInfo) => {
+  const image = { url: "/api/reviews/media/00000000-0000-4000-8000-000000000001/00000000-0000-4000-8000-000000000002/00000000-0000-4000-8000-000000000003", width: 48, height: 32 };
+  await request.post(`${fixture}/__configure`, { data: { [numericId(tee)]: { summary: { count: 1, average: 4, distribution: {1:0,2:0,3:0,4:1,5:0} }, reviews: [{ ...review(tee,4), photos: [image] }] } } });
+  await page.goto(`/products/${tee.handle}#reviews`);
+  const thumbnail = page.getByRole("img", { name: "Photo 1 from Ryan F.'s review", exact: true });
+  await expect(thumbnail).toBeVisible();
+  const source = new URL((await thumbnail.getAttribute("src"))!, baseURL);
+  expect(source.origin).toBe(baseURL); expect(source.pathname).toBe(image.url); expect(source.search).toBe("");
+  const response = await request.get(image.url);
+  expect(response.status()).toBe(200); expect(response.headers()["cache-control"]).toBe("no-store");
+  expect(response.headers()["content-type"]).toBe("image/webp");
+  expect(response.headers()["referrer-policy"]).toBe("no-referrer");
+  await page.getByRole("button", { name: "View photo 1 from Ryan F.", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Photo from Ryan F.", exact: true });
+  await expect(dialog.getByRole("heading", { name: "Photo from Ryan F." })).toBeVisible();
+  const enlarged = dialog.getByRole("img", { name: "Merch photo from Ryan F.'s review", exact: true });
+  await expect(enlarged).toBeVisible();
+  await expect.poll(() => enlarged.evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBe(48);
+  for (const width of [390, 1024, 1280, 1536]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath(`public-photo-${width}.png`) });
+  }
+  await request.post(`${fixture}/__configure`, { data: { [numericId(tee)]: { summary: empty, reviews: [] } } });
+  expect((await request.get(image.url)).status()).toBe(404);
+});

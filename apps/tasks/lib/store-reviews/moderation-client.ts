@@ -29,3 +29,8 @@ export async function deleteStoreReview(command: ReviewDeletionCommand): Promise
   if (result.deleted !== true) throw new Error("The deletion could not be confirmed.");
   return { photosRemoved: result.photosRemoved === true };
 }
+
+export async function saveReviewPhotoDecision(command: import("./moderation").ReviewPhotoDecision) {
+  const result = await mutate<{ saved: boolean }>("/api/admin/reviews/photos", { method: "POST", body: JSON.stringify(command) });
+  if (result.saved !== true) throw new Error("The photo decision could not be confirmed.");
+}

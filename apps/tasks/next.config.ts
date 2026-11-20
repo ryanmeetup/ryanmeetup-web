@@ -55,6 +55,7 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      { source: "/api/admin/reviews/photos", headers: [{ key: "Referrer-Policy", value: "no-referrer" }] },
     ];
   },
 };

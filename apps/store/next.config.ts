@@ -1,6 +1,5 @@
 import type { NextConfig } from "next";
 import { standardSecurityHeaders } from "@ryanmeetup/utils";
-import { reviewPhotoHosts } from "./lib/review-photo-hosts";
 
 /**
  * Buyer sign-in is tested locally through an HTTPS tunnel, whose host is the
@@ -41,11 +40,11 @@ const nextConfig: NextConfig = {
       // Keep the private photo policy after the site default: matching config
       // headers can override a route handler's response header.
       { source: "/api/reviews/photos/:path*", headers: [{ key: "Referrer-Policy", value: "no-referrer" }] },
+      { source: "/api/reviews/media/:path*", headers: [{ key: "Referrer-Policy", value: "no-referrer" }] },
     ];
   },
   images: {
     remotePatterns: [
-      ...reviewPhotoHosts.map((hostname) => ({ protocol: "https" as const, hostname })),
       { protocol: "https", hostname: "cdn.shopify.com" },
       // Demo catalog photos only; a connected production store never optimizes
       // Unsplash images. The dev server allows them for the My reviews samples.

@@ -1,3 +1,4 @@
+import type { StaffReviewPhoto } from "@ryanmeetup/reviews";
 import type { PublicReviewItem, ReviewRating } from "@ryanmeetup/reviews";
 
 export const MODERATION_FILTERS = ["pending", "published", "hidden", "rejected", "all"] as const;
@@ -5,7 +6,7 @@ export type ModerationFilter = (typeof MODERATION_FILTERS)[number];
 /** `republish` publishes a rejected revision after all; rejected text is never deleted. */
 export type ModerationAction = "approve" | "reject" | "hide" | "restore" | "republish";
 export type ReplyAction = "reply-set" | "reply-remove";
-export type StaffReviewAction = ModerationAction | ReplyAction | "delete";
+export type StaffReviewAction = ModerationAction | ReplyAction | "delete" | "photo-approve" | "photo-reject";
 
 /**
  * The only grounds for deleting a review. They follow the FTC consumer review
@@ -47,6 +48,7 @@ export type ModerationReply = { body: string; publishedAt: string; updatedAt: st
 export type ModerationRevision = {
   id: string; rating: ReviewRating; title: string | null; body: string;
   displayName: string; submittedAt: string;
+  photos?: StaffReviewPhoto[];
 };
 export type ModerationEvent = {
   action: string; actorKind: "buyer" | "staff"; actor: string | null;
@@ -98,6 +100,8 @@ export function moderationActionLabel(action: StaffReviewAction, review: Moderat
     case "reply-set": return review.reply ? "Edit reply" : "Write reply";
     case "reply-remove": return "Remove reply";
     case "delete": return "Delete review";
+    case "photo-approve": return "Approve photo";
+    case "photo-reject": return "Reject photo";
   }
 }
 
@@ -121,3 +125,8 @@ export function isModerationTimestamp(value: unknown): value is string {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/.test(value) &&
     Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === `${value.slice(0, 23)}Z`;
 }
+
+export type ReviewPhotoDecision = {
+  reviewId: string; revisionId: string; photoId: string; expectedUpdatedAt: string;
+  action: "approve" | "reject"; note: string | null;
+};

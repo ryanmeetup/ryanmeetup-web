@@ -66,3 +66,6 @@ export type {
 } from "./review-backend";
 export { buyerReviewPhotoSchema, buyerReviewPhotoSelectionSchema } from "./review-media";
 export type { BuyerReviewPhoto, BuyerReviewPhotoSelection } from "./review-media";
+export * from "./public-photo-path";
+export { staffReviewPhotoSchema, REVIEW_PHOTO_STATES } from "./review-media";
+export type { StaffReviewPhoto, ReviewPhotoState } from "./review-media";

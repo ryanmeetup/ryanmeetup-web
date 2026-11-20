@@ -1,13 +1,16 @@
 "use client";
 
 import { useRef, useState } from "react";
+import type { StaffReviewPhoto } from "@ryanmeetup/reviews";
 import { notifyStoreReviewsChanged } from "@/hooks/useStoreReviewPendingCount";
 import { ApiMutationError } from "@/lib/mutation-client";
-import { deleteStoreReview, fetchModerationPage, saveModerationDecision, saveOfficialReply } from "@/lib/store-reviews/moderation-client";
+import { saveReviewPhotoDecision, deleteStoreReview, fetchModerationPage, saveModerationDecision, saveOfficialReply } from "@/lib/store-reviews/moderation-client";
 import { moderationActionLabel, moderationRevisionId, reviewModerationActions, reviewReplyActions } from "@/lib/store-reviews/moderation";
 import type { ModerationFilter, ModerationInitialState, ModerationPage, ModerationReview, ReviewDeletionReason, StaffReviewAction } from "@/lib/store-reviews/moderation";
 
-export type ModerationSelection = { action: StaffReviewAction; review: ModerationReview };
+type PhotoAction = "photo-approve" | "photo-reject";
+export type ModerationSelection = { action: Exclude<StaffReviewAction, PhotoAction>; review: ModerationReview } |
+  { action: PhotoAction; review: ModerationReview; photo: StaffReviewPhoto; revisionId: string };
 
 export function useReviewModeration(initial: ModerationInitialState) {
   const [page, setPage] = useState<ModerationPage | null>(initial.status === "ready" ? initial.page : null);
@@ -44,12 +47,20 @@ export function useReviewModeration(initial: ModerationInitialState) {
   function select(review: ModerationReview, action: StaffReviewAction) {
     // Any review can be deleted; the dialog limits it to policy reasons.
     const allowed: StaffReviewAction[] = [...reviewModerationActions(review), ...reviewReplyActions(review), "delete"];
-    if (!disabled && !active.current && allowed.includes(action)) setSelection({ review, action });
+    if (disabled || active.current || !allowed.includes(action)) return;
+    setSelection({ review, action: action as Exclude<StaffReviewAction, PhotoAction> });
+  }
+  function selectPhoto(review: ModerationReview, revisionId: string, photo: StaffReviewPhoto, action: PhotoAction) {
+    if (!disabled && !active.current && review.state !== "withdrawn") setSelection({ review, revisionId, photo, action });
   }
   function dismiss() { if (!active.current) setSelection(null); }
 
-  async function decide(note: string | null, reason?: ReviewDeletionReason) {
-    if (!selection || active.current || disabled) return;
+  function decide(note: string | null, reason?: ReviewDeletionReason) {
+    return selection ? run(selection, note, reason) : Promise.resolve();
+  }
+
+  async function run(selection: ModerationSelection, note: string | null, reason?: ReviewDeletionReason) {
+    if (active.current || disabled) return;
     const { review, action } = selection;
     if (action === "reply-set" && !note) return;
     if (action === "delete" && !reason) return;
@@ -57,7 +68,10 @@ export function useReviewModeration(initial: ModerationInitialState) {
     let outcome: "saved" | "conflict" | "unknown" = "unknown";
     let photosLeft = false;
     try {
-      if (action === "delete") {
+      if ("photo" in selection) {
+        await saveReviewPhotoDecision({ reviewId: review.id, revisionId: selection.revisionId, photoId: selection.photo.id,
+          expectedUpdatedAt: review.updatedAt, action: action === "photo-approve" ? "approve" : "reject", note });
+      } else if (action === "delete") {
         photosLeft = !(await deleteStoreReview({ reviewId: review.id, expectedUpdatedAt: review.updatedAt, reason: reason!, note })).photosRemoved;
       } else if (action === "reply-set" || action === "reply-remove") {
         await saveOfficialReply({ reviewId: review.id, expectedUpdatedAt: review.updatedAt, body: action === "reply-remove" ? null : note });
@@ -92,5 +106,5 @@ export function useReviewModeration(initial: ModerationInitialState) {
     active.current = false; setBusy(null);
   }
 
-  return { page, filter, productId, busy, selection, error, message, disabled, load, select, dismiss, decide };
+  return { page, filter, productId, busy, selection, error, message, disabled, load, select, selectPhoto, dismiss, decide };
 }

@@ -30,6 +30,11 @@ decision. Buyer withdrawals stay withdrawn.
 Write, edit, or remove an official public reply from the same queue. Preview
 the exact reply before publishing; hidden reviews stay hidden when you reply.
 
+Preview buyer photos and approve or reject each one separately from the text.
+Photos awaiting a decision keep the review in the waiting queue. Only approved
+photos on the published version appear in the store; hiding, withdrawal,
+replacement, and deletion revoke their public links.
+
 Rejected reviews are kept, never deleted. Find them in the Rejected queue and
 publish one anyway if you change your mind. Narrow any queue to a single
 product with the Product filter.

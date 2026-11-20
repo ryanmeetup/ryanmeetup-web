@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   const authorized = await storeReviewStaffContext();
   if ("response" in authorized) return privateResponse(authorized.response);
   try {
-    return privateResponse(NextResponse.json({ pending: await countPendingReviews(authorized.admin, authorized.shopId) }));
+    return privateResponse(NextResponse.json({ pending: await countPendingReviews(authorized.admin, authorized.user.id, authorized.shopId) }));
   } catch (error) {
     return privateResponse(databaseFailure(request, "store_review_pending_count", {
       code: error instanceof StoreReviewDatabaseError ? error.code : undefined,

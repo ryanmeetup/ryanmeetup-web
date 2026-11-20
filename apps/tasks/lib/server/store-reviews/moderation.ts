@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { reviewReplyBodySchema, reviewSubmissionSchema } from "@ryanmeetup/reviews";
+import { reviewReplyBodySchema, reviewSubmissionSchema, staffReviewPhotoSchema } from "@ryanmeetup/reviews";
 import { parseUuid } from "@/lib/api-schema";
 import { isModerationProductId, isModerationTimestamp } from "@/lib/store-reviews/moderation";
 import { StoreReviewDatabaseError } from "./errors";
@@ -16,13 +16,17 @@ function text(value: unknown, max: number): value is string {
   return typeof value === "string" && value.length > 0 && [...value].length <= max && value === value.trim();
 }
 function revision(value: unknown): ModerationRevision | null {
-  const row = object(value, ["id", "rating", "title", "body", "displayName", "submittedAt"]);
+  const fields = ["id", "rating", "title", "body", "displayName", "submittedAt"];
+  const row = object(value, [...fields, "photos"]) ?? object(value, fields);
   if (!row || !parseUuid(row.id) || !isModerationTimestamp(row.submittedAt) || !text(row.displayName, 60)) return null;
   const content = reviewSubmissionSchema({ rating: row.rating, title: row.title, body: row.body, nameStyle: "anonymous" });
   if (!content || content.title !== row.title || content.body !== row.body) return null;
-  return { id: row.id as string, rating: content.rating, title: content.title, body: content.body, displayName: row.displayName, submittedAt: row.submittedAt };
+  const photos = row.photos ?? [];
+  if (!Array.isArray(photos) || photos.length > 5 || photos.some((photo) => !staffReviewPhotoSchema(photo)) ||
+    new Set(photos.map((photo) => photo.id)).size !== photos.length) return null;
+  return { photos, id: row.id as string, rating: content.rating, title: content.title, body: content.body, displayName: row.displayName, submittedAt: row.submittedAt };
 }
-const eventActions = ["submitted", "resubmitted", "edited", "withdrawn", "approved", "rejected", "hidden", "restored", "reply_set", "reply_removed"];
+const eventActions = ["submitted", "resubmitted", "edited", "withdrawn", "approved", "rejected", "hidden", "restored", "reply_set", "reply_removed", "photo_approved", "photo_rejected"];
 function event(value: unknown): ModerationEvent | null {
   const row = object(value, ["action", "actorKind", "actor", "note", "createdAt"]);
   if (!row || !eventActions.includes(String(row.action)) || !isModerationTimestamp(row.createdAt) ||
@@ -74,7 +78,7 @@ async function loadModerationProducts(admin: SupabaseClient, actor: string, shop
 }
 
 export async function loadReviewModerationPage(admin: SupabaseClient, actor: string, shopId: string, query: ModerationQuery): Promise<ModerationPage> {
-  const [{ data, error }, products] = await Promise.all([admin.rpc("store_review_moderation_page_v4", {
+  const [{ data, error }, products] = await Promise.all([admin.rpc("store_review_moderation_page_v5", {
     p_actor: actor, p_shop_id: shopId, p_filter: query.filter, p_product_id: query.productId, p_limit: 21,
     p_after_created_at: query.after?.createdAt ?? null, p_after_id: query.after?.id ?? null,
   }), loadModerationProducts(admin, actor, shopId)]);
@@ -134,18 +138,10 @@ export async function deleteReview(admin: SupabaseClient, actor: string, shopId:
   return { deleted: true, photoCount: photoIds.length, photosRemoved: removed };
 }
 
-/**
- * How many reviews wait for a decision, matching the moderation page's
- * `pending` queue: a waiting revision on a review the buyer has not withdrawn.
- * A review holds at most one pending revision, so counting revisions counts
- * reviews. Call only after the caller has required app ownership; the service
- * role reads these tables without the RPC's owner recheck.
- */
-export async function countPendingReviews(admin: SupabaseClient, shopId: string): Promise<number> {
-  const { count, error } = await admin.from("store_review_revisions")
-    .select("id, review:store_reviews!store_review_revisions_review_id_fkey!inner(id)", { count: "exact", head: true })
-    .eq("status", "pending").eq("review.shop_id", shopId).neq("review.state", "withdrawn");
+/** The same review predicate as the pending queue, including undecided current media. */
+export async function countPendingReviews(admin: SupabaseClient, actor: string, shopId: string): Promise<number> {
+  const { data, error } = await admin.rpc("store_pending_review_count", { p_actor: actor, p_shop_id: shopId });
   if (error) throw new StoreReviewDatabaseError(error.code);
-  if (typeof count !== "number" || !Number.isSafeInteger(count) || count < 0) throw new StoreReviewDatabaseError();
-  return count;
+  if (typeof data !== "number" || !Number.isSafeInteger(data) || data < 0) throw new StoreReviewDatabaseError();
+  return data;
 }

@@ -6,6 +6,7 @@ import { isModerationFilter } from "@/lib/store-reviews/moderation";
 import type { ModerationInitialState } from "@/lib/store-reviews/moderation";
 import { useReviewModeration } from "./useReviewModeration";
 import { ReviewModerationCard } from "./ReviewModerationCard";
+import { ReviewPhotoDecisionDialog } from "./ReviewPhotoDecisionDialog";
 import { ReviewDeletionDialog } from "./ReviewDeletionDialog";
 import { ReviewModerationDialog } from "./ReviewModerationDialog";
 import { ReviewReplyDialog } from "./ReviewReplyDialog";
@@ -35,19 +36,20 @@ export function ReviewModerationQueue({ initial, staffNames }: { initial: Modera
     </div>
     <Text className="text-sm">{queue.filter === "rejected"
       ? "Rejected text is kept, never deleted. Publish anyway puts it live, as long as the buyer has not written a newer version."
-      : "Oldest first, across every rating. Buyer edits wait for approval while the approved version stays public."}</Text>
+      : "Oldest first, across every rating. Waiting text and photos need separate decisions; approved content stays public while edits wait."}</Text>
     <div role="status" aria-live="polite" className="text-sm text-black/70 dark:text-white/70">
       {queue.busy ? <span className="inline-flex items-center gap-2"><Spinner size={16} />{queue.busy === "saving" ? "Saving decision and refreshing reviews…" : "Loading reviews…"}</span> : queue.message}
     </div>
     {queue.error && <ErrorCallout>{queue.error}</ErrorCallout>}
     <div aria-label="Review queue" aria-busy={Boolean(queue.busy)} className={`space-y-4 ${queue.busy ? "opacity-60" : ""}`}>
       {queue.page?.reviews.map((review) => <ReviewModerationCard key={`${review.id}-${review.updatedAt}`}
-        review={review} staffNames={staffNames} disabled={Boolean(queue.busy)} onSelect={queue.select} />)}
+        review={review} staffNames={staffNames} disabled={Boolean(queue.busy)} onSelect={queue.select} onPhotoSelect={queue.selectPhoto} />)}
       {queue.page?.reviews.length === 0 && <EmptyState message={queue.filter === "pending" ? "No reviews waiting for a decision" :
         queue.filter === "rejected" ? "No rejected reviews" : "No reviews in this queue"} />}
     </div>
     {queue.page?.next && <Button className="w-full sm:w-auto" variant="secondary" disabled={locked} onClick={() => void queue.load({ more: true })}>Load more reviews</Button>}
-    {queue.selection?.action === "delete" ? <ReviewDeletionDialog key={`${queue.selection.review.id}-delete`} review={queue.selection.review}
+    {queue.selection && "photo" in queue.selection ? <ReviewPhotoDecisionDialog selection={queue.selection} saving={Boolean(queue.busy)} onClose={queue.dismiss} onSubmit={queue.decide} /> :
+    queue.selection?.action === "delete" ? <ReviewDeletionDialog key={`${queue.selection.review.id}-delete`} review={queue.selection.review}
       saving={Boolean(queue.busy)} onClose={queue.dismiss} onSubmit={queue.decide} /> :
     queue.selection && (queue.selection.action === "reply-set" || queue.selection.action === "reply-remove" ?
       <ReviewReplyDialog key={`${queue.selection.review.id}-${queue.selection.action}`} review={queue.selection.review}

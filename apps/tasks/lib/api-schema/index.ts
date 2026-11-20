@@ -32,3 +32,5 @@ export {
 
 export { parseUuid } from "./shared";
 export { storeReviewDeletionSchema, storeReviewModerationSchema, storeReviewModerationQuery, storeReviewReplySchema } from "./store-review-moderation";
+
+export { storeReviewPhotoDecisionSchema } from "./store-review-moderation";

@@ -1,3 +1,5 @@
+import { isPublicReviewPhotoPath } from "./public-photo-path";
+
 /**
  * Review content contract shared by the storefront and the review backend.
  * Buyer input is normalized here, and public payloads are checked against an
@@ -181,7 +183,7 @@ function itemSchema(value: unknown): PublicReviewItem | null {
 
 function photoSchema(value: unknown): PublicReviewPhoto | null {
   const photo = exactObject(value, ["url", "width", "height"]);
-  return photo && isHttpsUrl(photo.url) && isCount(photo.width) && photo.width > 0 && isCount(photo.height) && photo.height > 0
+  return photo && (isHttpsUrl(photo.url) || isPublicReviewPhotoPath(photo.url)) && isCount(photo.width) && photo.width > 0 && isCount(photo.height) && photo.height > 0
     ? (photo as PublicReviewPhoto) : null;
 }
 

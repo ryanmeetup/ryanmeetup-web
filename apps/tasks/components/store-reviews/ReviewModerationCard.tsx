@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import { useId, useState } from "react";
 import { FiChevronDown, FiEdit2, FiEye, FiEyeOff, FiMessageSquare, FiTrash2 } from "react-icons/fi";
 import { AnimatedCollapse, Button, Card, Heading, IconButton, Kicker, Pill, RatingStars, Text } from "@ryanmeetup/ui";
@@ -7,12 +9,15 @@ import { formatTimestamp } from "@/lib/date-format";
 import { moderationActionLabel, reviewModerationActions, reviewReplyActions } from "@/lib/store-reviews/moderation";
 import type { ModerationReview, ModerationRevision, StaffReviewAction } from "@/lib/store-reviews/moderation";
 
+import { ReviewModerationPhotos } from "./ReviewModerationPhotos";
+import type { PhotoChoice } from "./ReviewModerationPhotos";
+
 const eventLabels: Record<string, string> = {
   submitted: "Submitted", resubmitted: "Resubmitted", edited: "Edit submitted", withdrawn: "Withdrawn",
-  approved: "Approved", rejected: "Rejected", hidden: "Hidden", restored: "Restored", reply_set: "Reply saved", reply_removed: "Reply removed",
+  photo_approved: "Photo approved", photo_rejected: "Photo rejected", approved: "Approved", rejected: "Rejected", hidden: "Hidden", restored: "Restored", reply_set: "Reply saved", reply_removed: "Reply removed",
 };
 
-export function ModerationVersion({ revision, label }: { revision: ModerationRevision; label: string }) {
+export function ModerationVersion({ revision, label, children }: { revision: ModerationRevision; label: string; children?: ReactNode }) {
   return <section className="min-w-0 space-y-3 rounded-xl border border-black/10 p-4 dark:border-white/10" aria-label={label}>
     <Kicker>{label}</Kicker>
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -22,17 +27,22 @@ export function ModerationVersion({ revision, label }: { revision: ModerationRev
     {revision.title && <Heading size="h3" variant="normal" className="text-base font-semibold wrap-anywhere">{revision.title}</Heading>}
     <Text className="whitespace-pre-wrap text-sm wrap-anywhere">{revision.body}</Text>
     <Text className="text-xs">Submitted <time dateTime={revision.submittedAt}>{formatTimestamp(revision.submittedAt)}</time></Text>
+    {children}
   </section>;
 }
 
-export function ReviewModerationCard({ review, disabled, staffNames, onSelect }: {
+export function ReviewModerationCard({ review, disabled, staffNames, onSelect, onPhotoSelect }: {
   review: ModerationReview; disabled: boolean; staffNames: Record<string, string>;
   onSelect: (review: ModerationReview, action: StaffReviewAction) => void;
+  onPhotoSelect: PhotoChoice;
 }) {
   const [historyOpen, setHistoryOpen] = useState(false);
   const historyId = useId();
   const headingId = useId();
   const actions = reviewModerationActions(review);
+  const version = (revision: ModerationRevision, label: string) => <ModerationVersion revision={revision} label={label}>
+    <ReviewModerationPhotos review={review} revision={revision} disabled={disabled} onSelect={onPhotoSelect} />
+  </ModerationVersion>;
   const state = review.state === "hidden" ? "Hidden" : review.state === "withdrawn" ? "Withdrawn" : review.published ? "Published" :
     review.pending ? "Pending" : review.rejected ? "Rejected" : "Not published";
   const second = review.published && (review.pending || review.rejected);
@@ -53,10 +63,10 @@ export function ReviewModerationCard({ review, disabled, staffNames, onSelect }:
         </div>
       </div>
       <div className={`grid items-start gap-4 ${second ? "xl:grid-cols-2" : ""}`}>
-        {review.pending && <ModerationVersion revision={review.pending} label={review.published ? "Waiting edit" : "Waiting for review"} />}
-        {review.rejected && <ModerationVersion revision={review.rejected} label={review.published ? "Rejected edit" : "Rejected version"} />}
-        {review.published && <ModerationVersion revision={review.published} label={review.state === "hidden" ? "Approved version · hidden" : "Published version"} />}
-        {!review.pending && !review.published && !review.rejected && <ModerationVersion revision={review.latest} label="Last submitted version" />}
+        {review.pending && version(review.pending, review.published ? "Waiting edit" : "Waiting for review")}
+        {review.rejected && version(review.rejected, review.published ? "Rejected edit" : "Rejected version")}
+        {review.published && version(review.published, review.state === "hidden" ? "Approved version · hidden" : "Published version")}
+        {!review.pending && !review.published && !review.rejected && version(review.latest, "Last submitted version")}
       </div>
       {review.rejected && <div className="space-y-1">
         {rejectionNote && <Text className="whitespace-pre-wrap text-sm wrap-anywhere">Private reason: {rejectionNote}</Text>}

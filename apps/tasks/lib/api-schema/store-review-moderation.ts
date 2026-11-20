@@ -46,3 +46,14 @@ export function storeReviewDeletionSchema(value: unknown): ReviewDeletionCommand
   if (note && ([...note].length > 1000 || /[\u0000-\u0008\u000b-\u001f\u007f]/u.test(note))) return null;
   return { reviewId: input.reviewId, expectedUpdatedAt: input.expectedUpdatedAt, reason: input.reason, note };
 }
+
+export function storeReviewPhotoDecisionSchema(value: unknown): import("@/lib/store-reviews/moderation").ReviewPhotoDecision | null {
+  const input = objectWithKeys(value, ["reviewId", "revisionId", "photoId", "expectedUpdatedAt", "action", "note"]);
+  if (!input || !isUuid(input.reviewId) || !isUuid(input.revisionId) || !isUuid(input.photoId) ||
+    !isModerationTimestamp(input.expectedUpdatedAt) || !["approve", "reject"].includes(String(input.action)) ||
+    (input.note !== null && typeof input.note !== "string")) return null;
+  const note = typeof input.note === "string" ? input.note.trim() || null : null;
+  if ((input.action === "reject" && !note) || (note && ([...note].length > 1000 || /[\u0000-\u0008\u000b-\u001f\u007f]/u.test(note)))) return null;
+  return { reviewId: input.reviewId, revisionId: input.revisionId, photoId: input.photoId,
+    expectedUpdatedAt: input.expectedUpdatedAt, action: input.action as "approve" | "reject", note };
+}
