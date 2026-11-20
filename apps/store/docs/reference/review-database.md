@@ -50,6 +50,7 @@ history under the Store or rewrite applied SQL.
 | `20261121010000` | Rejected queue, publish-anyway and product filter; staff v4 | Applied |
 | `20261121020000` | Audited permanent review deletion | Applied |
 | `20261121030000` | Owner photo decisions/previews, staff v5 and revocable public images | Applied |
+| `20261121040000` | Buyer-facing rejection reasons until resubmission | Applied |
 
 The timestamp-shaped versions are identifiers, not evidence of deployment time.
 Photo publication was applied to RMT and verified for private-bucket and
