@@ -75,6 +75,20 @@ test("ungrouped products retain their own complete rating summary", async ({ pag
   expect((await schema(page)).aggregateRating).toMatchObject({ ratingValue: "4.4", reviewCount: 25 });
 });
 
+test("published unverified custom reviews remain visible without a purchase or legacy verification badge", async ({ page, request }) => {
+  const verified = review(tee, 4);
+  const unverified = { ...verified, id: "00000000-0000-4000-8000-000000000002", displayName: "Another Ryan", verifiedPurchase: false };
+  expect((await request.post(`${fixture}/__configure`, { data: {
+    [numericId(tee)]: { summary: { count: 2, average: 4, distribution: { 1: 0, 2: 0, 3: 0, 4: 2, 5: 0 } }, reviews: [verified, unverified] },
+  } })).ok()).toBe(true);
+  await page.goto(`/products/${tee.handle}#reviews`);
+  await expect(page.getByRole("article", { name: "Review by Ryan F.", exact: true }).getByText("Verified purchase", { exact: true })).toBeVisible();
+  const card = page.getByRole("article", { name: "Review by Another Ryan", exact: true });
+  await expect(card).toContainText("Synthetic public review.");
+  await expect(card.getByText(/Verified (purchase|review)/)).toHaveCount(0);
+  await expect(page.locator("#reviews")).toContainText("Average rating from 2 reviews");
+});
+
 test("pausing custom collection keeps published reviews readable and refuses buyer operations before private storage", async ({ page, request, baseURL }) => {
   await page.goto(`/products/${tee.handle}`);
   await expect(page.locator("#reviews")).toContainText("Average rating from 25 reviews");

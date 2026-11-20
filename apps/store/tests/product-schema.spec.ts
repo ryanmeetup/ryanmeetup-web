@@ -9,7 +9,7 @@ import { dad, ryan } from "./fixtures/products";
 const url = "https://store.ryanmeetup.com/products/name-tag-shirt?design=ryan";
 const reviews: ReviewsData = {
   status: "available", averageRating: 4.4, count: 25,
-  reviews: [{ id: "one-visible-review", rating: 4, title: "Fits well", body: "Still looking good.", reviewerName: "Ryan F.", createdAt: "2026-11-18T12:00:00Z", verified: true }],
+  reviews: [{ id: "one-visible-review", rating: 4, title: "Fits well", body: "Still looking good.", reviewerName: "Ryan F.", createdAt: "2026-11-18T12:00:00Z", verification: "purchase" }],
 };
 
 test("product structured data uses the complete rating summary, independently of the visible page", () => {

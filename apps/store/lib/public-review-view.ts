@@ -15,7 +15,8 @@ export function toReviewsData(page: PublicReviewPage): Extract<ReviewsData, { st
       const photoUrls = review.photos.flatMap((photo) => publishedReviewPhotoUrl(photo.url) ?? []);
       return {
         id: review.id, rating: review.rating, title: review.title, body: review.body,
-        reviewerName: review.displayName, createdAt: review.publishedAt, verified: review.verifiedPurchase,
+        reviewerName: review.displayName, createdAt: review.publishedAt,
+        verification: review.verifiedPurchase ? "purchase" as const : null,
         ...(photoUrls.length ? { photoUrls } : {}),
         ...(review.reply ? { reply: { body: review.reply.body, publishedAt: review.reply.publishedAt } } : {}),
       };

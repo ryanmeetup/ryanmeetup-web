@@ -34,6 +34,8 @@ for (const theme of ["light", "dark"]) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto(`/products/${tee.handle}#reviews`);
       const article = page.getByRole("article", { name: "Review by Ryan F.", exact: true });
+      await expect(article.getByText("Verified purchase", { exact: true })).toBeVisible();
+      await expect(article.getByText("Verified review", { exact: true })).toHaveCount(0);
       const response = article.getByRole("region", { name: label, exact: true });
       await expect(response.getByRole("heading", { name: label, level: 4 })).toBeVisible();
       await expect(response.locator("time")).toHaveAttribute("datetime", publishedAt);

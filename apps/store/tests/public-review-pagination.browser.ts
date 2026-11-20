@@ -49,6 +49,7 @@ test("all public pages are reachable while complete totals, JSON-LD and replies 
   await expect(page.locator("#reviews")).toContainText("Average rating from 45 reviews");
   expect(JSON.parse((await page.locator("#product-structured-data").textContent())!).aggregateRating.reviewCount).toBe(45);
   await expect(page.getByRole("article", { name: "Review by Ryan 1", exact: true })).toContainText("The oldest review has a public reply.");
+  await expect(page.getByRole("article", { name: "Review by Ryan 1", exact: true }).getByText("Verified purchase", { exact: true })).toBeVisible();
   expect(await cards(page).evaluateAll((rows) => new Set(rows.map((row) => row.querySelector("h3")?.textContent)).size)).toBe(45);
 });
 

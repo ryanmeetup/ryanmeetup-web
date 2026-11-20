@@ -182,7 +182,7 @@ export function Reviews({ data, product, reviewAccount, reviewPreview, customAcc
                   {!!review.photoUrls?.length && <ReviewPhotoGallery urls={review.photoUrls} reviewerName={review.reviewerName} />}
                   <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1">
                     <Text className="flex min-w-0 items-center gap-1.5 text-sm font-semibold"><FiUser className="size-3.5 shrink-0" aria-hidden /><span className="min-w-0 break-words">{review.reviewerName}</span></Text>
-                    {review.verified && <Pill variant="success" size="sm"><FiCheck className="shrink-0" aria-hidden />Verified review</Pill>}
+                    {review.verification && <Pill variant="success" size="sm"><FiCheck className="shrink-0" aria-hidden />{review.verification === "purchase" ? "Verified purchase" : "Verified review"}</Pill>}
                   </div>
                   {review.reply && <ReviewReply reply={review.reply} />}
                 </article>

@@ -94,7 +94,7 @@ async function loadJudgeMeReviews(productId: string): Promise<ReviewsData> {
       rating: review.rating,
       reviewerName: review.reviewer?.name ?? "Ryan customer",
       createdAt: review.created_at,
-      verified: verifiedReviewStatuses.has(review.verified ?? ""),
+      verification: verifiedReviewStatuses.has(review.verified ?? "") ? "review" : null,
       photoUrls: Array.from(new Set((review.pictures ?? []).flatMap((picture) => {
         if (picture.hidden !== false) return [];
         const url = publishedReviewPhotoUrl(picture.urls?.huge) ?? publishedReviewPhotoUrl(picture.urls?.original);
