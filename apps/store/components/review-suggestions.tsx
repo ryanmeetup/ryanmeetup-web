@@ -3,10 +3,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
-import { Button, Card, Heading, Text } from "@ryanmeetup/ui";
+import { Button, Card, DisclosureCard, Heading, Pill, Text } from "@ryanmeetup/ui";
 import { FiPackage } from "react-icons/fi";
 import type { ReviewSuggestion, ReviewSuggestions as Suggestions } from "@/lib/review-suggestions";
 import { CustomReviewComposer, type CustomReviewResult } from "./custom-review-composer";
+
+/** The toggle row both My reviews sections share, so they read as one page. */
+export const reviewSectionToggle = "flex w-full items-center justify-between gap-4 rounded-sm py-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/40";
 
 const shippedDate = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 
@@ -55,11 +58,17 @@ export function ReviewSuggestions({ suggestions, onReviewed }: { suggestions: Su
   if (!items.length) return null;
 
   return (
-    <section aria-labelledby="ready-to-review" className="space-y-4">
-      <div className="space-y-1">
-        <Heading id="ready-to-review" size="h2" className="text-2xl">Ready to review</Heading>
-        <Text className="text-sm">From your recent orders. Reviews of things you bought get a Verified badge.</Text>
-      </div>
+    <section aria-labelledby="ready-to-review">
+      <DisclosureCard
+        id="ready-to-review"
+        heading="h2"
+        defaultOpen
+        className="border-b border-black/10 dark:border-white/10"
+        buttonClassName={reviewSectionToggle}
+        panelClassName="space-y-4 pb-6"
+        summary={<span className="flex items-center gap-3"><span className="font-cooper text-2xl">Ready to review</span><Pill variant="neutral" size="sm">{items.length}</Pill></span>}
+      >
+      <Text className="text-sm">From your recent orders. Reviews of things you bought get a Verified badge.</Text>
       <ul className="grid gap-3 md:grid-cols-2">
         {items.map((item) => (
           <li key={item.lineId}>
@@ -82,6 +91,7 @@ export function ReviewSuggestions({ suggestions, onReviewed }: { suggestions: Su
           </li>
         ))}
       </ul>
+      </DisclosureCard>
       {reviewing && (
         <CustomReviewComposer
           key={reviewing.lineId}

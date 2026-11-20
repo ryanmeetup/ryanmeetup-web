@@ -165,3 +165,28 @@ test("signed in, My reviews offers recent purchases to review and reviews them i
   const {calls}=await state(request);
   expect(calls).toEqual([expect.objectContaining({operation:"review.submit",subject:"buyer-a",purchase:expect.objectContaining({orderId:"100",lineId:"101"})})]);
 });
+test("Ready to review and Your reviews each fold away under a real heading",async({page,request,baseURL})=>{
+  await reset(request);
+  const purchase=customerPurchasePage();purchase.order.customer.id="gid://shopify/Customer/123";
+  purchase.order.lineItems.nodes[0].productId=demoProductId("ryan-meetup-tee");
+  purchase.order.lineItems.nodes[0].variantTitle="M / White";
+  await configure(request,{purchase});await signIn(page,baseURL!);
+  for(const width of [390,1280]){
+    await page.setViewportSize({width,height:900});
+    await page.goto("/reviews/mine");
+    const ready=page.getByRole("heading",{level:2,name:/^Ready to review/}).getByRole("button");
+    const yours=page.getByRole("heading",{level:2,name:/^Your reviews/}).getByRole("button");
+    await expect(ready).toHaveAttribute("aria-expanded","true");await expect(yours).toHaveAttribute("aria-expanded","true");
+    await expect(page.getByRole("button",{name:"Refresh reviews",exact:true})).toBeVisible();
+    await page.screenshot({path:screenshotPath(`my-reviews-sections-open-${width}.png`),fullPage:true});
+    await ready.click();
+    await expect(ready).toHaveAttribute("aria-expanded","false");
+    await expect(page.getByRole("button",{name:"Write a review of Official Ryan Meetup Tee"})).toHaveCount(0);
+    await yours.click();
+    await expect(yours).toHaveAttribute("aria-expanded","false");
+    // The shared panel stays mounted to animate; closed, it is aria-hidden and inert, so reviews leave the accessibility tree.
+    await expect(page.getByRole("article",{name:/^Your review of/})).toHaveCount(0);
+    await page.screenshot({path:screenshotPath(`my-reviews-sections-closed-${width}.png`),fullPage:true});
+    await yours.click();await expect(page.locator("article[data-testid^='my-review-']").first()).toBeVisible();
+  }
+});

@@ -1,14 +1,14 @@
 "use client";
 
 import type { BuyerReviewStatus } from "@ryanmeetup/reviews";
-import { Button, Card, ConfirmationDialog, ErrorCallout, Heading, IconButton, Pill, RatingStars, Spinner, Text } from "@ryanmeetup/ui";
+import { Button, Card, ConfirmationDialog, DisclosureCard, ErrorCallout, Heading, IconButton, Pill, RatingStars, Spinner, Text } from "@ryanmeetup/ui";
 import { FiEdit2, FiMessageSquare, FiRefreshCw, FiTrash2 } from "react-icons/fi";
 import { buyerReviewNameChoices } from "@/lib/my-review-view";
 import { reviewSignInRel, reviewSignInUrl } from "@/lib/review-sign-in";
 import type { MyReviewView } from "@/lib/my-review-view";
 import type { ReviewSuggestions as Suggestions } from "@/lib/review-suggestions";
 import { CustomReviewComposer } from "./custom-review-composer";
-import { ReviewSuggestions } from "./review-suggestions";
+import { ReviewSuggestions, reviewSectionToggle } from "./review-suggestions";
 import { useMyReviews } from "./use-my-reviews";
 
 const STATUS: Record<BuyerReviewStatus, { label: string; note: string }> = {
@@ -25,17 +25,25 @@ export function MyReviews({ initial, suggestions }: { initial: MyReviewView | nu
   const mine=useMyReviews(initial);
   const editing=mine.editing;
   const hasSuggestions=Boolean(suggestions?.items.length);
-  return <div className="space-y-10">
+  const reviewCount=mine.view?.page.reviews.length ?? 0;
+  return <div className="space-y-6">
     {suggestions && <ReviewSuggestions suggestions={suggestions} onReviewed={(notice)=>void mine.reloadWith(notice)} />}
-    <section aria-labelledby={hasSuggestions ? "your-reviews" : undefined} className="space-y-4">
-    <div className="flex min-h-10 items-center justify-between gap-4 border-b border-black/10 pb-3 dark:border-white/10">
-      {hasSuggestions ? <Heading id="your-reviews" size="h2" className="text-2xl">Your reviews</Heading> : <span />}
-      <div className="flex shrink-0 items-center gap-2">
+    <section aria-labelledby="your-reviews">
+    <DisclosureCard
+      id="your-reviews"
+      heading="h2"
+      defaultOpen
+      className="border-b border-black/10 dark:border-white/10"
+      buttonClassName={reviewSectionToggle}
+      panelClassName="space-y-4 pb-6"
+      summary={<span className="flex items-center gap-3"><span className="font-cooper text-2xl">Your reviews</span>{reviewCount ? <Pill variant="neutral" size="sm">{reviewCount}</Pill> : null}</span>}
+      actionsClassName="absolute right-8 top-1/2 flex -translate-y-1/2 items-center gap-2"
+      actions={<>
         {!mine.view && <Button.Link href={reviewSignInUrl("/reviews/mine")} rel={reviewSignInRel} prefetch={false} size="sm" variant="secondary">Sign in</Button.Link>}
-        <Button variant="ghost" size="sm" disabled={mine.pending || Boolean(editing || mine.withdrawing)} onClick={()=>void mine.load()}
-          leftIcon={<FiRefreshCw aria-hidden className={mine.pending ? "animate-spin motion-reduce:animate-none" : ""} />}>Refresh reviews</Button>
-      </div>
-    </div>
+        <Button variant="ghost" size="sm" aria-label="Refresh reviews" disabled={mine.pending || Boolean(editing || mine.withdrawing)} onClick={()=>void mine.load()}
+          leftIcon={<FiRefreshCw aria-hidden className={mine.pending ? "animate-spin motion-reduce:animate-none" : ""} />}><span className="hidden sm:inline">Refresh reviews</span></Button>
+      </>}
+    >
     <div role="status" aria-live="polite" className="text-sm text-black/70 dark:text-white/70">
       {mine.pending ? <span className="inline-flex items-center gap-2"><Spinner size={16} className="shrink-0" />Updating your reviews…</span> : mine.message}
     </div>
@@ -74,6 +82,7 @@ export function MyReviews({ initial, suggestions }: { initial: MyReviewView | nu
       </ul>
     </div>
     {mine.view?.page.nextCursor && <Button className="w-full sm:w-auto" variant="secondary" disabled={mine.pending} onClick={()=>void mine.load(true)}>Load more reviews</Button>}
+    </DisclosureCard>
     </section>
     {editing && <CustomReviewComposer key={`${editing.id}-${editing.updatedAt}`} open
       access={{status:"ready",buyer:{firstName:null,lastName:null},purchases:editing.lineId?[{lineId:editing.lineId,label:editing.item.variantTitle ? `${editing.item.productTitle} · ${editing.item.variantTitle}`:editing.item.productTitle}]:[],defaultNameStyle:editing.current.nameStyle}}
