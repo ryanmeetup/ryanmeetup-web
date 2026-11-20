@@ -11,8 +11,10 @@ import {
   REVIEW_PAGE_MAX,
   REVIEW_PHOTOS_MAX,
   publicReviewPageSchema,
+  publicReviewSchema,
   reviewSubmissionSchema,
   type PublicReviewItem,
+  type PublicReview,
   type PublicReviewPage,
   type ReviewSubmission,
 } from "./content";
@@ -71,6 +73,7 @@ export type ReviewCommand =
   | { operation: "review.edit"; subject: string; reviewId: string; expectedUpdatedAt: string; submission: ReviewSubmission; displayName: string; photoIds?: string[] }
   | { operation: "review.withdraw"; subject: string; reviewId: string; expectedUpdatedAt: string }
   | { operation: "reviews.page"; productIds: string[]; limit: number; cursor: string | null }
+  | { operation: "reviews.latest" }
   | { operation: "reviews.mine"; subject: string; cursor: string | null }
   | { operation: "review.mine"; subject: string; reviewId: string }
   | { operation: "reviews.reviewedLines"; subject: string; lineIds: string[] }
@@ -85,6 +88,7 @@ export type ReviewResults = {
   "review.edit": "pending" | "closed" | "not_found" | "conflict" | "invalid_photos";
   "review.withdraw": "withdrawn" | "not_found" | "conflict";
   "reviews.page": PublicReviewPage;
+  "reviews.latest": PublicReview[];
   "reviews.mine": BuyerReviewPage;
   "review.mine": BuyerReview | null;
   "reviews.reviewedLines": string[];
@@ -155,6 +159,8 @@ export function reviewCommandSchema(value: unknown): ReviewCommand | null {
         Number.isSafeInteger(command.limit) && (command.limit as number) >= 1 && (command.limit as number) <= REVIEW_PAGE_MAX &&
         (command.cursor === null || (typeof command.cursor === "string" && decodeReviewCursor(command.cursor) !== null)) ? (command as ReviewCommand) : null;
     }
+    case "reviews.latest":
+      return exactObject(value, ["operation"]) ? value as ReviewCommand : null;
     case "reviews.mine": {
       const command = exactObject(value, ["operation", "subject", "cursor"]);
       return command && subject(command.subject) && (command.cursor === null || (typeof command.cursor === "string" && decodeBuyerReviewCursor(command.cursor))) ? (command as ReviewCommand) : null;
@@ -241,6 +247,11 @@ export function reviewResultSchema<Operation extends ReviewOperation>(operation:
     valid = data === "withdrawn" || data === "not_found" || data === "conflict";
   } else if (operation === "reviews.page") {
     valid = publicReviewPageSchema(data) !== null;
+  } else if (operation === "reviews.latest") {
+    valid = Array.isArray(data) && data.length <= 6 && data.every(publicReviewSchema) &&
+      new Set(data.map((review) => review.id)).size === data.length &&
+      data.every((review, index) => index === 0 || Date.parse(data[index - 1].publishedAt) > Date.parse(review.publishedAt) ||
+        (data[index - 1].publishedAt === review.publishedAt && data[index - 1].id > review.id));
   } else if (operation === "reviews.mine") {
     const page = exactObject(data,["reviews","nextCursor"]);
     if (page && Array.isArray(page.reviews) && page.reviews.length <= 20 && page.reviews.every((review) => buyerReviewSchema(review) !== null)) {

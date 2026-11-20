@@ -5,9 +5,11 @@ import {
   Text,
 } from "@ryanmeetup/ui";
 import Image from "next/image";
+import { Suspense } from "react";
 import { FiArrowRight } from "react-icons/fi";
 import { HomeCollectionTiles } from "@/components/home-collection-tiles";
 import { HomeSpotlight } from "@/components/home-spotlight";
+import { HomeReviews } from "@/components/home-reviews";
 import { ProductGrid } from "@/components/product-grid";
 import { getHomeCatalog } from "@/lib/shopify";
 
@@ -112,6 +114,7 @@ export default async function HomePage() {
           <HomeCollectionTiles tiles={collections} className="mt-8" />
         </section>
       )}
+      <Suspense fallback={null}><HomeReviews /></Suspense>
     </main>
   );
 }

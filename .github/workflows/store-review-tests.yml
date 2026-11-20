@@ -57,7 +57,7 @@ jobs:
       - name: Test buyer review management against isolated transports
         run: npm run test:e2e:my-reviews
       - name: Test public review projections and structured data
-        run: STORE_BASE_URL=http://127.0.0.1:39999 npx playwright test tests/product-schema.spec.ts tests/custom-review-replies.spec.ts tests/public-review-page.spec.ts tests/review-verification.spec.ts --workers=1 --output=test-results-public-reviews/unit
+        run: STORE_BASE_URL=http://127.0.0.1:39999 npx playwright test tests/product-schema.spec.ts tests/custom-review-replies.spec.ts tests/public-review-page.spec.ts tests/review-verification.spec.ts tests/home-reviews.spec.ts --workers=1 --output=test-results-public-reviews/unit
       - name: Test review photo processing, collection and private staging
         run: STORE_BASE_URL=http://127.0.0.1:39999 npx playwright test tests/review-photo-processing.spec.ts tests/review-photo-staging.spec.ts tests/review-photo-actions.spec.ts tests/review-photo-reader.spec.ts tests/review-photo-reads.spec.ts tests/review-photo-client.spec.ts tests/review-photo-viewer.spec.ts tests/public-review-photo.spec.ts --workers=1 --output=test-results-public-reviews/photo-unit
       - name: Test private review photo editor with synthetic accounts

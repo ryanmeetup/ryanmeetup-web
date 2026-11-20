@@ -27,6 +27,9 @@ function check<T>(result: { data: T; error: { code?: string } | null }) {
 async function executeStoreReview(admin: SupabaseClient, shopId: string, command: ReviewCommand) {
   let data: unknown;
   switch (command.operation) {
+    case "reviews.latest":
+      data = check(await admin.rpc("store_latest_reviews", { p_shop_id: shopId }).abortSignal(AbortSignal.timeout(10_000)));
+      break;
     case "review.submit": {
       const { purchase, submission } = command;
       const rows = check(await admin.rpc(command.photoIds === undefined ? "store_submit_review" : "store_submit_review_with_photos", {

@@ -110,6 +110,7 @@ createServer(async(req,res)=>{
     const args=await body(req);
     if(url.pathname==="/rest/v1/store_customer_sessions"){sessions.set(args.session_hash,{...args,revision:0});return json(res,201);}
     const name=url.pathname.replace(/^\/rest\/v1\/rpc\//,"");
+    if(name==="store_latest_reviews")return json(res,200,[]);
     if(name==="store_get_customer_session"){const s=sessions.get(args.p_session_hash);return json(res,200,s?[s]:[]);}
     if(name==="store_revoke_customer_session")return json(res,200,sessions.delete(args.p_session_hash));
     if(options.failRead&&name==="store_buyer_reviews")return json(res,503,{message:"Synthetic read failure"});

@@ -8,7 +8,7 @@ export default defineConfig({
   testDir: "./tests",
   outputDir: "./test-results-public-reviews/browser",
   // Kept out of the ordinary suite, which uses an empty public-review fixture.
-  testMatch: ["product-review-scope.browser.ts", "public-review-replies.browser.ts", "public-review-pagination.browser.ts", "private-review-photos.browser.ts"],
+  testMatch: ["home-reviews.browser.ts", "product-review-scope.browser.ts", "public-review-replies.browser.ts", "public-review-pagination.browser.ts", "private-review-photos.browser.ts"],
   workers: 1,
   use: { baseURL: `http://localhost:${port}`, trace: "retain-on-failure" },
   webServer: [
@@ -18,7 +18,7 @@ export default defineConfig({
       env: {
         // Valid synthetic auth configuration makes the pause test exercise
         // the explicit off switch, rather than missing credentials.
-        ...process.env, ...customerAccountEnvironment, NEXT_DIST_DIR: ".next-e2e/product-reviews",
+        ...process.env, ...customerAccountEnvironment, NEXT_DIST_DIR: process.env.PRODUCT_REVIEW_DIST_DIR ?? ".next-e2e/product-reviews",
         STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED: "", STORE_REVIEW_PHOTOS_ENABLED: "false",
         SHOPIFY_STOREFRONT_API_TOKEN: "", SHOPIFY_CUSTOMER_ACCOUNT_SHOP_ID: "123456",
         SUPABASE_URL: `http://127.0.0.1:${fixturePort}`, SUPABASE_SECRET_KEY: "synthetic-supabase-secret",

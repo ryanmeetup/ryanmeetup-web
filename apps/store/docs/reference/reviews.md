@@ -31,6 +31,20 @@ The code and prior docs record production's move to custom reviews on November
 media or recovery case has been tested. See [operations](../how-to/review-operations.md)
 for the evidence to collect rather than treating unrecorded checks as passed.
 
+## Latest reviews on the home page
+
+The bottom of the home page shows up to six newest published reviews across the
+shop, including low ratings. It reuses product review cards, approved photo
+paths and verified-purchase badges. Product links open the exact review when
+the product still has a storefront page; unavailable products keep their saved
+review title without a broken link. Long bodies have a compact preview.
+
+The server uses the service-only `store_latest_reviews` reader and the canonical
+public projection. It never requests buyer sessions or private moderation data.
+The showcase reads per request so hiding, withdrawal and deletion are reflected
+on the next load. Catalog caching is unchanged. Empty or unavailable reads omit
+the section; no demo testimonials or partial-feed rating average is shown.
+
 ## Buyer and publication rules
 
 - Shopify sign-in is required. Identity, purchase snapshots and public names

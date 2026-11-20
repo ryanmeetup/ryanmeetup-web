@@ -20,6 +20,8 @@ than inheriting an old "not started" or "done" label.
   status and customer accounts.
 - Signed catalog webhooks with five-minute cache freshness as a fallback;
   About, support, policy pages, sitemap and branded error pages.
+- Six newest published reviews on the home page, with ratings, approved photos
+  and links to their product reviews.
 - Custom text reviews with Shopify sign-in, verified/unverified feedback,
   management/suggestions, full product totals, paging, replies and owner
   moderation in Tasks, including rejected/product filters and audited deletion.
