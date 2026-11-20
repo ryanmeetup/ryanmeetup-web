@@ -108,3 +108,22 @@ test("fits the private list and editor across mobile/desktop boundaries in both 
     }
   }
 });
+test("an empty list points back to the shop, and refreshing shows a small spinner",async({page,request,baseURL})=>{
+  await reset(request,{empty:true});await signIn(page,baseURL!);
+  for(const theme of ["dark","light"]){
+    await page.addInitScript((value)=>localStorage.setItem("theme",value),theme);
+    await page.goto("/reviews/mine");
+    await expect(page.getByRole("heading",{name:"No reviews yet",exact:true})).toBeVisible();
+    await expect(page.getByRole("link",{name:"Browse the shop",exact:true})).toHaveAttribute("href","/");
+    await page.locator("main").screenshot({path:`/private/tmp/store-my-reviews-empty-${theme}.png`});
+  }
+  // Hold the refresh open long enough to measure what it shows.
+  let release=()=>{};const held=new Promise<void>((resolve)=>{release=resolve;});
+  await page.route("**/api/reviews/mine**",async(route)=>{await held;await route.continue();});
+  await page.getByRole("button",{name:"Refresh reviews",exact:true}).click();
+  const status=page.getByRole("status").filter({hasText:"Updating your reviews…"});
+  await expect(status).toBeVisible();
+  const spinner=await status.locator("svg").boundingBox();
+  expect(spinner!.width).toBeLessThanOrEqual(20);expect(spinner!.height).toBeLessThanOrEqual(20);
+  release();await expect(status).toHaveCount(0);
+});

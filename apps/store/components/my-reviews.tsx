@@ -2,7 +2,7 @@
 
 import type { BuyerReviewStatus } from "@ryanmeetup/reviews";
 import { Button, Card, ConfirmationDialog, ErrorCallout, Heading, IconButton, Pill, RatingStars, Spinner, Text } from "@ryanmeetup/ui";
-import { FiEdit2, FiTrash2 } from "react-icons/fi";
+import { FiEdit2, FiMessageSquare, FiRefreshCw, FiTrash2 } from "react-icons/fi";
 import { buyerReviewNameChoices } from "@/lib/my-review-view";
 import { reviewSignInRel, reviewSignInUrl } from "@/lib/review-sign-in";
 import type { MyReviewView } from "@/lib/my-review-view";
@@ -23,16 +23,24 @@ export function MyReviews({ initial }: { initial: MyReviewView | null }) {
   const mine=useMyReviews(initial);
   const editing=mine.editing;
   return <div className="space-y-4">
-    <div className="flex flex-col gap-2 sm:flex-row sm:justify-between">
-      <Button variant="secondary" className="w-full sm:w-auto" disabled={mine.pending || Boolean(editing || mine.withdrawing)} onClick={()=>void mine.load()}>Refresh reviews</Button>
-      {!mine.view && <Button.Link href={reviewSignInUrl("/reviews/mine")} rel={reviewSignInRel} prefetch={false} className="w-full sm:w-auto">Sign in</Button.Link>}
-    </div>
-    <div role="status" aria-live="polite" className="text-sm text-black/70 dark:text-white/70">
-      {mine.pending ? <span className="inline-flex items-center gap-2"><Spinner size="sm" />Updating your reviews…</span> : mine.message}
+    <div className="flex min-h-10 items-center justify-between gap-4 border-b border-black/10 pb-3 dark:border-white/10">
+      <div role="status" aria-live="polite" className="min-w-0 text-sm text-black/70 dark:text-white/70">
+        {mine.pending ? <span className="inline-flex items-center gap-2"><Spinner size={16} className="shrink-0" />Updating your reviews…</span> : mine.message}
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        {!mine.view && <Button.Link href={reviewSignInUrl("/reviews/mine")} rel={reviewSignInRel} prefetch={false} size="sm" variant="secondary">Sign in</Button.Link>}
+        <Button variant="ghost" size="sm" disabled={mine.pending || Boolean(editing || mine.withdrawing)} onClick={()=>void mine.load()}
+          leftIcon={<FiRefreshCw aria-hidden className={mine.pending ? "animate-spin motion-reduce:animate-none" : ""} />}>Refresh reviews</Button>
+      </div>
     </div>
     {mine.error && <ErrorCallout>{mine.error}</ErrorCallout>}
     <div aria-busy={mine.pending} className={mine.pending ? "opacity-60" : ""}>
-      {mine.view?.page.reviews.length===0 && <Card><Heading size="h2" className="text-xl">No reviews yet</Heading><Text className="mt-2">Your reviews will appear here once you have written one from a product page.</Text></Card>}
+      {mine.view?.page.reviews.length===0 && <div className="rounded-2xl border border-dashed border-black/20 p-8 text-center dark:border-white/20 sm:p-10">
+        <FiMessageSquare aria-hidden className="mx-auto size-6 text-black/60 dark:text-white/60" />
+        <Heading size="h2" className="mt-3 text-xl">No reviews yet</Heading>
+        <Text className="mx-auto mt-2 max-w-md">Got some Ryan gear? Write a review on its product page and it&apos;ll show up here, ready to edit.</Text>
+        <Button.Link href="/" size="md" className="mt-6 w-full sm:w-auto">Browse the shop</Button.Link>
+      </div>}
       <ul aria-label="Your reviews" className="space-y-4">
         {mine.view?.page.reviews.map((review)=>{
           const status=STATUS[review.status];
