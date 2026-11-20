@@ -14,11 +14,14 @@ function row(n,status="pending",subject="buyer-a") {
       hasPendingEdit:status==="published",publishedAt:status==="published"?stamp(1000-n).slice(0,23)+"Z":null,
       createdAt:stamp(1000-n),updatedAt:stamp(1000-n),current:content}};
 }
+/** `records` replaces the default rows; `keepSessions` leaves sign-ins alone, for the local preview's scenario switcher. */
 function reset(config={}) {
-  options=config;sessions=new Map();calls=[];tick=0;
+  const {records:given,keepSessions,...rest}=config;
+  options=rest;if(!keepSessions||!sessions)sessions=new Map();calls=[];tick=0;
   records=config.many?Array.from({length:125},(_,i)=>row(i+1)):[row(1),row(2,"published"),row(3,"rejected"),row(4,"hidden"),row(5,"withdrawn"),row(201,"published","buyer-b")];
   if(config.many)records.push(row(201,"published","buyer-b"));
   if(config.empty)records=[];
+  if(given)records=structuredClone(given);
   if(config.longText){records[1].value.item.productTitle="Ryan".repeat(50);records[1].value.current.body="Review".repeat(150);}
 }
 reset();
@@ -79,14 +82,17 @@ function review(name,a){
   return operation==="review.edit"?"pending":"withdrawn";
 }
 
-/** Shopify Customer API answers: the buyer, plus one configurable purchase (`options.purchase`). */
-function customerApi(query){
+/** Shopify Customer API answers: the buyer, plus configurable purchases (`options.purchase`, or several as `options.purchases`). */
+function customerApi(query,variables={}){
   const buyer={id:"gid://shopify/Customer/123",firstName:"Ryan",lastName:"Fixture"};
-  const purchase=options.purchase;
+  const purchases=options.purchases??(options.purchase?[options.purchase]:[]);
   const none={hasNextPage:false,endCursor:null};
-  if(query.includes("ReviewOrderCandidates"))return {customer:{...buyer,orders:{nodes:purchase?[{id:purchase.order.id,updatedAt:purchase.order.updatedAt,
-    lineItems:{nodes:purchase.order.lineItems.nodes.map(({id,productId})=>({id,productId})),pageInfo:none}}]:[],pageInfo:none}}};
-  if(query.includes("ReviewPurchase"))return {customer:{id:buyer.id},order:purchase?{...purchase.order,customer:{id:buyer.id}}:null};
+  if(query.includes("ReviewOrderCandidates"))return {customer:{...buyer,orders:{nodes:purchases.map(({order})=>({id:order.id,updatedAt:order.updatedAt,
+    lineItems:{nodes:order.lineItems.nodes.map(({id,productId})=>({id,productId})),pageInfo:none}})),pageInfo:none}}};
+  if(query.includes("ReviewPurchase")){
+    const purchase=purchases.find(({order})=>order.id===variables.orderId)??(purchases.length===1?purchases[0]:null);
+    return {customer:{id:buyer.id},order:purchase?{...purchase.order,customer:{id:buyer.id}}:null};
+  }
   return {customer:buyer};
 }
 
@@ -99,7 +105,7 @@ createServer(async(req,res)=>{
     if(url.pathname==="/__state")return json(res,200,{calls,records});
     if(url.pathname==="/__revoke"){sessions.clear();return json(res,200,{ok:true});}
     if(url.pathname==="/__discovery")return json(res,200,{graphql_api:"https://shopify.com/123456/account/customer/api/2026-10/graphql"});
-    if(url.pathname==="/__customer")return json(res,200,{data:customerApi((await body(req)).query??"")});
+    if(url.pathname==="/__customer"){const {query,variables}=await body(req);return json(res,200,{data:customerApi(query??"",variables??{})});}
     if(req.headers.apikey!==key)return json(res,401,{message:"Synthetic Supabase key required"});
     const args=await body(req);
     if(url.pathname==="/rest/v1/store_customer_sessions"){sessions.set(args.session_hash,{...args,revision:0});return json(res,201);}
