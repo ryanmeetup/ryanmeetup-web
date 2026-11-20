@@ -5,14 +5,18 @@ import {
 } from "@ryanmeetup/reviews";
 import type { BuyerReview, PublicReview, ReviewCommand, ReviewResults } from "@ryanmeetup/reviews";
 import { getStoreDatabase, getStoreShopId } from "./store-database";
+import { reportReviewStorageFailure } from "./review-diagnostics";
+import type { ReviewStorageFailure } from "./review-diagnostics";
 
 /** Database failures carry only the Postgres code; row values and messages may hold review text or buyer IDs. */
 export class ReviewBackendError extends Error {
-  constructor(readonly code?: string) { super("Review storage is temporarily unavailable."); }
+  constructor(readonly code?: string, readonly failure: ReviewStorageFailure = "invalid_response") {
+    super("Review storage is temporarily unavailable.");
+  }
 }
 
 function check<T>(result: { data: T; error: { code?: string } | null }) {
-  if (result.error) throw new ReviewBackendError(result.error.code);
+  if (result.error) throw new ReviewBackendError(result.error.code, "storage_error");
   return result.data;
 }
 
@@ -117,7 +121,9 @@ export function createReviewBackend({ database, shopId }: { database: SupabaseCl
     try {
       return (await executeStoreReview(database, shopId, command)).data as ReviewResults[Sent["operation"]];
     } catch (error) {
-      throw error instanceof ReviewBackendError ? error : new ReviewBackendError();
+      const failure = error instanceof ReviewBackendError ? error : new ReviewBackendError(undefined, "unexpected_error");
+      reportReviewStorageFailure(command.operation, failure.failure, failure.code);
+      throw failure;
     }
   };
 }
