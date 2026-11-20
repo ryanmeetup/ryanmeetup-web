@@ -42,8 +42,8 @@ never reach this log boundary. If the log sink throws, callers still receive the
 generic storage failure.
 
 This instrumentation does **not** cover disabled/missing configuration that
-returns no backend, Shopify identity/purchase lookups, Judge.me requests,
-Tasks moderation, standalone photo processing/staging/budget calls, browser
+returns no backend, Shopify identity/purchase lookups,
+Tasks moderation, standalone photo processing/staging/budget/selection/preview calls, browser
 network errors, latency or successful traffic. Photo attachment RPC failures
 within review submit/edit do use this event; `invalid_photos` remains a normal
 domain outcome.

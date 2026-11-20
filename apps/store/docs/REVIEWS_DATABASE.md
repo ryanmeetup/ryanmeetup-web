@@ -3,9 +3,9 @@
 Updated November 20, 2026. Ryan chose to reuse the existing RMT Supabase
 project as a shared backend for Ryan Meetup properties. Encrypted Shopify
 session storage, custom review/revision/reply/audit schema, buyer management,
-owner moderation, private photo staging and pending-revision associations are
-implemented. All ten RMT-only Store migrations through `20261120230000` are
-applied; PRD receives none. Real Shopify-backed lifecycle proof, complete media
+owner moderation, private photo staging, pending-revision associations and
+private buyer photo reads are implemented. All eleven RMT-only Store migrations
+through `20261121000000` are applied. PRD receives none. Real Shopify-backed lifecycle proof, complete media
 UI/moderation/publication and operations/recovery work remain outstanding.
 See [the current inventory](REVIEWS_REBUILD.md) for evidence and next steps.
 
@@ -146,22 +146,26 @@ and the staging option before deciding whether hosting needs to change.
 
 The content schema and direct RMT connection are implemented and applied. The
 latest rollout verified remote history, an empty public-schema diff and
-metadata-only availability of private photo tables and bucket settings. The
+metadata-only availability of private photo tables, both private read RPCs and
+bucket settings. All eleven Store versions match RMT history; the final public
+schema comparison is empty. The
 photo collection flag remains off by default; no deployment flag or credential
 was changed by that rollout. Public SQL still exposes `photos: []`.
 
 Remaining rollout work:
 
 1. Prove Shopify login, token renewal, exact purchase semantics and the complete
-   buyer/owner/public lifecycle on an isolated HTTPS target. Configuration and
-   provider selection alone are not evidence of a working lifecycle.
-2. Complete private buyer media previews/UI, staff media decisions, controlled
-   publication and cleanup/retention before enabling photo collection.
+   buyer/owner/public lifecycle on an isolated HTTPS target. Configuration alone
+   is not evidence of a working lifecycle.
+2. Wire the implemented private media reads into buyer UI; complete staff media
+   decisions, controlled publication and cleanup/retention before enabling
+   photo collection.
 3. Verify database and image-object backups/restores separately, rehearse
    collection pause/recovery and record the operational observation window.
-4. Preserve the recorded decision to leave legacy reviews in Judge.me. No import
-   is planned; export them before eventual uninstall and rehearse provider
-   recovery while preserving new custom data. See [release](REVIEWS_RELEASE.md).
+4. Follow the recorded removal decision: no legacy export/import and no
+   Judge.me recovery path. External uninstall/Shop settings and old secrets
+   remain cleanup follow-ups. Recovery must preserve custom data through a
+   compatible custom release or reviewed repair. See [release](REVIEWS_RELEASE.md).
 
 Use `node scripts/test-store-customer-auth.mjs` from `apps/tasks` for database
 validation. It creates a uniquely named test stack on separate ports, replays
