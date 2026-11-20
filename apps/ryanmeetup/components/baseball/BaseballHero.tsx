@@ -1,8 +1,7 @@
-import NextImage from "next/image";
 import { Button, Heading, Kicker, Text } from "@ryanmeetup/ui";
 
 import type { BaseballTeam } from "@/lib/types";
-import { getSeasonStats, getTeamLogoSrc } from "@/utils/baseball";
+import { getSeasonStats } from "@/utils/baseball";
 
 type BaseballHeroProps = {
   teams: BaseballTeam[];
@@ -14,23 +13,16 @@ type BaseballHeroProps = {
 type Point = [number, number];
 type Seam = [Point, Point, Point, Point];
 
-// Two baseball seams curving in from the hero's edges, as cubic Béziers in
-// the SVG's 1200×480 space.
-const SEAMS: Seam[] = [
-  [
-    [70, -40],
-    [310, 120],
-    [310, 360],
-    [70, 520],
-  ],
-  [
-    [1130, -40],
-    [890, 120],
-    [890, 360],
-    [1130, 520],
-  ],
+// One seam bowing in from the hero's left edge, as a cubic Bézier in a
+// fixed-width 96×480 strip. The right edge is the same strip mirrored, so the
+// seams hug the sides at every width instead of scaling into the title.
+const SEAM: Seam = [
+  [-40, -40],
+  [80, 120],
+  [80, 360],
+  [-40, 520],
 ];
-const STITCHES_PER_SEAM = 26;
+const STITCHES_PER_SEAM = 24;
 const STITCH_GAP = 4; // from the seam line to where a stitch starts
 const STITCH_REACH = 12; // how far a stitch reaches out from the seam
 const STITCH_LEAN = 7; // how far it leans along the seam, forming the V
@@ -75,79 +67,19 @@ const stitchPath = (seam: Seam) =>
       .join(" ");
   }).join(" ");
 
-const BaseballSeams = () => (
+const SeamEdge = ({ side }: { side: "left" | "right" }) => (
   <svg
     aria-hidden
-    viewBox="0 0 1200 480"
-    preserveAspectRatio="xMidYMid slice"
-    className="pointer-events-none absolute inset-0 hidden h-full w-full text-nametag opacity-30 sm:block dark:opacity-40"
+    viewBox="0 0 96 480"
+    preserveAspectRatio="xMinYMid slice"
+    className={`pointer-events-none absolute inset-y-0 hidden h-full w-24 text-nametag opacity-30 sm:block dark:opacity-40 ${side === "left" ? "left-0" : "right-0 -scale-x-100"}`}
   >
-    {SEAMS.map((seam) => (
-      <g
-        key={seamPath(seam)}
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-      >
-        <path d={seamPath(seam)} strokeWidth="1.5" opacity="0.5" />
-        <path d={stitchPath(seam)} strokeWidth="3" />
-      </g>
-    ))}
+    <g fill="none" stroke="currentColor" strokeLinecap="round">
+      <path d={seamPath(SEAM)} strokeWidth="1.5" opacity="0.5" />
+      <path d={stitchPath(SEAM)} strokeWidth="3" />
+    </g>
   </svg>
 );
-
-// Below this many logos the loop repeats so visibly it looks broken.
-const MIN_STRIP_LOGOS = 3;
-// Enough logos in one run to overfill a wide screen before it repeats.
-const STRIP_RUN_LENGTH = 16;
-const STRIP_SECONDS_PER_LOGO = 3;
-
-/**
- * Every announced team's logo drifting past. Decorative: the same teams are
- * listed, with names, in the finder below, so the strip is hidden from
- * assistive tech and simply stops for readers who prefer reduced motion.
- */
-const TeamLogoStrip = ({ teams }: { teams: BaseballTeam[] }) => {
-  const logos = teams.flatMap((team) => {
-    const src = getTeamLogoSrc(team);
-    return src ? [{ slug: team.slug, src }] : [];
-  });
-  if (logos.length < MIN_STRIP_LOGOS) return null;
-
-  const rounds = Math.ceil(STRIP_RUN_LENGTH / logos.length);
-  const run = Array.from({ length: rounds }, (_, round) =>
-    logos.map((logo) => ({ ...logo, key: `${round}-${logo.slug}` })),
-  ).flat();
-
-  return (
-    <div
-      aria-hidden
-      className="relative -mx-6 -mb-6 overflow-hidden border-t border-black/10 py-4 [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)] lg:-mx-10 lg:-mb-10 dark:border-white/10"
-    >
-      <ul
-        className="flex w-max animate-marquee motion-reduce:animate-none"
-        style={{ animationDuration: `${run.length * STRIP_SECONDS_PER_LOGO}s` }}
-      >
-        {/* Two identical runs back to back make the -50% loop seamless. */}
-        {["a", "b"].flatMap((copy) =>
-          run.map((logo) => (
-            <li key={`${copy}-${logo.key}`} className="px-2 sm:px-3">
-              <div className="relative size-12 overflow-hidden rounded-xl border border-black/10 bg-white sm:size-14 dark:border-white/10">
-                <NextImage
-                  src={logo.src}
-                  alt=""
-                  fill
-                  sizes="56px"
-                  className="object-contain p-1.5"
-                />
-              </div>
-            </li>
-          )),
-        )}
-      </ul>
-    </div>
-  );
-};
 
 const BaseballHero = ({ teams, seasonRange, hasMerch }: BaseballHeroProps) => {
   const stats = getSeasonStats(teams);
@@ -158,7 +90,8 @@ const BaseballHero = ({ teams, seasonRange, hasMerch }: BaseballHeroProps) => {
         aria-hidden
         className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(0,0,0,0.08),_transparent_60%)] dark:bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.12),_transparent_60%)]"
       />
-      <BaseballSeams />
+      <SeamEdge side="left" />
+      <SeamEdge side="right" />
       <div className="relative flex flex-col items-center gap-6">
         <div className="flex flex-col items-center gap-4">
           {seasonRange && <Kicker>{seasonRange}</Kicker>}
@@ -220,8 +153,6 @@ const BaseballHero = ({ teams, seasonRange, hasMerch }: BaseballHeroProps) => {
             </Button.Link>
           )}
         </div>
-
-        <TeamLogoStrip teams={teams} />
       </div>
     </section>
   );

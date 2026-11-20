@@ -61,15 +61,6 @@
   @keyframes fade-out {
     to { opacity: 0; }
   }
-
-  /* An endless horizontal strip. Render the content twice in a row and the
-     -50% shift lands the second copy exactly where the first began. Pair it
-     with motion-reduce:animate-none. */
-  --animate-marquee: marquee 60s linear infinite;
-
-  @keyframes marquee {
-    to { transform: translateX(-50%); }
-  }
 }
 
 @utility brightness-20 { filter: brightness(0.2); }

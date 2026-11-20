@@ -1,7 +1,12 @@
 // Components
 import { Layout } from "@/components/navigation";
 import { Button, Divider, EmptyState, SectionHeader } from "@ryanmeetup/ui";
-import { BaseballHero, MerchStrip, TeamFinder } from "@/components/baseball";
+import {
+  BaseballHero,
+  MerchStrip,
+  TeamFinder,
+  TeamLogoMarquee,
+} from "@/components/baseball";
 
 // Types
 import type { BaseballTeam } from "@/lib/types";
@@ -16,6 +21,7 @@ import {
 } from "@/lib/test-fixtures/baseball";
 import { getSeasonRange } from "@/utils/baseball";
 import { buildPageMetadata, SITE_URL } from "@/utils/metadata";
+import { layoutPaddingX } from "@/lib/constants";
 
 const MERCH_COLLECTION_HANDLE = "baseball-classic";
 
@@ -62,14 +68,21 @@ const BaseballPage = async () => {
   const hasMerch = Boolean(merch && merch.products.length > 0);
 
   return (
-    <Layout>
-      <div className="space-y-12">
-        <BaseballHero
-          teams={teams}
-          seasonRange={getSeasonRange(teams)}
-          hasMerch={hasMerch}
-        />
+    // Full-bleed like the home page, so the team logos can run edge to edge;
+    // every other section brings its own layout padding.
+    <Layout fullscreen>
+      <div className="space-y-8 pt-8">
+        <div className={layoutPaddingX}>
+          <BaseballHero
+            teams={teams}
+            seasonRange={getSeasonRange(teams)}
+            hasMerch={hasMerch}
+          />
+        </div>
+        <TeamLogoMarquee teams={teams} />
+      </div>
 
+      <div className={`space-y-12 pb-8 pt-12 ${layoutPaddingX}`}>
         {merch && hasMerch && <MerchStrip collection={merch} />}
 
         {teams.length > 0 ? (
@@ -80,25 +93,25 @@ const BaseballPage = async () => {
             <EmptyState message="Teams are still warming up. Check back soon." />
           </section>
         )}
+
+        <Divider margins="lg" />
+
+        <section className="flex flex-col items-center gap-4 text-center">
+          <SectionHeader
+            align="center"
+            title="Got a question?"
+            description="Tickets, group outings, or bringing your team into the Classic: send it our way and a Ryan will get back to you."
+          />
+          <Button.Link
+            href="/contact?topic=baseball-classic"
+            size="md"
+            fullWidth
+            className="sm:w-auto"
+          >
+            Ask a question
+          </Button.Link>
+        </section>
       </div>
-
-      <Divider margins="lg" />
-
-      <section className="flex flex-col items-center gap-4 text-center">
-        <SectionHeader
-          align="center"
-          title="Got a question?"
-          description="Tickets, group outings, or bringing your team into the Classic: send it our way and a Ryan will get back to you."
-        />
-        <Button.Link
-          href="/contact?topic=baseball-classic"
-          size="md"
-          fullWidth
-          className="sm:w-auto"
-        >
-          Ask a question
-        </Button.Link>
-      </section>
     </Layout>
   );
 };
