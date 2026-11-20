@@ -296,5 +296,53 @@ select is(array(select public.store_buyer_reviewed_products('345', 'buyer-u', ar
 select is((select outcome from pg_temp.unverified()), 'resubmitted', 'and can write it again');
 select throws_ok($$select * from public.store_review_moderation_page_v3('00000000-0000-4000-8000-000000000902', '345', 'all', 20)$$, '42501', null, 'v3 staff reads recheck the owner');
 
+-- --- rejected queue, product filter, and publishing a rejected review ---------------
+create function pg_temp.queue4(filter text, product text default null) returns setof jsonb language sql as $$
+  select * from public.store_review_moderation_page_v4('00000000-0000-4000-8000-000000000901', '345', filter, product, 51);
+$$;
+-- now() is fixed for this whole test transaction; real edits are separate transactions.
+create function pg_temp.edit(review uuid, rating smallint, body text) returns void language sql as $$
+  select public.store_edit_review(review, '345', 'buyer-a', rating, 'Solid', body, 'anonymous', 'Anonymous');
+  update public.store_review_revisions set submitted_at = clock_timestamp() where review_id = review and status = 'pending';
+$$;
+insert into ids select 'rej-new', review_id from pg_temp.submit('901', product => '900', shop => '345');
+insert into ids select 'rej-new-rev', pg_temp.pending(id) from ids where name = 'rej-new';
+select ok(pg_temp.moderate((select id from ids where name = 'rej-new'), 'reject', (select id from ids where name = 'rej-new-rev'), 'Off topic'), 'an owner rejects a new review');
+select is((select status from public.store_review_revisions where id = (select id from ids where name = 'rej-new-rev')), 'rejected', 'rejection keeps the revision');
+select is((select count(*) from pg_temp.queue4('rejected', '900')), 1::bigint, 'the rejected queue lists it');
+select is((select r->'rejected'->>'id' from pg_temp.queue4('rejected', '900') r), (select id::text from ids where name = 'rej-new-rev'), 'the queue names the rejected revision');
+select is((select count(*) from pg_temp.queue4('pending', '900')), 0::bigint, 'a rejected review no longer waits');
+select is((select count(*) from pg_temp.queue4('all', '900')), 1::bigint, 'the product filter narrows the queue to one item');
+select ok((select bool_and(r->'item'->>'productId' = '900') from pg_temp.queue4('all', '900') r), 'the product filter returns only that item');
+select ok((select bool_or(p->>'productId' = '900' and p->>'productTitle' = 'Name Tag Shirt')
+  from public.store_review_moderation_products('00000000-0000-4000-8000-000000000901', '345') p), 'the product list includes every reviewed item');
+select is((select count(*) from public.store_review_moderation_products('00000000-0000-4000-8000-000000000901', '999')), 0::bigint, 'the product list pins the shop');
+select throws_ok($$select * from pg_temp.queue4('all', 'gid://shopify/Product/1')$$, '22023', null, 'product filters are plain numeric IDs');
+select throws_ok($$select * from public.store_review_moderation_products('00000000-0000-4000-8000-000000000902', '345')$$, '42501', null, 'the product list rechecks the owner');
+select throws_ok($$select * from public.store_review_moderation_page_v4('00000000-0000-4000-8000-000000000902', '345', 'rejected', null, 20)$$, '42501', null, 'v4 staff reads recheck the owner');
+select ok(not pg_temp.moderate((select id from ids where name = 'rej-new'), 'republish', (select id from ids where name = 'rej-new-rev'), expected => now() - interval '1 day'), 'a stale publish-anyway is refused');
+select ok(not pg_temp.moderate((select id from ids where name = 'rej-new'), 'republish', pg_temp.pending((select id from ids where name = 'mod-high'))), 'publish-anyway accepts only this review''s rejected revision');
+select ok(pg_temp.moderate((select id from ids where name = 'rej-new'), 'republish', (select id from ids where name = 'rej-new-rev')), 'an owner publishes the rejected review after all');
+select is((public.store_review_summary('345', array['900'])->>'count'), '1', 'the published review counts in totals');
+select is((select count(*) from pg_temp.queue4('rejected', '900')), 0::bigint, 'it leaves the rejected queue');
+select is((select action from public.store_review_events where review_id = (select id from ids where name = 'rej-new') order by id desc limit 1), 'approved', 'publish-anyway is audited as an approval');
+select ok(not pg_temp.moderate((select id from ids where name = 'rej-new'), 'republish', (select id from ids where name = 'rej-new-rev')), 'a published revision cannot be republished');
+
+insert into ids select 'rej-edit', review_id from pg_temp.submit('902', product => '900', shop => '345');
+select pg_temp.moderate((select id from ids where name = 'rej-edit'), 'approve', pg_temp.pending((select id from ids where name = 'rej-edit')));
+select pg_temp.edit((select id from ids where name = 'rej-edit'), 1::smallint, 'Rejected edit.');
+insert into ids select 'rej-edit-old', pg_temp.pending(id) from ids where name = 'rej-edit';
+select pg_temp.moderate((select id from ids where name = 'rej-edit'), 'reject', (select id from ids where name = 'rej-edit-old'), 'Too harsh');
+select is((select (r->'published'->>'rating') || '/' || (r->'rejected'->>'rating') from pg_temp.queue4('rejected', '900') r where r->>'id' = (select id::text from ids where name = 'rej-edit')), '5/1', 'a rejected edit shows beside the public version');
+select pg_temp.edit((select id from ids where name = 'rej-edit'), 2::smallint, 'Newer edit.');
+select ok(not pg_temp.moderate((select id from ids where name = 'rej-edit'), 'republish', (select id from ids where name = 'rej-edit-old')), 'a rejected revision the buyer has replaced cannot be published');
+select is((select count(*) from pg_temp.queue4('rejected', '900') r where r->>'id' = (select id::text from ids where name = 'rej-edit')), 0::bigint, 'a newer buyer edit takes the review out of the rejected queue');
+insert into ids select 'rej-edit-new', pg_temp.pending(id) from ids where name = 'rej-edit';
+select pg_temp.moderate((select id from ids where name = 'rej-edit'), 'reject', (select id from ids where name = 'rej-edit-new'), 'Still harsh');
+select ok(pg_temp.moderate((select id from ids where name = 'rej-edit'), 'republish', (select id from ids where name = 'rej-edit-new'), 'Fair enough'), 'an owner publishes the latest rejected edit');
+select is((public.store_review_summary('345', array['900'])->>'average'), '3.5', 'the republished edit replaces the public rating');
+select is((select count(*) from public.store_review_revisions where review_id = (select id from ids where name = 'rej-edit') and status = 'approved'), 1::bigint, 'one approved version at a time');
+select is((select status from public.store_review_revisions where id = (select id from ids where name = 'rej-edit-old')), 'rejected', 'older rejected text is still kept');
+
 select * from finish();
 rollback;
