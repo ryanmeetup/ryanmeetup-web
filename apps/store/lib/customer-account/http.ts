@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { privateHeaders, readCookie, requestOrigin } from "../request-guard";
-import { isLoopbackHost } from "../review-provider";
 import { customerSignedInNoticeCookie } from "./notice";
 import { customerAuthorizationCookie } from "./authorization";
 import { getCustomerAccountStorageService, getCustomerSignInService } from "./runtime";
@@ -9,6 +8,14 @@ import { beginCustomerSignIn, completeCustomerSignIn, customerSessionCookie, cus
 const cookieOptions = { httpOnly: true, secure: true, sameSite: "lax" as const, path: "/" };
 
 /** Problems a buyer can land on after a failed sign-in navigation. */
+
+const loopbackHost = /^(?:localhost|127\.0\.0\.1|\[::1\])(?::\d{1,5})?$/i;
+
+/** A request addressed to this machine, by its Host header. */
+function isLoopbackHost(host: string | null) {
+  return host !== null && loopbackHost.test(host);
+}
+
 export type CustomerSignInProblem = "expired" | "blocked" | "unavailable";
 export const customerSignInProblemPath = "/reviews/sign-in";
 
@@ -79,7 +86,7 @@ export async function callbackCustomerSignIn(request: Request) {
   return response;
 }
 
-/** Revokes the review session even after the browser switches back to Judge.me. */
+/** Revokes the review session, even when sign-in has since been switched off. */
 export async function logoutCustomerSignIn(request: Request) {
   const service = getCustomerAccountStorageService({ logout: true });
   if (!service) return failure(request, 503, "Sign-out is temporarily unavailable. Please try again.");

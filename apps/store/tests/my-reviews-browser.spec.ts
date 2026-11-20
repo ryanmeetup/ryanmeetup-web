@@ -83,15 +83,12 @@ test("pages beyond 100 reviews and never merges another buyer's page",async({pag
   await signIn(page,baseURL!,"buyer-b");await page.getByRole("button",{name:"Load more reviews",exact:true}).click();
   await expect(page.locator("article[data-testid^='my-review-']")).toHaveCount(1);await expect(card(page,201)).toBeVisible();await expect(card(page,1)).toHaveCount(0);
 });
-test("forged edits, expired sessions, and Judge.me mode cannot change buyer reviews",async({page,request,baseURL})=>{
+test("forged edits and expired sessions cannot change buyer reviews",async({page,request,baseURL})=>{
   await page.goto("/reviews/mine");
   const snapshot=await state(request);const foreign=snapshot.records.find((r:{subject:string})=>r.subject==="buyer-b").value;
   const forged=await page.request.post("/api/reviews/mine",{headers:{Origin:baseURL!},data:{action:"withdraw",reviewId:foreign.id,expectedUpdatedAt:foreign.updatedAt}});expect(forged.status()).toBe(404);
   await request.post(`${fixture}/__revoke`);await page.getByRole("button",{name:"Refresh reviews",exact:true}).click();
   await expect(page.locator("article[data-testid^='my-review-']")).toHaveCount(0);await expect(page.getByRole("link",{name:"Sign in",exact:true})).toBeVisible();
-  await signIn(page,baseURL!);await page.context().addCookies([{name:"store-review-preview",value:"judgeme",url:baseURL!}]);
-  await page.goto("/reviews/mine");await expect(page.getByRole("heading",{name:"My reviews",exact:true})).toHaveCount(0);
-  expect((await page.request.get("/api/reviews/mine")).status()).toBe(503);expect((await state(request)).calls).toHaveLength(0);
 });
 test("fits the private list and editor across mobile/desktop boundaries in both themes",async({page,request,baseURL},testInfo)=>{
   await reset(request,{longText:true});await signIn(page,baseURL!);

@@ -1,4 +1,3 @@
-import { notFound } from "next/navigation";
 import { Button, Heading, Text } from "@ryanmeetup/ui";
 import { FiLogIn } from "react-icons/fi";
 import { MyReviews } from "@/components/my-reviews";
@@ -7,7 +6,6 @@ import { buildPageMetadata, DEFAULT_IMAGE } from "@/lib/metadata";
 import { currentRequest } from "@/lib/request-from-headers";
 import { getReviewBackend } from "@/lib/review-backend";
 import { loadMyReviewPage } from "@/lib/my-review-actions";
-import { getActiveReviewProvider } from "@/lib/review-preview";
 import { reviewSignInRel, reviewSignInUrl } from "@/lib/review-sign-in";
 import { findBuyerName, findRecentReviewablePurchases } from "@/lib/review-purchases";
 import { getReviewSuggestions } from "@/lib/review-suggestions";
@@ -33,8 +31,6 @@ function Shell({ children }: { children: React.ReactNode }) {
 }
 
 export default async function Page() {
-  // Only custom reviews have buyer accounts; Judge.me reviews are managed there.
-  if (await getActiveReviewProvider() !== "custom") notFound();
   const request = await currentRequest("/reviews/mine");
   const backend = getReviewBackend();
   const session = getCustomerAccountSession(request);

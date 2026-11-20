@@ -7,14 +7,12 @@ import { DropdownSelect } from "@ryanmeetup/ui";
 import { getColorOption, getColorPreview, getColorSlug, getColorValue, getImageColor, getListingColors } from "@/lib/product-colors";
 import { getProductGallery } from "@/lib/product-gallery";
 import type { ProductDesign, ReviewsData, StoreImage } from "@/lib/types";
-import type { ReviewAccount } from "@/lib/review-collection";
 import type { CustomReviewAccess } from "@/lib/custom-review-access";
-import type { ReviewPreviewState } from "@/lib/review-provider";
 import { ProductDetail } from "./product-detail";
 import { ProductSchema } from "./product-schema";
 import { Reviews } from "./reviews";
 
-export function ProductGroupDetail({ title, handle, url, breadcrumbs, designs, defaultColor, reviewsByProduct, reviewAccount, reviewPreview, customReviewAccessByProduct }: {
+export function ProductGroupDetail({ title, handle, url, breadcrumbs, designs, defaultColor, reviewsByProduct, reviewAccessByProduct }: {
   title: string;
   url: string;
   breadcrumbs?: ReactNode;
@@ -22,9 +20,7 @@ export function ProductGroupDetail({ title, handle, url, breadcrumbs, designs, d
   designs: ProductDesign[];
   defaultColor?: string;
   reviewsByProduct: Record<string, ReviewsData>;
-  reviewAccount: ReviewAccount | undefined;
-  reviewPreview?: ReviewPreviewState;
-  customReviewAccessByProduct?: Record<string, CustomReviewAccess>;
+  reviewAccessByProduct: Record<string, CustomReviewAccess>;
 }) {
   const searchParams = useSearchParams();
   const navigationFocus = useRef<string | null>(null);
@@ -111,7 +107,7 @@ export function ProductGroupDetail({ title, handle, url, breadcrumbs, designs, d
           );
         }}
       />
-      <Reviews key={`reviews-${selected.product.id}`} data={reviewsByProduct[selected.product.id]} product={selected.product} reviewAccount={reviewAccount} reviewPreview={reviewPreview} customAccess={customReviewAccessByProduct?.[selected.product.id]} />
+      <Reviews key={`reviews-${selected.product.id}`} data={reviewsByProduct[selected.product.id]} product={selected.product} access={reviewAccessByProduct[selected.product.id]} />
     </>
   );
 }

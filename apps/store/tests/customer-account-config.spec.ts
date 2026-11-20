@@ -14,11 +14,10 @@ const env = {
 const originalFetch = globalThis.fetch;
 test.afterEach(() => { globalThis.fetch = originalFetch; });
 
-test("missing buyer configuration never borrows Admin or Judge.me credentials", () => {
-  const result = getCustomerAccountConfiguration({ SHOPIFY_ADMIN_CLIENT_ID: "admin", SHOPIFY_ADMIN_CLIENT_SECRET: "private-admin-secret", JUDGEME_PRIVATE_API_TOKEN: "judge-secret" });
+test("missing buyer configuration never borrows Admin credentials", () => {
+  const result = getCustomerAccountConfiguration({ SHOPIFY_ADMIN_CLIENT_ID: "admin", SHOPIFY_ADMIN_CLIENT_SECRET: "private-admin-secret" });
   expect(result).toEqual({ status: "unavailable", missing: customerAccountEnvironmentKeys, invalid: [] });
   expect(JSON.stringify(result)).not.toContain("private-admin-secret");
-  expect(JSON.stringify(result)).not.toContain("judge-secret");
 });
 
 test("a confidential client requires every explicit setting and a registered HTTPS callback", () => {

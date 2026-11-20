@@ -44,7 +44,7 @@ export function publicHttpsUrl(value: unknown): URL | null {
   }
 }
 
-/** No fallback to Admin or Judge.me credentials: these authenticate a buyer. */
+/** No fallback to Admin credentials: these authenticate a buyer. */
 export function getCustomerAccountConfiguration(env: Readonly<Record<string, string | undefined>> = process.env): CustomerAccountConfiguration {
   const values = Object.fromEntries(customerAccountEnvironmentKeys.map((key) => [key, env[key]?.trim() ?? ""])) as Record<ConfigurationKey, string>;
   const missing = customerAccountEnvironmentKeys.filter((key) => !values[key]);

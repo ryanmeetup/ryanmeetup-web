@@ -11,13 +11,13 @@ const session = (idToken: string) => ({ sessionHash: "a".repeat(64), subject: "b
   tokens: { accessToken: "private-access", refreshToken: "private-refresh", idToken } }) as CustomerAccountSession;
 const request = (headers: HeadersInit = {}) => new Request("https://store.test/api/account", { headers });
 const status = async (result: CustomerSessionResult | Error, headers?: HeadersInit) => {
-  const response = await handleAccountStatus(request(headers), { customReviews: true, loadSession: async () => { if (result instanceof Error) throw result; return result; } });
+  const response = await handleAccountStatus(request(headers), { loadSession: async () => { if (result instanceof Error) throw result; return result; } });
   return { code: response.status, body: await response.json(), cache: response.headers.get("cache-control") };
 };
 
 test("the header learns who is signed in, and nothing more", async () => {
   const signedIn = await status({ status: "authenticated", session: session(token({ sub: "buyer", email: "ryan@example.com" })) });
-  expect(signedIn).toMatchObject({ code: 200, body: { status: "signed-in", email: "ryan@example.com", reviews: true } });
+  expect(signedIn).toMatchObject({ code: 200, body: { status: "signed-in", email: "ryan@example.com" } });
   expect(signedIn.cache).toContain("no-store");
   expect(JSON.stringify(signedIn.body)).not.toMatch(/private-|buyer"/);
   expect((await status({ status: "sign_in_required" })).body).toEqual({ status: "signed-out" });

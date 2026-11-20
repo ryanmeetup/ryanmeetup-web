@@ -19,7 +19,7 @@ const page: PublicReviewPage = {
 };
 
 function render(data: ReviewsData) {
-  return renderToStaticMarkup(createElement(Reviews, { product: tee, data, reviewAccount: { url: null } }));
+  return renderToStaticMarkup(createElement(Reviews, { product: tee, data, access: { status: "unavailable" } }));
 }
 
 test("only the canonical custom purchase flag gives a purchase badge, while totals stay unchanged", () => {

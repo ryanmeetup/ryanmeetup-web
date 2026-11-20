@@ -95,36 +95,26 @@ test("pending loads have one request, accessible progress and a disabled mobile 
   } finally { release(); }
 });
 
-for (const change of ["product", "provider"] as const) {
-  test(`a ${change} change discards a response from the previous review list`, async ({ page }) => {
-    let release!: () => void;
-    const held = new Promise<void>((resolve) => { release = resolve; });
-    await page.route("**/api/reviews/page?**", async (route) => {
-      const response = await route.fetch();
-      await held;
-      await route.fulfill({ response }).catch(() => {});
-    });
-    try {
-      await page.goto("/products/name-tag-shirt");
-      await page.getByRole("button", { name: "Load more reviews", exact: true }).click();
-      await expect(page.getByRole("button", { name: "Loading reviews…", exact: true })).toBeDisabled();
-      if (change === "product") {
-        await page.getByRole("button", { name: /^Style/ }).click();
-        await page.getByRole("option", { name: "Ryan’s Dad", exact: true }).click();
-        await expect(cards(page)).toHaveCount(1);
-      } else {
-        await page.getByRole("button", { name: /^Review mode/ }).click();
-        await page.getByRole("option", { name: "Judge.me", exact: true }).click();
-        await expect(page.locator("#reviews")).toContainText("No reviews yet");
-      }
-      release();
-      await expect(page.getByRole("button", { name: "Load more reviews", exact: true })).toHaveCount(0);
-      await expect(cards(page)).toHaveCount(change === "product" ? 1 : 0);
-      if (change === "product") {
-        await page.goBack();
-        await expect(cards(page)).toHaveCount(20);
-        await expect(page.getByRole("button", { name: "Load more reviews", exact: true })).toBeEnabled();
-      }
-    } finally { release(); }
+test("a product change discards a response from the previous review list", async ({ page }) => {
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => { release = resolve; });
+  await page.route("**/api/reviews/page?**", async (route) => {
+    const response = await route.fetch();
+    await held;
+    await route.fulfill({ response }).catch(() => {});
   });
-}
+  try {
+    await page.goto("/products/name-tag-shirt");
+    await page.getByRole("button", { name: "Load more reviews", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Loading reviews…", exact: true })).toBeDisabled();
+    await page.getByRole("button", { name: /^Style/ }).click();
+    await page.getByRole("option", { name: "Ryan’s Dad", exact: true }).click();
+    await expect(cards(page)).toHaveCount(1);
+    release();
+    await expect(page.getByRole("button", { name: "Load more reviews", exact: true })).toHaveCount(0);
+    await expect(cards(page)).toHaveCount(1);
+    await page.goBack();
+    await expect(cards(page)).toHaveCount(20);
+    await expect(page.getByRole("button", { name: "Load more reviews", exact: true })).toBeEnabled();
+  } finally { release(); }
+});

@@ -1,22 +1,15 @@
 "use client";
 
-import Image from "next/image";
-import { useId, useRef, useState } from "react";
-import type { FormEvent } from "react";
-import { Button, Card, ErrorCallout, FormStatus, Heading, Input, Modal, ModalActions, Pill, RatingStars, StarRating, Text, Textarea } from "@ryanmeetup/ui";
+import { useId, useState } from "react";
+import { Button, Card, ErrorCallout, FormStatus, Heading, Pill, RatingStars, Text } from "@ryanmeetup/ui";
 import { FiCalendar, FiCheck, FiUser } from "react-icons/fi";
 import type { Product, ReviewsData } from "@/lib/types";
-import type { ReviewAccount } from "@/lib/review-collection";
-import type { ReviewPreviewState } from "@/lib/review-provider";
 import type { CustomReviewAccess } from "@/lib/custom-review-access";
 import { CustomReviewComposer, type CustomReviewResult } from "./custom-review-composer";
 import type { ReviewSubmission } from "@ryanmeetup/reviews";
-import { ReviewModeSwitch } from "./review-mode-switch";
 import { ReviewPhotoGallery } from "./review-photo-gallery";
 import { ReviewReply } from "./review-reply";
 import { usePublicReviews } from "./use-public-reviews";
-
-const emptyDraft = { rating: null as number | null, body: "", name: "", email: "" };
 
 function RatingSummary({ data, className = "" }: { data: ReviewsData; className?: string }) {
   if (data.status === "unavailable") {
@@ -41,126 +34,39 @@ async function submitCustomReview(review: ReviewSubmission & { lineId: string | 
   return { ok: true, message: "Thanks! Your review is waiting for approval." };
 }
 
-export function Reviews({ data, product, reviewAccount, reviewPreview, customAccess }: { data: ReviewsData; product: Pick<Product, "id" | "title" | "featuredImage">; reviewAccount: ReviewAccount | undefined; reviewPreview?: ReviewPreviewState; customAccess?: CustomReviewAccess }) {
+export function Reviews({ data, product, access }: { data: ReviewsData; product: Pick<Product, "id" | "title" | "featuredImage">; access: CustomReviewAccess }) {
   const formId = useId();
   const publicReviews = usePublicReviews(data, product.id);
-  const ratingField = useRef<HTMLDivElement>(null);
-  const [showForm, setShowForm] = useState(false);
-  const [draft, setDraft] = useState(emptyDraft);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
-  const [customOpen, setCustomOpen] = useState(false);
-  const [customMessage, setCustomMessage] = useState("");
-
-  async function submitReview(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (loading || reviewAccount !== undefined) return;
-    if (!draft.rating) {
-      setError("Choose a rating before submitting your review.");
-      ratingField.current?.querySelector("input")?.focus();
-      return;
-    }
-    setLoading(true);
-    setError("");
-    try {
-      const response = await fetch("/api/reviews", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...draft, productId: product.id, rating: Number(draft.rating) }),
-      });
-      const payload = (await response.json()) as { error?: unknown; success?: unknown } | null;
-      if (!response.ok || payload?.success !== true) {
-        setError(typeof payload?.error === "string" ? payload.error : "Your review could not be submitted. Please try again.");
-        return;
-      }
-      setSuccess(true);
-      setDraft(emptyDraft);
-      setShowForm(false);
-    } catch {
-      setError("Your review could not be submitted. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  }
+  const [open, setOpen] = useState(false);
+  const [message, setMessage] = useState("");
 
   return (
     <section id="reviews" className="border-t border-black/10 py-16 dark:border-white/10 sm:py-20">
-      {reviewPreview && <ReviewModeSwitch preview={reviewPreview} />}
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <Heading size="h2" className="text-3xl sm:text-4xl">The Ryans have spoken</Heading>
           <RatingSummary data={data} className="mt-3" />
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-start lg:max-w-xs lg:items-end lg:text-right">
-          {customAccess ? (
-            <Button size="sm" variant="secondary" className="w-full sm:w-auto" disabled={customAccess.status === "unavailable"} onClick={() => { setCustomMessage(""); setCustomOpen(true); }}>Write a review</Button>
-          ) : reviewAccount ? (
-            reviewAccount.url ? (
-              <Button.Link href={reviewAccount.url} prefetch={false} size="sm" variant="secondary" className="w-full sm:w-auto">Write a review</Button.Link>
-            ) : (
-              <Button size="sm" variant="secondary" className="w-full sm:w-auto" disabled>Write a review</Button>
-            )
-          ) : (
-            <Button size="sm" variant="secondary" className="w-full sm:w-auto" onClick={() => { setError(""); setShowForm(true); }}>Write a review</Button>
-          )}
-          {customAccess ? (
-            customAccess.status === "unavailable" && <Text className="text-sm">Review collection is temporarily unavailable. Please try again later.</Text>
-          ) : reviewAccount && <Text className="text-sm">{reviewAccount.url ? "From your customer account" : "Review collection is temporarily unavailable. Please try again later."}</Text>}
+          <Button size="sm" variant="secondary" className="w-full sm:w-auto" disabled={access.status === "unavailable"} onClick={() => { setMessage(""); setOpen(true); }}>Write a review</Button>
+          {access.status === "unavailable" && <Text className="text-sm">Review collection is temporarily unavailable. Please try again later.</Text>}
         </div>
       </div>
 
       <div role="status" aria-live="polite">
-        {success && <FormStatus className="mt-6" title="Review received" icon={<FiCheck aria-hidden />}>Thanks for sharing your experience.</FormStatus>}
-        {customMessage && <FormStatus className="mt-6" title="Review received" icon={<FiCheck aria-hidden />}>{customMessage}</FormStatus>}
+        {message && <FormStatus className="mt-6" title="Review received" icon={<FiCheck aria-hidden />}>{message}</FormStatus>}
       </div>
-      {customAccess && (
-        <CustomReviewComposer
-          access={customAccess}
-          product={product}
-          open={customOpen}
-          onClose={() => setCustomOpen(false)}
-          onSubmit={async (review) => {
-            const result = await submitCustomReview({ ...review, productId: product.id });
-            if (result.ok) setCustomMessage(result.message);
-            return result;
-          }}
-        />
-      )}
-      <Modal
-        open={showForm && reviewAccount === undefined && !customAccess}
-        setIsOpen={setShowForm}
-        title="Write a review"
-        size="lg"
-        description="Tell other Ryans how it went."
-        closable={!loading}
-        formId={formId}
-        onSubmit={submitReview}
-        bodyClassName="space-y-5"
-        panelClassName="max-sm:fixed max-sm:inset-0 max-sm:m-0 max-sm:h-dvh max-sm:!max-h-dvh max-sm:rounded-none max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)]"
-        actions={<ModalActions onCancel={() => setShowForm(false)} confirmForm={formId} confirmLabel="Submit review" pending={loading} pendingLabel="Submitting" />}
-      >
-        <div className="flex items-center gap-4 rounded-xl border border-black/10 p-3 dark:border-white/10">
-          {product.featuredImage && <Image src={product.featuredImage.url} alt="" width={64} height={64} sizes="64px" className="h-16 w-16 shrink-0 rounded-lg object-cover" />}
-          <div className="min-w-0">
-            <Text className="font-semibold">{product.title}</Text>
-            <RatingSummary data={data} className="mt-1 flex-wrap gap-x-2 gap-y-1" />
-          </div>
-        </div>
-        <fieldset disabled={loading} aria-busy={loading} className="min-w-0 space-y-5">
-          <legend className="sr-only">Your review</legend>
-          <div ref={ratingField} onInvalid={() => setError("Choose a rating before submitting your review.")}>
-            <StarRating label="Rating" name={`${formId}-rating`} step={1} required disabled={loading} value={draft.rating} onChange={(rating) => setDraft((value) => ({ ...value, rating }))} />
-          </div>
-          <Textarea id={`${formId}-body`} label="Review" name="body" required maxLength={5000} placeholder="The good, the bad, the very Ryan. Tell us how it's holding up. We read every review." value={draft.body} onChange={(event) => setDraft((value) => ({ ...value, body: event.target.value }))} />
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Input label="Display name" name={`${formId}-name`} required maxLength={100} autoComplete="name" placeholder="Ryan" value={draft.name} onChange={(event) => setDraft((value) => ({ ...value, name: event.target.value }))} />
-            <Input label="Email" name={`${formId}-email`} type="email" required maxLength={254} autoComplete="email" placeholder="Your email address" value={draft.email} onChange={(event) => setDraft((value) => ({ ...value, email: event.target.value }))} />
-          </div>
-          <Text className="text-sm">Your display name and review will be public. Your email stays private. If your review flags a problem with your order, that&apos;s where we&apos;ll reach out to sort it.</Text>
-        </fieldset>
-        {error && <ErrorCallout>{error}</ErrorCallout>}
-      </Modal>
+      <CustomReviewComposer
+        access={access}
+        product={product}
+        open={open}
+        onClose={() => setOpen(false)}
+        onSubmit={async (review) => {
+          const result = await submitCustomReview({ ...review, productId: product.id });
+          if (result.ok) setMessage(result.message);
+          return result;
+        }}
+      />
 
       {data.status === "unavailable" ? (
         <div className="mt-8 rounded-2xl border border-dashed border-black/20 p-8 text-center dark:border-white/20">

@@ -39,15 +39,10 @@ export default defineConfig({
       // in .env.local. Empty values win over .env files.
       SHOPIFY_STORE_DOMAIN: "",
       SHOPIFY_STOREFRONT_API_TOKEN: "",
-      JUDGEME_SHOP_DOMAIN: "",
-      JUDGEME_PUBLIC_TOKEN: "",
-      JUDGEME_PRIVATE_API_TOKEN: "",
       SUPABASE_URL: `http://127.0.0.1:${fakeSupabasePort}`,
       SUPABASE_SECRET_KEY: "synthetic-supabase-secret",
       SHOPIFY_CUSTOMER_ACCOUNT_SHOP_ID: "123456",
-      // The suite assumes Judge.me as the environment default and sign-in
-      // closed, whatever local review testing .env.local turns on.
-      REVIEWS_PROVIDER: "",
+      // The suite assumes sign-in closed, whatever .env.local turns on.
       STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED: "",
     },
   }],

@@ -74,7 +74,7 @@ test("an unexpected database-client exception is classified without serializing 
 });
 
 test("HTTP callers retain the generic unavailable response while server diagnostics stay private", async () => {
-  const response = await handlePublicReviewPage(new Request("https://store.test/api/reviews/page?productId=100"), { provider: "custom", backend: backendWithFailure("42501") });
+  const response = await handlePublicReviewPage(new Request("https://store.test/api/reviews/page?productId=100"), { backend: backendWithFailure("42501") });
   expect(response.status).toBe(503);
   expect(response.headers.get("cache-control")).toBe("no-store");
   expect(await response.json()).toEqual({ error: "More reviews are temporarily unavailable. Please try again." });

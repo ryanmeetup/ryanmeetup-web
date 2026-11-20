@@ -99,9 +99,8 @@ test("definitive rejection needs sign-in while discovery and storage failures re
   expect(await getCustomerAccountSession(request(id))).toEqual({ status: "unavailable" });
 });
 
-test("sign-in doesn't depend on the review provider, but disabled sign-in and missing configuration load no session", async () => {
+test("a stored session loads, but disabled sign-in and missing configuration load no session", async () => {
   const { id, session } = await seed(false);
-  process.env.REVIEWS_PROVIDER = "judgeme";
   expect(await getCustomerAccountSession(request(id))).toEqual({ status: "authenticated", session });
   requests = [];
   for (const [key, value] of [["STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED", "false"], ["SUPABASE_SECRET_KEY", ""]]) {

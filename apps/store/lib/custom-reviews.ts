@@ -12,7 +12,7 @@ export function numericProductId(productId: string) {
 
 /**
  * Published custom reviews for one product. Any failure is reported as
- * unavailable, never as an empty success and never as Judge.me data.
+ * unavailable, never as an empty success.
  */
 export async function getCustomReviews(productId: string, backend = getReviewBackend()): Promise<ReviewsData> {
   const id = numericProductId(productId);

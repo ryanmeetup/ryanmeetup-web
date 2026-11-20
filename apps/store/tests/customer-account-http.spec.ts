@@ -151,8 +151,7 @@ test("disabled sign-in and missing configuration keep sign-in closed before any 
   expect(requests).toEqual([]);
 });
 
-test("shoppers can sign in from the header whatever the review provider", async () => {
-  process.env.REVIEWS_PROVIDER = "judgeme";
+test("shoppers can sign in from the header", async () => {
   const response = await start(new Request("https://store.test/api/reviews/auth/start?returnTo=%2Fapparel%2Fhats"));
   expect(response.status).toBe(303);
   expect(response.headers.get("location")).toMatch(/^https:\/\/shopify\.com\/authentication\/123456\/oauth\/authorize\?/);
@@ -206,11 +205,11 @@ test("callbacks accept the configured public host behind a proxy and reject anot
   expect(response.status).toBe(303);
 });
 
-test("review-session logout works after switching to Judge.me and when Shopify discovery is down", async () => {
+test("review-session logout works after sign-in is switched off and when Shopify discovery is down", async () => {
   const { state, binding } = await begin();
   const signedIn = await callback(callbackRequest(state, binding));
   const id = signedIn.cookies.get(customerSessionCookie)!.value;
-  process.env.REVIEWS_PROVIDER = "judgeme"; process.env.STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED = "false"; refuseDiscovery = true;
+  process.env.STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED = "false"; refuseDiscovery = true;
   requests = [];
   const response = await logout(new Request("https://store.test/api/reviews/auth/logout", { method: "POST", headers: { origin: "https://store.test", cookie: `${customerSessionCookie}=${id}` } }));
   expect(response.status).toBe(200);

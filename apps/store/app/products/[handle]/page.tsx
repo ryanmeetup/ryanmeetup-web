@@ -15,10 +15,8 @@ import { getGarmentIcon, getStoreCollectionIcon, StoreHomeIcon, StoreProductIcon
 import { decodeRouteHandle } from "@/lib/handles";
 import { getColorPreview } from "@/lib/product-colors";
 import { getProductGroupForMember, getProductHref, resolveProductDesignValue } from "@/lib/product-groups";
-import { getReviews } from "@/lib/reviews";
-import { getReviewAccount } from "@/lib/review-collection";
+import { getCustomReviews } from "@/lib/custom-reviews";
 import { getCustomReviewAccessByProduct } from "@/lib/custom-review-access";
-import { getActiveReviewProvider, getReviewPreview } from "@/lib/review-preview";
 import { cartOrigin, withProductOrigin } from "@/lib/product-origin";
 import { getCollections, getProduct, getProductHandles } from "@/lib/shopify";
 
@@ -59,11 +57,9 @@ export default async function ProductPage({ params, searchParams }: Props) {
     permanentRedirect(withProductOrigin(`/products/${product.handle}?design=${encodeURIComponent(requestedDesign)}${color}`, query.from));
   }
   const reviewProducts = product.designs?.map((design) => design.product) ?? [product];
-  const [reviewEntries, reviewAccount, reviewPreview, customReviewAccess] = await Promise.all([
-    Promise.all(reviewProducts.map(async (item) => [item.id, await getReviews(item.id)] as const)),
-    getReviewAccount(),
-    getReviewPreview(),
-    getActiveReviewProvider().then((provider) => (provider === "custom" ? getCustomReviewAccessByProduct(reviewProducts, `/products/${product.handle}`) : undefined)),
+  const [reviewEntries, reviewAccess] = await Promise.all([
+    Promise.all(reviewProducts.map(async (item) => [item.id, await getCustomReviews(item.id)] as const)),
+    getCustomReviewAccessByProduct(reviewProducts, `/products/${product.handle}`),
   ]);
   const reviewsByProduct = Object.fromEntries(reviewEntries);
   const originCrumbs = await getOriginCrumbs(query.from);
@@ -74,12 +70,12 @@ export default async function ProductPage({ params, searchParams }: Props) {
     <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
       <NavSection href={typeCollection ? getCollectionPath(typeCollection.handle) : null} />
       {product.designs ? (
-        <ProductGroupDetail title={product.title} handle={product.handle} url={productUrl} breadcrumbs={breadcrumbs} designs={product.designs} defaultColor={product.defaultColor} reviewsByProduct={reviewsByProduct} reviewAccount={reviewAccount} reviewPreview={reviewPreview} customReviewAccessByProduct={customReviewAccess} />
+        <ProductGroupDetail title={product.title} handle={product.handle} url={productUrl} breadcrumbs={breadcrumbs} designs={product.designs} defaultColor={product.defaultColor} reviewsByProduct={reviewsByProduct} reviewAccessByProduct={reviewAccess} />
       ) : (
         <>
           <ProductSchema product={product} reviews={reviewsByProduct[product.id]} url={productUrl} />
           <ProductDetail product={product} breadcrumbs={breadcrumbs} initialColor={query.color} initialImage={getColorPreview(product, query.color)?.image} />
-          <Reviews data={reviewsByProduct[product.id]} product={product} reviewAccount={reviewAccount} reviewPreview={reviewPreview} customAccess={customReviewAccess?.[product.id]} />
+          <Reviews data={reviewsByProduct[product.id]} product={product} access={reviewAccess[product.id]} />
         </>
       )}
       <p className="sr-only">Price: {formatMoney(product.priceRange.minVariantPrice)}</p>

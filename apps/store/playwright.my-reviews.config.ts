@@ -11,7 +11,7 @@ export default defineConfig({
     {command:"node tests/fixtures/fake-supabase-server.mjs",url:`http://127.0.0.1:${fixturePort}/health`,reuseExistingServer:false,env:{FAKE_SUPABASE_PORT:String(fixturePort)}},
     {command:`npm run dev -- --port ${port}`,url:`http://localhost:${port}`,timeout:120000,reuseExistingServer:false,
       env:{...process.env,...customerAccountEnvironment,SUPABASE_URL:`http://127.0.0.1:${fixturePort}`,MY_REVIEWS_FIXTURE:"1",NEXT_DIST_DIR:".next-preview",
-        SHOPIFY_STOREFRONT_API_TOKEN:"",JUDGEME_SHOP_DOMAIN:"",JUDGEME_PUBLIC_TOKEN:"",JUDGEME_PRIVATE_API_TOKEN:"",
+        SHOPIFY_STOREFRONT_API_TOKEN:"",
         NODE_OPTIONS:`--import=${path.resolve(__dirname,"tests/fixtures/my-reviews-preload.mjs")}`}},
   ],
   projects:[{name:"chromium",use:{...devices["Desktop Chrome"]}}],

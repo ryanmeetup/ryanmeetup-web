@@ -22,7 +22,7 @@ export const customerAccountMetadata = {
 
 /** Complete synthetic server environment; never configure a live deployment with it. */
 export const customerAccountEnvironment = {
-  STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED: "true", REVIEWS_PROVIDER: "custom", VERCEL_ENV: "preview", REVIEWS_PREVIEW_ENABLED: "true",
+  STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED: "true", VERCEL_ENV: "preview",
   SHOPIFY_STORE_DOMAIN: customerAccountConfig.shopDomain, SHOPIFY_CUSTOMER_ACCOUNT_SHOP_ID: customerAccountConfig.shopId,
   SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_ID: customerAccountConfig.clientId, SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_SECRET: customerAccountConfig.clientSecret,
   SHOPIFY_CUSTOMER_ACCOUNT_REDIRECT_URI: customerAccountConfig.redirectUri, ...fakeSupabaseEnvironment, STORE_CUSTOMER_ACCOUNT_ENCRYPTION_KEY_ID: "test",

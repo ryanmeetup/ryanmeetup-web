@@ -15,14 +15,9 @@ async function buyTee(request: Parameters<typeof reset>[0]) {
   await configure(request, { purchase });
 }
 
-async function choose(page: Page, name: string) {
-  const option = page.getByRole("option", { name, exact: true });
-  // The page can re-render after a switch and close the menu mid-click; retry opening and choosing together.
-  await expect(async () => {
-    if (!(await option.isVisible())) await page.getByRole("button", { name: /^Review mode/ }).click();
-    await option.click({ timeout: 2000 });
-  }).toPass({ timeout: 60_000 });
-  await expect(page.getByRole("complementary", { name: "Review testing" })).toHaveAttribute("aria-busy", "false");
+/** Re-render the server components in place, the way a router refresh does, without remounting the page. */
+async function refreshInPlace(page: Page) {
+  await page.evaluate(() => (window as unknown as { next: { router: { refresh(): void } } }).next.router.refresh());
 }
 
 async function openComposer(page: Page) {
@@ -98,6 +93,52 @@ test("the buyer must pick a rating and give a title before submitting", async ({
   await expect(dialog.getByText(/^Give your review a title/)).toBeVisible();
 });
 
+test("stars preview whole ratings without changing the saved selection", async ({ page, baseURL }) => {
+  await signIn(page, baseURL!);
+  const { dialog } = await openComposer(page);
+  const rating = dialog.getByRole("radiogroup", { name: "Rating" });
+  const four = rating.getByRole("radio", { name: "4 stars", exact: true });
+  const five = rating.getByRole("radio", { name: "5 stars", exact: true });
+  await four.check();
+  await five.hover();
+  await expect(rating.getByText("5 out of 5", { exact: true })).toBeVisible();
+  await expect(four).toBeChecked();
+  await dialog.getByLabel(/^Review/).hover();
+  await expect(rating.getByText("Rated 4 out of 5", { exact: true })).toBeVisible();
+});
+
+test("keyboard arrows select whole stars with a full-star keyboard-only focus outline", async ({ page, baseURL }) => {
+  await signIn(page, baseURL!);
+  const { dialog } = await openComposer(page);
+  const four = dialog.getByRole("radio", { name: "4 stars", exact: true });
+  const five = dialog.getByRole("radio", { name: "5 stars", exact: true });
+  await expect(dialog.getByRole("radio")).toHaveCount(5);
+  await four.check();
+  await expect(four.locator("../..")).toHaveCSS("outline-style", "none");
+  await four.press("ArrowRight");
+  await expect(five).toBeChecked();
+  await expect(five).toBeFocused();
+  await expect(five.locator("../..")).toHaveCSS("outline-width", "2px");
+  await expect(five.locator("..")).toHaveCSS("box-shadow", "none");
+  await five.press("ArrowLeft");
+  await expect(four).toBeChecked();
+});
+
+test("touch selects full stars", async ({ browser, baseURL }) => {
+  const context = await browser.newContext({ baseURL, hasTouch: true, viewport: { width: 390, height: 844 } });
+  const page = await context.newPage();
+  await signIn(page, baseURL!);
+  const { dialog } = await openComposer(page);
+  const four = dialog.getByRole("radio", { name: "4 stars", exact: true });
+  await four.tap();
+  await expect(four).toBeChecked();
+  const five = dialog.getByRole("radio", { name: "5 stars", exact: true });
+  await five.tap();
+  await expect(five).toBeChecked();
+  await expect(dialog.getByRole("radiogroup", { name: "Rating" })).toContainText("5 out of 5");
+  await context.close();
+});
+
 test("a single purchase stays implied when access changes without a remount", async ({ page, request, baseURL }) => {
   await signIn(page, baseURL!);
   // Start with storage unavailable, so the composer mounts closed; recovering refreshes it in place.
@@ -106,7 +147,8 @@ test("a single purchase stays implied when access changes without a remount", as
   const reviews = page.locator("#reviews");
   await expect(reviews).toContainText("Review collection is temporarily unavailable.");
   await configure(request, { failReviewedLines: false });
-  await choose(page, "Environment default");
+  await refreshInPlace(page);
+  await expect(reviews.getByRole("button", { name: "Write a review", exact: true })).toBeEnabled();
   await reviews.getByRole("button", { name: "Write a review", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Write a review", exact: true });
   await dialog.getByRole("radio", { name: "5 stars", exact: true }).check();

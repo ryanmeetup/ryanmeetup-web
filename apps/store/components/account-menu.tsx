@@ -148,7 +148,7 @@ export function AccountMenu({ accountUrl }: { accountUrl: string | null }) {
             <FiSettings aria-hidden /> Account details
           </DropdownMenuItemLink>
         )}
-        {signedIn && account.reviews && (
+        {signedIn && (
           <DropdownMenuItemLink href="/reviews/mine">
             <FiMessageSquare aria-hidden /> My reviews
           </DropdownMenuItemLink>
