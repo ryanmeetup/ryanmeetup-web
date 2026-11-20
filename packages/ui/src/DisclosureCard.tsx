@@ -18,6 +18,12 @@ export type DisclosureCardProps = {
   actionsClassName?: string;
   description?: ReactNode;
   collapsible?: boolean;
+  /**
+   * Wrap the toggle in a heading element so the section keeps its place in
+   * the page outline. A heading inside the button would lose its semantics,
+   * so pass the title as plain text or a styled span, not a `Heading`.
+   */
+  heading?: "h2" | "h3" | "h4";
 };
 
 const DisclosureCard = ({
@@ -33,7 +39,9 @@ const DisclosureCard = ({
   actionsClassName = "absolute right-0 top-1/2 -translate-y-1/2",
   description,
   collapsible = true,
+  heading,
 }: DisclosureCardProps) => {
+  const Title = heading;
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   if (!collapsible)
@@ -42,9 +50,15 @@ const DisclosureCard = ({
         <div
           className={`relative ${actions ? "flex min-h-10 flex-col justify-center" : ""}`}
         >
-          <div className={buttonClassName}>
-            <span className="min-w-0 flex-1">{summary}</span>
-          </div>
+          {Title ? (
+            <Title className={buttonClassName}>
+              <span className="min-w-0 flex-1">{summary}</span>
+            </Title>
+          ) : (
+            <div className={buttonClassName}>
+              <span className="min-w-0 flex-1">{summary}</span>
+            </div>
+          )}
           {description && <div className="-mt-1">{description}</div>}
           {actions && (
             <div className={actionsClassName}>{actions}</div>
@@ -53,6 +67,19 @@ const DisclosureCard = ({
         <div>{children}</div>
       </div>
     );
+
+  const toggle = (open: boolean) => (
+    <DisclosureButton
+      ref={buttonRef}
+      id={id}
+      className={`cursor-pointer ${buttonClassName}`}
+    >
+      <span className="min-w-0 flex-1">{summary}</span>
+      <ChevronDown
+        className={`${iconClassName} shrink-0 transition-transform duration-200 ${open ? "-rotate-180" : ""}`}
+      />
+    </DisclosureButton>
+  );
 
   return (
     <Disclosure as="div" className={className} defaultOpen={defaultOpen}>
@@ -69,16 +96,7 @@ const DisclosureCard = ({
                 buttonRef.current?.click();
             }}
           >
-            <DisclosureButton
-              ref={buttonRef}
-              id={id}
-              className={`cursor-pointer ${buttonClassName}`}
-            >
-              <span className="min-w-0 flex-1">{summary}</span>
-              <ChevronDown
-                className={`${iconClassName} shrink-0 transition-transform duration-200 ${open ? "-rotate-180" : ""}`}
-              />
-            </DisclosureButton>
+            {Title ? <Title className="m-0">{toggle(open)}</Title> : toggle(open)}
             {description && <div className="-mt-1">{description}</div>}
             {actions && (
             <div className={actionsClassName}>{actions}</div>
