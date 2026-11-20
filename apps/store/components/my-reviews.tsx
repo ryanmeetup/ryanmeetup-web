@@ -24,10 +24,11 @@ const STATUS: Record<BuyerReviewStatus, { label: string; note: string }> = {
 export function MyReviews({ initial, suggestions }: { initial: MyReviewView | null; suggestions?: Suggestions | null }) {
   const mine=useMyReviews(initial);
   const editing=mine.editing;
-  const hasSuggestions=Boolean(suggestions?.items.length);
+  const currentSuggestions=mine.view?.viewerKey === initial?.viewerKey ? suggestions : null;
+  const hasSuggestions=Boolean(currentSuggestions?.items.length);
   const reviewCount=mine.view?.page.reviews.length ?? 0;
   return <div className="space-y-6">
-    {suggestions && <ReviewSuggestions suggestions={suggestions} onReviewed={(notice)=>void mine.reloadWith(notice)} />}
+    {currentSuggestions && mine.view && <ReviewSuggestions key={mine.view.viewerKey} suggestions={currentSuggestions} photoViewerKey={mine.view.photosEnabled ? mine.view.viewerKey : undefined} onReviewed={(notice)=>void mine.reloadWith(notice)} />}
     <section aria-labelledby="your-reviews">
     <DisclosureCard
       id="your-reviews"
@@ -90,7 +91,9 @@ export function MyReviews({ initial, suggestions }: { initial: MyReviewView | nu
       access={{status:"ready",buyer:{firstName:null,lastName:null},purchases:editing.lineId?[{lineId:editing.lineId,label:editing.item.variantTitle ? `${editing.item.productTitle} · ${editing.item.variantTitle}`:editing.item.productTitle}]:[],defaultNameStyle:editing.current.nameStyle}}
       product={{title:editing.item.productTitle,featuredImage:null}}
       edit={{initial:editing.current,nameChoices:buyerReviewNameChoices(editing,mine.view?.buyerName??null)}}
-      onClose={mine.dismiss} onSubmit={(review)=>mine.save(editing,{rating:review.rating,title:review.title,body:review.body,nameStyle:review.nameStyle})} />}
+      photos={mine.view?.photosEnabled ? {productId:editing.item.productId,viewerKey:mine.view.viewerKey,review:{id:editing.id,updatedAt:editing.updatedAt}} : undefined}
+      onClose={mine.dismiss} onSubmit={(review)=>mine.save(editing,{rating:review.rating,title:review.title,body:review.body,nameStyle:review.nameStyle,
+        ...(review.photoIds ? {photoIds:review.photoIds,viewerKey:review.viewerKey} : {})})} />}
     <ConfirmationDialog open={Boolean(mine.withdrawing)} setOpen={(open)=>{if(!open)mine.dismiss();}}
       title="Withdraw this review?" description="It comes off the product page and out of rating totals. To write again, return to the product page."
       confirmLabel="Withdraw" pendingLabel="Withdrawing…" pending={mine.pending} onConfirm={()=>mine.withdrawing&&mine.save(mine.withdrawing)} />

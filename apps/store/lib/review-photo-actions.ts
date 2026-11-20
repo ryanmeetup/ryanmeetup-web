@@ -5,6 +5,7 @@ import { isSameOriginRequest, privateJson as reply } from "./request-guard";
 import { prepareReviewPhoto } from "./review-photo-processing";
 import type { getReviewPhotoStaging } from "./review-photo-staging";
 import { readReviewPhotoBytes } from "./review-photo-bytes";
+import { matchesReviewViewer, reviewViewerChanged, reviewViewerKey } from "./review-viewer";
 
 // Raw bytes stay below the hosting platform's 4.5 MB request limit.
 export const REVIEW_PHOTO_HTTP_MAX_BYTES = 4 * 1024 * 1024;
@@ -43,6 +44,7 @@ export async function handleReviewPhoto(request: Request, services: Services): P
   const session = await load();
   if (session.status === "sign_in_required") return reply(401, { error: "Sign in to add review photos." });
   if (session.status !== "authenticated") return unavailable();
+  if (!matchesReviewViewer(request, session.session)) return reviewViewerChanged();
   const scope = { subject: session.session.subject, productId };
   const current = async () => {
     const next = await load();
@@ -77,7 +79,11 @@ export async function handleReviewPhoto(request: Request, services: Services): P
       if (!await current()) return unavailable();
       const result = await services.staging.stage({ ...scope, requestKey: id, photo: prepared.photo });
       if (!await current()) return unavailable();
-      if (result.status === "ready") return reply(200, { status: "ready", photo: result.photo });
+      if (result.status === "ready") {
+        const response = reply(200, { status: "ready", photo: result.photo });
+        response.headers.set("X-Review-Viewer", reviewViewerKey(session.session));
+        return response;
+      }
       return reply(409, { error: result.status === "full" ? "A review can have up to five photos." : "Start a new upload for that photo." });
     } finally { active--; }
   } catch { return unavailable(); }

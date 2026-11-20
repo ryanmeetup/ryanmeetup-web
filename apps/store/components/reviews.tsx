@@ -5,8 +5,7 @@ import { Button, Card, ErrorCallout, Heading, Pill, RatingStars, SuccessCallout,
 import { FiCalendar, FiCheck, FiUser } from "react-icons/fi";
 import type { Product, ReviewsData } from "@/lib/types";
 import type { CustomReviewAccess } from "@/lib/custom-review-access";
-import { CustomReviewComposer, type CustomReviewResult } from "./custom-review-composer";
-import type { ReviewSubmission } from "@ryanmeetup/reviews";
+import { CustomReviewComposer, type CustomReviewResult, type CustomReviewSubmission } from "./custom-review-composer";
 import { ReviewPhotoGallery } from "./review-photo-gallery";
 import { ReviewReply } from "./review-reply";
 import { usePublicReviews } from "./use-public-reviews";
@@ -23,14 +22,14 @@ function RatingSummary({ data, className = "" }: { data: ReviewsData; className?
   );
 }
 
-async function submitCustomReview(review: ReviewSubmission & { lineId: string | null; productId: string }): Promise<CustomReviewResult> {
+async function submitCustomReview({viewerKey,...review}: CustomReviewSubmission & { productId: string }): Promise<CustomReviewResult> {
   const response = await fetch("/api/reviews", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(viewerKey ? {"X-Review-Viewer":viewerKey} : {}) },
     body: JSON.stringify(review),
   });
-  const payload = (await response.json().catch(() => null)) as { error?: unknown } | null;
-  if (!response.ok) return { ok: false, error: typeof payload?.error === "string" ? payload.error : "Your review could not be submitted. Please try again." };
+  const payload = (await response.json().catch(() => null)) as { error?: unknown; code?: unknown } | null;
+  if (!response.ok) return { ok: false, error: typeof payload?.error === "string" ? payload.error : "Your review could not be submitted. Please try again.", refreshRequired:payload?.code === "viewer_changed" };
   return { ok: true, message: "Thanks! Your review is waiting for approval." };
 }
 
@@ -60,6 +59,7 @@ export function Reviews({ data, product, access }: { data: ReviewsData; product:
         access={access}
         product={product}
         open={open}
+        photos={access.status === "ready" ? access.photos : undefined}
         onClose={() => setOpen(false)}
         onSubmit={async (review) => {
           const result = await submitCustomReview({ ...review, productId: product.id });

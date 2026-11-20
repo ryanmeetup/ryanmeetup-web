@@ -39,6 +39,7 @@ for (const theme of ["light", "dark"]) {
       await expect(dialog).toContainText(`Reviewing ${label}`);
       await expect(dialog).toContainText("Shown publicly as Ryan F.");
       await expect(dialog.getByLabel("Email")).toHaveCount(0);
+      await expect(dialog.getByLabel("Photos", { exact: true })).toHaveCount(0);
 
       await dialog.getByRole("button", { name: /^Show my name as/ }).click();
       await page.getByRole("option", { name: "Full name: Ryan Fixture", exact: true }).click();

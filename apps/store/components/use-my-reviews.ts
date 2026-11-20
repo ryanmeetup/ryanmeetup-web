@@ -33,7 +33,7 @@ export function useMyReviews(initial: MyReviewView | null) {
   }
   function dismiss() {if(!active.current){setEditing(null);setWithdrawing(null);}}
 
-  async function save(review:BuyerReview, submission?:ReviewSubmission) {
+  async function save(review:BuyerReview, submission?:ReviewSubmission & {photoIds?:string[];viewerKey?:string}) {
     if(active.current) return {ok:false as const,error:"A review change is already in progress."};
     active.current=true;setPending(true);setError("");setMessage("");
     let outcome:"saved"|"conflict"|"unknown"="unknown";

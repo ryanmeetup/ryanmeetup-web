@@ -10,6 +10,7 @@ import { reviewSignInRel, reviewSignInUrl } from "@/lib/review-sign-in";
 import { findBuyerName, findRecentReviewablePurchases } from "@/lib/review-purchases";
 import { getReviewSuggestions } from "@/lib/review-suggestions";
 import { getCustomerAccountUrl, getProductCardsByIds } from "@/lib/shopify";
+import { reviewPhotosEnabled } from "@/lib/review-photo-policy";
 
 export const metadata = buildPageMetadata({
   title: "My reviews",
@@ -33,7 +34,7 @@ export default async function Page() {
   const backend = getReviewBackend();
   const session = getCustomerAccountSession(request);
   const [result, suggestions] = await Promise.all([
-    loadMyReviewPage(null, { loadSession: () => session, findBuyerName, backend }),
+    loadMyReviewPage(null, { loadSession: () => session, findBuyerName, backend, photosEnabled: reviewPhotosEnabled() }),
     // Suggestions are a nicety: any failure leaves them out rather than failing the page.
     session.then(async (current) => current.status === "authenticated" && backend ? getReviewSuggestions({
       session: current.session, findRecent: findRecentReviewablePurchases, productCards: getProductCardsByIds,
@@ -49,5 +50,5 @@ export default async function Page() {
       <Button.Link href={reviewSignInUrl("/reviews/mine")} rel={reviewSignInRel} prefetch={false} size="md" className="mt-6 w-full sm:w-auto">Sign in</Button.Link>
     </div>
   </Shell>;
-  return <Shell><MyReviews initial={result.status === "ready" ? result.view : null} suggestions={result.status === "ready" ? suggestions : null} /></Shell>;
+  return <Shell><MyReviews key={result.status === "ready" ? `${result.view.viewerKey}:${Boolean(result.view.photosEnabled)}` : "unavailable"} initial={result.status === "ready" ? result.view : null} suggestions={result.status === "ready" ? suggestions : null} /></Shell>;
 }

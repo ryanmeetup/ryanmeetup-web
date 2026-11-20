@@ -2,6 +2,7 @@ import { reviewDisplayName, reviewPhotoIdsSchema, reviewSubmissionSchema } from 
 import { numericProductId } from "./custom-reviews";
 import { hasJsonBody, isSameOriginRequest, privateJson as reply, readBoundedJsonObject } from "./request-guard";
 import { sameCustomerAccountSession } from "./customer-account/storage";
+import { matchesReviewViewer, reviewViewerChanged } from "./review-viewer";
 import type { ReviewPurchase } from "@ryanmeetup/reviews";
 import type { CustomerAccountSession } from "./customer-account/storage";
 import type { ReviewBackend } from "./review-backend";
@@ -44,6 +45,7 @@ export async function submitCustomReview(request: Request, { loadSession, findPu
   const session = await loadSession().catch((): CustomerSessionResult => ({ status: "unavailable" }));
   if (session.status === "unavailable") return unavailable();
   if (session.status === "sign_in_required") return reply(401, { error: "Sign in to write a review." });
+  if (!matchesReviewViewer(request, session.session)) return reviewViewerChanged();
 
   // Ownership and eligibility are rechecked on every write, never trusted from the page.
   const eligibility = await findPurchases(session.session, product).catch(() => ({ status: "unavailable" as const }));

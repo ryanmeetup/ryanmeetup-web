@@ -1,5 +1,5 @@
 import { ANONYMOUS_REVIEWER_NAME, buyerReviewTimestamp, decodeBuyerReviewCursor, reviewDisplayName, reviewPhotoIdsSchema, reviewSubmissionSchema } from "@ryanmeetup/reviews";
-import { createHash } from "node:crypto";
+import { matchesReviewViewer, reviewViewerChanged, reviewViewerKey } from "./review-viewer";
 import type { CustomerSessionResult } from "./customer-account/session";
 import { sameCustomerAccountSession } from "./customer-account/storage";
 import { hasJsonBody, isSameOriginRead, isSameOriginRequest, privateJson as reply, readBoundedJsonObject } from "./request-guard";
@@ -23,7 +23,7 @@ async function recheckSession(first: Extract<CustomerSessionResult, { status: "a
 }
 
 /** Initial server rendering and client paging share the same private buyer boundary. */
-export async function loadMyReviewPage(cursor: string | null, { loadSession, backend, findBuyerName }: MyReviewServices): Promise<
+export async function loadMyReviewPage(cursor: string | null, { loadSession, backend, findBuyerName, photosEnabled = false }: MyReviewServices): Promise<
   { status: "ready"; view: MyReviewView } | { status: "sign_in_required" | "unavailable" }
 > {
   if (!backend) return { status: "unavailable" };
@@ -37,7 +37,7 @@ export async function loadMyReviewPage(cursor: string | null, { loadSession, bac
     const current = await recheckSession(session,loadSession);
     return current.status === "authenticated" ? { status:"ready",view:{page,buyerName,
       // Equality marker only; neither a session lookup hash nor an authentication credential.
-      viewerKey:createHash("sha256").update("my-review-view:").update(session.session.sessionHash).digest("hex")}} : current;
+      viewerKey:reviewViewerKey(session.session), ...(photosEnabled ? { photosEnabled: true as const } : {})}} : current;
   } catch { return { status: "unavailable" }; }
 }
 
@@ -71,6 +71,7 @@ export async function handleMyReviewAction(request: Request, { loadSession, find
   if (action === "edit" ? !submission : Object.keys(fields).length) return reply(400, { error: "Please complete every required field." });
   const session = await sessionResult(loadSession);
   if (session.status !== "authenticated") return sessionFailure(session);
+  if (!matchesReviewViewer(request, session.session)) return reviewViewerChanged();
   const subject = session.session.subject;
   try {
     // A direct scoped read also finds reviews beyond the first page.

@@ -6,7 +6,7 @@ import { useState, type ReactNode } from "react";
 import { Button, Card, DisclosureCard, Heading, Text } from "@ryanmeetup/ui";
 import { FiPackage } from "react-icons/fi";
 import type { ReviewSuggestion, ReviewSuggestions as Suggestions } from "@/lib/review-suggestions";
-import { CustomReviewComposer, type CustomReviewResult } from "./custom-review-composer";
+import { CustomReviewComposer, type CustomReviewResult, type CustomReviewSubmission } from "./custom-review-composer";
 
 /**
  * A section title with its count beside the arrow, matching the collapsible
@@ -49,14 +49,14 @@ function SuggestionDetails({ item }: { item: ReviewSuggestion }) {
 }
 
 /** The same review request a product page sends; the server rechecks the purchase. */
-async function submit(item: ReviewSuggestion, review: Record<string, unknown>): Promise<CustomReviewResult> {
+async function submit(item: ReviewSuggestion, {viewerKey,...review}: CustomReviewSubmission): Promise<CustomReviewResult> {
   const response = await fetch("/api/reviews", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(viewerKey ? {"X-Review-Viewer":viewerKey} : {}) },
     body: JSON.stringify({ ...review, productId: item.productId, lineId: item.lineId }),
   }).catch(() => null);
-  const payload = (await response?.json().catch(() => null)) as { error?: unknown } | null;
-  if (!response?.ok) return { ok: false, error: typeof payload?.error === "string" ? payload.error : "Your review could not be submitted. Please try again." };
+  const payload = (await response?.json().catch(() => null)) as { error?: unknown; code?: unknown } | null;
+  if (!response?.ok) return { ok: false, error: typeof payload?.error === "string" ? payload.error : "Your review could not be submitted. Please try again.", refreshRequired:payload?.code === "viewer_changed" };
   return { ok: true, message: "Thanks! Your review is waiting for approval." };
 }
 
@@ -65,7 +65,7 @@ async function submit(item: ReviewSuggestion, review: Record<string, unknown>): 
  * orders that they haven't reviewed. Each opens the review form already set
  * to that order, so reviewing doesn't mean finding the product first.
  */
-export function ReviewSuggestions({ suggestions, onReviewed }: { suggestions: Suggestions; onReviewed: (message: string) => void }) {
+export function ReviewSuggestions({ suggestions, onReviewed, photoViewerKey }: { suggestions: Suggestions; onReviewed: (message: string) => void; photoViewerKey?: string }) {
   const [items, setItems] = useState(suggestions.items);
   const [reviewing, setReviewing] = useState<ReviewSuggestion | null>(null);
   if (!items.length) return null;
@@ -109,6 +109,7 @@ export function ReviewSuggestions({ suggestions, onReviewed }: { suggestions: Su
         <CustomReviewComposer
           key={reviewing.lineId}
           open
+          photos={photoViewerKey ? {productId:reviewing.productId,viewerKey:photoViewerKey} : undefined}
           access={{ status: "ready", buyer: suggestions.buyer, purchases: [{ lineId: reviewing.lineId, label: reviewing.label }], defaultNameStyle: "first-initial" }}
           product={{ title: reviewing.productTitle, featuredImage: reviewing.image ? { ...reviewing.image, width: null, height: null } : null }}
           onClose={() => setReviewing(null)}

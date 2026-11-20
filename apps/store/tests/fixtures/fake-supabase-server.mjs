@@ -28,7 +28,15 @@ const submission=(a)=>({rating:a.p_rating,title:a.p_title,body:a.p_body,nameStyl
 
 /** Buyer review RPCs, mirroring the database functions' outcomes. */
 function review(name,a){
+  // Browser transport fixtures only; atomic ownership/rollback is proven by the SQL suite.
+  if(name==="store_submit_review_with_photos")name="store_submit_review";
+  if(name==="store_edit_buyer_review_with_photos")name="store_edit_buyer_review";
   const owned=records.filter((r)=>r.subject===a.p_subject);
+  if(name==="store_buyer_review_photo_selection"){
+    const record=owned.find((r)=>r.value.id===a.p_review_id);
+    return record?{reviewId:record.value.id,productId:record.value.item.productId,
+      updatedAt:options.photoVersion??record.value.updatedAt,photos:options.photos?.[record.value.id]??[]}:null;
+  }
   if(name==="store_review_summary")return {count:0,average:0,distribution:{1:0,2:0,3:0,4:0,5:0}};
   if(name==="store_public_reviews")return [];
   if(name==="store_buyer_reviewed_products")return [...new Set(owned.filter((r)=>r.value.lineId===null&&r.value.status!=="withdrawn"&&a.p_product_ids.includes(r.value.item.productId)).map((r)=>r.value.item.productId))];
@@ -42,7 +50,7 @@ function review(name,a){
   }
   if(name==="store_submit_review"){
     const purchase={orderId:a.p_order_id,lineId:a.p_line_id,productId:a.p_product_id,variantId:a.p_variant_id,productTitle:a.p_product_title,variantTitle:a.p_variant_title};
-    calls.push({operation:"review.submit",subject:a.p_subject,purchase,submission:submission(a),displayName:a.p_display_name});
+    calls.push({operation:"review.submit",subject:a.p_subject,purchase,submission:submission(a),displayName:a.p_display_name,...(a.p_photo_ids?{photoIds:a.p_photo_ids}:{})});
     const same=(r)=>a.p_line_id===null?r.value.lineId===null&&r.value.item.productId===a.p_product_id:r.value.lineId===a.p_line_id;
     if(owned.some(same))return [{review_id:null,outcome:"exists"}];
     const created=row(500+ ++tick,"pending",a.p_subject);
@@ -54,7 +62,7 @@ function review(name,a){
   const operation=name==="store_edit_buyer_review"?"review.edit":name==="store_withdraw_buyer_review"?"review.withdraw":null;
   if(!operation)return undefined;
   calls.push({operation,subject:a.p_subject,reviewId:a.p_review_id,expectedUpdatedAt:a.p_expected_updated_at,
-    ...(operation==="review.edit"?{submission:submission(a),displayName:a.p_display_name}:{})});
+    ...(operation==="review.edit"?{submission:submission(a),displayName:a.p_display_name,...(a.p_photo_ids?{photoIds:a.p_photo_ids}:{})}:{})});
   const record=owned.find((r)=>r.value.id===a.p_review_id);
   if(!record)return "not_found";
   if(options.conflictOnce){options.conflictOnce=false;record.value.updatedAt=stamp(2000+ ++tick);record.value.current.body="A newer buyer edit.";return "conflict";}

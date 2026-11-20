@@ -2,11 +2,12 @@
 
 Updated November 20, 2026. Server processing, private staging, a gated
 same-origin upload/discard API, atomic pending-revision associations and
-private buyer selection/preview reads are implemented. RMT-only migrations
+private buyer selection/preview reads and buyer composer/edit controls are
+implemented. RMT-only migrations
 through `20261121000000` own the schema; see [the rebuild inventory](REVIEWS_REBUILD.md) for rollout evidence.
 `STORE_REVIEW_PHOTOS_ENABLED` is **false by default** and was not enabled by
-this work. Buyer attachment UI and staff media moderation/publication remain
-unbuilt. The new read routes also require that same flag. Custom public SQL still returns `photos: []`.
+this work. Buyer photo UI is now wired; staff media moderation/publication
+remain unbuilt. The new read routes also require that same flag. Custom public SQL still returns `photos: []`.
 
 ## Implemented processor
 
@@ -170,16 +171,55 @@ return raw Storage details, paths, digests, buyer IDs or signed URLs.
 
 Image responses use `no-store`, `no-referrer`, `Vary: Cookie`, `nosniff` and
 `Cross-Origin-Resource-Policy: same-origin`. They carry no ETag/redirect or
-public storage capability. Future UI must load this authenticated path directly
-(for example, `next/image` with `unoptimized`), bypassing a server image optimizer
-that lacks the buyer cookie and could cache private media. Account-switch UI
-must also clear already loaded previews/object URLs; that UI work is still open.
+public storage capability. The buyer UI fetches this authenticated path and
+creates a private browser blob URL only after validating the viewer and content
+type/size. Its `next/image` uses `unoptimized`; the server image optimizer never
+receives buyer credentials or caches these previews. Closing, hiding the page,
+account changes and unmount revoke loaded URLs and cancel pending work.
+
+## Implemented buyer photo controls
+
+Product composers, Ready to review suggestions and My reviews edits now reuse
+shared `FileDropField`. The field appears only when the server enables photos;
+no new public environment variable or production flag was set. It accepts up
+to five retained/new photos together, with visible still JPEG/PNG/WebP and
+4 MiB guidance, private previews, per-file retry and remove actions.
+
+One upload runs at a time. A failed upload is retried explicitly with the same
+request key and bytes; a preview retry reuses the ready reference. Known expired
+uploads require a fresh key on explicit retry. Pending/failed photos block save
+with visible status and recovery actions. Removing a new ready draft confirms
+its scoped discard; removing a retained attachment only changes the next
+revision's selection, preserving approved/history objects.
+
+Editing loads the saved selection and requires its exact version to match the
+text editor. It never combines old text with a newer selection or silently
+falls back to an empty list after a read failure. Explicit empty selections
+remove all photos from the new pending revision. A successful save clears the
+form's local photo state; uncertain saves preserve the existing review-action
+reload/reconciliation behavior.
+
+`GET /api/reviews/photos/context` privately rechecks the session and returns a
+noncredential viewer equality marker. Enabled forms receive that same derived
+marker from the server; they validate it on open, before submit, on focus and
+when returning to a visible page. Photo requests and photo-enabled review writes
+send `X-Review-Viewer` outside the JSON body. The server refuses a supplied
+marker that differs from the authenticated session before lookup/upload/write;
+identity and permissions still come from authentication and database ownership.
+Older requests without a marker keep their existing authenticated boundary.
+Selection/upload/preview responses also carry the viewer marker for client
+validation. Neither raw session hashes nor buyer IDs are exposed by this marker.
+
+Closing or hiding clears preview URLs immediately and aborts requests. Late
+responses cannot restore an old preview. Reopening the same mounted form under
+the same viewer reuses confirmed references; navigation/unmount drops local
+state. A known account change blocks the old editor and requires refresh.
+My reviews remounts on viewer/capability changes, and stale account suggestions
+are withheld. Private orphan/expiry cleanup remains a separate backend task;
+closing an uncertain operation never automatically deletes stored objects.
 
 ## Remaining work
 
-- Build buyer selection, previews, retry/removal and edit behavior using shared
-  `FileDropField`, with the actual 4 MiB HTTP guidance. Wire the implemented
-  selection/preview reads into composer/edit state and account-switch cleanup.
 - Add staff media decisions and approved-only publication. Hiding/withdrawing
   must revoke public media access, not merely hide a card with a permanent URL.
 - Add custom image-host configuration and public projection after that access
@@ -191,7 +231,7 @@ must also clear already loaded previews/object URLs; that UI work is still open.
 - Rehearse the complete hosted buyer-to-media-moderation lifecycle before
   enabling collection. This checkpoint changed no Shopify auth/purchase logic,
   production feature flag or existing buyer content. Judge.me/provider selection
-was subsequently removed by Claude; these routes now use the custom-only Store.
+  was subsequently removed by Claude; these routes now use the custom-only Store.
 
 ## Local evidence
 
@@ -211,7 +251,12 @@ The earlier combined photo/public-view run passed 39 tests and the staging
 checkpoint passed 20 processor/staging tests. Current collection evidence is
 recorded in [the rebuild inventory](REVIEWS_REBUILD.md): native image checks,
 actual Supabase-client transport fakes, streamed HTTP/body/session/concurrency
-checks, atomic SQL rollback and independent media decisions. CI includes the
+checks, atomic SQL rollback, independent media decisions and the new buyer UI.
+The UI follow-up passed 18 synthetic photo browser scenarios, 30 existing buyer
+scenarios with photos disabled, 22 public/HTTP scenarios and 93 focused
+photo/review unit checks. Screenshots cover light/dark at 390, 1024, 1280 and
+1536 pixels; mobile/light and desktop/dark captures were visually inspected.
+Store build, typecheck, changed-file ESLint and diff checks passed. CI includes the
 photo handler in its dedicated step and keeps isolated artifacts.
 
 Both migration profiles are tested from empty in separately named local

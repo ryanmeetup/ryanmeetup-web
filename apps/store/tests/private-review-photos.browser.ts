@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 // The isolated server has complete synthetic configuration; the photo switch is explicitly off.
 for (const path of [
+  "/api/reviews/photos/context",
   "/api/reviews/photos?productId=100&photoId=00000000-0000-4000-8000-000000000001",
   "/api/reviews/photos/selection?reviewId=00000000-0000-4000-8000-000000000002",
 ]) {

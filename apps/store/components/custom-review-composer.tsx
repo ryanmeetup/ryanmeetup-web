@@ -16,8 +16,12 @@ import { Button, DropdownSelect, ErrorCallout, Input, Modal, ModalActions, StarR
 import type { CustomReviewAccess } from "@/lib/custom-review-access";
 import { reviewSignInRel, signInExplanation } from "@/lib/review-sign-in";
 import type { Product } from "@/lib/types";
+import type { ReviewPhotoEditorScope } from "@/lib/review-photo-client";
+import { useReviewPhotos } from "./use-review-photos";
+import { ReviewPhotoField } from "./review-photo-field";
 
-export type CustomReviewResult = { ok: true; message: string } | { ok: false; error: string };
+export type CustomReviewResult = { ok: true; message: string } | { ok: false; error: string; refreshRequired?: boolean };
+export type CustomReviewSubmission = ReviewSubmission & { lineId: string | null; photoIds?: string[]; viewerKey?: string };
 
 /** Editing an existing review: start from what the buyer wrote, and offer only names the server can build. */
 export type CustomReviewEdit = {
@@ -52,18 +56,21 @@ export function CustomReviewComposer({
   onClose,
   onSubmit,
   edit,
+  photos: photoScope,
 }: {
   access: CustomReviewAccess;
   product: Pick<Product, "title"> & { featuredImage: Product["featuredImage"] | null };
   open: boolean;
   onClose: () => void;
   /** `lineId` is null for a review written without a matching order. */
-  onSubmit: (review: ReviewSubmission & { lineId: string | null }) => Promise<CustomReviewResult>;
+  onSubmit: (review: CustomReviewSubmission) => Promise<CustomReviewResult>;
   edit?: CustomReviewEdit;
+  photos?: ReviewPhotoEditorScope;
 }) {
   const formId = useId();
   const ratingField = useRef<HTMLDivElement>(null);
   const ready = access.status === "ready" ? access : null;
+  const photos = useReviewPhotos(ready ? photoScope : undefined, open);
   const freshDraft = (): Draft => ({
     lineId: ready?.purchases.length === 1 ? ready.purchases[0].lineId : "",
     rating: edit?.initial.rating ?? null,
@@ -75,8 +82,8 @@ export function CustomReviewComposer({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const nameChoices = edit?.nameChoices ?? (ready ? REVIEW_NAME_STYLES.map((style) => ({ style, displayName: reviewDisplayName(style, ready.buyer) })) : []);
-  // A single purchase is implied. Access can change after mount (a review mode
-  // switch refreshes the page without remounting), so this is derived, not stored.
+  // A single purchase is implied. A server refresh can change access without
+  // remounting, so the selected purchase is derived rather than stored.
   const lineId = ready?.purchases.some((purchase) => purchase.lineId === draft.lineId) ? draft.lineId
     : ready?.purchases.length === 1 ? ready.purchases[0].lineId : "";
   const publicName = nameChoices.find((choice) => choice.style === draft.nameStyle)?.displayName ?? "";
@@ -89,7 +96,7 @@ export function CustomReviewComposer({
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!ready || pending) return;
+    if (!ready || pending || (photoScope && !photos.ready)) return;
     const verified = ready.purchases.length > 0;
     if (verified && !lineId) return setError("Choose which purchase you're reviewing.");
     if (!draft.rating) {
@@ -102,8 +109,11 @@ export function CustomReviewComposer({
     setPending(true);
     setError("");
     try {
-      const result = await onSubmit({ ...review, lineId: verified ? lineId : null });
-      if (!result.ok) return setError(result.error);
+      if (photoScope && !await photos.prepare()) return;
+      const result = await onSubmit({ ...review, lineId: verified ? lineId : null,
+        ...(photoScope ? {photoIds:photos.photoIds, viewerKey:photoScope.viewerKey} : {}) });
+      if (!result.ok) { if (result.refreshRequired) photos.invalidate(result.error); return setError(result.error); }
+      if (photoScope) photos.complete();
       if (!edit) setDraft(freshDraft());
       onClose();
     } catch {
@@ -165,7 +175,9 @@ export function CustomReviewComposer({
       onSubmit={submit}
       bodyClassName="space-y-5"
       panelClassName="max-sm:fixed max-sm:inset-0 max-sm:m-0 max-sm:h-dvh max-sm:!max-h-dvh max-sm:rounded-none max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)]"
-      actions={<ModalActions onCancel={close} confirmForm={formId} confirmLabel={edit ? "Save changes" : "Submit review"} pending={pending} pendingLabel={edit ? "Saving" : "Submitting"} />}
+      actions={<ModalActions onCancel={close} confirmForm={formId} confirmLabel={edit ? "Save changes" : "Submit review"}
+        confirmDisabled={Boolean(photoScope && !photos.ready)} confirmTooltip={photoScope && !photos.ready ? "Finish preparing your photos, remove any that failed, or refresh if your account changed." : undefined}
+        pending={pending} pendingLabel={edit ? "Saving" : "Submitting"} />}
     >
       {productCard}
       <fieldset disabled={pending} aria-busy={pending} className="min-w-0 space-y-5">
@@ -190,6 +202,7 @@ export function CustomReviewComposer({
         </div>
         <Input label="Title" name={`${formId}-title`} required maxLength={REVIEW_TITLE_MAX} placeholder="Sum it up, Ryan" value={draft.title} onChange={(event) => setDraft((value) => ({ ...value, title: event.target.value }))} />
         <Textarea id={`${formId}-body`} label="Review" name="body" required maxLength={REVIEW_BODY_MAX} placeholder="The good, the bad, the very Ryan. How's it fitting, and how's it holding up?" value={draft.body} onChange={(event) => setDraft((value) => ({ ...value, body: event.target.value }))} />
+        {photoScope && <ReviewPhotoField photos={photos} disabled={pending} />}
         <div className="space-y-2">
           <DropdownSelect
             label="Show my name as"

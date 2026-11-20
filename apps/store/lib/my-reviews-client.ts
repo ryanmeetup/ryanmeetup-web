@@ -17,9 +17,10 @@ export async function fetchMyReviews(cursor: string | null = null) {
   if (!view) throw new Error("Your reviews could not load.");
   return view;
 }
-export type MyReviewChange = { action:"edit"; reviewId:string; expectedUpdatedAt:string } & ReviewSubmission |
+export type MyReviewChange = { action:"edit"; reviewId:string; expectedUpdatedAt:string; photoIds?:string[];viewerKey?:string } & ReviewSubmission |
   { action:"withdraw"; reviewId:string; expectedUpdatedAt:string };
 export async function changeMyReview(change: MyReviewChange) {
-  const value = await result(await fetch("/api/reviews/mine",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(change)}));
+  const {viewerKey,...body}=change.action === "edit" ? change : {...change,viewerKey:undefined};
+  const value = await result(await fetch("/api/reviews/mine",{method:"POST",headers:{"Content-Type":"application/json",...(viewerKey ? {"X-Review-Viewer":viewerKey} : {})},body:JSON.stringify(body)}));
   if (value?.status !== (change.action === "edit" ? "pending" : "withdrawn")) throw new Error("The review change could not be confirmed.");
 }

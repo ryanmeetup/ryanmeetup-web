@@ -8,6 +8,8 @@ import { findBuyerName, findReviewablePurchases } from "./review-purchases";
 import type { CustomerSessionResult } from "./customer-account/session";
 import type { CustomerAccountSession } from "./customer-account/storage";
 import type { ReviewEligibilityLookup } from "./review-purchases";
+import { reviewViewerKey } from "./review-viewer";
+import { reviewPhotosEnabled } from "./review-photo-policy";
 
 /** One purchased order line the buyer can review. The label is safe to show; the ID is opaque. */
 export type ReviewablePurchase = { lineId: string; label: string };
@@ -30,6 +32,7 @@ export type CustomReviewAccess =
       /** The buyer's unreviewed matching order lines; empty means a review without a matching order. */
       purchases: ReviewablePurchase[];
       defaultNameStyle: ReviewNameStyle;
+      photos?: { productId: string; viewerKey: string };
     };
 
 /**
@@ -89,7 +92,12 @@ export async function getCustomReviewAccessByProduct(products: { id: string }[],
   const request = await currentRequest(productPath);
   let session: Promise<CustomerSessionResult> | undefined;
   const loadSession = () => (session ??= getCustomerAccountSession(request));
-  const entries = await Promise.all(products.map(async (item) =>
-    [item.id, await getCustomReviewAccess({ productId: item.id, productPath, loadSession, findPurchases: findReviewablePurchases, findBuyerName, reviewedLines, reviewedProducts })] as const));
+  const entries = await Promise.all(products.map(async (item) => {
+    const access = await getCustomReviewAccess({ productId: item.id, productPath, loadSession, findPurchases: findReviewablePurchases, findBuyerName, reviewedLines, reviewedProducts });
+    if (access.status !== "ready" || !reviewPhotosEnabled()) return [item.id, access] as const;
+    const current = await loadSession();
+    return [item.id, current.status === "authenticated"
+      ? { ...access, photos: { productId: numericProductId(item.id)!, viewerKey: reviewViewerKey(current.session) } } : access] as const;
+  }));
   return Object.fromEntries(entries) as Record<string, CustomReviewAccess>;
 }
