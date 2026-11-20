@@ -1,22 +1,12 @@
 import { NextResponse } from "next/server";
 import { storeReviewModerationQuery, storeReviewModerationSchema, storeReviewReplySchema } from "@/lib/api-schema";
 import { apiError, databaseFailure, privateResponse } from "@/lib/server/api-response";
-import { privilegedContext, readJson } from "@/lib/server/privileged-api";
-import { getStoreCustomerAuthScope } from "@/lib/server/store-customer-auth/scope";
+import { readJson } from "@/lib/server/privileged-api";
 import { loadReviewModerationPage, moderateReview, saveReviewReply } from "@/lib/server/store-reviews/moderation";
 import { StoreReviewDatabaseError } from "@/lib/server/store-reviews/errors";
+import { storeReviewStaffContext as context } from "@/lib/server/store-reviews/staff-context";
 
 export const runtime = "nodejs";
-
-async function context() {
-  // A storefront service credential never authorizes staff operations.
-  const owner = await privilegedContext({ owner: true });
-  if ("response" in owner) return owner;
-  const scope = getStoreCustomerAuthScope();
-  return scope ? { ...owner, shopId: scope.shopId } : {
-    response: apiError(503, "SERVICE_UNAVAILABLE", "Store review moderation is not configured for this instance."),
-  };
-}
 
 function failure(request: Request, error: unknown) {
   // Database details can contain review text or a private moderation reason.
