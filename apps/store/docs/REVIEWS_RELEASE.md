@@ -9,8 +9,8 @@ reviews and tracks the remaining external uninstall/settings cleanup.
 
 The [rebuild inventory](REVIEWS_REBUILD.md) is the current implementation and
 migration record. Text reviews are implemented; the private photo backend is
-implemented behind an off-by-default flag, with buyer UI, staff media approval,
-publication and cleanup still outstanding. Production's recorded November 20
+implemented and the buyer picker/editor is wired behind an off-by-default
+flag. Staff media approval, publication and cleanup remain outstanding. Production's recorded November 20
 switch does not prove the complete live lifecycle or recovery procedure.
 
 ## Record the release target
@@ -72,7 +72,8 @@ public-read verification in the rehearsal.
 5. Pause buyer collection with an active session and open editor. Confirm later
    reads/writes stop, public approved content remains and sign-out still revokes
    the session. Pause Tasks moderation separately. Resume and verify both paths.
-6. Keep photos disabled until buyer UI, independent staff media decisions,
+6. The buyer photo UI is implemented; keep photos disabled until independent
+   staff media decisions,
    controlled publication, lifecycle cleanup and recovery are implemented.
    Then rehearse upload/preview/edit/rejection/hide/withdraw and account changes
    on the isolated target before enabling production collection. Private GETs

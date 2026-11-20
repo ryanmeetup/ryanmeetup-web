@@ -6,7 +6,8 @@ session storage, custom review/revision/reply/audit schema, buyer management,
 owner moderation, private photo staging, pending-revision associations and
 private buyer photo reads are implemented. All eleven RMT-only Store migrations
 through `20261121000000` are applied. PRD receives none. Real Shopify-backed lifecycle proof, complete media
-UI/moderation/publication and operations/recovery work remain outstanding.
+moderation/publication and operations/recovery work remain outstanding. Buyer
+photo selection/previews/editing are now wired behind the off-by-default flag.
 See [the current inventory](REVIEWS_REBUILD.md) for evidence and next steps.
 
 ## Selected project and ownership
@@ -157,9 +158,8 @@ Remaining rollout work:
 1. Prove Shopify login, token renewal, exact purchase semantics and the complete
    buyer/owner/public lifecycle on an isolated HTTPS target. Configuration alone
    is not evidence of a working lifecycle.
-2. Wire the implemented private media reads into buyer UI; complete staff media
-   decisions, controlled publication and cleanup/retention before enabling
-   photo collection.
+2. Complete staff media decisions, controlled publication and cleanup/retention
+   before enabling photo collection. Buyer UI now uses the private media reads.
 3. Verify database and image-object backups/restores separately, rehearse
    collection pause/recovery and record the operational observation window.
 4. Follow the recorded removal decision: no legacy export/import and no

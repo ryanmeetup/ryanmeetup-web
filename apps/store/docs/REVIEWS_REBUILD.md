@@ -4,7 +4,8 @@ Updated **November 20, 2026**, against the custom-only Store source, including
 Claude's Judge.me removal (`93bf9c40`, `db592573`), sidebar moderation
 (`2f200649`) and private photo reads (`45686fd9`, CI `a159ac3a`). Earlier
 checkpoints are available in Git history; this file describes current
-implementation and evidence.
+implementation and evidence. Buyer photo controls are committed in `af14f169`
+without enabling production collection.
 
 ## Where we are
 
@@ -21,9 +22,10 @@ reviews. Judge.me is **not a recovery provider**. Its Shopify uninstall,
 Shop review/email settings and obsolete environment-variable cleanup remain
 listed there as external follow-ups; this audit did not perform those actions.
 
-The **photo backend is built, with UI and publication still incomplete**:
+The **photo backend and buyer UI are built; staff media review/publication remain**:
 normalization, private staging, atomic pending-revision association, upload
-limits, owner-scoped selection reads and authenticated previews. All photo
+limits, owner-scoped selection reads, authenticated previews and composer/edit
+controls using shared FileDropField. All photo
 routes require `STORE_REVIEW_PHOTOS_ENABLED=true`, which defaults off. This
 work did not enable that deployment setting. Public SQL still returns
 `photos: []`; no new custom photo is publicly accessible.
@@ -45,15 +47,15 @@ photo was created by this follow-up.
 | Shopify authentication | Start/callback, public discovery, PKCE, state/nonce/browser binding, confidential token exchange and signed ID-token verification. | Intended client permissions, protected data access and real buyer sign-in require redacted live evidence. |
 | Sessions/account | Opaque Secure/HttpOnly cookies, encrypted server storage, seven-day absolute session, renewal, revision checks, account menu, My reviews, sign-out and account switching. | Real renewal/rotation/reuse and account switching need rehearsal. Refresh coalescing is within one process; no expiry cleanup job. |
 | Purchase verification | Product order discovery, owned order/line verification, exact product/variant snapshots, current session checks and Shopify-derived names. | Conservative bounded scans; real refund/edit/fulfillment semantics remain to be proven. Lookup failure never becomes permission for an unverified review. |
-| Buyer composer | Whole stars 1–5, required title up to 100 characters, required body up to 5,000, purchase picker, full/first-initial/anonymous display name and preview. | Text UI only. No photo picker or attachment editor yet. Without sign-in, Write a review is disabled with an explanation. |
+| Buyer composer | Whole stars 1–5, required title up to 100 characters, required body up to 5,000, purchase picker, full/first-initial/anonymous display name and preview. | Photo selection, upload/retry/remove and private previews are wired behind the off-by-default flag. Without sign-in, Write a review is disabled with an explanation. |
 | Submission | Same-origin authenticated `POST /api/reviews`, current purchase recheck, server-owned identity/name/item snapshots, pending revision and duplicate protection. Optional private photo IDs attach atomically when enabled. | A successful lookup with no eligible line permits unverified product feedback; an eligible line must be selected. Live write lifecycle remains unproven here. |
-| Buyer management | Private `/reviews/mine`, paginated reads, exact-version edits, withdrawal, uncertain-response recovery, recent purchases with variant/order context and collapsible review sections. Separate photo-selection read includes its exact version. | Not a Shopify account extension. Buyer photo UI/version reconciliation is not wired yet. |
+| Buyer management | Private `/reviews/mine`, paginated reads, exact-version edits, withdrawal, uncertain-response recovery, recent purchases with variant/order context and collapsible review sections. Separate photo-selection read includes its exact version. | Not a Shopify account extension. Enabled edits load the exact matching photo selection and preserve approved media until a new decision. |
 | Persistence | Reviews, revisions, official replies and audit; separate pending/approved content; one verified review per order line and one unverified review per buyer/product. | Retention, customer export/removal and tested recovery remain open. Withdrawal is not deletion. |
 | Staff moderation | Owner-only Tasks `/store-reviews` in the sidebar, waiting-count badge, queue/API, filters, paging, approve/reject/hide/restore, reasons, exact-version conflicts and recent audit history. Official reply create/edit/remove is transactional; old admin links redirect. | No separate moderator role, media decisions or full-history browser API. The sidebar/count work is committed separately from this photo follow-up. |
 | Public reviews | Approved active revisions only, complete totals/distribution, twenty-row pages, load-more/retry/accessibility states, duplicate suppression and stale-response cancellation. | Totals remain the initial server snapshot until refresh. Distribution, per-review item attribution and edited timestamp are not displayed. |
 | Verification | Canonical `verifiedPurchase` produces Verified purchase; unverified reviews remain visible without the badge. | No browser/provider inference can grant purchase verification. Component support for a legacy badge does not restore a legacy reader. |
 | Replies/product schema | Public reply body/date, safe plain text, UTC display; selected-design ratings, images/offers and JSON-LD stay together through initial HTML and navigation. | Real owner-to-public rehearsal remains. Empty/unavailable ratings omit aggregateRating. |
-| Photos | Still-image validation/re-encoding, private owner/product drafts, digest-bound retries, bounded uploads, atomic ordered selection, private current-selection reads and byte previews. | Off by default. Buyer UI, staff approval, controlled publication, cleanup and object recovery remain. Existing gallery/old image-host allowlist are not custom publication. |
+| Photos | Still-image validation/re-encoding, private owner/product drafts, digest-bound retries, bounded uploads, atomic ordered selection, private current-selection reads and byte previews. | Off by default. Buyer UI is wired; staff media approval, controlled publication, cleanup and object recovery remain. Existing gallery/old image-host allowlist are not custom publication. |
 | Support/diagnostics | Scoped revoke-all-buyer-sessions RPC; sanitized Store backend failure event with fixed operation/category/allowlisted code. | No support UI, hosted alert/retention setup or complete auth/Shopify/media monitoring. See [operations](REVIEWS_OPERATIONS.md). |
 
 ## Current buyer and publication rules
@@ -126,9 +128,8 @@ expected size, verify length/SHA-256, repeat photo authorization and recheck the
 session before returning. Four preview pipelines run per process without a
 queue. Responses are uncached WebP with same-origin resource policy, cookie
 variance and nosniff; no signed storage URL/path is issued. A photo-specific
-Next header rule preserves no-referrer on actual HTTP responses. Future UI must
-bypass server image optimization for this cookie-authenticated path and clear
-loaded previews on account changes. See [media implementation](REVIEWS_MEDIA.md).
+Next header rule preserves no-referrer on actual HTTP responses. The UI uses verified browser blob URLs with image optimization bypassed and
+revokes previews on close/hide/account changes/unmount. See [media implementation](REVIEWS_MEDIA.md).
 
 ## Backend and migration state
 
@@ -168,27 +169,24 @@ failure during parallel verification.
 
 ## What to build or prove next
 
-1. **Buyer photo UI.** Use shared FileDropField for selection, format/4 MiB
-   guidance, upload/retry/removal, previews and retained attachments on edits.
-   Compare photo/text versions and clear previews on account changes. The private
-   backend exists; composer and My reviews wiring remain.
-2. **Staff media approval and publication.** Add independent media decisions,
-   approved-only projections and an access model that responds to hide/withdraw.
-   A permanent public URL must not outlive removal. Replace the residual old
-   image-host allowlist only when the custom publication model exists.
-3. **Lifecycle cleanup and recovery.** Bound expired auth/session/draft/budget
+1. **Staff media approval and publication.** The buyer picker/editor is wired.
+   Keep collection off while adding independent media decisions, approved-only
+   projections and an access model that responds to hide/withdraw. A permanent
+   public URL must not outlive removal. Replace the residual old image-host
+   allowlist only when the custom publication model exists.
+2. **Lifecycle cleanup and recovery.** Bound expired auth/session/draft/budget
    cleanup, failed uploads, removed/historical media, retention and customer
    export/deletion. Back up and restore image objects separately from SQL.
-4. **Live Shopify/lifecycle proof.** Confirm the confidential client, protected
+3. **Live Shopify/lifecycle proof.** Confirm the confidential client, protected
    customer data access, exact HTTPS callback and an isolated test target.
    Prove sign-in/return, encrypted persistence, renewal/rotation, logout/switch,
    normal/split/unpaid/cancelled/edited/refunded orders and foreign ownership;
    then submit → owner decision/reply → public read → edit/reject/withdraw.
-5. **Operations.** Rehearse custom collection pause/resume and recovery, add
+4. **Operations.** Rehearse custom collection pause/resume and recovery, add
    auth/text-write abuse limits, hosted alerts/retention and availability/latency
    monitoring. Existing upload budgets/process bounds are not the whole abuse
    model. Complete external Judge.me/Shop cleanup from the removal record.
-6. **Later product work.** Review-request emails need proven delivery events,
+5. **Later product work.** Review-request emails need proven delivery events,
    timing, eligible-line rechecks, deduplication, opt-outs, mail delivery and
    observability. Customer-account extensions and eligibility overrides remain
    separate features. No Judge.me import is planned.
@@ -200,6 +198,28 @@ configuration. Do not use production RMT as a Preview test database or swap
 Tasks instances' credentials.
 
 ## Validation evidence for this follow-up
+
+**Buyer photo UI follow-up:**
+
+- Added product/suggestion composers and My reviews editing behind the existing
+  flag, five retained/new slots, serial upload, explicit retries and private
+  blob previews. Wrong account markers stop photo operations and review writes;
+  focus/visibility checks and generation guards prevent old/late previews.
+- All **18** synthetic photo-browser scenarios passed, including upload versus
+  preview retries, limits, saved-photo removal, stale versions, account changes,
+  late uploads and URL revocation. All **30** existing buyer scenarios passed
+  with photos explicitly disabled; all **22** public/HTTP scenarios passed,
+  including the disabled context endpoint. The focused unit run passed **93**.
+- Store production build, typecheck, changed-file ESLint and diff checks passed.
+  Screenshots were captured in both themes at 390/1024/1280/1536; mobile and
+  desktop captures were visually inspected. Browser transports are synthetic,
+  so this does not prove a real Shopify/RMT photo lifecycle or hosted CI run.
+- This follow-up adds **no migration**, changes no production flag/credential and
+  creates no real buyer review/photo. Claude's separate staff-queue SQL work is
+  outside this photo UI commit; the applied photo schema checkpoint below stays
+  distinct from that work.
+
+**Earlier private-read/schema checkpoint:**
 
 - RMT from empty: **419 database assertions**, including 36 new private-read
   checks; two encrypted-storage integration tests and five concurrency checks.
@@ -225,9 +245,12 @@ Useful commands, from the indicated workspace:
 
 ```sh
 # apps/store: server-free photo and buyer boundaries
-STORE_BASE_URL=http://127.0.0.1:39999 npx playwright test tests/review-photo-processing.spec.ts tests/review-photo-staging.spec.ts tests/review-photo-actions.spec.ts tests/review-photo-reader.spec.ts tests/review-photo-reads.spec.ts tests/custom-review-submission.spec.ts tests/my-review-actions.spec.ts tests/review-backend.spec.ts --workers=1 --output=test-results-public-reviews/photo-unit
+STORE_BASE_URL=http://127.0.0.1:39999 npx playwright test tests/review-photo-processing.spec.ts tests/review-photo-staging.spec.ts tests/review-photo-actions.spec.ts tests/review-photo-reader.spec.ts tests/review-photo-reads.spec.ts tests/review-photo-client.spec.ts tests/review-photo-viewer.spec.ts tests/custom-review-submission.spec.ts tests/my-review-actions.spec.ts tests/review-backend.spec.ts --workers=1 --output=test-results-public-reviews/photo-unit
 
-# apps/store: isolated public/HTTP browser fixtures
+# apps/store: isolated photo UI and public/HTTP fixtures
+npx playwright test --config=playwright.review-photos.config.ts
+
+# Public/HTTP regression
 npx playwright test --config=playwright.product-reviews.config.ts
 
 # apps/tasks: separate isolated stacks, one profile at a time
@@ -246,5 +269,6 @@ node --test scripts/migration-plan.test.mjs scripts/build-catchup-sql.test.mjs
 | Buyer management | [`my-review-actions.ts`](../lib/my-review-actions.ts), [`my-reviews.tsx`](../components/my-reviews.tsx) |
 | Fixed database operations | [`review-backend.ts`](../lib/review-backend.ts), [database boundary](REVIEWS_DATABASE.md) |
 | Public projection / paging | [`public-review-view.ts`](../lib/public-review-view.ts), [`page/route.ts`](../app/api/reviews/page/route.ts) |
+| Buyer photo UI | [`use-review-photos.ts`](../components/use-review-photos.ts), [`review-photo-field.tsx`](../components/review-photo-field.tsx), [`review-photo-client.ts`](../lib/review-photo-client.ts) |
 | Private media | [`review-photo-actions.ts`](../lib/review-photo-actions.ts), [`review-photo-reader.ts`](../lib/review-photo-reader.ts), [`review-photo-reads.ts`](../lib/review-photo-reads.ts), [media guide](REVIEWS_MEDIA.md) |
 | Operations / removal | [diagnostics](REVIEWS_OPERATIONS.md), [Judge.me removal record](REVIEWS_JUDGEME_REMOVAL.md) |
