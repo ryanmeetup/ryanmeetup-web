@@ -95,7 +95,7 @@ migrations are shared. Store/shared-backend extensions use `store_` or `rmt_`
 filenames and require an explicit `rmtOnly` entry. Keep applied SQL immutable.
 PRD receives only shared Tasks migrations; existing RMT-only objects/history on
 PRD, if any, stay untouched. Store credentials, integration configuration, and
-customer data target RMT only. See `apps/store/docs/REVIEWS_DATABASE.md`.
+customer data target RMT only. See `apps/store/docs/reference/review-database.md`.
 
 ## Before Making Changes
 

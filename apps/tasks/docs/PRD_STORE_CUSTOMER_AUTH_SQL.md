@@ -13,4 +13,4 @@ untouched. The planner tolerates those entries; this change performs no cleanup
 or rollback on either hosted database.
 
 See [migration profiles](DATABASE.md#migration-profiles) and
-[the review handoff](../../store/docs/REVIEWS_HANDOFF.md) for current instructions.
+[the Store database guide](../../store/docs/reference/review-database.md) for current instructions.

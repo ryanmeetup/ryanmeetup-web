@@ -1,24 +1,24 @@
-# Custom review photo processing
+# Custom review media
 
-Updated November 20, 2026. Server processing, private staging, a gated
-same-origin upload/discard API, atomic pending-revision associations and
-private buyer selection/preview reads and buyer composer/edit controls are
-implemented. RMT-only migrations
-through `20261121000000` own the schema; see [the rebuild inventory](REVIEWS_REBUILD.md) for rollout evidence.
-`STORE_REVIEW_PHOTOS_ENABLED` is **false by default** and was not enabled by
-this work. Buyer photo UI is now wired; staff media moderation/publication
-remain unbuilt. The new read routes also require that same flag. Custom public SQL still returns `photos: []`.
+Reviewed November 20, 2026 against the Store handlers/UI and canonical SQL.
+Server processing, private staging, upload/discard, atomic revision associations,
+private selection/preview reads and buyer composer/edit controls are implemented.
+Owner preview and independent photo decisions are implemented in Tasks, with
+approved-only, revision-bound public delivery through the Store. The private
+Storage bucket remains private. `STORE_REVIEW_PHOTOS_ENABLED` defaults false;
+this work did not enable collection. Buyer photo routes require the flag;
+staff moderation and already-approved public images remain available during a
+collection pause. See [the database guide](review-database.md) for rollout status.
 
 ## Implemented processor
 
-[`prepareReviewPhoto`](../lib/review-photo-processing.ts) accepts a byte array
+[`prepareReviewPhoto`](../../lib/review-photo-processing.ts) accepts a byte array
 and an optional declared MIME type. It has no filename, filesystem-path,
 remote-URL, buyer, review or storage input. It returns either a fixed failure
 reason or an owned WebP buffer with its MIME type and decoded output dimensions.
 It does not write original files, upload anything or authorize publication.
 
-These are the initial implementation limits, not a claim that a live upload
-policy has been approved or enabled:
+These are source limits, not evidence that deployed collection is enabled:
 
 | Boundary | Current implementation |
 | --- | --- |
@@ -32,8 +32,8 @@ policy has been approved or enabled:
 | Processing time | A ten-second native processing timeout. Queue waiting is excluded; this is not an end-to-end request deadline. |
 | Metadata | Orientation is applied to pixels. EXIF/GPS, XMP and ICC metadata are not copied to the output. |
 
-The processor uses the already-resolved Sharp `0.35.5`, now declared directly
-by the Store. See Sharp's [input limits](https://sharp.pixelplumbing.com/api-constructor/),
+The Store declares Sharp directly; use its package/lockfile version when
+changing processor behavior. See Sharp's [input limits](https://sharp.pixelplumbing.com/api-constructor/),
 [metadata reader](https://sharp.pixelplumbing.com/api-input/) and
 [output/timeout behavior](https://sharp.pixelplumbing.com/api-output/) for the
 library boundaries. Header checks and the output gate do not replace bounded
@@ -47,11 +47,11 @@ change the file being checked.
 
 ## Implemented private staging
 
-[`createReviewPhotoStaging`](../lib/review-photo-staging.ts) is a private Store
+[`createReviewPhotoStaging`](../../lib/review-photo-staging.ts) is a private Store
 server service. The HTTP handler authenticates/rechecks the buyer and
 product and processes their bytes before invoking it; browser-supplied subjects,
 shop IDs, paths and URLs are not authority. Its production factory uses the
-existing RMT-only database guard. No auth/session/purchase code was changed.
+existing RMT-only database guard. Existing buyer authentication and purchase/unverified-feedback rules apply.
 
 `store_review_photo_drafts` holds a generated UUID, configured shop, buyer
 subject, product, scoped request key, normalized-byte SHA-256/size/dimensions,
@@ -79,7 +79,7 @@ reads/finalization and quota consumption; it does not delete stored objects.
 
 ## Implemented HTTP boundary
 
-[`POST /api/reviews/photos`](../app/api/reviews/photos/route.ts) requires
+[`POST /api/reviews/photos`](../../app/api/reviews/photos/route.ts) requires
 `STORE_REVIEW_PHOTOS_ENABLED=true`, configured RMT storage, an active
 Shopify buyer session and the storefront's exact origin. It accepts a single
 raw JPEG/PNG/WebP body with numeric `productId` and UUID `requestKey` query
@@ -111,8 +111,9 @@ no-referrer headers and fixed safe error copy.
 `DELETE /api/reviews/photos?productId=...&photoId=...` uses the same feature,
 origin and session boundary. It discards only a matching unattached draft,
 confirms the database transition, then removes the derived private object.
-Attached/historical media cannot be deleted through the draft API. Private previews are now served through authenticated Store GETs below; no
-public photo route or signed browser storage capability is issued.
+Attached/historical media cannot be deleted through the draft API. Private
+previews use authenticated Store GETs below. Public delivery uses a separate
+approved-only route; neither path issues signed Storage capabilities.
 
 ## Implemented pending-revision associations
 
@@ -134,20 +135,21 @@ Invalid media rolls back **all** text, revision, version and audit changes and
 returns `invalid_photos` with no review ID. Normal version/idempotency/ownership
 outcomes are preserved. Existing approved revisions keep their photo selection
 while pending edits wait. Each new revision's media decision starts pending;
-text approval does not approve photos. No media enters public projections.
+text approval does not approve photos. Only separately approved photos on the
+current approved revision enter public projections.
 
 ## Implemented private buyer reads
 
 Migration `20261121000000` adds two service-only, invoker RPCs; no new tables,
 public grants, publication behavior or Shopify auth changes. The Store's
-[`private reader`](../lib/review-photo-reader.ts) pins the shop, validates strict
+[`private reader`](../../lib/review-photo-reader.ts) pins the shop, validates strict
 responses and derives the fixed private object path itself.
 
 - `GET /api/reviews/photos/selection?reviewId=...` returns the owned review's
   product ID, exact six-digit `updatedAt` and up to five ordered `{id,width,height}`
   references. This is a separate private read, leaving existing My reviews
-  page/row contracts unchanged. Future editors must compare that version with
-  their text snapshot before combining selections and edits.
+  page/row contracts unchanged. The implemented editor compares that version with
+  its text snapshot before combining selections and edits.
 - `GET /api/reviews/photos?productId=...&photoId=...` returns only verified WebP
   bytes through the Store. Ready drafts must remain owned/unexpired. Attached
   photos must belong to the buyer's **current** revision selection: pending,
@@ -218,48 +220,77 @@ My reviews remounts on viewer/capability changes, and stale account suggestions
 are withheld. Private orphan/expiry cleanup remains a separate backend task;
 closing an uncertain operation never automatically deletes stored objects.
 
-## Remaining work
+## Implemented staff decisions and public delivery
 
-- Add staff media decisions and approved-only publication. Hiding/withdrawing
-  must revoke public media access, not merely hide a card with a permanent URL.
-- Add custom image-host configuration and public projection after that access
-  model exists. Keep pending edits separate from the approved media set.
-- Implement failed/abandoned upload cleanup, budget-row cleanup, removal,
-  retention/export behavior and recovery of objects plus associations. Expiry
-  stops draft use but does not delete objects; historical attachments stay
-  protected until a deliberate lifecycle operation removes them.
-- Rehearse the complete hosted buyer-to-media-moderation lifecycle before
-  enabling collection. This checkpoint changed no Shopify auth/purchase logic,
-  production feature flag or existing buyer content. Judge.me/provider selection
-  was subsequently removed by Claude; these routes now use the custom-only Store.
+Migration `20261121030000` adds staff projection v5, per-photo decision and
+preview RPCs, a shared waiting-queue/count predicate and approved-only public
+projections. Every new RPC is service-role-only and invoker. Staff RPCs recheck
+an onboarded Tasks owner; browser requests cannot choose shop or actor.
 
-## Local evidence
+Tasks shows up to five ordered photos per current version. Owners can enlarge,
+approve or reject each photo after its preview loads. Rejection requires a
+private reason. A decision locks the review, checks its exact six-digit version,
+updates one revision/photo association, records photo/revision/actor audit and
+advances the review version atomically. A stale decision requires a fresh read;
+an unknown outcome is never automatically repeated. Pending photos on pending
+or published text keep the review in the waiting queue and badge after text
+approval. Rejected text and withdrawn reviews do not create media-only work.
 
-From `apps/store`, with no live service or browser server:
+`GET /api/admin/reviews/photos` accepts exactly `reviewId`, `revisionId`,
+`photoId` and `expectedUpdatedAt`. It requires owner access and refuses
+cross-origin browser reads. `POST` accepts those four fields plus `action`
+(`approve` or `reject`) and nullable `note`. Staff previews are restricted to the
+current pending/published/latest revision and expire when the review changes.
+
+Public SQL returns only approved photos on active approved text, with dimensions
+and `/api/reviews/media/<review>/<revision>/<photo>` URLs. The Store pins the
+shop and rechecks authorization before and after a bounded private download,
+verifying exact size, SHA-256 and metadata consistency. A hidden, withdrawn,
+deleted or replaced revision, or a rejected photo, makes its old path unavailable.
+A deliberate restore/reapproval can restore an otherwise current path.
+Previously downloaded bytes cannot be recalled from a viewer's device.
+
+Public responses are WebP, `no-store` for browser and CDN, `no-referrer`,
+`nosniff` and same-origin resource policy. The gallery bypasses the Next image
+optimizer and offers retry on a failed enlarged image. No redirect, signed URL,
+public bucket or legacy Judge.me host allowlist is involved. Public downloads
+have an eight-pipeline per-process cap; staff previews have four. Collection
+flags do not block already-published photo reads.
+
+## Deletion and remaining operational limits
+
+The Tasks policy-deletion action now removes the review's photo associations
+and draft records transactionally, then tries to remove its private objects.
+A failed Storage removal is reported; no automatic retry worker exists. This
+is separate from buyer draft discard and withdrawal. See
+[moderation](review-moderation.md#permanent-deletion).
+
+Draft expiry prevents use but does not delete objects; failed Storage removal
+has no retry worker. Keep collection off until cleanup, recovery and a hosted
+lifecycle rehearsal are ready. See the [roadmap](../planning/roadmap.md#14-store-reviews)
+for cleanup, retention and release evidence, and
+[operations](../how-to/review-operations.md) for recovery procedures.
+
+## Repeatable verification
+
+From `apps/store`, synthetic server-free boundaries:
 
 ```sh
-STORE_BASE_URL=http://127.0.0.1:39999 npx playwright test tests/review-photo-processing.spec.ts tests/review-photo-staging.spec.ts tests/review-photo-actions.spec.ts tests/review-photo-reader.spec.ts tests/review-photo-reads.spec.ts --workers=1 --output=test-results-public-reviews/photo-unit
+STORE_BASE_URL=http://127.0.0.1:39999 npx playwright test tests/review-photo-processing.spec.ts tests/review-photo-staging.spec.ts tests/review-photo-actions.spec.ts tests/review-photo-reader.spec.ts tests/review-photo-reads.spec.ts tests/review-photo-client.spec.ts tests/review-photo-viewer.spec.ts tests/public-review-photo.spec.ts --workers=1
 ```
 
-All ten processor scenarios passed using generated binary fixtures. Coverage
-includes each supported format, exact/over byte limits, disguised content,
-truncated files, aspect ratio/no enlargement, a tiny PNG advertising over forty
-million pixels, real EXIF GPS/orientation data, XMP/ICC removal, pixel-level
-rotation checks, transparency, animated WebP/APNG and caller buffer mutation.
+For the buyer editor and real HTTP boundaries with synthetic accounts:
 
-The earlier combined photo/public-view run passed 39 tests and the staging
-checkpoint passed 20 processor/staging tests. Current collection evidence is
-recorded in [the rebuild inventory](REVIEWS_REBUILD.md): native image checks,
-actual Supabase-client transport fakes, streamed HTTP/body/session/concurrency
-checks, atomic SQL rollback, independent media decisions and the new buyer UI.
-The UI follow-up passed 18 synthetic photo browser scenarios, 30 existing buyer
-scenarios with photos disabled, 22 public/HTTP scenarios and 93 focused
-photo/review unit checks. Screenshots cover light/dark at 390, 1024, 1280 and
-1536 pixels; mobile/light and desktop/dark captures were visually inspected.
-Store build, typecheck, changed-file ESLint and diff checks passed. CI includes the
-photo handler in its dedicated step and keeps isolated artifacts.
+```sh
+npx playwright test --config=playwright.review-photos.config.ts
+npx playwright test --config=playwright.product-reviews.config.ts
+```
 
-Both migration profiles are tested from empty in separately named local
-stacks. RMT covers the private schema and claim/budget races; PRD verifies all
-Store objects are excluded. The runner never resets the existing app stack.
-These checks do not prove a hosted buyer upload or media moderation lifecycle.
+The dedicated photo browser suite covers limits, upload/preview retry, retained
+photo removal, stale versions, account changes, late responses, blob revocation
+and responsive themes. The Store CI workflow includes these configurations and
+processor/handler tests. Database profile tests cover atomic rollback, ownership,
+claims, budgets, private reads, separate media decisions and public revocation;
+run the two isolated profiles sequentially from the database guide. Tasks browser
+tests cover preview/approve/reject, queue retention and stale decisions. These
+tests do not establish live Shopify permissions or a hosted object-restore rehearsal.

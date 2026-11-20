@@ -15,7 +15,7 @@ do not start a competing store migration directory for this same project.
 Shared Tasks migrations reach both instances; RMT-only extensions are selected
 through `supabase/migration-scopes.json`. Store runtime
 connections and customer data target RMT only; PRD remains a separate personal
-instance. The [review database plan](../../store/docs/REVIEWS_DATABASE.md)
+instance. The [review database plan](../../store/docs/reference/review-database.md)
 records the boundary, including keeping Shopify buyers out of Tasks signup
 and membership provisioning. Private customer authorization/session storage is
 implemented in `20261120130000_store_customer_auth_storage.sql` and applied to

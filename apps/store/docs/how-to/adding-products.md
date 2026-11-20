@@ -1,14 +1,17 @@
 # Adding products to the Ryan Meetup Store
 
+Reviewed November 20, 2026 against the catalog, grouping, designer and webhook
+code. Collection names below are examples, not a fresh Shopify inventory audit.
+
 How to set up a product in Shopify so it shows up in the right places on
 `store.ryanmeetup.com`. Everything here happens in Shopify Admin; no code changes
 or developer help are needed for everyday listing work.
 
 ## How the store reads Shopify
 
-Product, collection, and inventory changes appear on the next page load.
-Shopify sends a signed webhook to `/api/webhooks/shopify`, which expires the
-store's catalog cache; a five-minute refresh is the fallback. The subscriptions
+After a successful catalog webhook, changes appear on the next uncached page
+load. Shopify sends a signed webhook to `/api/webhooks/shopify`, which expires
+the store's catalog cache; a five-minute refresh is the fallback. The subscriptions
 live in Shopify Admin under **Settings → Notifications → Webhooks**, and their
 signing secret is `SHOPIFY_WEBHOOK_SECRET` in the Vercel **store** project. If
 the store's domain changes, update each subscription's URL; if the secret is
@@ -27,8 +30,8 @@ what customers see:
 | **Title** | The product name, and the option name in that Style dropdown. |
 | **`designer:` tags** | The names credited under **Designed by Ryan** on the product page. |
 
-Changes show up on the store within about **5 minutes**. If something looks
-wrong right after a change, wait and refresh before troubleshooting.
+If the webhook is missing or delayed, the five-minute cache refresh is the
+fallback. Confirm webhook delivery before expecting immediate freshness.
 
 ## Checklist for every new product
 
@@ -164,11 +167,11 @@ Nothing else is needed.
 | Page | Groupings, in order | Categories that land there |
 | --- | --- | --- |
 | Apparel | T-Shirts | T-Shirts, Shirts |
-| | Hoodies & Sweatshirts | Hoodies, Sweatshirts |
+| | Hoodies & Sweatshirts | Hoodies, Sweatshirts, Activewear Sweatshirts & Hoodies |
 | | Hats | Anything under Hats: Baseball Caps, Beanies, … |
 | | Kids | Anything under Baby & Children's Clothing |
 | Accessories | RY-Ds | The RY-D membership card, sold at ryanmeetup.com |
-| | Pins | Lapel Pins, Pinback Buttons |
+| | Pins | Brooches & Lapel Pins, Pinback Buttons |
 | | Bags | Anything under Luggage & Bags |
 | | Mugs | Anything under Drinkware |
 | | Home Goods | Door Mats |
@@ -177,7 +180,7 @@ Nothing else is needed.
 Kids sizes go under Kids even when they are hoodies or shirts. A product whose
 category matches none of these, such as the polo, appears at the bottom under
 "More Ryan Goods". To add a grouping or change the order, ask a developer to
-edit [lib/garments.ts](../lib/garments.ts).
+edit [lib/garments.ts](../../lib/garments.ts).
 
 **Don't create collections for a kind of product** such as Hats or Hoodies.
 Groupings already cover that, and they stay complete without upkeep. Old links
@@ -189,7 +192,7 @@ the matching grouping.
 Collections are themes: what a product says, not what it is. They build the home
 page. There are three kinds.
 
-**Theme collections**: currently **Limited Edition**, **Not A Cult**,
+**Theme collections** include examples such as **Limited Edition**, **Not A Cult**,
 **Lunch Money**, **I ❤️ RY**, **Ryan Classics**, and **Name Tag**. Each one gets
 its own page and a tile on the home page that leads there. The tile shows the
 collection's image from Shopify, or its first product's photo when it has none.
@@ -241,9 +244,10 @@ links to its external order page. `frontpage` and `spotlight` are reserved for B
 
 ## Tags
 
-The store reads **only** `listing:` tags. Every other tag is ignored and has no
-effect on search engines either. Use other tags only as private notes in Shopify
-if they help you; they can also be left off entirely.
+The storefront uses `listing:` tags for grouped listings and `designer:` tags
+for public designer credits. Other tags currently have no special storefront
+behavior in this code. Shopify or another installed app may use them separately;
+do not treat unused storefront tags as proof that they are safe to delete.
 
 ## Where a product appears
 
@@ -270,3 +274,18 @@ if they help you; they can also be left off entirely.
 | Two Style options have the same name | Two products in the listing have titles that differ only in the listing name. Make the part after it unique. |
 | Collection has no home page tile | It's on the **Ryan Meetup Store Headless** channel and has at least one product. |
 | Wrong item printed or shipped | The product's Printful sync. Listings only change how products are displayed; they never change what Printful prints. |
+
+## Maintenance
+
+- Confirm the current Headless channel and intended theme membership in Admin
+  for each new product; this document does not freeze a live collection list.
+- Keep webhook subscriptions/secret synchronized and verify a delivered change.
+- Before renaming grouped listings, arrange redirects for shared URLs.
+- Add theme collections through Admin. New garment groupings and legacy URL
+  redirects require a code change.
+
+Shipping profiles and personalization have separate work in the
+[roadmap](../planning/roadmap.md). Implementation references:
+[grouping](../../lib/product-groups.ts), [departments](../../lib/catalog-collections.ts),
+[garments](../../lib/garments.ts), [designer credits](../../lib/product-designers.ts)
+and [webhook handling](../../lib/shopify-webhook.ts).

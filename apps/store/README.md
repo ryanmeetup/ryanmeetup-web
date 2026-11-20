@@ -41,21 +41,32 @@ that EmailJS accepted the request.
 - Create public Storefront API access for products, collections, and carts.
 - After payment, shoppers stay on Shopify's own Thank-you page; Shopify has no setting to send them elsewhere. Its **Continue shopping** button reaches the store home page through the theme redirect, and the store drops a checked-out cart on the next page load.
 - Install/connect Printful in Shopify and map every Shopify variant to the matching Printful SKU.
-- To cancel an order, start in Printful, then refund in Shopify; see [docs/CANCELLING_ORDERS.md](docs/CANCELLING_ORDERS.md).
-- Brand checkout and customer accounts, redirect the Online Store theme here, and point the notification emails at the store; see [docs/SHOPIFY_HOSTED_PAGES.md](docs/SHOPIFY_HOSTED_PAGES.md).
+- To cancel an order, start in Printful, then refund in Shopify; see [cancellation guide](docs/how-to/cancelling-orders.md).
+- Brand checkout and customer accounts, redirect the Online Store theme here, and point the notification emails at the store; see [Shopify-hosted pages guide](docs/how-to/shopify-hosted-pages.md).
 - Keep customer accounts on (Settings → Customer accounts). The **Your orders** links use the Storefront API's `customerAccountUrl`, which is null for this headless shop, so they fall back to `https://shopify.com/<shop id>/account`.
 - Write the store policies in Settings → Policies. Each one that has text gets a page at `/policies/<handle>`, a footer link, and a sitemap entry; a blank one gets nothing. Without Shopify credentials there are no policy pages.
-- Keep the catalog webhooks in Settings → Notifications → Webhooks pointed at `https://store.ryanmeetup.com/api/webhooks/shopify`, with their signing secret in `SHOPIFY_WEBHOOK_SECRET`; see [docs/ADDING_PRODUCTS.md](docs/ADDING_PRODUCTS.md#how-the-store-reads-shopify). Five-minute ISR freshness remains a fallback.
+- Keep the catalog webhooks in Settings → Notifications → Webhooks pointed at `https://store.ryanmeetup.com/api/webhooks/shopify`, with their signing secret in `SHOPIFY_WEBHOOK_SECRET`; see [product listing guide](docs/how-to/adding-products.md#how-the-store-reads-shopify). Five-minute ISR freshness remains a fallback.
 
-## Launch roadmap
+## Documentation
 
-What remains before the store takes real orders and replaces the Etsy shop is
-tracked in [docs/LAUNCH_ROADMAP.md](docs/LAUNCH_ROADMAP.md).
+Start with the [documentation index](docs/README.md):
+
+- [How-to guides](docs/README.md#how-to-guides) cover catalog work, cancellations,
+  shipping, Shopify-hosted pages and review operations.
+- [Technical references](docs/README.md#technical-references) describe the
+  current review architecture, database, authentication, verification, media
+  and moderation contracts.
+- [Roadmap and feature planning](docs/planning/roadmap.md) tracks unfinished
+  implementation, Admin setup, live verification and optional features.
+
+The store already accepts orders; Etsy stays alongside it until Ryan chooses
+otherwise. Keep procedures and current behavior in the guides/reference, and
+update the roadmap when work is completed or reprioritized.
 
 ## Storefront listings
 
 For the Shopify-side steps when listing a new product, without the code
-details, see [docs/ADDING_PRODUCTS.md](docs/ADDING_PRODUCTS.md).
+details, see [product listing guide](docs/how-to/adding-products.md).
 
 The storefront can present several separate Shopify products as one **listing**:
 one card and one product page with a **Style** selector for choosing a member.
@@ -80,7 +91,8 @@ original variant ID to Shopify's cart and checkout.
 
 **The tag controls inclusion; the title controls the label.** Putting "Name Tag"
 in a product title alone does not add it to a listing, and neither does its Type.
-The storefront ignores every tag other than `listing:`; they have no SEO effect.
+The storefront uses `listing:` for grouping and `designer:` for public credits;
+other tags have no special storefront behavior in this code.
 
 Shopify copies a heart emoji from a title into the handle it generates, so
 "I ❤️ RY" gets the handle `i-❤️-ry`. The storefront spells ❤️ and ♥ as `heart` in
@@ -299,12 +311,13 @@ buyer edit or withdraw theirs.
 
 Judge.me was retired on November 20, 2026: its code, the `REVIEWS_PROVIDER`
 switch, and the localhost **Review mode** control were removed, and its
-reviews were not kept. See the
-[removal record](docs/REVIEWS_JUDGEME_REMOVAL.md).
+reviews were not kept. Remaining external app/settings cleanup is tracked in
+[the roadmap](docs/planning/roadmap.md#14-store-reviews); recovery stays within
+[the custom system](docs/how-to/review-operations.md#recovery-within-the-custom-system).
 
 Without Shopify buyer sign-in configured (including demo mode), **Write a
 review** stays disabled with a visible explanation. Locally, sign-in goes
 through the HTTPS tunnel set in `SHOPIFY_CUSTOMER_ACCOUNT_REDIRECT_URI`; the
-[Shopify sign-in setup](docs/REVIEWS_SHOPIFY_AUTH.md) lists the Customer Account
-client settings. See the [rebuild plan](docs/REVIEWS_REBUILD.md) for the full
+[Shopify sign-in setup](docs/reference/review-authentication.md) lists the Customer Account
+client settings. See the [reviews overview](docs/reference/reviews.md) for the full
 scope and remaining work.

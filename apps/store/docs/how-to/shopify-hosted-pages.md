@@ -1,5 +1,10 @@
 # Shopify-hosted pages
 
+Reviewed November 20, 2026. The November 15 record confirms light-scheme
+wordmark branding and theme redirects. Current Admin settings and notification
+templates were not inspected during this audit. The steps below maintain that
+setup and identify the checks still needed.
+
 The store is headless. Shoppers browse, review, and fill their cart on
 `store.ryanmeetup.com`; Shopify only takes over for the parts that have to run on
 Shopify:
@@ -23,15 +28,15 @@ policy, and cart paths line up one to one; Shopify search goes to Shop All, whil
 Best Sellers and anything else go to the home page.
 
 In Shopify Admin → **Online Store → Themes → ⋯ → Edit code**, paste it as the
-first thing inside `<head>` in `layout/theme.liquid`, which renders every theme
-page. The store password is off, so `layout/password.liquid` is never shown;
-add the snippet there too only if the password is ever turned back on.
+first thing inside `<head>` in `layout/theme.liquid`, which renders theme
+pages. With the recorded password-off setup, `layout/password.liquid` is not
+shown; handle it separately if the password is turned back on.
 
 ```liquid
 {%- comment -%}
   Headless redirect: the storefront is store.ryanmeetup.com, so every theme page
   sends the shopper to the same page there. The theme editor is left alone so the
-  theme can still be previewed. Source: apps/store/docs/SHOPIFY_HOSTED_PAGES.md.
+  theme can still be previewed. Source: apps/store/docs/how-to/shopify-hosted-pages.md.
 {%- endcomment -%}
 {%- unless request.design_mode -%}
   {%- assign headless_path = '/' -%}
@@ -65,10 +70,10 @@ add the snippet there too only if the password is ever turned back on.
 Check it by opening `https://checkout.ryanmeetup.com/collections/all` in a
 private window: it should land on `https://store.ryanmeetup.com/collections/all`.
 
-The store password is off. `checkout.ryanmeetup.com` is connected to Shopify as
-its primary domain (`store.ryanmeetup.com` stays on Vercel), and
-`ryan-meetup-store.myshopify.com` forwards there. Every theme page, including a
-hand-typed deep link such as `/products/<handle>`, reaches the same page here.
+The last recorded setup had the password off and `checkout.ryanmeetup.com`
+connected as Shopify's primary domain (`store.ryanmeetup.com` on Vercel), with
+`ryan-meetup-store.myshopify.com` forwarding there. Recheck the redirect after
+domain or theme changes, including deep links such as `/products/<handle>`.
 
 Checkout, order status, and customer accounts don't use the theme, so the
 redirect doesn't touch them.
@@ -81,7 +86,7 @@ clicks, but pointing them here directly skips the hop.
 
 1. **Settings → Notifications → Customer notifications → Customize email
    templates**:
-   - Logo: upload [`shopify-assets/wordmark-black.png`](shopify-assets/wordmark-black.png)
+   - Logo: upload [the black wordmark](../assets/shopify/wordmark-black.png)
      (emails have a white background), width about 220px.
    - Accent color: `#000000`, matching the store's black buttons. The nametag
      red `#EE1A25` is too light for white button text.
@@ -99,49 +104,36 @@ clicks, but pointing them here directly skips the hop.
 
 ## 3. Brand checkout and customer accounts
 
-Checkout, the order status page, and customer accounts all take their look from
-**Settings → Checkout → Customize** (the "Configurations → Customize" row under
-Customer accounts opens the same editor). Shopify's assistant, Sidekick, can work
-through it. Upload these to **Content → Files** first so it has them:
+Use the checkout/accounts editor under **Settings → Checkout** (or the matching
+configuration entry under Customer accounts). Shopify supports choosing a logo,
+colors and fonts from the editor; advanced branding APIs require Plus. See
+[Shopify's current style guide](https://help.shopify.com/en/manual/checkout-settings/customize-checkout-configurations/checkout-style).
 
-- [`shopify-assets/wordmark-black.png`](shopify-assets/wordmark-black.png) and
-  [`shopify-assets/wordmark-white.png`](shopify-assets/wordmark-white.png);
-- `packages/brand/COOPBL.woff`, the Cooper Black display face. Confirm the font
-  license covers use on Shopify-hosted pages before uploading it; without it,
-  use the closest Shopify font for headings.
+The recorded November 15 result is the **light** scheme with the black wordmark
+and Shopify's available heading font. Preserve that as the baseline rather
+than treating the former aspirational dark/Cooper prompt as completed setup.
+The Basic editor is not a workflow for uploading this repository's WOFF font.
 
-Then give Sidekick this prompt:
+- Use [wordmark-black.png](../assets/shopify/wordmark-black.png) on a light background
+  (about 220px wide). Keep [wordmark-white.png](../assets/shopify/wordmark-white.png)
+  for a deliberately chosen dark surface.
+- Check contrast, form fields, buttons, logo links and policy links in the
+  checkout, confirmation/order status and customer account pages.
+- Preview changes before publishing and verify on a phone and desktop. Changing
+  the Next.js theme does not change Shopify's hosted configuration.
 
-> My store is headless. Customers shop at https://store.ryanmeetup.com and only
-> see Shopify for checkout, the order status page, and customer accounts. Please
-> make checkout and customer accounts match that site as closely as the checkout
-> and accounts editor allows. List every change before publishing, and tell me
-> which of these the editor can't do.
->
-> - **Color scheme (dark, the site's default):** page background `#000000`;
->   order summary panel `#171717`; text `#FFFFFF`; secondary text `#B3B3B3`;
->   borders and dividers `#1A1A1A`; form fields `#111111` with `#333333`
->   borders.
-> - **Primary buttons:** `#FFFFFF` background with `#000000` text; hover
->   `#E6E6E6`. Secondary buttons: transparent with a `#333333` border and white
->   text.
-> - **Accents:** links and selected states `#FFFFFF`. Success and price green
->   `#17803D`. Errors `#EE1A25`.
-> - **Corner radius:** 8px for buttons and fields; larger (16px) for cards and
->   the order summary if the editor allows.
-> - **Typography:** headings in the uploaded Cooper Black file (`COOPBL.woff`);
->   body text in a plain sans-serif close to Helvetica or Arial. Keep headings
->   in title case; labels can stay as they are.
-> - **Logo:** use the uploaded `wordmark-white.png` on dark sections (and
->   `wordmark-black.png` on any light one), left aligned, about 220px wide.
-> - **Header and footer:** minimal. Show the logo in the header and the store
->   policies in the footer; no extra banners.
-> - **Customer accounts:** apply the same colors, fonts, logo, and corner radius.
+## Verify the setup
 
-If dark checkout looks wrong next to the card fields, ask Sidekick for the light
-version instead: background `#FFFFFF`, order summary `#F5F5F5`, text `#000000`,
-secondary text `#4D4D4D`, borders `#E6E6E6`, primary buttons `#000000` with white
-text, and `wordmark-black.png`.
+- Verify today's theme redirects, including product/collection/policy/cart deep
+  links and Continue shopping. Recheck after a theme replacement. The redirect
+  snippet does not affect checkout or accounts, which do not use the theme.
+- Verify every used notification template's logo and direct store links.
+  Keep order-status and abandoned-checkout recovery destinations intact. Send
+  clearly labelled test emails and inspect their links before claiming completion.
+- Confirm the current hosted light-scheme branding and links on all three
+  surfaces, rather than requesting unsupported custom font work.
+- Complete the dated real order/notification check in the
+  [roadmap](../planning/roadmap.md#4-shopify-and-printful-operating-setup). No new
+  storefront implementation is needed for those Admin checks.
 
-Place a test order afterward and look at checkout, the confirmation page, the
-order status page, and the account page on a phone and a laptop.
+This guide's images are upload assets for Shopify; keep them with the procedure.

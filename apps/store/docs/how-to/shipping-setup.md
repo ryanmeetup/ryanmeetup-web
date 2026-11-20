@@ -1,9 +1,10 @@
 # Shipping on Shopify Basic
 
-Status: **partly applied**. The US name tag shirt and hoodie tiers below are
-live; a November 15 quote check matched them for 1–3 and 10 shirts, 1–2
-hoodies, and a mixed cart. Other product families and international rates still
-need their own profiles.
+Reviewed November 20, 2026. **Partly verified:** the November 15 operating
+record says the US name tag shirt/hoodie tiers were applied and matched quotes
+for 1–3 and 10 shirts, 1–2 hoodies and a mixed cart. This audit did not inspect
+today's Admin assignments or obtain new quotes. Other families/international
+rates and the highest supported weights still need recorded verification.
 
 Ryan chose to keep Basic and use conservative weight-based tiers on November
 14, 2026. Shipping charges may appear entirely in hosted checkout. Do not change
@@ -17,10 +18,11 @@ shipping category, first-item rate, additional-item rate, or minimum variant
 weight differs. Inspect current Admin assignments and Printful mappings before
 moving products.
 
-The public catalog audit covered all 88 products and 1,878 variants. Product
-types are too broad for shipping: Apparel includes children's clothing, while
-Accessory includes mugs, flags, and pins. Minimum variant weights vary from
-0.25 oz to 53.969 oz across products. Do not apply adult-shirt tiers globally.
+The earlier catalog audit covered 88 products and 1,878 variants; those are
+historical counts, not a current inventory constraint. Product types are too
+broad for shipping: Apparel includes children's clothing, while Accessory
+includes mugs, flags, and pins. That audit found minimum variant weights from
+0.25 oz to 53.969 oz. Recheck current weights; do not apply adult-shirt tiers globally.
 
 For each confirmed US profile:
 
@@ -47,13 +49,15 @@ silently receive the last flat price.
 
 ## Initial name tag family tables
 
-Observed shirt weights are 5.8–10.7 oz; hoodie weights are 16–26.3 oz. Confirm
-family membership and Printful fulfillment locations in Admin before moving
-products. Other products require their own verified profiles.
+The earlier audit observed shirt weights of 5.8–10.7 oz and hoodie weights of
+16–26.3 oz. Confirm current weights, family membership and Printful fulfillment
+locations in Admin before moving products. Other products require their own
+verified profiles.
 
-US shirt shipping is $4.95 plus $2.20 per additional item; hoodie shipping is
-$8.79 plus $2.50 per additional item. These examples include a $0.40 holiday
-allowance per contributing profile.
+The November 15 examples used US shirt shipping of $4.95 plus $2.20 per
+additional item and hoodie shipping of $8.79 plus $2.50 per additional item.
+Recheck Printful's current product/location rates before reusing these amounts.
+The examples include a $0.40 holiday allowance per contributing profile.
 
 | Tier | Shirt weight, grams (`q = 164`) | Shirt rate | Hoodie weight, grams (`q = 453`) | Hoodie rate |
 | --- | --- | --- | --- | --- |
@@ -67,13 +71,18 @@ These are the first five tiers, not a complete table for an unrestricted cart.
 Before package weight, two 5.8 oz shirts use the $7.55 tier; two 10.7 oz shirts
 use the conservative $9.75 tier.
 
-The US surcharge ends January 17, 2027. Custom rates need the allowance removed
-manually when it ends. Including it in each profile can collect more than
-$0.40 on mixed-profile orders; this is a conservative allowance, not an exact
+Printful's current holiday notice confirms a $0.40 US surcharge per order from
+October 15, 2026 through January 17, 2027. Custom rates need the allowance
+removed manually after that period. Including it in each profile can collect
+more than $0.40 on mixed-profile orders; this is a conservative allowance, not an exact
 pass-through. Do not add it again as a handling fee. Printful's automatic
 surcharge switch does not establish that custom Shopify rates were updated.
 
 ## Applying and verifying
+
+Shopify is gradually moving some stores to shipping options by market; inspect
+the current Admin layout before following profile-era labels. Keep the verified
+rate logic and quote checks if the controls have moved.
 
 In **Shopify → Settings → Shipping and delivery**, create each custom profile,
 assign confirmed products and the Printful fulfillment location, and add a US
@@ -88,6 +97,10 @@ Test one item, multiple identical items, mixed sizes, mixed products and
 profiles, tier boundaries, package weight, and the highest supported weight.
 Compare the cheapest eligible shipping charge with Printful's cost. Confirm
 assignments survive a Printful sync. Quote tests require no order or payment.
+
+Open destination/profile setup and the holiday-allowance follow-up are tracked
+in [the roadmap](../planning/roadmap.md#4-shopify-and-printful-operating-setup).
+The procedure above applies whenever rates or assigned products change.
 
 ## Sources
 
