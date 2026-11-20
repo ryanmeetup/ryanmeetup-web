@@ -68,7 +68,8 @@ export function useReviewModeration(initial: ModerationInitialState) {
     let outcome: "saved" | "conflict" | "unknown" = "unknown";
     let photosLeft = false;
     try {
-      if ("photo" in selection) {
+      if (action === "photo-approve" || action === "photo-reject") {
+        if (!("photo" in selection)) throw new Error("Photo selection is unavailable.");
         await saveReviewPhotoDecision({ reviewId: review.id, revisionId: selection.revisionId, photoId: selection.photo.id,
           expectedUpdatedAt: review.updatedAt, action: action === "photo-approve" ? "approve" : "reject", note });
       } else if (action === "delete") {
