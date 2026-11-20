@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
-  decodeBuyerReviewCursor, decodeReviewCursor, encodeBuyerReviewCursor, encodeReviewCursor, publicReviewPageSchema,
+  buyerReviewRow, decodeBuyerReviewCursor, decodeReviewCursor, encodeBuyerReviewCursor, encodeReviewCursor, publicReviewPageSchema,
   reviewCommandSchema, reviewResultSchema,
 } from "@ryanmeetup/reviews";
 import type { BuyerReview, PublicReview, ReviewCommand, ReviewResults } from "@ryanmeetup/reviews";
@@ -55,7 +55,7 @@ async function executeStoreReview(admin: SupabaseClient, shopId: string, command
     case "review.mine": {
       const rows = check(await admin.rpc("store_buyer_reviews", { p_shop_id: shopId, p_subject: command.subject, p_review_id: command.reviewId, p_limit: 1 }));
       if (!Array.isArray(rows) || rows.length > 1 || (rows.length === 1 && rows[0]?.id !== command.reviewId)) throw new ReviewBackendError();
-      data = rows[0] ?? null;
+      data = rows.length ? buyerReviewRow(rows[0]) : null;
       break;
     }
     case "reviews.mine": {
@@ -66,7 +66,7 @@ async function executeStoreReview(admin: SupabaseClient, shopId: string, command
       // Validate the extra row before it can influence a private cursor.
       const reviews: BuyerReview[] = [];
       for (const row of rows) {
-        const parsed = reviewResultSchema("review.mine", { data: row });
+        const parsed = reviewResultSchema("review.mine", { data: buyerReviewRow(row) });
         if (!parsed?.data) throw new ReviewBackendError();
         reviews.push(parsed.data);
       }

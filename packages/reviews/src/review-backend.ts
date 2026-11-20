@@ -185,10 +185,34 @@ export const buyerReviewTimestamp = (value: unknown): value is string =>
 const isoDate = (value: unknown): value is string => typeof value === "string" &&
   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
 
+const BUYER_REVIEW_KEYS = ["id", "lineId", "item", "status", "hasPendingEdit", "rejectionReason", "publishedAt", "createdAt", "updatedAt", "current"] as const;
+const BUYER_REVIEW_ITEM_KEYS = ["productId", "productTitle", "variantTitle"] as const;
+const BUYER_REVIEW_CURRENT_KEYS = ["rating", "title", "body", "nameStyle", "displayName"] as const;
+
+function pick(value: unknown, keys: readonly string[]) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+  const record = value as Record<string, unknown>;
+  return Object.fromEntries(keys.filter((key) => Object.hasOwn(record, key)).map((key) => [key, record[key]]));
+}
+
+/**
+ * Keeps only the fields this build knows from a buyer review row read from the
+ * database, so a migration that adds a field doesn't break a deployment still
+ * running older code. Missing or invalid fields still fail validation. Public
+ * reviews stay exact: an unexpected field there is a sign of a leaking query.
+ */
+export function buyerReviewRow(value: unknown): unknown {
+  const row = pick(value, BUYER_REVIEW_KEYS);
+  if (!row || typeof row !== "object" || Array.isArray(row)) return row;
+  const { item, current } = row as Record<string, unknown>;
+  return { ...row, ...("item" in row ? { item: pick(item, BUYER_REVIEW_ITEM_KEYS) } : {}),
+    ...("current" in row ? { current: pick(current, BUYER_REVIEW_CURRENT_KEYS) } : {}) };
+}
+
 function buyerReviewSchema(value: unknown): BuyerReview | null {
-  const review = exactObject(value, ["id", "lineId", "item", "status", "hasPendingEdit", "rejectionReason", "publishedAt", "createdAt", "updatedAt", "current"]);
-  const item = review && exactObject(review.item, ["productId", "productTitle", "variantTitle"]);
-  const current = review && exactObject(review.current, ["rating", "title", "body", "nameStyle", "displayName"]);
+  const review = exactObject(value, BUYER_REVIEW_KEYS);
+  const item = review && exactObject(review.item, BUYER_REVIEW_ITEM_KEYS);
+  const current = review && exactObject(review.current, BUYER_REVIEW_CURRENT_KEYS);
   return review && item && current && uuid(review.id) && (review.lineId === null || numericId(review.lineId)) &&
     numericId(item.productId) && singleLine(item.productTitle,255) && (item.variantTitle === null || singleLine(item.variantTitle,255)) &&
     ["pending","published","rejected","hidden","withdrawn"].includes(review.status as string) &&

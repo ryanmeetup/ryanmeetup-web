@@ -73,6 +73,21 @@ test("malformed commands never reach the database", async () => {
   expect(calls).toHaveLength(0);
 });
 
+test("buyer review rows ignore fields this build doesn't know, but still require every known one", async () => {
+  const mine = {
+    id: review.id, lineId: "200", item: review.item, status: "pending", hasPendingEdit: false, rejectionReason: null, publishedAt: null,
+    createdAt: "2026-11-17T12:00:00.000000Z", updatedAt: "2026-11-17T12:00:00.000000Z",
+    current: { rating: 4, title: "Ryan approved", body: "Holding up well.", nameStyle: "anonymous", displayName: "Anonymous Ryan" },
+  };
+  // A later migration may add fields before this deployment learns about them.
+  const newer = { ...mine, addedLater: "staff only", item: { ...mine.item, addedLater: 1 }, current: { ...mine.current, addedLater: true } };
+  const { backend } = database({ store_buyer_reviews: [[newer]] });
+  expect(await backend({ operation: "reviews.mine", subject: "buyer", cursor: null })).toEqual({ reviews: [mine], nextCursor: null });
+  expect(await backend({ operation: "review.mine", subject: "buyer", reviewId: review.id })).toEqual(mine);
+  const { rejectionReason: _dropped, ...missing } = mine;
+  await expect(database({ store_buyer_reviews: [[missing]] }).backend({ operation: "reviews.mine", subject: "buyer", cursor: null })).rejects.toThrow(ReviewBackendError);
+});
+
 test("unexpected, leaky, or failed responses become one generic error", async () => {
   for (const responses of [
     { store_review_summary: [page.summary], store_public_reviews: [[{ ...review, customerEmail: "ryan@example.com" }]] },

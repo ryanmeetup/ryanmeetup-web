@@ -43,6 +43,7 @@ export type {
 } from "./content";
 export {
   REVIEW_REJECTION_REASON_MAX,
+  buyerReviewRow,
   buyerReviewTimestamp,
   decodeBuyerReviewCursor,
   encodeBuyerReviewCursor,
