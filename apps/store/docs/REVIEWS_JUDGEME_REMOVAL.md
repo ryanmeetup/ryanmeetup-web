@@ -37,8 +37,8 @@ Simplify:
 
 - `lib/reviews.ts`: drop the Judge.me branch; always read custom reviews.
 - `app/api/reviews/route.ts`: drop the Judge.me submission branch, which
-  forwards an anonymous name/email review to Judge.me, or returns 410 in a
-  pending uncommitted change. Keep only the custom submission path.
+  now returns 410 after the anonymous relay was retired in `62ca8435`.
+  Keep only the custom submission path.
 - `components/reviews.tsx`: remove the legacy anonymous review form (the
   `emptyDraft`/`submitReview` modal with name and email fields) and the
   `reviewAccount` branches that link to the Shopify account for Judge.me.
@@ -57,7 +57,7 @@ Simplify:
   (`tests/review-mode-switch.spec.ts`, `tests/review-preview-api.spec.ts`):
   the localhost switch exists only to flip between the two providers.
 - `lib/review-photo-hosts.ts` and its use in `next.config.ts` image hosts and
-  `lib/custom-reviews.ts`: the allowed hosts are Judge.me's image CDNs. Keep the
+  `lib/public-review-view.ts`: the allowed hosts are Judge.me's image CDNs. Keep the
   mechanism only if custom review photos will use their own host, then replace
   the list.
 

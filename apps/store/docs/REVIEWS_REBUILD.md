@@ -1,20 +1,20 @@
 # Ryan Meetup reviews rebuild
 
-Updated **November 20, 2026**, against committed source through `d80310af`,
-including the independent product-rating (`54cdfde7`) and public reply/
-pagination (`d80310af`) changes, plus this release-documentation checkpoint.
-RMT migration evidence below is from November 18. This is
-the current implementation inventory and remaining launch plan. The earlier automated
-results below remain historical. Committed work, unfinished changes and live
-integration evidence are separate milestones.
+Updated **November 20, 2026**, against committed source through `c80fda5`.
+The independent relay retirement (`62ca8435`), verification labels (`8ad88a62`),
+diagnostics (`9dca5e4c`) and private photo processing/staging (`3d671ed4`) are
+committed. RMT rollout evidence is refreshed below. Claude's account-switch
+work (`848b9f43`) and recorded production provider change (`c09cb700`) are
+included. Earlier test checkpoints remain historical; implementation, rollout
+and live lifecycle evidence are separate milestones.
 
 ## Where we are
 
 The core **text-review system is implemented**: Shopify buyer sign-in and
 session code, exact purchased-line checks, submission, buyer editing and
 withdrawal, owner moderation, official reply management, and public reads with
-complete rating totals. Its eight committed database migrations are applied
-to RMT, including Claude's verified/unverified review extension. Signed-in
+complete rating totals. Nine committed extension migrations are now applied
+to RMT, including verified/unverified reviews and private photo staging. Signed-in
 accounts without a reviewable matching order can now submit an unverified
 product review; both paths still wait for approval.
 
@@ -23,14 +23,21 @@ authentication, client permissions, token renewal, purchase semantics, and the
 complete buyer-to-moderator lifecycle still need proof in an isolated HTTPS
 environment. Public pagination, reply rendering and grouped-product rating
 consistency are implemented and tested in the independent follow-ups below.
-Custom photo collection is not built.
+Server photo validation/normalization and private staging are implemented;
+the upload HTTP boundary, buyer UI, review association and media moderation/
+publication are not wired yet.
 
-Judge.me remains the code default and the last documented production provider.
+**Production switched to custom reviews on November 20**, according to
+Claude's committed [production/removal record](REVIEWS_JUDGEME_REMOVAL.md).
+Judge.me remains the blank-setting code default and an available recovery
+provider; it is no longer the latest documented production selection.
 Shopify sign-in requires explicit configuration and now works independently of
 the review provider; custom collection additionally requires custom mode.
-This audit did not inspect deployed environment variables or perform a real buyer login; do not
-read the existence of routes or applied SQL as evidence that collection is live.
-No provider setting, credential, deployment, or review content was changed.
+This audit did not independently inspect deployed environment variables or
+perform a real buyer login. The recorded provider switch does not prove the
+complete live lifecycle or mean the photo workflow is available. This work
+changed no provider setting, credential or buyer review content; it applied
+the committed private staging migration to RMT and verified its metadata.
 
 Since the first audit, committed changes require a title on every review,
 connect the store server to RMT directly, remove the Tasks storefront relay
@@ -55,16 +62,18 @@ remaining effort; reassess after the live Shopify gate.
 | Sessions | Opaque Secure/HttpOnly cookies, encrypted server persistence, seven-day absolute storefront session, access-token renewal, revision checks, and sign-out. | Live refresh rotation/reuse and recovery need evidence. No distributed refresh claim or expired-record cleanup job. |
 | Purchase checks | Product-level order discovery, owned-order/line verification, product and variant snapshots, current encrypted-session checks, and Shopify-derived buyer names. Used by both picker and submit; a successful lookup with no eligible line opens the unverified path. | Conservative verification policy and bounded history; see below. A failed lookup stays unavailable. Live order semantics/permissions remain unproven. |
 | Buyer composer | Whole stars 1–5, required title up to 100 characters, required text up to 5,000, purchase picker, full name/first name and last initial/anonymous, exact public-name preview. | Text only. No custom photo picker/upload path. |
-| Submission | Same-origin `POST /api/reviews` custom branch; authenticates the account, rechecks purchases and chooses the verified line or unverified product path server-side. An account with an eligible line must use it; no-order title/name snapshots are server-owned. Both create a pending revision. | Configuration gates exist; opening collection still requires live validation. Judge.me mode still has its legacy unverified forwarding branch. |
+| Submission | Same-origin `POST /api/reviews` custom branch; authenticates the account, rechecks purchases and chooses the verified line or unverified product path server-side. An account with an eligible line must use it; no-order title/name snapshots are server-owned. Both create a pending revision. The anonymous Judge.me relay is retired: Judge.me-mode POSTs return uncached `410` without reading the body or calling a provider, including localhost overrides. | Collection remains configuration-gated; the recorded custom-provider switch does not prove the live write lifecycle or sign-in settings. Judge.me reads/hosted account links remain available if that provider is selected; external collection/email entry points still need coordination. |
 | Buyer management | Private `/reviews/mine` and `GET/POST /api/reviews/mine`; twenty-row pagination, all review states, edit/withdraw, account-switch and stale-write handling. Reviewed lines link here; withdrawn lines may be resubmitted. | Real Shopify-backed lifecycle still needs rehearsal. This is a storefront page, not a Shopify account extension. |
-| Persistence | Review, revision, reply and audit tables; one verified review per shop + order + line, plus one unverified review per shop + account + product; transactional writes; separate pending/approved text and exact database versions. | Media tables/buckets and retention/export/removal workflows remain. |
+| Persistence | Review, revision, reply and audit tables; verified-line and unverified-account/product uniqueness; transactional writes; separate pending/approved text and exact versions. Private photo drafts and a dedicated bucket are applied to RMT. | Photo-to-revision association, media publication, cleanup and retention/export/removal workflows remain. |
 | Staff moderation | Tasks **Admin → Store reviews**, `/admin/reviews`; filters, paging, approve/reject/hide/restore, reasons, version conflicts and recent history. The v3 queue labels unverified reviews “No matching order.” | Existing Tasks app owners only. No separate moderator role or full-history browser endpoint. |
 | Official replies | Owner create/edit/remove, atomic audit/version updates and approved-review public projection. The storefront now carries the public body/date through its adapter and renders “Reply from Ryan Meetup” beneath the review, with plain text, preserved line breaks and a UTC publication date. Removed replies disappear on the next public read. | Local adapter/browser/build checks passed; the real owner-to-public lifecycle still needs rehearsal. No staff identity, private version or moderation note is exposed. |
 | Public reads | Approved active revisions only; complete count, average and star distribution. Custom pages show 20 reviews initially and expose “Load more reviews” through an anonymous, bounded, product-scoped GET endpoint. Loading/retry states, duplicate suppression and stale-response cancellation are covered locally. | Complete rating totals remain the initial server snapshot until refresh; they are not recomputed from loaded rows. Distribution, item attribution and edit timestamp are not displayed. Legacy Judge.me remains on its existing first-page path. |
+| Public verification labels | Custom reviews with the canonical `verifiedPurchase` flag show **Verified purchase**; qualifying Judge.me statuses retain **Verified review**. Published unverified reviews remain visible without either badge. The app view carries the badge meaning per review, including later pages. | Display/projection work only; purchase eligibility, accepted Judge.me statuses, account identity and submission rules are unchanged. No live-provider proof is implied. |
 | Product integration | Per-product reads, selected-design review switching, cards, rating summary, published-photo gallery and product JSON-LD. The independent scope fix keeps JSON-LD ratings, imagery and offers on the selected design, including initial HTML, style changes and browser history. | Empty/unavailable selected-design reviews omit aggregateRating. The scope fix is tested locally; it does not establish deployment or live-provider verification. |
-| Photos | Existing published-photo display/gallery and shared public photo contract, allowing up to five. | Custom SQL returns `photos: []`; image hosts currently cover Judge.me only. No custom upload, processing, moderation or cleanup pipeline. |
+| Photos | Published-photo gallery/shared five-photo contract; bounded server normalization; private RMT staging with scoped ownership, five active slots per buyer/product, one-hour expiry, digest-bound retries and confirmed-discard cleanup. | Custom SQL still returns `photos: []`. No authenticated upload endpoint, revision association, buyer UI, media moderation/publication or expiry sweep. Storage API behavior has synthetic client coverage plus real SQL/metadata checks, not a live buyer upload. See [media checkpoint](REVIEWS_MEDIA.md). |
 | Support revocation | Service-role-only function to revoke every review session for one buyer, scoped to shop/client/issuer/subject. Applied to RMT. | Database operation only; no route or staff UI. Sign-out ends the review session and leaves the separate Shopify account session signed in. |
-| Account context | Committed header account menu with private `/api/account` status, signed-in email, orders/profile links, sign-out and custom-mode My reviews. The inline review-area account line is removed. My reviews has its own refresh/paging feedback; the shared spinner now takes pixel sizes. | Claude owns this account/auth work. Live account switching/logout still need provider-backed evidence. |
+| Store storage diagnostics | One structured server event per failed custom review backend operation, with a fixed operation/category and allowlisted code. Contract violations and unexpected exceptions are distinguished; ordinary domain outcomes stay quiet. No payloads or raw errors are logged by this event. | Local code/tests only. No hosted alert, retention or live monitoring setup; disabled configuration, Shopify auth/purchases, Judge.me and Tasks moderation are outside this event. See [operations](REVIEWS_OPERATIONS.md). |
+| Account context | Header account menu, private `/api/account` status, email, orders/profile links, sign-out and My reviews. Claude added sign-in guidance and `/api/reviews/auth/switch` for choosing another Shopify account; ordinary review sign-out remains separate. | Claude owns this account/auth work. Live account switching/logout evidence is separate from committed code. |
 | Automated coverage | Store HTTP/domain tests, Tasks contracts/routes, SQL isolation/concurrency checks, buyer and moderation browser fixtures, responsive/theme coverage, CI jobs. | Synthetic provider/browser coverage does not prove a live Shopify installation. |
 
 ### Latest verified/unverified checkpoint
@@ -76,8 +85,10 @@ longer a local draft. The follow-up account-line styling and duplicate-key test
 fix are committed in `482d1b64`. Subsequent commits enable sign-in on any page
 and provider (`a5ac550f`), add the header account menu (`0eb4bbf2`), finish the
 localhost return hop (`1f02697f`), and tidy My reviews/spinner sizing
-(`8851c013`, `8736e1f5`). Live Shopify setup remains a separate gate; this audit
-does not infer a successful login from those commits.
+(`8851c013`, `8736e1f5`). Sign-in guidance/account switching are now committed
+in `848b9f43`; production's custom-provider switch is recorded in `c09cb700`.
+This audit still does not infer a completed provider-backed lifecycle from
+those commits or the environment switch.
 
 A real Shopify account with no reviewable
 matching purchase can write one **unverified** review per buyer/product.
@@ -143,10 +154,13 @@ No provider switch isolates storage or makes Preview safe to write to RMT.
 
 ### Database rollout, verified in this audit
 
-`supabase migration list --linked` on November 18 confirmed the following
-eight committed versions in RMT's remote history. The `20261120…` identifiers
-are migration versions, not the date of this status report. This is history
-verification; this audit did not rerun a schema diff or modify the database.
+`supabase migration list --linked` on November 20 confirms all nine versions
+below in RMT's remote history. Photo staging was tested on both isolated
+profiles, committed in `3d671ed4`, then applied with `supabase db push` to the
+pinned RMT project. A post-rollout public-schema diff is empty. Read-only API
+checks confirm the draft table is readable by the Store server and the bucket
+is private, WebP-only and limited to 4 MiB; no buyer rows/files were read/written
+for that verification. PRD received no migration or fake history entry.
 
 | Migration version | File / capability | RMT |
 | --- | --- | --- |
@@ -158,9 +172,11 @@ verification; this audit did not rerun a schema diff or modify the database.
 | `20261120190000` | `store_customer_session_revoke_buyer.sql`: revoke all sessions for a buyer | Applied |
 | `20261120200000` | `store_review_title_required.sql`: required stored revision titles | Applied |
 | `20261120210000` | `store_unverified_reviews.sql`: account/product uniqueness, nullable order pair and public/staff verification projection | Applied |
+| `20261120220000` | `store_review_photo_staging.sql`: private drafts/bucket, ownership, bounded allocation and idempotent transitions | Applied |
 
-Version `20261120210000` was absent at the earlier documentation check and is
-present at this latest read-only check. This follow-up did not apply or edit SQL.
+Version `20261120210000` was absent at an earlier check and is now confirmed
+with the other original eight. The ninth version is the new staging rollout;
+no previously applied migration was edited.
 
 The old `20261120150000` buyer-management draft was never applied or committed;
 the final version is `20261120180000`. Applied SQL stays immutable.
@@ -259,7 +275,7 @@ This is the next gate, not another rewrite of the existing auth or purchase code
 Public discovery and offline schema validation already passed in earlier
 checkpoints. Neither establishes the intended client's real buyer permissions.
 
-### 2. Finish public storefront wiring
+### 2. Verify the completed public storefront wiring on the release target
 
 The grouped-product rating-scope fix is implemented separately: one
 `ProductSchema` renderer and `buildProductSchema` builder serve both ordinary
@@ -283,8 +299,13 @@ retry, and aborts/discards continuations on a new product/provider/server
 snapshot. Complete totals and JSON-LD remain on the initial complete summary
 until refresh. Buyer and staff pagination remain independent.
 
-- Distinguish custom **Verified purchase** from legacy Judge.me **Verified
-  review** without upgrading the meaning of legacy verification.
+The public adapters now preserve verification meaning per review: a true
+custom `verifiedPurchase` becomes **Verified purchase**, an accepted Judge.me
+verification status stays **Verified review**, and unverified reviews get no
+badge. The card does not infer verification from the current provider mode.
+This works for initial and appended pages without changing either provider's
+verification rules. Confirm these labels in the live release rehearsal.
+
 - Keep complete totals separate from the displayed page. The backend already
   returns star distribution and attribution; distribution/filter UI belongs
   to Phase 2. There is no custom review cache/invalidation layer today:
@@ -310,19 +331,35 @@ The intended Phase 1 experience still includes up to five optional photos.
 Photos can follow the working text flow, but omitting them from launch would
 be an explicit scope decision, not a completed feature.
 
+The isolated [server photo processor](REVIEWS_MEDIA.md) is implemented and
+tested. It accepts still JPEG/PNG/WebP bytes up to 10 MiB/40 million pixels,
+checks actual content and animation, corrects EXIF orientation, strips metadata
+and returns an aspect-preserving WebP up to 2048px per edge and 4 MiB. These are
+initial implementation caps; no live upload policy or endpoint is enabled.
+The Store now declares the existing Sharp `0.35.5` as a direct dependency.
+
+Private staging is also implemented and applied to RMT. It binds slots to the
+configured shop and authenticated-server subject/product, serializes the
+five-active-slot quota, expires slots after one hour and recovers identical
+retries using content digests. Files stay in a private WebP-only bucket;
+uncertain finalization never triggers a destructive delete. The primitives
+do not authenticate callers independently and have no browser endpoint yet.
+
 - Buyer attachment selection, preview, removal and edit behavior.
-- Eligibility/ownership-bound, expiring upload authorization and private
-  store-owned storage in RMT, isolated from Tasks attachments and Preview.
-- Server validation of type, size and dimensions; re-encoding and metadata
-  removal; media records tied to the buyer/review/revision.
+- An authenticated, bounded upload boundary that rechecks buyer/product
+  eligibility before invoking processing/staging, with concurrency/abuse
+  controls and request limits compatible with the deployed runtime.
+- Atomic attachment of owned, ready, unexpired media to the pending revision,
+  enforcing the full five-photo limit across retained/new media and edits.
 - Staff media review and approved-only publication. Pending edit photos must
   not leak or silently replace the approved set.
 - Cleanup of failed/abandoned uploads and removed/withdrawn media, plus an
   appropriate custom image-host allowlist and `next/image` configuration.
 - Tested restore of image objects separately from database records.
 
-The existing gallery, public photo type and five-photo constant do not provide
-upload authorization or storage. No custom media bucket/migration exists yet.
+The existing gallery and new private primitives do not yet provide a working
+custom collection/publication flow. Expiry makes drafts unavailable but does
+not delete objects; an expiry sweep and object restore proof remain open.
 
 ### 5. Complete operations and release preparation
 
@@ -335,7 +372,12 @@ upload authorization or storage. No custom media bucket/migration exists yet.
 - Define and implement customer export/removal and retention procedures for
   reviews, purchase references, revisions, audit records and future media.
   Buyer withdrawal is not deletion or a complete data-removal workflow.
-- Verify monitoring, backend capacity, key rotation, backups and restore,
+- Connect and verify live monitoring using the implemented Store storage
+  failure event and [operations guide](REVIEWS_OPERATIONS.md). Configure alert
+  ownership/thresholds and cover availability, latency, disabled configuration,
+  Shopify/auth and Tasks moderation; the failure event alone does not prove
+  health or supply a request denominator.
+- Verify backend capacity, key rotation, backups and restore,
   Preview isolation, and support procedures. Decide whether support needs a
   staff UI for buyer-wide session revocation; the database function exists.
 - Decide whether review logout should also sign out of Shopify. It currently
@@ -371,12 +413,18 @@ upload authorization or storage. No custom media bucket/migration exists yet.
 
 ## Cutover and rollback, still to rehearse
 
+Production is already recorded on custom mode; the verification/recovery steps
+below remain outstanding unless their evidence is recorded. Do not treat the
+provider switch itself as completion of these checks.
+
 The detailed [release runbook](REVIEWS_RELEASE.md) now records release evidence,
 actual Store/Tasks pause controls, private snapshot requirements, read-only
 cutoff queries and recovery paths. The locally tested holding state keeps
-custom public reads available with collection paused. Returning to Judge.me
-is conditional on closing the legacy POST relay; switching providers alone
-can reopen it. No production setting, provider or data was changed here.
+custom public reads available with collection paused. The anonymous Judge.me
+POST relay is now retired in source, including after a provider switch.
+Returning to Judge.me still requires the live recovery rehearsal, preserving
+custom reviews and coordinating hosted collection links/request emails.
+No production setting, provider or review data was changed here.
 
 1. Pass the live buyer gate, public wiring checks, full lifecycle and agreed
    media scope; complete operational preparation. Record the exact deployed
@@ -385,9 +433,10 @@ can reopen it. No production setting, provider or data was changed here.
    imports are deferred. Custom reads deliberately do not merge/fall back to
    Judge.me, so switching providers will not carry its history along.
 3. In the planned window, coordinate Judge.me collection and its queued request
-   emails, remove/redirect old entry points, and disable the legacy unverified
-   forwarding branch. Only then open the custom collection path and set the
-   production provider to `custom`. New request emails are a later feature.
+   emails, remove/redirect old entry points, and verify that the deployed
+   source refuses legacy anonymous POSTs with `410`. Only then open the custom
+   collection path and set the production provider to `custom`. New request
+   emails are a later feature.
 4. Keep Judge.me installed during the rollback window. Verify production buyer,
    owner and public behavior plus complete totals. Rehearse a return to
    Judge.me with custom writes stopped first and new custom reviews preserved;
@@ -399,6 +448,109 @@ Do not install/uninstall Judge.me, change its emails, repoint credentials, or
 switch the production provider merely to test this plan.
 
 ## Evidence and repeat validation
+
+**Private photo staging and rollout, November 20:**
+
+- Processing/staging code and RMT-only migration `20261120220000` are committed
+  in `3d671ed4`. The migration was applied only to RMT after both isolated
+  profiles passed. Remote history confirms all nine Store versions, the
+  post-rollout public-schema diff is empty, and read-only bucket/table checks
+  confirm private WebP-only storage capped at 4 MiB.
+- RMT passed 330 database assertions, including 46 staging/access assertions,
+  two real encrypted-storage checks and three lock/race scenarios. Concurrent
+  allocation cannot exceed the fifth active slot. PRD passed 65 assertions
+  and confirms the table/bucket are absent. All 16 planner/catch-up tests passed.
+- All 20 processor/staging tests passed, including lost upload/finalization/
+  discard responses, digest mismatches, cross-owner/product access, quota and
+  closed outcomes, failed removal and malformed result rejection. Store build,
+  Tasks typecheck, changed-file ESLint and `git diff --check` passed.
+- CI now has a pinned-CLI matrix for both isolated profiles, including relevant
+  Tasks migration/script/test PR paths. Workflow YAML is validated locally;
+  hosted execution is not claimed here. The runner's storage integration tests
+  are server-free and never reset the existing application stack.
+- Browser uploads, revision association, media moderation/publication and
+  expiry cleanup remain unbuilt. No real buyer photo or review was created.
+
+**Server photo-processing follow-up, November 20:**
+
+- Implemented server byte validation and re-encoding without adding an upload
+  route, bucket, table or public URL. The processor returns only a normalized
+  WebP/dimensions or a fixed failure reason; original bytes and decoder errors
+  are not returned. Photo count, buyer ownership and moderation still belong
+  to the unbuilt workflow, not this function.
+- All ten processor scenarios and the combined 39-test photo/public-view run
+  passed. Fixtures exercise actual codecs, private EXIF GPS/XMP/ICC data,
+  orientation at the pixel level, transparency, malicious size/type/header
+  inputs, animations and caller-buffer mutation.
+- Changed-file ESLint, local documentation links, `git diff --check` and the
+  isolated custom-mode Store production build passed. The manifest/lockfile
+  now declare the already-resolved Sharp version directly; no package version
+  upgrade, schema change or changes to Claude's account/purchase code occurred.
+- CI has a dedicated processor check. Upload/storage authorization, revision
+  association, buyer UI, approved-only media access, cleanup and object restore
+  remain open; photo collection is not marked complete.
+
+**Store storage diagnostics follow-up, November 20:**
+
+- Failed validated backend operations now emit `store_review_operation_failed`
+  with only operation, failure category and an allowlisted code. Storage errors,
+  invalid public/private responses and unexpected exceptions are distinguished.
+  Two failed public-read RPCs produce one event; successful/normal domain
+  answers and rejected commands do not produce failure events.
+- 57 focused tests passed across diagnostics, backend contracts, public paging,
+  buyer submission/management and purchase lookups. Nine diagnostics scenarios
+  cover private content and malformed-code exclusion, unchanged public errors,
+  unexpected/transport failures, normal outcomes and a broken logging sink.
+- Changed-file ESLint and `git diff --check` passed. No schema change, live
+  provider call, alert activation or alteration of Claude's authentication and
+  purchase code is part of this follow-up. The operations guide records the
+  remaining coverage and release evidence; monitoring is not marked complete.
+- The isolated custom-mode Store production build passed with live catalog,
+  Judge.me and database connections disabled. Local documentation links passed
+  validation. No browser/layout changes were made in this follow-up.
+
+**Public verification-label follow-up, November 20:**
+
+- Replaced the app-local ambiguous verified boolean with `purchase`, `review`
+  or `null` in the public view. The shared/domain `verifiedPurchase` contract,
+  Judge.me status allowlist and Claude's buyer/purchase/submission code remain
+  unchanged. An unrelated legacy-style field cannot give an unverified custom
+  review a purchase badge.
+- 29 focused tests passed across custom/legacy projections, actual card
+  rendering, backend contracts, public pagination, replies and structured
+  data. Coverage confirms the two badge meanings can coexist without being
+  upgraded, and unverified text remains visible with no badge.
+- All 20 isolated public-read browser scenarios passed. They cover a mixed
+  verified/unverified custom product, the purchase badge on later pages,
+  reply rendering, rating scope, pause behavior, retries and stale responses.
+  The badge/reply cards were visually inspected in both themes at
+  390/1024/1280/1536px. The existing demo catalog image still emits a 404;
+  the review checks pass independently.
+- Changed-file ESLint, local documentation links, `git diff --check` and the
+  isolated custom-mode Store production build passed. No schema or production
+  configuration change is required. Claude's concurrent browser-test artifact
+  work is separate and was left untouched.
+
+**Anonymous Judge.me relay retirement, November 20:**
+
+- Removed the external create-review request from `POST /api/reviews`.
+  Default/blank/explicit Judge.me modes and a local Judge.me override return
+  uncached `410` before reading buyer-supplied content. Browser provider fields,
+  credentials, malformed input and missing configuration cannot restore it.
+  Invalid provider configuration remains unavailable; the custom branch is
+  unchanged.
+- 55 focused tests passed across route retirement, provider selection,
+  localhost overrides, Judge.me public projections/domain credentials,
+  hosted collection links and custom submissions/purchase lookups. The real
+  custom route still saves only verified server-derived purchase references;
+  the signed-in unverified path retains its existing domain coverage.
+- Changed-file ESLint and `git diff --check` passed. These tests use synthetic
+  transports and do not prove deployed retirement or change Judge.me's own
+  hosted forms, settings or queued emails. CI now includes the route retirement
+  and provider/override regression suites.
+- The isolated custom-mode Store production build passed with live catalog,
+  Judge.me and database connections disabled. This follow-up does not require
+  a database migration or changes to Claude's authentication/purchase code.
 
 **Public pagination follow-up, November 20:**
 
@@ -501,7 +653,7 @@ Useful repeat commands:
 
 ```sh
 # From apps/store: independent product-rating checks and public-read browser suite.
-STORE_BASE_URL=http://127.0.0.1:39999 npx playwright test tests/product-schema.spec.ts tests/product-groups.spec.ts tests/custom-review-replies.spec.ts tests/public-review-page.spec.ts --workers=1 --output=test-results-public-reviews/unit
+STORE_BASE_URL=http://127.0.0.1:39999 npx playwright test tests/product-schema.spec.ts tests/product-groups.spec.ts tests/custom-review-replies.spec.ts tests/public-review-page.spec.ts tests/review-verification.spec.ts tests/reviews-data.spec.ts --workers=1 --output=test-results-public-reviews/unit
 npx playwright test --config=playwright.product-reviews.config.ts
 
 # From apps/store: server-free domain/HTTP checks using synthetic transports.
@@ -543,12 +695,17 @@ disable the normal Tasks database-contract preflight to make a build pass.
 | Account menu | [`components/account-menu.tsx`](../components/account-menu.tsx), [`app/api/account/route.ts`](../app/api/account/route.ts) |
 | Public adapter/cards | [`lib/custom-reviews.ts`](../lib/custom-reviews.ts), [`lib/public-review-view.ts`](../lib/public-review-view.ts), [`components/reviews.tsx`](../components/reviews.tsx), [`components/product-group-detail.tsx`](../components/product-group-detail.tsx), [`app/products/[handle]/page.tsx`](../app/products/%5Bhandle%5D/page.tsx) |
 | Public pagination | [`app/api/reviews/page/route.ts`](../app/api/reviews/page/route.ts), [`lib/public-review-page.ts`](../lib/public-review-page.ts), [`components/use-public-reviews.ts`](../components/use-public-reviews.ts), [`tests/public-review-page.spec.ts`](../tests/public-review-page.spec.ts), [`tests/public-review-pagination.browser.ts`](../tests/public-review-pagination.browser.ts) |
+| Verification badge meaning | [`lib/types.ts`](../lib/types.ts), [`lib/public-review-view.ts`](../lib/public-review-view.ts), [`lib/judgeme-reviews.ts`](../lib/judgeme-reviews.ts), [`tests/review-verification.spec.ts`](../tests/review-verification.spec.ts), [`tests/reviews-data.spec.ts`](../tests/reviews-data.spec.ts) |
 | Public official replies | [`components/review-reply.tsx`](../components/review-reply.tsx), [`tests/custom-review-replies.spec.ts`](../tests/custom-review-replies.spec.ts), [`tests/public-review-replies.browser.ts`](../tests/public-review-replies.browser.ts) |
 | Selected-product structured data | [`lib/product-schema.ts`](../lib/product-schema.ts), [`components/product-schema.tsx`](../components/product-schema.tsx), [`playwright.product-reviews.config.ts`](../playwright.product-reviews.config.ts) |
 | Store persistence/contracts | [`lib/store-database.ts`](../lib/store-database.ts), [`lib/review-backend.ts`](../lib/review-backend.ts), [`lib/customer-account/backend.ts`](../lib/customer-account/backend.ts), [`packages/reviews/src/`](../../../packages/reviews/src) |
+| Store storage diagnostics | [`lib/review-diagnostics.ts`](../lib/review-diagnostics.ts), [`tests/review-diagnostics.spec.ts`](../tests/review-diagnostics.spec.ts), [operations guide](REVIEWS_OPERATIONS.md) |
+| Server photo processing | [`lib/review-photo-processing.ts`](../lib/review-photo-processing.ts), [`tests/review-photo-processing.spec.ts`](../tests/review-photo-processing.spec.ts), [media checkpoint](REVIEWS_MEDIA.md) |
+| Private photo staging | [`lib/review-photo-staging.ts`](../lib/review-photo-staging.ts), [`20261120220000_store_review_photo_staging.sql`](../../tasks/supabase/migrations/20261120220000_store_review_photo_staging.sql), [`store-review-photo-staging.sql`](../../tasks/tests/database/store-review-photo-staging.sql) |
 | Owner moderation/replies | [moderation checkpoint](REVIEWS_MODERATION.md), [`apps/tasks/app/api/admin/reviews/route.ts`](../../tasks/app/api/admin/reviews/route.ts) |
 | Migration policy and infrastructure | [database decision](REVIEWS_DATABASE.md), [`apps/tasks/supabase/migrations/`](../../tasks/supabase/migrations), [multi-instance policy](../../tasks/docs/MULTI_INSTANCE.md) |
 | Release preparation and recovery | [cutover/rollback runbook](REVIEWS_RELEASE.md) |
+| Recorded production provider and eventual retirement | [Judge.me removal checklist](REVIEWS_JUDGEME_REMOVAL.md) |
 | Earlier commit-by-commit history | [implementation handoff](REVIEWS_HANDOFF.md) |
 
 Some earlier handoffs still describe stages before purchase hooks or review

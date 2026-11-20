@@ -2,14 +2,17 @@
 
 Updated November 20, 2026, against the direct-RMT storefront and Tasks owner
 moderation code. The collection pause has synthetic local coverage; the full
-live rehearsal and production release have not passed. This runbook changes
-no deployment, environment setting, Judge.me configuration or database content.
+live rehearsal/recovery evidence remains incomplete. Production is recorded as
+switched to custom mode on November 20 in [the removal record](REVIEWS_JUDGEME_REMOVAL.md);
+that environment change does not establish that all release gates passed.
+The private staging migration is applied to RMT; this runbook itself changes
+no deployment, provider setting or buyer review content.
 
 Use [the rebuild inventory](REVIEWS_REBUILD.md) for implementation status.
 Claude's verified/unverified submission changes are committed, and migration
-`20261120210000` is confirmed in RMT's remote history. His live Shopify setup
-is a separate gate; record its completed evidence before selecting a release
-candidate.
+`20261120210000` and staging version `20261120220000` are confirmed in RMT.
+Record the completed Shopify/lifecycle evidence separately from the provider
+switch, and verify the exact release candidate deployed.
 Judge.me imports remain deferred. Custom request emails remain Phase 2.
 
 ## Release record
@@ -42,7 +45,7 @@ configuration during a pause; removing credentials is not the pause mechanism.
 | Store `STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED=false` with custom provider | Stops new sign-in and ordinary session loading. Valid submissions and My reviews reads/edits/withdrawals return unavailable. Published review reads continue when storage is configured. This also pauses already signed-in buyers; it is not a new-buyers-only switch. |
 | Store `STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED=true` | Allows configured buyer authentication and session loading in either provider mode. Custom writes/My reviews additionally require the custom provider, current submission rules and storage. |
 | Tasks `STORE_REVIEWS_CUSTOMER_AUTH_ENABLED=false` | Disables the store moderation scope, including owner queue/API reads and decisions/replies. It does not stop storefront writes, and does not change other Tasks workspace data. |
-| Store `REVIEWS_PROVIDER=judgeme` | Switches public reads and collection routing to Judge.me. While the existing legacy POST branch remains, this can also reopen its unverified forwarding behavior. It is not a write freeze. |
+| Store `REVIEWS_PROVIDER=judgeme` | Switches public reads and the hosted customer-account collection link to Judge.me. The local anonymous POST relay is retired and returns `410`; switching providers cannot reopen it. External Judge.me forms/request emails are separate collection entry points and may still accept reviews. |
 
 Review sign-out deliberately bypasses the sign-in-enable/provider gates, so it
 can revoke an existing review session during a pause if its client, database
@@ -74,8 +77,13 @@ instance's Supabase identity to enable store review tools.
    and pagination now have local adapter/browser coverage; the real
    owner-to-public loop still needs this rehearsal. Load beyond twenty rows,
    exercise a failed-page retry and switch products during a pending load.
-4. Exercise the agreed photo scope. Custom uploads/processing/moderation are
-   not implemented yet; a text-only launch must be recorded as an explicit
+   Confirm verified custom reviews say “Verified purchase,” published
+   unverified reviews have no verification badge, and Judge.me reviews retain
+   “Verified review” under their existing verification rules.
+4. Exercise the agreed photo scope. [Server processing/private staging](REVIEWS_MEDIA.md)
+   are tested and the RMT infrastructure is applied, but the upload HTTP/UI
+   boundary, revision association and media moderation/publication are not
+   implemented yet; a text-only launch must be recorded as an explicit
    scope change rather than checking photos off as complete.
 5. Exercise the pause below with a real active session and an open editor,
    then resume it. Confirm a draft opened before the pause cannot save after
@@ -89,6 +97,11 @@ instance's Supabase identity to enable store review tools.
    builds and the Tasks database-contract preflight. The isolated Store demo
    build now passes; production configuration and the live database contract
    still need release evidence. Do not bypass the contract/type check.
+8. Complete the [monitoring evidence](REVIEWS_OPERATIONS.md): connect the Store
+   storage failure event to the chosen log destination/alerts, verify it on an
+   isolated target, and record ownership/thresholds. Add checks for availability
+   and the auth/purchase/moderation paths this event does not cover. The local
+   diagnostic tests are not proof of a live alert or healthy configuration.
 
 ## Pause custom collection while retaining published reviews
 
@@ -136,10 +149,12 @@ versions instead of replaying old pending requests.
    Judge.me's queued request-email behavior. Keep Judge.me installed through
    the observation window. This runbook does not install/uninstall it or change
    its configuration automatically.
-3. Require the release source to refuse the legacy unverified Judge.me POST
-   forwarding branch. That retirement/write gate is still outstanding in the
-   audited source. Keep Judge.me reads available if the recovery plan needs
-   them; hiding a button does not close its submission endpoint.
+3. Verify the deployed release source contains the retired anonymous Judge.me
+   POST branch: default/explicit Judge.me mode returns `410` with
+   `Cache-Control: no-store` and makes no upstream create-review request.
+   This is implemented and tested locally; deployed evidence is still needed.
+   Keep Judge.me reads available if the recovery plan needs them. An older
+   artifact predating this retirement can still reopen the relay.
 4. Deploy the reviewed custom version with collection paused. Verify the
    intended RMT connection, approved public reads, product scope/JSON-LD,
    owner permissions and the chosen historical-review presentation. No import
@@ -155,16 +170,16 @@ versions instead of replaying old pending requests.
 
 **Supported holding state: custom reads, collection paused.** Use the pause
 procedure, freeze moderation if preserving a stable snapshot, retain all
-review records and diagnose/fix the reviewed release. This avoids reopening
-the legacy relay while retaining published custom content. Buyer management
+review records and diagnose/fix the reviewed release. This retains published
+custom content while collection is paused. Buyer management
 is unavailable until session loading is enabled again.
 
 **Return to Judge.me: conditional, still to rehearse.** First pause custom
 collection/moderation, let in-flight operations settle and preserve all custom
-reviews since cutoff. Switch providers only on a release version that keeps
-the legacy unverified POST branch closed. The current source cannot provide
-that guarantee through the provider switch alone. Judge.me collection/account
-entry points and emails must follow the recorded recovery plan; do not blindly
+reviews since cutoff. Switch providers only on a release version that contains
+the anonymous POST retirement; the current source returns `410` in Judge.me
+mode, and deployment must be verified. Judge.me collection/account entry
+points and emails must follow the recorded recovery plan; do not blindly
 reopen both collectors for the same purchase.
 
 Custom reviews are not copied into Judge.me by provider switching. Keep a
@@ -243,3 +258,14 @@ The full release/recovery rehearsal remains open until its evidence is recorded.
 For implementation details see the [sign-in setup](REVIEWS_SHOPIFY_AUTH.md),
 [moderation checkpoint](REVIEWS_MODERATION.md) and
 [database policy](REVIEWS_DATABASE.md).
+
+The anonymous relay retirement has separate server-free regression coverage:
+
+```sh
+STORE_BASE_URL=http://127.0.0.1:39999 npx playwright test tests/reviews-api.spec.ts tests/review-provider.spec.ts tests/review-preview-api.spec.ts --workers=1 --output=test-results-public-reviews/relay-unit
+```
+
+The placeholder URL prevents server startup; these tests import the route and
+replace provider transports. The focused retirement/read/custom-submission
+run passed 55 tests, and the isolated Store production build passed. This
+does not establish that a deployed version contains the retirement.
