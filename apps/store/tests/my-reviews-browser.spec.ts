@@ -60,7 +60,16 @@ test("uncertain withdrawal clears stale actions and a refresh confirms the saved
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(page.getByRole("alert").filter({hasText:"could not confirm"})).toBeVisible();
   await expect(page.locator("article[data-testid^='my-review-']")).toHaveCount(0);
+  await page.unroute("**/api/reviews/mine");
+  // Hold the refresh open long enough to measure what it shows.
+  let release=()=>{};const held=new Promise<void>((resolve)=>{release=resolve;});
+  await page.route("**/api/reviews/mine**",async(route)=>{await held;await route.continue();});
   await page.getByRole("button",{name:"Refresh reviews",exact:true}).click();
+  const status=page.getByRole("status").filter({hasText:"Updating your reviews…"});
+  await expect(status).toBeVisible();
+  const spinner=await status.locator("svg").boundingBox();
+  expect(spinner!.width).toBeLessThanOrEqual(20);expect(spinner!.height).toBeLessThanOrEqual(20);
+  release();await expect(status).toHaveCount(0);
   await expect(card(page,2)).toContainText("Withdrawn");expect((await state(request)).calls).toHaveLength(1);
 });
 test("a confirmed edit with failed reload remains saved and blocks further decisions",async({page,request})=>{
@@ -79,7 +88,7 @@ test("pages beyond 100 reviews and never merges another buyer's page",async({pag
   for(let pageNumber=0;pageNumber<6;pageNumber++)await page.getByRole("button",{name:"Load more reviews",exact:true}).click();
   await expect(page.locator("article[data-testid^='my-review-']")).toHaveCount(125);
   await expect(page.getByRole("button",{name:"Load more reviews",exact:true})).toHaveCount(0);
-  await page.getByRole("button",{name:"Refresh reviews",exact:true}).click();await expect(page.locator("article[data-testid^='my-review-']")).toHaveCount(20);
+  await page.reload();await expect(page.locator("article[data-testid^='my-review-']")).toHaveCount(20);
   await signIn(page,baseURL!,"buyer-b");await page.getByRole("button",{name:"Load more reviews",exact:true}).click();
   await expect(page.locator("article[data-testid^='my-review-']")).toHaveCount(1);await expect(card(page,201)).toBeVisible();await expect(card(page,1)).toHaveCount(0);
 });
@@ -87,7 +96,7 @@ test("forged edits and expired sessions cannot change buyer reviews",async({page
   await page.goto("/reviews/mine");
   const snapshot=await state(request);const foreign=snapshot.records.find((r:{subject:string})=>r.subject==="buyer-b").value;
   const forged=await page.request.post("/api/reviews/mine",{headers:{Origin:baseURL!},data:{action:"withdraw",reviewId:foreign.id,expectedUpdatedAt:foreign.updatedAt}});expect(forged.status()).toBe(404);
-  await request.post(`${fixture}/__revoke`);await page.getByRole("button",{name:"Refresh reviews",exact:true}).click();
+  await request.post(`${fixture}/__revoke`);await page.reload();
   await expect(page.locator("article[data-testid^='my-review-']")).toHaveCount(0);await expect(page.getByRole("link",{name:"Sign in",exact:true})).toBeVisible();
 });
 test("fits the private list and editor across mobile/desktop boundaries in both themes",async({page,request,baseURL},testInfo)=>{
@@ -108,7 +117,7 @@ test("fits the private list and editor across mobile/desktop boundaries in both 
     }
   }
 });
-test("an empty list points back to the shop, and refreshing shows a small spinner",async({page,request,baseURL})=>{
+test("an empty list points back to the shop",async({page,request,baseURL})=>{
   await reset(request,{empty:true});await signIn(page,baseURL!);
   for(const theme of ["dark","light"]){
     await page.addInitScript((value)=>localStorage.setItem("theme",value),theme);
@@ -117,15 +126,6 @@ test("an empty list points back to the shop, and refreshing shows a small spinne
     await expect(page.getByRole("link",{name:"Browse the shop",exact:true})).toHaveAttribute("href","/");
     await page.locator("main").screenshot({path:screenshotPath(`store-my-reviews-empty-${theme}.png`)});
   }
-  // Hold the refresh open long enough to measure what it shows.
-  let release=()=>{};const held=new Promise<void>((resolve)=>{release=resolve;});
-  await page.route("**/api/reviews/mine**",async(route)=>{await held;await route.continue();});
-  await page.getByRole("button",{name:"Refresh reviews",exact:true}).click();
-  const status=page.getByRole("status").filter({hasText:"Updating your reviews…"});
-  await expect(status).toBeVisible();
-  const spinner=await status.locator("svg").boundingBox();
-  expect(spinner!.width).toBeLessThanOrEqual(20);expect(spinner!.height).toBeLessThanOrEqual(20);
-  release();await expect(status).toHaveCount(0);
 });
 test("signed in, My reviews offers recent purchases to review and reviews them in place",async({page,request,baseURL})=>{
   await reset(request,{empty:true});
@@ -174,7 +174,8 @@ test("Ready to review and Your reviews each fold away under a real heading",asyn
     const ready=page.getByRole("heading",{level:2,name:/^Ready to review/}).getByRole("button");
     const yours=page.getByRole("heading",{level:2,name:/^Your reviews/}).getByRole("button");
     await expect(ready).toHaveAttribute("aria-expanded","true");await expect(yours).toHaveAttribute("aria-expanded","true");
-    await expect(page.getByRole("button",{name:"Refresh reviews",exact:true})).toBeVisible();
+    // Nothing went wrong, so there is nothing to refresh.
+    await expect(page.getByRole("button",{name:"Refresh reviews",exact:true})).toHaveCount(0);
     await page.screenshot({path:screenshotPath(`my-reviews-sections-open-${width}.png`),fullPage:true});
     await ready.click();
     await expect(ready).toHaveAttribute("aria-expanded","false");

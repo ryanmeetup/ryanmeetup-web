@@ -44,8 +44,9 @@ export function MyReviews({ initial, suggestions }: { initial: MyReviewView | nu
       </div>
       <div className="flex shrink-0 items-center gap-2">
         {!mine.view && <Button.Link href={reviewSignInUrl("/reviews/mine")} rel={reviewSignInRel} prefetch={false} size="sm" variant="secondary">Sign in</Button.Link>}
-        <Button variant="ghost" size="sm" disabled={mine.pending || Boolean(editing || mine.withdrawing)} onClick={()=>void mine.load()}
-          leftIcon={<FiRefreshCw aria-hidden className={mine.pending ? "animate-spin motion-reduce:animate-none" : ""} />}>Refresh reviews</Button>
+        {/* Edits, withdrawals, and new reviews reload the list themselves; this is only the way back after a failed load. */}
+        {mine.error && <Button variant="ghost" size="sm" disabled={mine.pending || Boolean(editing || mine.withdrawing)} onClick={()=>void mine.load()}
+          leftIcon={<FiRefreshCw aria-hidden className={mine.pending ? "animate-spin motion-reduce:animate-none" : ""} />}>Refresh reviews</Button>}
       </div>
     </div>
     {mine.error && <ErrorCallout>{mine.error}</ErrorCallout>}
