@@ -160,15 +160,14 @@ test("invalid and malformed choices are rejected without changing cookies", asyn
   expect(wrongFormat.status).toBe(415);
 });
 
-test("preview selection applies to submissions while another browser retains its default", async () => {
+test("preview selection preserves custom gates and cannot reopen the retired Judge.me relay", async () => {
   expect((await submit(`${reviewPreviewCookie}=custom`)).status).toBe(503);
   expect(requests).toEqual([]);
-  expect((await submit()).status).toBe(200);
-  expect(requests).toEqual(["https://judge.me/api/v1/reviews"]);
-  requests = [];
+  expect((await submit()).status).toBe(410);
+  expect(requests).toEqual([]);
   process.env.REVIEWS_PROVIDER = "custom";
-  expect((await submit(`${reviewPreviewCookie}=judgeme`)).status).toBe(200);
-  expect(requests).toEqual(["https://judge.me/api/v1/reviews"]);
+  expect((await submit(`${reviewPreviewCookie}=judgeme`)).status).toBe(410);
+  expect(requests).toEqual([]);
 });
 
 test("an invalid cookie cannot override a closed default configuration", async () => {

@@ -2,106 +2,81 @@ import { expect, test } from "@playwright/test";
 import { POST } from "../app/api/reviews/route";
 
 const originalFetch = globalThis.fetch;
-const originalProvider = process.env.REVIEWS_PROVIDER;
-const originalDomain = process.env.SHOPIFY_STORE_DOMAIN;
-const originalJudgeMeDomain = process.env.JUDGEME_SHOP_DOMAIN;
-let providerRequests: { url: string; body: Record<string, unknown> }[] = [];
-let providerStatus = 200;
+const keys = ["REVIEWS_PROVIDER", "SHOPIFY_STORE_DOMAIN", "JUDGEME_SHOP_DOMAIN", "JUDGEME_PRIVATE_API_TOKEN", "REVIEWS_PREVIEW_ENABLED", "VERCEL"] as const;
+const originalEnv = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
+let providerRequests: string[];
 
 const validReview = { name: "Ryan", email: "ryan@example.com", productId: "gid://shopify/Product/123", rating: 5, body: "Holding up great." };
 
 test.beforeEach(() => {
   process.env.REVIEWS_PROVIDER = "judgeme";
+  process.env.SHOPIFY_STORE_DOMAIN = "catalog.test";
+  process.env.JUDGEME_SHOP_DOMAIN = "registered-reviews.test";
+  process.env.JUDGEME_PRIVATE_API_TOKEN = "synthetic-private-token";
   providerRequests = [];
-  providerStatus = 200;
-  process.env.SHOPIFY_STORE_DOMAIN = "reviews.test";
-  delete process.env.JUDGEME_SHOP_DOMAIN;
-  globalThis.fetch = async (input, init) => {
-    providerRequests.push({ url: String(input), body: JSON.parse(String(init?.body)) });
-    return new Response("{}", { status: providerStatus });
+  globalThis.fetch = async (input) => {
+    providerRequests.push(String(input));
+    throw new Error("Retired submissions must never reach a provider.");
   };
 });
 
 test.afterEach(() => {
-  if (originalProvider === undefined) delete process.env.REVIEWS_PROVIDER;
-  else process.env.REVIEWS_PROVIDER = originalProvider;
   globalThis.fetch = originalFetch;
-  if (originalDomain === undefined) delete process.env.SHOPIFY_STORE_DOMAIN;
-  else process.env.SHOPIFY_STORE_DOMAIN = originalDomain;
-  if (originalJudgeMeDomain === undefined) delete process.env.JUDGEME_SHOP_DOMAIN;
-  else process.env.JUDGEME_SHOP_DOMAIN = originalJudgeMeDomain;
+  for (const key of keys) {
+    if (originalEnv[key] === undefined) delete process.env[key];
+    else process.env[key] = originalEnv[key];
+  }
 });
 
-function submit(body: unknown, contentType = "application/json", headers: Record<string, string> = {}) {
-  return POST(new Request("https://store.test/api/reviews", {
+function request(body: unknown = validReview, headers: Record<string, string> = {}, url = "https://store.test/api/reviews") {
+  return new Request(url, {
     method: "POST",
-    headers: { "Content-Type": contentType, Origin: "https://store.test", ...headers },
+    headers: { "Content-Type": "application/json", Origin: "https://store.test", ...headers },
     body: typeof body === "string" ? body : JSON.stringify(body),
-  }));
+  });
 }
 
-test("a complete review is forwarded to Judge.me without an API token", async () => {
-  const response = await submit({ ...validReview, verified: true, api_token: "invented" });
-  expect(response.status).toBe(200);
-  expect(await response.json()).toEqual({ success: true });
+async function expectRetired(input: Request) {
+  const response = await POST(input);
+  expect(response.status).toBe(410);
   expect(response.headers.get("Cache-Control")).toBe("no-store");
-  expect(providerRequests).toEqual([{
-    url: "https://judge.me/api/v1/reviews",
-    body: { shop_domain: "reviews.test", platform: "shopify", id: 123, name: "Ryan", email: "ryan@example.com", rating: 5, body: "Holding up great." },
-  }]);
-});
+  expect(await response.json()).toEqual({ error: "Please open your customer account to leave a review." });
+  expect(input.bodyUsed).toBe(false);
+  expect(providerRequests).toEqual([]);
+}
 
-test("submission uses Judge.me's registered domain instead of the Shopify catalog domain", async () => {
-  process.env.SHOPIFY_STORE_DOMAIN = "catalog.test";
-  process.env.JUDGEME_SHOP_DOMAIN = "registered-reviews.test";
-  expect((await submit(validReview)).status).toBe(200);
-  expect(providerRequests[0].body.shop_domain).toBe("registered-reviews.test");
-  expect(process.env.SHOPIFY_STORE_DOMAIN).toBe("catalog.test");
-});
-
-test("incomplete or out-of-range reviews are rejected before Judge.me", async () => {
-  for (const review of [
-    { ...validReview, body: " " },
-    { ...validReview, rating: 4.5 },
-    { ...validReview, rating: 6 },
-    { ...validReview, productId: "gid://shopify/Product/demo-1" },
-    { ...validReview, email: "not-an-email" },
-  ]) {
-    expect((await submit(review)).status).toBe(400);
+test("the default and explicit Judge.me modes refuse anonymous submissions even with working credentials", async () => {
+  for (const provider of [undefined, "", "  ", "judgeme"]) {
+    if (provider === undefined) delete process.env.REVIEWS_PROVIDER;
+    else process.env.REVIEWS_PROVIDER = provider;
+    await expectRetired(request({ ...validReview, verified: true, api_token: "invented" }));
   }
-  expect((await submit("{")).status).toBe(400);
-  for (const malformed of [null, [], true]) {
-    expect((await submit(malformed)).status).toBe(400);
-  }
-  expect(providerRequests).toHaveLength(0);
 });
 
-test("only this storefront's pages can relay a review to Judge.me", async () => {
-  const attempts: Record<string, string>[] = [{ Origin: "https://spam.test" }, { "Sec-Fetch-Site": "cross-site" }];
-  for (const headers of attempts) {
-    const response = await submit(validReview, "application/json", headers);
-    expect(response.status).toBe(403);
-  }
-  const missing = await POST(new Request("https://store.test/api/reviews", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(validReview) }));
-  expect(missing.status).toBe(403);
-  expect(providerRequests).toHaveLength(0);
+test("browser-supplied provider fields and credentials cannot restore the retired relay", async () => {
+  await expectRetired(request({ ...validReview, provider: "custom", shop_domain: "other.test", subject: "invented-buyer" }, {
+    "X-Review-Provider": "custom", Cookie: "store-review-preview=custom", Authorization: "Bearer invented",
+  }, "https://store.test/api/reviews?provider=custom"));
 });
 
-test("photo uploads are refused until photos have a host", async () => {
-  const response = await submit("--boundary", "multipart/form-data; boundary=boundary");
-  expect(response.status).toBe(415);
-  expect(providerRequests).toHaveLength(0);
+test("a local Judge.me override cannot reopen forwarding when the environment uses custom", async () => {
+  delete process.env.VERCEL;
+  process.env.REVIEWS_PREVIEW_ENABLED = "true";
+  process.env.REVIEWS_PROVIDER = "custom";
+  await expectRetired(request(validReview, { Origin: "http://localhost:3002", Cookie: "store-review-preview=judgeme" }, "http://localhost:3002/api/reviews"));
 });
 
-test("a Judge.me rejection is reported as a retryable failure", async () => {
-  providerStatus = 422;
-  const response = await submit(validReview);
-  expect(response.status).toBe(502);
-  expect(await response.json()).toEqual({ error: "Judge.me could not accept that review. Please try again." });
+test("retired requests are closed before parsing bodies or contacting external storage", async () => {
+  for (const body of ["{", null, [], true, { ...validReview, rating: 6 }]) await expectRetired(request(body));
+  await expectRetired(request("--boundary", { "Content-Type": "multipart/form-data; boundary=boundary", Origin: "https://other.test" }));
 });
 
-test("missing shop configuration closes submissions", async () => {
+test("missing or invalid configuration cannot restore anonymous forwarding", async () => {
   delete process.env.SHOPIFY_STORE_DOMAIN;
-  expect((await submit(validReview)).status).toBe(503);
-  expect(providerRequests).toHaveLength(0);
+  delete process.env.JUDGEME_SHOP_DOMAIN;
+  delete process.env.JUDGEME_PRIVATE_API_TOKEN;
+  await expectRetired(request());
+  process.env.REVIEWS_PROVIDER = "typo";
+  expect((await POST(request())).status).toBe(503);
+  expect(providerRequests).toEqual([]);
 });

@@ -69,11 +69,12 @@ for (const value of ["custom", "typo", "JudgeMe"]) {
   });
 }
 
-test("switching back restores Judge.me and browser input cannot select a write provider", async () => {
+test("switching back restores Judge.me reads while the anonymous relay stays retired", async () => {
   process.env.REVIEWS_PROVIDER = "custom";
   expect((await submit()).status).toBe(503);
   process.env.REVIEWS_PROVIDER = "judgeme";
-  expect((await submit()).status).toBe(200);
+  expect((await submit()).status).toBe(410);
+  expect(requests).toEqual([]);
   expect((await getReviews("gid://shopify/Product/123")).count).toBe(1);
   requests = [];
   process.env.REVIEWS_PROVIDER = "custom";
