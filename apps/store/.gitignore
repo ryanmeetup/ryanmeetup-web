@@ -1,4 +1,5 @@
 .next/
 test-results/
+test-results-public-reviews/
 playwright-report/
 .env.local

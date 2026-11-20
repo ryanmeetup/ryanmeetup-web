@@ -13,6 +13,8 @@ import { CustomReviewComposer, type CustomReviewResult } from "./custom-review-c
 import type { ReviewSubmission } from "@ryanmeetup/reviews";
 import { ReviewModeSwitch } from "./review-mode-switch";
 import { ReviewPhotoGallery } from "./review-photo-gallery";
+import { ReviewReply } from "./review-reply";
+import { usePublicReviews } from "./use-public-reviews";
 
 const emptyDraft = { rating: null as number | null, body: "", name: "", email: "" };
 
@@ -41,6 +43,7 @@ async function submitCustomReview(review: ReviewSubmission & { lineId: string | 
 
 export function Reviews({ data, product, reviewAccount, reviewPreview, customAccess }: { data: ReviewsData; product: Pick<Product, "id" | "title" | "featuredImage">; reviewAccount: ReviewAccount | undefined; reviewPreview?: ReviewPreviewState; customAccess?: CustomReviewAccess }) {
   const formId = useId();
+  const publicReviews = usePublicReviews(data, product.id);
   const ratingField = useRef<HTMLDivElement>(null);
   const [showForm, setShowForm] = useState(false);
   const [draft, setDraft] = useState(emptyDraft);
@@ -164,9 +167,9 @@ export function Reviews({ data, product, reviewAccount, reviewPreview, customAcc
           <Heading size="h3" className="text-xl">Reviews are taking a short break</Heading>
           <Text className="mt-2">We couldn&apos;t load reviews for this product. Please try again later.</Text>
         </div>
-      ) : data.reviews.length ? (
-        <ul aria-label="Customer reviews" className="mt-8 grid items-start gap-4 md:grid-cols-2">
-          {data.reviews.map((review) => (
+      ) : publicReviews.reviews.length ? (
+        <ul id={`${formId}-reviews`} aria-label="Customer reviews" aria-busy={publicReviews.pending} className="mt-8 grid items-start gap-4 md:grid-cols-2">
+          {publicReviews.reviews.map((review) => (
             <li key={review.id}>
               <Card size="lg" variant="outline">
                 <article aria-label={`Review by ${review.reviewerName}`} className="min-w-0">
@@ -181,6 +184,7 @@ export function Reviews({ data, product, reviewAccount, reviewPreview, customAcc
                     <Text className="flex min-w-0 items-center gap-1.5 text-sm font-semibold"><FiUser className="size-3.5 shrink-0" aria-hidden /><span className="min-w-0 break-words">{review.reviewerName}</span></Text>
                     {review.verified && <Pill variant="success" size="sm"><FiCheck className="shrink-0" aria-hidden />Verified review</Pill>}
                   </div>
+                  {review.reply && <ReviewReply reply={review.reply} />}
                 </article>
               </Card>
             </li>
@@ -192,6 +196,15 @@ export function Reviews({ data, product, reviewAccount, reviewPreview, customAcc
           <Text className="mt-2">This product is waiting for its first official Ryan review.</Text>
         </div>
       )}
+      {(publicReviews.cursor || publicReviews.pending || publicReviews.message || publicReviews.error) && <div className="mt-6 space-y-3">
+        {publicReviews.cursor && <Button variant="secondary" className="w-full sm:w-auto" loading={publicReviews.pending} loadingText="Loading reviews…"
+          aria-label={publicReviews.pending ? "Loading reviews…" : "Load more reviews"}
+          aria-controls={`${formId}-reviews`} onClick={() => void publicReviews.loadMore()}>Load more reviews</Button>}
+        <div role="status" aria-live="polite" className="text-sm text-black/70 dark:text-white/70">
+          {publicReviews.pending ? "Loading more reviews…" : publicReviews.message}
+        </div>
+        {publicReviews.error && <ErrorCallout>{publicReviews.error}</ErrorCallout>}
+      </div>}
     </section>
   );
 }

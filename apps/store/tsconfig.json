@@ -39,7 +39,9 @@
     ".next-preview/types/**/*.ts",
     ".next-preview/dev/types/**/*.ts",
     ".next-hostcheck/types/**/*.ts",
-    ".next-hostcheck/dev/types/**/*.ts"
+    ".next-hostcheck/dev/types/**/*.ts",
+    ".next-e2e/product-reviews/types/**/*.ts",
+    ".next-e2e/product-reviews/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"
