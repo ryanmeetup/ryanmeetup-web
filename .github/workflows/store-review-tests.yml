@@ -59,7 +59,7 @@ jobs:
       - name: Test public review projections and structured data
         run: STORE_BASE_URL=http://127.0.0.1:39999 npx playwright test tests/product-schema.spec.ts tests/custom-review-replies.spec.ts tests/public-review-page.spec.ts tests/review-verification.spec.ts --workers=1 --output=test-results-public-reviews/unit
       - name: Test review photo processing, collection and private staging
-        run: STORE_BASE_URL=http://127.0.0.1:39999 npx playwright test tests/review-photo-processing.spec.ts tests/review-photo-staging.spec.ts tests/review-photo-actions.spec.ts --workers=1 --output=test-results-public-reviews/photo-unit
+        run: STORE_BASE_URL=http://127.0.0.1:39999 npx playwright test tests/review-photo-processing.spec.ts tests/review-photo-staging.spec.ts tests/review-photo-actions.spec.ts tests/review-photo-reader.spec.ts tests/review-photo-reads.spec.ts --workers=1 --output=test-results-public-reviews/photo-unit
       - name: Test public reviews against isolated reads
         run: npx playwright test --config=playwright.product-reviews.config.ts
       - uses: actions/upload-artifact@v4
