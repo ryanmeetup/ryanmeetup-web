@@ -21,11 +21,9 @@ export const metadata = buildPageMetadata({
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="store-container py-12 sm:py-16">
-      <div className="mx-auto max-w-3xl space-y-8">
-        <Heading size="h1" className="text-4xl sm:text-5xl">My reviews</Heading>
-        {children}
-      </div>
+    <main className="store-container space-y-8 py-10 sm:py-14">
+      <Heading size="h1" className="text-4xl sm:text-5xl">My reviews</Heading>
+      {children}
     </main>
   );
 }
