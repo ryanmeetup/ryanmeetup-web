@@ -1,14 +1,11 @@
 "use client";
 
 import { useId, useState } from "react";
-import { Button, Card, ErrorCallout, Heading, RatingStars, SuccessCallout, Text } from "@ryanmeetup/ui";
-import { FiCalendar, FiUser } from "react-icons/fi";
+import { Button, ErrorCallout, Heading, RatingStars, SuccessCallout, Text } from "@ryanmeetup/ui";
 import type { Product, ReviewsData } from "@/lib/types";
 import type { CustomReviewAccess } from "@/lib/custom-review-access";
 import { CustomReviewComposer, type CustomReviewResult, type CustomReviewSubmission } from "./custom-review-composer";
-import { ReviewPhotoGallery } from "./review-photo-gallery";
-import { ReviewReply } from "./review-reply";
-import { VerifiedBadge } from "./verified-badge";
+import { PublicReviewCard } from "./public-review-card";
 import { usePublicReviews } from "./use-public-reviews";
 
 function RatingSummary({ data, className = "" }: { data: ReviewsData; className?: string }) {
@@ -78,22 +75,7 @@ export function Reviews({ data, product, access }: { data: ReviewsData; product:
         <ul id={`${formId}-reviews`} aria-label="Customer reviews" aria-busy={publicReviews.pending} className="mt-8 grid items-start gap-4 md:grid-cols-2">
           {publicReviews.reviews.map((review) => (
             <li key={review.id}>
-              <Card size="lg" variant="outline">
-                <article aria-label={`Review by ${review.reviewerName}`} className="min-w-0">
-                  <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-                    <RatingStars rating={review.rating} />
-                    <time className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs text-black/70 dark:text-white/70" dateTime={review.createdAt}><FiCalendar className="size-3.5 shrink-0" aria-hidden />{new Date(review.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}</time>
-                  </div>
-                  {review.title && <Heading size="h3" className="mt-3 break-words text-xl">{review.title}</Heading>}
-                  <Text className="mt-2 max-w-prose whitespace-pre-line break-words">{review.body}</Text>
-                  {!!review.photoUrls?.length && <ReviewPhotoGallery urls={review.photoUrls} reviewerName={review.reviewerName} />}
-                  <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <Text className="flex min-w-0 items-center gap-1.5 text-sm font-semibold"><FiUser className="size-3.5 shrink-0" aria-hidden /><span className="min-w-0 break-words">{review.reviewerName}</span></Text>
-                    {review.verification && <VerifiedBadge kind={review.verification} />}
-                  </div>
-                  {review.reply && <ReviewReply reply={review.reply} />}
-                </article>
-              </Card>
+              <PublicReviewCard review={review} />
             </li>
           ))}
         </ul>

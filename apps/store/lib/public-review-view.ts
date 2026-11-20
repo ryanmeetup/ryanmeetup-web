@@ -1,9 +1,21 @@
 import { decodeReviewCursor, publicReviewPageSchema } from "@ryanmeetup/reviews";
-import type { PublicReviewPage } from "@ryanmeetup/reviews";
+import type { PublicReview, PublicReviewPage } from "@ryanmeetup/reviews";
 import { publishedReviewPhotoUrl } from "./review-photo-hosts";
 import type { Review, ReviewsData } from "./types";
 
 export const PUBLIC_REVIEW_PAGE_SIZE = 20;
+
+/** The same public fields and approved photo paths in every Store review card. */
+export function toReview(review: PublicReview): Review {
+  const photoUrls = review.photos.flatMap((photo) => publishedReviewPhotoUrl(photo.url) ?? []);
+  return {
+    id: review.id, rating: review.rating, title: review.title, body: review.body,
+    reviewerName: review.displayName, createdAt: review.publishedAt,
+    verification: review.verifiedPurchase ? "purchase" as const : null,
+    ...(photoUrls.length ? { photoUrls } : {}),
+    ...(review.reply ? { reply: { body: review.reply.body, publishedAt: review.reply.publishedAt } } : {}),
+  };
+}
 
 /** Shared server/browser projection; no database client or buyer data belongs here. */
 export function toReviewsData(page: PublicReviewPage): Extract<ReviewsData, { status: "available" }> {
@@ -11,16 +23,7 @@ export function toReviewsData(page: PublicReviewPage): Extract<ReviewsData, { st
     status: "available",
     averageRating: page.summary.average,
     count: page.summary.count,
-    reviews: page.reviews.map((review) => {
-      const photoUrls = review.photos.flatMap((photo) => publishedReviewPhotoUrl(photo.url) ?? []);
-      return {
-        id: review.id, rating: review.rating, title: review.title, body: review.body,
-        reviewerName: review.displayName, createdAt: review.publishedAt,
-        verification: review.verifiedPurchase ? "purchase" as const : null,
-        ...(photoUrls.length ? { photoUrls } : {}),
-        ...(review.reply ? { reply: { body: review.reply.body, publishedAt: review.reply.publishedAt } } : {}),
-      };
-    }),
+    reviews: page.reviews.map(toReview),
     ...(page.nextCursor && page.scope.productIds.length === 1 ? {
       pagination: { productId: page.scope.productIds[0], nextCursor: page.nextCursor },
     } : {}),
