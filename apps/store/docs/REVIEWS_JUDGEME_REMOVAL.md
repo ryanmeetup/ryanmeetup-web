@@ -13,13 +13,13 @@ the order below so each commit still builds and passes its tests.
 
 ## Before deleting anything
 
-- [ ] **Decide what happens to existing Judge.me reviews.** Since the switch,
-      product pages show only custom reviews from RMT, so published Judge.me
-      reviews and their rating totals no longer appear (including in product
-      JSON-LD). Either import them into `store_reviews` (no import exists yet:
-      they have no verified order line, so they would arrive as reviews
-      without a matching order) or accept losing them, and export a copy from
-      Judge.me first either way.
+- [x] **Existing Judge.me reviews: left as is (decided November 20, 2026).**
+      They are not imported. Since the switch, product pages show only custom
+      reviews from RMT, so published Judge.me reviews and their rating totals
+      (including product JSON-LD) no longer appear on the storefront. They
+      stay in Judge.me untouched.
+- [ ] Before uninstalling Judge.me, export its reviews so a copy exists
+      outside the app.
 - [ ] Confirm nobody still relies on the localhost **Review mode** switch to
       compare Judge.me and custom side by side.
 
