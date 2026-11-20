@@ -4,7 +4,7 @@ import type { ReviewEligibilityLookup } from "./review-purchases";
 import { isSameOriginRequest, privateJson as reply } from "./request-guard";
 import { prepareReviewPhoto } from "./review-photo-processing";
 import type { getReviewPhotoStaging } from "./review-photo-staging";
-import { readReviewPhotoBytes } from "./review-photo-bytes";
+import { readReviewPhotoBytes } from "@ryanmeetup/reviews/server";
 import { matchesReviewViewer, reviewViewerChanged, reviewViewerKey } from "./review-viewer";
 
 // Raw bytes stay below the hosting platform's 4.5 MB request limit.

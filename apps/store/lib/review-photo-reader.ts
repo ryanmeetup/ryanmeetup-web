@@ -1,9 +1,8 @@
-import { createHash } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buyerReviewPhotoSchema, buyerReviewPhotoSelectionSchema } from "@ryanmeetup/reviews";
 import type { BuyerReviewPhoto } from "@ryanmeetup/reviews";
 import { getStoreDatabase, getStoreShopId } from "./store-database";
-import { readReviewPhotoBytes } from "./review-photo-bytes";
+import { loadVerifiedReviewPhoto } from "@ryanmeetup/reviews/server";
 
 const uuid = (value: unknown): value is string => typeof value === "string" && /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(value);
 const numeric = (value: unknown): value is string => typeof value === "string" && /^[1-9][0-9]{0,19}$/.test(value);
@@ -48,22 +47,21 @@ export function createReviewPhotoReader({ database, shopId }: { database: Supaba
       subject(input.subject);
       if (!uuid(input.id) || !numeric(input.productId)) throw new ReviewPhotoReadError();
       const scope = { p_subject: input.subject, p_product_id: input.productId, p_id: input.id };
-      const initial = await rpc("store_get_review_photo_preview", scope);
-      if (initial === null) return null;
-      const photo = context(initial, input.id, input.productId);
       try {
-        // Stream through the private client, with a hard bound before buffering. Never issue a URL.
-        const result = await database.storage.from("store-review-photos")
-          .download(`${shopId}/${input.id}.webp`, {}, { signal: AbortSignal.timeout(10_000), cache: "no-store" }).asStream();
-        if (result.error || !result.data) throw new ReviewPhotoReadError();
-        const bytes = await readReviewPhotoBytes(result.data, photo.byteSize);
-        if (!bytes || bytes === "too_large" || bytes.length !== photo.byteSize || createHash("sha256").update(bytes).digest("hex") !== photo.sha256) throw new ReviewPhotoReadError();
-        // Discard, expiry, removed selection or changed metadata during download revokes this response.
-        const latest = await rpc("store_get_review_photo_preview", scope);
-        if (latest === null) return null;
-        const checked = context(latest, input.id, input.productId);
-        if (checked.sha256 !== photo.sha256 || checked.byteSize !== photo.byteSize || checked.width !== photo.width || checked.height !== photo.height) throw new ReviewPhotoReadError();
-        return bytes;
+        return await loadVerifiedReviewPhoto({
+          context: async () => {
+            const value = await rpc("store_get_review_photo_preview", scope);
+            if (value === null) return null;
+            const photo = context(value, input.id, input.productId);
+            return { id: photo.id, width: photo.width, height: photo.height, sha256: photo.sha256, byteSize: photo.byteSize };
+          },
+          download: async () => {
+            const result = await database.storage.from("store-review-photos")
+              .download(`${shopId}/${input.id}.webp`, {}, { signal: AbortSignal.timeout(10_000), cache: "no-store" }).asStream();
+            if (result.error) throw new ReviewPhotoReadError();
+            return result.data;
+          },
+        });
       } catch { throw new ReviewPhotoReadError(); }
     },
   };
