@@ -165,6 +165,38 @@ and cannot revive revoked sessions. Revocation erases the token envelope and
 advances the revision, so an in-flight stale refresh cannot overwrite logout.
 The store's encryption context additionally binds record identity and expiry.
 
+## Store review photo staging
+
+RMT-only migration `20261120220000` adds `store_review_photo_drafts` and the
+private `store-review-photos` bucket. Draft rows have RLS and explicit
+service-role grants; anonymous users and Tasks members have no table/RPC
+access. The invoker, empty-search-path photo RPCs scope reads and transitions
+by shop, buyer subject and product. The Store must establish that subject and
+product through the authenticated server flow before calling these private
+primitives; the RPCs do not independently authenticate a Shopify buyer.
+
+Allocation serializes each buyer/product quota with a transaction advisory
+lock. At most five unexpired uploading/ready rows are active, with an initial
+one-hour staging expiry. A scoped request key reuses the same content digest,
+dimensions and size; changed content conflicts and discarded/expired keys do
+not revive. Finalization requires the matching digest and current ownership/
+expiry; discard is idempotent. No review is created or published by staging.
+
+Storage paths are derived from the pinned shop and generated draft UUID, never
+a caller path or buyer identity. Only processed WebP objects up to 4 MiB are
+stored. A restrictive `storage.objects` policy excludes this bucket for
+anonymous/authenticated roles even if a permissive policy exists elsewhere;
+other buckets retain their current behavior. Service-role access remains
+project-wide, so the key stays server-only. No signed browser capability or
+public object URL is issued by the staging service.
+
+Lost upload responses are recovered only after comparing the stored bytes
+with the exact expected digest. Uncertain database finalization never deletes
+an object. Discard must be confirmed in the owner scope before object removal;
+failed removal leaves a private discarded record for explicit retry/cleanup.
+Revision association, media moderation/publication and expiry cleanup remain
+unimplemented; the browser upload endpoint is not enabled by these primitives.
+
 ## Store buyer review management
 
 The storefront's `/reviews/mine` and `GET/POST /api/reviews/mine` use its encrypted

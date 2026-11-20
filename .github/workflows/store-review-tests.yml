@@ -30,11 +30,13 @@ jobs:
         working-directory: .
       - run: npx playwright install --with-deps chromium
       - name: Test buyer HTTP and backend contracts
-        run: npx playwright test tests/my-review-actions.spec.ts tests/custom-review-submission.spec.ts tests/review-backend.spec.ts --workers=1
+        run: npx playwright test tests/my-review-actions.spec.ts tests/custom-review-submission.spec.ts tests/review-backend.spec.ts tests/review-diagnostics.spec.ts tests/reviews-api.spec.ts tests/review-provider.spec.ts tests/review-preview-api.spec.ts --workers=1
       - name: Test buyer review management against isolated transports
         run: npm run test:e2e:my-reviews
       - name: Test public review projections and structured data
-        run: STORE_BASE_URL=http://127.0.0.1:39999 npx playwright test tests/product-schema.spec.ts tests/custom-review-replies.spec.ts tests/public-review-page.spec.ts --workers=1 --output=test-results-public-reviews/unit
+        run: STORE_BASE_URL=http://127.0.0.1:39999 npx playwright test tests/product-schema.spec.ts tests/custom-review-replies.spec.ts tests/public-review-page.spec.ts tests/review-verification.spec.ts tests/reviews-data.spec.ts --workers=1 --output=test-results-public-reviews/unit
+      - name: Test review photo processing and private staging
+        run: STORE_BASE_URL=http://127.0.0.1:39999 npx playwright test tests/review-photo-processing.spec.ts tests/review-photo-staging.spec.ts --workers=1 --output=test-results-public-reviews/photo-unit
       - name: Test public reviews against isolated reads
         run: npx playwright test --config=playwright.product-reviews.config.ts
       - uses: actions/upload-artifact@v4
