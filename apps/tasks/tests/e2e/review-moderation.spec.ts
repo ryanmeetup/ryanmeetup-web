@@ -51,34 +51,34 @@ test("loads pending reviews on the server and compares a waiting edit with the a
 
 test("publishes the exact one-star revision and preserves all version digits", async ({ page, request }) => {
   await signIn(page); await page.goto("/store-reviews");
+  // Publishing saves on click, with no confirmation or note.
   await card(page, 1).getByRole("button", { name: "Publish review", exact: true }).click();
-  const dialog = page.getByRole("dialog", { name: "Publish review" });
-  await expect(dialog).toContainText("The size ran small.");
-  await dialog.getByRole("button", { name: "Publish review", exact: true }).click();
   await expect(page.getByRole("status").filter({ hasText: "Publish review: saved." })).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(card(page, 1)).toHaveCount(0);
   await expect(page.locator("#desktop-workspace-navigation").getByRole("link", { name: "Store Reviews 2 waiting reviews" })).toBeVisible();
   const { calls } = await state(request);
   expect(calls).toHaveLength(1);
-  expect(calls[0]).toMatchObject({ p_action: "approve", p_review_id: id(1), p_revision_id: id(101), p_expected_updated_at: "2026-11-18T12:00:00.123456Z" });
+  expect(calls[0]).toMatchObject({ p_action: "approve", p_review_id: id(1), p_revision_id: id(101), p_expected_updated_at: "2026-11-18T12:00:00.123456Z", p_note: null });
   await queue(page, "Published");
   await expect(card(page, 1).getByRole("img", { name: "1 out of 5 stars" })).toBeVisible();
 });
 
-test("requires a private rejection reason and keeps the approved version", async ({ page, request }) => {
+test("requires a buyer-facing rejection reason and keeps the approved version", async ({ page, request }) => {
   await signIn(page); await page.goto("/store-reviews");
   await card(page, 2).getByRole("button", { name: "Reject edit" }).click();
   const dialog = page.getByRole("dialog", { name: "Reject edit" });
-  await expect(dialog.getByLabel("Private reason")).toHaveAttribute("required", "");
+  await expect(dialog.getByLabel("Reason for the buyer")).toHaveAttribute("required", "");
+  await expect(dialog).toContainText("The buyer sees this on My reviews");
   await expect(dialog.getByRole("button", { name: "Reject edit", exact: true })).toBeDisabled();
-  await dialog.getByLabel("Private reason").fill("  Contains private information  ");
+  await dialog.getByLabel("Reason for the buyer").fill("  Contains private information  ");
   await dialog.getByRole("button", { name: "Reject edit", exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await queue(page, "Published");
   await expect(card(page, 2).getByRole("region", { name: "Published version" })).toContainText("Original approved text.");
   // Rejected text is kept beside the public version, never deleted.
   await expect(card(page, 2).getByRole("region", { name: "Rejected edit" })).toContainText("Updated after washing.");
-  await expect(card(page, 2)).toContainText("Private reason: Contains private information");
+  await expect(card(page, 2)).toContainText("Reason shown to the buyer: Contains private information");
   await card(page, 2).getByRole("button", { name: /Recent history/ }).click();
   await expect(card(page, 2)).toContainText("Test Member");
   expect((await state(request)).calls[0].p_note).toBe("Contains private information");
@@ -89,19 +89,15 @@ test("keeps a rejected review in its own queue and can publish it anyway", async
   await expect(card(page, 1).getByRole("button", { name: /Recent history/ })).toHaveCount(0);
   await card(page, 1).getByRole("button", { name: "Reject review", exact: true }).click();
   const reject = page.getByRole("dialog", { name: "Reject review" });
-  await reject.getByLabel("Private reason").fill("Not about the shirt.");
+  await reject.getByLabel("Reason for the buyer").fill("Not about the shirt.");
   await reject.getByRole("button", { name: "Reject review", exact: true }).click();
   await expect(card(page, 1)).toHaveCount(0);
   await queue(page, "Rejected");
   await expect(card(page, 1).getByRole("region", { name: "Rejected version" })).toContainText("The size ran small.");
-  await expect(card(page, 1)).toContainText("Private reason: Not about the shirt.");
+  await expect(card(page, 1)).toContainText("Reason shown to the buyer: Not about the shirt.");
   await expect(card(page, 1).getByText("Rejected", { exact: true }).first()).toBeVisible(); // The status chip.
   await expect(card(page, 1).getByRole("button", { name: /Recent history \(2\)/ })).toBeVisible();
   await card(page, 1).getByRole("button", { name: "Publish anyway" }).click();
-  const publish = page.getByRole("dialog", { name: "Publish anyway" });
-  await expect(publish).toContainText("The size ran small.");
-  await expect(publish.getByLabel("Private reason")).not.toHaveAttribute("required", "");
-  await publish.getByRole("button", { name: "Publish anyway", exact: true }).click();
   await expect(page.getByRole("status").filter({ hasText: "Publish anyway: saved." })).toBeVisible();
   await expect(page.getByText("No rejected reviews")).toBeVisible();
   const { calls } = await state(request);
@@ -144,10 +140,8 @@ test("hides with a reason and restores the approved review with its audit histor
 
 test("approving a hidden edit keeps it hidden and withdrawn reviews offer no decisions", async ({ page }) => {
   await signIn(page); await page.goto("/store-reviews"); await queue(page, "Hidden");
+  await expect(card(page, 3)).toContainText("Approving an edit keeps it hidden.");
   await card(page, 3).getByRole("button", { name: "Approve revision" }).click();
-  const dialog = page.getByRole("dialog", { name: "Approve revision" });
-  await expect(dialog).toContainText("The review stays hidden");
-  await dialog.getByRole("button", { name: "Approve revision", exact: true }).click();
   await expect(card(page, 3)).toContainText("A hidden edit.");
   await expect(card(page, 3).getByText("Hidden", { exact: true })).toBeVisible();
   await queue(page, "All reviews");
@@ -162,7 +156,6 @@ test("refreshes conflicts without automatically repeating a decision", async ({ 
   await configure(request, { conflictOnce: true });
   await signIn(page); await page.goto("/store-reviews");
   await card(page, 1).getByRole("button", { name: "Publish review", exact: true }).click();
-  await page.getByRole("dialog").getByRole("button", { name: "Publish review", exact: true }).click();
   await expect(page.getByRole("alert").filter({ hasText: "read the latest text before deciding" })).toBeVisible();
   await expect(card(page, 1)).toContainText("The buyer replaced this text.");
   expect((await state(request)).calls).toHaveLength(1);
@@ -172,7 +165,6 @@ test("a saved decision with a failed reload blocks stale actions until a fresh r
   await configure(request, { failReadAfterSave: true });
   await signIn(page); await page.goto("/store-reviews");
   await card(page, 1).getByRole("button", { name: "Publish review", exact: true }).click();
-  await page.getByRole("dialog").getByRole("button", { name: "Publish review", exact: true }).click();
   await expect(page.getByRole("alert").filter({ hasText: "Your decision was saved" })).toBeVisible();
   await expect(page.locator("article[data-testid^='review-']")).toHaveCount(0);
   await configure(request, { failRead: false, failReadAfterSave: false });
@@ -190,18 +182,14 @@ test("blocks duplicate decisions and dismissal while a save is pending", async (
     if (route.request().method() === "POST") await waiting;
     await route.continue();
   });
-  await card(page, 1).getByRole("button", { name: "Publish review", exact: true }).click();
-  const dialog = page.getByRole("dialog", { name: "Publish review" });
+  const publish = card(page, 1).getByRole("button", { name: "Publish review", exact: true });
   try {
-    await dialog.getByRole("button", { name: "Publish review", exact: true }).click();
-    await expect(dialog.getByRole("button", { name: "Cancel" })).toBeDisabled();
-    await expect(dialog.getByLabel("Private reason")).toBeDisabled();
-    await expect(dialog.getByRole("button", { name: "Close dialog" })).toHaveCount(0);
-    await page.keyboard.press("Escape");
-    await expect(dialog.getByRole("heading", { name: "Publish review", exact: true })).toBeVisible();
+    await publish.click();
+    await expect(publish).toBeDisabled();
     await expect(card(page, 2).getByRole("button", { name: "Publish edit", includeHidden: true })).toBeDisabled();
+    await publish.click({ force: true });
   } finally { release(); }
-  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole("status").filter({ hasText: "Publish review: saved." })).toBeVisible();
   expect((await state(request)).calls).toHaveLength(1);
 });
 
@@ -212,7 +200,6 @@ test("a lost acknowledgement requires refresh without repeating the committed wr
     else await route.continue();
   });
   await card(page, 1).getByRole("button", { name: "Publish review", exact: true }).click();
-  await page.getByRole("dialog").getByRole("button", { name: "Publish review", exact: true }).click();
   await expect(page.getByRole("alert").filter({ hasText: "could not confirm this decision" })).toBeVisible();
   await expect(page.locator("article[data-testid^='review-']")).toHaveCount(0);
   expect((await state(request)).calls).toHaveLength(1);
@@ -371,7 +358,7 @@ test("fits mobile and desktop boundary widths in both themes", async ({ page }, 
       if (width === 390 || width === 1280) {
         await card(page, 1).getByRole("button", { name: "Reject review" }).click();
         const dialog = page.getByRole("dialog", { name: "Reject review" });
-        await expect(dialog.getByLabel("Private reason")).toBeFocused();
+        await expect(dialog.getByLabel("Reason for the buyer")).toBeFocused();
         await page.screenshot({ path: testInfo.outputPath(`${theme}-${width}-dialog.png`) });
         await dialog.getByRole("button", { name: "Cancel" }).click();
       }
@@ -436,7 +423,6 @@ test("photos need separate decisions and remain in the waiting queue after text 
   await signIn(page); await page.goto("/store-reviews");
   await expect(card(page, 1).getByRole("button", { name: "Approve photo", exact: true })).toHaveCount(2);
   await card(page, 1).getByRole("button", { name: "Publish review", exact: true }).click();
-  await page.getByRole("dialog", { name: "Publish review", exact: true }).getByRole("button", { name: "Publish review", exact: true }).click();
   await expect(card(page, 1)).toBeVisible();
   const approve = card(page, 1).getByRole("button", { name: "Approve photo", exact: true });
   await expect(approve.first()).toBeEnabled(); await approve.first().click();

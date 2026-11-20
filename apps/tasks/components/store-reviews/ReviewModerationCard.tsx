@@ -6,7 +6,7 @@ import { useId, useState } from "react";
 import { FiChevronDown, FiEdit2, FiEye, FiEyeOff, FiMessageSquare, FiTrash2 } from "react-icons/fi";
 import { AnimatedCollapse, Button, Card, Heading, IconButton, Kicker, Pill, RatingStars, Text } from "@ryanmeetup/ui";
 import { formatTimestamp } from "@/lib/date-format";
-import { moderationActionLabel, reviewModerationActions, reviewReplyActions } from "@/lib/store-reviews/moderation";
+import { moderationActionLabel, moderationReasonIsPublic, reviewModerationActions, reviewReplyActions } from "@/lib/store-reviews/moderation";
 import type { ModerationReview, ModerationRevision, StaffReviewAction } from "@/lib/store-reviews/moderation";
 
 import { ReviewModerationPhotos } from "./ReviewModerationPhotos";
@@ -69,7 +69,7 @@ export function ReviewModerationCard({ review, disabled, staffNames, onSelect, o
         {!review.pending && !review.published && !review.rejected && version(review.latest, "Last submitted version")}
       </div>
       {review.rejected && <div className="space-y-1">
-        {rejectionNote && <Text className="whitespace-pre-wrap text-sm wrap-anywhere">Private reason: {rejectionNote}</Text>}
+        {rejectionNote && <Text className="whitespace-pre-wrap text-sm wrap-anywhere">{review.state === "active" ? "Reason shown to the buyer" : "Rejection reason"}: {rejectionNote}</Text>}
         <Text className="text-sm">{review.published ? "This edit is kept, not deleted. The published version stays live until you publish the edit." :
           "Kept off the storefront, not deleted. You can still publish it."}</Text>
       </div>}
@@ -117,10 +117,10 @@ export function ReviewModerationCard({ review, disabled, staffNames, onSelect, o
             {review.recentEvents.map((event, index) => <li key={`${event.createdAt}-${index}`} className="space-y-1 text-sm">
               <Text className="text-sm"><span className="font-semibold">{eventLabels[event.action] ?? event.action}</span> · {event.actorKind === "buyer" ? "Buyer" : staffNames[event.actor ?? ""] || "Staff member"}</Text>
               <Text className="text-xs"><time dateTime={event.createdAt}>{formatTimestamp(event.createdAt)}</time></Text>
-              {event.note && <Text className="whitespace-pre-wrap text-sm wrap-anywhere">Private reason: {event.note}</Text>}
+              {event.note && <Text className="whitespace-pre-wrap text-sm wrap-anywhere">{moderationReasonIsPublic(event.action) ? "Reason given to the buyer" : "Private reason"}: {event.note}</Text>}
             </li>)}
           </ol>
-          <Text className="mt-3 text-xs">Up to 10 recent events. Reasons are visible only to staff.</Text>
+          <Text className="mt-3 text-xs">Up to 10 recent events. Rejection reasons are shown to the buyer until they resubmit; other reasons stay with staff.</Text>
         </AnimatedCollapse>
       </div>}
     </Card>

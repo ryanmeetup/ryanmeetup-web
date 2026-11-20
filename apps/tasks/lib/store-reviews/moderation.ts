@@ -85,6 +85,17 @@ export function moderationReasonRequired(action: ModerationAction) {
   return action === "reject" || action === "hide";
 }
 
+/** Publishing needs no confirmation and carries no note; every other decision opens a dialog. */
+export type PublishAction = Extract<ModerationAction, "approve" | "republish">;
+export function isPublishAction(action: StaffReviewAction): action is PublishAction {
+  return action === "approve" || action === "republish";
+}
+
+/** A rejection reason is written for the buyer, who reads it on My reviews; other notes stay with staff. */
+export function moderationReasonIsPublic(action: ModerationAction | string) {
+  return action === "reject" || action === "rejected";
+}
+
 export function reviewReplyActions(review: ModerationReview): ReplyAction[] {
   if (review.state === "withdrawn" || !review.published) return [];
   return review.reply ? ["reply-set", "reply-remove"] : ["reply-set"];

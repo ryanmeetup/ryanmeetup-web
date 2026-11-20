@@ -21,7 +21,9 @@ export function storeReviewModerationSchema(value: unknown): ModerationDecision 
   if ((action === "approve" || action === "reject" || action === "republish") !== (input.revisionId !== null)) return null;
   const note = typeof input.note === "string" ? input.note.trim() || null : null;
   if ((note && ([...note].length > 1000 || /[\u0000-\u0008\u000b-\u001f\u007f]/u.test(note))) ||
-    ((action === "hide" || action === "reject") && !note)) return null;
+    ((action === "hide" || action === "reject") && !note) ||
+    // Publishing is a single click with nothing to explain.
+    ((action === "approve" || action === "republish") && note)) return null;
   return { action, reviewId: input.reviewId, expectedUpdatedAt: input.expectedUpdatedAt, revisionId: input.revisionId, note };
 }
 

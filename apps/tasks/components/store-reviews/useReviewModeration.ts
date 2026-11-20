@@ -5,7 +5,7 @@ import type { StaffReviewPhoto } from "@ryanmeetup/reviews";
 import { notifyStoreReviewsChanged } from "@/hooks/useStoreReviewPendingCount";
 import { ApiMutationError } from "@/lib/mutation-client";
 import { saveReviewPhotoDecision, deleteStoreReview, fetchModerationPage, saveModerationDecision, saveOfficialReply } from "@/lib/store-reviews/moderation-client";
-import { moderationActionLabel, moderationRevisionId, reviewModerationActions, reviewReplyActions } from "@/lib/store-reviews/moderation";
+import { isPublishAction, moderationActionLabel, moderationRevisionId, reviewModerationActions, reviewReplyActions } from "@/lib/store-reviews/moderation";
 import type { ModerationFilter, ModerationInitialState, ModerationPage, ModerationReview, ReviewDeletionReason, StaffReviewAction } from "@/lib/store-reviews/moderation";
 
 type PhotoAction = "photo-approve" | "photo-reject";
@@ -48,7 +48,10 @@ export function useReviewModeration(initial: ModerationInitialState) {
     // Any review can be deleted; the dialog limits it to policy reasons.
     const allowed: StaffReviewAction[] = [...reviewModerationActions(review), ...reviewReplyActions(review), "delete"];
     if (disabled || active.current || !allowed.includes(action)) return;
-    setSelection({ review, action: action as Exclude<StaffReviewAction, PhotoAction> });
+    const next = { review, action: action as Exclude<StaffReviewAction, PhotoAction> };
+    // Publishing saves on click: there is nothing to confirm or explain.
+    if (isPublishAction(action)) void run(next, null);
+    else setSelection(next);
   }
   function selectPhoto(review: ModerationReview, revisionId: string, photo: StaffReviewPhoto, action: PhotoAction) {
     if (!disabled && !active.current && review.state !== "withdrawn") setSelection({ review, revisionId, photo, action });

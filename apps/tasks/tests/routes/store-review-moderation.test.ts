@@ -131,7 +131,9 @@ describe("owner review moderation", () => {
     }
     for (const body of [{ ...decision, shopId: "999" }, { ...decision, actor }, { ...decision, action: ["approve"] },
       { ...decision, revisionId: null }, { ...decision, action: "republish", revisionId: null }, { ...decision, expectedUpdatedAt: time.slice(0, 23) + "Z" },
-      { ...decision, action: "hide", revisionId: null, note: " " }, { ...decision, action: "reject", note: "x".repeat(1001) }]) {
+      { ...decision, action: "hide", revisionId: null, note: " " }, { ...decision, action: "reject", note: "x".repeat(1001) },
+      // Publishing carries no note.
+      { ...decision, note: "Looks good" }, { ...decision, action: "republish", note: "Changed my mind" }]) {
       expect((await POST(post(body))).status).toBe(400);
     }
     expect(mocks.rpc).not.toHaveBeenCalled();

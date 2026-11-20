@@ -3,7 +3,7 @@
 import { FiRefreshCw } from "react-icons/fi";
 import { Button, Card, DropdownSelect, EmptyState, ErrorCallout, Spinner, Text } from "@ryanmeetup/ui";
 import { isModerationFilter } from "@/lib/store-reviews/moderation";
-import type { ModerationInitialState } from "@/lib/store-reviews/moderation";
+import type { ModerationAction, ModerationInitialState, PublishAction } from "@/lib/store-reviews/moderation";
 import { useReviewModeration } from "./useReviewModeration";
 import { ReviewModerationCard } from "./ReviewModerationCard";
 import { ReviewPhotoDecisionDialog } from "./ReviewPhotoDecisionDialog";
@@ -55,7 +55,7 @@ export function ReviewModerationQueue({ initial, staffNames }: { initial: Modera
       <ReviewReplyDialog key={`${queue.selection.review.id}-${queue.selection.action}`} review={queue.selection.review}
         remove={queue.selection.action === "reply-remove"} saving={Boolean(queue.busy)} onClose={queue.dismiss} onSubmit={queue.decide} /> :
       <ReviewModerationDialog key={`${queue.selection.review.id}-${queue.selection.action}`}
-        selection={{ action: queue.selection.action, review: queue.selection.review }}
+        selection={{ action: queue.selection.action as Exclude<ModerationAction, PublishAction>, review: queue.selection.review }}
         saving={Boolean(queue.busy)} onClose={queue.dismiss} onSubmit={queue.decide} />)}
   </div>;
 }
