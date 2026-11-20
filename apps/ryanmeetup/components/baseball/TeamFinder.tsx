@@ -5,6 +5,7 @@ import {
   ClearFiltersButton,
   DropdownSelect,
   EmptyState,
+  Pagination,
   PendingResults,
   SearchInput,
   SectionHeader,
@@ -20,7 +21,9 @@ import {
   getStateName,
   getStateOptions,
   getTeamOptions,
+  isPartialZip,
   isValidZip,
+  matchesSearch,
   sortByDate,
   teamsNearPoint,
   toCitySlug,
@@ -42,32 +45,83 @@ type GeocodeResult = {
 };
 
 const ALL = "all";
-const ZIP_DEBOUNCE_MS = 400;
+const SEARCH_DEBOUNCE_MS = 400;
+// The search field and filter buttons share one height so the row lines up.
+const FILTER_HEIGHT = "h-10";
+const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
+const DEFAULT_PAGE_SIZE = PAGE_SIZE_OPTIONS[0];
+
+/**
+ * The `q` value for the search field, or null while a zip code is half typed.
+ * Five digits run the nearby search; anything else matches names and places.
+ */
+const getSearchQuery = (value: string): string | null => {
+  const next = value.trim();
+  return isPartialZip(next) ? null : next;
+};
 
 const TeamFinder = ({ teams }: TeamFinderProps) => {
-  const [state, setState] = useQueryParamState("state", ALL);
-  const [city, setCity] = useQueryParamState("city", ALL);
-  const [team, setTeam] = useQueryParamState("team", ALL);
-  const [date, setDate] = useQueryParamState("date", ALL);
-  const [urlZip, setUrlZip] = useQueryParamState("zip");
-  const [zipInput, setZipInput] = useState(urlZip);
+  const [pageParam, setPageParam] = useQueryParamState("page", "1");
+  const [perPageParam, setPerPageParam] = useQueryParamState(
+    "perPage",
+    String(DEFAULT_PAGE_SIZE),
+  );
+  // Any change to what's being searched starts the list back on page one.
+  const resetPage = () => setPageParam("1");
+  const withPageReset =
+    (setter: (value: string) => void) => (value: string) => {
+      setter(value);
+      resetPage();
+    };
+  const [state, setStateParam] = useQueryParamState("state", ALL);
+  const [city, setCityParam] = useQueryParamState("city", ALL);
+  const [team, setTeamParam] = useQueryParamState("team", ALL);
+  const [date, setDateParam] = useQueryParamState("date", ALL);
+  const [legacyZip, setLegacyZip] = useQueryParamState("zip");
+  const [urlQuery, setUrlQueryParam] = useQueryParamState("q");
+  const setState = withPageReset(setStateParam);
+  const setCity = withPageReset(setCityParam);
+  const setTeam = withPageReset(setTeamParam);
+  const setDate = withPageReset(setDateParam);
+  const [searchInput, setSearchInput] = useState(urlQuery || legacyZip);
   const [geocode, setGeocode] = useState<GeocodeResult | null>(null);
+  const urlZip = isValidZip(urlQuery) ? urlQuery.trim() : "";
+  const textQuery = urlZip ? "" : urlQuery;
+
+  const applySearch = (query: string) => {
+    setUrlQueryParam(query);
+    resetPage();
+  };
+
+  // Links from before search moved to `q` used `?zip=`; fold them in so
+  // those bookmarks keep working.
+  useEffect(() => {
+    if (!legacyZip) return;
+    if (!urlQuery) setUrlQueryParam(legacyZip);
+    setLegacyZip("");
+  }, [legacyZip, setLegacyZip, setUrlQueryParam, urlQuery]);
 
   // Keep the field in step with the URL when it changes elsewhere (back
-  // button, Clear filters, a shared link).
+  // button, Clear filters, a shared link), without trimming what the reader
+  // is mid-way through typing.
   useEffect(() => {
-    setZipInput(urlZip);
-  }, [urlZip]);
+    setSearchInput((current) =>
+      getSearchQuery(current) === urlQuery ? current : urlQuery,
+    );
+  }, [urlQuery]);
 
-  // The field updates on every keystroke; the URL and the search follow once
-  // the reader has stopped typing a complete zip (or cleared it).
+  // The field updates on every keystroke; the URL and the results follow
+  // once the reader stops typing.
   useEffect(() => {
-    const next = zipInput.trim();
-    if (next === urlZip || (next && !isValidZip(next))) return;
+    const next = getSearchQuery(searchInput);
+    if (next === null || next === urlQuery) return;
 
-    const timer = window.setTimeout(() => setUrlZip(next), ZIP_DEBOUNCE_MS);
+    const timer = window.setTimeout(() => {
+      setUrlQueryParam(next);
+      setPageParam("1");
+    }, SEARCH_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
-  }, [setUrlZip, urlZip, zipInput]);
+  }, [searchInput, setPageParam, setUrlQueryParam, urlQuery]);
 
   useEffect(() => {
     if (!isValidZip(urlZip)) return;
@@ -100,9 +154,10 @@ const TeamFinder = ({ teams }: TeamFinderProps) => {
 
   // Only trust a lookup for the zip that's actually in the URL.
   const activeGeocode = geocode?.zip === urlZip && isValidZip(urlZip) ? geocode : null;
-  const typedPartialZip = zipInput.trim() !== "" && !isValidZip(zipInput);
+  const pendingQuery = getSearchQuery(searchInput);
+  const typedPartialZip = pendingQuery === null;
   const isPending =
-    (!typedPartialZip && zipInput.trim() !== urlZip) ||
+    (pendingQuery !== null && pendingQuery !== urlQuery) ||
     (isValidZip(urlZip) && !activeGeocode);
 
   const stateOptions = useMemo(() => getStateOptions(teams), [teams]);
@@ -119,24 +174,46 @@ const TeamFinder = ({ teams }: TeamFinderProps) => {
       city: city === ALL ? undefined : city,
       team: team === ALL ? undefined : team,
       date: date === ALL ? undefined : date,
-    });
+    }).filter((entry) => matchesSearch(entry, textQuery));
 
     if (activeGeocode?.point) {
       return teamsNearPoint(filtered, activeGeocode.point);
     }
     return { results: sortByDate(filtered).map((entry) => ({ team: entry })), outOfRange: false };
-  }, [activeGeocode, city, date, state, team, teams]);
+  }, [activeGeocode, city, date, state, team, teams, textQuery]);
+
+  const parsedPerPage = Number.parseInt(perPageParam, 10);
+  const pageSize = (PAGE_SIZE_OPTIONS as readonly number[]).includes(
+    parsedPerPage,
+  )
+    ? parsedPerPage
+    : DEFAULT_PAGE_SIZE;
+  const totalPages = Math.max(1, Math.ceil(results.length / pageSize));
+  // Clamp rather than rewrite the URL, so a stale ?page= still shows something.
+  const page = Math.min(
+    Math.max(1, Number.parseInt(pageParam, 10) || 1),
+    totalPages,
+  );
+  const pagedResults = results.slice((page - 1) * pageSize, page * pageSize);
+  const showPagination = results.length > DEFAULT_PAGE_SIZE;
+
+  const scrollToResults = () =>
+    document.getElementById("find-results")?.scrollIntoView({ block: "start" });
 
   const hasFilters =
-    state !== ALL || city !== ALL || team !== ALL || date !== ALL || urlZip !== "";
+    state !== ALL ||
+    city !== ALL ||
+    team !== ALL ||
+    date !== ALL ||
+    urlQuery !== "";
 
   const clearFilters = () => {
     setState(ALL);
     setCity(ALL);
     setTeam(ALL);
     setDate(ALL);
-    setUrlZip("");
-    setZipInput("");
+    applySearch("");
+    setSearchInput("");
   };
 
   const servesNoteFor = (entry: BaseballTeam) => {
@@ -167,36 +244,36 @@ const TeamFinder = ({ teams }: TeamFinderProps) => {
     <section id="find" className="scroll-mt-28 space-y-6">
       <SectionHeader
         title="Find your Ryan night"
-        description="Search by zip code, or narrow the list by state, city, team, or date. Nearby states without a team show the closest one."
+        description="Search by team, city, state, or zip code, or narrow the list with the filters. Nearby states without a team show the closest one."
       />
 
-      <div className="space-y-4">
+      {/* Zip search and filters share a row once there is room for both. */}
+      <div className="flex flex-col gap-4 xl:flex-row xl:flex-wrap xl:items-center">
         <form
           role="search"
           aria-label="Find a team near you"
           onSubmit={(event) => {
             event.preventDefault();
-            const next = zipInput.trim();
-            if (isValidZip(next) || next === "") setUrlZip(next);
+            if (pendingQuery !== null) applySearch(pendingQuery);
           }}
-          className="max-w-md"
+          className="w-full max-w-md xl:w-96 xl:flex-none"
         >
           <SearchInput
-            label="Zip code"
-            name="zip"
-            inputMode="numeric"
-            autoComplete="postal-code"
-            maxLength={5}
-            placeholder="Your zip code, e.g. 03101"
-            value={zipInput}
-            onChange={(event) => setZipInput(event.target.value.replace(/\D/g, ""))}
+            label="Search teams"
+            name="q"
+            autoComplete="off"
+            placeholder="Search by team, city, state, or zip code..."
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
+            inputClassName={FILTER_HEIGHT}
             pending={isPending}
-            pendingLabel="Finding nearby teams"
+            pendingLabel="Searching teams"
           />
         </form>
 
-        <div className="grid grid-cols-2 gap-3 lg:flex lg:flex-wrap lg:items-center">
+        <div className="grid grid-cols-2 gap-3 lg:flex lg:flex-wrap lg:items-center xl:min-w-0 xl:flex-1 xl:basis-0">
           <DropdownSelect
+            className={FILTER_HEIGHT}
             label="State"
             value={state}
             active={state !== ALL}
@@ -204,6 +281,7 @@ const TeamFinder = ({ teams }: TeamFinderProps) => {
             onChange={setState}
           />
           <DropdownSelect
+            className={FILTER_HEIGHT}
             label="City"
             value={city}
             active={city !== ALL}
@@ -211,6 +289,7 @@ const TeamFinder = ({ teams }: TeamFinderProps) => {
             onChange={setCity}
           />
           <DropdownSelect
+            className={FILTER_HEIGHT}
             label="Team"
             value={team}
             active={team !== ALL}
@@ -219,6 +298,7 @@ const TeamFinder = ({ teams }: TeamFinderProps) => {
             menuWidth="wide"
           />
           <DropdownSelect
+            className={FILTER_HEIGHT}
             label="Date"
             value={date}
             active={date !== ALL}
@@ -231,7 +311,7 @@ const TeamFinder = ({ teams }: TeamFinderProps) => {
         </div>
 
         {zipStatus && (
-          <p role="status" className="text-sm text-black/70 dark:text-white/70">
+          <p role="status" className="text-sm text-black/70 xl:basis-full dark:text-white/70">
             {zipStatus}
           </p>
         )}
@@ -242,13 +322,33 @@ const TeamFinder = ({ teams }: TeamFinderProps) => {
           {results.length === 0 ? (
             <EmptyState message="No teams match those filters yet." />
           ) : (
-            <ul className="space-y-4" aria-label={`${results.length} ${results.length === 1 ? "team" : "teams"}`}>
-              {results.map(({ team: entry, distance }) => (
-                <li key={entry.slug}>
-                  <TeamCard team={entry} distance={distance} servesNote={servesNoteFor(entry)} />
-                </li>
-              ))}
-            </ul>
+            <div id="find-results" className="scroll-mt-28 space-y-4">
+              <ul className="space-y-4" aria-label={`${results.length} ${results.length === 1 ? "team" : "teams"}`}>
+                {pagedResults.map(({ team: entry, distance }) => (
+                  <li key={entry.slug}>
+                    <TeamCard team={entry} distance={distance} servesNote={servesNoteFor(entry)} />
+                  </li>
+                ))}
+              </ul>
+              {showPagination && (
+                <Pagination
+                  page={page}
+                  pageSize={pageSize}
+                  totalCount={results.length}
+                  pageSizeOptions={PAGE_SIZE_OPTIONS}
+                  itemLabel="teams"
+                  disabled={isPending}
+                  onPageChange={(next) => {
+                    setPageParam(String(next));
+                    scrollToResults();
+                  }}
+                  onPageSizeChange={(next) => {
+                    setPerPageParam(String(next));
+                    resetPage();
+                  }}
+                />
+              )}
+            </div>
           )}
         </PendingResults>
         <div className="xl:sticky xl:top-28">

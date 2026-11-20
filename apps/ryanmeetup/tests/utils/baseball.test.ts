@@ -6,9 +6,13 @@ import {
   formatGameDate,
   getCityOptions,
   getSeasonRange,
+  getSeasonStats,
   getStateOptions,
+  hasTicketLink,
   haversineMiles,
+  isPartialZip,
   isValidZip,
+  matchesSearch,
   sortByDate,
   teamsNearPoint,
   toCitySlug,
@@ -105,4 +109,38 @@ test("zip validation accepts five digits only", () => {
   expect(isValidZip(" 05401 ")).toBe(true);
   expect(isValidZip("5401")).toBe(false);
   expect(isValidZip("05401-1234")).toBe(false);
+});
+
+test("tbd.com and blank ticket links don't count as real tickets", () => {
+  const withUrl = (ticketUrl: string) => ({ ...teams[0], ticketUrl });
+  expect(hasTicketLink(withUrl("https://example.com/tickets"))).toBe(true);
+  expect(hasTicketLink(withUrl("example.com/tickets"))).toBe(true);
+  expect(hasTicketLink(withUrl("https://tbd.com"))).toBe(false);
+  expect(hasTicketLink(withUrl("https://www.TBD.com/tickets"))).toBe(false);
+  expect(hasTicketLink(withUrl("tbd.com"))).toBe(false);
+  expect(hasTicketLink(withUrl(""))).toBe(false);
+});
+
+test("free-text search needs every word to match a name or place", () => {
+  const find = (query: string) =>
+    slugs(teams.filter((team) => matchesSearch(team, query)));
+  expect(find("")).toHaveLength(teams.length);
+  expect(find("Ryan Sox")).toEqual(["worcester-ryan-sox"]);
+  expect(find("worcester massachusetts")).toEqual(["worcester-ryan-sox"]);
+  expect(find("riverside")).toEqual(["manchester-ryanlanders"]);
+  // Served states and cities count too.
+  expect(find("vermont")).toEqual(["manchester-ryanlanders"]);
+  expect(find("burlington")).toEqual(["manchester-ryanlanders"]);
+  expect(find("worcester vermont")).toEqual([]);
+});
+
+test("a few digits read as a zip code still being typed", () => {
+  expect(isPartialZip("031")).toBe(true);
+  expect(isPartialZip("03101")).toBe(false);
+  expect(isPartialZip("ryan")).toBe(false);
+});
+
+test("season stats count teams, host states, and distinct game nights", () => {
+  expect(getSeasonStats(teams)).toEqual({ teams: 6, states: 6, gameNights: 5 });
+  expect(getSeasonStats([])).toEqual({ teams: 0, states: 0, gameNights: 0 });
 });

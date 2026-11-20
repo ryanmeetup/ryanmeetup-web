@@ -76,6 +76,41 @@ const filterTeams = (teams: BaseballTeam[], filters: BaseballFilters) =>
     return true;
   });
 
+/** True when a free-text search looks like the start of a zip code. */
+const isPartialZip = (value: string) => /^\d{1,4}$/.test(value.trim());
+
+/**
+ * Free-text search across a team's name, stadium, city, and state, including
+ * the places it serves. Every word must match somewhere, so "worcester ma"
+ * narrows rather than widens.
+ */
+const matchesSearch = (team: BaseballTeam, query: string) => {
+  const words = normalize(query).split(/\s+/).filter(Boolean);
+  if (words.length === 0) return true;
+
+  const states = [team.state, ...(team.servesStates ?? [])];
+  const haystack = normalize(
+    [
+      team.name,
+      team.venue,
+      team.city,
+      ...(team.servesCities ?? []),
+      ...states,
+      ...states.map(getStateName),
+    ]
+      .filter(Boolean)
+      .join(" "),
+  );
+  return words.every((word) => haystack.includes(word));
+};
+
+/** Headline counts for the hero, all derived from announced teams. */
+const getSeasonStats = (teams: BaseballTeam[]) => ({
+  teams: teams.length,
+  states: new Set(teams.map((team) => team.state.trim().toUpperCase())).size,
+  gameNights: new Set(teams.map((team) => team.gameDate.slice(0, 10))).size,
+});
+
 const sortByDate = (teams: BaseballTeam[]) =>
   [...teams].sort(
     (a, b) =>
@@ -203,6 +238,24 @@ const getTeamLogoSrc = (team: BaseballTeam) => {
   return convertImageUrl(team.logo);
 };
 
+// Hosts that stand in for a ticket link that hasn't been set up yet.
+const PLACEHOLDER_TICKET_HOSTS = ["tbd.com"];
+
+/** True once a team has a real ticket link rather than a blank or tbd.com stand-in. */
+const hasTicketLink = (team: BaseballTeam) => {
+  const raw = team.ticketUrl?.trim();
+  if (!raw) return false;
+  try {
+    const url = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    const host = new URL(url).hostname.toLowerCase().replace(/^www\./, "");
+    return !PLACEHOLDER_TICKET_HOSTS.some(
+      (placeholder) => host === placeholder || host.endsWith(`.${placeholder}`),
+    );
+  } catch {
+    return false;
+  }
+};
+
 export {
   NEAREST_FALLBACK_COUNT,
   ZIP_SEARCH_RADIUS_MILES,
@@ -211,13 +264,17 @@ export {
   getCityOptions,
   getDateOptions,
   getSeasonRange,
+  getSeasonStats,
   getStateName,
   getStateOptions,
   getTeamLogoSrc,
   getTeamOptions,
+  hasTicketLink,
   haversineMiles,
+  isPartialZip,
   isValidZip,
   matchesCity,
+  matchesSearch,
   matchesState,
   sortByDate,
   teamsNearPoint,

@@ -64,7 +64,11 @@ const BaseballPage = async () => {
   return (
     <Layout>
       <div className="space-y-12">
-        <BaseballHero seasonRange={getSeasonRange(teams)} hasMerch={hasMerch} />
+        <BaseballHero
+          teams={teams}
+          seasonRange={getSeasonRange(teams)}
+          hasMerch={hasMerch}
+        />
 
         {merch && hasMerch && <MerchStrip collection={merch} />}
 

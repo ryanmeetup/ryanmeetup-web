@@ -62,8 +62,8 @@ test("filters stay in the URL and clear together", async ({ page }) => {
 test("zip search lists nearby teams, closest first", async ({ page }) => {
   await page.goto("/baseball");
 
-  await page.getByLabel("Zip code").fill("01608");
-  await expect(page).toHaveURL(/zip=01608/);
+  await page.getByLabel("Search teams").fill("01608");
+  await expect(page).toHaveURL(/q=01608/);
   await expect(
     page.getByText(/Teams within 120 miles of Worcester, Massachusetts/),
   ).toBeVisible();
@@ -73,10 +73,46 @@ test("zip search lists nearby teams, closest first", async ({ page }) => {
 });
 
 test("zip search far from every team offers the closest ones", async ({ page }) => {
+  // An old ?zip= link still works, and moves to ?q=.
   await page.goto("/baseball?zip=05401");
+  await expect(page).toHaveURL(/q=05401/);
+  await expect(page).not.toHaveURL(/zip=/);
 
   await expect(
     page.getByText(/No teams within 120 miles of Burlington, Vermont/),
   ).toBeVisible();
   await expect(teamCards(page)).toHaveCount(2);
+});
+
+test("teams still on a tbd.com ticket link can't be clicked through", async ({
+  page,
+}) => {
+  await page.goto("/baseball?team=sacramento-river-ryans");
+
+  await expect(teamCards(page)).toHaveCount(1);
+  await expect(
+    page.getByRole("button", { name: /Sacramento River Ryans aren't on sale/ }),
+  ).toBeDisabled();
+  await expect(
+    page.getByRole("link", { name: /Tickets for Sacramento River Ryans/ }),
+  ).toHaveCount(0);
+});
+
+test("search matches team, city, and state names", async ({ page }) => {
+  await page.goto("/baseball");
+
+  await page.getByLabel("Search teams").fill("worcester");
+  await expect(page).toHaveURL(/q=worcester/);
+  await expect(teamCards(page)).toHaveCount(1);
+  await expect(teamCards(page).first()).toContainText("Worcester Ryan Sox");
+
+  await page.getByLabel("Search teams").fill("new hampshire");
+  await expect(teamCards(page)).toHaveCount(1);
+  await expect(teamCards(page).first()).toContainText("Manchester Ryanlanders");
+
+  await page.getByLabel("Search teams").fill("01608");
+  await expect(page).toHaveURL(/q=01608/);
+  await expect(
+    page.getByText(/Teams within 120 miles of Worcester, Massachusetts/),
+  ).toBeVisible();
 });

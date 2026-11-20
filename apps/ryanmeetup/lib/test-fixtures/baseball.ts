@@ -90,7 +90,7 @@ const getBaseballFixtures = (): BaseballTeam[] => [
     state: "CA",
     coordinates: { lat: 38.5816, lon: -121.4944 },
     gameDate: "2027-07-10",
-    ticketUrl: "https://example.com/tickets/sacramento",
+    ticketUrl: "https://tbd.com",
   },
 ];
 
