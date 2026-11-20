@@ -12,7 +12,7 @@ export async function HomeReviews() {
   return <section aria-labelledby="home-reviews" className="store-container border-t border-black/10 pt-8 dark:border-white/10 sm:pt-12">
     <SectionHeader align="left" title={<span id="home-reviews">Fresh from the Ryans</span>}
       description="The latest reviews from across the shop." />
-    <ul aria-label="Latest customer reviews" className="mt-8 grid items-stretch gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <ul aria-label="Latest customer reviews" className={`mt-8 grid items-stretch gap-4 ${reviews.length === 1 ? "max-w-2xl" : "md:grid-cols-2"} ${reviews.length > 2 ? "xl:grid-cols-3" : ""}`}>
       {reviews.map(({ review, product }) => <li key={review.id} className="min-w-0"><PublicReviewCard review={review} product={product} /></li>)}
     </ul>
   </section>;

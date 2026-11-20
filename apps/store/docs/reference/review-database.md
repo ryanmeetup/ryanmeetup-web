@@ -51,7 +51,7 @@ history under the Store or rewrite applied SQL.
 | `20261121020000` | Audited permanent review deletion | Applied |
 | `20261121030000` | Owner photo decisions/previews, staff v5 and revocable public images | Applied |
 | `20261121040000` | Buyer-facing rejection reasons until resubmission | Applied |
-| `20261121050000` | Bounded latest public reviews across the shop | Pending rollout |
+| `20261121050000` | Bounded latest public reviews across the shop | Applied |
 
 The timestamp-shaped versions are identifiers, not evidence of deployment time.
 Photo publication was applied to RMT and verified for private-bucket and
