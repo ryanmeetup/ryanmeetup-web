@@ -25,6 +25,8 @@ export function useMyReviews(initial: MyReviewView | null) {
     } catch (failure) { setView(null);setError(failure instanceof MyReviewRequestError ? failure.message : "Your reviews could not load. Refresh to try again."); }
     finally {active.current=false;setPending(false);}
   }
+  /** Reload after a change made elsewhere on the page, then say what happened. */
+  async function reloadWith(notice:string) {await load();setMessage(notice);}
   function select(review:BuyerReview, action:"edit"|"withdraw") {
     if (active.current || !view || review.status === "withdrawn" || (action === "edit" && review.status === "hidden")) return;
     setMessage("");setError(""); if(action === "edit")setEditing(review);else setWithdrawing(review);
@@ -50,5 +52,5 @@ export function useMyReviews(initial: MyReviewView | null) {
     active.current=false;setPending(false);
     return outcome==="saved" ? {ok:true as const,message:""} : {ok:false as const,error:"Refresh your reviews before trying again."};
   }
-  return {view,editing,withdrawing,pending,message,error,load,select,dismiss,save};
+  return {view,editing,withdrawing,pending,message,error,load,reloadWith,select,dismiss,save};
 }

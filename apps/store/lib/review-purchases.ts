@@ -1,6 +1,6 @@
 import type { VerifiedReviewPurchase } from "@ryanmeetup/reviews";
 import type { CustomerAccountSession } from "./customer-account/storage";
-import { lookupReviewBuyerName, lookupReviewablePurchases } from "./customer-account/review-lookups";
+import { lookupRecentReviewablePurchases, lookupReviewBuyerName, lookupReviewablePurchases } from "./customer-account/review-lookups";
 
 /** A purchased line the signed-in buyer may review, with a label safe to show them. */
 export type ReviewablePurchaseLine = VerifiedReviewPurchase & { label: string };
@@ -42,3 +42,6 @@ export type ReviewBuyerNameLookup = (session: CustomerAccountSession) => Promise
  * preserve the stored choice or allow anonymous names in that case.
  */
 export const findBuyerName: ReviewBuyerNameLookup = lookupReviewBuyerName;
+
+/** Recent purchases across all products, to suggest what a buyer could review next. */
+export const findRecentReviewablePurchases = lookupRecentReviewablePurchases;

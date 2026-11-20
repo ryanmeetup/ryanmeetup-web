@@ -111,6 +111,44 @@ export async function lookupReviewablePurchases(session: CustomerAccountSession,
   } catch { return { status: "unavailable" }; }
 }
 
+/**
+ * Every line from the buyer's newest orders that passes the review rules, for
+ * suggesting what to review. Unlike the per-product lookup this is only a
+ * suggestion: a line that fails the rules is left out silently, a long
+ * history stops at the newest verified orders, and each write still rechecks
+ * its own purchase. Only a failed or inconsistent lookup is `unavailable`.
+ */
+export async function lookupRecentReviewablePurchases(session: CustomerAccountSession, { maxOrders = 10 } = {}): Promise<
+  { status: "found"; buyer: { firstName: string | null; lastName: string | null }; purchases: ReviewablePurchaseLine[] } | { status: "unavailable" }
+> {
+  try {
+    const client = await context(session);
+    if (!client) return { status: "unavailable" };
+    const discovery = await readReviewOrderCandidates(client.query);
+    if (!discovery) return { status: "unavailable" };
+    const purchases: ReviewablePurchaseLine[] = [];
+    const seenLines = new Set<string>();
+    for (const candidate of discovery.orders.slice(0, maxOrders)) {
+      if (candidate.completeLines && candidate.lines.every((line) => line.productId === null)) continue;
+      const read = await readCustomerPurchase(client.query, candidate.id);
+      if (client.exhausted()) break;
+      if (read.status !== "found" || read.purchase.buyerId !== discovery.buyer.id || read.purchase.updatedAt !== candidate.updatedAt) return { status: "unavailable" };
+      for (const line of read.purchase.lines) {
+        if (!line.productId) continue;
+        const checked = evaluateReviewPurchase(read.purchase, { shopId: client.shopId, lineId: line.id, productId: line.productId });
+        if (checked.status === "ineligible") continue;
+        if (checked.status !== "eligible") return { status: "unavailable" };
+        const verified = reviewBackendPurchase(checked.purchase);
+        if (!verified || seenLines.has(verified.lineId)) return { status: "unavailable" };
+        seenLines.add(verified.lineId);
+        purchases.push({ ...verified, label: `Order ${read.purchase.orderLabel}${verified.variantTitle ? ` · ${verified.variantTitle}` : ""}` });
+      }
+    }
+    if (!await client.active()) return { status: "unavailable" };
+    return { status: "found", buyer: { firstName: discovery.buyer.firstName, lastName: discovery.buyer.lastName }, purchases };
+  } catch { return { status: "unavailable" }; }
+}
+
 /** Names are fetched from the current customer token, never the browser or draft. */
 export async function lookupReviewBuyerName(session: CustomerAccountSession): Promise<{ firstName: string | null; lastName: string | null } | null> {
   try {

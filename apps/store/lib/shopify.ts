@@ -529,6 +529,32 @@ export async function getProduct(handle: string): Promise<ProductListing | null>
   return getShopifyProduct(resolveProductHandle(handle));
 }
 
+/** What a review suggestion card needs about a product: where it lives and what it looks like. */
+export type ProductCard = { handle: string; title: string; image: { url: string; altText: string | null } | null };
+
+/**
+ * Published products by numeric Shopify ID, keyed by that ID. Unpublished or
+ * deleted products are simply absent, since there's no page to review them on.
+ */
+export async function getProductCardsByIds(productIds: string[]): Promise<Record<string, ProductCard>> {
+  const ids = [...new Set(productIds)].filter((id) => /^[1-9][0-9]{0,19}$/.test(id)).slice(0, 50);
+  if (!ids.length) return {};
+  const card = (product: { handle: string; title: string; featuredImage?: { url: string; altText?: string | null } | null }): ProductCard =>
+    ({ handle: product.handle, title: product.title, image: product.featuredImage ? { url: product.featuredImage.url, altText: product.featuredImage.altText ?? null } : null });
+  if (!isShopifyConfigured()) {
+    return Object.fromEntries(demoProducts.flatMap((product) => {
+      const id = product.id.split("/").pop()!;
+      return ids.includes(id) ? [[id, card(product)]] : [];
+    }));
+  }
+  const data = await storefrontRequest<{ nodes: ({ id: string; handle: string; title: string; featuredImage: { url: string; altText: string | null } | null } | null)[] }>(
+    `query ProductCards($ids: [ID!]!) { nodes(ids: $ids) { ... on Product { id handle title featuredImage { url altText } } } }`,
+    { ids: ids.map((id) => `gid://shopify/Product/${id}`) },
+    { revalidate: 300 },
+  );
+  return Object.fromEntries(data.nodes.flatMap((node) => node?.id && node.handle ? [[node.id.split("/").pop()!, card(node)]] : []));
+}
+
 /**
  * A product's current title from its numeric Shopify ID, or null when no such
  * product exists. Used as the snapshot on a review written without an order.

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { POST } from "../app/api/reviews/route";
-import { findBuyerName, findReviewablePurchases } from "../lib/review-purchases";
+import { findBuyerName, findRecentReviewablePurchases, findReviewablePurchases } from "../lib/review-purchases";
 import { reviewBackendPurchase } from "../lib/customer-account/review-lookups";
 import { getCustomerAccountStorageService } from "../lib/customer-account/runtime";
 import { customerAuthBackendFixture, fakeSupabaseUrl, supabaseCall } from "./fixtures/customer-auth-backend";
@@ -94,6 +94,18 @@ test("the picker returns only owned qualifying lines and exact normalized backen
   expect(JSON.stringify(result)).not.toContain("stored-private-access");
   expect(JSON.stringify(result)).not.toContain("opaque-buyer-subject");
   expect(transport.requests.map(({ operation }) => operation)).toEqual(["session.get", "session.get"]);
+});
+
+test("recent purchases across every product are verified the same way, for review suggestions", async () => {
+  const { session } = await seed();
+  expect(await findRecentReviewablePurchases(session)).toEqual({ status: "found", buyer: { firstName: "Ryan", lastName: "Le" }, purchases: [{
+    orderId: "100", lineId: "101", productId: "102", variantId: "104", productTitle: "Ryan tee", variantTitle: "Blue / M", label: "Order #100 · Blue / M",
+  }] });
+  // A line that fails the rules is left out of suggestions rather than closing them.
+  purchase.order.fulfillments.nodes[0].status = "PENDING";
+  expect(await findRecentReviewablePurchases(session)).toEqual({ status: "found", buyer: { firstName: "Ryan", lastName: "Le" }, purchases: [] });
+  rejectQuery = true;
+  expect(await findRecentReviewablePurchases(session)).toEqual({ status: "unavailable" });
 });
 
 test("a forged caller identity is rejected and caller token fields are never used as authority", async () => {

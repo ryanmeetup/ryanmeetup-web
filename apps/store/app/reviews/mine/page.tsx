@@ -9,7 +9,9 @@ import { getReviewBackend } from "@/lib/review-backend";
 import { loadMyReviewPage } from "@/lib/my-review-actions";
 import { getActiveReviewProvider } from "@/lib/review-preview";
 import { reviewSignInRel, reviewSignInUrl } from "@/lib/review-sign-in";
-import { findBuyerName } from "@/lib/review-purchases";
+import { findBuyerName, findRecentReviewablePurchases } from "@/lib/review-purchases";
+import { getReviewSuggestions } from "@/lib/review-suggestions";
+import { getProductCardsByIds } from "@/lib/shopify";
 
 export const metadata = buildPageMetadata({
   title: "My reviews",
@@ -37,9 +39,16 @@ export default async function Page() {
   // Only custom reviews have buyer accounts; Judge.me reviews are managed there.
   if (await getActiveReviewProvider() !== "custom") notFound();
   const request = await currentRequest("/reviews/mine");
-  const result = await loadMyReviewPage(null, {
-    loadSession: () => getCustomerAccountSession(request), findBuyerName, backend:getReviewBackend(),
-  });
+  const backend = getReviewBackend();
+  const session = getCustomerAccountSession(request);
+  const [result, suggestions] = await Promise.all([
+    loadMyReviewPage(null, { loadSession: () => session, findBuyerName, backend }),
+    // Suggestions are a nicety: any failure leaves them out rather than failing the page.
+    session.then((current) => current.status === "authenticated" && backend ? getReviewSuggestions({
+      session: current.session, findRecent: findRecentReviewablePurchases, productCards: getProductCardsByIds,
+      reviewedLines: (subject, lineIds) => backend({ operation: "reviews.reviewedLines", subject, lineIds }),
+    }) : null).catch(() => null),
+  ]);
   if (result.status === "sign_in_required") return <Shell>
     <div className="rounded-2xl border border-dashed border-black/20 p-8 text-center dark:border-white/20 sm:p-10">
       <FiLogIn aria-hidden className="mx-auto size-6 text-black/60 dark:text-white/60" />
@@ -48,5 +57,5 @@ export default async function Page() {
       <Button.Link href={reviewSignInUrl("/reviews/mine")} rel={reviewSignInRel} prefetch={false} size="md" className="mt-6 w-full sm:w-auto">Sign in</Button.Link>
     </div>
   </Shell>;
-  return <Shell><MyReviews initial={result.status === "ready" ? result.view : null} /></Shell>;
+  return <Shell><MyReviews initial={result.status === "ready" ? result.view : null} suggestions={result.status === "ready" ? suggestions : null} /></Shell>;
 }

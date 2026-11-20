@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
+import { demoProductId } from "../lib/demo-data";
 import { configure, fixture, reset, signIn, state } from "./fixtures/buyer-browser";
+import { customerPurchasePage } from "./fixtures/customer-purchase";
 import { screenshotPath } from "./fixtures/screenshots";
 
 const id=(n:number)=>`00000000-0000-4000-8000-${String(n).padStart(12,"0")}`;
@@ -127,4 +129,32 @@ test("an empty list points back to the shop, and refreshing shows a small spinne
   const spinner=await status.locator("svg").boundingBox();
   expect(spinner!.width).toBeLessThanOrEqual(20);expect(spinner!.height).toBeLessThanOrEqual(20);
   release();await expect(status).toHaveCount(0);
+});
+test("signed in, My reviews offers recent purchases to review and reviews them in place",async({page,request,baseURL})=>{
+  await reset(request,{empty:true});
+  const purchase=customerPurchasePage();purchase.order.customer.id="gid://shopify/Customer/123";
+  purchase.order.lineItems.nodes[0].productId=demoProductId("ryan-meetup-tee");
+  await configure(request,{purchase});await signIn(page,baseURL!);
+  await page.goto("/reviews/mine");
+  const ready=page.getByRole("region",{name:"Ready to review"});
+  await expect(ready.getByRole("heading",{name:"Official Ryan Meetup Tee"})).toBeVisible();
+  await expect(ready).toContainText("Order #100 · Blue / M");
+  // With something to review, the empty-state card would only repeat the invitation.
+  await expect(page.getByRole("heading",{name:"No reviews yet",exact:true})).toHaveCount(0);
+  await page.screenshot({path:screenshotPath("my-reviews-ready-to-review.png"),fullPage:true});
+
+  await ready.getByRole("button",{name:"Write a review of Official Ryan Meetup Tee",exact:true}).click();
+  const dialog=page.getByRole("dialog",{name:"Write a review",exact:true});
+  await expect(dialog).toContainText("Reviewing Order #100 · Blue / M");
+  await dialog.getByRole("radio",{name:"5 stars",exact:true}).check();
+  await dialog.getByLabel(/^Title/).fill("Wore it to the meetup");
+  await dialog.getByLabel(/^Review/).fill("Every Ryan asked where I got it.");
+  await dialog.getByRole("button",{name:"Submit review",exact:true}).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole("status").filter({hasText:"Thanks!"})).toContainText("Thanks! Your review is waiting for approval.");
+  await expect(page.getByRole("region",{name:"Ready to review"})).toHaveCount(0);
+  await expect(page.locator("article[data-testid^='my-review-']")).toHaveCount(1);
+  await expect(page.locator("article[data-testid^='my-review-']")).toContainText("Waiting for approval");
+  const {calls}=await state(request);
+  expect(calls).toEqual([expect.objectContaining({operation:"review.submit",subject:"buyer-a",purchase:expect.objectContaining({orderId:"100",lineId:"101"})})]);
 });
