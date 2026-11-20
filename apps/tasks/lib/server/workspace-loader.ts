@@ -6,6 +6,7 @@ import {
   type WorkspaceAreaKey,
 } from "@/lib/access/workspace-areas";
 import { APPLY_MIGRATIONS_HINT, isMissingFunction } from "./supabase-errors";
+import { getStoreCustomerAuthScope } from "./store-customer-auth/scope";
 import {
   TASK_ASSIGNEE_COLUMNS,
   TASK_CATEGORY_COLUMNS,
@@ -77,6 +78,7 @@ export type WorkspaceCollection = Exclude<
   | "resourceAttachmentCounts"
   | "accessibleAreas"
   | "isGuest"
+  | "canModerateStoreReviews"
 >;
 
 export const TASK_PAGE_SIZE = 50;
@@ -265,5 +267,9 @@ export async function loadWorkspace(
     canManageCategories: Boolean(categoryManagerResult.data),
     accessibleAreas,
     isGuest,
+    canModerateStoreReviews:
+      profileResult.data.app_role === "owner" &&
+      profileResult.data.onboarding_completed &&
+      getStoreCustomerAuthScope() !== null,
   } as WorkspaceData;
 }

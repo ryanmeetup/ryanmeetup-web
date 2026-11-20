@@ -50,8 +50,12 @@ export function CountBadge({
   hideLabel?: boolean;
   className?: string;
   size?: keyof typeof sizeStyles;
-  /** Remove the pill surface when the count is supporting metadata. */
-  variant?: "solid" | "ghost";
+  /**
+   * `ghost` removes the pill surface when the count is supporting metadata.
+   * `alert` is a notification: work waiting on the reader. Its fixed red and
+   * white read the same on any row, selected or not, in either theme.
+   */
+  variant?: "solid" | "ghost" | "alert";
 }) {
   const styles = variant === "ghost" ? ghostSizeStyles[size] : sizeStyles[size];
   const noun = label
@@ -66,7 +70,9 @@ export function CountBadge({
       className={`relative inline-flex items-center justify-center whitespace-nowrap font-sans normal-case tabular-nums tracking-normal ${
         variant === "ghost"
           ? "font-medium leading-normal text-black/45 dark:text-white/45"
-          : "rounded-full bg-black/10 font-semibold leading-none text-black/60 dark:bg-white/10 dark:text-white/60"
+          : variant === "alert"
+            ? "rounded-full bg-red-600 font-semibold leading-none text-white"
+            : "rounded-full bg-black/10 font-semibold leading-none text-black/60 dark:bg-white/10 dark:text-white/60"
       } ${styles.base} ${showNoun ? styles.labelled : styles.bare} ${className ?? ""}`}
     >
       {children}

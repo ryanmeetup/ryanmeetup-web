@@ -1,7 +1,6 @@
 import {
   FiActivity,
   FiColumns,
-  FiMessageSquare,
   FiSettings,
   FiShield,
   FiSliders,
@@ -23,7 +22,6 @@ export const adminRoutes = [
   { href: "/admin/statuses", label: "Statuses", exact: false, icon: FiColumns },
   { href: "/admin/access", label: "Access", exact: false, icon: FiShield },
   { href: "/admin/usage", label: "Usage", exact: false, icon: FiActivity },
-  { href: "/admin/reviews", label: "Store reviews", exact: false, icon: FiMessageSquare },
   {
     href: "/admin/settings",
     label: "Settings",

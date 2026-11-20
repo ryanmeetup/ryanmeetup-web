@@ -1,7 +1,7 @@
 # Review moderation handoff
 
 Updated November 18, 2026. The private moderation database boundary, Tasks API,
-and owner-facing queue at **Admin → Store reviews** are implemented, including
+and owner-facing queue at **Store reviews** in the Tasks sidebar (`/store-reviews`) are implemented, including
 official public replies.
 Judge.me remains the storefront default and the browser testing switch is
 unchanged. No application deployment or collection flag was changed here.

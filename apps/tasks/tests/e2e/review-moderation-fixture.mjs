@@ -32,6 +32,19 @@ export function createReviewModerationFixture(json, readBody, profile) {
     if (url.pathname === "/__reviews/configure") { options = { ...options, ...await readBody(request) }; json(response, 200, { ok: true }); return true; }
     if (url.pathname === "/__reviews/state") { json(response, 200, { calls, reviews }); return true; }
     if (url.pathname === "/rest/v1/rpc/is_app_owner") { json(response, 200, isOwner()); return true; }
+    if (url.pathname === "/rest/v1/store_review_revisions") {
+      // The sidebar count: a service-role HEAD with an exact count, filtered to
+      // pending revisions on this shop's unwithdrawn reviews.
+      const p = url.searchParams;
+      if (request.headers.apikey !== "sb_secret_test" || request.method !== "HEAD" || p.get("status") !== "eq.pending" ||
+        p.get("review.shop_id") !== "eq.123" || p.get("review.state") !== "neq.withdrawn") {
+        json(response, 400, { code: "PGRST100", message: "Unexpected count query" }); return true;
+      }
+      if (options.failCount) { json(response, 500, { code: "P0001", message: "Synthetic count failure" }); return true; }
+      const count = reviews.filter((r) => r.pending && r.state !== "withdrawn").length;
+      response.writeHead(200, { "content-range": count ? `0-${count - 1}/${count}` : `*/0`, "access-control-allow-origin": "*", "access-control-expose-headers": "*" });
+      response.end(); return true;
+    }
     if (!["/rest/v1/rpc/store_review_moderation_page_v3", "/rest/v1/rpc/store_moderate_review", "/rest/v1/rpc/store_save_review_reply"].includes(url.pathname)) return false;
     const command = await readBody(request);
     if (!isOwner() || command.p_actor !== profile.id || command.p_shop_id !== "123" || request.headers.apikey !== "sb_secret_test") {

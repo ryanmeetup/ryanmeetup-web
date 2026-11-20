@@ -249,10 +249,15 @@ choose an actor or shop. Browser writes use the normal same-origin, bounded JSON
 schema boundary. Every response is private and uncached; database failures expose
 only safe messages and correlation IDs.
 
-`/admin/reviews` checks the same owner authority through `loadWorkspacePage`
-before loading its initial private queue on the server. Demo preview redirects
-away; disabled integration shows an unavailable state without querying review
-storage. Browser decisions wait for a confirmed transaction, then reload. Stale
+`/store-reviews` checks the same owner authority through `loadWorkspacePage`
+before loading its initial private queue on the server, then answers 404 on an
+instance without the store backend; `/admin/reviews` permanently redirects
+there. Demo preview redirects away. The sidebar lists the page only for an
+onboarded owner on an instance with the backend, and never during an access
+preview. Its badge reads `GET /api/admin/reviews/pending-count`, which uses the
+same owner context and counts pending revisions on unwithdrawn reviews for the
+pinned shop through the service role, matching the queue's `pending` filter. A
+failed count shows no badge rather than a zero. Browser decisions wait for a confirmed transaction, then reload. Stale
 or uncertain outcomes never automatically repeat a write, and an unavailable
 refresh removes stale decision controls until a fresh read succeeds.
 

@@ -89,3 +89,19 @@ export async function saveReviewReply(admin: SupabaseClient, actor: string, shop
   if (typeof data !== "boolean") throw new StoreReviewDatabaseError();
   return data;
 }
+
+/**
+ * How many reviews wait for a decision, matching the moderation page's
+ * `pending` queue: a waiting revision on a review the buyer has not withdrawn.
+ * A review holds at most one pending revision, so counting revisions counts
+ * reviews. Call only after the caller has required app ownership; the service
+ * role reads these tables without the RPC's owner recheck.
+ */
+export async function countPendingReviews(admin: SupabaseClient, shopId: string): Promise<number> {
+  const { count, error } = await admin.from("store_review_revisions")
+    .select("id, review:store_reviews!store_review_revisions_review_id_fkey!inner(id)", { count: "exact", head: true })
+    .eq("status", "pending").eq("review.shop_id", shopId).neq("review.state", "withdrawn");
+  if (error) throw new StoreReviewDatabaseError(error.code);
+  if (typeof count !== "number" || !Number.isSafeInteger(count) || count < 0) throw new StoreReviewDatabaseError();
+  return count;
+}

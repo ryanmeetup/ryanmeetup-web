@@ -24,7 +24,6 @@ const sectionDescriptions: Record<
   "/admin/access":
     "Access groups, membership, and which projects each group can reach.",
   "/admin/usage": "Email quota consumption and recently delivered messages.",
-  "/admin/reviews": "Buyer submissions, publication decisions, and private review history.",
   "/admin/settings":
     "The name, wordmark, banners, and link preview this instance goes by.",
 };

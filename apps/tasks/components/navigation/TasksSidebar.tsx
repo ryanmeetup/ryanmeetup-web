@@ -16,6 +16,7 @@ import {
   FiFileText,
   FiInfo,
   FiLock,
+  FiMessageSquare,
   FiSidebar,
   FiUsers,
   FiStar,
@@ -36,7 +37,8 @@ import {
   projectStatusDetails,
 } from "@/lib/resources/project-status";
 import { projectPath } from "@/lib/resources/project-route";
-import { InstanceWordmark, useInstance } from "@/components/global";
+import { CountBadge, InstanceWordmark, useInstance } from "@/components/global";
+import { useStoreReviewPendingCount } from "@/hooks/useStoreReviewPendingCount";
 
 /**
  * A filled dot in this sidebar already means "category identity", so project
@@ -171,7 +173,18 @@ export function TasksSidebar({
   // A preview lists every page, so the owner sees what the subject is missing;
   // the ones the subject cannot open stay listed but inert.
   const previewing = Boolean(data.accessPreview);
-  const navItems = [
+  // Owner-only, so a preview of someone else's view leaves it out entirely
+  // rather than listing a page no previewed member could ever be granted.
+  const storeReviews = Boolean(data.canModerateStoreReviews) && !previewing;
+  const pendingReviews = useStoreReviewPendingCount(storeReviews);
+  const navItems: {
+    href: string;
+    label: string;
+    icon: typeof FiHome;
+    active: boolean;
+    available: boolean;
+    pending?: number | null;
+  }[] = [
     {
       href: "/",
       label: "Dashboard",
@@ -222,6 +235,18 @@ export function TasksSidebar({
             icon: FiCheckSquare,
             active: isRyd,
             available: canView("ryd"),
+          },
+        ]
+      : []),
+    ...(storeReviews
+      ? [
+          {
+            href: "/store-reviews",
+            label: "Store reviews",
+            icon: FiMessageSquare,
+            active: pathname === "/store-reviews",
+            available: true,
+            pending: pendingReviews,
           },
         ]
       : []),
@@ -417,6 +442,16 @@ export function TasksSidebar({
             >
               <item.icon />
               {item.label}
+              {item.pending ? (
+                <CountBadge
+                  variant="alert"
+                  label="waiting review"
+                  hideLabel
+                  className="ml-auto"
+                >
+                  {item.pending}
+                </CountBadge>
+              ) : null}
             </Link>
           ) : previewing ? (
             // Locked the way an unreachable category is, so a preview shows

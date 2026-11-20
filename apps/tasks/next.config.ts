@@ -35,6 +35,12 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
       { source: "/usage", destination: "/admin/usage", permanent: true },
+      // Store reviews left /admin for its own sidebar entry.
+      {
+        source: "/admin/reviews",
+        destination: "/store-reviews",
+        permanent: true,
+      },
     ];
   },
   async headers() {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { notifyStoreReviewsChanged } from "@/hooks/useStoreReviewPendingCount";
 import { ApiMutationError } from "@/lib/mutation-client";
 import { fetchModerationPage, saveModerationDecision, saveOfficialReply } from "@/lib/store-reviews/moderation-client";
 import { moderationActionLabel, reviewModerationActions, reviewReplyActions } from "@/lib/store-reviews/moderation";
@@ -29,6 +30,7 @@ export function useReviewModeration(initial: ModerationInitialState) {
         ...result,
         reviews: [...current.reviews, ...result.reviews.filter((row) => !current.reviews.some((existing) => existing.id === row.id))],
       } : result);
+      if (!more) notifyStoreReviewsChanged();
     } catch {
       // An unavailable page is not an empty queue, and stale decisions stay closed.
       setPage(null); setError("Reviews could not load. Refresh the queue to try again.");
@@ -59,6 +61,9 @@ export function useReviewModeration(initial: ModerationInitialState) {
       if (failure instanceof ApiMutationError && failure.code === "CONFLICT") outcome = "conflict";
     }
     setSelection(null);
+    // A conflict or a lost response may still have changed the queue, so the
+    // sidebar re-counts after every attempt, not only a confirmed save.
+    notifyStoreReviewsChanged();
     if (outcome === "unknown") {
       // A lost response may follow a committed decision. Require a fresh read, never a blind retry.
       setPage(null); setError("We could not confirm this decision. Refresh the queue before trying again.");

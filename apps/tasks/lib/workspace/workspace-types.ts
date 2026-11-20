@@ -88,6 +88,12 @@ export type WorkspaceData = {
    * work open to the workspace never reaches them.
    */
   isGuest?: boolean;
+  /**
+   * Whether the signed-in member is an app owner on an instance with the store
+   * review backend, so the shell offers Store reviews. Navigation only: the
+   * page and its API recheck ownership and the backend themselves.
+   */
+  canModerateStoreReviews?: boolean;
   subtasks: Subtask[];
   comments: TaskComment[];
   activity: TaskActivity[];
