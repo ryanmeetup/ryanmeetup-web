@@ -70,17 +70,20 @@ export function ReviewSuggestions({ suggestions, onReviewed, photoViewerKey, sub
         panelClassName="space-y-4 pb-6"
         summary={<SectionTitle title="Ready to review" count={`${items.length} item${items.length === 1 ? "" : "s"}`} />}
       >
-      <Text className="text-sm">From your recent orders. Reviews of things you bought get a Verified badge.</Text>
-      <ul className="grid gap-3 md:grid-cols-2">
+      <Text className="text-sm">Fellow Ryans are counting on you. A few words on how it fits, feels, and holds up help the next Ryan pick with confidence.</Text>
+      <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {items.map((item) => (
           <li key={item.lineId}>
-            <Card variant="outline" className="flex h-full items-start gap-4">
-              <ReviewItemThumbnail href={item.href} image={item.image} />
-              <div className="min-w-0 flex-1 space-y-2">
-                <Heading size="h3" className="text-base wrap-anywhere"><ReviewItemTitle href={item.href}>{item.productTitle}</ReviewItemTitle></Heading>
-                <ReviewItemDetails rows={suggestionRows(item)} />
-                <Button size="sm" variant="secondary" fullWidth aria-label={`Write a review of ${item.productTitle}`} onClick={() => setReviewing(item)}>Write a review</Button>
+            <Card variant="outline" className="flex h-full flex-col gap-4">
+              <div className="flex items-start gap-4">
+                <ReviewItemThumbnail href={item.href} image={item.image} />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <Heading size="h3" className="text-base wrap-anywhere"><ReviewItemTitle href={item.href}>{item.productTitle}</ReviewItemTitle></Heading>
+                  <ReviewItemDetails rows={suggestionRows(item)} />
+                </div>
               </div>
+              {/* Pinned to the bottom so buttons line up across a row of cards. */}
+              <Button size="sm" variant="secondary" fullWidth className="mt-auto" aria-label={`Write a review of ${item.productTitle}`} onClick={() => setReviewing(item)}>Write a review</Button>
             </Card>
           </li>
         ))}

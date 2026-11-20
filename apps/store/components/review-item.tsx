@@ -11,8 +11,8 @@ const focusRing = "focus-visible:outline-none focus-visible:ring-2 focus-visible
  */
 export function ReviewItemThumbnail({ href, image }: { href?: string | null; image: { url: string } | null | undefined }) {
   const picture = image
-    ? <Image src={image.url} alt="" width={64} height={64} sizes="64px" className="size-16 rounded-lg object-cover" />
-    : <span className="flex size-16 items-center justify-center rounded-lg bg-black/5 dark:bg-white/10"><FiPackage className="size-5 text-black/60 dark:text-white/60" /></span>;
+    ? <Image src={image.url} alt="" width={80} height={80} sizes="80px" className="size-20 rounded-lg object-cover" />
+    : <span className="flex size-20 items-center justify-center rounded-lg bg-black/5 dark:bg-white/10"><FiPackage className="size-5 text-black/60 dark:text-white/60" /></span>;
   return href
     ? <Link href={href} className={`shrink-0 rounded-lg ${focusRing}`} tabIndex={-1} aria-hidden>{picture}</Link>
     : <span className="shrink-0" aria-hidden>{picture}</span>;
