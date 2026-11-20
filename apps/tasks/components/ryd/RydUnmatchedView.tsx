@@ -213,7 +213,7 @@ export function RydUnmatchedView({
         options={orderOptions}
         value=""
         onChange={(orderId) => onLink(submitter, orderId)}
-        searchPlaceholder="Search orders"
+        searchPlaceholder="Search by name, email, or order number..."
         menuWidth="wide"
         disabled={
           selection.disabled ||

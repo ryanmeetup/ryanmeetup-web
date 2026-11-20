@@ -643,7 +643,7 @@ export function AccessPageClient({
             name="team-search"
             value={teamQuery}
             onChange={(event) => setTeamQuery(event.target.value)}
-            placeholder="Search team..."
+            placeholder="Search by name or email..."
             pending={teamSearchPending}
             pendingLabel="Loading team results"
           />

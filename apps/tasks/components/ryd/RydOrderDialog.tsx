@@ -477,7 +477,7 @@ export function RydOrderDialog({
                     options={linkOptions}
                     value={linkChoice}
                     onChange={setLinkChoice}
-                    searchPlaceholder="Search by name or email"
+                    searchPlaceholder="Search by name or email..."
                     disabled={busy}
                   />
                 </div>

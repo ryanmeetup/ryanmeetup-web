@@ -100,7 +100,7 @@ export function ProjectAccessFields({
             onChange={onGroupIdsChange}
             placeholder="Choose access groups"
             searchable
-            searchPlaceholder="Search access groups"
+            searchPlaceholder="Search by group name..."
             disabled={disabled}
           />
         ) : (

@@ -1011,7 +1011,7 @@ export function ProjectsModal({
                   name="project-search"
                   value={projectQuery}
                   onChange={(event) => setProjectQuery(event.target.value)}
-                  placeholder="Search projects..."
+                  placeholder="Search by name, description, or link..."
                   pending={searchPending}
                   pendingLabel="Loading project results"
                 />

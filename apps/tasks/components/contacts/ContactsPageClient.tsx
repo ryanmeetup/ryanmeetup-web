@@ -239,7 +239,7 @@ export function ContactsPageClient({
               name="contact-search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search contacts and people..."
+              placeholder="Search by name, person, email, phone, or notes..."
               pending={searchPending}
               pendingLabel="Loading contact results"
             />

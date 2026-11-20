@@ -79,7 +79,7 @@ export function RecentEmailTable({ emails }: { emails: ResendEmailSummary[] }) {
           aria-busy={isPending}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search subjects, recipients, dates, or delivery states..."
+          placeholder="Search by subject, recipient, date, or delivery state..."
           inputClassName="pr-10"
         />
         {isPending && (

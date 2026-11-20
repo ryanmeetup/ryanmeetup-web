@@ -68,7 +68,7 @@ const DropdownSelect = ({
   active = false,
   proximityValue,
   proximityGroup,
-  searchPlaceholder = `Search ${label.toLocaleLowerCase()}`,
+  searchPlaceholder = `Search by ${label.toLocaleLowerCase()}...`,
   stackLabelOnMobile = false,
   menuWidth = "default",
 }: DropdownSelectProps) => {

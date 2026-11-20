@@ -50,7 +50,7 @@ const MultiSelect = ({
   proximityValue,
   required = false,
   searchable = true,
-  searchPlaceholder = "Search options",
+  searchPlaceholder = "Search by name...",
   summaryLimit = 2,
 }: MultiSelectProps) => {
   const buttonId = useId();

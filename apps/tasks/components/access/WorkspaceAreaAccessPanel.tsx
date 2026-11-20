@@ -233,7 +233,7 @@ export function WorkspaceAreaAccessPanel({
                   onChange={(groupIds) => update(area.key, { groupIds })}
                   placeholder="Choose access groups"
                   searchable
-                  searchPlaceholder="Search access groups"
+                  searchPlaceholder="Search by group name..."
                   disabled={!enforced}
                 />
                 {entry.groupIds.length === 0 && (

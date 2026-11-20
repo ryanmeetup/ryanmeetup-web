@@ -734,7 +734,7 @@ export function ContactEditor(props: ContactEditorProps) {
               name="people-search"
               value={peopleQuery}
               onChange={(event) => setPeopleQuery(event.target.value)}
-              placeholder="Search people…"
+              placeholder="Search by name, title, email, or phone..."
               disabled={saving}
               pending={peopleSearchPending}
               pendingLabel="Loading people results"

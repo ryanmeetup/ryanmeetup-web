@@ -301,7 +301,7 @@ export function TaskFields({
               patch({ category_tags });
             }}
             searchable
-            searchPlaceholder="Search tags"
+            searchPlaceholder="Search by tag name..."
             disabled={tagOptions.length === 0}
             placeholder={
               draft.category_ids.length === 0

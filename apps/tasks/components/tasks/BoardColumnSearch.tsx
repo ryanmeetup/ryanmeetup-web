@@ -25,7 +25,7 @@ export function BoardColumnSearch({
         aria-busy={isPending}
         value={query}
         onChange={(event) => setQuery(event.target.value)}
-        placeholder={`Search ${statusName}...`}
+        placeholder="Search by title, ID, or description..."
         className="h-8 w-full rounded-lg border border-black/10 bg-white pl-8 pr-8 text-sm outline-none focus:border-black/30 focus:ring-2 focus:ring-black/10 sm:h-9 sm:pl-9 sm:pr-9 dark:border-white/10 dark:bg-white/5 dark:focus:border-white/30 [&::-webkit-search-cancel-button]:appearance-none"
       />
       {isPending && (

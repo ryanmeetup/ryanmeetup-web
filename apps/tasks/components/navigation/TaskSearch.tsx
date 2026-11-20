@@ -256,8 +256,8 @@ export function TaskSearch({
         }}
         placeholder={
           showDetailedPlaceholder
-            ? "Search tasks by title, ID, or project..."
-            : "Search tasks…"
+            ? "Search by title, ID, or project..."
+            : "Search by title or ID..."
         }
         className={`h-8 w-full rounded-lg border border-black/10 bg-white pl-8 text-sm outline-none focus:border-black/30 focus:ring-2 focus:ring-black/10 max-sm:placeholder:text-sm sm:h-10 sm:pl-10 sm:pr-20 [&::-webkit-search-cancel-button]:appearance-none dark:border-white/10 dark:bg-white/5 dark:focus:border-white/30 ${isPending ? "pr-16" : query ? "pr-12" : "pr-3"}`}
       />

@@ -19,7 +19,7 @@ test("keeps the header search placeholder readable on narrow screens", async ({
   await page.goto("/");
 
   const search = page.getByRole("combobox", { name: "Search tasks" });
-  await expect(search).toHaveAttribute("placeholder", "Search tasks…");
+  await expect(search).toHaveAttribute("placeholder", "Search by title or ID...");
   await expect(search).toHaveCSS("font-size", "13px");
   await expect(search).toHaveCSS("height", "32px");
   const placeholderFontSize = () =>
@@ -70,7 +70,7 @@ test("explains what task search supports on desktop screens", async ({
   const search = page.getByRole("combobox", { name: "Search tasks" });
   await expect(search).toHaveAttribute(
     "placeholder",
-    "Search tasks by title, ID, or project...",
+    "Search by title, ID, or project...",
   );
   await expect(search).toHaveCSS("font-size", "13px");
   await expect(search).toHaveCSS("height", "40px");

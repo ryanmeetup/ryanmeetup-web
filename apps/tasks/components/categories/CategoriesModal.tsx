@@ -610,7 +610,7 @@ export function CategoriesModal({
                   : "Loading access groups…"
               }
               searchable
-              searchPlaceholder="Search access groups"
+              searchPlaceholder="Search by group name..."
               disabled={creating || !accessLoaded}
             />
             <p className="mt-2 text-sm text-black/70 dark:text-white/70">
@@ -816,7 +816,7 @@ export function CategoriesModal({
                     name="category-search"
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
-                    placeholder="Search categories..."
+                    placeholder="Search by name, description, or link..."
                     pending={searchPending}
                     pendingLabel="Loading category results"
                   />
@@ -1248,7 +1248,7 @@ export function CategoriesModal({
                                     : "Owners and managers only"
                                 }
                                 searchable
-                                searchPlaceholder="Search access groups"
+                                searchPlaceholder="Search by group name..."
                                 disabled={saving || !accessLoaded}
                               />
                               <p className="mt-2 text-sm text-black/70 dark:text-white/70">

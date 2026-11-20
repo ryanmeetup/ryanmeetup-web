@@ -356,6 +356,11 @@ Rules:
   state, show a loading spinner in the input while the query is pending, and
   expose the same pending state over the main results area with `aria-busy`, a
   visible loading status, and temporarily disabled/dimmed stale results.
+- Every search placeholder, including the search box inside a `DropdownSelect`
+  or `MultiSelect` menu, follows the template "Search by x, y, or z..." and
+  names only fields the search actually matches, ending in three dots. One
+  field is fine ("Search by tag name..."). Keep the list honest: when the
+  haystack changes, update the placeholder.
 - Labels must remain visible; placeholders supplement labels and do not replace
   them.
 - Write placeholders and helper copy in the Ryan voice when appropriate, but
