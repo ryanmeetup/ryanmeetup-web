@@ -11,10 +11,12 @@ import type { ReviewAccount } from "@/lib/review-collection";
 import type { CustomReviewAccess } from "@/lib/custom-review-access";
 import type { ReviewPreviewState } from "@/lib/review-provider";
 import { ProductDetail } from "./product-detail";
+import { ProductSchema } from "./product-schema";
 import { Reviews } from "./reviews";
 
-export function ProductGroupDetail({ title, handle, breadcrumbs, designs, defaultColor, reviewsByProduct, reviewAccount, reviewPreview, customReviewAccessByProduct }: {
+export function ProductGroupDetail({ title, handle, url, breadcrumbs, designs, defaultColor, reviewsByProduct, reviewAccount, reviewPreview, customReviewAccessByProduct }: {
   title: string;
+  url: string;
   breadcrumbs?: ReactNode;
   handle: string;
   designs: ProductDesign[];
@@ -58,6 +60,7 @@ export function ProductGroupDetail({ title, handle, breadcrumbs, designs, defaul
 
   return (
     <>
+      <ProductSchema product={selected.product} title={title} reviews={reviewsByProduct[selected.product.id]} url={`${url}?${new URLSearchParams({ design: selected.value })}`} />
       <ProductDetail
         key={`product-${selected.product.id}`}
         product={selected.product}

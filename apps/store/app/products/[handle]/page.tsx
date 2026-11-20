@@ -5,6 +5,7 @@ import { FiShoppingBag } from "react-icons/fi";
 import { NavSection } from "@/components/nav-section";
 import { ProductDetail } from "@/components/product-detail";
 import { ProductGroupDetail } from "@/components/product-group-detail";
+import { ProductSchema } from "@/components/product-schema";
 import { Reviews } from "@/components/reviews";
 import { getCollectionPath, getProductTypeCollection } from "@/lib/catalog-collections";
 import { buildPageMetadata, DEFAULT_IMAGE, getProductMetaDescription, SITE_URL, toMetadataImage } from "@/lib/metadata";
@@ -57,7 +58,6 @@ export default async function ProductPage({ params, searchParams }: Props) {
     const color = query.color ? `&color=${encodeURIComponent(query.color)}` : "";
     permanentRedirect(withProductOrigin(`/products/${product.handle}?design=${encodeURIComponent(requestedDesign)}${color}`, query.from));
   }
-  const selectedDesign = product.designs?.find((design) => design.value === requestedDesign);
   const reviewProducts = product.designs?.map((design) => design.product) ?? [product];
   const [reviewEntries, reviewAccount, reviewPreview, customReviewAccess] = await Promise.all([
     Promise.all(reviewProducts.map(async (item) => [item.id, await getReviews(item.id)] as const)),
@@ -66,35 +66,18 @@ export default async function ProductPage({ params, searchParams }: Props) {
     getActiveReviewProvider().then((provider) => (provider === "custom" ? getCustomReviewAccessByProduct(reviewProducts, `/products/${product.handle}`) : undefined)),
   ]);
   const reviewsByProduct = Object.fromEntries(reviewEntries);
-  const reviewCount = Object.values(reviewsByProduct).reduce((count, reviews) => count + reviews.count, 0);
-  const totalRating = Object.values(reviewsByProduct).reduce((total, reviews) => total + reviews.averageRating * reviews.count, 0);
   const originCrumbs = await getOriginCrumbs(query.from);
   const typeCollection = getProductTypeCollection(product);
-  const productSchema = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: product.title,
-    description: product.description,
-    image: (selectedDesign?.product ?? product).images.map((image) => image.url),
-    offers: {
-      "@type": "AggregateOffer",
-      priceCurrency: product.priceRange.minVariantPrice.currencyCode,
-      lowPrice: product.priceRange.minVariantPrice.amount,
-      offerCount: product.variants.length,
-      availability: product.availableForSale ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-      url: `${SITE_URL}/products/${product.handle}`,
-    },
-    ...(reviewCount ? { aggregateRating: { "@type": "AggregateRating", ratingValue: (totalRating / reviewCount).toFixed(1), reviewCount } } : {}),
-  };
+  const productUrl = `${SITE_URL}/products/${product.handle}`;
   const breadcrumbs = <Breadcrumbs variant="compact" crumbs={[{ href: "/", title: "Store", icon: <StoreHomeIcon aria-hidden className="shrink-0" /> }, ...originCrumbs, { href: `/products/${product.handle}`, title: product.title, current: true, icon: <StoreProductIcon aria-hidden className="shrink-0" /> }]} />;
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
       <NavSection href={typeCollection ? getCollectionPath(typeCollection.handle) : null} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema).replace(/</g, "\\u003c") }} />
       {product.designs ? (
-        <ProductGroupDetail title={product.title} handle={product.handle} breadcrumbs={breadcrumbs} designs={product.designs} defaultColor={product.defaultColor} reviewsByProduct={reviewsByProduct} reviewAccount={reviewAccount} reviewPreview={reviewPreview} customReviewAccessByProduct={customReviewAccess} />
+        <ProductGroupDetail title={product.title} handle={product.handle} url={productUrl} breadcrumbs={breadcrumbs} designs={product.designs} defaultColor={product.defaultColor} reviewsByProduct={reviewsByProduct} reviewAccount={reviewAccount} reviewPreview={reviewPreview} customReviewAccessByProduct={customReviewAccess} />
       ) : (
         <>
+          <ProductSchema product={product} reviews={reviewsByProduct[product.id]} url={productUrl} />
           <ProductDetail product={product} breadcrumbs={breadcrumbs} initialColor={query.color} initialImage={getColorPreview(product, query.color)?.image} />
           <Reviews data={reviewsByProduct[product.id]} product={product} reviewAccount={reviewAccount} reviewPreview={reviewPreview} customAccess={customReviewAccess?.[product.id]} />
         </>
