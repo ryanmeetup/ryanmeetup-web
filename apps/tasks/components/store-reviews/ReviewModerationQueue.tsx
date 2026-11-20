@@ -21,7 +21,7 @@ export function ReviewModerationQueue({ initial, staffNames }: { initial: Modera
     </div>
     <Text className="text-sm">Oldest first, across every rating. Buyer edits wait for approval while the approved version stays public.</Text>
     <div role="status" aria-live="polite" className="text-sm text-black/70 dark:text-white/70">
-      {queue.busy ? <span className="inline-flex items-center gap-2"><Spinner size="sm" />{queue.busy === "saving" ? "Saving decision and refreshing reviews…" : "Loading reviews…"}</span> : queue.message}
+      {queue.busy ? <span className="inline-flex items-center gap-2"><Spinner size={16} />{queue.busy === "saving" ? "Saving decision and refreshing reviews…" : "Loading reviews…"}</span> : queue.message}
     </div>
     {queue.error && <ErrorCallout>{queue.error}</ErrorCallout>}
     <div aria-label="Review queue" aria-busy={Boolean(queue.busy)} className={`space-y-4 ${queue.busy ? "opacity-60" : ""}`}>

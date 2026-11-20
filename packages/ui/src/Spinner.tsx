@@ -2,7 +2,8 @@ import type { SVGAttributes } from "react";
 
 export type SpinnerProps = SVGAttributes<SVGSVGElement> & {
   label?: string;
-  size?: number | string;
+  /** Width and height in pixels. A word such as "sm" is not a size: SVG would fall back to 300×150. */
+  size?: number;
 };
 
 const Spinner = ({
