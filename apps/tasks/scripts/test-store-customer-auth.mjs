@@ -28,6 +28,7 @@ const photoAttachmentsMigration = fileURLToPath(new URL("../supabase/migrations/
 
 const photoReadsMigration = fileURLToPath(new URL("../supabase/migrations/20261121000000_store_review_photo_reads.sql", import.meta.url));
 const rejectedQueueMigration = fileURLToPath(new URL("../supabase/migrations/20261121010000_store_review_rejected_queue.sql", import.meta.url));
+const deletionsMigration = fileURLToPath(new URL("../supabase/migrations/20261121020000_store_review_deletions.sql", import.meta.url));
 
 function run(command, args, input, inherit = false) {
   const result = spawnSync(command, args, { cwd: appRoot, input, encoding: "utf8", stdio: inherit ? "inherit" : undefined, maxBuffer: 32 * 1024 * 1024 });
@@ -104,8 +105,9 @@ try {
     sql(readFileSync(photoAttachmentsMigration, "utf8"));
     sql(readFileSync(photoReadsMigration, "utf8"));
     sql(readFileSync(rejectedQueueMigration, "utf8"));
+    sql(readFileSync(deletionsMigration, "utf8"));
     console.log("PASS: full migration reset and idempotent auth and review migration replay");
-    run("supabase", ["test", "db", "--workdir", testRoot, join(appRoot, "tests/database/store-customer-auth.sql"), join(appRoot, "tests/database/store-reviews.sql"), join(appRoot, "tests/database/store-buyer-reviews.sql"), join(appRoot, "tests/database/store-review-photo-staging.sql"), join(appRoot, "tests/database/store-review-photo-attachments.sql"), join(appRoot, "tests/database/store-review-photo-reads.sql"), join(appRoot, "supabase/tests/access_control.sql")], undefined, true);
+    run("supabase", ["test", "db", "--workdir", testRoot, join(appRoot, "tests/database/store-customer-auth.sql"), join(appRoot, "tests/database/store-reviews.sql"), join(appRoot, "tests/database/store-buyer-reviews.sql"), join(appRoot, "tests/database/store-review-photo-staging.sql"), join(appRoot, "tests/database/store-review-photo-attachments.sql"), join(appRoot, "tests/database/store-review-photo-reads.sql"), join(appRoot, "tests/database/store-review-deletions.sql"), join(appRoot, "supabase/tests/access_control.sql")], undefined, true);
     const integration = spawnSync("npx", ["playwright", "test", "tests/customer-account-storage.spec.ts", "--workers=1"], {
       cwd: fileURLToPath(new URL("../../store/", import.meta.url)),
       env: { ...process.env, STORE_AUTH_TEST_CONTAINER: container, STORE_BASE_URL: "http://127.0.0.1:39999" }, stdio: "inherit",
