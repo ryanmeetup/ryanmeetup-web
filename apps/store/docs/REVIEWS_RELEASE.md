@@ -13,7 +13,9 @@ Claude's verified/unverified submission changes are committed, and migration
 `20261120210000` and staging version `20261120220000` are confirmed in RMT.
 Record the completed Shopify/lifecycle evidence separately from the provider
 switch, and verify the exact release candidate deployed.
-Judge.me imports remain deferred. Custom request emails remain Phase 2.
+Existing Judge.me reviews remain there without import or custom-storefront
+display, per the November 20 decision. Export a copy before eventual uninstall.
+Custom request emails remain Phase 2.
 
 ## Release record
 
@@ -30,7 +32,7 @@ Store secrets, buyer identifiers and exported review data outside Git.
 | Review policy | Final verified/unverified behavior, duplicate rules, moderation policy and tests from Claude's completed implementation. |
 | Migration state | Exact committed RMT-only versions applied, with remote verification. Do not assume a local draft is applied. |
 | Recovery evidence | Private location of the review snapshot, cutoff totals/timestamps and successful isolated restore evidence. |
-| Historical reviews | Agreed presentation/retention of Judge.me history without imports. Provider switching does not merge it into custom reads. |
+| Historical reviews | Judge.me history stays there and does not appear in custom reads. No import is planned; export a copy before uninstalling Judge.me. |
 | Collection entry points | Product CTA, customer-account buttons, existing Judge.me request links and queued emails; record which remain active. |
 | Scope and window | Explicit photo-launch scope, start time, observation window and conditions for resuming or pausing. No duration is assumed here. |
 

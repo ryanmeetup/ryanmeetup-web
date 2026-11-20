@@ -47,8 +47,10 @@ and a fake Supabase transport. The HTTPS sign-in tunnel's hostname is allowed
 for Next development assets; that is configuration support, not proof of a
 successful live sign-in.
 
-**Judge.me content imports are deferred at Ryan's request (November 18).**
-There is no active import or import dry-run milestone. Review request emails,
+**Existing Judge.me reviews stay in Judge.me and will not be imported**
+(November 20 decision, recorded in `62e348eb`). They no longer appear in the
+custom storefront or its rating totals; export a copy before any eventual
+uninstall. There is no active import or import dry-run milestone. Review request emails,
 shop-wide discovery, and a native Shopify order-page shortcut remain Phase 2.
 The earlier 4–6 week figure was an initial estimate, not a current estimate of
 remaining effort; reassess after the live Shopify gate.
@@ -429,9 +431,9 @@ No production setting, provider or review data was changed here.
 1. Pass the live buyer gate, public wiring checks, full lifecycle and agreed
    media scope; complete operational preparation. Record the exact deployed
    versions, environment/project identities and release owner.
-2. Decide how historical Judge.me reviews will be presented or retained while
-   imports are deferred. Custom reads deliberately do not merge/fall back to
-   Judge.me, so switching providers will not carry its history along.
+2. Preserve the agreed historical-review handling: Judge.me reviews remain
+   there without import or custom-storefront display. Export a copy before
+   uninstalling Judge.me. Custom reads do not merge/fall back to that history.
 3. In the planned window, coordinate Judge.me collection and its queued request
    emails, remove/redirect old entry points, and verify that the deployed
    source refuses legacy anonymous POSTs with `410`. Only then open the custom
