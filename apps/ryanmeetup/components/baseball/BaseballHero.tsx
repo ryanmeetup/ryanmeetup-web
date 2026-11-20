@@ -1,4 +1,5 @@
 import { Button, Heading, Kicker, Text } from "@ryanmeetup/ui";
+import { FaCamera as Camera } from "react-icons/fa";
 
 import type { BaseballTeam } from "@/lib/types";
 import { getSeasonStats } from "@/utils/baseball";
@@ -9,6 +10,19 @@ type BaseballHeroProps = {
   seasonRange: string | null;
   hasMerch: boolean;
 };
+
+// Albums from earlier installments, copied from their Contentful `gallery`
+// entries (also listed on /gallery).
+const PAST_ALBUMS = [
+  {
+    title: "Ryan Baseball Classic",
+    href: "https://photos.app.goo.gl/e91wbBpxYyCcaudV9",
+  },
+  {
+    title: "Ryans @ Rockies",
+    href: "https://photos.app.goo.gl/rTSW8pzCw6TgczcC9",
+  },
+];
 
 type Point = [number, number];
 type Seam = [Point, Point, Point, Point];
@@ -137,7 +151,7 @@ const BaseballHero = ({ teams, seasonRange, hasMerch }: BaseballHeroProps) => {
           </dl>
         )}
 
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-center">
           <Button.Link href="#find" size="md" fullWidth className="sm:w-auto">
             Find your game
           </Button.Link>
@@ -152,6 +166,21 @@ const BaseballHero = ({ teams, seasonRange, hasMerch }: BaseballHeroProps) => {
               Shop the merch
             </Button.Link>
           )}
+          {PAST_ALBUMS.map((album) => (
+            <Button.Link
+              key={album.href}
+              href={album.href}
+              newTab
+              size="md"
+              variant="secondary"
+              leftIcon={<Camera aria-hidden />}
+              fullWidth
+              className="sm:w-auto"
+              aria-label={`${album.title} photo album (opens in a new tab)`}
+            >
+              {album.title}
+            </Button.Link>
+          ))}
         </div>
       </div>
     </section>
