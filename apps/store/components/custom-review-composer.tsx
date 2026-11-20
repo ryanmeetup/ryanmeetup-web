@@ -14,7 +14,7 @@ import {
 } from "@ryanmeetup/reviews";
 import { Button, DropdownSelect, ErrorCallout, Input, Modal, ModalActions, StarRating, Text, Textarea } from "@ryanmeetup/ui";
 import type { CustomReviewAccess } from "@/lib/custom-review-access";
-import { reviewSignInRel } from "@/lib/review-sign-in";
+import { reviewSignInRel, signInExplanation } from "@/lib/review-sign-in";
 import type { Product } from "@/lib/types";
 
 export type CustomReviewResult = { ok: true; message: string } | { ok: false; error: string };
@@ -34,7 +34,7 @@ const NAME_STYLE_LABELS: Record<ReviewNameStyle, string> = {
 /** What each state says when there's no form to show. */
 const CLOSED_COPY: Record<Exclude<CustomReviewAccess["status"], "ready">, { title: string; body: string }> = {
   unavailable: { title: "Reviews are closed for now", body: "Review collection is temporarily unavailable. Please try again later." },
-  "signed-out": { title: "Sign in to review", body: "Sign in with your store account and we'll bring you right back here. Use the email you ordered with, and your review gets a Verified badge." },
+  "signed-out": { title: "Sign in to review", body: "We'll send you to Shopify to sign in with your email, then right back here. Already signed in to Shopify on this device? You'll come straight back as that account. Use the email you ordered with, and your review gets a Verified badge." },
   reviewed: { title: "You've already reviewed this", body: "Thanks for weighing in. Edit or withdraw your review from My reviews." },
 };
 
@@ -148,6 +148,7 @@ export function CustomReviewComposer({
       >
         {productCard}
         <Text>{copy.body}</Text>
+        {access.status === "signed-out" && <Text className="text-sm">{signInExplanation.newHere}</Text>}
       </Modal>
     );
   }

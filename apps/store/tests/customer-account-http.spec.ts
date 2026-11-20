@@ -4,6 +4,8 @@ import type { JWK } from "jose";
 import { GET as start } from "../app/api/reviews/auth/start/route";
 import { GET as callback } from "../app/api/reviews/auth/callback/route";
 import { POST as logout } from "../app/api/reviews/auth/logout/route";
+import { POST as switchAccount } from "../app/api/reviews/auth/switch/route";
+import { customerSignedInNoticeCookie } from "../lib/customer-account/notice";
 import { customerAuthorizationCookie } from "../lib/customer-account/authorization";
 import { customerSessionCookie } from "../lib/customer-account/sign-in";
 import { customerAuthBackendFixture, fakeSupabaseUrl } from "./fixtures/customer-auth-backend";
@@ -83,6 +85,8 @@ test("callback verifies identity, persists an encrypted session, and restores th
   expect(response.headers.get("location")).toBe("https://store.test/products/tee?color=blue#reviews");
   expect(response.cookies.get(customerSessionCookie)?.value).toMatch(/^[A-Za-z0-9_-]{43}$/);
   expect(response.cookies.get(customerAuthorizationCookie)?.value).toBe("");
+  // A short-lived "1" lets the returning page say who signed in; it carries no identity.
+  expect(response.cookies.get(customerSignedInNoticeCookie)).toMatchObject({ value: "1", maxAge: 300, secure: true });
   expect(transport.requests.map(({ operation }) => operation)).toEqual(["authorization.create", "authorization.get", "authorization.consume", "session.create"]);
   expect(JSON.stringify(transport.requests)).not.toContain("private-access");
   expect(JSON.stringify(transport.requests)).not.toContain("private-refresh");
@@ -214,6 +218,28 @@ test("review-session logout works after switching to Judge.me and when Shopify d
   expect(response.cookies.get(customerSessionCookie)?.value).toBe("");
   expect([...transport.sessions.values()]).toEqual([null]);
   expect(requests.map((url) => url.split("?")[0])).toEqual([`${fakeSupabaseUrl}/rest/v1/rpc/store_revoke_customer_session`]);
+});
+
+test("switching accounts ends this session and hands back Shopify's logout so the next sign-in can pick another account", async () => {
+  const { state, binding } = await begin();
+  const signedIn = await callback(callbackRequest(state, binding));
+  const id = signedIn.cookies.get(customerSessionCookie)!.value;
+  const switchRequest = (headers: HeadersInit) => new Request("https://store.test/api/reviews/auth/switch", { method: "POST", headers: { origin: "https://store.test", cookie: `${customerSessionCookie}=${id}`, ...headers } });
+  expect((await switchAccount(switchRequest({ origin: "https://attacker.test" }))).status).toBe(403);
+  expect([...transport.sessions.values()].some((session) => session !== null)).toBe(true);
+  const response = await switchAccount(switchRequest({}));
+  expect(response.status).toBe(200);
+  const { signedOut, shopifyLogoutUrl } = await response.json();
+  expect(signedOut).toBe(true);
+  const logoutUrl = new URL(shopifyLogoutUrl);
+  expect(`${logoutUrl.origin}${logoutUrl.pathname}`).toBe(metadata.end_session_endpoint);
+  expect(logoutUrl.searchParams.get("id_token_hint")).toBeTruthy();
+  expect(logoutUrl.searchParams.get("post_logout_redirect_uri")).toBe("https://store.test/");
+  expect(response.cookies.get(customerSessionCookie)?.value).toBe("");
+  expect([...transport.sessions.values()]).toEqual([null]);
+  // Nobody signed in: nothing to end at Shopify, so the browser just starts a sign-in.
+  const nobody = await switchAccount(new Request("https://store.test/api/reviews/auth/switch", { method: "POST", headers: { origin: "https://store.test" } }));
+  expect(await nobody.json()).toEqual({ signedOut: true, shopifyLogoutUrl: null });
 });
 
 test("logout rejects cross-origin requests and preserves retry capability during storage failure", async () => {

@@ -2,12 +2,32 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { FiLogIn, FiLogOut, FiMessageSquare, FiPackage, FiSettings, FiUser } from "react-icons/fi";
+import { FiLogIn, FiLogOut, FiMessageSquare, FiPackage, FiRepeat, FiSettings, FiUser } from "react-icons/fi";
 import { DropdownMenu, DropdownMenuButton, DropdownMenuItem, DropdownMenuItemLink, DropdownMenuItems, DropdownMenuSeparator, Tooltip, toast } from "@ryanmeetup/ui";
 import type { CustomerAccountStatus } from "@/lib/customer-account/account-status";
-import { reviewSignInRel, reviewSignInUrl } from "@/lib/review-sign-in";
+import { customerSignedInNoticeCookie } from "@/lib/customer-account/notice";
+import { reviewSignInUrl } from "@/lib/review-sign-in";
+import { SignInDialog } from "./sign-in-dialog";
 
 type MenuStatus = CustomerAccountStatus | { status: "loading" };
+
+// Set before leaving for Shopify's logout, so the storefront it returns to
+// can go straight on to a fresh sign-in.
+const switchingKey = "store-switching-account";
+
+function takeSwitching() {
+  try {
+    const switching = sessionStorage.getItem(switchingKey) === "1";
+    sessionStorage.removeItem(switchingKey);
+    return switching;
+  } catch { return false; }
+}
+
+function takeSignedInNotice() {
+  const present = document.cookie.split("; ").some((entry) => entry === `${customerSignedInNoticeCookie}=1`);
+  if (present) document.cookie = `${customerSignedInNoticeCookie}=; Max-Age=0; Path=/; Secure; SameSite=Lax`;
+  return present;
+}
 
 /** Shopify's account pages live under the account URL; profile edits sit beside order history. */
 function accountPage(accountUrl: string, page: string) {
@@ -26,14 +46,51 @@ export function AccountMenu({ accountUrl }: { accountUrl: string | null }) {
   const [account, setAccount] = useState<MenuStatus>({ status: "loading" });
   const [signingOut, setSigningOut] = useState(false);
   const [refreshing, startTransition] = useTransition();
+  const [switching, setSwitching] = useState(false);
+  const [signInOpen, setSignInOpen] = useState(false);
+
+  async function switchAccount() {
+    setSwitching(true);
+    try {
+      const response = await fetch("/api/reviews/auth/switch", { method: "POST" });
+      if (!response.ok) throw new Error("Switch failed");
+      const { shopifyLogoutUrl } = (await response.json()) as { shopifyLogoutUrl: string | null };
+      if (shopifyLogoutUrl) {
+        try { sessionStorage.setItem(switchingKey, "1"); } catch { /* Without storage, the shopper signs in again by hand. */ }
+        window.location.assign(shopifyLogoutUrl);
+      } else {
+        window.location.assign(reviewSignInUrl(pathname));
+      }
+    } catch {
+      setSwitching(false);
+      toast.error("Couldn't switch accounts. Please try again.", { id: "switch-account-failed" });
+    }
+  }
 
   useEffect(() => {
     let current = true;
     fetch("/api/account", { cache: "no-store" })
       .then((response) => (response.ok ? (response.json() as Promise<CustomerAccountStatus>) : { status: "unavailable" as const }))
       .catch(() => ({ status: "unavailable" as const }))
-      .then((status) => { if (current) setAccount(status); });
+      .then((status) => {
+        if (!current) return;
+        setAccount(status);
+        // Back from Shopify's logout while switching: sign in again, now with no remembered account.
+        if (takeSwitching() && status.status === "signed-out") window.location.assign(reviewSignInUrl(window.location.pathname));
+        // Just back from signing in: say who, with an easy way out if Shopify remembered someone else.
+        if (takeSignedInNotice() && status.status === "signed-in") {
+          toast.custom((t) => (
+            <span className="text-sm">
+              Signed in as <span className="font-semibold">{status.email ?? "your store account"}</span>.{" "}
+              <button type="button" className="rounded-sm underline decoration-current/50 underline-offset-2 hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
+                onClick={() => { toast.dismiss(t.id); void switchAccount(); }}>Not you? Use a different account</button>
+            </span>
+          ), { id: "signed-in-as", duration: 10_000 });
+        }
+      });
     return () => { current = false; };
+    // Runs once per page load; switchAccount only reads stable values.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function signOut() {
@@ -76,9 +133,9 @@ export function AccountMenu({ accountUrl }: { accountUrl: string | null }) {
           </div>
         )}
         {account.status === "signed-out" && (
-          <DropdownMenuItemLink href={reviewSignInUrl(pathname)} rel={reviewSignInRel}>
+          <DropdownMenuItem onClick={() => setSignInOpen(true)}>
             <FiLogIn aria-hidden /> Sign in
-          </DropdownMenuItemLink>
+          </DropdownMenuItem>
         )}
         {(signedIn || account.status === "signed-out") && accountUrl && <DropdownMenuSeparator />}
         {accountUrl && (
@@ -99,12 +156,16 @@ export function AccountMenu({ accountUrl }: { accountUrl: string | null }) {
         {signedIn && (
           <>
             <DropdownMenuSeparator />
+            <DropdownMenuItem disabled={switching} onClick={() => void switchAccount()}>
+              <FiRepeat aria-hidden /> {switching ? "Switching…" : "Use a different account"}
+            </DropdownMenuItem>
             <DropdownMenuItem disabled={signingOut || refreshing} onClick={() => void signOut()}>
               <FiLogOut aria-hidden /> {signingOut || refreshing ? "Signing out…" : "Sign out"}
             </DropdownMenuItem>
           </>
         )}
       </DropdownMenuItems>
+      <SignInDialog open={signInOpen} setOpen={setSignInOpen} returnTo={pathname} />
     </DropdownMenu>
   );
 }

@@ -145,8 +145,14 @@ test("the header account menu signs a shopper in from any page and out again", a
   // Signed out: the menu offers sign-in that comes back to this page.
   await page.goto("/apparel");
   await page.getByRole("button", { name: "Account", exact: true }).click();
-  await expect(page.getByRole("menuitem", { name: "Sign in" })).toHaveAttribute("href", "/api/reviews/auth/start?returnTo=%2Fapparel");
-  await page.keyboard.press("Escape");
+  await page.getByRole("menuitem", { name: "Sign in" }).click();
+  // Before leaving for Shopify, say what happens and that new shoppers are welcome.
+  const explain = page.getByRole("dialog", { name: "Sign in with Shopify", exact: true });
+  await expect(explain.getByText(/Already signed in to Shopify on this device/)).toBeVisible();
+  await expect(explain.getByText(/New here\? Any email works/)).toBeVisible();
+  await expect(explain.getByRole("link", { name: "Continue to Shopify", exact: true })).toHaveAttribute("href", "/api/reviews/auth/start?returnTo=%2Fapparel");
+  await explain.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(explain).toHaveCount(0);
 
   await signIn(page, baseURL!);
   await page.goto(productPath);
@@ -173,6 +179,27 @@ test("the header account menu signs a shopper in from any page and out again", a
   await expect(page.getByRole("dialog", { name: "Sign in to review", exact: true }).getByRole("link", { name: "Sign in", exact: true })).toBeVisible();
   expect(signOuts).toBe(1);
   expect((await state(request)).calls).toEqual([]);
+});
+
+test("after signing in, the shopper sees who they are and can switch to another account", async ({ page, baseURL }) => {
+  await signIn(page, baseURL!);
+  // What the sign-in callback leaves behind for the page it returns to.
+  await page.context().addCookies([{ name: "store-signed-in-notice", value: "1", url: baseURL! }]);
+  await page.goto("/apparel");
+  const notice = page.getByText(/^Signed in as/).filter({ hasText: "your store account" });
+  await expect(notice).toBeVisible();
+  // Shown once: the notice cookie is gone after this load.
+  expect((await page.context().cookies()).some((cookie) => cookie.name === "store-signed-in-notice")).toBe(false);
+
+  // Switching ends this session, visits Shopify's logout (stood in for by a store page here),
+  // then starts a fresh sign-in on its own so Shopify asks for an email instead of reusing one.
+  await page.route("**/api/reviews/auth/switch", async (route) => {
+    await page.context().clearCookies({ name: "__Host-store-customer-session" });
+    await route.fulfill({ json: { signedOut: true, shopifyLogoutUrl: new URL("/collections", baseURL).href } });
+  });
+  await page.route("**/api/reviews/auth/start**", (route) => route.fulfill({ contentType: "text/html", body: "<title>Shopify sign-in</title>" }));
+  await page.getByRole("button", { name: "Not you? Use a different account", exact: true }).click();
+  await page.waitForURL(/\/api\/reviews\/auth\/start\?returnTo=%2Fcollections$/);
 });
 
 test("a signed-out visitor is asked to sign in", async ({ page }) => {
