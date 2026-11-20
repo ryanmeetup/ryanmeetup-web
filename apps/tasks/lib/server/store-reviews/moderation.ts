@@ -3,9 +3,9 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { reviewReplyBodySchema, reviewSubmissionSchema } from "@ryanmeetup/reviews";
 import { parseUuid } from "@/lib/api-schema";
-import { isModerationTimestamp } from "@/lib/store-reviews/moderation";
+import { isModerationProductId, isModerationTimestamp } from "@/lib/store-reviews/moderation";
 import { StoreReviewDatabaseError } from "./errors";
-import type { ModerationDecision, ModerationEvent, ModerationPage, ModerationQuery, ModerationReview, ModerationRevision, ReviewReplyCommand } from "@/lib/store-reviews/moderation";
+import type { ModerationDecision, ModerationEvent, ModerationPage, ModerationProduct, ModerationQuery, ModerationReview, ModerationRevision, ReviewReplyCommand } from "@/lib/store-reviews/moderation";
 
 function object(value: unknown, keys: string[]): Record<string, unknown> | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
@@ -32,18 +32,20 @@ function event(value: unknown): ModerationEvent | null {
   return row as ModerationEvent;
 }
 function review(value: unknown): ModerationReview | null {
-  const row = object(value, ["id", "state", "createdAt", "updatedAt", "item", "verifiedPurchase", "pending", "published", "latest", "recentEvents", "reply"]);
+  const row = object(value, ["id", "state", "createdAt", "updatedAt", "item", "verifiedPurchase", "pending", "published", "latest", "rejected", "recentEvents", "reply"]);
   if (!row || !parseUuid(row.id) || !["active", "hidden", "withdrawn"].includes(String(row.state)) ||
     !isModerationTimestamp(row.createdAt) || !isModerationTimestamp(row.updatedAt) || typeof row.verifiedPurchase !== "boolean") return null;
   const item = object(row.item, ["productId", "productTitle", "variantTitle"]);
-  if (!item || typeof item.productId !== "string" || !/^[1-9][0-9]{0,19}$/.test(item.productId) ||
+  if (!item || !isModerationProductId(item.productId) ||
     !text(item.productTitle, 255) || (item.variantTitle !== null && !text(item.variantTitle, 255))) return null;
   const pending = row.pending === null ? null : revision(row.pending);
   const published = row.published === null ? null : revision(row.published);
   const latest = revision(row.latest);
+  const rejected = row.rejected === null ? null : revision(row.rejected);
   if ((!pending && row.pending !== null) || (!published && row.published !== null) || !latest ||
+    (!rejected && row.rejected !== null) || (rejected && (pending || rejected.id !== latest.id)) ||
     !Array.isArray(row.recentEvents) || row.recentEvents.length > 10 ||
-    (row.state === "withdrawn" && (pending || published))) return null;
+    (row.state === "withdrawn" && (pending || published || rejected))) return null;
   const events = row.recentEvents.map(event);
   if (events.some((entry) => !entry)) return null;
   const reply = row.reply === null ? null : object(row.reply, ["body", "publishedAt", "updatedAt"]);
@@ -52,22 +54,37 @@ function review(value: unknown): ModerationReview | null {
   return { id: row.id as string, state: row.state as ModerationReview["state"], createdAt: row.createdAt, updatedAt: row.updatedAt,
     item: { productId: item.productId, productTitle: item.productTitle, variantTitle: item.variantTitle },
     verifiedPurchase: row.verifiedPurchase,
-    pending, published, latest, recentEvents: events as ModerationEvent[],
+    pending, published, latest, rejected, recentEvents: events as ModerationEvent[],
     reply: reply ? { body: reply.body as string, publishedAt: reply.publishedAt as string, updatedAt: reply.updatedAt as string } : null };
 }
 
+function product(value: unknown): ModerationProduct | null {
+  const row = object(value, ["productId", "productTitle"]);
+  return row && isModerationProductId(row.productId) && text(row.productTitle, 255)
+    ? { productId: row.productId, productTitle: row.productTitle } : null;
+}
+
+async function loadModerationProducts(admin: SupabaseClient, actor: string, shopId: string): Promise<ModerationProduct[]> {
+  const { data, error } = await admin.rpc("store_review_moderation_products", { p_actor: actor, p_shop_id: shopId });
+  if (error) throw new StoreReviewDatabaseError(error.code);
+  if (!Array.isArray(data) || data.length > 500) throw new StoreReviewDatabaseError();
+  const rows = data.map(product);
+  if (rows.some((row) => !row)) throw new StoreReviewDatabaseError();
+  return rows as ModerationProduct[];
+}
+
 export async function loadReviewModerationPage(admin: SupabaseClient, actor: string, shopId: string, query: ModerationQuery): Promise<ModerationPage> {
-  const { data, error } = await admin.rpc("store_review_moderation_page_v3", {
-    p_actor: actor, p_shop_id: shopId, p_filter: query.filter, p_limit: 21,
+  const [{ data, error }, products] = await Promise.all([admin.rpc("store_review_moderation_page_v4", {
+    p_actor: actor, p_shop_id: shopId, p_filter: query.filter, p_product_id: query.productId, p_limit: 21,
     p_after_created_at: query.after?.createdAt ?? null, p_after_id: query.after?.id ?? null,
-  });
+  }), loadModerationProducts(admin, actor, shopId)]);
   if (error) throw new StoreReviewDatabaseError(error.code);
   if (!Array.isArray(data) || data.length > 21) throw new StoreReviewDatabaseError();
   const rows = data.map(review);
   if (rows.some((row) => !row)) throw new StoreReviewDatabaseError();
   const reviews = (rows as ModerationReview[]).slice(0, 20);
   const last = reviews.at(-1);
-  return { reviews, next: rows.length > 20 && last ? { id: last.id, createdAt: last.createdAt } : null };
+  return { reviews, products, next: rows.length > 20 && last ? { id: last.id, createdAt: last.createdAt } : null };
 }
 
 export async function moderateReview(admin: SupabaseClient, actor: string, shopId: string, decision: ModerationDecision): Promise<boolean> {

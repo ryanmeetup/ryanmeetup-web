@@ -30,6 +30,10 @@ decision. Buyer withdrawals stay withdrawn.
 Write, edit, or remove an official public reply from the same queue. Preview
 the exact reply before publishing; hidden reviews stay hidden when you reply.
 
+Rejected reviews are kept, never deleted. Find them in the Rejected queue and
+publish one anyway if you change your mind. Narrow any queue to a single
+product with the Product filter.
+
 ### Save a focused task view
 
 Save your current task filters, exclusions, sort order, and board or list layout

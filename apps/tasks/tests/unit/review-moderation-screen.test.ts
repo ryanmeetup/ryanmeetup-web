@@ -21,7 +21,7 @@ describe("review moderation screen boundary", () => {
   it("requires an owner workspace before loading private moderation data", async () => {
     await StoreReviewsPage();
     expect(mocks.workspace).toHaveBeenCalledWith(["profiles", "statuses", "categories", "projects"], { owner: true });
-    expect(mocks.load).toHaveBeenCalledWith({ marker: "private-client" }, "owner", "123", { filter: "pending", after: null });
+    expect(mocks.load).toHaveBeenCalledWith({ marker: "private-client" }, "owner", "123", { filter: "pending", productId: null, after: null });
     mocks.load.mockClear(); mocks.scope.mockClear();
     mocks.workspace.mockRejectedValue(new Error("Owner required"));
     await expect(StoreReviewsPage()).rejects.toThrow("Owner required");

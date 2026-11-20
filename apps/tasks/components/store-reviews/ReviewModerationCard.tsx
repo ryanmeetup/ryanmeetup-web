@@ -33,7 +33,11 @@ export function ReviewModerationCard({ review, disabled, staffNames, onSelect }:
   const historyId = useId();
   const headingId = useId();
   const actions = reviewModerationActions(review);
-  const state = review.state === "hidden" ? "Hidden" : review.state === "withdrawn" ? "Withdrawn" : review.published ? "Published" : review.pending ? "Pending" : "Not published";
+  const state = review.state === "hidden" ? "Hidden" : review.state === "withdrawn" ? "Withdrawn" : review.published ? "Published" :
+    review.pending ? "Pending" : review.rejected ? "Rejected" : "Not published";
+  const second = review.published && (review.pending || review.rejected);
+  // recentEvents is newest first, so this is the reason for the rejection on screen.
+  const rejectionNote = review.rejected ? review.recentEvents.find((event) => event.action === "rejected")?.note : null;
   return <article aria-labelledby={headingId} data-testid={`review-${review.id}`}>
     <Card className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -44,14 +48,21 @@ export function ReviewModerationCard({ review, disabled, staffNames, onSelect }:
         <div className="flex shrink-0 flex-wrap gap-2">
           <Pill size="sm" variant="neutral">{state}</Pill>
           {review.pending && review.published && <Pill size="sm" variant="neutral">Edit waiting</Pill>}
+          {review.rejected && review.published && <Pill size="sm" variant="neutral">Edit rejected</Pill>}
           {!review.verifiedPurchase && <Pill size="sm" variant="neutral">No matching order</Pill>}
         </div>
       </div>
-      <div className={`grid items-start gap-4 ${review.pending && review.published ? "xl:grid-cols-2" : ""}`}>
+      <div className={`grid items-start gap-4 ${second ? "xl:grid-cols-2" : ""}`}>
         {review.pending && <ModerationVersion revision={review.pending} label={review.published ? "Waiting edit" : "Waiting for review"} />}
+        {review.rejected && <ModerationVersion revision={review.rejected} label={review.published ? "Rejected edit" : "Rejected version"} />}
         {review.published && <ModerationVersion revision={review.published} label={review.state === "hidden" ? "Approved version · hidden" : "Published version"} />}
-        {!review.pending && !review.published && <ModerationVersion revision={review.latest} label="Last submitted version" />}
+        {!review.pending && !review.published && !review.rejected && <ModerationVersion revision={review.latest} label="Last submitted version" />}
       </div>
+      {review.rejected && <div className="space-y-1">
+        {rejectionNote && <Text className="whitespace-pre-wrap text-sm wrap-anywhere">Private reason: {rejectionNote}</Text>}
+        <Text className="text-sm">{review.published ? "This edit is kept, not deleted. The published version stays live until you publish the edit." :
+          "Kept off the storefront, not deleted. You can still publish it."}</Text>
+      </div>}
       {review.state === "hidden" && <Text className="text-sm">Hidden from the storefront and rating totals. Approving an edit keeps it hidden.</Text>}
       {review.state === "withdrawn" && <Text className="text-sm">Withdrawn by the buyer. Staff cannot restore this review.</Text>}
       {actions.length > 0 && <div className="flex flex-wrap items-center gap-2">
@@ -80,7 +91,8 @@ export function ReviewModerationCard({ review, disabled, staffNames, onSelect }:
         </> : <Text className="text-sm">No official reply yet.</Text>}
         {review.state !== "active" && <Text className="text-xs">This reply is not public while the review is {review.state}.</Text>}
       </section>}
-      <div className="border-t border-black/10 pt-3 dark:border-white/10">
+      {/* A lone "Submitted" event repeats what the card already shows. */}
+      {review.recentEvents.length > 1 && <div className="border-t border-black/10 pt-3 dark:border-white/10">
         <Button variant="ghost" size="xs" aria-expanded={historyOpen} aria-controls={historyId}
           rightIcon={<FiChevronDown aria-hidden className={`transition-transform motion-reduce:transition-none ${historyOpen ? "rotate-180" : ""}`} />}
           onClick={() => setHistoryOpen(!historyOpen)}>
@@ -96,7 +108,7 @@ export function ReviewModerationCard({ review, disabled, staffNames, onSelect }:
           </ol>
           <Text className="mt-3 text-xs">Up to 10 recent events. Reasons are visible only to staff.</Text>
         </AnimatedCollapse>
-      </div>
+      </div>}
     </Card>
   </article>;
 }

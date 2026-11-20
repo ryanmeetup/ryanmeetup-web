@@ -6,8 +6,8 @@ export function createReviewModerationFixture(json, readBody, profile) {
   const revision = (n, rating, body) => ({ id: id(n + 100), rating, title: "Ryan approved", body, displayName: "Ryan Fixture", submittedAt: initialTime });
   function row(n, pending, published = null, state = "active") {
     return { reply: null, id: id(n), state, createdAt: `2026-11-18T12:00:${String(n).padStart(2, "0")}.123456Z`, updatedAt: initialTime,
-      item: { productId: "100", productTitle: `Fixture shirt ${n}`, variantTitle: "Black / M" }, verifiedPurchase: n !== 1,
-      pending, published, latest: pending ?? published ?? revision(n, 4, "Withdrawn text."),
+      item: { productId: String(100 + n), productTitle: `Fixture shirt ${n}`, variantTitle: "Black / M" }, verifiedPurchase: n !== 1,
+      pending, published, latest: pending ?? published ?? revision(n, 4, "Withdrawn text."), rejected: null,
       recentEvents: [{ action: "submitted", actorKind: "buyer", actor: null, note: null, createdAt: initialTime }] };
   }
   function reset(settings = {}) {
@@ -45,17 +45,23 @@ export function createReviewModerationFixture(json, readBody, profile) {
       response.writeHead(200, { "content-range": count ? `0-${count - 1}/${count}` : `*/0`, "access-control-allow-origin": "*", "access-control-expose-headers": "*" });
       response.end(); return true;
     }
-    if (!["/rest/v1/rpc/store_review_moderation_page_v3", "/rest/v1/rpc/store_moderate_review", "/rest/v1/rpc/store_save_review_reply"].includes(url.pathname)) return false;
+    if (!["/rest/v1/rpc/store_review_moderation_page_v4", "/rest/v1/rpc/store_review_moderation_products", "/rest/v1/rpc/store_moderate_review", "/rest/v1/rpc/store_save_review_reply"].includes(url.pathname)) return false;
     const command = await readBody(request);
     if (!isOwner() || command.p_actor !== profile.id || command.p_shop_id !== "123" || request.headers.apikey !== "sb_secret_test") {
       json(response, 403, { code: "42501", message: "Owner required" }); return true;
     }
-    if (url.pathname.endsWith("store_review_moderation_page_v3")) {
+    if (url.pathname.endsWith("store_review_moderation_products")) {
       if (options.failRead) { json(response, 500, { code: "P0001", message: "Synthetic read failure" }); return true; }
-      const selected = reviews.filter((r) => command.p_filter === "all" ||
+      const products = new Map(reviews.map((r) => [r.item.productId, { productId: r.item.productId, productTitle: r.item.productTitle }]));
+      json(response, 200, [...products.values()].sort((a, b) => a.productTitle.localeCompare(b.productTitle))); return true;
+    }
+    if (url.pathname.endsWith("store_review_moderation_page_v4")) {
+      if (options.failRead) { json(response, 500, { code: "P0001", message: "Synthetic read failure" }); return true; }
+      const selected = reviews.filter((r) => (!command.p_product_id || r.item.productId === command.p_product_id) && (command.p_filter === "all" ||
         (command.p_filter === "pending" && r.pending && r.state !== "withdrawn") ||
         (command.p_filter === "published" && r.published && r.state === "active") ||
-        (command.p_filter === "hidden" && r.state === "hidden"));
+        (command.p_filter === "hidden" && r.state === "hidden") ||
+        (command.p_filter === "rejected" && r.rejected && r.state !== "withdrawn")));
       const after = command.p_after_created_at;
       json(response, 200, selected.filter((r) => !after || r.createdAt > after ||
         (r.createdAt === after && r.id > command.p_after_id)).slice(0, command.p_limit)); return true;
@@ -71,11 +77,12 @@ export function createReviewModerationFixture(json, readBody, profile) {
     }
     if (options.conflictOnce && r) {
       options.conflictOnce = false;
-      r.pending = revision(90, 2, "The buyer replaced this text."); r.latest = r.pending; r.updatedAt = advance();
+      r.pending = revision(90, 2, "The buyer replaced this text."); r.latest = r.pending; r.rejected = null; r.updatedAt = advance();
       json(response, 200, false); return true;
     }
     if (!r || r.state === "withdrawn" || r.updatedAt !== command.p_expected_updated_at ||
-      (["approve", "reject"].includes(command.p_action) && r.pending?.id !== command.p_revision_id)) {
+      (["approve", "reject"].includes(command.p_action) && r.pending?.id !== command.p_revision_id) ||
+      (command.p_action === "republish" && r.rejected?.id !== command.p_revision_id)) {
       json(response, 200, false); return true;
     }
     if (isReply) {
@@ -83,11 +90,12 @@ export function createReviewModerationFixture(json, readBody, profile) {
       r.reply = command.p_body === null ? null : { body: command.p_body, publishedAt: r.reply?.publishedAt ?? advance(), updatedAt: advance() };
     }
     else if (command.p_action === "approve") { r.published = r.pending; r.pending = null; }
-    else if (command.p_action === "reject") { r.pending = null; }
+    else if (command.p_action === "reject") { r.rejected = r.pending; r.pending = null; }
+    else if (command.p_action === "republish") { r.published = r.rejected; r.rejected = null; }
     else if (command.p_action === "hide") { r.state = "hidden"; }
     else if (command.p_action === "restore") { r.state = "active"; }
     r.updatedAt = advance();
-    r.recentEvents.unshift({ action: isReply ? (command.p_body === null ? "reply_removed" : "reply_set") : { approve: "approved", reject: "rejected", hide: "hidden", restore: "restored" }[command.p_action],
+    r.recentEvents.unshift({ action: isReply ? (command.p_body === null ? "reply_removed" : "reply_set") : { approve: "approved", reject: "rejected", hide: "hidden", restore: "restored", republish: "approved" }[command.p_action],
       actorKind: "staff", actor: profile.id, note: command.p_note ?? null, createdAt: r.updatedAt });
     if (options.failReadAfterSave) options.failRead = true;
     json(response, 200, true); return true;

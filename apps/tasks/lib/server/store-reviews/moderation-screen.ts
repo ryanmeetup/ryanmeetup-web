@@ -13,7 +13,7 @@ export async function loadReviewModerationScreen(actor: string): Promise<Moderat
   const admin = getAdminClient();
   if (!admin) return { status: "error" };
   try {
-    return { status: "ready", page: await loadReviewModerationPage(admin, actor, scope.shopId, { filter: "pending", after: null }) };
+    return { status: "ready", page: await loadReviewModerationPage(admin, actor, scope.shopId, { filter: "pending", productId: null, after: null }) };
   } catch (error) {
     console.error("Review moderation page failed", { code: error instanceof StoreReviewDatabaseError ? error.code : undefined });
     return { status: "error" };

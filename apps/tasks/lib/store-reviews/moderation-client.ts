@@ -3,8 +3,9 @@
 import { mutate, parseMutationResponse } from "@/lib/mutation-client";
 import type { ModerationCursor, ModerationDecision, ModerationFilter, ModerationPage, ReviewReplyCommand } from "./moderation";
 
-export async function fetchModerationPage(filter: ModerationFilter, after: ModerationCursor | null = null): Promise<ModerationPage> {
+export async function fetchModerationPage(filter: ModerationFilter, productId: string | null, after: ModerationCursor | null = null): Promise<ModerationPage> {
   const params = new URLSearchParams({ filter });
+  if (productId) params.set("productId", productId);
   if (after) {
     params.set("afterCreatedAt", after.createdAt);
     params.set("afterId", after.id);

@@ -75,12 +75,53 @@ test("requires a private rejection reason and keeps the approved version", async
   await dialog.getByRole("button", { name: "Reject edit", exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await queue(page, "Published");
-  await expect(card(page, 2)).toContainText("Original approved text.");
-  await expect(card(page, 2)).not.toContainText("Updated after washing.");
-  await card(page, 2).getByRole("button", { name: /Recent history/ }).click();
+  await expect(card(page, 2).getByRole("region", { name: "Published version" })).toContainText("Original approved text.");
+  // Rejected text is kept beside the public version, never deleted.
+  await expect(card(page, 2).getByRole("region", { name: "Rejected edit" })).toContainText("Updated after washing.");
   await expect(card(page, 2)).toContainText("Private reason: Contains private information");
+  await card(page, 2).getByRole("button", { name: /Recent history/ }).click();
   await expect(card(page, 2)).toContainText("Test Member");
   expect((await state(request)).calls[0].p_note).toBe("Contains private information");
+});
+
+test("keeps a rejected review in its own queue and can publish it anyway", async ({ page, request }) => {
+  await signIn(page); await page.goto("/store-reviews");
+  await expect(card(page, 1).getByRole("button", { name: /Recent history/ })).toHaveCount(0);
+  await card(page, 1).getByRole("button", { name: "Reject review", exact: true }).click();
+  const reject = page.getByRole("dialog", { name: "Reject review" });
+  await reject.getByLabel("Private reason").fill("Not about the shirt.");
+  await reject.getByRole("button", { name: "Reject review", exact: true }).click();
+  await expect(card(page, 1)).toHaveCount(0);
+  await queue(page, "Rejected");
+  await expect(card(page, 1).getByRole("region", { name: "Rejected version" })).toContainText("The size ran small.");
+  await expect(card(page, 1)).toContainText("Private reason: Not about the shirt.");
+  await expect(card(page, 1).getByText("Rejected", { exact: true }).first()).toBeVisible(); // The status chip.
+  await expect(card(page, 1).getByRole("button", { name: /Recent history \(2\)/ })).toBeVisible();
+  await card(page, 1).getByRole("button", { name: "Publish anyway" }).click();
+  const publish = page.getByRole("dialog", { name: "Publish anyway" });
+  await expect(publish).toContainText("The size ran small.");
+  await expect(publish.getByLabel("Private reason")).not.toHaveAttribute("required", "");
+  await publish.getByRole("button", { name: "Publish anyway", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Publish anyway: saved." })).toBeVisible();
+  await expect(page.getByText("No rejected reviews")).toBeVisible();
+  const { calls } = await state(request);
+  expect(calls.at(-1)).toMatchObject({ p_action: "republish", p_review_id: id(1), p_revision_id: id(101), p_note: null });
+  await queue(page, "Published");
+  await expect(card(page, 1).getByRole("region", { name: "Published version" })).toContainText("The size ran small.");
+});
+
+test("narrows any queue to one product", async ({ page }) => {
+  await signIn(page); await page.goto("/store-reviews");
+  await expect(card(page, 1)).toBeVisible(); await expect(card(page, 2)).toBeVisible();
+  await page.getByRole("button", { name: /^Product/ }).click();
+  await page.getByRole("option", { name: "Fixture shirt 2", exact: true }).click();
+  await expect(card(page, 1)).toHaveCount(0);
+  await expect(card(page, 2)).toBeVisible();
+  await queue(page, "All reviews");
+  await expect(page.locator('[aria-label="Review queue"] article')).toHaveCount(1);
+  await page.getByRole("button", { name: /^Product/ }).click();
+  await page.getByRole("option", { name: "All products", exact: true }).click();
+  await expect(card(page, 4)).toBeVisible();
 });
 
 test("hides with a reason and restores the approved review with its audit history", async ({ page }) => {
@@ -111,7 +152,8 @@ test("approving a hidden edit keeps it hidden and withdrawn reviews offer no dec
   await expect(card(page, 3).getByText("Hidden", { exact: true })).toBeVisible();
   await queue(page, "All reviews");
   await expect(card(page, 4)).toContainText("Staff cannot restore this review.");
-  await expect(card(page, 4).getByRole("button")).toHaveCount(1); // Read-only history disclosure.
+  // No decisions, and a lone "Submitted" event adds no history disclosure.
+  await expect(card(page, 4).getByRole("button")).toHaveCount(0);
 });
 
 test("refreshes conflicts without automatically repeating a decision", async ({ page, request }) => {

@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { notifyStoreReviewsChanged } from "@/hooks/useStoreReviewPendingCount";
 import { ApiMutationError } from "@/lib/mutation-client";
 import { fetchModerationPage, saveModerationDecision, saveOfficialReply } from "@/lib/store-reviews/moderation-client";
-import { moderationActionLabel, reviewModerationActions, reviewReplyActions } from "@/lib/store-reviews/moderation";
+import { moderationActionLabel, moderationRevisionId, reviewModerationActions, reviewReplyActions } from "@/lib/store-reviews/moderation";
 import type { ModerationFilter, ModerationInitialState, ModerationPage, ModerationReview, StaffReviewAction } from "@/lib/store-reviews/moderation";
 
 export type ModerationSelection = { action: StaffReviewAction; review: ModerationReview };
@@ -12,6 +12,8 @@ export type ModerationSelection = { action: StaffReviewAction; review: Moderatio
 export function useReviewModeration(initial: ModerationInitialState) {
   const [page, setPage] = useState<ModerationPage | null>(initial.status === "ready" ? initial.page : null);
   const [filter, setFilter] = useState<ModerationFilter>("pending");
+  // Null shows every product. Product IDs stay internal to this API request.
+  const [productId, setProductId] = useState<string | null>(null);
   const [busy, setBusy] = useState<"loading" | "saving" | null>(null);
   const [selection, setSelection] = useState<ModerationSelection | null>(null);
   const [error, setError] = useState(initial.status === "error" ? "Reviews could not load. Refresh the queue to try again." : "");
@@ -20,12 +22,14 @@ export function useReviewModeration(initial: ModerationInitialState) {
   const active = useRef(false);
   const disabled = initial.status === "disabled";
 
-  async function load(nextFilter = filter, more = false) {
+  async function load({ filter: nextFilter = filter, productId: nextProduct = productId, more = false }: {
+    filter?: ModerationFilter; productId?: string | null; more?: boolean;
+  } = {}) {
     if (disabled || active.current || selection) return;
     active.current = true;
-    setBusy("loading"); setError(""); setMessage(""); setFilter(nextFilter);
+    setBusy("loading"); setError(""); setMessage(""); setFilter(nextFilter); setProductId(nextProduct);
     try {
-      const result = await fetchModerationPage(nextFilter, more ? page?.next : null);
+      const result = await fetchModerationPage(nextFilter, nextProduct, more ? page?.next : null);
       setPage((current) => more && current ? {
         ...result,
         reviews: [...current.reviews, ...result.reviews.filter((row) => !current.reviews.some((existing) => existing.id === row.id))],
@@ -54,7 +58,7 @@ export function useReviewModeration(initial: ModerationInitialState) {
         await saveOfficialReply({ reviewId: review.id, expectedUpdatedAt: review.updatedAt, body: action === "reply-remove" ? null : note });
       } else {
         await saveModerationDecision({ action, reviewId: review.id, expectedUpdatedAt: review.updatedAt,
-          revisionId: action === "approve" || action === "reject" ? review.pending!.id : null, note });
+          revisionId: moderationRevisionId(action, review), note });
       }
       outcome = "saved";
     } catch (failure) {
@@ -70,7 +74,7 @@ export function useReviewModeration(initial: ModerationInitialState) {
     } else {
       if (outcome === "saved") setMessage(`${moderationActionLabel(action, review)}: saved.`);
       try {
-        setPage(await fetchModerationPage(filter));
+        setPage(await fetchModerationPage(filter, productId));
         if (outcome === "conflict") setError("This review changed. The queue has been refreshed; read the latest text before deciding.");
       } catch {
         setPage(null); setError(outcome === "saved"
@@ -81,5 +85,5 @@ export function useReviewModeration(initial: ModerationInitialState) {
     active.current = false; setBusy(null);
   }
 
-  return { page, filter, busy, selection, error, message, disabled, load, select, dismiss, decide };
+  return { page, filter, productId, busy, selection, error, message, disabled, load, select, dismiss, decide };
 }

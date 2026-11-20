@@ -14,7 +14,7 @@ const time = "2026-11-18T12:00:00.123456Z";
 const scope = { shopId: "123", clientId: "client", issuer: "https://shopify.com/authentication/123", redirectUri: "https://store.test/api/reviews/auth/callback" };
 const revision = { id: revisionId, rating: 1, title: "Ryan approved", body: "Too small.", displayName: "Anonymous", submittedAt: time };
 const row = { reply: null, id: reviewId, state: "active", createdAt: time, updatedAt: time,
-  item: { productId: "100", productTitle: "Shirt", variantTitle: null }, verifiedPurchase: true, pending: revision, published: null, latest: revision,
+  item: { productId: "100", productTitle: "Shirt", variantTitle: null }, verifiedPurchase: true, pending: revision, published: null, latest: revision, rejected: null,
   recentEvents: [{ action: "submitted", actorKind: "buyer", actor: null, note: null, createdAt: time }] };
 const decision = { action: "approve", reviewId, expectedUpdatedAt: time, revisionId, note: null };
 function post(body: unknown = decision, headers: HeadersInit = {}) {
@@ -29,6 +29,10 @@ function patch(body: unknown, headers: HeadersInit = {}) {
 }
 const reply = { reviewId, expectedUpdatedAt: time, body: "Thanks for the feedback." };
 const get = (query = "") => new Request(`https://tasks.test/api/admin/reviews${query}`);
+const products = [{ productId: "100", productTitle: "Shirt" }, { productId: "200", productTitle: "Hat" }];
+// GET reads the page and the product list together; each answers its own RPC.
+let pageResult: { data: unknown; error: unknown };
+let productResult: { data: unknown; error: unknown };
 
 describe("owner review moderation", () => {
   beforeEach(() => {
@@ -38,7 +42,9 @@ describe("owner review moderation", () => {
     vi.stubEnv("STORE_REVIEWS_CUSTOMER_AUTH_SCOPE", JSON.stringify(scope));
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://lvfaartgcpphuokoswcm.supabase.co");
     mocks.context.mockResolvedValue({ user: { id: actor }, admin: { rpc: mocks.rpc } });
-    mocks.rpc.mockResolvedValue({ data: [row], error: null });
+    pageResult = { data: [row], error: null };
+    productResult = { data: products, error: null };
+    mocks.rpc.mockImplementation(async (name: string) => name === "store_review_moderation_products" ? productResult : pageResult);
   });
   afterEach(() => { vi.unstubAllEnvs(); vi.restoreAllMocks(); });
 
@@ -72,29 +78,48 @@ describe("owner review moderation", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(response.headers.get("referrer-policy")).toBe("no-referrer");
-    expect(await response.json()).toEqual({ reviews: [row], next: null });
-    expect(mocks.rpc).toHaveBeenCalledWith("store_review_moderation_page_v3", {
-      p_actor: actor, p_shop_id: "123", p_filter: "pending", p_limit: 21, p_after_created_at: null, p_after_id: null,
+    expect(await response.json()).toEqual({ reviews: [row], next: null, products });
+    expect(mocks.rpc).toHaveBeenCalledWith("store_review_moderation_page_v4", {
+      p_actor: actor, p_shop_id: "123", p_filter: "pending", p_product_id: null, p_limit: 21, p_after_created_at: null, p_after_id: null,
     });
+    expect(mocks.rpc).toHaveBeenCalledWith("store_review_moderation_products", { p_actor: actor, p_shop_id: "123" });
+  });
+
+  it("filters the rejected queue to one product and validates the product list", async () => {
+    const rejectedRow = { ...row, pending: null, rejected: revision };
+    pageResult = { data: [rejectedRow], error: null };
+    const response = await GET(get("?filter=rejected&productId=100"));
+    expect(response.status).toBe(200);
+    expect((await response.json()).reviews[0].rejected).toEqual(revision);
+    expect(mocks.rpc).toHaveBeenCalledWith("store_review_moderation_page_v4", expect.objectContaining({ p_filter: "rejected", p_product_id: "100" }));
+    for (const invalid of [[{ ...rejectedRow, pending: revision }], [{ ...rejectedRow, rejected: { ...revision, id: reviewId } }]]) {
+      pageResult = { data: invalid, error: null };
+      expect((await GET(get())).status).toBe(500);
+    }
+    pageResult = { data: [row], error: null };
+    for (const invalid of [[{ productId: "gid://shopify/Product/1", productTitle: "Shirt" }], [{ ...products[0], customerSubject: "secret" }], null]) {
+      productResult = { data: invalid, error: null };
+      expect((await GET(get())).status).toBe(500);
+    }
   });
 
   it("bounds paging and validates complete keyset cursors without rounding", async () => {
-    mocks.rpc.mockResolvedValue({ data: Array.from({ length: 21 }, (_, i) => ({ ...row, id: `00000000-0000-4000-8000-${String(i + 1).padStart(12, "0")}` })), error: null });
+    pageResult = { data: Array.from({ length: 21 }, (_, i) => ({ ...row, id: `00000000-0000-4000-8000-${String(i + 1).padStart(12, "0")}` })), error: null };
     const response = await GET(get());
     const page = await response.json();
     expect(page.reviews).toHaveLength(20);
     expect(page.next).toEqual({ id: "00000000-0000-4000-8000-000000000020", createdAt: time });
     await GET(get(`?filter=published&afterCreatedAt=${encodeURIComponent(time)}&afterId=${reviewId}`));
-    expect(mocks.rpc).toHaveBeenLastCalledWith("store_review_moderation_page_v3", expect.objectContaining({ p_filter: "published", p_after_created_at: time, p_after_id: reviewId }));
+    expect(mocks.rpc).toHaveBeenCalledWith("store_review_moderation_page_v4", expect.objectContaining({ p_filter: "published", p_after_created_at: time, p_after_id: reviewId }));
   });
 
   it("rejects unknown fields, caller shops/actors, rating filters, and malformed cursor dates", async () => {
-    for (const query of ["?shopId=999", "?filter=5", "?filter=pending&filter=all", "?afterId=" + reviewId,
+    for (const query of ["?shopId=999", "?filter=5", "?filter=pending&filter=all", "?afterId=" + reviewId, "?productId=shirt", "?productId=0",
       `?afterCreatedAt=2026-02-31T12:00:00.123456Z&afterId=${reviewId}`]) {
       expect((await GET(get(query))).status).toBe(400);
     }
     for (const body of [{ ...decision, shopId: "999" }, { ...decision, actor }, { ...decision, action: ["approve"] },
-      { ...decision, revisionId: null }, { ...decision, expectedUpdatedAt: time.slice(0, 23) + "Z" },
+      { ...decision, revisionId: null }, { ...decision, action: "republish", revisionId: null }, { ...decision, expectedUpdatedAt: time.slice(0, 23) + "Z" },
       { ...decision, action: "hide", revisionId: null, note: " " }, { ...decision, action: "reject", note: "x".repeat(1001) }]) {
       expect((await POST(post(body))).status).toBe(400);
     }
@@ -119,6 +144,15 @@ describe("owner review moderation", () => {
     expect(response.headers.get("cache-control")).toBe("no-store");
   });
 
+  it("publishes a rejected revision only by its exact ID, with an optional private note", async () => {
+    mocks.rpc.mockResolvedValue({ data: true, error: null });
+    const response = await POST(post({ ...decision, action: "republish", note: null }));
+    expect(await response.json()).toEqual({ saved: true });
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("store_moderate_review", expect.objectContaining({
+      p_action: "republish", p_revision_id: revisionId, p_note: null,
+    }));
+  });
+
   it("returns a conflict for a stale or withdrawn review and maps revoked owner access", async () => {
     mocks.rpc.mockResolvedValue({ data: false, error: null });
     expect((await POST(post())).status).toBe(409);
@@ -131,8 +165,9 @@ describe("owner review moderation", () => {
     const response = await POST(post());
     expect(response.status).toBe(500);
     expect(JSON.stringify(await response.json())).not.toContain("private");
+    mocks.rpc.mockImplementation(async (name: string) => name === "store_review_moderation_products" ? productResult : pageResult);
     for (const data of [[{ ...row, customerSubject: "secret" }], [{ ...row, recentEvents: [{ ...row.recentEvents[0], actor: "buyer-secret" }] }], [{ ...row, pending: { ...revision, rating: 8 } }], null]) {
-      mocks.rpc.mockResolvedValue({ data, error: null });
+      pageResult = { data, error: null };
       expect((await GET(get())).status).toBe(500);
     }
   });
@@ -174,10 +209,10 @@ describe("owner review moderation", () => {
   });
   it("returns only the validated staff reply fields and rejects malformed projections", async () => {
     const staffReply = { body: reply.body, publishedAt: time, updatedAt: time };
-    mocks.rpc.mockResolvedValue({ data: [{ ...row, reply: staffReply }], error: null });
+    pageResult = { data: [{ ...row, reply: staffReply }], error: null };
     expect((await (await GET(get())).json()).reviews[0].reply).toEqual(staffReply);
     for (const invalid of [{ ...staffReply, author: actor }, { ...staffReply, body: "  untrimmed " }, { ...staffReply, updatedAt: "bad" }]) {
-      mocks.rpc.mockResolvedValue({ data: [{ ...row, reply: invalid }], error: null });
+      pageResult = { data: [{ ...row, reply: invalid }], error: null };
       expect((await GET(get())).status).toBe(500);
     }
   });

@@ -4,14 +4,17 @@ import { fetchModerationPage, saveModerationDecision } from "@/lib/store-reviews
 describe("review moderation browser transport", () => {
   afterEach(() => vi.unstubAllGlobals());
   it("preserves the exact timestamp cursor and requests an uncached page", async () => {
-    const transport = vi.fn().mockResolvedValue(Response.json({ reviews: [], next: null }));
+    const transport = vi.fn().mockImplementation(async () => Response.json({ reviews: [], next: null, products: [] }));
     vi.stubGlobal("fetch", transport);
-    await fetchModerationPage("hidden", { id: "internal-review-id", createdAt: "2026-11-18T12:00:00.123456Z" });
+    await fetchModerationPage("rejected", "100", { id: "internal-review-id", createdAt: "2026-11-18T12:00:00.123456Z" });
     const [url, init] = transport.mock.calls[0];
     const params = new URL(url, "https://tasks.test").searchParams;
-    expect(params.get("filter")).toBe("hidden");
+    expect(params.get("filter")).toBe("rejected");
+    expect(params.get("productId")).toBe("100");
     expect(params.get("afterCreatedAt")).toBe("2026-11-18T12:00:00.123456Z");
     expect(init.cache).toBe("no-store");
+    await fetchModerationPage("pending", null);
+    expect(new URL(transport.mock.calls[1][0], "https://tasks.test").searchParams.has("productId")).toBe(false);
   });
   it("does not retry a conflict or a decision that lacks positive acknowledgement", async () => {
     const decision = { action: "hide" as const, reviewId: "id", revisionId: null, expectedUpdatedAt: "2026-11-18T12:00:00.123456Z", note: "Private reason" };

@@ -63,14 +63,20 @@ The personal PRD project is always refused. Staff requests cannot choose a shop
 or actor. No new environment variable or frontend secret was added.
 
 `GET /api/admin/reviews` defaults to `filter=pending`. Other filters are
-`published`, `hidden`, and `all`. Pages contain up to 20 reviews, oldest first,
+`published`, `hidden`, `rejected`, and `all`. An optional numeric `productId`
+narrows any filter to one item. Pages contain up to 20 reviews, oldest first,
 without rating preference. Pass both returned `next.createdAt` and `next.id` as
-`afterCreatedAt` and `afterId` for the next page; preserve the filter. No other
-query keys, duplicate parameters, or partial cursors are accepted.
+`afterCreatedAt` and `afterId` for the next page; preserve the filter and
+product. No other query keys, duplicate parameters, or partial cursors are
+accepted. Every page also returns `products`: each reviewed item's ID and most
+recent title, for the product filter.
 
 Each row has the product/variant snapshot, state, exact `createdAt`/`updatedAt`,
-separate `pending` and `published` revisions, its `latest` revision, and up to
-ten recent audit events. It also includes a nullable `reply` with its body and
+separate `pending` and `published` revisions, its `latest` revision, a
+nullable `rejected` revision, and up to ten recent audit events. `rejected` is
+the latest revision when staff rejected it and the buyer has not written
+anything since; the `rejected` filter lists exactly those reviews. The card
+shows the history disclosure only once there is more than the submission event. It also includes a nullable `reply` with its body and
 exact `publishedAt`/`updatedAt` timestamps. Order IDs and customer subjects are omitted. Buyer
 event actors are null. Staff identities and reasons stay private. The complete
 history remains in the existing private revision/event tables; there is no
@@ -88,10 +94,11 @@ full-history browser endpoint yet.
 }
 ```
 
-Actions are `approve`, `reject`, `hide`, and `restore`. Approve/reject require
-the pending revision ID. Hide/restore require `revisionId: null`. A private
-reason of up to 1,000 characters is required for reject/hide; it can be null
-for approve/restore. Whitespace is trimmed at the HTTP boundary.
+Actions are `approve`, `reject`, `hide`, `restore`, and `republish`.
+Approve/reject require the pending revision ID; `republish` ("Publish anyway")
+requires the `rejected` revision ID. Hide/restore require `revisionId: null`. A
+private reason of up to 1,000 characters is required for reject/hide; it can be
+null for approve/restore/republish. Whitespace is trimmed at the HTTP boundary.
 
 **Preserve all six fractional timestamp digits.** Do not serialize the version
 through JavaScript `Date`, which loses microseconds. Dates may be formatted for
@@ -100,8 +107,12 @@ shop, missing review, or buyer-withdrawn review returns `409 CONFLICT`; reload
 before another decision. Lost owner authority returns 403.
 
 A successful decision returns `{ "saved": true }`. The canonical state change
-and staff audit event commit in one transaction. Rejection keeps the previous
-approved version public. Hiding removes the review and its rating from public
+and staff audit event commit in one transaction. Rejection never deletes text:
+the revision is marked `rejected` and kept, and the previous approved version
+stays public. `republish` publishes a rejected revision after all, replacing
+any approved version, and is audited as an approval. It is refused once the
+buyer has written a newer version, so staff never publish replaced text. Like
+approval, it keeps a hidden review hidden. Hiding removes the review and its rating from public
 reads immediately. Approval of a hidden edit keeps the review hidden until a
 separate restore. Staff cannot restore a buyer withdrawal. A buyer who
 resubmits a withdrawn review starts over: its publish date is cleared and set
@@ -135,8 +146,11 @@ reply bodies are not kept as separate revisions.
 
 `store_review_moderation_page_v2` reads the review version, reply, revisions, and
 events from one statement snapshot. The original v1 function is unchanged so
-older deployed strict response parsers keep working. Current staff code uses
-v2. The public storefront reply projection remains only body/published date;
+older deployed strict response parsers keep working. v3 added
+`verifiedPurchase`; current staff code uses v4
+(`20261121010000_store_review_rejected_queue.sql`), which adds the `rejected`
+filter and field and the product filter, alongside
+`store_review_moderation_products`. Earlier versions stay unchanged. The public storefront reply projection remains only body/published date;
 it never exposes staff identifiers or private concurrency fields. Neither reply
 writes nor staff reads are exposed through the storefront service bearer.
 
