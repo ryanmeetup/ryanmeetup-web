@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import { dad, superBlack } from "./fixtures/products";
+import { screenshotPath } from "./fixtures/screenshots";
 
 test("cart links discover a new design through its Shopify tags", async ({ page }) => {
   await page.route("**/_next/image?**", (route) => route.fulfill({
@@ -383,7 +384,7 @@ test("customer can switch between the Ryan Meetup light and dark themes", async 
   await expect(page.locator("html")).toHaveClass(/light/);
   expect(themeErrors).toEqual([]);
   await page.screenshot({
-    path: "/private/tmp/store-light.png",
+    path: screenshotPath("store-light.png"),
     fullPage: true,
   });
 });
@@ -474,12 +475,12 @@ test("customer can open store support and enter order details", async ({
     page.getByRole("button", { name: "Send to customer service" }),
   ).toBeVisible();
   await page.screenshot({
-    path: "/private/tmp/store-contact-dark.png",
+    path: screenshotPath("store-contact-dark.png"),
     fullPage: true,
   });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({
-    path: "/private/tmp/store-contact-mobile.png",
+    path: screenshotPath("store-contact-mobile.png"),
     fullPage: true,
   });
 });
@@ -500,10 +501,10 @@ test("customer can read about the store and get back to shopping", async ({ page
   await expect(page.getByText("We can’t accept returns or exchanges", { exact: false })).toBeVisible();
   await expect(page.getByText("We ship to most of the world.", { exact: false })).toBeVisible();
   await expect(page.getByText(/printful/i)).toHaveCount(0);
-  await page.screenshot({ path: "/private/tmp/store-about-desktop.png", fullPage: true });
+  await page.screenshot({ path: screenshotPath("store-about-desktop.png"), fullPage: true });
 
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.screenshot({ path: "/private/tmp/store-about-mobile.png", fullPage: true });
+  await page.screenshot({ path: screenshotPath("store-about-mobile.png"), fullPage: true });
   await page.getByRole("link", { name: "Shop the collection" }).click();
   await expect(page).toHaveURL(/\/collections\/all$/);
 });
@@ -575,7 +576,7 @@ test("store navigation and breadcrumbs use icons", async ({ page }) => {
     page.getByRole("navigation", { name: "Breadcrumb" }).locator("li svg"),
   ).toHaveCount(2);
   await page.screenshot({
-    path: "/private/tmp/store-product-breadcrumbs.png",
+    path: screenshotPath("store-product-breadcrumbs.png"),
     fullPage: false,
   });
 
@@ -587,7 +588,7 @@ test("store navigation and breadcrumbs use icons", async ({ page }) => {
       .locator("a svg"),
   ).toHaveCount(16); // About and Contact, plus every menu link: 5 apparel, 7 accessories, RY-Ds, and Shop All
   await page.screenshot({
-    path: "/private/tmp/store-mobile-navigation.png",
+    path: screenshotPath("store-mobile-navigation.png"),
     fullPage: false,
   });
 });
@@ -615,7 +616,7 @@ for (const viewport of [
       ).toBeVisible();
     }
     await page.screenshot({
-      path: `/private/tmp/store-${viewport.name}.png`,
+      path: screenshotPath(`store-${viewport.name}.png`),
       fullPage: true,
     });
   });

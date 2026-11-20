@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import type { Locator, Page } from "@playwright/test";
 import { dad, tee } from "./fixtures/products";
+import { screenshotPath } from "./fixtures/screenshots";
 
 async function openReview(page: Page) {
   await page.goto("/products/ryan-meetup-tee");
@@ -108,7 +109,7 @@ test("keyboard arrows select whole stars with a full-star keyboard-only focus ou
   await expect(five).toBeFocused();
   await expect(five.locator("../..")).toHaveCSS("outline-width", "2px");
   await expect(five.locator("..")).toHaveCSS("box-shadow", "none");
-  await page.screenshot({ path: "/private/tmp/store-review-star-keyboard-focus.png" });
+  await page.screenshot({ path: screenshotPath("store-review-star-keyboard-focus.png") });
   await five.press("ArrowLeft");
   await expect(four).toBeChecked();
   await four.press("Tab");
@@ -183,7 +184,7 @@ for (const theme of ["light", "dark"]) {
         expect(bounds!.y).toBe(0);
         expect(bounds!.height).toBe(844);
       }
-      await page.screenshot({ path: `/private/tmp/store-review-${theme}-${width}.png` });
+      await page.screenshot({ path: screenshotPath(`store-review-${theme}-${width}.png`) });
     });
   }
 }

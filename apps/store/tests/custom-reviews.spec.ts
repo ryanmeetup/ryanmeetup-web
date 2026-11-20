@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { screenshotPath } from "./fixtures/screenshots";
 
 // Run against a separate demo server built/started with REVIEWS_PROVIDER=custom.
 // Keep the existing Judge.me/demo browser suite runnable against its own mode.
@@ -23,7 +24,7 @@ for (const theme of ["light", "dark"]) {
       expect(bounds).not.toBeNull();
       expect(bounds!.x).toBeGreaterThanOrEqual(0);
       expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
-      await reviews.screenshot({ path: `/private/tmp/store-custom-review-${theme}-${width}.png` });
+      await reviews.screenshot({ path: screenshotPath(`store-custom-review-${theme}-${width}.png`) });
     });
   }
 }

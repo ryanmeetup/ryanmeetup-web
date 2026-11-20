@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { screenshotPath } from "./fixtures/screenshots";
 
 for (const theme of ["light", "dark"]) {
   test(`${theme} navigation distinguishes hover from keyboard focus`, async ({ page }) => {
@@ -13,7 +14,7 @@ for (const theme of ["light", "dark"]) {
     await expect(apparel).toHaveAttribute("aria-expanded", "true");
     await expect(page.locator(`[id="${await apparel.getAttribute("aria-controls")}"]`)).toHaveCSS("opacity", "1");
     await expect.poll(ring).not.toContain("2px");
-    await page.screenshot({ path: `/private/tmp/store-nav-${theme}-hover.png`, clip: { x: 0, y: 0, width: 1536, height: 350 } });
+    await page.screenshot({ path: screenshotPath(`store-nav-${theme}-hover.png`), clip: { x: 0, y: 0, width: 1536, height: 350 } });
 
     await apparel.press("Escape");
     await expect(page.getByRole("link", { name: /^T-Shirts/ })).toHaveCount(0);
@@ -32,11 +33,11 @@ for (const theme of ["light", "dark"]) {
     await expect(firstLink).toHaveCSS("outline-style", "none");
     await expect.poll(() => firstLink.evaluate((element) => getComputedStyle(element).getPropertyValue("--tw-ring-shadow"))).toContain("inset");
     await expect.poll(() => firstLink.evaluate((element) => getComputedStyle(element).boxShadow)).toContain("2px");
-    await page.screenshot({ path: `/private/tmp/store-nav-${theme}-keyboard.png`, clip: { x: 0, y: 0, width: 1536, height: 350 } });
+    await page.screenshot({ path: screenshotPath(`store-nav-${theme}-keyboard.png`), clip: { x: 0, y: 0, width: 1536, height: 350 } });
 
     await page.setViewportSize({ width: 1280, height: 900 });
     await expect(apparel).toBeVisible();
-    await page.screenshot({ path: `/private/tmp/store-nav-${theme}-1280.png`, clip: { x: 0, y: 0, width: 1280, height: 350 } });
+    await page.screenshot({ path: screenshotPath(`store-nav-${theme}-1280.png`), clip: { x: 0, y: 0, width: 1280, height: 350 } });
     await apparel.press("Escape");
     await expect(firstLink).toHaveCount(0);
     for (const width of [1024, 390]) {
@@ -44,7 +45,7 @@ for (const theme of ["light", "dark"]) {
       await expect(navigation).toBeHidden();
       await page.getByRole("button", { name: "Open navigation", exact: true }).click();
       await expect(page.getByRole("navigation", { name: "Mobile navigation", exact: true })).toBeVisible();
-      await page.screenshot({ path: `/private/tmp/store-nav-${theme}-${width}.png` });
+      await page.screenshot({ path: screenshotPath(`store-nav-${theme}-${width}.png`) });
       await page.getByRole("button", { name: "Close navigation", exact: true }).click();
     }
   });
@@ -78,7 +79,7 @@ for (const theme of ["light", "dark"]) {
         await expect(trigger).toHaveAttribute("aria-expanded", "true");
         await panel.getByRole("link").first().hover();
         await expect(trigger).toHaveAttribute("aria-expanded", "true");
-        await page.screenshot({ path: `/private/tmp/store-caret-${theme}-${title.toLowerCase()}-${width}.png`, clip: { x: 0, y: 0, width, height: 470 } });
+        await page.screenshot({ path: screenshotPath(`store-caret-${theme}-${title.toLowerCase()}-${width}.png`), clip: { x: 0, y: 0, width, height: 470 } });
         await trigger.press("Escape");
         await expect(panel).toHaveCount(0);
         await page.mouse.move(0, 500);

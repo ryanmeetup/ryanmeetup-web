@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
+import { screenshotPath } from "./fixtures/screenshots";
 
 test.skip(process.env.REVIEWS_PREVIEW_ENABLED !== "true", "Requires a demo server with browser review testing enabled and Judge.me as the default.");
 
@@ -27,7 +28,7 @@ for (const theme of ["light", "dark"]) {
       await page.reload();
       await expect(testing).toContainText("Using custom reviews.");
       await expect(trigger).toBeDisabled();
-      await testing.screenshot({ path: `/private/tmp/store-review-switch-${theme}-${width}.png` });
+      await testing.screenshot({ path: screenshotPath(`store-review-switch-${theme}-${width}.png`) });
       const bounds = await testing.boundingBox();
       expect(bounds).not.toBeNull();
       expect(bounds!.x).toBeGreaterThanOrEqual(0);

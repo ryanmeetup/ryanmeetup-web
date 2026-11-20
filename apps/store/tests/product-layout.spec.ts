@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { screenshotPath } from "./fixtures/screenshots";
 
 for (const viewport of [
   { width: 390, height: 844 },
@@ -65,6 +66,6 @@ for (const viewport of [
     })).toBe(true);
     await expect(page.getByRole("button", { name: "Add to cart", exact: true })).toBeEnabled();
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
-    await page.screenshot({ path: `/private/tmp/store-product-${viewport.width}-${viewport.height}.png`, fullPage: true });
+    await page.screenshot({ path: screenshotPath(`store-product-${viewport.width}-${viewport.height}.png`), fullPage: true });
   });
 }

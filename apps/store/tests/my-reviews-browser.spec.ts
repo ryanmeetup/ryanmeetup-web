@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { configure, fixture, reset, signIn, state } from "./fixtures/buyer-browser";
+import { screenshotPath } from "./fixtures/screenshots";
 
 const id=(n:number)=>`00000000-0000-4000-8000-${String(n).padStart(12,"0")}`;
 const card=(page:Page,n:number)=>page.getByTestId(`my-review-${id(n)}`);
@@ -115,7 +116,7 @@ test("an empty list points back to the shop, and refreshing shows a small spinne
     await page.goto("/reviews/mine");
     await expect(page.getByRole("heading",{name:"No reviews yet",exact:true})).toBeVisible();
     await expect(page.getByRole("link",{name:"Browse the shop",exact:true})).toHaveAttribute("href","/");
-    await page.locator("main").screenshot({path:`/private/tmp/store-my-reviews-empty-${theme}.png`});
+    await page.locator("main").screenshot({path:screenshotPath(`store-my-reviews-empty-${theme}.png`)});
   }
   // Hold the refresh open long enough to measure what it shows.
   let release=()=>{};const held=new Promise<void>((resolve)=>{release=resolve;});

@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { demoProductId } from "../lib/demo-data";
 import { configure, reset, signIn, state } from "./fixtures/buyer-browser";
 import { customerPurchasePage } from "./fixtures/customer-purchase";
+import { screenshotPath } from "./fixtures/screenshots";
 
 // A signed-in synthetic buyer with one shipped purchase of the demo tee.
 const productPath = "/products/ryan-meetup-tee#reviews";
@@ -53,7 +54,7 @@ for (const theme of ["light", "dark"]) {
       await dialog.getByLabel(/^Review/).fill("Washed it twice and the name tag still pops.");
       // The dialog element itself has no box; measure and capture its visible form.
       await expect(dialog.getByRole("button", { name: "Submit review", exact: true })).toBeVisible();
-      await page.screenshot({ path: `/private/tmp/store-custom-composer-${theme}-${width}.png` });
+      await page.screenshot({ path: screenshotPath(`store-custom-composer-${theme}-${width}.png`) });
       const bounds = await dialog.locator("form").boundingBox();
       expect(bounds!.x).toBeGreaterThanOrEqual(0);
       expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
