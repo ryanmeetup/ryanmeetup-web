@@ -1,6 +1,6 @@
 # Ryan Meetup Store
 
-Headless Shopify storefront for `store.ryanmeetup.com`. Product and collection pages are rendered from the Shopify Storefront API, while checkout stays on Shopify. Product reviews are the store's own, stored in the shared Ryan Meetup backend (RMT); Judge.me remains only as a rollback until the [final cut-over](docs/REVIEWS_JUDGEME_REMOVAL.md).
+Headless Shopify storefront for `store.ryanmeetup.com`. Product and collection pages are rendered from the Shopify Storefront API, while checkout stays on Shopify. Product reviews are the store's own, stored in the shared Ryan Meetup backend (RMT).
 
 ## Local development
 
@@ -289,81 +289,22 @@ individually, use a collection and keep their standalone pages.
 | Cart item or fulfillment is wrong | Confirm the selected underlying product and variant, then its Shopify/Printful sync. The listing tag only controls presentation. |
 | Preview differs from the live catalog | Without Shopify credentials, the app uses [lib/demo-data.ts](lib/demo-data.ts). Demo entries do not establish what is published in Shopify. |
 
-## Review provider switch
+## Reviews
 
-`REVIEWS_PROVIDER` is the server-only switch for review reads, collection links,
-and `POST /api/reviews`. Set it in `.env.local` or the deployment environment:
+Product reviews are the store's own, stored in the shared Ryan Meetup backend
+(RMT). A buyer signs in with their Shopify customer account to write one; it
+shows **Verified purchase** when it matches one of their orders, and every
+review waits for approval in Tasks. **My reviews** (`/reviews/mine`) lets a
+buyer edit or withdraw theirs.
 
-| Value | Behavior |
-| --- | --- |
-| `custom` | **Production since November 20, 2026.** Reviews stored in RMT; Shopify sign-in to write one, verified when the order matches; every review waits for approval in Tasks. No Judge.me calls. |
-| `judgeme` (also the unset/blank default) | Legacy Judge.me integration, kept only as a rollback until the final cut-over ([removal checklist](docs/REVIEWS_JUDGEME_REMOVAL.md)). |
-| Any other value | Unavailable reviews and closed submissions. Correct the setting. |
+Judge.me was retired on November 20, 2026: its code, the `REVIEWS_PROVIDER`
+switch, and the localhost **Review mode** control were removed, and its
+reviews were not kept. See the
+[removal record](docs/REVIEWS_JUDGEME_REMOVAL.md).
 
-The **Review mode** dropdown above each product's review section lets you test
-both providers in one browser without restarting or redeploying:
-
-- Local `next dev`: the control appears automatically.
-- A local production build (`next start`): set `REVIEWS_PREVIEW_ENABLED=true`.
-- Everywhere else, the control, its endpoint, and the preference cookie are
-  off. It only answers requests addressed to `localhost`, `127.0.0.1`, or
-  `[::1]`, and never on a Vercel deployment (Preview included), even if the
-  flag is set or a request claims a localhost Host header.
-
-Choose **Judge.me**, **Custom reviews**, or **Environment default**. Your
-selection lasts one day in that browser, follows product navigation and
-reloads, and applies to review reads, collection links, and submissions.
-Other browsers keep the environment default. Returning to **Environment
-default** removes the preference. Writing a custom review needs Shopify
-sign-in, which locally goes through the HTTPS tunnel set in
-`SHOPIFY_CUSTOMER_ACCOUNT_REDIRECT_URI`.
-
-`REVIEWS_PROVIDER` still sets the environment default. Restart development or
-build a fresh deployment after changing that setting; browser selections need
-neither. Production runs `custom`; setting it back to `judgeme` and
-redeploying is the rollback until Judge.me is removed.
-
-This does not change Judge.me's installation, hosted account extensions, or
-queued request emails. It is a testing switch, not a completed migration or
-rollback procedure after collecting custom reviews. Keep both configuration
-variables server-only. The preview endpoint accepts same-origin requests in
-allowed environments; ordinary submission fields cannot choose a provider.
-
-See the [rebuild plan](docs/REVIEWS_REBUILD.md) for the full replacement scope
-and the [implementation handoff](docs/REVIEWS_HANDOFF.md) for completed commits,
-verification commands, and the next small chunks.
-
-Buyer authentication for custom reviews is being built separately from the
-hosted Judge.me account handoff. The [Shopify sign-in setup](docs/REVIEWS_SHOPIFY_AUTH.md)
-lists the required Customer Account client settings and current implementation
-boundary. Its configuration/discovery helpers do not enable buyer login yet.
-
-## Judge.me setup
-
-Install Judge.me in the same Shopify store and provide its private API token server-side. Published reviews and visible review photos are read during product-page rendering using the documented `X-Api-Token` header.
-
-When Shopify is configured, **Write a review** links to the Shopify customer
-account. Judge.me's account extensions collect reviews for fulfilled purchases,
-host uploaded photos, and provide **My Reviews** for management. A failure to
-resolve the account link disables collection with a visible explanation.
-
-Without Shopify credentials, demo mode retains the product-context modal for
-UI previews. Individual ratings use whole stars; averages retain fractional
-fills. The custom photo chooser is hidden until separate photo hosting exists.
-The JSON `POST /api/reviews` route remains an unverified web-review forwarding
-endpoint; it does not prove purchase eligibility and rejects multipart requests
-with HTTP 415. The configured storefront's account handoff does not use it.
-Remaining review work is item 14 of the [launch roadmap](docs/LAUNCH_ROADMAP.md).
-
-1. In Shopify Admin, install **Judge.me Product Reviews** from the Shopify App Store.
-2. In Judge.me, open **Settings → Integrations → View API token** (under Developers) and copy the **Private API token**.
-3. Set it as `JUDGEME_PRIVATE_API_TOKEN` in `.env.local` and in the Vercel project's Production and Preview environments. It must stay server-only; never prefix it with `NEXT_PUBLIC_`.
-4. Set `JUDGEME_SHOP_DOMAIN` to the exact **Shop domain** in the same modal. For this store it is `9mf9bm-3f.myshopify.com`, while the working catalog connection uses `SHOPIFY_STORE_DOMAIN=ryan-meetup-store.myshopify.com`. Keep those separate. If `JUDGEME_SHOP_DOMAIN` is absent, the app falls back to `SHOPIFY_STORE_DOMAIN` for stores whose domains match.
-5. Redeploy. Reviews refresh every five minutes.
-
-Missing or invalid provider credentials appear as an empty review section, so
-an empty section doesn't prove a product has no reviews. A 401 from Judge.me
-with valid-looking tokens usually means `JUDGEME_SHOP_DOMAIN` is missing or
-wrong.
-The public token is named `JUDGEME_PUBLIC_TOKEN`; the custom server-rendered
-review list currently uses only the private token.
+Without Shopify buyer sign-in configured (including demo mode), **Write a
+review** stays disabled with a visible explanation. Locally, sign-in goes
+through the HTTPS tunnel set in `SHOPIFY_CUSTOMER_ACCOUNT_REDIRECT_URI`; the
+[Shopify sign-in setup](docs/REVIEWS_SHOPIFY_AUTH.md) lists the Customer Account
+client settings. See the [rebuild plan](docs/REVIEWS_REBUILD.md) for the full
+scope and remaining work.

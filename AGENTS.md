@@ -348,7 +348,7 @@ Rules:
   field and `variant="compact"` for a toolbar or filter control. Reach for
   `MultiSelect` when more than one value may be chosen.
 - Exception: star-review ratings use the shared `StarRating` control. Match its
-  step to the review provider: the store uses whole stars for Judge.me, while
+  step to the review: the store's own reviews use whole stars, while
   fractional averages remain supported. Keep other single-choice controls on
   `DropdownSelect`.
 - All search inputs must use the shared debounced search behavior established by

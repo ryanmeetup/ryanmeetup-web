@@ -31,7 +31,7 @@ and the live checkout.
   SKU.
 - US shipping for name tag shirts and hoodies uses weight tiers that cover
   Printful's cost (see [SHIPPING_SETUP.md](SHIPPING_SETUP.md)).
-- Judge.me product reviews, read server-side.
+- Product reviews stored in RMT, written by signed-in buyers and approved in Tasks.
 - About (including shipping and returns), Contact, and the sitemap.
 - Policy pages at `/policies/<handle>` for each policy written in Shopify Admin,
   linked from the footer and listed in the sitemap.
@@ -127,49 +127,23 @@ fields. The store supports neither.
 
 - [ ] Done
 
-The [reviews rebuild plan](REVIEWS_REBUILD.md) defines the scope, agent
-handoffs, and release gates for a first-party replacement. The notes below
-describe the existing Judge.me flow and its outstanding checks while that
-replacement is being evaluated.
+The [reviews rebuild plan](REVIEWS_REBUILD.md) defines the scope and release
+gates for the store's own reviews.
 
-**Problem.** Etsy shows a shop rating and only buyers can review. Here reviews are
-per product and anyone can submit.
+**Problem.** Etsy shows a shop rating and only buyers can review.
 
-**Current state.** The provider is undecided. Judge.me is wired in, but its
-cost is in question: the features a headless store needs sit on paid plans.
-Until that's settled, treat the Judge.me-specific work below as provisional.
-Today, configured product pages send **Write a review** to the Shopify customer
-account, where Judge.me's account extensions collect reviews of fulfilled
-purchases, host photos, and offer **My Reviews** for edits. The JSON
-`POST /api/reviews` route still forwards unverified web reviews and returns 415
-for photos (see the [README](../README.md#judgeme-setup)). Individual ratings
-are whole stars, as Judge.me requires; averages show fractions.
-
-**Provider limits that shape the approach.** Judge.me's create-review API needs
-no authorization, accepts only whole 1–5 ratings, takes hosted photo URLs rather
-than files, and can't mark a review verified or edit it. Hiding our route
-therefore doesn't make reviews buyer-only. Judge.me's widgets for headless
-storefronts need the paid Awesome plan; the account is on the free plan.
-
-**Goal (Ryan, November 14).** Only buyers can review, and only products they
-bought. Nobody else can get a review published, so spam has no way in.
+**Current state.** Custom reviews have served production since November 20,
+2026, and Judge.me was retired the same day. Writing a review needs Shopify
+sign-in; a matching order makes it a verified purchase, and every review waits
+for approval in Tasks. Product summaries come from complete totals, pages load
+more reviews on demand, and the store can reply.
 
 **Remaining.**
-- Remove `POST /api/reviews`, which lets anyone submit. It contradicts the goal.
-- In Judge.me, stop publishing reviews that aren't from verified buyers.
-  Judge.me's own create endpoint is public, so closing our route alone doesn't
-  stop direct spam.
-- Decide the provider. The free plan appears to cover the goal: account
-  extensions collect from fulfilled orders, and our pages read reviews with the
-  private API, which worked on the free plan on November 6. Paid plans add
-  on-page widgets we don't use. Revisit only if a needed feature is paid.
-- Test the account flow with fulfilled order #1002, following
-  [REVIEWS_FIRST_ORDER_CHECK.md](REVIEWS_FIRST_ORDER_CHECK.md).
 - Show the overall shop rating on the home and About pages.
-- Compute the product summary from complete Judge.me totals. `lib/reviews.ts`
-  averages at most the first 20 reviews; keep counts and JSON-LD consistent.
-- Later: rating distribution, sorting, pagination, seller responses, and
-  delivery-timed review requests.
+- Turn off Shopify's own review prompts so buyers use the store's reviews
+  (the Shop app's "Leave review with Shop" button on order pages and its
+  feedback email).
+- Later: rating distribution, sorting, and delivery-timed review requests.
 
 **Done when.** The shop rating is visible, product summaries are accurate, and a
 real buyer's review with a photo appears on the product page.
@@ -197,6 +171,7 @@ Record each finished or changed item here, newest first.
 
 | Date | Item | Change | Commit |
 | --- | --- | --- | --- |
+| 2026-11-20 | 14 | Judge.me retired; its reads, the `REVIEWS_PROVIDER` switch and the localhost Review mode control were removed from the code. Its reviews were not kept. Buyer-only collection, complete totals, pagination and replies are done; item 14 now lists only what is left. | — |
 | 2026-11-17 | 17 | Done. `app/error.tsx` and `app/global-error.tsx` share a branded "Oops" name-tag page built on the shared `NotFoundCard`, which now accepts a badge, label, tag name, and button actions. **Try again** re-fetches the failed page; Shop All and store support are linked, with the error reference for support. Verified against an unreachable Shopify domain in both themes at 390 and 1280 px. | — |
 | 2026-11-15 | — | Reviewed the roadmap. Item 4 is now a next-steps table led by the Admin API scopes it is blocked on; the superseded November 14 shipping audit left (the live tiers replaced it). "Already in place" now covers branded checkout and accounts, payments, SKU mapping, and the name tag shipping tiers. Added item 17 for branded error pages, and moved item 9 under Polish to match its priority. | — |
 | 2026-11-15 | 4 | Ryan cancelled and refunded test order #1001, then placed a second real order that is going through Printful fulfillment. Shipping tiers for US name tag shirts and hoodies verified live (1–3 and 10 shirts, 1–2 hoodies, and a mixed cart all match Printful's cost plus $0.40). | — |

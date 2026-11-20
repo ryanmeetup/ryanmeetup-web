@@ -2,7 +2,7 @@
 
 The custom review sign-in routes are implemented behind an explicit opt-in.
 They are disabled until the client, backend, keyring, and flag are configured.
-Judge.me remains the default, and custom submissions remain closed. Local
+Without them, review submissions stay closed. Local
 checks are not proof of a working buyer login on the intended installation.
 
 ## Client setup
@@ -179,7 +179,7 @@ credentials or enable flags have been configured by this implementation.
 | --- | --- |
 | `GET /api/reviews/auth/start?returnTo=...` | Persist an encrypted ten-minute attempt, set the opaque browser binding, then redirect to Shopify. Use normal navigation with prefetch disabled. |
 | `GET /api/reviews/auth/callback` | Validate state/browser/configuration, consume once, exchange and verify tokens, persist an encrypted session, then return to the original product link. A denial retires the attempt without creating a session. |
-| `POST /api/reviews/auth/logout` | Require the storefront's exact Origin, revoke the review session, then clear its cookie and the flow cookie. Remains usable after switching to Judge.me or disabling new sign-ins. |
+| `POST /api/reviews/auth/logout` | Require the storefront's exact Origin, revoke the review session, then clear its cookie and the flow cookie. Remains usable after disabling new sign-ins. |
 
 The session cookie is `__Host-store-customer-session`, a random opaque value
 with Secure, HttpOnly, SameSite=Lax, and Path=/ attributes. Only its hash is

@@ -1,85 +1,48 @@
-# Judge.me removal checklist
+# Judge.me removal record
 
-Production switched to custom reviews on November 20, 2026, by setting
-`REVIEWS_PROVIDER=custom` on the store's Vercel Production environment and
-redeploying. Judge.me code and credentials were deliberately left in place so
-the switch can be undone by setting `REVIEWS_PROVIDER=judgeme` (or removing it)
-and redeploying. Rolling back hides any custom reviews collected since the
-switch (they stay in RMT) and brings back Judge.me's.
+Production switched to custom reviews on November 20, 2026. Later that day
+Ryan decided to remove Judge.me outright rather than keep it as a rollback:
+**its reviews were not exported or imported**, and there is no way back to
+them once the app is uninstalled.
 
-Use this list for the final cut-over, once custom reviews have run in
-production long enough that rolling back is no longer wanted. Remove items in
-the order below so each commit still builds and passes its tests.
+## Done in code (November 20, 2026)
 
-## Before deleting anything
+- Deleted the Judge.me read path (`lib/judgeme.ts`, `lib/judgeme-reviews.ts`)
+  and its tests.
+- Removed the `REVIEWS_PROVIDER` setting and everything that existed to choose
+  a provider: `lib/review-provider.ts`, `lib/review-preview.ts`,
+  `lib/review-collection.ts`, the localhost **Review mode** control and its
+  `/api/reviews/preview` route, and `REVIEWS_PREVIEW_ENABLED`. Custom reviews
+  are the only reviews; nothing reads either variable any more.
+- Removed the legacy anonymous review form (name and email fields) from the
+  product page. Without buyer sign-in, **Write a review** is disabled with an
+  explanation.
+- `POST /api/reviews` now always takes the custom, signed-in submission path.
+- The account status no longer reports whether custom reviews are active;
+  **My reviews** shows for every signed-in buyer.
+- Dropped the `JUDGEME_*` and `REVIEWS_PROVIDER` blanks from the Playwright
+  configs and `.env.example`.
 
-- [x] **Existing Judge.me reviews: left as is (decided November 20, 2026).**
-      They are not imported. Since the switch, product pages show only custom
-      reviews from RMT, so published Judge.me reviews and their rating totals
-      (including product JSON-LD) no longer appear on the storefront. They
-      stay in Judge.me untouched.
-- [ ] Before uninstalling Judge.me, export its reviews so a copy exists
-      outside the app.
-- [ ] Confirm nobody still relies on the localhost **Review mode** switch to
-      compare Judge.me and custom side by side.
+**Kept on purpose:** `lib/review-photo-hosts.ts` still lists Judge.me's image
+CDNs and filters public review photo URLs. It belongs to the review photo
+work: replace the list with the custom photo host when public photos ship.
 
-## Code that only exists for Judge.me
+## Settings and services (Ryan)
 
-Delete outright:
+- [ ] Shopify Admin: uninstall the Judge.me app. This also removes its
+      **Write a new review** button from customer-account order pages.
+- [ ] Vercel (`teamryan/store`, every environment): delete
+      `JUDGEME_SHOP_DOMAIN`, `JUDGEME_PUBLIC_TOKEN`,
+      `JUDGEME_PRIVATE_API_TOKEN`, `REVIEWS_PROVIDER` and
+      `REVIEWS_PREVIEW_ENABLED`. The code ignores them, so this is tidying, not
+      a deploy blocker.
+- [ ] Local `apps/store/.env.local`: remove the same keys.
+- [ ] Shopify Admin → Sales channels → Shop: turn off Shop product reviews and
+      the Shop feedback-request email, so the **Leave review with Shop** button
+      stops competing with the store's reviews.
 
-- `lib/judgeme.ts`: Judge.me shop-domain helper.
-- `lib/judgeme-reviews.ts`: Judge.me review reads.
-- `tests/judgeme-domain.spec.ts`, and the Judge.me cases in
-  `tests/reviews-data.spec.ts`, `tests/reviews-api.spec.ts`,
-  `tests/review-collection.spec.ts` and `tests/review-provider.spec.ts`.
+## History
 
-Simplify:
-
-- `lib/reviews.ts`: drop the Judge.me branch; always read custom reviews.
-- `app/api/reviews/route.ts`: drop the Judge.me submission branch, which
-  now returns 410 after the anonymous relay was retired in `62ca8435`.
-  Keep only the custom submission path.
-- `components/reviews.tsx`: remove the legacy anonymous review form (the
-  `emptyDraft`/`submitReview` modal with name and email fields) and the
-  `reviewAccount` branches that link to the Shopify account for Judge.me.
-  `customAccess` then becomes required.
-- `lib/review-collection.ts` (`getReviewAccount`) and the `reviewAccount` prop
-  threaded through `app/products/[handle]/page.tsx` and
-  `components/product-group-detail.tsx`: only Judge.me mode uses them.
-- `lib/review-provider.ts`: remove the `judgeme` provider and its default.
-  Once only one provider is left, `REVIEWS_PROVIDER`, `getReviewProvider`,
-  `resolveReviewProvider`, `getActiveReviewProvider` (`lib/review-preview.ts`)
-  and their callers can go, including the provider checks in
-  `app/api/account/route.ts`, `app/api/reviews/mine/route.ts`,
-  `app/reviews/mine/page.tsx` and `app/products/[handle]/page.tsx`.
-- `components/review-mode-switch.tsx`, `lib/review-preview.ts`, the
-  `/api/reviews/preview` route, `REVIEWS_PREVIEW_ENABLED`, and their tests
-  (`tests/review-mode-switch.spec.ts`, `tests/review-preview-api.spec.ts`):
-  the localhost switch exists only to flip between the two providers.
-- `lib/review-photo-hosts.ts` and its use in `next.config.ts` image hosts and
-  `lib/public-review-view.ts`: the allowed hosts are Judge.me's image CDNs. Keep the
-  mechanism only if custom review photos will use their own host, then replace
-  the list.
-
-Tests and configs that pin Judge.me for isolation: remove the `JUDGEME_*`
-blanks and the `REVIEWS_PROVIDER` pin from `playwright.config.ts`,
-`playwright.my-reviews.config.ts` and `playwright.product-reviews.config.ts`
-once the provider setting is gone.
-
-## Settings and services
-
-- [ ] Vercel (`teamryan/store`, every environment): delete `JUDGEME_SHOP_DOMAIN`,
-      `JUDGEME_PUBLIC_TOKEN`, `JUDGEME_PRIVATE_API_TOKEN`, then
-      `REVIEWS_PROVIDER` and `REVIEWS_PREVIEW_ENABLED` once the code no longer
-      reads them.
-- [ ] `apps/store/.env.example` and local `.env.local` files: remove the same keys.
-- [ ] Shopify Admin: uninstall the Judge.me app after exporting its reviews.
-- [ ] Revoke the Judge.me private API token in Judge.me.
-
-## Docs to update at the same time
-
-`README.md` (reviews section), `docs/LAUNCH_ROADMAP.md`,
-`docs/REVIEWS_REBUILD.md`, `docs/REVIEWS_RELEASE.md`,
-`docs/REVIEWS_OPERATIONS.md` and `docs/SHOPIFY_HOSTED_PAGES.md` all describe
-Judge.me as a live or fallback provider. The older handoff docs
-(`REVIEWS_HANDOFF.md` and friends) are history; leave them.
+The older handoff docs (`REVIEWS_HANDOFF.md` and friends) and the rollback
+sections of `REVIEWS_RELEASE.md` and `REVIEWS_REBUILD.md` describe the
+Judge.me era. Returning to Judge.me is no longer possible.

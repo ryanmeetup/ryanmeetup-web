@@ -41,10 +41,8 @@ the store initially; extract shared server code when another app consumes it.
 
 Configure each app's server connection explicitly and verify project identity
 before enabling submissions. Preview must not write to the production RMT
-database. The browser mode switch selects a review provider; it never changes
-which database a deployment uses. The blank-setting code default is Judge.me;
-production switched to custom on November 20 per the committed production
-record, without establishing live lifecycle proof.
+database. Custom reviews are the only reviews since Judge.me was retired on
+November 20 ([removal record](REVIEWS_JUDGEME_REMOVAL.md)).
 
 ## One migration history
 

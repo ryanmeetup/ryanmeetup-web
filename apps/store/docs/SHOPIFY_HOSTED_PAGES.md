@@ -8,7 +8,7 @@ Shopify:
 | --- | --- | --- |
 | Catalog, product pages, sorting, sale prices | Checkout and payment | The Online Store theme at `checkout.ryanmeetup.com` (and `ryan-meetup-store.myshopify.com`) |
 | Cart and cart drawer (Shopify's cart API) | Order confirmation and order status pages | |
-| Reviews (Judge.me, server-side) | Customer accounts (`shopify.com/71870054511/account`) | |
+| Reviews (stored in RMT) | Customer accounts (`shopify.com/71870054511/account`) | |
 | About, Contact, policy pages | Notification emails | |
 
 Three things keep Shopify's plain theme out of sight: the theme redirect, the
