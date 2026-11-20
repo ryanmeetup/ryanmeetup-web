@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import sharp from "sharp";
 import { handleReviewPhoto, REVIEW_PHOTO_HTTP_MAX_BYTES } from "../lib/review-photo-actions";
+import { reviewPhotosEnabled } from "../lib/review-photo-policy";
 import type { CustomerAccountSession } from "../lib/customer-account/storage";
 import type { CustomerSessionResult } from "../lib/customer-account/session";
 
@@ -38,6 +39,25 @@ test("disabled collection, cross-origin and caller authority fields stop before 
     expect((await handleReviewPhoto(request({ query: `productId=100&requestKey=${id}${extra}` }), deps)).status).toBe(400);
   }
   expect(calls).toEqual([]);
+});
+
+test("default collection stages authenticated attachments and an explicit pause stops before private work", async () => {
+  const original = process.env.STORE_REVIEW_PHOTOS_ENABLED;
+  try {
+    delete process.env.STORE_REVIEW_PHOTOS_ENABLED;
+    const enabled = setup();
+    expect((await handleReviewPhoto(request(), { ...enabled.deps, enabled: reviewPhotosEnabled() })).status).toBe(200);
+    expect(enabled.calls).toContain("stage");
+    for (const setting of ["false", "invalid"]) {
+      process.env.STORE_REVIEW_PHOTOS_ENABLED = setting;
+      const paused = setup();
+      expect((await handleReviewPhoto(request(), { ...paused.deps, enabled: reviewPhotosEnabled() })).status).toBe(503);
+      expect(paused.calls).toEqual([]);
+    }
+  } finally {
+    if (original === undefined) delete process.env.STORE_REVIEW_PHOTOS_ENABLED;
+    else process.env.STORE_REVIEW_PHOTOS_ENABLED = original;
+  }
 });
 
 test("signed-out and failed sessions cannot stage bytes", async () => {

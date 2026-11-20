@@ -25,8 +25,9 @@ than inheriting an old "not started" or "done" label.
   moderation in Tasks, including rejected/product filters and audited deletion.
 - Photo processing/staging/associations and buyer controls, separately gated;
   owner previews and per-photo approval/rejection in Tasks; approved-only public
-  images with revocation on hide/withdraw/replacement/deletion. Collection remains
-  gated pending cleanup, recovery and hosted proof.
+  images with revocation on hide/withdraw/replacement/deletion. Attachments are
+  enabled by default for signed-in reviews, with an explicit collection pause.
+  Cleanup, recovery and hosted proof remain open.
 
 The November 15 record confirms paid checkout, Printful SKU mapping, branded
 checkout/accounts and US name-tag shirt/hoodie shipping quote checks. It does
@@ -130,7 +131,7 @@ unverified product feedback. All submissions wait for approval.
 - [x] Independent staff media decisions, approved-only projections and revocable
       revision-bound public delivery. The Judge.me image-host allowlist is removed.
       Synthetic database, route and browser tests cover these contracts; hosted
-      rehearsal and production collection enablement remain separate.
+      rehearsal and deployed configuration verification remain separate.
 - [ ] Implement bounded auth authorization/session/tombstone, draft and upload-budget
       expiry; abandoned/historical/orphan object cleanup; and retryable cleanup
       after a committed review deletion whose Storage removal failed.
@@ -141,8 +142,8 @@ unverified product feedback. All submissions wait for approval.
       text writes, moderation and standalone media in addition to current
       sanitized backend failures.
 - [ ] Add auth/text-write abuse controls; current upload budgets are partial
-      protection. Enable photo collection only after publication, cleanup,
-      recovery and hosted lifecycle evidence are ready.
+      protection. Confirm hosted photo collection settings and record lifecycle,
+      cleanup and recovery evidence.
 
 #### Conditional and optional features
 

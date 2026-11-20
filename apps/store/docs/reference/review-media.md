@@ -5,9 +5,10 @@ Server processing, private staging, upload/discard, atomic revision associations
 private selection/preview reads and buyer composer/edit controls are implemented.
 Owner preview and independent photo decisions are implemented in Tasks, with
 approved-only, revision-bound public delivery through the Store. The private
-Storage bucket remains private. `STORE_REVIEW_PHOTOS_ENABLED` defaults false;
-this work did not enable collection. Buyer photo routes require the flag;
-staff moderation and already-approved public images remain available during a
+Storage bucket remains private. Photo attachments are enabled by default for
+signed-in buyers with configured RMT storage. Set `STORE_REVIEW_PHOTOS_ENABLED=false`
+to pause collection; invalid nonempty values also disable it. Buyer photo routes
+honor this setting; staff moderation and approved public images remain available during a
 collection pause. See [the database guide](review-database.md) for rollout status.
 
 ## Implemented processor
@@ -80,7 +81,7 @@ reads/finalization and quota consumption; it does not delete stored objects.
 ## Implemented HTTP boundary
 
 [`POST /api/reviews/photos`](../../app/api/reviews/photos/route.ts) requires
-`STORE_REVIEW_PHOTOS_ENABLED=true`, configured RMT storage, an active
+photo collection enabled (the default), configured RMT storage, an active
 Shopify buyer session and the storefront's exact origin. It accepts a single
 raw JPEG/PNG/WebP body with numeric `productId` and UUID `requestKey` query
 parameters. Unknown/duplicate parameters are refused; no buyer, shop, path or
@@ -266,9 +267,9 @@ is separate from buyer draft discard and withdrawal. See
 [moderation](review-moderation.md#permanent-deletion).
 
 Draft expiry prevents use but does not delete objects; failed Storage removal
-has no retry worker. Keep collection off until cleanup, recovery and a hosted
-lifecycle rehearsal are ready. See the [roadmap](../planning/roadmap.md#14-store-reviews)
-for cleanup, retention and release evidence, and
+has no retry worker. Cleanup, recovery and a hosted lifecycle rehearsal remain
+operational work; they are not established by enabling attachments. See the
+[roadmap](../planning/roadmap.md#14-store-reviews) for cleanup, retention and release evidence, and
 [operations](../how-to/review-operations.md) for recovery procedures.
 
 ## Repeatable verification

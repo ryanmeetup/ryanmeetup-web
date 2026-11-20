@@ -19,7 +19,7 @@ export default defineConfig({
         // Valid synthetic auth configuration makes the pause test exercise
         // the explicit off switch, rather than missing credentials.
         ...process.env, ...customerAccountEnvironment, NEXT_DIST_DIR: ".next-e2e/product-reviews",
-        STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED: "", STORE_REVIEW_PHOTOS_ENABLED: "",
+        STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED: "", STORE_REVIEW_PHOTOS_ENABLED: "false",
         SHOPIFY_STOREFRONT_API_TOKEN: "", SHOPIFY_CUSTOMER_ACCOUNT_SHOP_ID: "123456",
         SUPABASE_URL: `http://127.0.0.1:${fixturePort}`, SUPABASE_SECRET_KEY: "synthetic-supabase-secret",
       },

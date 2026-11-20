@@ -43,6 +43,29 @@ test("upload, private preview and submit use raw bytes and only confirmed photo 
   expect(calls).toHaveLength(1);expect(calls[0].photoIds).toEqual(["00000000-0000-4000-8000-000000001001"]);
 });
 
+test("a signed-in buyer without a matching order can attach photos to product feedback",async({page,request,baseURL})=>{
+  await configure(request,{purchase:null});
+  await photos(page);await signIn(page,baseURL!);const dialog=await composer(page);await fill(page);
+  await expect(dialog).toContainText("your review shows without the Verified badge");
+  await pick(dialog,file());await expect(dialog.getByRole("img",{name:"Review photo 1",exact:true})).toBeVisible();
+  await dialog.getByRole("button",{name:"Submit review",exact:true}).click();
+  await expect(page.getByText("Review received",{exact:true})).toBeVisible();
+  const calls=(await state(request)).calls.filter((call:{operation:string})=>call.operation==="review.submit");
+  expect(calls).toHaveLength(1);expect(calls[0].purchase.lineId).toBeNull();
+  expect(calls[0].photoIds).toEqual(["00000000-0000-4000-8000-000000001001"]);
+});
+
+test("Ready to Review submits attachments with the selected purchase",async({page,request,baseURL})=>{
+  await photos(page);await signIn(page,baseURL!);await page.goto("/reviews/mine");
+  await page.getByRole("button",{name:/^Write a review of /}).first().click();
+  const dialog=page.getByRole("dialog",{name:"Write a review",exact:true});await fill(page);
+  await pick(dialog,file());await expect(dialog.getByRole("img",{name:"Review photo 1",exact:true})).toBeVisible();
+  await dialog.getByRole("button",{name:"Submit review",exact:true}).click();await expect(dialog).toHaveCount(0);
+  const calls=(await state(request)).calls.filter((call:{operation:string})=>call.operation==="review.submit");
+  expect(calls).toHaveLength(1);expect(calls[0].purchase).toMatchObject({orderId:"100",lineId:"101"});
+  expect(calls[0].photoIds).toEqual(["00000000-0000-4000-8000-000000001001"]);
+});
+
 test("failed uploads require an explicit retry with the same request key",async({page,baseURL})=>{
   const transport=await photos(page,{failUploadOnce:true});await signIn(page,baseURL!);const dialog=await composer(page);await fill(page);
   await pick(dialog,file());await expect(dialog.getByRole("alert")).toContainText("Synthetic upload failure");

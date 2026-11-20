@@ -25,8 +25,9 @@ an applied migration list do not establish a working live buyer lifecycle.
 | Setting | Effect |
 | --- | --- |
 | Store `STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED=false` | Stops start/callback and ordinary session loading, including existing-session writes and My reviews reads/edits/withdrawals. Public approved text and photos remain available with storage configured. |
-| Store `STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED=true` | Enables configured buyer flows, subject to current session/purchase/backend checks. Does not enable photos. |
-| Store `STORE_REVIEW_PHOTOS_ENABLED=false` | Default. Stops upload/discard/context/selection/preview operations and nonempty photo selections in writes. Text-only edits retain private selections; an explicit empty edit array may remove them. Already-approved public images remain available independently of this collection flag. |
+| Store `STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED=true` | Enables configured buyer flows, subject to current session/purchase/backend checks. Photo attachments follow their own collection setting below. |
+| Store `STORE_REVIEW_PHOTOS_ENABLED` unset, blank or `true` | Default. Makes photo attachments available in product reviews, Ready to Review and My reviews edits, with configured RMT storage and buyer sign-in. |
+| Store `STORE_REVIEW_PHOTOS_ENABLED=false` | Stops upload/discard/context/selection/preview operations and nonempty photo selections in writes. Text-only edits retain private selections; an explicit empty edit array may remove them. Already-approved public images remain available independently of this collection flag. |
 | Tasks `STORE_REVIEWS_CUSTOMER_AUTH_ENABLED=false` | Stops configured staff queue, decision/reply/photo/deletion reads or writes independently of Store collection and other Tasks data. |
 | Old Judge.me/provider settings | Ignored. They cannot restore a legacy reader or provide recovery. External cleanup is in the roadmap. |
 
@@ -56,11 +57,12 @@ in-flight writes before choosing a recovery cutoff.
 5. Pause with an active session/editor: later buyer reads/writes stop, public
    approved text remains and ordinary logout revokes. Pause Tasks separately;
    resume and check both paths with fresh deployments.
-6. Staff media review and controlled publication are built. Keep collection off
-   until cleanup and recovery are ready. On the isolated target, rehearse
+6. Photo attachments, staff media review and controlled publication are built.
+   Collection is enabled by default; use the explicit false setting to pause it.
+   Cleanup and recovery remain open work. On the isolated target, rehearse
    upload/preview/edit, separate text/photo approval and rejection, queue/badge
    retention, old public-path revocation on hide/withdraw/replacement/delete,
-   failed preview recovery and account changes before production enablement.
+   failed preview recovery and account changes as part of hosted release verification.
 7. Observe the agreed window using hosted monitoring. Record results instead
    of inferring health from a successful build or absence of error events.
 

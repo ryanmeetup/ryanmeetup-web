@@ -128,7 +128,7 @@ async function main() {
   console.log(`Starting the store preview on ${store} (first compile takes a minute)…`);
   start("npm", ["run", "dev", "--", "--port", String(storePort)], {
     ...process.env, ...customerAccountEnvironment, SUPABASE_URL: fixture, MY_REVIEWS_FIXTURE: "1", NEXT_DIST_DIR: ".next-preview",
-    SHOPIFY_STOREFRONT_API_TOKEN: "", SHOPIFY_PRIVATE_ACCESS_TOKEN: "", SHOPIFY_ADMIN_CLIENT_ID: "", SHOPIFY_ADMIN_CLIENT_SECRET: "", STORE_REVIEW_PHOTOS_ENABLED: "",
+    SHOPIFY_STOREFRONT_API_TOKEN: "", SHOPIFY_PRIVATE_ACCESS_TOKEN: "", SHOPIFY_ADMIN_CLIENT_ID: "", SHOPIFY_ADMIN_CLIENT_SECRET: "", STORE_REVIEW_PHOTOS_ENABLED: "false",
     NODE_OPTIONS: `--import=${path.join(root, "tests/fixtures/my-reviews-preload.mjs")}`,
   }, "store");
   await waitFor(store);

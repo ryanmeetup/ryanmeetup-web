@@ -1,2 +1,5 @@
-/** Collection is staged separately from text reviews; it stays off until media moderation is ready. */
-export const reviewPhotosEnabled = () => process.env.STORE_REVIEW_PHOTOS_ENABLED === "true";
+/** Photos accompany signed-in reviews by default; an explicit false pauses collection. */
+export function reviewPhotosEnabled() {
+  const setting = process.env.STORE_REVIEW_PHOTOS_ENABLED;
+  return setting === undefined || setting === "" || setting === "true";
+}
