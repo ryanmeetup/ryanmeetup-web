@@ -5,7 +5,33 @@ export type ModerationFilter = (typeof MODERATION_FILTERS)[number];
 /** `republish` publishes a rejected revision after all; rejected text is never deleted. */
 export type ModerationAction = "approve" | "reject" | "hide" | "restore" | "republish";
 export type ReplyAction = "reply-set" | "reply-remove";
-export type StaffReviewAction = ModerationAction | ReplyAction;
+export type StaffReviewAction = ModerationAction | ReplyAction | "delete";
+
+/**
+ * The only grounds for deleting a review. They follow the FTC consumer review
+ * rule (16 CFR 465.7), which permits removing reviews for these reasons when
+ * the policy applies to every review alike, and forbids removing one for its
+ * rating or a negative opinion. Keep in step with `store_delete_review`.
+ */
+export const REVIEW_DELETION_REASONS = ["spam", "false_or_misleading", "unrelated", "confidential", "abusive", "discriminatory"] as const;
+export type ReviewDeletionReason = (typeof REVIEW_DELETION_REASONS)[number];
+export const reviewDeletionReasonLabels: Record<ReviewDeletionReason, string> = {
+  spam: "Spam or fake review",
+  false_or_misleading: "Clearly false or misleading",
+  unrelated: "Unrelated to the product",
+  confidential: "Trade secrets or private information",
+  abusive: "Defamatory, harassing, abusive, obscene, or sexually explicit",
+  discriminatory: "Demeans a protected or intrinsic characteristic",
+};
+export function isReviewDeletionReason(value: unknown): value is ReviewDeletionReason {
+  return REVIEW_DELETION_REASONS.includes(value as ReviewDeletionReason);
+}
+export type ReviewDeletionCommand = {
+  reviewId: string;
+  expectedUpdatedAt: string;
+  reason: ReviewDeletionReason;
+  note: string | null;
+};
 export type ModerationCursor = { createdAt: string; id: string };
 export type ModerationQuery = { filter: ModerationFilter; productId: string | null; after: ModerationCursor | null };
 export type ModerationProduct = { productId: string; productTitle: string };
@@ -71,6 +97,7 @@ export function moderationActionLabel(action: StaffReviewAction, review: Moderat
     case "republish": return "Publish anyway";
     case "reply-set": return review.reply ? "Edit reply" : "Write reply";
     case "reply-remove": return "Remove reply";
+    case "delete": return "Delete review";
   }
 }
 

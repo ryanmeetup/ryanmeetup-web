@@ -144,6 +144,33 @@ back reply creation, replacement, or deletion. Reply changes also invalidate
 stale publication decisions. The audit records actors/actions/times; prior
 reply bodies are not kept as separate revisions.
 
+### Deleting a review
+
+`DELETE /api/admin/reviews` accepts exactly `reviewId`, `expectedUpdatedAt`,
+`reason`, and a nullable private `note` (up to 1,000 characters). `reason` must
+be one of `spam`, `false_or_misleading`, `unrelated`, `confidential`, `abusive`,
+or `discriminatory`. These are the grounds the FTC consumer review rule
+(16 CFR 465.7) allows for removing a review when the policy applies to every
+review alike; a low rating or negative opinion is never a reason. The
+confirmation dialog shows that rule, requires a reason, and requires staff to
+confirm the rating played no part. Any review can be deleted, withdrawn ones
+included.
+
+RMT-only `store_delete_review` (`20261121020000_store_review_deletions.sql`)
+rechecks the owner, shop, and exact review version, takes the same photo lock as
+attachment, and in one transaction deletes the review with its revisions,
+events, reply, and photo records, and inserts an append-only
+`store_review_deletions` row. That row keeps the review ID, product, latest
+rating, whether it was published, verified purchase, reason, note, photo count,
+creation time, actor, and deletion time. It keeps no review text and no buyer
+identity. The backend role can insert and read it but not update or delete it.
+
+The function returns the deleted photo IDs, or null for a stale or missing
+review (409). The route then removes `<shop>/<photo id>.webp` from the private
+`store-review-photos` bucket. Storage cannot join the transaction, so a failed
+file removal still reports the deletion, returns `photosRemoved: false`, and
+logs it; the leftover files stay private and unreferenced.
+
 `store_review_moderation_page_v2` reads the review version, reply, revisions, and
 events from one statement snapshot. The original v1 function is unchanged so
 older deployed strict response parsers keep working. v3 added

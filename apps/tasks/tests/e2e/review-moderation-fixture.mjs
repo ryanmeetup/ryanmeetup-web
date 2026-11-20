@@ -45,7 +45,7 @@ export function createReviewModerationFixture(json, readBody, profile) {
       response.writeHead(200, { "content-range": count ? `0-${count - 1}/${count}` : `*/0`, "access-control-allow-origin": "*", "access-control-expose-headers": "*" });
       response.end(); return true;
     }
-    if (!["/rest/v1/rpc/store_review_moderation_page_v4", "/rest/v1/rpc/store_review_moderation_products", "/rest/v1/rpc/store_moderate_review", "/rest/v1/rpc/store_save_review_reply"].includes(url.pathname)) return false;
+    if (!["/rest/v1/rpc/store_review_moderation_page_v4", "/rest/v1/rpc/store_review_moderation_products", "/rest/v1/rpc/store_moderate_review", "/rest/v1/rpc/store_save_review_reply", "/rest/v1/rpc/store_delete_review"].includes(url.pathname)) return false;
     const command = await readBody(request);
     if (!isOwner() || command.p_actor !== profile.id || command.p_shop_id !== "123" || request.headers.apikey !== "sb_secret_test") {
       json(response, 403, { code: "42501", message: "Owner required" }); return true;
@@ -69,6 +69,13 @@ export function createReviewModerationFixture(json, readBody, profile) {
     calls.push(command);
     const r = reviews.find((entry) => entry.id === command.p_review_id);
     const advance = () => `2026-11-18T12:01:00.${String(++tick).padStart(6, "0")}Z`;
+    if (url.pathname.endsWith("store_delete_review")) {
+      // Any state may be deleted; a stale view answers null. No fixture review has photos.
+      if (options.conflictOnce && r) { options.conflictOnce = false; r.updatedAt = advance(); }
+      if (!r || r.updatedAt !== command.p_expected_updated_at) { json(response, 200, null); return true; }
+      reviews = reviews.filter((entry) => entry !== r);
+      json(response, 200, []); return true;
+    }
     const isReply = url.pathname.endsWith("store_save_review_reply");
     if (isReply && options.replyConflictOnce && r) {
       options.replyConflictOnce = false;

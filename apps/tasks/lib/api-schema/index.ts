@@ -31,4 +31,4 @@ export {
 } from "./ryd";
 
 export { parseUuid } from "./shared";
-export { storeReviewModerationSchema, storeReviewModerationQuery, storeReviewReplySchema } from "./store-review-moderation";
+export { storeReviewDeletionSchema, storeReviewModerationSchema, storeReviewModerationQuery, storeReviewReplySchema } from "./store-review-moderation";

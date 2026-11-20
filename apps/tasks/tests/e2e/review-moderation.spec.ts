@@ -153,7 +153,9 @@ test("approving a hidden edit keeps it hidden and withdrawn reviews offer no dec
   await queue(page, "All reviews");
   await expect(card(page, 4)).toContainText("Staff cannot restore this review.");
   // No decisions, and a lone "Submitted" event adds no history disclosure.
-  await expect(card(page, 4).getByRole("button")).toHaveCount(0);
+  // Deleting stays available, since a withdrawn review can still be spam.
+  await expect(card(page, 4).getByRole("button")).toHaveCount(1);
+  await expect(card(page, 4).getByRole("button", { name: "Delete review for Fixture shirt 4" })).toBeVisible();
 });
 
 test("refreshes conflicts without automatically repeating a decision", async ({ page, request }) => {
@@ -386,4 +388,45 @@ test("wraps long names and review text without horizontal overflow", async ({ pa
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await card(page, 2).screenshot({ path: testInfo.outputPath(`long-text-${width}.png`) });
   }
+});
+
+test("deletes spam only after a policy reason and a rating-neutral confirmation", async ({ page, request }) => {
+  await signIn(page); await page.goto("/store-reviews");
+  await card(page, 1).getByRole("button", { name: "Delete review for Fixture shirt 1" }).click();
+  const dialog = page.getByRole("dialog", { name: "Delete review" });
+  // The FTC standard stays on screen beside the review being deleted.
+  await expect(dialog.getByRole("region", { name: "FTC rules on removing reviews" })).toContainText("16 CFR 465.7");
+  await expect(dialog.getByRole("region", { name: "Review being deleted" })).toContainText("The size ran small.");
+  const confirm = dialog.getByRole("button", { name: "Delete review", exact: true });
+  await expect(confirm).toBeDisabled();
+  await dialog.getByRole("button", { name: /^Reason/ }).click();
+  await page.getByRole("option", { name: "Spam or fake review", exact: true }).click();
+  await expect(confirm).toBeDisabled();
+  await dialog.getByLabel("Private note").fill("Link to a follower shop");
+  await dialog.getByRole("checkbox").check();
+  await confirm.click();
+  await expect(page.getByRole("status").filter({ hasText: "Review deleted and logged." })).toBeVisible();
+  await expect(card(page, 1)).toHaveCount(0);
+  const { calls } = await state(request);
+  expect(calls.at(-1)).toEqual({ p_actor: expect.any(String), p_shop_id: "123", p_review_id: id(1),
+    p_expected_updated_at: "2026-11-18T12:00:00.123456Z", p_reason: "spam", p_note: "Link to a follower shop" });
+});
+
+test("a withdrawn review can still be deleted, and a stale view is refused", async ({ page, request }) => {
+  await signIn(page); await page.goto("/store-reviews"); await queue(page, "All reviews");
+  await configure(request, { conflictOnce: true });
+  await card(page, 4).getByRole("button", { name: "Delete review for Fixture shirt 4" }).click();
+  const dialog = page.getByRole("dialog", { name: "Delete review" });
+  await dialog.getByRole("button", { name: /^Reason/ }).click();
+  await page.getByRole("option", { name: "Unrelated to the product", exact: true }).click();
+  await dialog.getByRole("checkbox").check();
+  await dialog.getByRole("button", { name: "Delete review", exact: true }).click();
+  await expect(page.getByText("This review changed or was already deleted.")).toBeVisible();
+  await card(page, 4).getByRole("button", { name: "Delete review for Fixture shirt 4" }).click();
+  await dialog.getByRole("button", { name: /^Reason/ }).click();
+  await page.getByRole("option", { name: "Unrelated to the product", exact: true }).click();
+  await dialog.getByRole("checkbox").check();
+  await dialog.getByRole("button", { name: "Delete review", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Review deleted and logged." })).toBeVisible();
+  await expect(card(page, 4)).toHaveCount(0);
 });

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { storeReviewModerationQuery, storeReviewModerationSchema, storeReviewReplySchema } from "@/lib/api-schema";
-import { apiError, databaseFailure, privateResponse } from "@/lib/server/api-response";
+import { storeReviewDeletionSchema, storeReviewModerationQuery, storeReviewModerationSchema, storeReviewReplySchema } from "@/lib/api-schema";
+import { apiError, databaseFailure, logServerFailure, privateResponse } from "@/lib/server/api-response";
 import { readJson } from "@/lib/server/privileged-api";
-import { loadReviewModerationPage, moderateReview, saveReviewReply } from "@/lib/server/store-reviews/moderation";
+import { deleteReview, loadReviewModerationPage, moderateReview, saveReviewReply } from "@/lib/server/store-reviews/moderation";
 import { StoreReviewDatabaseError } from "@/lib/server/store-reviews/errors";
 import { storeReviewStaffContext as context } from "@/lib/server/store-reviews/staff-context";
 
@@ -47,4 +47,19 @@ export async function PATCH(request: Request) {
     return privateResponse(changed ? NextResponse.json({ saved: true }) :
       apiError(409, "CONFLICT", "This review or reply changed. Refresh the queue before editing it."));
   } catch (error) { return failure(request, error); }
+}
+
+export async function DELETE(request: Request) {
+  const authorized = await context();
+  if ("response" in authorized) return privateResponse(authorized.response);
+  const parsed = await readJson(request, storeReviewDeletionSchema, { maxBytes: 8 * 1024 });
+  if ("response" in parsed) return privateResponse(parsed.response);
+  let outcome;
+  try {
+    outcome = await deleteReview(authorized.admin, authorized.user.id, authorized.shopId, parsed.data);
+  } catch (error) { return failure(request, error); }
+  if (!outcome.deleted) return privateResponse(apiError(409, "CONFLICT", "This review changed. Refresh the queue before deleting it."));
+  // The review is gone either way; leftover files are private and unreferenced.
+  if (!outcome.photosRemoved) logServerFailure(request, "store_review_photo_removal", { code: "STORAGE", message: `${outcome.photoCount} photo file(s) left after deleting a review` });
+  return privateResponse(NextResponse.json({ deleted: true, photosRemoved: outcome.photosRemoved }));
 }

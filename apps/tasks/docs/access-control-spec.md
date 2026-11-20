@@ -311,6 +311,12 @@ reply and review version from one snapshot; v1 stays unchanged for older
 deployments. No table or RPC privileges are widened, the public reply shape is
 unchanged, and the moderation endpoints accept only a Tasks owner session.
 
+Staff deletion uses service-role-only `store_delete_review`, which rechecks the
+owner, shop, and exact review version, accepts only the policy reasons, and
+writes an append-only `store_review_deletions` audit row in the same
+transaction. The backend role may insert and select that table but never update
+or delete it; anon and Tasks members cannot reach it.
+
 ## RY-D Verification
 
 RY-D review writes use service-role-only `ryd_change_submission`,

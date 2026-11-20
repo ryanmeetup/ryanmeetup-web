@@ -1,6 +1,6 @@
 import { reviewReplyBodySchema } from "@ryanmeetup/reviews";
-import type { ModerationDecision, ModerationQuery, ReviewReplyCommand } from "@/lib/store-reviews/moderation";
-import { isModerationFilter, isModerationProductId, isModerationTimestamp } from "@/lib/store-reviews/moderation";
+import type { ModerationDecision, ModerationQuery, ReviewDeletionCommand, ReviewReplyCommand } from "@/lib/store-reviews/moderation";
+import { isModerationFilter, isReviewDeletionReason, isModerationProductId, isModerationTimestamp } from "@/lib/store-reviews/moderation";
 import { isUuid, objectWithKeys } from "./shared";
 
 export function storeReviewReplySchema(value: unknown): ReviewReplyCommand | null {
@@ -36,4 +36,13 @@ export function storeReviewModerationQuery(params: URLSearchParams): ModerationQ
   if (createdAt === null && id === null) return { filter, productId, after: null };
   if (!isModerationTimestamp(createdAt) || !isUuid(id)) return null;
   return { filter, productId, after: { createdAt, id } };
+}
+
+export function storeReviewDeletionSchema(value: unknown): ReviewDeletionCommand | null {
+  const input = objectWithKeys(value, ["reviewId", "expectedUpdatedAt", "reason", "note"]);
+  if (!input || !isUuid(input.reviewId) || !isModerationTimestamp(input.expectedUpdatedAt) ||
+    !isReviewDeletionReason(input.reason) || (input.note !== null && typeof input.note !== "string")) return null;
+  const note = typeof input.note === "string" ? input.note.trim() || null : null;
+  if (note && ([...note].length > 1000 || /[\u0000-\u0008\u000b-\u001f\u007f]/u.test(note))) return null;
+  return { reviewId: input.reviewId, expectedUpdatedAt: input.expectedUpdatedAt, reason: input.reason, note };
 }

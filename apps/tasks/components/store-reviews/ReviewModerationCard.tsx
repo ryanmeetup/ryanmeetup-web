@@ -65,7 +65,7 @@ export function ReviewModerationCard({ review, disabled, staffNames, onSelect }:
       </div>}
       {review.state === "hidden" && <Text className="text-sm">Hidden from the storefront and rating totals. Approving an edit keeps it hidden.</Text>}
       {review.state === "withdrawn" && <Text className="text-sm">Withdrawn by the buyer. Staff cannot restore this review.</Text>}
-      {actions.length > 0 && <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {actions.map((action) => action === "hide" || action === "restore" ?
           <IconButton key={action} size="md" label={`${moderationActionLabel(action, review)} for ${review.item.productTitle}`} disabled={disabled} onClick={() => onSelect(review, action)}>
             {action === "hide" ? <FiEyeOff aria-hidden /> : <FiEye aria-hidden />}
@@ -73,7 +73,11 @@ export function ReviewModerationCard({ review, disabled, staffNames, onSelect }:
           <Button key={action} variant={action === "approve" ? "primary" : "secondary"} disabled={disabled} onClick={() => onSelect(review, action)}>
             {moderationActionLabel(action, review)}
           </Button>)}
-      </div>}
+        <IconButton size="md" variant="danger" tooltipTriggerClassName="ml-auto" label={`Delete review for ${review.item.productTitle}`}
+          tooltip="Delete review" disabled={disabled} onClick={() => onSelect(review, "delete")}>
+          <FiTrash2 aria-hidden />
+        </IconButton>
+      </div>
       {(review.reply || reviewReplyActions(review).length > 0) && <section aria-label="Official reply" className="space-y-3 border-t border-black/10 pt-4 dark:border-white/10">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Heading size="h3" variant="normal" className="text-sm font-semibold">Official reply</Heading>

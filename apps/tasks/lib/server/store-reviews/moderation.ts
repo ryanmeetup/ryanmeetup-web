@@ -5,7 +5,7 @@ import { reviewReplyBodySchema, reviewSubmissionSchema } from "@ryanmeetup/revie
 import { parseUuid } from "@/lib/api-schema";
 import { isModerationProductId, isModerationTimestamp } from "@/lib/store-reviews/moderation";
 import { StoreReviewDatabaseError } from "./errors";
-import type { ModerationDecision, ModerationEvent, ModerationPage, ModerationProduct, ModerationQuery, ModerationReview, ModerationRevision, ReviewReplyCommand } from "@/lib/store-reviews/moderation";
+import type { ModerationDecision, ReviewDeletionCommand, ModerationEvent, ModerationPage, ModerationProduct, ModerationQuery, ModerationReview, ModerationRevision, ReviewReplyCommand } from "@/lib/store-reviews/moderation";
 
 function object(value: unknown, keys: string[]): Record<string, unknown> | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
@@ -105,6 +105,33 @@ export async function saveReviewReply(admin: SupabaseClient, actor: string, shop
   if (error) throw new StoreReviewDatabaseError(error.code);
   if (typeof data !== "boolean") throw new StoreReviewDatabaseError();
   return data;
+}
+
+const reviewPhotoBucket = "store-review-photos";
+
+export type ReviewDeletionOutcome =
+  | { deleted: false }
+  | { deleted: true; photoCount: number; photosRemoved: boolean };
+
+/**
+ * Permanently deletes a review and records the audit row in one transaction,
+ * then removes its private photo files. Storage cannot join the database
+ * transaction, so a failed file removal leaves the review deleted and reports
+ * `photosRemoved: false`; the files stay private and unreferenced.
+ */
+export async function deleteReview(admin: SupabaseClient, actor: string, shopId: string, command: ReviewDeletionCommand): Promise<ReviewDeletionOutcome> {
+  const { data, error } = await admin.rpc("store_delete_review", {
+    p_actor: actor, p_shop_id: shopId, p_review_id: command.reviewId,
+    p_expected_updated_at: command.expectedUpdatedAt, p_reason: command.reason, p_note: command.note,
+  });
+  if (error) throw new StoreReviewDatabaseError(error.code);
+  if (data === null) return { deleted: false };
+  if (!Array.isArray(data) || data.some((id) => !parseUuid(id))) throw new StoreReviewDatabaseError();
+  const photoIds = data as string[];
+  if (!photoIds.length) return { deleted: true, photoCount: 0, photosRemoved: true };
+  const removed = await admin.storage.from(reviewPhotoBucket).remove(photoIds.map((id) => `${shopId}/${id}.webp`))
+    .then(({ error: storageError }) => !storageError, () => false);
+  return { deleted: true, photoCount: photoIds.length, photosRemoved: removed };
 }
 
 /**

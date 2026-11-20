@@ -34,6 +34,11 @@ Rejected reviews are kept, never deleted. Find them in the Rejected queue and
 publish one anyway if you change your mind. Narrow any queue to a single
 product with the Product filter.
 
+Delete spam for good with the trash button on any review. The confirmation
+lists the FTC's rules on removing reviews, asks for one of the allowed reasons,
+and has you confirm the rating played no part. Each deletion is logged with its
+reason, rating, and who deleted it, but not the review text.
+
 ### Save a focused task view
 
 Save your current task filters, exclusions, sort order, and board or list layout

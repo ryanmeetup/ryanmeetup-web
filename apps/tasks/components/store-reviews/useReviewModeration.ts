@@ -3,9 +3,9 @@
 import { useRef, useState } from "react";
 import { notifyStoreReviewsChanged } from "@/hooks/useStoreReviewPendingCount";
 import { ApiMutationError } from "@/lib/mutation-client";
-import { fetchModerationPage, saveModerationDecision, saveOfficialReply } from "@/lib/store-reviews/moderation-client";
+import { deleteStoreReview, fetchModerationPage, saveModerationDecision, saveOfficialReply } from "@/lib/store-reviews/moderation-client";
 import { moderationActionLabel, moderationRevisionId, reviewModerationActions, reviewReplyActions } from "@/lib/store-reviews/moderation";
-import type { ModerationFilter, ModerationInitialState, ModerationPage, ModerationReview, StaffReviewAction } from "@/lib/store-reviews/moderation";
+import type { ModerationFilter, ModerationInitialState, ModerationPage, ModerationReview, ReviewDeletionReason, StaffReviewAction } from "@/lib/store-reviews/moderation";
 
 export type ModerationSelection = { action: StaffReviewAction; review: ModerationReview };
 
@@ -42,19 +42,24 @@ export function useReviewModeration(initial: ModerationInitialState) {
   }
 
   function select(review: ModerationReview, action: StaffReviewAction) {
-    const allowed: StaffReviewAction[] = [...reviewModerationActions(review), ...reviewReplyActions(review)];
+    // Any review can be deleted; the dialog limits it to policy reasons.
+    const allowed: StaffReviewAction[] = [...reviewModerationActions(review), ...reviewReplyActions(review), "delete"];
     if (!disabled && !active.current && allowed.includes(action)) setSelection({ review, action });
   }
   function dismiss() { if (!active.current) setSelection(null); }
 
-  async function decide(note: string | null) {
+  async function decide(note: string | null, reason?: ReviewDeletionReason) {
     if (!selection || active.current || disabled) return;
     const { review, action } = selection;
     if (action === "reply-set" && !note) return;
+    if (action === "delete" && !reason) return;
     active.current = true; setBusy("saving"); setError(""); setMessage("");
     let outcome: "saved" | "conflict" | "unknown" = "unknown";
+    let photosLeft = false;
     try {
-      if (action === "reply-set" || action === "reply-remove") {
+      if (action === "delete") {
+        photosLeft = !(await deleteStoreReview({ reviewId: review.id, expectedUpdatedAt: review.updatedAt, reason: reason!, note })).photosRemoved;
+      } else if (action === "reply-set" || action === "reply-remove") {
         await saveOfficialReply({ reviewId: review.id, expectedUpdatedAt: review.updatedAt, body: action === "reply-remove" ? null : note });
       } else {
         await saveModerationDecision({ action, reviewId: review.id, expectedUpdatedAt: review.updatedAt,
@@ -72,10 +77,12 @@ export function useReviewModeration(initial: ModerationInitialState) {
       // A lost response may follow a committed decision. Require a fresh read, never a blind retry.
       setPage(null); setError("We could not confirm this decision. Refresh the queue before trying again.");
     } else {
-      if (outcome === "saved") setMessage(`${moderationActionLabel(action, review)}: saved.`);
+      if (outcome === "saved") setMessage(action === "delete"
+        ? `Review deleted and logged.${photosLeft ? " Its photo files could not be removed and stay private." : ""}`
+        : `${moderationActionLabel(action, review)}: saved.`);
       try {
         setPage(await fetchModerationPage(filter, productId));
-        if (outcome === "conflict") setError("This review changed. The queue has been refreshed; read the latest text before deciding.");
+        if (outcome === "conflict") setError(action === "delete" ? "This review changed or was already deleted. The queue has been refreshed; check it before deleting." : "This review changed. The queue has been refreshed; read the latest text before deciding.");
       } catch {
         setPage(null); setError(outcome === "saved"
           ? "Your decision was saved, but reviews could not reload. Refresh the queue before deciding again."

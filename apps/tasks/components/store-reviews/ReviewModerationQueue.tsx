@@ -6,6 +6,7 @@ import { isModerationFilter } from "@/lib/store-reviews/moderation";
 import type { ModerationInitialState } from "@/lib/store-reviews/moderation";
 import { useReviewModeration } from "./useReviewModeration";
 import { ReviewModerationCard } from "./ReviewModerationCard";
+import { ReviewDeletionDialog } from "./ReviewDeletionDialog";
 import { ReviewModerationDialog } from "./ReviewModerationDialog";
 import { ReviewReplyDialog } from "./ReviewReplyDialog";
 
@@ -46,7 +47,9 @@ export function ReviewModerationQueue({ initial, staffNames }: { initial: Modera
         queue.filter === "rejected" ? "No rejected reviews" : "No reviews in this queue"} />}
     </div>
     {queue.page?.next && <Button className="w-full sm:w-auto" variant="secondary" disabled={locked} onClick={() => void queue.load({ more: true })}>Load more reviews</Button>}
-    {queue.selection && (queue.selection.action === "reply-set" || queue.selection.action === "reply-remove" ?
+    {queue.selection?.action === "delete" ? <ReviewDeletionDialog key={`${queue.selection.review.id}-delete`} review={queue.selection.review}
+      saving={Boolean(queue.busy)} onClose={queue.dismiss} onSubmit={queue.decide} /> :
+    queue.selection && (queue.selection.action === "reply-set" || queue.selection.action === "reply-remove" ?
       <ReviewReplyDialog key={`${queue.selection.review.id}-${queue.selection.action}`} review={queue.selection.review}
         remove={queue.selection.action === "reply-remove"} saving={Boolean(queue.busy)} onClose={queue.dismiss} onSubmit={queue.decide} /> :
       <ReviewModerationDialog key={`${queue.selection.review.id}-${queue.selection.action}`}

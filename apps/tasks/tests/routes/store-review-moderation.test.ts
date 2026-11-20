@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextResponse } from "next/server";
 
-const mocks = vi.hoisted(() => ({ context: vi.fn(), rpc: vi.fn() }));
+const mocks = vi.hoisted(() => ({ context: vi.fn(), rpc: vi.fn(), remove: vi.fn(), from: vi.fn() }));
 vi.mock("@/lib/server/privileged-api", async (importOriginal) => ({
   ...await importOriginal<typeof import("@/lib/server/privileged-api")>(), privilegedContext: mocks.context,
 }));
-import { GET, POST, PATCH } from "@/app/api/admin/reviews/route";
+import { DELETE, GET, POST, PATCH } from "@/app/api/admin/reviews/route";
 
 const actor = "00000000-0000-4000-8000-000000000901";
 const reviewId = "00000000-0000-4000-8000-000000000001";
@@ -28,6 +28,13 @@ function patch(body: unknown, headers: HeadersInit = {}) {
   }, body: JSON.stringify(body) });
 }
 const reply = { reviewId, expectedUpdatedAt: time, body: "Thanks for the feedback." };
+function del(body: unknown, headers: HeadersInit = {}) {
+  return new Request("https://tasks.test/api/admin/reviews", { method: "DELETE", headers: {
+    "content-type": "application/json", origin: "https://tasks.test", ...headers,
+  }, body: JSON.stringify(body) });
+}
+const deletion = { reviewId, expectedUpdatedAt: time, reason: "spam", note: "Link spam" };
+const photoId = "00000000-0000-4000-8000-000000000003";
 const get = (query = "") => new Request(`https://tasks.test/api/admin/reviews${query}`);
 const products = [{ productId: "100", productTitle: "Shirt" }, { productId: "200", productTitle: "Hat" }];
 // GET reads the page and the product list together; each answers its own RPC.
@@ -41,7 +48,9 @@ describe("owner review moderation", () => {
     vi.stubEnv("STORE_REVIEWS_SUPABASE_PROJECT_REF", "lvfaartgcpphuokoswcm");
     vi.stubEnv("STORE_REVIEWS_CUSTOMER_AUTH_SCOPE", JSON.stringify(scope));
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://lvfaartgcpphuokoswcm.supabase.co");
-    mocks.context.mockResolvedValue({ user: { id: actor }, admin: { rpc: mocks.rpc } });
+    mocks.context.mockResolvedValue({ user: { id: actor }, admin: { rpc: mocks.rpc, storage: { from: mocks.from } } });
+    mocks.from.mockReturnValue({ remove: mocks.remove });
+    mocks.remove.mockResolvedValue({ data: [], error: null });
     pageResult = { data: [row], error: null };
     productResult = { data: products, error: null };
     mocks.rpc.mockImplementation(async (name: string) => name === "store_review_moderation_products" ? productResult : pageResult);
@@ -53,6 +62,7 @@ describe("owner review moderation", () => {
     expect((await GET(get())).status).toBe(403);
     expect((await POST(post(decision, { authorization: `Bearer ${"a".repeat(43)}` }))).status).toBe(403);
     expect((await PATCH(patch(reply, { authorization: `Bearer ${"a".repeat(43)}` }))).status).toBe(403);
+    expect((await DELETE(del(deletion, { authorization: `Bearer ${"a".repeat(43)}` }))).status).toBe(403);
     expect(mocks.context).toHaveBeenCalledWith({ owner: true });
     expect(mocks.rpc).not.toHaveBeenCalled();
   });
@@ -63,6 +73,7 @@ describe("owner review moderation", () => {
       expect((await GET(get())).status).toBe(503);
       expect((await POST(post())).status).toBe(503);
       expect((await PATCH(patch(reply))).status).toBe(503);
+      expect((await DELETE(del(deletion))).status).toBe(503);
     }
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://lvfaartgcpphuokoswcm.supabase.co");
     vi.stubEnv("STORE_REVIEWS_CUSTOMER_AUTH_ENABLED", "false");
@@ -215,5 +226,53 @@ describe("owner review moderation", () => {
       pageResult = { data: [{ ...row, reply: invalid }], error: null };
       expect((await GET(get())).status).toBe(500);
     }
+  });
+
+  it("deletes with a pinned actor and shop, then removes the review's private photo files", async () => {
+    mocks.rpc.mockResolvedValue({ data: [photoId], error: null });
+    const response = await DELETE(del(deletion));
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(await response.json()).toEqual({ deleted: true, photosRemoved: true });
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("store_delete_review", {
+      p_actor: actor, p_shop_id: "123", p_review_id: reviewId, p_expected_updated_at: time, p_reason: "spam", p_note: "Link spam",
+    });
+    expect(mocks.from).toHaveBeenCalledWith("store-review-photos");
+    expect(mocks.remove).toHaveBeenCalledExactlyOnceWith([`123/${photoId}.webp`]);
+  });
+  it("skips storage without photos and reports, never hides, a failed file removal", async () => {
+    mocks.rpc.mockResolvedValue({ data: [], error: null });
+    expect(await (await DELETE(del({ ...deletion, note: null }))).json()).toEqual({ deleted: true, photosRemoved: true });
+    expect(mocks.remove).not.toHaveBeenCalled();
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    mocks.rpc.mockResolvedValue({ data: [photoId], error: null });
+    mocks.remove.mockResolvedValue({ data: null, error: { message: "storage down" } });
+    const response = await DELETE(del(deletion));
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ deleted: true, photosRemoved: false });
+  });
+  it("accepts only policy reasons and refuses privileged or malformed deletion fields", async () => {
+    for (const invalid of [{ ...deletion, reason: "low_rating" }, { ...deletion, reason: null }, { reviewId, expectedUpdatedAt: time, reason: "spam" },
+      { ...deletion, actor }, { ...deletion, shopId: "999" }, { ...deletion, note: "x".repeat(1001) }, { ...deletion, note: "bad\u0001" },
+      { ...deletion, reviewId: "not-a-uuid" }, { ...deletion, expectedUpdatedAt: time.slice(0, 23) + "Z" }]) {
+      expect((await DELETE(del(invalid))).status).toBe(400);
+    }
+    expect((await DELETE(del(deletion, { origin: "https://evil.test" }))).status).toBe(403);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    mocks.rpc.mockResolvedValue({ data: [], error: null });
+    expect((await DELETE(del({ ...deletion, note: "   " }))).status).toBe(200);
+    expect(mocks.rpc).toHaveBeenLastCalledWith("store_delete_review", expect.objectContaining({ p_note: null }));
+  });
+  it("returns a conflict for a stale or deleted review and keeps database details private", async () => {
+    mocks.rpc.mockResolvedValue({ data: null, error: null });
+    expect((await DELETE(del(deletion))).status).toBe(409);
+    mocks.rpc.mockResolvedValue({ data: null, error: { code: "42501", message: "private" } });
+    expect((await DELETE(del(deletion))).status).toBe(403);
+    mocks.rpc.mockResolvedValue({ data: ["not-a-uuid"], error: null });
+    expect((await DELETE(del(deletion))).status).toBe(500);
+    mocks.rpc.mockResolvedValue({ data: null, error: { code: "P0001", details: "private review text" } });
+    const response = await DELETE(del(deletion));
+    expect(response.status).toBe(500); expect(JSON.stringify(await response.json())).not.toContain("private");
+    expect(mocks.remove).not.toHaveBeenCalled();
   });
 });
