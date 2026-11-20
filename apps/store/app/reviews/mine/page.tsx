@@ -34,7 +34,7 @@ export default async function Page() {
   const backend = getReviewBackend();
   const session = getCustomerAccountSession(request);
   const [result, suggestions] = await Promise.all([
-    loadMyReviewPage(null, { loadSession: () => session, findBuyerName, backend, photosEnabled: reviewPhotosEnabled() }),
+    loadMyReviewPage(null, { loadSession: () => session, findBuyerName, backend, photosEnabled: reviewPhotosEnabled(), productCards: getProductCardsByIds }),
     // Suggestions are a nicety: any failure leaves them out rather than failing the page.
     session.then(async (current) => current.status === "authenticated" && backend ? getReviewSuggestions({
       session: current.session, findRecent: findRecentReviewablePurchases, productCards: getProductCardsByIds,

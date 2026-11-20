@@ -21,7 +21,7 @@ export function useMyReviews(initial: MyReviewView | null) {
       let next=await fetchMyReviews(more ? view?.page.nextCursor : null);
       const append=more && view && next.viewerKey === view.viewerKey;
       if (more && view && !append) next=await fetchMyReviews();
-      setView(append ? {...next,page:{...next.page,reviews:[...view.page.reviews,...next.page.reviews.filter((r)=>!view.page.reviews.some((old)=>old.id===r.id))]}} : next);
+      setView(append ? {...next,products:{...view.products,...next.products},page:{...next.page,reviews:[...view.page.reviews,...next.page.reviews.filter((r)=>!view.page.reviews.some((old)=>old.id===r.id))]}} : next);
     } catch (failure) { setView(null);setError(failure instanceof MyReviewRequestError ? failure.message : "Your reviews could not load. Refresh to try again."); }
     finally {active.current=false;setPending(false);}
   }

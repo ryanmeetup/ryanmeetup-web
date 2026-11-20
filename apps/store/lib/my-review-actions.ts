@@ -5,11 +5,26 @@ import { sameCustomerAccountSession } from "./customer-account/storage";
 import { hasJsonBody, isSameOriginRead, isSameOriginRequest, privateJson as reply, readBoundedJsonObject } from "./request-guard";
 import type { ReviewBackend } from "./review-backend";
 import type { ReviewBuyerNameLookup } from "./review-purchases";
-import type { MyReviewView } from "./my-review-view";
+import type { MyReviewProduct, MyReviewView } from "./my-review-view";
+import type { ProductCard } from "./shopify";
 
 const unavailable = () => reply(503, { error: "Your reviews are temporarily unavailable. Please try again later." });
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
-export type MyReviewServices = { loadSession: () => Promise<CustomerSessionResult>; findBuyerName: ReviewBuyerNameLookup; backend: ReviewBackend | null; photosEnabled?: boolean };
+export type MyReviewServices = {
+  loadSession: () => Promise<CustomerSessionResult>; findBuyerName: ReviewBuyerNameLookup; backend: ReviewBackend | null; photosEnabled?: boolean;
+  /** Storefront cards by numeric product ID, for thumbnails and links. A failed lookup only leaves them out. */
+  productCards?: (productIds: string[]) => Promise<Record<string, ProductCard>>;
+};
+
+async function reviewedProducts(page: MyReviewView["page"], productCards: MyReviewServices["productCards"]): Promise<Record<string, MyReviewProduct>> {
+  const ids = [...new Set(page.reviews.map((review) => review.item.productId))];
+  if (!productCards || !ids.length) return {};
+  const cards = await productCards(ids).catch(() => ({} as Record<string, ProductCard>));
+  return Object.fromEntries(ids.flatMap((id) => {
+    const card = cards[id];
+    return card ? [[id, { href: `/products/${card.handle}#reviews`, image: card.image, options: card.options }]] : [];
+  }));
+}
 
 async function sessionResult(load: MyReviewServices["loadSession"]) {
   return load().catch((): CustomerSessionResult => ({ status: "unavailable" }));
@@ -23,7 +38,7 @@ async function recheckSession(first: Extract<CustomerSessionResult, { status: "a
 }
 
 /** Initial server rendering and client paging share the same private buyer boundary. */
-export async function loadMyReviewPage(cursor: string | null, { loadSession, backend, findBuyerName, photosEnabled = false }: MyReviewServices): Promise<
+export async function loadMyReviewPage(cursor: string | null, { loadSession, backend, findBuyerName, photosEnabled = false, productCards }: MyReviewServices): Promise<
   { status: "ready"; view: MyReviewView } | { status: "sign_in_required" | "unavailable" }
 > {
   if (!backend) return { status: "unavailable" };
@@ -34,8 +49,8 @@ export async function loadMyReviewPage(cursor: string | null, { loadSession, bac
       backend({ operation: "reviews.mine", subject: session.session.subject, cursor }),
       findBuyerName(session.session).catch(() => null),
     ]);
-    const current = await recheckSession(session,loadSession);
-    return current.status === "authenticated" ? { status:"ready",view:{page,buyerName,
+    const [products,current] = await Promise.all([reviewedProducts(page,productCards),recheckSession(session,loadSession)]);
+    return current.status === "authenticated" ? { status:"ready",view:{page,products,buyerName,
       // Equality marker only; neither a session lookup hash nor an authentication credential.
       viewerKey:reviewViewerKey(session.session), ...(photosEnabled ? { photosEnabled: true as const } : {})}} : current;
   } catch { return { status: "unavailable" }; }

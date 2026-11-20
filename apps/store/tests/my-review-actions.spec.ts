@@ -106,3 +106,17 @@ test("photo selections are explicit, feature-gated and unavailable for withdrawa
   expect((await handleMyReviewAction(request({...edit,photoIds:[]}),deps)).status).toBe(200);
   expect(writes(commands).at(-1)).toMatchObject({operation:"review.edit",photoIds:[]});
 });
+
+test("reviewed products carry storefront links and thumbnails, and a failed lookup leaves them out",async()=>{
+  const card={handle:"name-tag-shirt",title:"Name Tag Shirt",image:{url:"https://cdn.shopify.com/s/files/tee.png",altText:null},options:["Size"]};
+  const seen:string[][]=[];
+  const found=await loadMyReviewPage(null,{...setup().deps,productCards:async(ids)=>{seen.push(ids);return {"100":card};}});
+  expect(seen).toEqual([["100"]]);
+  expect(found.status==="ready" && found.view.products).toEqual({"100":{href:"/products/name-tag-shirt#reviews",image:card.image,options:["Size"]}});
+  expect(found.status==="ready" && myReviewViewSchema(JSON.parse(JSON.stringify(found.view)))).toBeTruthy();
+  const failed=await loadMyReviewPage(null,{...setup().deps,productCards:async()=>{throw new Error("Shopify down");}});
+  expect(failed.status==="ready" && failed.view.products).toEqual({});
+  const view=found.status==="ready" ? found.view : null;
+  expect(myReviewViewSchema({...view,products:{"100":{...card,href:"https://evil.test/"}}})).toBeNull();
+  expect(myReviewViewSchema({...view,products:{"100":{href:"/products/x#reviews",image:{url:"javascript:alert(1)",altText:null},options:[]}}})).toBeNull();
+});

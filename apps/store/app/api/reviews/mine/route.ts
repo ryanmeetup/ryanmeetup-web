@@ -3,10 +3,11 @@ import { handleMyReviewAction, handleMyReviewPage } from "@/lib/my-review-action
 import { getReviewBackend } from "@/lib/review-backend";
 import { findBuyerName } from "@/lib/review-purchases";
 import { reviewPhotosEnabled } from "@/lib/review-photo-policy";
+import { getProductCardsByIds } from "@/lib/shopify";
 
 export const runtime = "nodejs";
 
-const deps = (request: Request) => ({ loadSession: () => getCustomerAccountSession(request), findBuyerName, backend: getReviewBackend(), photosEnabled: reviewPhotosEnabled() });
+const deps = (request: Request) => ({ loadSession: () => getCustomerAccountSession(request), findBuyerName, backend: getReviewBackend(), photosEnabled: reviewPhotosEnabled(), productCards: getProductCardsByIds });
 
 /** Edit or withdraw one of the signed-in buyer's reviews. */
 export function POST(request: Request) {
