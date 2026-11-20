@@ -13,7 +13,7 @@ import { getCustomerAccountUrl, getProductCardsByIds } from "@/lib/shopify";
 import { reviewPhotosEnabled } from "@/lib/review-photo-policy";
 
 export const metadata = buildPageMetadata({
-  title: "My reviews",
+  title: "My Reviews",
   description: "Edit or withdraw the reviews you've written.",
   canonical: "/reviews/mine",
   image: DEFAULT_IMAGE,
@@ -23,7 +23,7 @@ export const metadata = buildPageMetadata({
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <main className="store-container space-y-8 py-10 sm:py-14">
-      <Heading size="h1" className="text-4xl sm:text-5xl">My reviews</Heading>
+      <Heading size="h1" className="text-4xl sm:text-5xl">My Reviews</Heading>
       {children}
     </main>
   );

@@ -9,7 +9,7 @@ const card=(page:Page,n:number)=>page.getByTestId(`my-review-${id(n)}`);
 test.beforeEach(async({page,request,baseURL})=>{await reset(request);await signIn(page,baseURL!);});
 
 test("shows only the signed-in buyer's statuses and allowed actions",async({page})=>{
-  await page.goto("/reviews/mine");await expect(page.getByRole("heading",{name:"My reviews",exact:true})).toBeVisible();
+  await page.goto("/reviews/mine");await expect(page.getByRole("heading",{name:"My Reviews",exact:true})).toBeVisible();
   await expect(page.locator("article[data-testid^='my-review-']")).toHaveCount(5);
   await expect(card(page,201)).toHaveCount(0);await expect(card(page,4)).toContainText("Hidden");
   await expect(card(page,4).getByRole("button",{name:/Edit your review/})).toHaveCount(0);
@@ -135,7 +135,7 @@ test("signed in, My reviews offers recent purchases to review and reviews them i
   purchase.order.lineItems.nodes[0].variantTitle="M / White";
   await configure(request,{purchase});await signIn(page,baseURL!);
   await page.goto("/reviews/mine");
-  const ready=page.getByRole("region",{name:"Ready to review"});
+  const ready=page.getByRole("region",{name:"Ready to Review"});
   await expect(ready.getByRole("heading",{name:"Official Ryan Meetup Tee"})).toBeVisible();
   // One labelled line per option and order fact, not a run-on label.
   const details=ready.locator("dl");
@@ -156,7 +156,7 @@ test("signed in, My reviews offers recent purchases to review and reviews them i
   await dialog.getByRole("button",{name:"Submit review",exact:true}).click();
   await expect(dialog).toHaveCount(0);
   await expect(page.getByRole("status").filter({hasText:"Thanks!"})).toContainText("Thanks! Your review is waiting for approval.");
-  await expect(page.getByRole("region",{name:"Ready to review"})).toHaveCount(0);
+  await expect(page.getByRole("region",{name:"Ready to Review"})).toHaveCount(0);
   await expect(page.locator("article[data-testid^='my-review-']")).toHaveCount(1);
   await expect(page.locator("article[data-testid^='my-review-']")).toContainText("Waiting for approval");
   const {calls}=await state(request);
@@ -171,8 +171,8 @@ test("Ready to review and Your reviews each fold away under a real heading",asyn
   for(const width of [390,1280]){
     await page.setViewportSize({width,height:900});
     await page.goto("/reviews/mine");
-    const ready=page.getByRole("heading",{level:2,name:/^Ready to review/}).getByRole("button");
-    const yours=page.getByRole("heading",{level:2,name:/^Your reviews/}).getByRole("button");
+    const ready=page.getByRole("heading",{level:2,name:/^Ready to Review/}).getByRole("button");
+    const yours=page.getByRole("heading",{level:2,name:/^Your Reviews/}).getByRole("button");
     await expect(ready).toHaveAttribute("aria-expanded","true");await expect(yours).toHaveAttribute("aria-expanded","true");
     // Nothing went wrong, so there is nothing to refresh.
     await expect(page.getByRole("button",{name:"Refresh reviews",exact:true})).toHaveCount(0);

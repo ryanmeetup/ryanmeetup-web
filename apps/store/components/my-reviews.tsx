@@ -44,7 +44,7 @@ export function MyReviews({ initial, suggestions, client, submitReview }: {
       className="border-b border-black/10 dark:border-white/10"
       buttonClassName={reviewSectionToggle}
       panelClassName="space-y-4 pb-6"
-      summary={<SectionTitle title="Your reviews" count={`${reviewCount}${mine.view?.page.nextCursor ? "+" : ""} review${reviewCount === 1 ? "" : "s"}`} />}
+      summary={<SectionTitle title="Your Reviews" count={`${reviewCount}${mine.view?.page.nextCursor ? "+" : ""} review${reviewCount === 1 ? "" : "s"}`} />}
     >
     <div className="flex items-center justify-between gap-4">
       <div role="status" aria-live="polite" className="min-w-0 text-sm text-black/70 dark:text-white/70">
@@ -66,11 +66,11 @@ export function MyReviews({ initial, suggestions, client, submitReview }: {
         <Text className="mx-auto mt-2 max-w-md">Got some Ryan gear? Write a review on its product page and it&apos;ll show up here, ready to edit.</Text>
         <Button.Link href="/" size="md" className="mt-6 w-full sm:w-auto">Browse the shop</Button.Link>
       </div>}
-      <ul aria-label="Your reviews" className="grid gap-4 lg:grid-cols-2">
+      <ul aria-label="Your Reviews" className="grid gap-4 lg:grid-cols-2">
         {mine.view?.page.reviews.map((review)=>{
           const status=STATUS[review.status];
           const product=mine.view?.products[review.item.productId];
-          const statusPill=<Pill variant={review.status==="published"?"success":"neutral"} size="sm">{status.label}</Pill>;
+          const statusPill=<Pill className="whitespace-nowrap" variant={review.status==="published"?"success":"neutral"} size="sm">{status.label}</Pill>;
           return <li key={`${review.id}-${review.updatedAt}`}>
             <Card size="lg" variant="outline" className="h-full">
               <article aria-label={`Your review of ${review.item.productTitle}`} data-testid={`my-review-${review.id}`} className="flex h-full min-w-0 flex-col gap-4">

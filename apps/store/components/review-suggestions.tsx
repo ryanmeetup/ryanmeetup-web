@@ -30,7 +30,6 @@ function suggestionRows(item: ReviewSuggestion): ReviewItemRow[] {
       ? <a href={item.orderUrl} className="rounded-sm underline decoration-black/30 underline-offset-2 hover:decoration-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:decoration-white/30 dark:focus-visible:ring-white/40">{item.orderLabel}</a>
       : item.orderLabel },
     ...(item.shippedAt ? [{ label: "Shipped", value: reviewItemDate.format(new Date(item.shippedAt)) }] : []),
-    ...(item.quantity > 1 ? [{ label: "Qty", value: item.quantity }] : []),
   ];
 }
 
@@ -47,7 +46,7 @@ async function submit(item: ReviewSuggestion, {viewerKey,...review}: CustomRevie
 }
 
 /**
- * "Ready to review": the signed-in buyer's shipped purchases from recent
+ * "Ready to Review": the signed-in buyer's shipped purchases from recent
  * orders that they haven't reviewed. Each opens the review form already set
  * to that order, so reviewing doesn't mean finding the product first.
  */
@@ -68,7 +67,7 @@ export function ReviewSuggestions({ suggestions, onReviewed, photoViewerKey, sub
         className="border-b border-black/10 dark:border-white/10"
         buttonClassName={reviewSectionToggle}
         panelClassName="space-y-4 pb-6"
-        summary={<SectionTitle title="Ready to review" count={`${items.length} item${items.length === 1 ? "" : "s"}`} />}
+        summary={<SectionTitle title="Ready to Review" count={`${items.length} item${items.length === 1 ? "" : "s"}`} />}
       >
       <Text className="text-sm">Fellow Ryans are counting on you. A few words on how it fits, feels, and holds up help the next Ryan pick with confidence.</Text>
       <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
