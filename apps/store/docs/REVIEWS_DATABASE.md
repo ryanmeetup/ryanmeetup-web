@@ -1,12 +1,13 @@
 # Reviews on the shared Ryan Meetup backend
 
-November 17, 2026. Ryan chose to reuse the existing Ryan Meetup Tasks Supabase
-project as the beginning of a shared backend for all Ryan Meetup properties.
-This supersedes the earlier recommendation to provision a dedicated store
-project. Private authorization/session storage is now implemented in migration
-`20261120130000_store_customer_auth_storage.sql`. A Shopify Customer Account
-API client, scoped runtime interface, and review-content schema remain
-outstanding.
+Updated November 20, 2026. Ryan chose to reuse the existing RMT Supabase
+project as a shared backend for Ryan Meetup properties. Encrypted Shopify
+session storage, custom review/revision/reply/audit schema, buyer management,
+owner moderation, private photo staging and pending-revision associations are
+implemented. All ten RMT-only Store migrations through `20261120230000` are
+applied; PRD receives none. Real Shopify-backed lifecycle proof, complete media
+UI/moderation/publication and operations/recovery work remain outstanding.
+See [the current inventory](REVIEWS_REBUILD.md) for evidence and next steps.
 
 ## Selected project and ownership
 
@@ -20,11 +21,12 @@ The personal Tasks instance at `projects.ryanle.dev`, project
 credentials and data. The store targets RMT; neither Tasks instance changes
 which project it uses.
 
-Keep review records in their own tables, for example a `store_reviews` family,
-with separate revision, moderation, and media ownership. Do not embed reviews
-in task records or extend Tasks access groups to every buyer. Choose final
-table names and constraints when implementing the schema after the Shopify
-feasibility gate.
+Review records use `store_reviews`, `store_review_revisions`,
+`store_review_replies` and `store_review_events`. Private media uses
+`store_review_photo_drafts`, `store_review_revision_photos` and
+`store_review_photo_budgets`, plus the private `store-review-photos` bucket.
+These tables have RLS and explicit service-only grants; fixed RPCs own
+transactional writes. Store buyer identity does not create Tasks membership.
 
 Sharing infrastructure is the first step. Shared person records, account
 linking, and cross-property staff access can follow through explicit
@@ -34,14 +36,15 @@ the store initially; extract shared server code when another app consumes it.
 | Environment | Setup | Data |
 | --- | --- | --- |
 | Development | Local Supabase rebuilt from the existing canonical migrations | Synthetic Tasks and store fixtures. |
-| Vercel Preview | An isolated test environment for the shared backend, or an appropriate Supabase branch | Synthetic fixtures and explicitly approved test accounts. |
+| HTTPS rehearsal / Preview | Isolated backend required. The current guard accepts RMT or nonproduction loopback only; an arbitrary hosted Supabase branch is not accepted. See the inventory for isolation work still required. | Synthetic fixtures and explicitly approved test accounts; do not write to RMT as a Preview test. |
 | Production | Existing RMT project `lvfaartgcpphuokoswcm` | Existing Tasks data plus store-owned review records and media. |
 
 Configure each app's server connection explicitly and verify project identity
 before enabling submissions. Preview must not write to the production RMT
 database. The browser mode switch selects a review provider; it never changes
-which database a deployment uses. Judge.me remains the default during the
-rebuild.
+which database a deployment uses. The blank-setting code default is Judge.me;
+production switched to custom on November 20 per the committed production
+record, without establishing live lifecycle proof.
 
 ## One migration history
 
@@ -103,7 +106,8 @@ using the privileged database client. Publishing reviews exposes only approved p
 - Reviews and their chosen public display names, rating, text, and purchased
   item display snapshots.
 - Minimal Shopify shop/customer/order/line identifiers for ownership and the
-  unique shop + order + line constraint. Read current purchase eligibility
+  unique shop + order + line constraint; reviews without a matching order use
+  a separate shop + buyer + product uniqueness limit. Read current purchase eligibility
   from Shopify on writes rather than trusting a browser-supplied product.
 - Approved versions separately from pending edits, publication/withdrawal
   state, official replies, and moderation audit history.
@@ -125,11 +129,12 @@ future shared staff identity does not automatically grant moderation rights.
 
 ## Photos and backups
 
-Use store-owned buckets in RMT, with private uploads awaiting validation and
-moderation. Keep their policies independent of task/project/category
-attachments. Publish only approved, re-encoded derivatives. Withdrawal,
-deletion, and abandoned upload cleanup must cover the corresponding objects
-as well as database rows.
+The dedicated RMT bucket stores only normalized WebP derivatives, privately,
+with policies independent of Tasks attachments. Pending-revision associations
+exist; media moderation/publication remains unbuilt and text approval leaves
+media pending. Future publication must expose only approved derivatives, with
+withdrawal, deletion and abandoned-upload cleanup covering objects as well as
+database rows. See [the media checkpoint](REVIEWS_MEDIA.md).
 
 Back up images separately from database records: Supabase's database backups
 do **not** include Storage file contents. Document and test both restore paths
@@ -141,26 +146,24 @@ No additional production Supabase project is planned. Database, storage, and
 bandwidth usage will share RMT's capacity and allowances. Check actual usage
 and the staging option before deciding whether hosting needs to change.
 
-1. Finish the Shopify login and exact purchase-line feasibility check. It is
-   still a gate before implementing the dependent custom submission service.
-2. Audit the existing RMT role/function grants and Tasks provisioning boundary,
-   then agree the store's restricted server connection and isolated Preview
-   target. Use store-owned environment variable names to make ownership clear.
-3. Add a small review migration to the canonical history, with explicit grants,
-   ownership, revision, and publication constraints plus database tests. Follow
-   the RMT-only scope policy; shared Tasks changes still reach both instances.
-4. Connect Preview to the isolated test backend and exercise a buyer,
-   moderator, and public-read flow. Custom mode remains closed until the
-   dependencies work.
-5. Apply and verify the reviewed schema on RMT, then configure the store's
-   scoped runtime access there. Verify backups and rehearse import/cutover and
-   rollback while Judge.me stays installed.
+The content schema and direct RMT connection are implemented and applied. The
+latest rollout verified remote history, an empty public-schema diff and
+metadata-only availability of private photo tables and bucket settings. The
+photo collection flag remains off by default; no deployment flag or credential
+was changed by that rollout. Public SQL still exposes `photos: []`.
 
-Auth storage has landed as a canonical migration; see
-[the handoff](REVIEWS_HANDOFF.md) for per-instance rollout verification and
-[the superseded PRD handoff](../../tasks/docs/PRD_STORE_CUSTOMER_AUTH_SQL.md). PRD
-does not need the store-auth migration. No storage
-bucket, deployment credential, or billing setting has been changed.
+Remaining rollout work:
+
+1. Prove Shopify login, token renewal, exact purchase semantics and the complete
+   buyer/owner/public lifecycle on an isolated HTTPS target. Configuration and
+   provider selection alone are not evidence of a working lifecycle.
+2. Complete private buyer media previews/UI, staff media decisions, controlled
+   publication and cleanup/retention before enabling photo collection.
+3. Verify database and image-object backups/restores separately, rehearse
+   collection pause/recovery and record the operational observation window.
+4. Preserve the recorded decision to leave legacy reviews in Judge.me. No import
+   is planned; export them before eventual uninstall and rehearse provider
+   recovery while preserving new custom data. See [release](REVIEWS_RELEASE.md).
 
 Use `node scripts/test-store-customer-auth.mjs` from `apps/tasks` for database
 validation. It creates a uniquely named test stack on separate ports, replays

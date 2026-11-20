@@ -46,6 +46,7 @@ configuration during a pause; removing credentials is not the pause mechanism.
 | Store `REVIEWS_PROVIDER=custom` | Public reads use custom storage; the review POST uses the custom submission path. It does not by itself open buyer sign-in. |
 | Store `STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED=false` with custom provider | Stops new sign-in and ordinary session loading. Valid submissions and My reviews reads/edits/withdrawals return unavailable. Published review reads continue when storage is configured. This also pauses already signed-in buyers; it is not a new-buyers-only switch. |
 | Store `STORE_CUSTOMER_ACCOUNT_SIGN_IN_ENABLED=true` | Allows configured buyer authentication and session loading in either provider mode. Custom writes/My reviews additionally require the custom provider, current submission rules and storage. |
+| Store `STORE_REVIEW_PHOTOS_ENABLED=false` | Default. Stops upload/discard routes and nonempty attachment selections while leaving text-review flows available. Text-only edits retain existing private selections; explicit empty edit arrays can remove them. No custom photo publication exists yet. |
 | Tasks `STORE_REVIEWS_CUSTOMER_AUTH_ENABLED=false` | Disables the store moderation scope, including owner queue/API reads and decisions/replies. It does not stop storefront writes, and does not change other Tasks workspace data. |
 | Store `REVIEWS_PROVIDER=judgeme` | Switches public reads and the hosted customer-account collection link to Judge.me. The local anonymous POST relay is retired and returns `410`; switching providers cannot reopen it. External Judge.me forms/request emails are separate collection entry points and may still accept reviews. |
 
@@ -82,10 +83,10 @@ instance's Supabase identity to enable store review tools.
    Confirm verified custom reviews say “Verified purchase,” published
    unverified reviews have no verification badge, and Judge.me reviews retain
    “Verified review” under their existing verification rules.
-4. Exercise the agreed photo scope. [Server processing/private staging](REVIEWS_MEDIA.md)
-   are tested and the RMT infrastructure is applied, but the upload HTTP/UI
-   boundary, revision association and media moderation/publication are not
-   implemented yet; a text-only launch must be recorded as an explicit
+4. Exercise the agreed photo scope. [Processing, private upload and atomic association](REVIEWS_MEDIA.md)
+   are implemented behind the off-by-default `STORE_REVIEW_PHOTOS_ENABLED`
+   flag. Buyer UI/previews, media moderation/publication and cleanup remain
+   unbuilt; a text-only launch must be recorded as an explicit
    scope change rather than checking photos off as complete.
 5. Exercise the pause below with a real active session and an open editor,
    then resume it. Confirm a draft opened before the pause cannot save after

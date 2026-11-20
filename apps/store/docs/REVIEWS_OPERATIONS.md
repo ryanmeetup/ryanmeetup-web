@@ -36,14 +36,17 @@ make it safe to log. Expand the allowlist only with a known code and a test.
 The logger never receives a command payload, database row, raw exception,
 error message/detail/hint, buyer/order/review identifiers, review text,
 session material, credential or connection URL. It records no successes.
-Expected domain answers such as `exists`, `forbidden`, `conflict`, `closed`
-and `not_found` are not storage failures. Rejected commands never reach this
-log boundary. If the log sink throws, callers still receive the original
+Expected domain answers such as `exists`, `forbidden`, `conflict`, `closed`,
+`invalid_photos` and `not_found` are not storage failures. Rejected commands
+never reach this log boundary. If the log sink throws, callers still receive the original
 generic storage failure.
 
 This instrumentation does **not** cover disabled/missing configuration that
 returns no backend, Shopify identity/purchase lookups, Judge.me requests,
-Tasks moderation, browser network errors, latency or successful traffic.
+Tasks moderation, standalone photo processing/staging/budget calls, browser
+network errors, latency or successful traffic. Photo attachment RPC failures
+within review submit/edit do use this event; `invalid_photos` remains a normal
+domain outcome.
 Those paths retain their existing behavior/logging. An absence of events does
 not establish health or a successful live integration; check public availability
 and the corresponding private flow separately. Counts here are failed backend
