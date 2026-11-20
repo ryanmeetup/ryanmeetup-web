@@ -3,10 +3,23 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
-import { Button, Card, DisclosureCard, Heading, Pill, Text } from "@ryanmeetup/ui";
+import { Button, Card, DisclosureCard, Heading, Text } from "@ryanmeetup/ui";
 import { FiPackage } from "react-icons/fi";
 import type { ReviewSuggestion, ReviewSuggestions as Suggestions } from "@/lib/review-suggestions";
 import { CustomReviewComposer, type CustomReviewResult } from "./custom-review-composer";
+
+/**
+ * A section title with its count beside the arrow, matching the collapsible
+ * collections on /collections/all.
+ */
+export function SectionTitle({ title, count }: { title: string; count: string }) {
+  return (
+    <span className="flex items-center justify-between gap-3">
+      <span className="min-w-0 font-cooper text-2xl">{title}</span>
+      <span className="whitespace-nowrap font-sans text-xs font-semibold tracking-normal text-black/70 dark:text-white/70">{count}</span>
+    </span>
+  );
+}
 
 /** The toggle row both My reviews sections share, so they read as one page. */
 export const reviewSectionToggle = "flex w-full items-center justify-between gap-4 rounded-sm py-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/40";
@@ -66,13 +79,13 @@ export function ReviewSuggestions({ suggestions, onReviewed }: { suggestions: Su
         className="border-b border-black/10 dark:border-white/10"
         buttonClassName={reviewSectionToggle}
         panelClassName="space-y-4 pb-6"
-        summary={<span className="flex items-center gap-3"><span className="font-cooper text-2xl">Ready to review</span><Pill variant="neutral" size="sm">{items.length}</Pill></span>}
+        summary={<SectionTitle title="Ready to review" count={`${items.length} item${items.length === 1 ? "" : "s"}`} />}
       >
       <Text className="text-sm">From your recent orders. Reviews of things you bought get a Verified badge.</Text>
       <ul className="grid gap-3 md:grid-cols-2">
         {items.map((item) => (
           <li key={item.lineId}>
-            <Card variant="outline" className="flex h-full items-center gap-4">
+            <Card variant="outline" className="flex h-full items-start gap-4">
               <Link href={item.href} className="shrink-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/40" tabIndex={-1} aria-hidden>
                 {item.image
                   ? <Image src={item.image.url} alt="" width={64} height={64} sizes="64px" className="size-16 rounded-lg object-cover" />
@@ -85,7 +98,7 @@ export function ReviewSuggestions({ suggestions, onReviewed }: { suggestions: Su
                   </Heading>
                 </div>
                 <SuggestionDetails item={item} />
-                <Button size="sm" variant="secondary" className="w-full sm:w-auto" aria-label={`Write a review of ${item.productTitle}`} onClick={() => setReviewing(item)}>Write a review</Button>
+                <Button size="sm" variant="secondary" fullWidth aria-label={`Write a review of ${item.productTitle}`} onClick={() => setReviewing(item)}>Write a review</Button>
               </div>
             </Card>
           </li>

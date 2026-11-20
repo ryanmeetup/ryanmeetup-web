@@ -8,7 +8,7 @@ import { reviewSignInRel, reviewSignInUrl } from "@/lib/review-sign-in";
 import type { MyReviewView } from "@/lib/my-review-view";
 import type { ReviewSuggestions as Suggestions } from "@/lib/review-suggestions";
 import { CustomReviewComposer } from "./custom-review-composer";
-import { ReviewSuggestions, reviewSectionToggle } from "./review-suggestions";
+import { ReviewSuggestions, SectionTitle, reviewSectionToggle } from "./review-suggestions";
 import { useMyReviews } from "./use-my-reviews";
 
 const STATUS: Record<BuyerReviewStatus, { label: string; note: string }> = {
@@ -36,16 +36,17 @@ export function MyReviews({ initial, suggestions }: { initial: MyReviewView | nu
       className="border-b border-black/10 dark:border-white/10"
       buttonClassName={reviewSectionToggle}
       panelClassName="space-y-4 pb-6"
-      summary={<span className="flex items-center gap-3"><span className="font-cooper text-2xl">Your reviews</span>{reviewCount ? <Pill variant="neutral" size="sm">{reviewCount}</Pill> : null}</span>}
-      actionsClassName="absolute right-8 top-1/2 flex -translate-y-1/2 items-center gap-2"
-      actions={<>
-        {!mine.view && <Button.Link href={reviewSignInUrl("/reviews/mine")} rel={reviewSignInRel} prefetch={false} size="sm" variant="secondary">Sign in</Button.Link>}
-        <Button variant="ghost" size="sm" aria-label="Refresh reviews" disabled={mine.pending || Boolean(editing || mine.withdrawing)} onClick={()=>void mine.load()}
-          leftIcon={<FiRefreshCw aria-hidden className={mine.pending ? "animate-spin motion-reduce:animate-none" : ""} />}><span className="hidden sm:inline">Refresh reviews</span></Button>
-      </>}
+      summary={<SectionTitle title="Your reviews" count={`${reviewCount}${mine.view?.page.nextCursor ? "+" : ""} review${reviewCount === 1 ? "" : "s"}`} />}
     >
-    <div role="status" aria-live="polite" className="text-sm text-black/70 dark:text-white/70">
-      {mine.pending ? <span className="inline-flex items-center gap-2"><Spinner size={16} className="shrink-0" />Updating your reviews…</span> : mine.message}
+    <div className="flex items-center justify-between gap-4">
+      <div role="status" aria-live="polite" className="min-w-0 text-sm text-black/70 dark:text-white/70">
+        {mine.pending ? <span className="inline-flex items-center gap-2"><Spinner size={16} className="shrink-0" />Updating your reviews…</span> : mine.message}
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        {!mine.view && <Button.Link href={reviewSignInUrl("/reviews/mine")} rel={reviewSignInRel} prefetch={false} size="sm" variant="secondary">Sign in</Button.Link>}
+        <Button variant="ghost" size="sm" disabled={mine.pending || Boolean(editing || mine.withdrawing)} onClick={()=>void mine.load()}
+          leftIcon={<FiRefreshCw aria-hidden className={mine.pending ? "animate-spin motion-reduce:animate-none" : ""} />}>Refresh reviews</Button>
+      </div>
     </div>
     {mine.error && <ErrorCallout>{mine.error}</ErrorCallout>}
     <div aria-busy={mine.pending} className={mine.pending ? "opacity-60" : ""}>

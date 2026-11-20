@@ -25,10 +25,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <main className="store-container py-12 sm:py-16">
       <div className="mx-auto max-w-3xl space-y-8">
-        <div className="space-y-2">
-          <Heading size="h1" className="text-4xl sm:text-5xl">My reviews</Heading>
-          <Text>Edit or withdraw what you&apos;ve written. Edits are checked before they go up.</Text>
-        </div>
+        <Heading size="h1" className="text-4xl sm:text-5xl">My reviews</Heading>
         {children}
       </div>
     </main>
