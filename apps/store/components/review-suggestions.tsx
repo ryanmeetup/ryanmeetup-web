@@ -51,7 +51,10 @@ async function submit(item: ReviewSuggestion, {viewerKey,...review}: CustomRevie
  * orders that they haven't reviewed. Each opens the review form already set
  * to that order, so reviewing doesn't mean finding the product first.
  */
-export function ReviewSuggestions({ suggestions, onReviewed, photoViewerKey }: { suggestions: Suggestions; onReviewed: (message: string) => void; photoViewerKey?: string }) {
+export function ReviewSuggestions({ suggestions, onReviewed, photoViewerKey, submitReview = submit }: {
+  suggestions: Suggestions; onReviewed: (message: string) => void; photoViewerKey?: string;
+  submitReview?: (item: ReviewSuggestion, review: CustomReviewSubmission) => Promise<CustomReviewResult>;
+}) {
   const [items, setItems] = useState(suggestions.items);
   const [reviewing, setReviewing] = useState<ReviewSuggestion | null>(null);
   if (!items.length) return null;
@@ -92,7 +95,7 @@ export function ReviewSuggestions({ suggestions, onReviewed, photoViewerKey }: {
           product={{ title: reviewing.productTitle, featuredImage: reviewing.image ? { ...reviewing.image, width: null, height: null } : null }}
           onClose={() => setReviewing(null)}
           onSubmit={async (review) => {
-            const result = await submit(reviewing, review);
+            const result = await submitReview(reviewing, review);
             if (result.ok) {
               setItems((current) => current.filter((item) => item.lineId !== reviewing.lineId));
               onReviewed(result.message);

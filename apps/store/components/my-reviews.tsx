@@ -10,7 +10,9 @@ import { variantOptions, type ReviewSuggestions as Suggestions } from "@/lib/rev
 import { CustomReviewComposer } from "./custom-review-composer";
 import { ReviewItemDetails, ReviewItemThumbnail, ReviewItemTitle, reviewItemDate } from "./review-item";
 import { ReviewSuggestions, SectionTitle, reviewSectionToggle } from "./review-suggestions";
-import { useMyReviews } from "./use-my-reviews";
+import { useMyReviews, type MyReviewsClient } from "./use-my-reviews";
+import type { CustomReviewResult, CustomReviewSubmission } from "./custom-review-composer";
+import type { ReviewSuggestion } from "@/lib/review-suggestions";
 
 const STATUS: Record<BuyerReviewStatus, { label: string; note: string }> = {
   pending: { label: "Waiting for approval", note: "We check every review before it goes up." },
@@ -22,14 +24,18 @@ const STATUS: Record<BuyerReviewStatus, { label: string; note: string }> = {
 
 
 /** Only canonical reloaded data enables another buyer action. */
-export function MyReviews({ initial, suggestions }: { initial: MyReviewView | null; suggestions?: Suggestions | null }) {
-  const mine=useMyReviews(initial);
+export function MyReviews({ initial, suggestions, client, submitReview }: {
+  initial: MyReviewView | null; suggestions?: Suggestions | null;
+  /** Dev-only mock transports; the live API is used when omitted. */
+  client?: MyReviewsClient; submitReview?: (item: ReviewSuggestion, review: CustomReviewSubmission) => Promise<CustomReviewResult>;
+}) {
+  const mine=useMyReviews(initial,client);
   const editing=mine.editing;
   const currentSuggestions=mine.view?.viewerKey === initial?.viewerKey ? suggestions : null;
   const hasSuggestions=Boolean(currentSuggestions?.items.length);
   const reviewCount=mine.view?.page.reviews.length ?? 0;
   return <div className="space-y-6">
-    {currentSuggestions && mine.view && <ReviewSuggestions key={mine.view.viewerKey} suggestions={currentSuggestions} photoViewerKey={mine.view.photosEnabled ? mine.view.viewerKey : undefined} onReviewed={(notice)=>void mine.reloadWith(notice)} />}
+    {currentSuggestions && mine.view && <ReviewSuggestions key={mine.view.viewerKey} suggestions={currentSuggestions} photoViewerKey={mine.view.photosEnabled ? mine.view.viewerKey : undefined} onReviewed={(notice)=>void mine.reloadWith(notice)} submitReview={submitReview} />}
     <section aria-labelledby="your-reviews">
     <DisclosureCard
       id="your-reviews"

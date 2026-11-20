@@ -47,8 +47,10 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       ...reviewPhotoHosts.map((hostname) => ({ protocol: "https" as const, hostname })),
       { protocol: "https", hostname: "cdn.shopify.com" },
-      // Demo catalog photos only; a connected store never optimizes Unsplash images.
-      ...(process.env.SHOPIFY_STORE_DOMAIN && process.env.SHOPIFY_STOREFRONT_API_TOKEN ? [] : [{ protocol: "https" as const, hostname: "images.unsplash.com" }]),
+      // Demo catalog photos only; a connected production store never optimizes
+      // Unsplash images. The dev server allows them for the My reviews samples.
+      ...(process.env.NODE_ENV === "development" || !(process.env.SHOPIFY_STORE_DOMAIN && process.env.SHOPIFY_STOREFRONT_API_TOKEN)
+        ? [{ protocol: "https" as const, hostname: "images.unsplash.com" }] : []),
     ],
   },
 };

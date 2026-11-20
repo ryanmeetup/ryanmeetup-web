@@ -4,7 +4,9 @@
  *
  * It starts the synthetic Supabase/Shopify fixture the browser suite uses, a
  * dev server pointed only at it, and a Chromium window already signed in as a
- * synthetic buyer. A scenario page switches between views. Nothing here talks
+ * synthetic buyer. A scenario page switches between views. Unlike the
+ * dev-only mock that /reviews/mine shows a signed-out visitor on localhost,
+ * this runs the real API routes and session checks. Nothing here talks
  * to live Shopify or Supabase: the dev server's preload refuses to start with
  * anything but the synthetic credentials.
  */
@@ -16,121 +18,51 @@ import { createClient } from "@supabase/supabase-js";
 import { createCustomerAuthBackend } from "../lib/customer-account/backend";
 import { customerAccountIssuer } from "../lib/customer-account/config";
 import { createCustomerAccountStorage } from "../lib/customer-account/storage";
+import type { BuyerReview } from "@ryanmeetup/reviews";
 import { demoProductId, demoProducts } from "../lib/demo-data";
+import { SAMPLE_SCENARIOS, isSampleScenario, sampleScenario, type SampleScenario, type SamplePurchase } from "../lib/my-reviews-samples";
 import { customerAccountConfig, customerAccountEnvironment } from "../tests/fixtures/customer-account";
 import { fakeSupabaseKey } from "../tests/fixtures/customer-auth-backend";
 import { customerPurchasePage } from "../tests/fixtures/customer-purchase";
 
 const root = path.resolve(__dirname, "..");
 const storePort = Number(process.env.PREVIEW_PORT ?? 3133);
-const fixturePort = Number(process.env.PREVIEW_FIXTURE_PORT ?? 54360);
+const fixturePort = Number(process.env.PREVIEW_FIXTURE_PORT ?? 54361);
 const controlPort = Number(process.env.PREVIEW_CONTROL_PORT ?? 3134);
 const store = `http://localhost:${storePort}`;
 const fixture = `http://127.0.0.1:${fixturePort}`;
 const control = `http://localhost:${controlPort}`;
-// The fixture's default rows (the 125-review scenario) belong to this subject.
-const subject = "buyer-a";
+const subject = "preview-buyer";
 
 // ---------------------------------------------------------------------------
-// Sample data
+// Sample data: the same scenarios as the dev-only mock on /reviews/mine
 // ---------------------------------------------------------------------------
 
-const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
-/** Database versions carry microseconds; the store rejects anything else. */
-const version = (daysAgo: number) => new Date(Date.UTC(2026, 10, 20, 15) - daysAgo * 86400000).toISOString().replace(/Z$/, "123Z");
-const published = (daysAgo: number) => new Date(Date.UTC(2026, 10, 20, 15) - daysAgo * 86400000).toISOString();
-const numeric = (gid: string) => gid.split("/").pop()!;
-const product = (handle: string) => {
-  const found = demoProducts.find((item) => item.handle === handle);
-  if (!found) throw new Error(`No demo product ${handle}`);
-  return found;
-};
+/** A sample review as a fixture row; live statuses carry their published text. */
+const record = (review: BuyerReview) => ({ subject, published: ["published", "hidden"].includes(review.status) ? review.current : null, value: review });
 
-type Status = "pending" | "published" | "rejected" | "hidden" | "withdrawn";
-type Content = { rating: number; title: string; body: string; nameStyle: "full" | "first-initial" | "anonymous"; displayName: string };
-type SampleReview = { n: number; status: Status; daysAgo: number; content: Content; verified?: boolean; pendingEdit?: boolean }
-  & ({ handle: string; variant?: string | null } | { offStorefront: { title: string; variant: string | null } });
-
-const names = { full: "Ryan Fixture", "first-initial": "Ryan F.", anonymous: "Anonymous" } as const;
-const content = (rating: number, title: string, body: string, nameStyle: Content["nameStyle"] = "first-initial"): Content =>
-  ({ rating, title, body, nameStyle, displayName: names[nameStyle] });
-
-function record(review: SampleReview) {
-  const item = "handle" in review
-    ? { productId: numeric(demoProductId(review.handle)), productTitle: product(review.handle).title, variantTitle: review.variant ?? null }
-    : { productId: String(8000000000 + review.n), productTitle: review.offStorefront.title, variantTitle: review.offStorefront.variant };
-  const live = review.status === "published" || review.status === "hidden";
-  return {
-    subject,
-    published: live ? (review.pendingEdit ? { ...review.content, body: "The version that's live right now." } : review.content) : null,
-    value: {
-      id: uuid(review.n), lineId: review.verified === false ? null : String(9000 + review.n), item, status: review.status,
-      hasPendingEdit: review.status === "published" && Boolean(review.pendingEdit),
-      publishedAt: review.status === "published" ? published(review.daysAgo - 1) : null,
-      createdAt: version(review.daysAgo), updatedAt: version(review.daysAgo), current: review.content,
-    },
-  };
-}
-
-const everyStatus: SampleReview[] = [
-  { n: 1, status: "pending", daysAgo: 1, handle: "ryan-meetup-tee", variant: "M / Black",
-    content: content(5, "Wore it to three Ryan meetups", "Soft, fits true to size, and strangers named Ryan keep nodding at me.", "anonymous") },
-  { n: 2, status: "published", daysAgo: 6, handle: "hello-my-name-is-ryan-sweatshirt", variant: "L / Cream",
-    content: content(5, "Warmest name tag I own", "Thick, cozy, and saves me introducing myself.", "full") },
-  { n: 3, status: "published", daysAgo: 12, pendingEdit: true, handle: "ryan-name-tag-shirt", variant: "S / White",
-    content: content(4, "Still great after a dozen washes", "Updated: the print hasn't faded at all. Knocked one star off because I wanted it in more colours.") },
-  { n: 4, status: "rejected", daysAgo: 15, verified: false, handle: "ryans-dad-name-tag-shirt", variant: null,
-    content: content(1, "Not my dad", "Bought it for my dad. His name is Steve.") },
-  { n: 5, status: "hidden", daysAgo: 21, handle: "certified-ryan-tote", variant: "One size / Natural",
-    content: content(3, "Holds a lot of Ryans", "Roomy tote, a little thin.") },
-  { n: 6, status: "withdrawn", daysAgo: 40, offStorefront: { title: "RyanCon 2025 Lanyard", variant: null },
-    content: content(4, "Classic lanyard", "No longer in the shop, so this one shows the fallback thumbnail.") },
-];
-
-const longText: SampleReview[] = [
-  { n: 20, status: "pending", daysAgo: 2, offStorefront: { title: "The Extremely Limited Commemorative RyanCon Founders' Edition Heavyweight Garment-Dyed Crewneck Sweatshirt", variant: "2XL / Washed Charcoal With Contrast Stitching" },
-    content: content(5, "A title long enough to check that review titles wrap politely instead of overflowing on phones", Array.from({ length: 5 }, (_, i) => `Paragraph ${i + 1}. This review keeps going so the body wraps across several lines at every width, including phones.`).join("\n\n")) },
-  ...everyStatus.slice(1, 3),
-];
-
-let orderNumber = 1000;
 /** One shipped order with a single line, in the Customer API's shape. */
-function order(handle: string, variant: string, { quantity = 1, shippedDaysAgo = 4 } = {}) {
-  const n = ++orderNumber;
+function order(purchase: SamplePurchase) {
+  const n = purchase.orderNumber;
+  const shipped = new Date(Date.now() - purchase.shippedDaysAgo * 86400000).toISOString();
   const page = customerPurchasePage();
-  page.order.id = `gid://shopify/Order/${n}`;
-  page.order.name = `#${n}`;
+  Object.assign(page.order, { id: `gid://shopify/Order/${n}`, name: `#${n}`, updatedAt: shipped });
   page.order.customer.id = "gid://shopify/Customer/123";
-  page.order.updatedAt = published(shippedDaysAgo);
   const line = page.order.lineItems.nodes[0];
-  Object.assign(line, { id: `gid://shopify/LineItem/${n}1`, productId: demoProductId(handle), variantId: `gid://shopify/ProductVariant/${n}2`,
-    name: product(handle).title, variantTitle: variant, quantity, refundableQuantity: quantity });
+  Object.assign(line, { id: `gid://shopify/LineItem/${n}1`, productId: demoProductId(purchase.handle), variantId: `gid://shopify/ProductVariant/${n}2`,
+    name: demoProducts.find((product) => product.handle === purchase.handle)!.title, variantTitle: purchase.variant,
+    quantity: purchase.quantity, refundableQuantity: purchase.quantity });
   const fulfillment = page.order.fulfillments.nodes[0];
-  fulfillment.id = `gid://shopify/Fulfillment/${n}3`;
-  fulfillment.createdAt = published(shippedDaysAgo);
-  Object.assign(fulfillment.fulfillmentLineItems.nodes[0], { id: `gid://shopify/FulfillmentLineItem/${n}4`, quantity, lineItem: { id: line.id } });
+  Object.assign(fulfillment, { id: `gid://shopify/Fulfillment/${n}3`, createdAt: shipped });
+  Object.assign(fulfillment.fulfillmentLineItems.nodes[0], { id: `gid://shopify/FulfillmentLineItem/${n}4`, quantity: purchase.quantity, lineItem: { id: line.id } });
   return page;
 }
-const purchases = () => {
-  orderNumber = 1000;
-  return [order("ryan-society-cap", "One size / Navy", { shippedDaysAgo: 2 }), order("ryans-dad-name-tag-shirt", "L / Natural", { quantity: 2 }),
-    order("ryan-meetup-tee", "XL / Black", { shippedDaysAgo: 9 })];
-};
 
-type Scenario = { label: string; description: string; reset?: Record<string, unknown>; signedOut?: true };
-const scenarios: Record<string, Scenario> = {
-  everything: { label: "Everything", description: "Three purchases to review, plus one review in every status: pending, published, published with an edit waiting, not approved (unverified), hidden, and withdrawn (off the storefront).",
-    reset: { records: everyStatus.map(record), purchases: purchases() } },
-  "reviews-only": { label: "Reviews only", description: "Every status, nothing left to review.", reset: { records: everyStatus.map(record) } },
-  "to-review-only": { label: "To review only", description: "Purchases to review, no reviews written yet.", reset: { records: [], purchases: purchases() } },
-  "single": { label: "One of each", description: "One purchase and one pending review, like the original screenshot.",
-    reset: { records: [record(everyStatus[0])], purchases: purchases().slice(0, 1) } },
-  "long-text": { label: "Long text", description: "Very long product names, variants, titles and bodies.", reset: { records: longText.map(record) } },
-  many: { label: "125 reviews", description: "Paging with the Load more button.", reset: { many: true, records: undefined } },
-  empty: { label: "Empty", description: "No reviews and nothing to review.", reset: { records: [] } },
-  "load-error": { label: "Load error", description: "The review list fails to load.", reset: { records: everyStatus.map(record), failRead: true } },
-  "signed-out": { label: "Signed out", description: "The sign-in prompt.", signedOut: true },
-};
+function fixtureReset(key: SampleScenario) {
+  const { reviews, purchases } = sampleScenario(key);
+  return { records: reviews.map(record), purchases: purchases.map(order), ...(key === "load-error" ? { failRead: true } : {}) };
+}
+const scenarios = SAMPLE_SCENARIOS;
 
 // ---------------------------------------------------------------------------
 // Processes
@@ -204,13 +136,12 @@ async function main() {
   const shotsDir = process.env.PREVIEW_SCREENSHOTS ? path.resolve(process.env.PREVIEW_SCREENSHOTS) : null;
   const browser = await chromium.launch({ headless: Boolean(shotsDir) });
   const context = await browser.newContext({ viewport: null });
-  let current = "everything";
+  let current: SampleScenario = "everything";
   let signedIn = false;
-  async function load(key: string) {
-    const scenario = scenarios[key];
-    if (scenario.signedOut) { await post("/__revoke"); await context.clearCookies({ name: "__Host-store-customer-session" }); signedIn = false; }
+  async function load(key: SampleScenario) {
+    if (key === "signed-out") { await post("/__revoke"); await context.clearCookies({ name: "__Host-store-customer-session" }); signedIn = false; }
     else {
-      await post("/__reset", { ...scenario.reset, keepSessions: true });
+      await post("/__reset", { ...fixtureReset(key), keepSessions: true });
       if (!signedIn) { await signIn(context); signedIn = true; }
     }
     current = key;
@@ -218,7 +149,7 @@ async function main() {
 
   createServer(async (req, res) => {
     const match = /^\/scenario\/([a-z-]+)$/.exec(req.url ?? "");
-    if (match && scenarios[match[1]]) {
+    if (match && isSampleScenario(match[1])) {
       try { await load(match[1]); } catch (error) { res.writeHead(500); res.end(String(error)); return; }
       res.writeHead(302, { location: `${store}/reviews/mine` }); res.end(); return;
     }
@@ -229,7 +160,7 @@ async function main() {
   if (shotsDir) {
     const page = await context.newPage();
     await page.setViewportSize({ width: 1280, height: 900 });
-    for (const key of Object.keys(scenarios)) {
+    for (const key of Object.keys(scenarios) as SampleScenario[]) {
       await load(key);
       await page.goto(`${store}/reviews/mine`);
       await page.waitForLoadState("networkidle");
