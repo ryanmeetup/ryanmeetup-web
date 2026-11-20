@@ -1,6 +1,6 @@
 # Ryan Meetup Store
 
-Headless Shopify storefront for `store.ryanmeetup.com`. Product and collection pages are rendered from the Shopify Storefront API, while checkout stays on Shopify. Judge.me supplies product reviews.
+Headless Shopify storefront for `store.ryanmeetup.com`. Product and collection pages are rendered from the Shopify Storefront API, while checkout stays on Shopify. Product reviews are the store's own, stored in the shared Ryan Meetup backend (RMT); Judge.me remains only as a rollback until the [final cut-over](docs/REVIEWS_JUDGEME_REMOVAL.md).
 
 ## Local development
 
@@ -296,8 +296,8 @@ and `POST /api/reviews`. Set it in `.env.local` or the deployment environment:
 
 | Value | Behavior |
 | --- | --- |
-| `judgeme` (also the unset/blank default) | Existing Judge.me integration, account links, and demo composer. |
-| `custom` | Custom integration under construction: unavailable reviews, disabled collection, and HTTP 503 on submissions. No Judge.me calls. |
+| `custom` | **Production since November 20, 2026.** Reviews stored in RMT; Shopify sign-in to write one, verified when the order matches; every review waits for approval in Tasks. No Judge.me calls. |
+| `judgeme` (also the unset/blank default) | Legacy Judge.me integration, kept only as a rollback until the final cut-over ([removal checklist](docs/REVIEWS_JUDGEME_REMOVAL.md)). |
 | Any other value | Unavailable reviews and closed submissions. Correct the setting. |
 
 The **Review mode** dropdown above each product's review section lets you test
@@ -314,12 +314,14 @@ Choose **Judge.me**, **Custom reviews**, or **Environment default**. Your
 selection lasts one day in that browser, follows product navigation and
 reloads, and applies to review reads, collection links, and submissions.
 Other browsers keep the environment default. Returning to **Environment
-default** removes the preference. Custom mode currently closes collection
-until buyer authentication and storage are ready.
+default** removes the preference. Writing a custom review needs Shopify
+sign-in, which locally goes through the HTTPS tunnel set in
+`SHOPIFY_CUSTOMER_ACCOUNT_REDIRECT_URI`.
 
 `REVIEWS_PROVIDER` still sets the environment default. Restart development or
 build a fresh deployment after changing that setting; browser selections need
-neither. Keep Production on `judgeme` during implementation.
+neither. Production runs `custom`; setting it back to `judgeme` and
+redeploying is the rollback until Judge.me is removed.
 
 This does not change Judge.me's installation, hosted account extensions, or
 queued request emails. It is a testing switch, not a completed migration or
