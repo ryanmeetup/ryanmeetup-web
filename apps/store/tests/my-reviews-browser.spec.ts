@@ -134,18 +134,25 @@ test("signed in, My reviews offers recent purchases to review and reviews them i
   await reset(request,{empty:true});
   const purchase=customerPurchasePage();purchase.order.customer.id="gid://shopify/Customer/123";
   purchase.order.lineItems.nodes[0].productId=demoProductId("ryan-meetup-tee");
+  // The demo tee's options are Size then Color, so its variant title lists them in that order.
+  purchase.order.lineItems.nodes[0].variantTitle="M / White";
   await configure(request,{purchase});await signIn(page,baseURL!);
   await page.goto("/reviews/mine");
   const ready=page.getByRole("region",{name:"Ready to review"});
   await expect(ready.getByRole("heading",{name:"Official Ryan Meetup Tee"})).toBeVisible();
-  await expect(ready).toContainText("Order #100 · Blue / M");
+  // One labelled line per option and order fact, not a run-on label.
+  const details=ready.locator("dl");
+  for(const [label,value] of [["Size","M"],["Color","White"],["Order","#100"],["Shipped","Nov 16, 2026"]] as const){
+    await expect(details.locator("dt",{hasText:label}).locator("xpath=following-sibling::dd[1]")).toHaveText(value);
+  }
+  await expect(details).not.toContainText("Qty");
   // With something to review, the empty-state card would only repeat the invitation.
   await expect(page.getByRole("heading",{name:"No reviews yet",exact:true})).toHaveCount(0);
   await page.screenshot({path:screenshotPath("my-reviews-ready-to-review.png"),fullPage:true});
 
   await ready.getByRole("button",{name:"Write a review of Official Ryan Meetup Tee",exact:true}).click();
   const dialog=page.getByRole("dialog",{name:"Write a review",exact:true});
-  await expect(dialog).toContainText("Reviewing Order #100 · Blue / M");
+  await expect(dialog).toContainText("Reviewing Order #100 · M / White");
   await dialog.getByRole("radio",{name:"5 stars",exact:true}).check();
   await dialog.getByLabel(/^Title/).fill("Wore it to the meetup");
   await dialog.getByLabel(/^Review/).fill("Every Ryan asked where I got it.");

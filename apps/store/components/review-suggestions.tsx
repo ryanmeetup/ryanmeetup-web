@@ -2,11 +2,35 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Button, Card, Heading, Text } from "@ryanmeetup/ui";
 import { FiPackage } from "react-icons/fi";
 import type { ReviewSuggestion, ReviewSuggestions as Suggestions } from "@/lib/review-suggestions";
 import { CustomReviewComposer, type CustomReviewResult } from "./custom-review-composer";
+
+const shippedDate = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+
+/** Variant options and order facts, one labelled line each. */
+function SuggestionDetails({ item }: { item: ReviewSuggestion }) {
+  const rows: { label: string; value: ReactNode }[] = [
+    ...item.options.map((option) => ({ label: option.name ?? "Variant", value: option.value })),
+    { label: "Order", value: item.orderUrl
+      ? <a href={item.orderUrl} className="rounded-sm underline decoration-black/30 underline-offset-2 hover:decoration-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:decoration-white/30 dark:focus-visible:ring-white/40">{item.orderLabel}</a>
+      : item.orderLabel },
+    ...(item.shippedAt ? [{ label: "Shipped", value: shippedDate.format(new Date(item.shippedAt)) }] : []),
+    ...(item.quantity > 1 ? [{ label: "Qty", value: item.quantity }] : []),
+  ];
+  return (
+    <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-3 gap-y-1">
+      {rows.map((row) => (
+        <div key={row.label} className="contents">
+          <dt className="text-xs font-semibold uppercase tracking-caps-tight text-black/60 dark:text-white/60">{row.label}</dt>
+          <dd className="min-w-0 text-sm text-black/80 wrap-anywhere dark:text-white/80">{row.value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
 
 /** The same review request a product page sends; the server rechecks the purchase. */
 async function submit(item: ReviewSuggestion, review: Record<string, unknown>): Promise<CustomReviewResult> {
@@ -50,8 +74,8 @@ export function ReviewSuggestions({ suggestions, onReviewed }: { suggestions: Su
                   <Heading size="h3" className="text-base wrap-anywhere">
                     <Link href={item.href} className="rounded-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/40">{item.productTitle}</Link>
                   </Heading>
-                  <Text className="text-sm wrap-anywhere">{item.label}</Text>
                 </div>
+                <SuggestionDetails item={item} />
                 <Button size="sm" variant="secondary" className="w-full sm:w-auto" aria-label={`Write a review of ${item.productTitle}`} onClick={() => setReviewing(item)}>Write a review</Button>
               </div>
             </Card>

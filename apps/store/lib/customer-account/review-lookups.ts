@@ -111,6 +111,9 @@ export async function lookupReviewablePurchases(session: CustomerAccountSession,
   } catch { return { status: "unavailable" }; }
 }
 
+/** A reviewable line with the order details a suggestion shows. */
+export type RecentReviewablePurchase = ReviewablePurchaseLine & { orderLabel: string; quantity: number; shippedAt: string | null };
+
 /**
  * Every line from the buyer's newest orders that passes the review rules, for
  * suggesting what to review. Unlike the per-product lookup this is only a
@@ -119,14 +122,14 @@ export async function lookupReviewablePurchases(session: CustomerAccountSession,
  * its own purchase. Only a failed or inconsistent lookup is `unavailable`.
  */
 export async function lookupRecentReviewablePurchases(session: CustomerAccountSession, { maxOrders = 10 } = {}): Promise<
-  { status: "found"; buyer: { firstName: string | null; lastName: string | null }; purchases: ReviewablePurchaseLine[] } | { status: "unavailable" }
+  { status: "found"; buyer: { firstName: string | null; lastName: string | null }; purchases: RecentReviewablePurchase[] } | { status: "unavailable" }
 > {
   try {
     const client = await context(session);
     if (!client) return { status: "unavailable" };
     const discovery = await readReviewOrderCandidates(client.query);
     if (!discovery) return { status: "unavailable" };
-    const purchases: ReviewablePurchaseLine[] = [];
+    const purchases: RecentReviewablePurchase[] = [];
     const seenLines = new Set<string>();
     for (const candidate of discovery.orders.slice(0, maxOrders)) {
       if (candidate.completeLines && candidate.lines.every((line) => line.productId === null)) continue;
@@ -141,7 +144,12 @@ export async function lookupRecentReviewablePurchases(session: CustomerAccountSe
         const verified = reviewBackendPurchase(checked.purchase);
         if (!verified || seenLines.has(verified.lineId)) return { status: "unavailable" };
         seenLines.add(verified.lineId);
-        purchases.push({ ...verified, label: `Order ${read.purchase.orderLabel}${verified.variantTitle ? ` · ${verified.variantTitle}` : ""}` });
+        // The latest successful shipment that included this line.
+        const shippedAt = read.purchase.fulfillments
+          .filter((fulfillment) => fulfillment.status === "SUCCESS" && fulfillment.lines.some((entry) => entry.lineId === line.id))
+          .map((fulfillment) => fulfillment.createdAt).sort().at(-1) ?? null;
+        purchases.push({ ...verified, label: `Order ${read.purchase.orderLabel}${verified.variantTitle ? ` · ${verified.variantTitle}` : ""}`,
+          orderLabel: read.purchase.orderLabel, quantity: checked.purchase.quantity, shippedAt });
       }
     }
     if (!await client.active()) return { status: "unavailable" };

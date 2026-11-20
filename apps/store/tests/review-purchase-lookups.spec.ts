@@ -100,6 +100,7 @@ test("recent purchases across every product are verified the same way, for revie
   const { session } = await seed();
   expect(await findRecentReviewablePurchases(session)).toEqual({ status: "found", buyer: { firstName: "Ryan", lastName: "Le" }, purchases: [{
     orderId: "100", lineId: "101", productId: "102", variantId: "104", productTitle: "Ryan tee", variantTitle: "Blue / M", label: "Order #100 · Blue / M",
+    orderLabel: "#100", quantity: 1, shippedAt: "2026-11-16T12:00:00.000Z",
   }] });
   // A line that fails the rules is left out of suggestions rather than closing them.
   purchase.order.fulfillments.nodes[0].status = "PENDING";

@@ -530,7 +530,11 @@ export async function getProduct(handle: string): Promise<ProductListing | null>
 }
 
 /** What a review suggestion card needs about a product: where it lives and what it looks like. */
-export type ProductCard = { handle: string; title: string; image: { url: string; altText: string | null } | null };
+export type ProductCard = {
+  handle: string; title: string; image: { url: string; altText: string | null } | null;
+  /** Option names in Shopify's order, e.g. ["Size", "Color"]; a variant title lists values in the same order. */
+  options: string[];
+};
 
 /**
  * Published products by numeric Shopify ID, keyed by that ID. Unpublished or
@@ -539,16 +543,17 @@ export type ProductCard = { handle: string; title: string; image: { url: string;
 export async function getProductCardsByIds(productIds: string[]): Promise<Record<string, ProductCard>> {
   const ids = [...new Set(productIds)].filter((id) => /^[1-9][0-9]{0,19}$/.test(id)).slice(0, 50);
   if (!ids.length) return {};
-  const card = (product: { handle: string; title: string; featuredImage?: { url: string; altText?: string | null } | null }): ProductCard =>
-    ({ handle: product.handle, title: product.title, image: product.featuredImage ? { url: product.featuredImage.url, altText: product.featuredImage.altText ?? null } : null });
+  const card = (product: { handle: string; title: string; featuredImage?: { url: string; altText?: string | null } | null; options?: { name: string }[] }): ProductCard =>
+    ({ handle: product.handle, title: product.title, image: product.featuredImage ? { url: product.featuredImage.url, altText: product.featuredImage.altText ?? null } : null,
+      options: (product.options ?? []).map((option) => option.name) });
   if (!isShopifyConfigured()) {
     return Object.fromEntries(demoProducts.flatMap((product) => {
       const id = product.id.split("/").pop()!;
       return ids.includes(id) ? [[id, card(product)]] : [];
     }));
   }
-  const data = await storefrontRequest<{ nodes: ({ id: string; handle: string; title: string; featuredImage: { url: string; altText: string | null } | null } | null)[] }>(
-    `query ProductCards($ids: [ID!]!) { nodes(ids: $ids) { ... on Product { id handle title featuredImage { url altText } } } }`,
+  const data = await storefrontRequest<{ nodes: ({ id: string; handle: string; title: string; featuredImage: { url: string; altText: string | null } | null; options: { name: string }[] } | null)[] }>(
+    `query ProductCards($ids: [ID!]!) { nodes(ids: $ids) { ... on Product { id handle title featuredImage { url altText } options { name } } } }`,
     { ids: ids.map((id) => `gid://shopify/Product/${id}`) },
     { revalidate: 300 },
   );

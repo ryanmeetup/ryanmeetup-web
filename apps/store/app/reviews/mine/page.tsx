@@ -11,7 +11,7 @@ import { getActiveReviewProvider } from "@/lib/review-preview";
 import { reviewSignInRel, reviewSignInUrl } from "@/lib/review-sign-in";
 import { findBuyerName, findRecentReviewablePurchases } from "@/lib/review-purchases";
 import { getReviewSuggestions } from "@/lib/review-suggestions";
-import { getProductCardsByIds } from "@/lib/shopify";
+import { getCustomerAccountUrl, getProductCardsByIds } from "@/lib/shopify";
 
 export const metadata = buildPageMetadata({
   title: "My reviews",
@@ -44,8 +44,9 @@ export default async function Page() {
   const [result, suggestions] = await Promise.all([
     loadMyReviewPage(null, { loadSession: () => session, findBuyerName, backend }),
     // Suggestions are a nicety: any failure leaves them out rather than failing the page.
-    session.then((current) => current.status === "authenticated" && backend ? getReviewSuggestions({
+    session.then(async (current) => current.status === "authenticated" && backend ? getReviewSuggestions({
       session: current.session, findRecent: findRecentReviewablePurchases, productCards: getProductCardsByIds,
+      accountUrl: await getCustomerAccountUrl().catch(() => null),
       reviewedLines: (subject, lineIds) => backend({ operation: "reviews.reviewedLines", subject, lineIds }),
     }) : null).catch(() => null),
   ]);
