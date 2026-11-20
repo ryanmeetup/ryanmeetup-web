@@ -16,7 +16,7 @@ const purchase = { orderId: "9000", lineId: "1", productId: "100", variantId: "2
 const eligible: ReviewEligibility = { status: "eligible", buyer: { firstName: "Ryan", lastName: "Le" }, purchases: [purchase] };
 const myReview: BuyerReview = {
   id: "3f1c2a4e-5b6d-4e7f-8a9b-0c1d2e3f4a5b", lineId: "1", item: { productId: "100", productTitle: "Name Tag Shirt", variantTitle: "Black / M" },
-  status: "pending", hasPendingEdit: false, publishedAt: null, createdAt: "2026-11-17T12:00:00.000000Z", updatedAt: "2026-11-17T12:00:00.000000Z",
+  status: "pending", hasPendingEdit: false, rejectionReason: null, publishedAt: null, createdAt: "2026-11-17T12:00:00.000000Z", updatedAt: "2026-11-17T12:00:00.000000Z",
   current: { rating: 5, title: "Ryan approved", body: "Great shirt.", nameStyle: "first-initial", displayName: "Ryan L." },
 };
 const review = { productId: "gid://shopify/Product/100", lineId: "1", rating: 5, title: "  Big fan ", body: "Great shirt.", nameStyle: "first-initial" };

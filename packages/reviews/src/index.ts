@@ -42,6 +42,7 @@ export type {
   ReviewSummary,
 } from "./content";
 export {
+  REVIEW_REJECTION_REASON_MAX,
   buyerReviewTimestamp,
   decodeBuyerReviewCursor,
   encodeBuyerReviewCursor,

@@ -38,25 +38,38 @@ select is((select r -> 'current' from pg_temp.mine() r where r ->> 'lineId' = '2
   '{"rating": 3, "title": "Update", "body": "Second take.", "nameStyle": "full", "displayName": "Ryan Le"}'::jsonb, 'the buyer sees their waiting edit');
 
 insert into ids values ('rejected', pg_temp.submit('3'));
-select public.store_decide_review_revision(pg_temp.pending((select id from ids where name = 'rejected')), '123', false, 'staff', 'Private note');
+select public.store_decide_review_revision(pg_temp.pending((select id from ids where name = 'rejected')), '123', false, 'staff', 'Please drop the phone number.');
 select is(pg_temp.status((select id from ids where name = 'rejected')), 'rejected', 'a rejected review says so');
+select is((select r ->> 'rejectionReason' from pg_temp.mine() r where r ->> 'lineId' = '3'), 'Please drop the phone number.', 'the buyer sees why it was rejected');
+select ok((select bool_and(r -> 'rejectionReason' = 'null'::jsonb) from pg_temp.mine() r where r ->> 'lineId' in ('1', '2')), 'reviews that were not rejected carry no reason, and approval notes stay private');
 
 insert into ids values ('hidden', pg_temp.submit('4'));
 select public.store_decide_review_revision(pg_temp.pending((select id from ids where name = 'hidden')), '123', true, 'staff');
 select public.store_set_review_hidden((select id from ids where name = 'hidden'), '123', true, 'staff', 'Phone number');
 select is(pg_temp.status((select id from ids where name = 'hidden')), 'hidden', 'a hidden review says so');
+select ok((select r -> 'rejectionReason' = 'null'::jsonb from pg_temp.mine() r where r ->> 'lineId' = '4'), 'a hide reason stays private');
+
+-- A rejected edit on a published review explains itself; resubmitting clears it.
+insert into ids values ('edit-rejected', pg_temp.submit('6'));
+select public.store_decide_review_revision(pg_temp.pending((select id from ids where name = 'edit-rejected')), '123', true, 'staff');
+select public.store_edit_review((select id from ids where name = 'edit-rejected'), '123', 'buyer-a', 2::smallint, 'Update', 'Edit with a link.', 'full', 'Ryan Le');
+select public.store_decide_review_revision(pg_temp.pending((select id from ids where name = 'edit-rejected')), '123', false, 'staff', 'Links are not allowed.');
+select ok((select r ->> 'status' = 'published' and r ->> 'rejectionReason' = 'Links are not allowed.' from pg_temp.mine() r where r ->> 'lineId' = '6'), 'a rejected edit shows its reason while the published version stays up');
+select public.store_edit_review((select id from ids where name = 'edit-rejected'), '123', 'buyer-a', 2::smallint, 'Update', 'Edit without a link.', 'full', 'Ryan Le');
+select ok((select r -> 'rejectionReason' = 'null'::jsonb from pg_temp.mine() r where r ->> 'lineId' = '6'), 'resubmitting clears the old reason');
+select public.store_withdraw_review((select id from ids where name = 'edit-rejected'), '123', 'buyer-a');
 
 insert into ids values ('withdrawn', pg_temp.submit('5', body => 'Gone soon.'));
 select public.store_withdraw_review((select id from ids where name = 'withdrawn'), '123', 'buyer-a');
 select is(pg_temp.status((select id from ids where name = 'withdrawn')), 'withdrawn', 'a withdrawn review says so');
 select is((select r -> 'current' ->> 'body' from pg_temp.mine() r where r ->> 'lineId' = '5'), 'Gone soon.', 'a withdrawn review keeps its text for resubmitting');
 
-select is((select count(*) from pg_temp.mine()), 5::bigint, 'every review the buyer wrote is listed');
+select is((select count(*) from pg_temp.mine()), 6::bigint, 'every review the buyer wrote is listed');
 select is(
   (select array_agg(distinct key order by key) from pg_temp.mine() r, jsonb_object_keys(r) key),
-  array['createdAt', 'current', 'hasPendingEdit', 'id', 'item', 'lineId', 'publishedAt', 'status', 'updatedAt'],
+  array['createdAt', 'current', 'hasPendingEdit', 'id', 'item', 'lineId', 'publishedAt', 'rejectionReason', 'status', 'updatedAt'],
   'only buyer-facing fields are returned');
-select is((select bool_or(r::text ~ 'Private note|Phone number|staff|buyer-a|9000') from pg_temp.mine() r), false, 'no staff notes, staff names, subject, or order ID leak');
+select is((select bool_or(r::text ~ 'Looks good|Phone number|Links are not|staff|buyer-a|9000') from pg_temp.mine() r), false, 'no private notes, stale reasons, staff names, subject, or order ID leak');
 
 -- The list is bounded and pages by immutable creation order, even when edited.
 select ok((select bool_and(r->>'updatedAt' ~ '\.\d{6}Z$' and r->>'createdAt' ~ '\.\d{6}Z$') from pg_temp.mine() r),'private versions keep exact microseconds');

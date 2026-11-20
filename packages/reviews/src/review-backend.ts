@@ -17,6 +17,8 @@ import {
   type ReviewSubmission,
 } from "./content";
 
+/** Staff moderation notes, including a rejection reason the buyer reads, stop at this many characters. */
+export const REVIEW_REJECTION_REASON_MAX = 1000;
 
 /**
  * What a review is written against. A purchased order line the storefront has
@@ -47,6 +49,13 @@ export type BuyerReview = {
   status: BuyerReviewStatus;
   /** Published, with a newer edit waiting for approval. */
   hasPendingEdit: boolean;
+  /**
+   * Why staff rejected the buyer's latest submission, written for the buyer.
+   * Null unless that submission is still the rejected one: a resubmission
+   * clears it. A published review may carry one for a rejected edit; hidden
+   * and withdrawn reviews, which the buyer cannot resubmit, never do.
+   */
+  rejectionReason: string | null;
   publishedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -177,13 +186,15 @@ const isoDate = (value: unknown): value is string => typeof value === "string" &
   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
 
 function buyerReviewSchema(value: unknown): BuyerReview | null {
-  const review = exactObject(value, ["id", "lineId", "item", "status", "hasPendingEdit", "publishedAt", "createdAt", "updatedAt", "current"]);
+  const review = exactObject(value, ["id", "lineId", "item", "status", "hasPendingEdit", "rejectionReason", "publishedAt", "createdAt", "updatedAt", "current"]);
   const item = review && exactObject(review.item, ["productId", "productTitle", "variantTitle"]);
   const current = review && exactObject(review.current, ["rating", "title", "body", "nameStyle", "displayName"]);
   return review && item && current && uuid(review.id) && (review.lineId === null || numericId(review.lineId)) &&
     numericId(item.productId) && singleLine(item.productTitle,255) && (item.variantTitle === null || singleLine(item.variantTitle,255)) &&
     ["pending","published","rejected","hidden","withdrawn"].includes(review.status as string) &&
     typeof review.hasPendingEdit === "boolean" && (!review.hasPendingEdit || review.status === "published") &&
+    (review.rejectionReason === null || (typeof review.rejectionReason === "string" && review.rejectionReason.trim() !== "" &&
+      [...review.rejectionReason].length <= REVIEW_REJECTION_REASON_MAX && ["rejected","published"].includes(review.status as string) && !review.hasPendingEdit)) &&
     (review.publishedAt === null || isoDate(review.publishedAt)) && (review.status !== "published" || review.publishedAt !== null) &&
     buyerReviewTimestamp(review.createdAt) && buyerReviewTimestamp(review.updatedAt) &&
     normalizedSubmission({ rating:current.rating,title:current.title,body:current.body,nameStyle:current.nameStyle }) &&

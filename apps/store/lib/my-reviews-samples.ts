@@ -26,7 +26,7 @@ function demo(handle: string) {
 
 type Sample = {
   n: number; status: BuyerReviewStatus; daysAgo: number; rating: number; title: string; body: string;
-  nameStyle?: ReviewNameStyle; verified?: boolean; pendingEdit?: boolean;
+  nameStyle?: ReviewNameStyle; verified?: boolean; pendingEdit?: boolean; rejectionReason?: string;
 } & ({ handle: string; variant?: string | null } | { offStorefront: { title: string; variant: string | null } });
 
 function review(now: number, sample: Sample): BuyerReview {
@@ -37,6 +37,7 @@ function review(now: number, sample: Sample): BuyerReview {
   return {
     id: uuid(sample.n), lineId: sample.verified === false ? null : String(9000 + sample.n), item, status: sample.status,
     hasPendingEdit: sample.status === "published" && Boolean(sample.pendingEdit),
+    rejectionReason: sample.rejectionReason ?? null,
     publishedAt: sample.status === "published" ? iso(now, sample.daysAgo - 1) : null,
     createdAt: version(now, sample.daysAgo, sample.n), updatedAt: version(now, sample.daysAgo, sample.n),
     current: { rating: sample.rating as BuyerReview["current"]["rating"], title: sample.title, body: sample.body, nameStyle, displayName: names[nameStyle] },
@@ -51,6 +52,7 @@ const everyStatus: Sample[] = [
   { n: 3, status: "published", daysAgo: 12, pendingEdit: true, handle: "ryan-name-tag-shirt", variant: "S / White", rating: 4,
     title: "Still great after a dozen washes", body: "Updated: the print hasn't faded at all. Knocked one star off because I wanted it in more colours." },
   { n: 4, status: "rejected", daysAgo: 15, verified: false, handle: "ryans-dad-name-tag-shirt", variant: null, rating: 1,
+    rejectionReason: "Reviews need to be about the product itself. Tell us how the shirt fits, feels, or washes and we'll happily put it up.",
     title: "Not my dad", body: "Bought it for my dad. His name is Steve." },
   { n: 5, status: "hidden", daysAgo: 21, handle: "certified-ryan-tote", variant: "One size / Natural", rating: 3,
     title: "Holds a lot of Ryans", body: "Roomy tote, a little thin." },
@@ -71,7 +73,7 @@ function many(): Sample[] {
   const statuses: BuyerReviewStatus[] = ["pending", "published", "published", "rejected", "hidden", "withdrawn"];
   return Array.from({ length: 125 }, (_, i) => ({
     n: 100 + i, status: statuses[i % statuses.length], daysAgo: 1 + i, handle: handles[i % handles.length], variant: null,
-    rating: 1 + (i % 5), title: `Review number ${i + 1}`, body: `Sample review ${i + 1} of 125, for paging through Load more.`,
+    rating: 1 + (i % 5), ...(statuses[i % statuses.length] === "rejected" ? { rejectionReason: "Sample rejection reason." } : {}), title: `Review number ${i + 1}`, body: `Sample review ${i + 1} of 125, for paging through Load more.`,
   }));
 }
 
