@@ -194,8 +194,23 @@ Lost upload responses are recovered only after comparing the stored bytes
 with the exact expected digest. Uncertain database finalization never deletes
 an object. Discard must be confirmed in the owner scope before object removal;
 failed removal leaves a private discarded record for explicit retry/cleanup.
-Revision association, media moderation/publication and expiry cleanup remain
-unimplemented; the browser upload endpoint is not enabled by these primitives.
+RMT-only migration `20261120230000` adds private upload budgets and ordered
+revision-photo links, both with RLS and explicit service-only grants. The
+shared shop/buyer budget serializes thirty attempts per ten minutes. Store's
+same-origin raw-image route authenticates and rechecks Shopify sessions, limits
+actual streamed bytes to 4 MiB and bounds per-process pipelines to two. Its
+explicit feature flag defaults off.
+
+Atomic submit/edit wrappers preserve canonical review ownership/version rules.
+They lock the review, buyer/product scope and sorted photo rows, validate every
+ready/unexpired private object, and claim each photo for one review. A bad
+selection rolls back text, versions, audit and media together. Attached photos
+cannot be returned/revived/discarded by draft RPCs and can only be retained by
+the same review. Text-only edits retain the selection; explicit arrays replace
+or remove it on the new pending revision. Approved selections remain intact.
+Every new media decision starts pending; text approval does not approve or
+publish images. Public SQL still emits no custom photos. Buyer preview/UI,
+staff media decisions/publication and lifecycle cleanup remain unimplemented.
 
 ## Store buyer review management
 

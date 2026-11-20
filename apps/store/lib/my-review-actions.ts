@@ -1,4 +1,4 @@
-import { ANONYMOUS_REVIEWER_NAME, buyerReviewTimestamp, decodeBuyerReviewCursor, reviewDisplayName, reviewSubmissionSchema } from "@ryanmeetup/reviews";
+import { ANONYMOUS_REVIEWER_NAME, buyerReviewTimestamp, decodeBuyerReviewCursor, reviewDisplayName, reviewPhotoIdsSchema, reviewSubmissionSchema } from "@ryanmeetup/reviews";
 import { createHash } from "node:crypto";
 import type { CustomerSessionResult } from "./customer-account/session";
 import { sameCustomerAccountSession } from "./customer-account/storage";
@@ -9,7 +9,7 @@ import type { MyReviewView } from "./my-review-view";
 
 const unavailable = () => reply(503, { error: "Your reviews are temporarily unavailable. Please try again later." });
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
-export type MyReviewServices = { loadSession: () => Promise<CustomerSessionResult>; findBuyerName: ReviewBuyerNameLookup; backend: ReviewBackend | null };
+export type MyReviewServices = { loadSession: () => Promise<CustomerSessionResult>; findBuyerName: ReviewBuyerNameLookup; backend: ReviewBackend | null; photosEnabled?: boolean };
 
 async function sessionResult(load: MyReviewServices["loadSession"]) {
   return load().catch((): CustomerSessionResult => ({ status: "unavailable" }));
@@ -53,14 +53,17 @@ export async function handleMyReviewPage(request: Request, services: MyReviewSer
 }
 
 /** The authenticated subject and public name come only from the server. */
-export async function handleMyReviewAction(request: Request, { loadSession, findBuyerName, backend }: MyReviewServices): Promise<Response> {
+export async function handleMyReviewAction(request: Request, { loadSession, findBuyerName, backend, photosEnabled = false }: MyReviewServices): Promise<Response> {
   if (!backend) return unavailable();
   if (!isSameOriginRequest(request)) return reply(403, { error: "Manage reviews from this storefront." });
   if (!hasJsonBody(request)) return reply(415, { error: "That change could not be read. Please try again." });
   const parsed = await readBoundedJsonObject(request, 48 * 1024);
   if (parsed.status === "too-large") return reply(413, { error: "That review change is too large." });
   if (parsed.status !== "valid") return reply(400, { error: "That change could not be read. Please try again." });
-  const { action, reviewId, expectedUpdatedAt, ...fields } = parsed.value;
+  const { action, reviewId, expectedUpdatedAt, photoIds, ...fields } = parsed.value;
+  const hasPhotos = Object.hasOwn(parsed.value, "photoIds");
+  if (hasPhotos && (action !== "edit" || !reviewPhotoIdsSchema(photoIds))) return reply(400, { error: "Those review photos could not be read." });
+  if (hasPhotos && (photoIds as string[]).length && !photosEnabled) return unavailable();
   if (typeof reviewId !== "string" || !uuid.test(reviewId) || !buyerReviewTimestamp(expectedUpdatedAt) || (action !== "edit" && action !== "withdraw")) {
     return reply(400, { error: "That change could not be read. Please try again." });
   }
@@ -85,9 +88,11 @@ export async function handleMyReviewAction(request: Request, { loadSession, find
     if (current.status !== "authenticated") return sessionFailure(current);
     const outcome = action === "withdraw"
       ? await backend({ operation: "review.withdraw", subject, reviewId, expectedUpdatedAt })
-      : await backend({ operation: "review.edit", subject, reviewId, expectedUpdatedAt, submission: submission!, displayName });
+      : await backend({ operation: "review.edit", subject, reviewId, expectedUpdatedAt, submission: submission!, displayName,
+        ...(hasPhotos ? { photoIds: photoIds as string[] } : {}) });
     if (outcome === "pending" || outcome === "withdrawn") return reply(200, { status: outcome });
     if (outcome === "conflict") return reply(409, { error: "This review changed. Refresh your reviews before deciding again." });
+    if (outcome === "invalid_photos") return reply(409, { error: "A review photo is unavailable. Upload it again before saving." });
     if (outcome === "closed") return reply(409, { error: "This review can't be edited right now. Refresh your reviews." });
     return reply(404, { error: "That review isn't on your account." });
   } catch { return unavailable(); }

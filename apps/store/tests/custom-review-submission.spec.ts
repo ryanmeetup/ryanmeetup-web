@@ -154,3 +154,25 @@ test("without a matching order, a signed-in buyer can still write one unverified
   expect(await access(notBought, { products: null })).toEqual({ status: "unavailable" });
   expect(await access(notBought, { name: null })).toEqual({ status: "unavailable" });
 });
+
+test("photos are gated, bounded and attached with server authority after a session recheck", async () => {
+  const photoId = "00000000-0000-4000-8000-000000000001";
+  const { commands, deps } = setup();
+  expect((await submitCustomReview(request({ ...review, photoIds: [photoId] }), deps)).status).toBe(503);
+  expect(commands).toEqual([]);
+  expect((await submitCustomReview(request({ ...review, photoIds: [photoId, photoId] }), { ...deps, photosEnabled: true })).status).toBe(400);
+  let sessions = 0;
+  expect((await submitCustomReview(request({ ...review, photoIds: [photoId] }), { ...deps, photosEnabled: true, loadSession: async () => { sessions++; return signedIn; } })).status).toBe(200);
+  expect(sessions).toBe(2); expect(commands[0]).toMatchObject({ operation: "review.submit", subject: session.subject, photoIds: [photoId] });
+  sessions = 0;
+  expect((await submitCustomReview(request({ ...review, photoIds: [photoId] }), { ...deps, photosEnabled: true,
+    loadSession: async () => ++sessions === 1 ? signedIn : { status: "sign_in_required" } })).status).toBe(503);
+  expect(commands).toHaveLength(1);
+});
+
+test("a failed atomic photo association returns a recoverable conflict and large review bodies are bounded", async () => {
+  const { deps } = setup();
+  const backend = (async () => ({ reviewId: null, outcome: "invalid_photos" })) as NonNullable<typeof deps.backend>;
+  expect((await submitCustomReview(request({ ...review, photoIds: [] }), { ...deps, backend })).status).toBe(409);
+  expect((await submitCustomReview(request({ ...review, body: "a".repeat(49 * 1024) }), deps)).status).toBe(413);
+});

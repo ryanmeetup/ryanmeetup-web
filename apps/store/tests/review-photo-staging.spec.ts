@@ -189,3 +189,16 @@ test("a prepared buffer is copied before asynchronous staging work", async () =>
   expect((await pending).status).toBe("ready");
   expect([...f.objects.values()][0]).toEqual(photo.bytes);
 });
+
+test("the upload budget pins the shop and rejects malformed or leaky responses", async () => {
+  let response: unknown = { allowed: true, retryAfter: 0 };
+  const calls: unknown[] = [];
+  const database = fakeSupabase(async (input, init) => { calls.push(supabaseCall(input, init)); return Response.json(response); });
+  const staging = createReviewPhotoStaging({ database, shopId: "123" });
+  expect(await staging.consumeUploadBudget("private-buyer")).toEqual(response);
+  expect(calls).toEqual([{ name: "store_consume_review_photo_budget", args: { p_shop_id: "123", p_subject: "private-buyer" } }]);
+  response = { allowed: false, retryAfter: 600 }; expect(await staging.consumeUploadBudget("private-buyer")).toEqual(response);
+  for (response of [null, {}, { allowed: true, retryAfter: 3 }, { allowed: false, retryAfter: 0 }, { allowed: false, retryAfter: 601 }, { allowed: true, retryAfter: 0, subject: "secret" }]) {
+    await expect(staging.consumeUploadBudget("private-buyer")).rejects.toThrow(ReviewPhotoStagingError);
+  }
+});

@@ -94,3 +94,15 @@ test("invalid pages and a session revoked while reading never return private rev
   expect((await handleMyReviewPage(new Request("https://store.test/api/reviews/mine",{headers:{"sec-fetch-site":"cross-site"}}),deps)).status).toBe(403);
   const result=await loadMyReviewPage(null,setup({sessions:[signedIn,{status:"sign_in_required"}]}).deps);expect(result).toEqual({status:"sign_in_required"});
 });
+
+test("photo selections are explicit, feature-gated and unavailable for withdrawal", async () => {
+  const photoId="00000000-0000-4000-8000-000000000001";
+  const {deps,commands}=setup();
+  expect((await handleMyReviewAction(request({...edit,photoIds:[photoId]}),deps)).status).toBe(503);
+  expect((await handleMyReviewAction(request({...edit,photoIds:[photoId,photoId]}),{...deps,photosEnabled:true})).status).toBe(400);
+  expect((await handleMyReviewAction(request({...edit,photoIds:[photoId]}),{...deps,photosEnabled:true})).status).toBe(200);
+  expect(writes(commands)).toEqual([expect.objectContaining({operation:"review.edit",subject:session.subject,photoIds:[photoId]})]);
+  expect((await handleMyReviewAction(request({action:"withdraw",reviewId,expectedUpdatedAt:version,photoIds:[]}),deps)).status).toBe(400);
+  expect((await handleMyReviewAction(request({...edit,photoIds:[]}),deps)).status).toBe(200);
+  expect(writes(commands).at(-1)).toMatchObject({operation:"review.edit",photoIds:[]});
+});

@@ -24,6 +24,7 @@ const buyerSessionsMigration = fileURLToPath(new URL("../supabase/migrations/202
 // Replayed last: it redefines functions the earlier replays restore.
 const unverifiedReviewsMigration = fileURLToPath(new URL("../supabase/migrations/20261120210000_store_unverified_reviews.sql", import.meta.url));
 const photoStagingMigration = fileURLToPath(new URL("../supabase/migrations/20261120220000_store_review_photo_staging.sql", import.meta.url));
+const photoAttachmentsMigration = fileURLToPath(new URL("../supabase/migrations/20261120230000_store_review_photo_attachments.sql", import.meta.url));
 
 function run(command, args, input, inherit = false) {
   const result = spawnSync(command, args, { cwd: appRoot, input, encoding: "utf8", stdio: inherit ? "inherit" : undefined, maxBuffer: 32 * 1024 * 1024 });
@@ -87,7 +88,7 @@ try {
   if (target === "prd") {
     const privateObjectsAbsent = sql("select to_regclass('public.store_customer_authorizations') is null and to_regclass('public.store_customer_sessions') is null and to_regclass('public.store_reviews') is null and not exists(select 1 from pg_proc where pronamespace='public'::regnamespace and proname like 'store_%review%') and not exists(select 1 from pg_proc where pronamespace='public'::regnamespace and proname in ('store_get_customer_authorization','store_consume_customer_authorization','store_get_customer_session','store_rotate_customer_session','store_revoke_customer_session','store_revoke_customer_buyer_sessions'))");
     if (privateObjectsAbsent !== "t") throw new Error("RMT-only store objects leaked into the PRD profile");
-    if (sql("select to_regclass('public.store_review_photo_drafts') is null and not exists(select 1 from storage.buckets where id='store-review-photos')") !== "t") throw new Error("Photo staging leaked into PRD");
+    if (sql("select to_regclass('public.store_review_photo_drafts') is null and to_regclass('public.store_review_revision_photos') is null and to_regclass('public.store_review_photo_budgets') is null and not exists(select 1 from storage.buckets where id='store-review-photos')") !== "t") throw new Error("Photo staging leaked into PRD");
     run("supabase", ["test", "db", "--workdir", testRoot, join(appRoot, "supabase/tests/access_control.sql"), join(appRoot, "tests/database/guest-access.sql")], undefined, true);
     console.log("PASS: PRD profile resets and supports Tasks without store auth objects or synthetic history");
   } else {
@@ -97,8 +98,9 @@ try {
     sql(readFileSync(buyerSessionsMigration, "utf8"));
     sql(readFileSync(unverifiedReviewsMigration, "utf8"));
     sql(readFileSync(photoStagingMigration, "utf8"));
+    sql(readFileSync(photoAttachmentsMigration, "utf8"));
     console.log("PASS: full migration reset and idempotent auth and review migration replay");
-    run("supabase", ["test", "db", "--workdir", testRoot, join(appRoot, "tests/database/store-customer-auth.sql"), join(appRoot, "tests/database/store-reviews.sql"), join(appRoot, "tests/database/store-buyer-reviews.sql"), join(appRoot, "tests/database/store-review-photo-staging.sql"), join(appRoot, "supabase/tests/access_control.sql")], undefined, true);
+    run("supabase", ["test", "db", "--workdir", testRoot, join(appRoot, "tests/database/store-customer-auth.sql"), join(appRoot, "tests/database/store-reviews.sql"), join(appRoot, "tests/database/store-buyer-reviews.sql"), join(appRoot, "tests/database/store-review-photo-staging.sql"), join(appRoot, "tests/database/store-review-photo-attachments.sql"), join(appRoot, "supabase/tests/access_control.sql")], undefined, true);
     const integration = spawnSync("npx", ["playwright", "test", "tests/customer-account-storage.spec.ts", "--workers=1"], {
       cwd: fileURLToPath(new URL("../../store/", import.meta.url)),
       env: { ...process.env, STORE_AUTH_TEST_CONTAINER: container, STORE_BASE_URL: "http://127.0.0.1:39999" }, stdio: "inherit",
@@ -127,6 +129,17 @@ try {
       "select (public.store_begin_review_photo('123','photo-quota','100',gen_random_uuid(),repeat('a',64),100,48,32)->>'outcome')='allocated'",
     );
     console.log("PASS: concurrent photo allocation cannot exceed the fifth active slot");
+    const photoId = sql("insert into public.store_review_photo_drafts(shop_id,customer_subject,product_id,request_key,sha256,byte_size,width,height,state) values('123','photo-claim','100',gen_random_uuid(),repeat('a',64),100,48,32,'ready') returning id").split(/\r?\n/)[0];
+    if (!/^[0-9a-f-]{36}$/.test(photoId)) throw new Error("Invalid synthetic photo ID");
+    sql(`insert into storage.objects(bucket_id,name) values('store-review-photos','123/${photoId}.webp')`);
+    const claim = (line) => `select outcome='created' from public.store_submit_review_with_photos('123','photo-claim','900','${line}','100',null,'Shirt',null,5::smallint,'Great shirt','Love it','anonymous','Anonymous Ryan',array['${photoId}'::uuid])`;
+    await race(claim("777"), claim("778"));
+    if (sql("select count(*)=1 from public.store_reviews where customer_subject='photo-claim'") !== "t") throw new Error("Rejected photo claim left a review");
+    console.log("PASS: a competing photo claim has one owner and rolls back the rejected review");
+    sql("select public.store_consume_review_photo_budget('123','budget-race') from generate_series(1,29)");
+    const budget = "select (public.store_consume_review_photo_budget('123','budget-race')->>'allowed')::boolean";
+    await race(budget, budget);
+    console.log("PASS: concurrent uploads cannot exceed the shared buyer attempt budget");
   }
 } finally {
   try {

@@ -1,11 +1,12 @@
 # Custom review photo processing
 
-Updated November 20, 2026. Server processing and private staging primitives are
-implemented and tested. Migration `20261120220000` adds the private RMT schema/
-bucket; see [the rebuild inventory](REVIEWS_REBUILD.md) for its rollout status.
-Browser photo collection is still unavailable: there is no upload endpoint,
-buyer attachment UI, review association or staff media moderation/publication
-path. Custom public SQL still returns `photos: []`.
+Updated November 20, 2026. Server processing, private staging, a gated
+same-origin upload/discard API and atomic pending-revision associations are
+implemented. RMT-only migrations `20261120220000` and `20261120230000` own the
+schema; see [the rebuild inventory](REVIEWS_REBUILD.md) for rollout evidence.
+`STORE_REVIEW_PHOTOS_ENABLED` is **false by default** and was not enabled by
+this work. Buyer attachment UI and staff media moderation/publication remain
+unbuilt. Custom public SQL still returns `photos: []`.
 
 ## Implemented processor
 
@@ -46,8 +47,8 @@ change the file being checked.
 ## Implemented private staging
 
 [`createReviewPhotoStaging`](../lib/review-photo-staging.ts) is a private Store
-server service. A future HTTP handler must authenticate/recheck the buyer and
-product and process their bytes before invoking it; browser-supplied subjects,
+server service. The HTTP handler authenticates/rechecks the buyer and
+product and processes their bytes before invoking it; browser-supplied subjects,
 shop IDs, paths and URLs are not authority. Its production factory uses the
 existing RMT-only database guard. No auth/session/purchase code was changed.
 
@@ -60,7 +61,7 @@ policy as well as the private bucket; only the service role accesses it.
 The allocation RPC serializes a buyer/product quota: at most five unexpired
 `uploading`/`ready` slots, initially expiring after one hour. These are staging
 implementation bounds. Identical scoped retries reuse their slot; a changed
-digest/size/dimension conflicts. Expired/discarded keys stay closed. Other
+digest/size/dimension conflicts. Expired/discarded/attached keys stay closed. Other
 buyers, products and shops cannot read, finish or discard a known ID.
 
 Only normalized bytes are uploaded to `shop-id/generated-uuid.webp`, without
@@ -75,43 +76,88 @@ discard responses/failed removal can be retried idempotently. There is no
 automatic destructive compensation and no expiry sweep yet. Expiry stops
 reads/finalization and quota consumption; it does not delete stored objects.
 
-The next boundary is the authenticated upload route and atomic association
-with the pending review revision. Preserve the existing publication rules:
+## Implemented HTTP boundary
 
-- Authenticate the buyer and scope every media operation to the intended shop
-  and buyer. Establish review/draft ownership before issuing expiring upload
-  authority; a submitted object name or public URL is not proof of ownership.
-- Keep future media migrations in the canonical RMT-only history, separate
-  from Tasks attachments and excluded from PRD. Staging introduces no second
-  Store migration history.
-- Bound request bytes before buffering them. Use the processor on server-owned
-  staged bytes, with bounded work/concurrency and abuse controls. Keep failed
-  or unprocessed objects private.
-- Attach only processed, owned media to the intended pending revision. Enforce
-  the shared `REVIEW_PHOTOS_MAX` value of five at the server/data boundary,
-  including retries, parallel submissions and edits.
-- Build buyer selection, previews and removal using the existing shared
-  `FileDropField`. Align visible format/size guidance with the actual processor
-  and the eventual upload limits.
-- Add staff media decisions and approved-only publication. Pending edit photos
-  must not replace or leak alongside the currently approved revision. Hiding
-  or withdrawing a review must remove its public media access as well.
-- Add the custom image-host configuration and public projection only after
-  approved media has a publication/access model. A permanent public object URL
-  can outlive a hidden review; hiding just the card is insufficient.
-- Implement failed/abandoned upload cleanup and removal, retention and export
-  behavior, then prove recovery of objects and their database associations.
+[`POST /api/reviews/photos`](../app/api/reviews/photos/route.ts) requires custom
+mode, `STORE_REVIEW_PHOTOS_ENABLED=true`, configured RMT storage, an active
+Shopify buyer session and the storefront's exact origin. It accepts a single
+raw JPEG/PNG/WebP body with numeric `productId` and UUID `requestKey` query
+parameters. Unknown/duplicate parameters are refused; no buyer, shop, path or
+URL can come from the browser. The server repeats the existing purchase lookup
+and checks the catalog for products without an eligible line. Lookup failures
+remain unavailable. Existing verified/unverified review submission rules are
+unchanged.
 
-This checkpoint changes no authentication, purchase-verification or text-review
-submission contract. The staging table/RPCs and private bucket are independent
-of the existing review/revision tables; no public projection was changed.
+The raw HTTP cap is **4 MiB**, checked against actual streamed bytes and any
+Content-Length. It deliberately fits below [Vercel's 4.5 MB request limit](https://vercel.com/docs/functions/limitations#request-body-size);
+the reusable processor's 10 MiB cap is not the upload cap. Empty/corrupt files
+are refused. Body reading has a ten-second deadline; native processing retains
+its own ten-second timeout. The Node route declares a thirty-second hosting
+budget. Two body/decoder pipelines may run per process, with no decoder queue.
+
+A transactionally enforced shop/buyer budget allows thirty attempts per ten
+minutes across processes/products. Attempts are counted before Shopify and
+image work, including failures/retries. Denial returns 429 and Retry-After;
+a busy process returns 503 with retry guidance. These are implementation caps,
+not a claim of a complete hosted abuse/monitoring setup. The budget table has
+private RLS/service-role-only grants. No IPs are recorded.
+
+Session identity is rechecked before staging and before returning its reference.
+An account change returns no reference; an uncertain private object is left for
+cleanup, never destructively removed. All handler results use no-store and
+no-referrer headers and fixed safe error copy.
+
+`DELETE /api/reviews/photos?productId=...&photoId=...` uses the same feature,
+origin and session boundary. It discards only a matching unattached draft,
+confirms the database transition, then removes the derived private object.
+Attached/historical media cannot be deleted through the draft API. There is no
+public/private photo-download route or signed browser upload capability.
+
+## Implemented pending-revision associations
+
+Migration `20261120230000` adds private `store_review_revision_photos` with
+ordered positions 1–5 and an independent pending/approved/rejected media state.
+Submit/edit commands can carry a strictly validated, unique `photoIds` array.
+Missing IDs preserve the old text submission path; a text-only edit retains
+its current photo selection. An explicit empty edit array removes photos from
+the new pending revision. Nonempty arrays require the photo feature flag.
+
+New atomic RPC wrappers call the existing canonical submit/version-checked edit
+functions. They then validate every photo's shop, buyer, product, ready state,
+expiry and private stored-object existence under locks. A draft is claimed for
+one review and moves to `attached`; only that same review may retain/reuse it
+later. Attached rows no longer consume draft slots, return through draft reads,
+revive on retries or permit discard. The count bound includes retained/new IDs.
+
+Invalid media rolls back **all** text, revision, version and audit changes and
+returns `invalid_photos` with no review ID. Normal version/idempotency/ownership
+outcomes are preserved. Existing approved revisions keep their photo selection
+while pending edits wait. Each new revision's media decision starts pending;
+text approval does not approve photos. No media enters public projections.
+
+## Remaining work
+
+- Build buyer selection, previews, retry/removal and edit behavior using shared
+  `FileDropField`, with the actual 4 MiB HTTP guidance. Add a private preview
+  access model and extend private buyer reads with the selected photo refs.
+- Add staff media decisions and approved-only publication. Hiding/withdrawing
+  must revoke public media access, not merely hide a card with a permanent URL.
+- Add custom image-host configuration and public projection after that access
+  model exists. Keep pending edits separate from the approved media set.
+- Implement failed/abandoned upload cleanup, budget-row cleanup, removal,
+  retention/export behavior and recovery of objects plus associations. Expiry
+  stops draft use but does not delete objects; historical attachments stay
+  protected until a deliberate lifecycle operation removes them.
+- Rehearse the complete hosted buyer-to-media-moderation lifecycle before
+  enabling collection. This checkpoint changed no Shopify auth/purchase logic,
+  provider selection, production feature flag or existing buyer content.
 
 ## Local evidence
 
 From `apps/store`, with no live service or browser server:
 
 ```sh
-STORE_BASE_URL=http://127.0.0.1:39999 npx playwright test tests/review-photo-processing.spec.ts tests/review-photo-staging.spec.ts --workers=1 --output=test-results-public-reviews/photo-unit
+STORE_BASE_URL=http://127.0.0.1:39999 npx playwright test tests/review-photo-processing.spec.ts tests/review-photo-staging.spec.ts tests/review-photo-actions.spec.ts --workers=1 --output=test-results-public-reviews/photo-unit
 ```
 
 All ten processor scenarios passed using generated binary fixtures. Coverage
@@ -120,17 +166,14 @@ truncated files, aspect ratio/no enlargement, a tiny PNG advertising over forty
 million pixels, real EXIF GPS/orientation data, XMP/ICC removal, pixel-level
 rotation checks, transparency, animated WebP/APNG and caller buffer mutation.
 
-The earlier combined photo/public-view run passed 39 tests. The current
-processor/staging run passed 20, including lost upload/finalization/discard
-responses, digest mismatches, quota/closed outcomes, owner checks, removal
-failures and malformed projections. Changed-file ESLint, `git diff --check`
-and the isolated custom-mode Store production build passed. CI has a dedicated
-photo step and keeps artifacts under `test-results-public-reviews/photo-unit`.
+The earlier combined photo/public-view run passed 39 tests and the staging
+checkpoint passed 20 processor/staging tests. Current collection evidence is
+recorded in [the rebuild inventory](REVIEWS_REBUILD.md): native image checks,
+actual Supabase-client transport fakes, streamed HTTP/body/session/concurrency
+checks, atomic SQL rollback and independent media decisions. CI includes the
+photo handler in its dedicated step and keeps isolated artifacts.
 
-Both migration profiles reset from empty in separately named local stacks:
-RMT passed 330 database assertions (46 specific staging assertions), two real
-encrypted-storage integration checks and allocation/auth races. PRD passed 65
-assertions and verifies the draft table/bucket are absent. The 16 scoped
-planner/catch-up tests passed. The profile runner never resets the existing
-app stack and its server-free storage checks no longer start a Store dev server.
+Both migration profiles are tested from empty in separately named local
+stacks. RMT covers the private schema and claim/budget races; PRD verifies all
+Store objects are excluded. The runner never resets the existing app stack.
 These checks do not prove a hosted buyer upload or media moderation lifecycle.

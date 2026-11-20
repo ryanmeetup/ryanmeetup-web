@@ -113,3 +113,20 @@ test("demo products have unique numeric IDs, so custom reviews work on the demo 
   }
   expect(isDemoProductId("gid://shopify/Product/8123456789")).toBe(false);
 });
+
+test("photo commands use atomic RPCs and strictly validate ordered private IDs", async () => {
+  const photoId = "00000000-0000-4000-8000-000000000001";
+  const submission = { rating: 5, title: "Great shirt", body: "Love it.", nameStyle: "anonymous" };
+  const submit = { operation: "review.submit", subject: "buyer", purchase: { orderId: null, lineId: null, productId: "100", variantId: null, productTitle: "Shirt", variantTitle: null }, submission, displayName: "Anonymous Ryan", photoIds: [photoId] };
+  const { backend, calls } = database({ store_submit_review_with_photos: [[{ review_id: null, outcome: "invalid_photos" }]], store_edit_buyer_review_with_photos: ['"invalid_photos"'] });
+  const command = reviewCommandSchema(submit);
+  expect(command).not.toBeNull();
+  expect(await backend(command!)).toEqual({ reviewId: null, outcome: "invalid_photos" });
+  expect(calls[0]).toMatchObject({ name: "store_submit_review_with_photos", args: { p_shop_id: shopId, p_subject: "buyer", p_photo_ids: [photoId] } });
+  for (const photoIds of [null, undefined, [photoId, photoId], Array(6).fill(photoId), ["https://example.test/a.webp"], ["../private"]]) {
+    expect(reviewCommandSchema({ ...submit, photoIds })).toBeNull();
+  }
+  const edit = reviewCommandSchema({ operation: "review.edit", subject: "buyer", reviewId: review.id, expectedUpdatedAt: "2026-11-20T00:00:00.000001Z", submission, displayName: "Anonymous Ryan", photoIds: [] });
+  expect(await backend(edit!)).toBe("invalid_photos");
+  expect(calls[1]).toMatchObject({ name: "store_edit_buyer_review_with_photos", args: { p_photo_ids: [] } });
+});

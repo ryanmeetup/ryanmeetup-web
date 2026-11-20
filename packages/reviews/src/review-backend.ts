@@ -9,6 +9,7 @@
 import {
   REVIEW_DISPLAY_NAME_MAX,
   REVIEW_PAGE_MAX,
+  REVIEW_PHOTOS_MAX,
   publicReviewPageSchema,
   reviewSubmissionSchema,
   type PublicReviewItem,
@@ -57,8 +58,8 @@ export type BuyerReviewPage = { reviews: BuyerReview[]; nextCursor: string | nul
 export type BuyerReviewCursor = { createdAt: string; id: string };
 
 export type ReviewCommand =
-  | { operation: "review.submit"; subject: string; purchase: ReviewPurchase; submission: ReviewSubmission; displayName: string }
-  | { operation: "review.edit"; subject: string; reviewId: string; expectedUpdatedAt: string; submission: ReviewSubmission; displayName: string }
+  | { operation: "review.submit"; subject: string; purchase: ReviewPurchase; submission: ReviewSubmission; displayName: string; photoIds?: string[] }
+  | { operation: "review.edit"; subject: string; reviewId: string; expectedUpdatedAt: string; submission: ReviewSubmission; displayName: string; photoIds?: string[] }
   | { operation: "review.withdraw"; subject: string; reviewId: string; expectedUpdatedAt: string }
   | { operation: "reviews.page"; productIds: string[]; limit: number; cursor: string | null }
   | { operation: "reviews.mine"; subject: string; cursor: string | null }
@@ -68,11 +69,11 @@ export type ReviewCommand =
   | { operation: "reviews.reviewedProducts"; subject: string; productIds: string[] };
 export type ReviewOperation = ReviewCommand["operation"];
 
-export type ReviewSubmitOutcome = "created" | "exists" | "resubmitted" | "forbidden";
+export type ReviewSubmitOutcome = "created" | "exists" | "resubmitted" | "forbidden" | "invalid_photos";
 export type ReviewResults = {
   /** `forbidden` means the line belongs to another buyer; it never reveals that review's ID. */
   "review.submit": { reviewId: string | null; outcome: ReviewSubmitOutcome };
-  "review.edit": "pending" | "closed" | "not_found" | "conflict";
+  "review.edit": "pending" | "closed" | "not_found" | "conflict" | "invalid_photos";
   "review.withdraw": "withdrawn" | "not_found" | "conflict";
   "reviews.page": PublicReviewPage;
   "reviews.mine": BuyerReviewPage;
@@ -92,6 +93,11 @@ const uuid = (value: unknown): value is string =>
   typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value);
 const subject = (value: unknown): value is string =>
   typeof value === "string" && value.length > 0 && value.length <= 512 && !/[\u0000-\u001f\u007f]/u.test(value);
+
+/** Ordered private draft IDs, never storage paths or public URLs. Missing means retain on edit. */
+export function reviewPhotoIdsSchema(value: unknown): string[] | null {
+  return Array.isArray(value) && value.length <= REVIEW_PHOTOS_MAX && value.every(uuid) && new Set(value).size === value.length ? value : null;
+}
 const singleLine = (value: unknown, max: number): value is string =>
   typeof value === "string" && value.length > 0 && [...value].length <= max && value === value.trim() && !/[\u0000-\u001f\u007f]|\s{2,}/u.test(value);
 
@@ -116,13 +122,17 @@ export function reviewCommandSchema(value: unknown): ReviewCommand | null {
   const operation = value && typeof value === "object" ? (value as { operation?: unknown }).operation : undefined;
   switch (operation) {
     case "review.submit": {
-      const command = exactObject(value, ["operation", "subject", "purchase", "submission", "displayName"]);
+      const hasPhotos = Object.hasOwn(value as object, "photoIds");
+      const command = exactObject(value, ["operation", "subject", "purchase", "submission", "displayName", ...(hasPhotos ? ["photoIds"] : [])]);
       return command && subject(command.subject) && purchaseSchema(command.purchase) && normalizedSubmission(command.submission) &&
+        (!hasPhotos || reviewPhotoIdsSchema(command.photoIds)) &&
         singleLine(command.displayName, REVIEW_DISPLAY_NAME_MAX) ? (command as ReviewCommand) : null;
     }
     case "review.edit": {
-      const command = exactObject(value, ["operation", "subject", "reviewId", "expectedUpdatedAt", "submission", "displayName"]);
+      const hasPhotos = Object.hasOwn(value as object, "photoIds");
+      const command = exactObject(value, ["operation", "subject", "reviewId", "expectedUpdatedAt", "submission", "displayName", ...(hasPhotos ? ["photoIds"] : [])]);
       return command && subject(command.subject) && uuid(command.reviewId) && buyerReviewTimestamp(command.expectedUpdatedAt) && normalizedSubmission(command.submission) &&
+        (!hasPhotos || reviewPhotoIdsSchema(command.photoIds)) &&
         singleLine(command.displayName, REVIEW_DISPLAY_NAME_MAX) ? (command as ReviewCommand) : null;
     }
     case "review.withdraw": {
@@ -188,10 +198,10 @@ export function reviewResultSchema<Operation extends ReviewOperation>(operation:
   let valid = false;
   if (operation === "review.submit") {
     const submit = exactObject(data, ["reviewId", "outcome"]);
-    valid = Boolean(submit && (submit.outcome === "forbidden" ? submit.reviewId === null
+    valid = Boolean(submit && (["forbidden", "invalid_photos"].includes(submit.outcome as string) ? submit.reviewId === null
       : ["created", "exists", "resubmitted"].includes(submit.outcome as string) && uuid(submit.reviewId)));
   } else if (operation === "review.edit") {
-    valid = data === "pending" || data === "closed" || data === "not_found" || data === "conflict";
+    valid = data === "pending" || data === "closed" || data === "not_found" || data === "conflict" || data === "invalid_photos";
   } else if (operation === "review.withdraw") {
     valid = data === "withdrawn" || data === "not_found" || data === "conflict";
   } else if (operation === "reviews.page") {

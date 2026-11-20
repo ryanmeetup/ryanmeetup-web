@@ -54,6 +54,14 @@ export function createReviewPhotoStaging({ database, shopId }: { database: Supab
   }
 
   return {
+    async consumeUploadBudget(subject: string): Promise<{ allowed: boolean; retryAfter: number }> {
+      owner({ subject, productId: "1" });
+      const value = await rpc("store_consume_review_photo_budget", { p_subject: subject });
+      if (!exact(value, ["allowed", "retryAfter"]) || typeof value.allowed !== "boolean" ||
+        !Number.isInteger(value.retryAfter) || (value.retryAfter as number) < 0 || (value.retryAfter as number) > 600 ||
+        (value.allowed ? value.retryAfter !== 0 : value.retryAfter === 0)) throw new ReviewPhotoStagingError();
+      return { allowed: value.allowed, retryAfter: value.retryAfter as number };
+    },
     /** Reuse the same request key and bytes after an uncertain response; nothing is overwritten. */
     async stage(input: Owner & { requestKey: string; photo: PreparedReviewPhoto }): Promise<ReviewPhotoStageResult> {
       const scope = owner(input);

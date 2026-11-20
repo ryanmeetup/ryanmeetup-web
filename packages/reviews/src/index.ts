@@ -48,6 +48,7 @@ export {
   decodeReviewCursor,
   encodeReviewCursor,
   reviewCommandSchema,
+  reviewPhotoIdsSchema,
   reviewResultSchema,
 } from "./review-backend";
 export type {

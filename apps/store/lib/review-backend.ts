@@ -29,11 +29,12 @@ async function executeStoreReview(admin: SupabaseClient, shopId: string, command
   switch (command.operation) {
     case "review.submit": {
       const { purchase, submission } = command;
-      const rows = check(await admin.rpc("store_submit_review", {
+      const rows = check(await admin.rpc(command.photoIds === undefined ? "store_submit_review" : "store_submit_review_with_photos", {
         p_shop_id: shopId, p_subject: command.subject, p_order_id: purchase.orderId, p_line_id: purchase.lineId,
         p_product_id: purchase.productId, p_variant_id: purchase.variantId, p_product_title: purchase.productTitle,
         p_variant_title: purchase.variantTitle, p_rating: submission.rating, p_title: submission.title, p_body: submission.body,
         p_name_style: submission.nameStyle, p_display_name: command.displayName,
+        ...(command.photoIds === undefined ? {} : { p_photo_ids: command.photoIds }),
       })) as { review_id: string | null; outcome: string }[] | null;
       const row = rows?.[0];
       data = row ? { reviewId: row.review_id, outcome: row.outcome } : null;
@@ -41,9 +42,10 @@ async function executeStoreReview(admin: SupabaseClient, shopId: string, command
     }
     case "review.edit": {
       const { submission } = command;
-      data = check(await admin.rpc("store_edit_buyer_review", {
+      data = check(await admin.rpc(command.photoIds === undefined ? "store_edit_buyer_review" : "store_edit_buyer_review_with_photos", {
         p_review_id: command.reviewId, p_shop_id: shopId, p_subject: command.subject, p_expected_updated_at: command.expectedUpdatedAt, p_rating: submission.rating,
         p_title: submission.title, p_body: submission.body, p_name_style: submission.nameStyle, p_display_name: command.displayName,
+        ...(command.photoIds === undefined ? {} : { p_photo_ids: command.photoIds }),
       }));
       break;
     }
