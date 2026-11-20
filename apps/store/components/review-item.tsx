@@ -1,6 +1,8 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { FiPackage } from "react-icons/fi";
 import { getKnownSwatch } from "@/lib/product-colors";
 
@@ -9,10 +11,12 @@ const focusRing = "focus-visible:outline-none focus-visible:ring-2 focus-visible
 /**
  * The product thumbnail both My reviews sections lead with. It repeats the
  * title link beside it, so it stays out of the tab order and the a11y tree.
+ * An image that fails to load falls back to the same placeholder as a missing one.
  */
 export function ReviewItemThumbnail({ href, image }: { href?: string | null; image: { url: string } | null | undefined }) {
-  const picture = image
-    ? <Image src={image.url} alt="" width={112} height={112} sizes="(min-width: 640px) 112px, 80px" className="size-20 rounded-lg object-cover sm:size-28" />
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const picture = image && image.url !== failedUrl
+    ? <Image src={image.url} alt="" width={112} height={112} sizes="(min-width: 640px) 112px, 80px" className="size-20 rounded-lg object-cover sm:size-28" onError={() => setFailedUrl(image.url)} />
     : <span className="flex size-20 items-center justify-center rounded-lg bg-black/5 sm:size-28 dark:bg-white/10"><FiPackage className="size-5 text-black/60 dark:text-white/60" /></span>;
   return href
     ? <Link href={href} className={`shrink-0 rounded-lg ${focusRing}`} tabIndex={-1} aria-hidden>{picture}</Link>

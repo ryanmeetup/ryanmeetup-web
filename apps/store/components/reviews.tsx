@@ -1,13 +1,14 @@
 "use client";
 
 import { useId, useState } from "react";
-import { Button, Card, ErrorCallout, Heading, Pill, RatingStars, SuccessCallout, Text } from "@ryanmeetup/ui";
-import { FiCalendar, FiCheck, FiUser } from "react-icons/fi";
+import { Button, Card, ErrorCallout, Heading, RatingStars, SuccessCallout, Text } from "@ryanmeetup/ui";
+import { FiCalendar, FiUser } from "react-icons/fi";
 import type { Product, ReviewsData } from "@/lib/types";
 import type { CustomReviewAccess } from "@/lib/custom-review-access";
 import { CustomReviewComposer, type CustomReviewResult, type CustomReviewSubmission } from "./custom-review-composer";
 import { ReviewPhotoGallery } from "./review-photo-gallery";
 import { ReviewReply } from "./review-reply";
+import { VerifiedBadge } from "./verified-badge";
 import { usePublicReviews } from "./use-public-reviews";
 
 function RatingSummary({ data, className = "" }: { data: ReviewsData; className?: string }) {
@@ -88,7 +89,7 @@ export function Reviews({ data, product, access }: { data: ReviewsData; product:
                   {!!review.photoUrls?.length && <ReviewPhotoGallery urls={review.photoUrls} reviewerName={review.reviewerName} />}
                   <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1">
                     <Text className="flex min-w-0 items-center gap-1.5 text-sm font-semibold"><FiUser className="size-3.5 shrink-0" aria-hidden /><span className="min-w-0 break-words">{review.reviewerName}</span></Text>
-                    {review.verification && <Pill variant="success" size="sm"><FiCheck className="shrink-0" aria-hidden />{review.verification === "purchase" ? "Verified purchase" : "Verified review"}</Pill>}
+                    {review.verification && <VerifiedBadge kind={review.verification} />}
                   </div>
                   {review.reply && <ReviewReply reply={review.reply} />}
                 </article>
