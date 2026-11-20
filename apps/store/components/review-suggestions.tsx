@@ -1,11 +1,9 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { Button, Card, DisclosureCard, Heading, Text } from "@ryanmeetup/ui";
-import { FiPackage } from "react-icons/fi";
 import type { ReviewSuggestion, ReviewSuggestions as Suggestions } from "@/lib/review-suggestions";
+import { ReviewItemDetails, ReviewItemThumbnail, ReviewItemTitle, reviewItemDate, type ReviewItemRow } from "./review-item";
 import { CustomReviewComposer, type CustomReviewResult, type CustomReviewSubmission } from "./custom-review-composer";
 
 /**
@@ -24,28 +22,16 @@ export function SectionTitle({ title, count }: { title: string; count: string })
 /** The toggle row both My reviews sections share, so they read as one page. */
 export const reviewSectionToggle = "flex w-full items-center justify-between gap-4 rounded-sm py-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/40";
 
-const shippedDate = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
-
 /** Variant options and order facts, one labelled line each. */
-function SuggestionDetails({ item }: { item: ReviewSuggestion }) {
-  const rows: { label: string; value: ReactNode }[] = [
+function suggestionRows(item: ReviewSuggestion): ReviewItemRow[] {
+  return [
     ...item.options.map((option) => ({ label: option.name ?? "Variant", value: option.value })),
     { label: "Order", value: item.orderUrl
       ? <a href={item.orderUrl} className="rounded-sm underline decoration-black/30 underline-offset-2 hover:decoration-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:decoration-white/30 dark:focus-visible:ring-white/40">{item.orderLabel}</a>
       : item.orderLabel },
-    ...(item.shippedAt ? [{ label: "Shipped", value: shippedDate.format(new Date(item.shippedAt)) }] : []),
+    ...(item.shippedAt ? [{ label: "Shipped", value: reviewItemDate.format(new Date(item.shippedAt)) }] : []),
     ...(item.quantity > 1 ? [{ label: "Qty", value: item.quantity }] : []),
   ];
-  return (
-    <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-3 gap-y-1">
-      {rows.map((row) => (
-        <div key={row.label} className="contents">
-          <dt className="text-xs font-semibold uppercase tracking-caps-tight text-black/60 dark:text-white/60">{row.label}</dt>
-          <dd className="min-w-0 text-sm text-black/80 wrap-anywhere dark:text-white/80">{row.value}</dd>
-        </div>
-      ))}
-    </dl>
-  );
 }
 
 /** The same review request a product page sends; the server rechecks the purchase. */
@@ -86,18 +72,10 @@ export function ReviewSuggestions({ suggestions, onReviewed, photoViewerKey }: {
         {items.map((item) => (
           <li key={item.lineId}>
             <Card variant="outline" className="flex h-full items-start gap-4">
-              <Link href={item.href} className="shrink-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/40" tabIndex={-1} aria-hidden>
-                {item.image
-                  ? <Image src={item.image.url} alt="" width={64} height={64} sizes="64px" className="size-16 rounded-lg object-cover" />
-                  : <span className="flex size-16 items-center justify-center rounded-lg bg-black/5 dark:bg-white/10"><FiPackage className="size-5 text-black/60 dark:text-white/60" /></span>}
-              </Link>
+              <ReviewItemThumbnail href={item.href} image={item.image} />
               <div className="min-w-0 flex-1 space-y-2">
-                <div className="min-w-0">
-                  <Heading size="h3" className="text-base wrap-anywhere">
-                    <Link href={item.href} className="rounded-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/40">{item.productTitle}</Link>
-                  </Heading>
-                </div>
-                <SuggestionDetails item={item} />
+                <Heading size="h3" className="text-base wrap-anywhere"><ReviewItemTitle href={item.href}>{item.productTitle}</ReviewItemTitle></Heading>
+                <ReviewItemDetails rows={suggestionRows(item)} />
                 <Button size="sm" variant="secondary" fullWidth aria-label={`Write a review of ${item.productTitle}`} onClick={() => setReviewing(item)}>Write a review</Button>
               </div>
             </Card>

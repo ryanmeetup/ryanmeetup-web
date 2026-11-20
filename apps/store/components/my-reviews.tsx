@@ -1,13 +1,14 @@
 "use client";
 
 import type { BuyerReviewStatus } from "@ryanmeetup/reviews";
-import { Button, Card, ConfirmationDialog, DisclosureCard, ErrorCallout, Heading, IconButton, Pill, RatingStars, Spinner, Text } from "@ryanmeetup/ui";
-import { FiEdit2, FiMessageSquare, FiRefreshCw, FiTrash2 } from "react-icons/fi";
+import { Button, Card, ConfirmationDialog, DisclosureCard, ErrorCallout, Heading, Pill, RatingStars, Spinner, Text } from "@ryanmeetup/ui";
+import { FiCheck, FiEdit2, FiMessageSquare, FiRefreshCw, FiXCircle } from "react-icons/fi";
 import { buyerReviewNameChoices } from "@/lib/my-review-view";
 import { reviewSignInRel, reviewSignInUrl } from "@/lib/review-sign-in";
 import type { MyReviewView } from "@/lib/my-review-view";
-import type { ReviewSuggestions as Suggestions } from "@/lib/review-suggestions";
+import { variantOptions, type ReviewSuggestions as Suggestions } from "@/lib/review-suggestions";
 import { CustomReviewComposer } from "./custom-review-composer";
+import { ReviewItemDetails, ReviewItemThumbnail, ReviewItemTitle, reviewItemDate } from "./review-item";
 import { ReviewSuggestions, SectionTitle, reviewSectionToggle } from "./review-suggestions";
 import { useMyReviews } from "./use-my-reviews";
 
@@ -62,22 +63,38 @@ export function MyReviews({ initial, suggestions }: { initial: MyReviewView | nu
       <ul aria-label="Your reviews" className="space-y-4">
         {mine.view?.page.reviews.map((review)=>{
           const status=STATUS[review.status];
+          const product=mine.view?.products[review.item.productId];
           return <li key={`${review.id}-${review.updatedAt}`}>
             <Card size="lg" variant="outline">
-              <article aria-label={`Your review of ${review.item.productTitle}`} data-testid={`my-review-${review.id}`} className="min-w-0 space-y-3">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0"><Heading size="h3" className="text-xl wrap-anywhere">{review.item.productTitle}</Heading>
-                    {review.item.variantTitle && <Text className="text-sm wrap-anywhere">{review.item.variantTitle}</Text>}</div>
-                  <Pill className="self-start shrink-0" variant={review.status==="published"?"success":"neutral"} size="sm">{status.label}</Pill>
+              <article aria-label={`Your review of ${review.item.productTitle}`} data-testid={`my-review-${review.id}`} className="flex min-w-0 items-start gap-4">
+                <ReviewItemThumbnail href={product?.href} image={product?.image} />
+                <div className="min-w-0 flex-1 space-y-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0 space-y-2">
+                      <Heading size="h3" className="text-base wrap-anywhere"><ReviewItemTitle href={product?.href}>{review.item.productTitle}</ReviewItemTitle></Heading>
+                      <ReviewItemDetails rows={[
+                        ...variantOptions(review.item.variantTitle, product?.options ?? []).map((option) => ({ label: option.name ?? "Variant", value: option.value })),
+                        { label: "Reviewed", value: reviewItemDate.format(new Date(review.createdAt)) },
+                      ]} />
+                    </div>
+                    <Pill className="self-start shrink-0" variant={review.status==="published"?"success":"neutral"} size="sm">{status.label}</Pill>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <RatingStars rating={review.current.rating} />
+                      {review.lineId && <Pill variant="success" size="sm"><FiCheck className="shrink-0" aria-hidden />Verified purchase</Pill>}
+                    </div>
+                    {review.current.title && <Heading size="h4" variant="normal" bold className="text-base tracking-normal wrap-anywhere">{review.current.title}</Heading>}
+                    <Text className="whitespace-pre-wrap wrap-anywhere">{review.current.body}</Text>
+                  </div>
+                  <Text className="text-sm wrap-anywhere">Shown as <span className="font-semibold">{review.current.displayName}</span>. {review.hasPendingEdit ? "Your latest edit is waiting for approval; the published version stays up until then." : status.note}</Text>
+                  {review.status!=="withdrawn" && <div className="flex flex-col gap-2 sm:flex-row">
+                    {review.status!=="hidden" && <Button size="sm" variant="secondary" fullWidth className="sm:w-auto" aria-label={`Edit your review of ${review.item.productTitle}`} disabled={mine.pending}
+                      leftIcon={<FiEdit2 aria-hidden />} onClick={()=>mine.select(review,"edit")}>Edit</Button>}
+                    <Button size="sm" variant="ghost" fullWidth className="sm:w-auto" aria-label={`Withdraw your review of ${review.item.productTitle}`} disabled={mine.pending}
+                      leftIcon={<FiXCircle aria-hidden />} onClick={()=>mine.select(review,"withdraw")}>Withdraw</Button>
+                  </div>}
                 </div>
-                <RatingStars rating={review.current.rating} />
-                {review.current.title && <Heading size="h4" className="text-lg wrap-anywhere">{review.current.title}</Heading>}
-                <Text className="whitespace-pre-wrap wrap-anywhere">{review.current.body}</Text>
-                <Text className="text-sm wrap-anywhere">Shown as <span className="font-semibold">{review.current.displayName}</span>. {review.hasPendingEdit ? "Your latest edit is waiting for approval; the published version stays up until then." : status.note}</Text>
-                {review.status!=="withdrawn" && <div className="flex gap-2">
-                  {review.status!=="hidden" && <IconButton size="md" label={`Edit your review of ${review.item.productTitle}`} disabled={mine.pending} onClick={()=>mine.select(review,"edit")}><FiEdit2 aria-hidden /></IconButton>}
-                  <IconButton size="md" variant="danger" label={`Withdraw your review of ${review.item.productTitle}`} disabled={mine.pending} onClick={()=>mine.select(review,"withdraw")}><FiTrash2 aria-hidden /></IconButton>
-                </div>}
               </article>
             </Card>
           </li>;
@@ -89,7 +106,7 @@ export function MyReviews({ initial, suggestions }: { initial: MyReviewView | nu
     </section>
     {editing && <CustomReviewComposer key={`${editing.id}-${editing.updatedAt}`} open
       access={{status:"ready",buyer:{firstName:null,lastName:null},purchases:editing.lineId?[{lineId:editing.lineId,label:editing.item.variantTitle ? `${editing.item.productTitle} · ${editing.item.variantTitle}`:editing.item.productTitle}]:[],defaultNameStyle:editing.current.nameStyle}}
-      product={{title:editing.item.productTitle,featuredImage:null}}
+      product={{title:editing.item.productTitle,featuredImage:mine.view?.products[editing.item.productId]?.image ? {...mine.view.products[editing.item.productId].image!,width:null,height:null} : null}}
       edit={{initial:editing.current,nameChoices:buyerReviewNameChoices(editing,mine.view?.buyerName??null)}}
       photos={mine.view?.photosEnabled ? {productId:editing.item.productId,viewerKey:mine.view.viewerKey,review:{id:editing.id,updatedAt:editing.updatedAt}} : undefined}
       onClose={mine.dismiss} onSubmit={(review)=>mine.save(editing,{rating:review.rating,title:review.title,body:review.body,nameStyle:review.nameStyle,
