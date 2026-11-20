@@ -14,7 +14,8 @@ test("shows only the signed-in buyer's statuses and allowed actions",async({page
   await expect(card(page,201)).toHaveCount(0);await expect(card(page,4)).toContainText("Hidden");
   await expect(card(page,4).getByRole("button",{name:/Edit your review/})).toHaveCount(0);
   await expect(card(page,4).getByRole("button",{name:/Withdraw your review/})).toHaveCount(1);
-  await expect(card(page,5).getByRole("button")).toHaveCount(0);
+  // A withdrawn review offers no actions; only the badge's info button remains.
+  await expect(card(page,5).getByRole("button",{name:/your review/})).toHaveCount(0);
 });
 test("editing retains approved content, uses the selected public name, and waits for moderation",async({page,request})=>{
   await page.goto("/reviews/mine");await card(page,2).getByRole("button",{name:/Edit your review/}).click();
@@ -27,19 +28,22 @@ test("editing retains approved content, uses the selected public name, and waits
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(card(page,2)).toContainText("Updated after another wash.");
   await expect(card(page,2)).toContainText("published version stays up");
-  await expect(card(page,2)).toContainText("Shown as Anonymous");
+  await expect(card(page,2)).toContainText(/Posted as\s*Anonymous/);
   const saved=await state(request);expect(saved.calls).toHaveLength(1);expect(saved.calls[0]).toMatchObject({operation:"review.edit",subject:"buyer-a",displayName:"Anonymous"});
   expect(saved.records.find((r:{value:{id:string}})=>r.value.id===id(2)).published.body).toBe("Approved original text.");
 });
 test("a rejected review can be edited and withdrawal removes approved content",async({page,request})=>{
-  await page.goto("/reviews/mine");await card(page,3).getByRole("button",{name:/Edit your review/}).click();
+  await page.goto("/reviews/mine");
+  // The buyer reads staff's reason, which a resubmission clears.
+  await expect(card(page,3)).toContainText("Please keep it about the shirt.");
+  await card(page,3).getByRole("button",{name:/Edit your review/}).click();
   const dialog=page.getByRole("dialog");await dialog.getByLabel("Review").fill("A revised review.");
   await dialog.getByRole("button",{name:"Save changes",exact:true}).click();await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expect(card(page,3)).toContainText("Waiting for approval");
+  await expect(card(page,3)).toContainText("Waiting for approval");await expect(card(page,3)).not.toContainText("Please keep it about the shirt.");
   await card(page,2).getByRole("button",{name:/Withdraw your review/}).click();
   await page.getByRole("dialog").getByRole("button",{name:"Withdraw",exact:true}).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);await expect(card(page,2)).toContainText("Withdrawn");
-  await expect(card(page,2).getByRole("button")).toHaveCount(0);
+  await expect(card(page,2).getByRole("button",{name:/your review/})).toHaveCount(0);
   expect((await state(request)).records.find((r:{value:{id:string}})=>r.value.id===id(2)).published).toBeNull();
 });
 test("stale edits reload the latest text without retrying the write",async({page,request})=>{
