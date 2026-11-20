@@ -164,6 +164,10 @@ test("in development, sign-in started on localhost hops to the registered addres
     const hop = await start(local());
     expect(hop.status).toBe(303);
     expect(hop.headers.get("location")).toBe("https://store.test/api/reviews/auth/start?returnTo=%2Fapparel");
+    // The hop lands cross-site; next dev continues from the registered address instead of refusing it.
+    const landed = await start(new Request("https://store.test/api/reviews/auth/start?returnTo=%2Fapparel", { headers: { "sec-fetch-site": "cross-site" } }));
+    expect(landed.status).toBe(303);
+    expect(landed.headers.get("location")).toMatch(/^https:\/\/shopify\.com\/authentication\/123456\/oauth\/authorize\?/);
     // A non-loopback host is still refused, even in development.
     expect((await start(new Request("https://store.test/api/reviews/auth/start", { headers: { host: "attacker.test" } }))).status).toBe(403);
     // Production never hops (here the synthetic loopback database is refused first, so it's a 503).
@@ -174,7 +178,7 @@ test("in development, sign-in started on localhost hops to the registered addres
   } finally {
     env.NODE_ENV = previous;
   }
-  expect(transport.requests).toEqual([]);
+  expect(transport.requests.map(({ operation }) => operation)).toEqual(["authorization.create"]);
 });
 
 test("start rejects cross-site navigation, wrong public hosts, and ambiguous return paths", async () => {

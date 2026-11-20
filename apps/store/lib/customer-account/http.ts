@@ -30,12 +30,14 @@ export async function startCustomerSignIn(request: Request) {
   const origin = new URL(service.config.redirectUri).origin;
   // Shopify only returns to the registered HTTPS address, which localhost can't
   // be. In development, hop there and start from it; the session lives there.
-  if (process.env.NODE_ENV !== "production" && isLoopbackHost(request.headers.get("host")) && requestOrigin(request) !== origin) {
+  if (process.env.NODE_ENV === "development" && isLoopbackHost(request.headers.get("host")) && requestOrigin(request) !== origin) {
     const url = new URL(request.url);
     return NextResponse.redirect(new URL(`${url.pathname}${url.search}`, origin), { status: 303, headers: privateHeaders });
   }
+  // That hop arrives cross-site, so `next dev` accepts it; everything else still refuses cross-site starts.
+  const crossSite = request.headers.get("sec-fetch-site") === "cross-site" && process.env.NODE_ENV !== "development";
   if (requestOrigin(request) !== origin || (request.headers.has("origin") && request.headers.get("origin") !== origin) ||
-    request.headers.get("sec-fetch-site") === "cross-site") return failure(request, 403, "Start customer sign-in from this storefront.");
+    crossSite) return failure(request, 403, "Start customer sign-in from this storefront.");
   const url = new URL(request.url);
   if (url.searchParams.getAll("returnTo").length > 1) return failure(request, 400, "Choose a single return destination.");
   try {
