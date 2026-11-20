@@ -64,3 +64,5 @@ export type {
   ReviewResults,
   ReviewSubmitOutcome,
 } from "./review-backend";
+export { buyerReviewPhotoSchema, buyerReviewPhotoSelectionSchema } from "./review-media";
+export type { BuyerReviewPhoto, BuyerReviewPhotoSelection } from "./review-media";

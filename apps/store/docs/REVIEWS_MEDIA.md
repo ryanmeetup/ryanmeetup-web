@@ -1,12 +1,12 @@
 # Custom review photo processing
 
 Updated November 20, 2026. Server processing, private staging, a gated
-same-origin upload/discard API and atomic pending-revision associations are
-implemented. RMT-only migrations `20261120220000` and `20261120230000` own the
-schema; see [the rebuild inventory](REVIEWS_REBUILD.md) for rollout evidence.
+same-origin upload/discard API, atomic pending-revision associations and
+private buyer selection/preview reads are implemented. RMT-only migrations
+through `20261121000000` own the schema; see [the rebuild inventory](REVIEWS_REBUILD.md) for rollout evidence.
 `STORE_REVIEW_PHOTOS_ENABLED` is **false by default** and was not enabled by
 this work. Buyer attachment UI and staff media moderation/publication remain
-unbuilt. Custom public SQL still returns `photos: []`.
+unbuilt. The new read routes also require that same flag. Custom public SQL still returns `photos: []`.
 
 ## Implemented processor
 
@@ -78,8 +78,8 @@ reads/finalization and quota consumption; it does not delete stored objects.
 
 ## Implemented HTTP boundary
 
-[`POST /api/reviews/photos`](../app/api/reviews/photos/route.ts) requires custom
-mode, `STORE_REVIEW_PHOTOS_ENABLED=true`, configured RMT storage, an active
+[`POST /api/reviews/photos`](../app/api/reviews/photos/route.ts) requires
+`STORE_REVIEW_PHOTOS_ENABLED=true`, configured RMT storage, an active
 Shopify buyer session and the storefront's exact origin. It accepts a single
 raw JPEG/PNG/WebP body with numeric `productId` and UUID `requestKey` query
 parameters. Unknown/duplicate parameters are refused; no buyer, shop, path or
@@ -110,8 +110,8 @@ no-referrer headers and fixed safe error copy.
 `DELETE /api/reviews/photos?productId=...&photoId=...` uses the same feature,
 origin and session boundary. It discards only a matching unattached draft,
 confirms the database transition, then removes the derived private object.
-Attached/historical media cannot be deleted through the draft API. There is no
-public/private photo-download route or signed browser upload capability.
+Attached/historical media cannot be deleted through the draft API. Private previews are now served through authenticated Store GETs below; no
+public photo route or signed browser storage capability is issued.
 
 ## Implemented pending-revision associations
 
@@ -135,11 +135,51 @@ outcomes are preserved. Existing approved revisions keep their photo selection
 while pending edits wait. Each new revision's media decision starts pending;
 text approval does not approve photos. No media enters public projections.
 
+## Implemented private buyer reads
+
+Migration `20261121000000` adds two service-only, invoker RPCs; no new tables,
+public grants, publication behavior or Shopify auth changes. The Store's
+[`private reader`](../lib/review-photo-reader.ts) pins the shop, validates strict
+responses and derives the fixed private object path itself.
+
+- `GET /api/reviews/photos/selection?reviewId=...` returns the owned review's
+  product ID, exact six-digit `updatedAt` and up to five ordered `{id,width,height}`
+  references. This is a separate private read, leaving existing My reviews
+  page/row contracts unchanged. Future editors must compare that version with
+  their text snapshot before combining selections and edits.
+- `GET /api/reviews/photos?productId=...&photoId=...` returns only verified WebP
+  bytes through the Store. Ready drafts must remain owned/unexpired. Attached
+  photos must belong to the buyer's **current** revision selection: pending,
+  else approved, else latest buyer attempt by audit order, matching buyer text
+  reads. Removed/historical selections are unavailable. Owners may privately
+  inspect their current hidden/withdrawn reviews; this grants no public access.
+
+Both routes require the photo flag, active buyer authentication
+and a same-origin read. Cross-site and sibling-site browser reads are refused;
+unknown/duplicate query keys and browser-supplied subjects/paths/URLs are
+refused. Unknown and foreign records share the same private unavailable result.
+Session identity is checked again after reading, before references/bytes return.
+
+The server checks photo authorization before downloading and again afterward,
+so expiry, discard or selection changes during the download revoke the response.
+It streams through the authenticated Storage client, aborts after ten seconds,
+limits actual bytes to the expected size (at most 4 MiB), and verifies length
+and SHA-256 before returning anything. Four preview pipelines may run per
+process, without a queue. Busy responses carry retry guidance. Errors never
+return raw Storage details, paths, digests, buyer IDs or signed URLs.
+
+Image responses use `no-store`, `no-referrer`, `Vary: Cookie`, `nosniff` and
+`Cross-Origin-Resource-Policy: same-origin`. They carry no ETag/redirect or
+public storage capability. Future UI must load this authenticated path directly
+(for example, `next/image` with `unoptimized`), bypassing a server image optimizer
+that lacks the buyer cookie and could cache private media. Account-switch UI
+must also clear already loaded previews/object URLs; that UI work is still open.
+
 ## Remaining work
 
 - Build buyer selection, previews, retry/removal and edit behavior using shared
-  `FileDropField`, with the actual 4 MiB HTTP guidance. Add a private preview
-  access model and extend private buyer reads with the selected photo refs.
+  `FileDropField`, with the actual 4 MiB HTTP guidance. Wire the implemented
+  selection/preview reads into composer/edit state and account-switch cleanup.
 - Add staff media decisions and approved-only publication. Hiding/withdrawing
   must revoke public media access, not merely hide a card with a permanent URL.
 - Add custom image-host configuration and public projection after that access
@@ -150,14 +190,15 @@ text approval does not approve photos. No media enters public projections.
   protected until a deliberate lifecycle operation removes them.
 - Rehearse the complete hosted buyer-to-media-moderation lifecycle before
   enabling collection. This checkpoint changed no Shopify auth/purchase logic,
-  provider selection, production feature flag or existing buyer content.
+  production feature flag or existing buyer content. Judge.me/provider selection
+was subsequently removed by Claude; these routes now use the custom-only Store.
 
 ## Local evidence
 
 From `apps/store`, with no live service or browser server:
 
 ```sh
-STORE_BASE_URL=http://127.0.0.1:39999 npx playwright test tests/review-photo-processing.spec.ts tests/review-photo-staging.spec.ts tests/review-photo-actions.spec.ts --workers=1 --output=test-results-public-reviews/photo-unit
+STORE_BASE_URL=http://127.0.0.1:39999 npx playwright test tests/review-photo-processing.spec.ts tests/review-photo-staging.spec.ts tests/review-photo-actions.spec.ts tests/review-photo-reader.spec.ts tests/review-photo-reads.spec.ts --workers=1 --output=test-results-public-reviews/photo-unit
 ```
 
 All ten processor scenarios passed using generated binary fixtures. Coverage

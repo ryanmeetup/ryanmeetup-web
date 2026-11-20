@@ -4,6 +4,7 @@ import type { ReviewEligibilityLookup } from "./review-purchases";
 import { isSameOriginRequest, privateJson as reply } from "./request-guard";
 import { prepareReviewPhoto } from "./review-photo-processing";
 import type { getReviewPhotoStaging } from "./review-photo-staging";
+import { readReviewPhotoBytes } from "./review-photo-bytes";
 
 // Raw bytes stay below the hosting platform's 4.5 MB request limit.
 export const REVIEW_PHOTO_HTTP_MAX_BYTES = 4 * 1024 * 1024;
@@ -20,25 +21,7 @@ let active = 0;
 
 async function readPhoto(request: Request): Promise<Uint8Array | "too_large" | null> {
   if (Number(request.headers.get("content-length")) > REVIEW_PHOTO_HTTP_MAX_BYTES) return "too_large";
-  const reader = request.body?.getReader();
-  if (!reader) return null;
-  let size = 0;
-  const chunks: Uint8Array[] = [];
-  // A slow/incomplete body cannot occupy a decoder slot indefinitely on local servers.
-  let timedOut = false;
-  const timer = setTimeout(() => { timedOut = true; void reader.cancel().catch(() => {}); }, 10_000);
-  let complete = false;
-  try {
-    while (true) {
-      const next = await reader.read();
-      if (next.done) { complete = true; break; }
-      size += next.value.byteLength;
-      if (size > REVIEW_PHOTO_HTTP_MAX_BYTES) { await reader.cancel().catch(() => {}); return "too_large"; }
-      chunks.push(next.value);
-    }
-    return complete && !timedOut && size > 0 ? Buffer.concat(chunks, size) : null;
-  } catch { return null; }
-  finally { clearTimeout(timer); reader.releaseLock(); }
+  return readReviewPhotoBytes(request.body, REVIEW_PHOTO_HTTP_MAX_BYTES);
 }
 
 /** Private raw-image upload/discard boundary. No caller-selected identity, path, URL or bucket. */

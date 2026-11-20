@@ -209,7 +209,24 @@ cannot be returned/revived/discarded by draft RPCs and can only be retained by
 the same review. Text-only edits retain the selection; explicit arrays replace
 or remove it on the new pending revision. Approved selections remain intact.
 Every new media decision starts pending; text approval does not approve or
-publish images. Public SQL still emits no custom photos. Buyer preview/UI,
+publish images. Public SQL still emits no custom photos.
+
+RMT-only migration `20261121000000` adds service-only invoker reads for the
+buyer's current ordered photo references and server-only preview context.
+Current follows buyer text: pending, approved, then latest buyer event attempt.
+Ready drafts require current ownership/expiry; attached previews require
+membership in that owned review's current selection. Removed/historical
+selections cannot preview. A buyer may inspect their own hidden/withdrawn
+current selection, without granting public access. There are no new grants to
+anonymous users or Tasks members and no new table or publication path.
+
+Store GET routes require the off-by-default photo flag and an
+active Shopify session. Same-origin reads exclude cross-site and sibling-site
+browser requests. Before returning bytes, the server bounds the private stream,
+checks its expected size/digest, repeats photo authorization and rechecks session
+identity. Four preview pipelines per process and ten-second download/body bounds
+limit work. Responses are uncached WebP with same-origin resource policy, cookie
+variance and nosniff; no signed URL or object path reaches a browser. UI wiring,
 staff media decisions/publication and lifecycle cleanup remain unimplemented.
 
 ## Store buyer review management

@@ -36,7 +36,12 @@ const nextConfig: NextConfig = {
     ];
   },
   async headers() {
-    return [{ source: "/:path*", headers: [...standardSecurityHeaders] }];
+    return [
+      { source: "/:path*", headers: [...standardSecurityHeaders] },
+      // Keep the private photo policy after the site default: matching config
+      // headers can override a route handler's response header.
+      { source: "/api/reviews/photos/:path*", headers: [{ key: "Referrer-Policy", value: "no-referrer" }] },
+    ];
   },
   images: {
     remotePatterns: [
