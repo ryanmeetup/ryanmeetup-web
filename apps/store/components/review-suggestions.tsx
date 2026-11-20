@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button, Card, DisclosureCard, Heading, Text } from "@ryanmeetup/ui";
 import type { ReviewSuggestion, ReviewSuggestions as Suggestions } from "@/lib/review-suggestions";
-import { ReviewItemDetails, ReviewItemThumbnail, ReviewItemTitle, reviewItemDate, type ReviewItemRow } from "./review-item";
+import { ReviewItemDetails, ReviewItemThumbnail, ReviewItemTitle, reviewItemDate, variantRows, type ReviewItemRow } from "./review-item";
 import { CustomReviewComposer, type CustomReviewResult, type CustomReviewSubmission } from "./custom-review-composer";
 
 /**
@@ -25,10 +25,10 @@ export const reviewSectionToggle = "flex w-full items-center justify-between gap
 /** Variant options and order facts, one labelled line each. */
 function suggestionRows(item: ReviewSuggestion): ReviewItemRow[] {
   return [
-    ...item.options.map((option) => ({ label: option.name ?? "Variant", value: option.value })),
+    ...variantRows(item.options),
     { label: "Order", value: item.orderUrl
-      ? <a href={item.orderUrl} className="rounded-sm underline decoration-black/30 underline-offset-2 hover:decoration-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:decoration-white/30 dark:focus-visible:ring-white/40">{item.orderLabel}</a>
-      : item.orderLabel },
+      ? <a href={item.orderUrl} className="rounded-sm font-mono underline decoration-black/30 underline-offset-2 hover:decoration-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:decoration-white/30 dark:focus-visible:ring-white/40">{item.orderLabel}</a>
+      : <span className="font-mono">{item.orderLabel}</span> },
     ...(item.shippedAt ? [{ label: "Shipped", value: reviewItemDate.format(new Date(item.shippedAt)) }] : []),
   ];
 }

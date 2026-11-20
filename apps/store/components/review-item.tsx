@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { FiPackage } from "react-icons/fi";
+import { getKnownSwatch } from "@/lib/product-colors";
 
 const focusRing = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/40";
 
@@ -38,6 +39,25 @@ export function ReviewItemDetails({ rows }: { rows: ReviewItemRow[] }) {
       ))}
     </dl>
   );
+}
+
+/** A variant option's value: colours get a swatch dot, sizes read as code. */
+function OptionValue({ name, value }: { name: string | null; value: string }) {
+  if (name && /^colou?r$/i.test(name.trim())) {
+    const swatch = getKnownSwatch(value);
+    return (
+      <span className="inline-flex items-center gap-1.5">
+        {swatch && <span aria-hidden style={{ backgroundColor: swatch }} className="size-3 shrink-0 rounded-full border border-black/20 dark:border-white/40" />}
+        {value}
+      </span>
+    );
+  }
+  return name && /^size$/i.test(name.trim()) ? <span className="font-mono">{value}</span> : <>{value}</>;
+}
+
+/** One labelled row per variant option, as both My Reviews sections list them. */
+export function variantRows(options: { name: string | null; value: string }[]): ReviewItemRow[] {
+  return options.map((option) => ({ label: option.name ?? "Variant", value: <OptionValue {...option} /> }));
 }
 
 export const reviewItemDate = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });

@@ -132,7 +132,8 @@ export function sampleSuggestions(items: SamplePurchase[], now = Date.now()): Re
       lineId: String(purchase.orderNumber * 10 + 1), productId: demoProductId(purchase.handle), productTitle: product.title,
       label: `Order #${purchase.orderNumber} · ${purchase.variant}`,
       options: values.length === optionNames.length ? values.map((value, index) => ({ name: optionNames[index], value })) : [{ name: null, value: purchase.variant }],
-      orderLabel: `#${purchase.orderNumber}`, orderUrl: null, quantity: purchase.quantity, shippedAt: iso(now, purchase.shippedDaysAgo),
+      // A placeholder: live data links Shopify's customer account order page.
+      orderLabel: `#${purchase.orderNumber}`, orderUrl: `https://example.com/account/orders/${purchase.orderNumber}`, quantity: purchase.quantity, shippedAt: iso(now, purchase.shippedDaysAgo),
       href: `/products/${product.handle}#reviews`,
       image: product.featuredImage ? { url: product.featuredImage.url, altText: product.featuredImage.altText ?? null } : null,
     };

@@ -8,7 +8,7 @@ import { reviewSignInRel, reviewSignInUrl } from "@/lib/review-sign-in";
 import type { MyReviewView } from "@/lib/my-review-view";
 import { variantOptions, type ReviewSuggestions as Suggestions } from "@/lib/review-suggestions";
 import { CustomReviewComposer } from "./custom-review-composer";
-import { ReviewItemDetails, ReviewItemThumbnail, ReviewItemTitle, reviewItemDate } from "./review-item";
+import { ReviewItemDetails, ReviewItemThumbnail, ReviewItemTitle, reviewItemDate, variantRows } from "./review-item";
 import { ReviewSuggestions, SectionTitle, reviewSectionToggle } from "./review-suggestions";
 import { useMyReviews, type MyReviewsClient } from "./use-my-reviews";
 import type { CustomReviewResult, CustomReviewSubmission } from "./custom-review-composer";
@@ -66,14 +66,15 @@ export function MyReviews({ initial, suggestions, client, submitReview }: {
         <Text className="mx-auto mt-2 max-w-md">Got some Ryan gear? Write a review on its product page and it&apos;ll show up here, ready to edit.</Text>
         <Button.Link href="/" size="md" className="mt-6 w-full sm:w-auto">Browse the shop</Button.Link>
       </div>}
-      <ul aria-label="Your Reviews" className="grid gap-4 lg:grid-cols-2">
+      {/* Masonry: cards keep their own height, filling two columns top to bottom. */}
+      <ul aria-label="Your Reviews" className="gap-4 lg:columns-2">
         {mine.view?.page.reviews.map((review)=>{
           const status=STATUS[review.status];
           const product=mine.view?.products[review.item.productId];
           const statusPill=<Pill className="whitespace-nowrap" variant={review.status==="published"?"success":"neutral"} size="sm">{status.label}</Pill>;
-          return <li key={`${review.id}-${review.updatedAt}`}>
-            <Card size="lg" variant="outline" className="h-full">
-              <article aria-label={`Your review of ${review.item.productTitle}`} data-testid={`my-review-${review.id}`} className="flex h-full min-w-0 flex-col gap-4">
+          return <li key={`${review.id}-${review.updatedAt}`} className="mb-4 break-inside-avoid">
+            <Card size="lg" variant="outline">
+              <article aria-label={`Your review of ${review.item.productTitle}`} data-testid={`my-review-${review.id}`} className="flex min-w-0 flex-col gap-4">
                 <div className="flex items-start gap-4">
                   <ReviewItemThumbnail href={product?.href} image={product?.image} />
                   <div className="min-w-0 flex-1 space-y-2">
@@ -81,7 +82,7 @@ export function MyReviews({ initial, suggestions, client, submitReview }: {
                     <div>{statusPill}</div>
                     <Heading size="h3" className="text-base wrap-anywhere"><ReviewItemTitle href={product?.href}>{review.item.productTitle}</ReviewItemTitle></Heading>
                     <ReviewItemDetails rows={[
-                      ...variantOptions(review.item.variantTitle, product?.options ?? []).map((option) => ({ label: option.name ?? "Variant", value: option.value })),
+                      ...variantRows(variantOptions(review.item.variantTitle, product?.options ?? [])),
                       { label: "Reviewed", value: reviewItemDate.format(new Date(review.createdAt)) },
                     ]} />
                   </div>
@@ -95,7 +96,7 @@ export function MyReviews({ initial, suggestions, client, submitReview }: {
                   <Text className="whitespace-pre-wrap wrap-anywhere">{review.current.body}</Text>
                 </div>
                 <Text className="text-sm wrap-anywhere">Shown as <span className="font-semibold">{review.current.displayName}</span>. {review.hasPendingEdit ? "Your latest edit is waiting for approval; the published version stays up until then." : status.note}</Text>
-                {review.status!=="withdrawn" && <div className="mt-auto flex flex-col gap-2 sm:flex-row">
+                {review.status!=="withdrawn" && <div className="flex flex-col gap-2 sm:flex-row">
                   {review.status!=="hidden" && <Button size="sm" variant="secondary" fullWidth className="sm:w-auto" aria-label={`Edit your review of ${review.item.productTitle}`} disabled={mine.pending}
                     leftIcon={<FiEdit2 aria-hidden />} onClick={()=>mine.select(review,"edit")}>Edit</Button>}
                   <Button size="sm" variant="ghost" fullWidth className="sm:w-auto" aria-label={`Withdraw your review of ${review.item.productTitle}`} disabled={mine.pending}
