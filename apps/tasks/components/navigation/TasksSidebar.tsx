@@ -242,7 +242,7 @@ export function TasksSidebar({
       ? [
           {
             href: "/store-reviews",
-            label: "Store reviews",
+            label: "Store Reviews",
             icon: FiMessageSquare,
             active: pathname === "/store-reviews",
             available: true,

@@ -6,7 +6,7 @@ import { storeReviewStaffContext } from "@/lib/server/store-reviews/staff-contex
 
 export const runtime = "nodejs";
 
-/** The number on the sidebar's Store reviews entry. Owner-only, never cached. */
+/** The number on the sidebar's Store Reviews entry. Owner-only, never cached. */
 export async function GET(request: Request) {
   const authorized = await storeReviewStaffContext();
   if ("response" in authorized) return privateResponse(authorized.response);

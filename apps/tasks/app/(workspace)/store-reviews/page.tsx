@@ -7,7 +7,7 @@ import { getStoreCustomerAuthScope } from "@/lib/server/store-customer-auth/scop
 import { isWorkspaceDemo, loadWorkspacePage } from "@/lib/server/workspace-page-loader";
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: { absolute: await pageTitle("Store reviews") } };
+  return { title: { absolute: await pageTitle("Store Reviews") } };
 }
 
 export default async function StoreReviewsPage() {

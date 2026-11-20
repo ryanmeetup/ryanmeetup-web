@@ -36,7 +36,7 @@ test.beforeEach(async ({ request }) => {
 test("loads pending reviews on the server and compares a waiting edit with the approved version", async ({ page }) => {
   await signIn(page);
   await page.goto("/store-reviews");
-  await expect(page).toHaveTitle(/Store reviews/);
+  await expect(page).toHaveTitle(/Store Reviews/);
   await expect(card(page, 1).getByRole("img", { name: "1 out of 5 stars" })).toBeVisible();
   // A review written without a matching order is labelled in words, not only by colour.
   await expect(card(page, 1)).toContainText("No matching order");
@@ -45,7 +45,7 @@ test("loads pending reviews on the server and compares a waiting edit with the a
   await expect(card(page, 2).getByRole("region", { name: "Published version" })).toContainText("Original approved text.");
   // Its own sidebar entry, not an admin tab, counting every waiting review.
   const nav = page.locator("#desktop-workspace-navigation").getByRole("navigation", { name: "Main navigation" });
-  await expect(nav.getByRole("link", { name: "Store reviews 3 waiting reviews" })).toHaveAttribute("href", "/store-reviews");
+  await expect(nav.getByRole("link", { name: "Store Reviews 3 waiting reviews" })).toHaveAttribute("href", "/store-reviews");
   await expect(page.getByRole("navigation", { name: "Admin sections" })).toHaveCount(0);
 });
 
@@ -57,7 +57,7 @@ test("publishes the exact one-star revision and preserves all version digits", a
   await dialog.getByRole("button", { name: "Publish review", exact: true }).click();
   await expect(page.getByRole("status").filter({ hasText: "Publish review: saved." })).toBeVisible();
   await expect(card(page, 1)).toHaveCount(0);
-  await expect(page.locator("#desktop-workspace-navigation").getByRole("link", { name: "Store reviews 2 waiting reviews" })).toBeVisible();
+  await expect(page.locator("#desktop-workspace-navigation").getByRole("link", { name: "Store Reviews 2 waiting reviews" })).toBeVisible();
   const { calls } = await state(request);
   expect(calls).toHaveLength(1);
   expect(calls[0]).toMatchObject({ p_action: "approve", p_review_id: id(1), p_revision_id: id(101), p_expected_updated_at: "2026-11-18T12:00:00.123456Z" });
@@ -199,14 +199,14 @@ test("denies regular members and redirects demo preview away from moderation", a
   expect((await request.post(`${fixture}/__reviews/reset`, { data: { role: "member" } })).ok()).toBeTruthy();
   await signIn(page); await page.goto("/store-reviews");
   await expect(page.getByRole("heading", { name: /Wrong turn/ })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Store reviews/ })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /Store Reviews/ })).toHaveCount(0);
   expect((await page.request.get("/api/admin/reviews/pending-count")).status()).toBe(403);
   expect((await page.request.get("/api/admin/reviews")).status()).toBe(403);
   expect((await request.post(`${fixture}/__reviews/reset`, { data: {} })).ok()).toBeTruthy();
   await page.context().addCookies([{ name: DEMO_PREVIEW_COOKIE, value: DEMO_PREVIEW_VALUE, url: baseURL! }]);
   await page.goto("/store-reviews");
   await expect(page).toHaveURL(/\/$/);
-  await expect(page.getByRole("heading", { name: "Store reviews", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Store Reviews", exact: true })).toHaveCount(0);
 });
 
 test("previews, creates, updates, and removes the official reply without changing the pending edit", async ({ page, request }) => {

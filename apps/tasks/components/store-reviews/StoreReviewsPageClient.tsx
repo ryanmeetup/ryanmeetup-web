@@ -15,7 +15,7 @@ export function StoreReviewsPageClient({ initialData, initial }: { initialData: 
   return <WorkspacePageShell data={data} demoMode={false} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} setData={setData}
     contentClassName="p-4 sm:p-6 lg:p-8">
     <div className="mx-auto max-w-7xl space-y-8">
-      <PageHeader icon={FiMessageSquare} title="Store reviews" description="Review buyer submissions, manage publication, and keep a private decision history." />
+      <PageHeader icon={FiMessageSquare} title="Store Reviews" description="Review buyer submissions, manage publication, and keep a private decision history." />
       <ReviewModerationQueue initial={initial} staffNames={staffNames} />
     </div>
   </WorkspacePageShell>;

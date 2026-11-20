@@ -19,7 +19,7 @@ overview:
 
 ### Moderate store reviews
 
-App owners can review buyer submissions from Store reviews in the sidebar,
+App owners can review buyer submissions from Store Reviews in the sidebar,
 below RY-D Verification, when the store integration is enabled. A red badge
 counts the reviews waiting for a decision and drops as you work through them. Compare a waiting edit with its approved version,
 publish or reject it, and hide or restore published reviews. Hiding and rejecting

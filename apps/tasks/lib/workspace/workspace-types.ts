@@ -90,7 +90,7 @@ export type WorkspaceData = {
   isGuest?: boolean;
   /**
    * Whether the signed-in member is an app owner on an instance with the store
-   * review backend, so the shell offers Store reviews. Navigation only: the
+   * review backend, so the shell offers Store Reviews. Navigation only: the
    * page and its API recheck ownership and the backend themselves.
    */
   canModerateStoreReviews?: boolean;
