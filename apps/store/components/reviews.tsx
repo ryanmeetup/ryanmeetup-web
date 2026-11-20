@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
-import { Button, Card, ErrorCallout, FormStatus, Heading, Pill, RatingStars, Text } from "@ryanmeetup/ui";
+import { Button, Card, ErrorCallout, Heading, Pill, RatingStars, SuccessCallout, Text } from "@ryanmeetup/ui";
 import { FiCalendar, FiCheck, FiUser } from "react-icons/fi";
 import type { Product, ReviewsData } from "@/lib/types";
 import type { CustomReviewAccess } from "@/lib/custom-review-access";
@@ -53,8 +53,8 @@ export function Reviews({ data, product, access }: { data: ReviewsData; product:
         </div>
       </div>
 
-      <div role="status" aria-live="polite">
-        {message && <FormStatus className="mt-6" title="Review received" icon={<FiCheck aria-hidden />}>{message}</FormStatus>}
+      <div aria-live="polite">
+        {message && <SuccessCallout className="mt-6" title="Review received" dismissLabel="Dismiss review confirmation" onDismiss={() => setMessage("")}>{message}</SuccessCallout>}
       </div>
       <CustomReviewComposer
         access={access}
