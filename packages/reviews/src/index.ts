@@ -58,6 +58,7 @@ export type {
   BuyerReviewStatus,
   BuyerReviewPage,
   BuyerReviewCursor,
+  PublicReviewFeedPage,
   ReviewCommand,
   ReviewCursor,
   ReviewOperation,

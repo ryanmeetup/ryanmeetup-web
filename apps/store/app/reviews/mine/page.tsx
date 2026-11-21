@@ -1,8 +1,9 @@
-import { Button, Heading, Text } from "@ryanmeetup/ui";
-import { FiLogIn } from "react-icons/fi";
+import { Breadcrumbs, Button, Heading, Text } from "@ryanmeetup/ui";
+import { FiLogIn, FiMessageSquare, FiStar } from "react-icons/fi";
 import { MyReviews } from "@/components/my-reviews";
 import { getCustomerAccountSession } from "@/lib/customer-account/runtime";
 import { buildPageMetadata, DEFAULT_IMAGE } from "@/lib/metadata";
+import { StoreHomeIcon } from "@/lib/navigation";
 import { currentRequest } from "@/lib/request-from-headers";
 import { getReviewBackend } from "@/lib/review-backend";
 import { loadMyReviewPage } from "@/lib/my-review-actions";
@@ -23,7 +24,14 @@ export const metadata = buildPageMetadata({
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <main className="store-container space-y-8 py-10 sm:py-14">
-      <Heading size="h1" className="text-4xl sm:text-5xl">My Reviews</Heading>
+      <div>
+        <Breadcrumbs variant="compact" crumbs={[
+          { href: "/", title: "Store", icon: <StoreHomeIcon aria-hidden className="shrink-0" /> },
+          { href: "/reviews", title: "Reviews", icon: <FiStar aria-hidden className="shrink-0" /> },
+          { href: "/reviews/mine", title: "My Reviews", current: true, icon: <FiMessageSquare aria-hidden className="shrink-0" /> },
+        ]} />
+        <Heading size="h1" className="mt-3 text-4xl sm:text-5xl">My Reviews</Heading>
+      </div>
       {children}
     </main>
   );

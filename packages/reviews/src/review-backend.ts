@@ -65,6 +65,9 @@ export type BuyerReview = {
   current: ReviewSubmission & { displayName: string };
 };
 
+/** One page of every published review across the shop, newest first. */
+export type PublicReviewFeedPage = { reviews: PublicReview[]; nextCursor: string | null };
+
 export type BuyerReviewPage = { reviews: BuyerReview[]; nextCursor: string | null };
 export type BuyerReviewCursor = { createdAt: string; id: string };
 
@@ -74,6 +77,7 @@ export type ReviewCommand =
   | { operation: "review.withdraw"; subject: string; reviewId: string; expectedUpdatedAt: string }
   | { operation: "reviews.page"; productIds: string[]; limit: number; cursor: string | null }
   | { operation: "reviews.latest" }
+  | { operation: "reviews.feed"; limit: number; cursor: string | null }
   | { operation: "reviews.mine"; subject: string; cursor: string | null }
   | { operation: "review.mine"; subject: string; reviewId: string }
   | { operation: "reviews.reviewedLines"; subject: string; lineIds: string[] }
@@ -89,6 +93,7 @@ export type ReviewResults = {
   "review.withdraw": "withdrawn" | "not_found" | "conflict";
   "reviews.page": PublicReviewPage;
   "reviews.latest": PublicReview[];
+  "reviews.feed": PublicReviewFeedPage;
   "reviews.mine": BuyerReviewPage;
   "review.mine": BuyerReview | null;
   "reviews.reviewedLines": string[];
@@ -161,6 +166,11 @@ export function reviewCommandSchema(value: unknown): ReviewCommand | null {
     }
     case "reviews.latest":
       return exactObject(value, ["operation"]) ? value as ReviewCommand : null;
+    case "reviews.feed": {
+      const command = exactObject(value, ["operation", "limit", "cursor"]);
+      return command && Number.isSafeInteger(command.limit) && (command.limit as number) >= 1 && (command.limit as number) <= REVIEW_PAGE_MAX &&
+        (command.cursor === null || (typeof command.cursor === "string" && decodeReviewCursor(command.cursor) !== null)) ? (command as ReviewCommand) : null;
+    }
     case "reviews.mine": {
       const command = exactObject(value, ["operation", "subject", "cursor"]);
       return command && subject(command.subject) && (command.cursor === null || (typeof command.cursor === "string" && decodeBuyerReviewCursor(command.cursor))) ? (command as ReviewCommand) : null;
@@ -231,6 +241,15 @@ function buyerReviewSchema(value: unknown): BuyerReview | null {
     singleLine(current.displayName,REVIEW_DISPLAY_NAME_MAX) ? review as BuyerReview : null;
 }
 
+/** Public, unique and in the shared keyset order: newest publish time, then highest ID. */
+function newestFirstReviews(data: unknown[]): data is PublicReview[] {
+  if (!data.every((review) => publicReviewSchema(review) !== null)) return false;
+  const reviews = data as PublicReview[];
+  return new Set(reviews.map((review) => review.id)).size === reviews.length &&
+    reviews.every((review, index) => index === 0 || Date.parse(reviews[index - 1].publishedAt) > Date.parse(review.publishedAt) ||
+      (reviews[index - 1].publishedAt === review.publishedAt && reviews[index - 1].id > review.id));
+}
+
 /** An invalid transport payload stays distinct from a legitimate refusal or empty page. */
 export function reviewResultSchema<Operation extends ReviewOperation>(operation: Operation, value: unknown): { data: ReviewResults[Operation] } | null {
   const result = exactObject(value, ["data"]);
@@ -248,10 +267,14 @@ export function reviewResultSchema<Operation extends ReviewOperation>(operation:
   } else if (operation === "reviews.page") {
     valid = publicReviewPageSchema(data) !== null;
   } else if (operation === "reviews.latest") {
-    valid = Array.isArray(data) && data.length <= 6 && data.every(publicReviewSchema) &&
-      new Set(data.map((review) => review.id)).size === data.length &&
-      data.every((review, index) => index === 0 || Date.parse(data[index - 1].publishedAt) > Date.parse(review.publishedAt) ||
-        (data[index - 1].publishedAt === review.publishedAt && data[index - 1].id > review.id));
+    valid = Array.isArray(data) && data.length <= 6 && newestFirstReviews(data);
+  } else if (operation === "reviews.feed") {
+    const page = exactObject(data, ["reviews", "nextCursor"]);
+    if (page && Array.isArray(page.reviews) && page.reviews.length <= REVIEW_PAGE_MAX && newestFirstReviews(page.reviews)) {
+      const last = (page.reviews as PublicReview[]).at(-1);
+      const cursor = typeof page.nextCursor === "string" ? decodeReviewCursor(page.nextCursor) : null;
+      valid = page.nextCursor === null || Boolean(cursor && last && cursor.id === last.id && cursor.publishedAt === last.publishedAt);
+    }
   } else if (operation === "reviews.mine") {
     const page = exactObject(data,["reviews","nextCursor"]);
     if (page && Array.isArray(page.reviews) && page.reviews.length <= 20 && page.reviews.every((review) => buyerReviewSchema(review) !== null)) {

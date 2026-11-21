@@ -30,6 +30,19 @@ async function executeStoreReview(admin: SupabaseClient, shopId: string, command
     case "reviews.latest":
       data = check(await admin.rpc("store_latest_reviews", { p_shop_id: shopId }).abortSignal(AbortSignal.timeout(10_000)));
       break;
+    case "reviews.feed": {
+      const after = command.cursor ? decodeReviewCursor(command.cursor) : null;
+      // One extra row tells us whether another page exists.
+      const rows = check(await admin.rpc("store_review_feed", {
+        p_shop_id: shopId, p_limit: command.limit + 1, p_after_published_at: after?.publishedAt ?? null, p_after_id: after?.id ?? null,
+      }).abortSignal(AbortSignal.timeout(10_000)));
+      if (!Array.isArray(rows) || rows.length > command.limit + 1) throw new ReviewBackendError();
+      const reviews = rows as PublicReview[];
+      const page = reviews.slice(0, command.limit);
+      const last = page.at(-1);
+      data = { reviews: page, nextCursor: reviews.length > command.limit && last ? encodeReviewCursor({ publishedAt: last.publishedAt, id: last.id }) : null };
+      break;
+    }
     case "review.submit": {
       const { purchase, submission } = command;
       const rows = check(await admin.rpc(command.photoIds === undefined ? "store_submit_review" : "store_submit_review_with_photos", {
