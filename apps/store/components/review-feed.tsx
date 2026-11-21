@@ -60,8 +60,9 @@ export function ReviewFeed({ initial }: { initial: ReviewFeedPage }) {
             <Text className="mt-2">{feed.pending ? "Checking every published review across the shop." : "Try loading again to see all reviews that match."}</Text>
           </div>
         ) : reviews.length ? (
-          <ul id="review-feed" aria-label="Customer reviews" aria-busy={feed.pending} className="grid items-stretch gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {reviews.map(({ product, ...review }) => <li key={review.id} className="min-w-0"><PublicReviewCard review={review} product={product} /></li>)}
+          <ul id="review-feed" aria-label="Customer reviews" aria-busy={feed.pending} className="gap-4 md:columns-2 xl:columns-3">
+            {/* Masonry: cards keep their own height, filling each column top to bottom. */}
+            {reviews.map(({ product, ...review }) => <li key={review.id} className="mb-4 min-w-0 break-inside-avoid last:mb-0"><PublicReviewCard review={review} product={product} /></li>)}
           </ul>
         ) : searching ? (
           <div className="rounded-2xl border border-dashed border-black/20 p-8 text-center dark:border-white/20">

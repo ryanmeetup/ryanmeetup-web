@@ -9,9 +9,9 @@ import { ReviewReply } from "./review-reply";
 
 /** The same public review presentation on product pages and the home showcase. */
 export function PublicReviewCard({ review, product }: { review: Review; product?: { title: string; href: string | null } }) {
-  // Header, content, then one bordered footer pinned to the bottom, so cards of
-  // different lengths still line up on the same rule in a grid.
-  return <Card size="lg" variant="outline" className="flex h-full flex-col">
+  // Header, content, then one bordered footer. Lists lay cards out as masonry,
+  // so each card keeps its natural height.
+  return <Card size="lg" variant="outline" className="flex flex-col">
     <article id={reviewAnchorId(review.id)} tabIndex={-1} aria-label={`Review by ${review.reviewerName}`}
       className="flex min-w-0 flex-1 scroll-mt-24 flex-col rounded-lg target:outline-2 target:outline-offset-8 target:outline-black/40 focus-visible:outline-2 focus-visible:outline-offset-8 focus-visible:outline-black/40 dark:target:outline-white/50 dark:focus-visible:outline-white/50">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">

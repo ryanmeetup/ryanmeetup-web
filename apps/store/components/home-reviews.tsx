@@ -16,10 +16,10 @@ export async function HomeReviews() {
       actions={<Button.Link href="/reviews" size="md" variant="secondary" className="!w-full sm:!w-auto" rightIcon={<FiArrowRight aria-hidden />}>
         See all reviews
       </Button.Link>} />
-    {/* Same grid as the /reviews feed: cards in a row share a height so their
-        byline footers line up, and order reads across each row, newest first. */}
-    <ul aria-label="Latest customer reviews" className={`mt-8 grid items-stretch gap-4 ${reviews.length === 1 ? "max-w-2xl" : "md:grid-cols-2"} ${reviews.length > 2 ? "xl:grid-cols-3" : ""}`}>
-      {reviews.map(({ review, product }) => <li key={review.id} className="min-w-0"><PublicReviewCard review={review} product={product} /></li>)}
+    {/* Masonry, like the /reviews feed: each card keeps its own height and
+        order runs down each column, newest first. */}
+    <ul aria-label="Latest customer reviews" className={`mt-8 gap-4 ${reviews.length === 1 ? "max-w-2xl" : "md:columns-2"} ${reviews.length > 2 ? "xl:columns-3" : ""}`}>
+      {reviews.map(({ review, product }) => <li key={review.id} className="mb-4 min-w-0 break-inside-avoid last:mb-0"><PublicReviewCard review={review} product={product} /></li>)}
     </ul>
   </section>;
 }

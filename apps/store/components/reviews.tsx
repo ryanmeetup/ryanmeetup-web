@@ -91,9 +91,10 @@ export function Reviews({ data, product, access }: { data: ReviewsData; product:
             <Text className="mt-2">{publicReviews.pending ? "Checking every review for this product." : "Try loading again to see all reviews that match."}</Text>
           </div>
         ) : publicReviews.reviews.length ? (
-          <ul id={`${formId}-reviews`} aria-label="Customer reviews" aria-busy={publicReviews.pending} className="mt-8 grid items-stretch gap-4 md:grid-cols-2">
+          <ul id={`${formId}-reviews`} aria-label="Customer reviews" aria-busy={publicReviews.pending} className="mt-8 gap-4 md:columns-2">
+            {/* Masonry: cards keep their own height, filling each column top to bottom. */}
             {publicReviews.reviews.map((review) => (
-              <li key={review.id}>
+              <li key={review.id} className="mb-4 min-w-0 break-inside-avoid last:mb-0">
                 <PublicReviewCard review={review} />
               </li>
             ))}
