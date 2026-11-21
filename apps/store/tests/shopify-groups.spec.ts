@@ -1,5 +1,4 @@
 import { expect, test } from "@playwright/test";
-import { demoGarments, toGarmentTable } from "../lib/garments";
 import { getProductGallery } from "../lib/product-gallery";
 import { getCollection, getCollections, getHomeCatalog, getProduct, getProductHandles, sortCollectionsBySales } from "../lib/shopify";
 import { dad, mom, productNode, ryan, tee } from "./fixtures/products";
@@ -21,25 +20,6 @@ test.afterEach(() => {
   else process.env.SHOPIFY_STOREFRONT_API_TOKEN = originalToken;
 });
 
-// The demo groupings as Shopify returns "Store grouping" metaobject entries.
-const groupingEntries = Object.entries(demoGarments).flatMap(([department, garments]) => garments.map(({ handle, title, description, categories, listings, collection, matchFirst }, position) => ({
-  handle,
-  fields: [
-    { key: "title", value: title },
-    { key: "department", value: department },
-    { key: "description", value: description },
-    { key: "position", value: String(position + 1) },
-    { key: "categories", value: JSON.stringify(categories) },
-    { key: "listings", value: listings ? JSON.stringify(listings) : null },
-    { key: "collection", value: collection ?? null },
-    { key: "match_first", value: matchFirst ? "true" : null },
-  ],
-})));
-
-test("the demo groupings survive a round trip through Shopify metaobject entries", () => {
-  expect(toGarmentTable(groupingEntries)).toEqual(demoGarments);
-});
-
 function mockCatalog(failDiscovery = false, spotlight: { handle: string }[] = []) {
   const requests: { query: string; variables: { handle?: string; query?: string | null; after?: string | null } }[] = [];
   globalThis.fetch = async (_input, init) => {
@@ -55,8 +35,6 @@ function mockCatalog(failDiscovery = false, spotlight: { handle: string }[] = []
       const catalog = [ryan, tee, mom, dad].filter((product) => !request.variables.query || request.variables.query === `product_type:${JSON.stringify(product.productType)}`);
       const page = request.variables.after ? catalog.slice(2) : catalog.slice(0, 2);
       data = { products: { edges: page.map((product) => ({ node: productNode(product) })), pageInfo: { endCursor: "type-page-1", hasNextPage: !request.variables.after && catalog.length > 2 } } };
-    } else if (request.query.includes("StoreGroupings")) {
-      data = { metaobjects: { edges: groupingEntries.map((node) => ({ node })), pageInfo: { endCursor: null, hasNextPage: false } } };
     } else if (request.query.includes("BestSellingHandles")) {
       data = { products: { edges: [mom, tee, dad, ryan].map(({ handle }) => ({ node: { handle } })), pageInfo: { endCursor: null, hasNextPage: false } } };
     } else if (request.query.includes("CollectionMemberships")) {

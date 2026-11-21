@@ -172,9 +172,6 @@ The Apparel and Accessories pages split into groupings by each product's Shopify
 **Category**, so a new hoodie lands under Hoodies as soon as its category is set.
 Nothing else is needed.
 
-The groupings themselves live in Shopify Admin under **Content → Metaobjects →
-Store grouping**. The store's groupings when this guide was reviewed:
-
 | Page | Groupings, in order | Categories that land there |
 | --- | --- | --- |
 | Apparel | T-Shirts | T-Shirts, Shirts |
@@ -190,38 +187,8 @@ Store grouping**. The store's groupings when this guide was reviewed:
 
 Kids sizes go under Kids even when they are hoodies or shirts. A product whose
 category matches none of these, such as the polo, appears at the bottom under
-"More Ryan Goods".
-
-A grouping with nothing in it, such as Home Goods while its only doormat is
-archived, drops out of the menu, its page becomes "not found", and it leaves the
-sitemap. It comes back on its own when a matching product returns.
-
-### Adding or changing a grouping
-
-Add an entry under **Content → Metaobjects → Store grouping**, or edit one:
-
-- **Title** and **Description** are the heading and the line under it, also
-  shown in the menu.
-- **Department** is `apparel` or `accessories`.
-- **Position** sets the order within the department, lowest first. Current
-  entries count by tens, so 25 slots between 20 and 30.
-- **Shopify categories** are standard category names, typed exactly as Shopify
-  shows them. A product matches when its category or any parent category has
-  one of these names, so `Drinkware` covers mugs and tumblers.
-- **Listings** places specific listing handles here whatever their category.
-  RY-Ds uses this, since the membership card has no category.
-- **Links to collection** is optional. It sends the menu link to a collection
-  instead of the grouping's own page. RY-Ds uses `ryd`, which goes to
-  ryanmeetup.com/cards.
-- **Claims products first** gives this grouping first pick, so a youth hoodie
-  goes to Kids instead of Hoodies.
-
-The entry handle becomes the page address (`/accessories/stickers`), so choose
-it before sharing links. Set the entry to **Active**; drafts stay off the store.
-Changes appear within five minutes. Shopify's catalog webhooks don't cover
-metaobjects, so a grouping edit waits for the normal refresh. A new grouping
-gets its department's icon until a developer gives it one in `garmentIcons` in
-[lib/navigation.ts](../../lib/navigation.ts).
+"More Ryan Goods". To add a grouping or change the order, ask a developer to
+edit [lib/garments.ts](../../lib/garments.ts).
 
 **Don't create collections for a kind of product** such as Hats or Hoodies.
 Groupings already cover that, and they stay complete without upkeep. Old links
@@ -322,8 +289,8 @@ do not treat unused storefront tags as proof that they are safe to delete.
   for each new product; this document does not freeze a live collection list.
 - Keep webhook subscriptions/secret synchronized and verify a delivered change.
 - Before renaming grouped listings, arrange redirects for shared URLs.
-- Add theme collections and garment groupings through Admin. Grouping icons and
-  legacy URL redirects require a code change.
+- Add theme collections through Admin. New garment groupings and legacy URL
+  redirects require a code change.
 
 Personalization has separate work in the [roadmap](../planning/roadmap.md).
 Implementation references:

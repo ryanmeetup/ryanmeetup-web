@@ -10,7 +10,6 @@ import { Header } from "@/components/header";
 import { NavSectionProvider } from "@/components/nav-section";
 import { PromotionBanner, PromotionProvider } from "@/components/promotion";
 import { buildPageMetadata, DEFAULT_IMAGE, SITE_NAME, SITE_URL } from "@/lib/metadata";
-import type { GarmentTable } from "@/lib/garments";
 import { getCollections, getCustomerAccountUrl, getPolicies, getStockedGarments, isShopifyConfigured } from "@/lib/shopify";
 import { currentPromotion, isPromotionLive } from "@/lib/promotion";
 import { getBugReportHref } from "@/lib/support";
@@ -49,12 +48,12 @@ async function getMenuCollections() {
   return collections.map(({ handle, title, description }) => ({ handle, title, description }));
 }
 
-// Apparel and Accessories list only the Shopify groupings with something in them. Like
-// the Collections menu, an outage leaves each with only its Shop All link.
-async function getMenuGarments(): Promise<GarmentTable> {
+// Apparel and Accessories list only the groupings with something in them. An outage
+// lists every grouping rather than emptying both menus.
+async function getMenuGarments() {
   return getStockedGarments().catch((error: unknown) => {
     console.error("Could not load garment groupings for the header menu.", error);
-    return {};
+    return null;
   });
 }
 

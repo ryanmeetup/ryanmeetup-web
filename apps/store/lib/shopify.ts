@@ -1,8 +1,7 @@
-import { catalogCollections, departments, getCatalogCollection, getCatalogCollectionSummary, getCatalogProductQuery, isDepartment, isInCatalogCollection } from "./catalog-collections";
+import { catalogCollections, departments, getCatalogCollection, getCatalogCollectionSummary, getCatalogProductQuery, isInCatalogCollection } from "./catalog-collections";
 import { demoCollections, demoProducts } from "./demo-data";
 import { withExternalListings } from "./external-listings";
-import { demoGarments, findGarment, garmentMetaobjectType, getGarment, getGarmentSummary, sectionByGarment, toGarmentTable } from "./garments";
-import type { GarmentMetaobject, GarmentTable } from "./garments";
+import { findGarment, getGarment, getGarmentSummary, sectionByGarment } from "./garments";
 import { normalizeHandle } from "./handles";
 import { getColorListingHref } from "./product-colors";
 import type { GroupableProduct } from "./product-groups";
@@ -440,44 +439,22 @@ export async function getCollection(handle: string): Promise<ProductPage | null>
   if (!page) return null;
   const popularHandles = memberships.find((collection) => collection.handle === featuredCollectionHandle)?.products.edges.map(({ node }) => node.handle) ?? [];
   const products = recommendListings(page.products, popularHandles);
-  return { ...page, products, ...(isDepartment(handle) ? sectionByGarment(await getGarments(), handle, products) : null) };
-}
-
-/**
- * Apparel and Accessories groupings from Shopify's active "Store grouping" metaobjects, so
- * adding or renaming one is an Admin edit rather than a deploy. Failures propagate.
- */
-export async function getGarments(): Promise<GarmentTable> {
-  if (!isShopifyConfigured()) return demoGarments;
-  const entries = await loadAllPages(async (after) => (await storefrontRequest<{ metaobjects: PaginatedConnection<GarmentMetaobject> }>(
-    `query StoreGroupings($type: String!, $after: String) {
-      metaobjects(type: $type, first: 250, after: $after) {
-        edges { node { handle fields { key value } } }
-        pageInfo { endCursor hasNextPage }
-      }
-    }`,
-    { type: garmentMetaobjectType, after },
-    { revalidate: 300 },
-  )).metaobjects);
-  return toGarmentTable(entries ?? []);
+  return { ...page, products, ...sectionByGarment(handle, products) };
 }
 
 /** One garment grouping of a department page, such as Hats under Apparel, in the same order. */
 export async function getGarmentCollection(department: string, handle: string): Promise<ProductPage | null> {
-  const garments = await getGarments();
-  const garment = findGarment(garments, department, handle);
-  // A grouping that links to a collection, like RY-Ds, has no page of its own.
-  const page = garment && !garment.collection ? await getCollection(department) : null;
+  const garment = findGarment(department, handle);
+  const page = garment ? await getCollection(department) : null;
   if (!garment || !page) return null;
-  return { collection: getGarmentSummary(garment), products: page.products.filter((listing) => getGarment(garments, department, listing)?.handle === handle) };
+  return { collection: getGarmentSummary(garment), products: page.products.filter((listing) => getGarment(department, listing)?.handle === handle) };
 }
 
-/** Each department's groupings that hold at least one listing, in display order. */
-export async function getStockedGarments(): Promise<GarmentTable> {
-  const garments = await getGarments();
+/** Each department's garment groupings that hold at least one listing, keyed by department. */
+export async function getStockedGarments(): Promise<Record<string, string[]>> {
   const entries = await Promise.all(departments.map(async ({ handle }) => {
-    const stocked = new Set((await getCollection(handle))?.sections?.map(({ collection }) => collection.handle));
-    return [handle, (garments[handle] ?? []).filter((garment) => stocked.has(garment.handle))] as const;
+    const page = await getCollection(handle);
+    return [handle, page?.sections?.map(({ collection }) => collection.handle) ?? []] as const;
   }));
   return Object.fromEntries(entries);
 }

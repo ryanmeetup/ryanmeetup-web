@@ -6,13 +6,12 @@ import { usePathname } from "next/navigation";
 import { FiChevronDown, FiMenu, FiShoppingBag, FiX } from "react-icons/fi";
 import { AnimatedCollapse, NavMenu, Tooltip, Wordmark } from "@ryanmeetup/ui";
 import { getCollectionMenuRoutes, getDepartmentMenuRoutes, getStoreNavigationSelection, storeNavigation } from "@/lib/navigation";
-import type { GarmentTable } from "@/lib/garments";
-import type { StoreMenu, StoreMenuCollection } from "@/lib/navigation";
+import type { StockedGarments, StoreMenu, StoreMenuCollection } from "@/lib/navigation";
 import { AccountMenu } from "./account-menu";
 import { useCart } from "./cart-provider";
 import { useNavSection } from "./nav-section";
 
-export function Header({ collections, garments, accountUrl }: { collections: StoreMenuCollection[]; garments: GarmentTable; accountUrl: string | null }) {
+export function Header({ collections, garments, accountUrl }: { collections: StoreMenuCollection[]; garments: StockedGarments; accountUrl: string | null }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const section = useNavSection();
@@ -22,7 +21,7 @@ export function Header({ collections, garments, accountUrl }: { collections: Sto
     () => ({
       apparel: getDepartmentMenuRoutes("apparel", garments),
       accessories: getDepartmentMenuRoutes("accessories", garments),
-      collections: getCollectionMenuRoutes(collections, garments),
+      collections: getCollectionMenuRoutes(collections),
     }),
     [collections, garments],
   );
