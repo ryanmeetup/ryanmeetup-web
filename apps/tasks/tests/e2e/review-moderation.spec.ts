@@ -431,43 +431,47 @@ test("a withdrawn review can still be deleted, and a stale view is refused", asy
   await expect(card(page, 4)).toHaveCount(0);
 });
 
-test("photos need separate decisions and remain in the waiting queue after text approval", async ({ page, request }) => {
+test("publishing a review publishes its photos except ones rejected first", async ({ page, request }) => {
   await request.post(`${fixture}/__reviews/reset`, { data: { photos: true } });
   await signIn(page); await page.goto("/store-reviews");
-  await expect(card(page, 1).getByRole("button", { name: "Approve photo", exact: true })).toHaveCount(2);
-  await card(page, 1).getByRole("button", { name: "Publish review", exact: true }).click();
-  await expect(card(page, 1)).toBeVisible();
-  const approve = card(page, 1).getByRole("button", { name: "Approve photo", exact: true });
-  await expect(approve.first()).toBeEnabled(); await approve.first().click();
-  const dialog = page.getByRole("dialog", { name: "Approve photo", exact: true });
-  await expect(dialog.getByRole("img", { name: "Photo being moderated" })).toBeVisible();
-  await dialog.getByRole("button", { name: "Approve photo", exact: true }).click();
-  await expect(card(page, 1)).toContainText("Photo approved");
-  await expect(card(page, 1).getByRole("button", { name: "Approve photo", exact: true })).toHaveCount(1);
+  // No separate photo approval: undecided photos ride along with the review.
+  await expect(card(page, 1).getByRole("button", { name: "Approve photo", exact: true })).toHaveCount(0);
+  await expect(card(page, 1).getByText("Publishes with review", { exact: true })).toHaveCount(2);
   const reject = card(page, 1).getByRole("button", { name: "Reject photo", exact: true });
-  await reject.nth(1).click();
+  await expect(reject.nth(1)).toBeEnabled(); await reject.nth(1).click();
   const rejecting = page.getByRole("dialog", { name: "Reject photo", exact: true });
+  await expect(rejecting.getByRole("img", { name: "Photo being moderated" })).toBeVisible();
   const confirm = rejecting.getByRole("button", { name: "Reject photo", exact: true });
   await expect(confirm).toBeDisabled();
   await rejecting.getByLabel("Reason for the buyer").fill("Private information in the background");
   await expect(confirm).toBeEnabled(); await confirm.click();
+  await expect(page.getByRole("status").filter({ hasText: "Reject photo: saved." })).toBeVisible();
+  await expect(card(page, 1)).toContainText("Photo rejected");
+  await expect(card(page, 1)).toContainText("Reason shown to the buyer: Private information in the background");
+  // A rejection can still be undone before or after publishing.
+  await expect(card(page, 1).getByRole("button", { name: "Approve photo", exact: true })).toHaveCount(1);
+  await card(page, 1).getByRole("button", { name: "Publish review", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Publish review: saved." })).toBeVisible();
   await expect(card(page, 1)).toHaveCount(0);
   await queue(page, "Published");
   await expect(card(page, 1)).toContainText("Photo approved"); await expect(card(page, 1)).toContainText("Photo rejected");
   await expect(card(page, 1)).toContainText("Reason shown to the buyer: Private information in the background");
   const { calls } = await state(request);
-  expect(calls.at(-1)).toMatchObject({ p_photo_id: id(1002), p_revision_id: id(101), p_action: "reject", p_note: "Private information in the background" });
+  expect(calls.at(-2)).toMatchObject({ p_photo_id: id(1002), p_revision_id: id(101), p_action: "reject", p_note: "Private information in the background" });
+  expect(calls.at(-1)).toMatchObject({ p_action: "approve", p_review_id: id(1), p_revision_id: id(101) });
 });
 
 test("photo decisions use exact versions and require fresh text after a conflict", async ({ page, request }) => {
   await request.post(`${fixture}/__reviews/reset`, { data: { photos: true } });
   await signIn(page); await page.goto("/store-reviews");
   await configure(request, { conflictOnce: true });
-  const approve = card(page, 1).getByRole("button", { name: "Approve photo", exact: true });
-  await expect(approve.first()).toBeEnabled(); await approve.first().click();
-  await page.getByRole("dialog", { name: "Approve photo", exact: true }).getByRole("button", { name: "Approve photo", exact: true }).click();
+  const reject = card(page, 1).getByRole("button", { name: "Reject photo", exact: true });
+  await expect(reject.first()).toBeEnabled(); await reject.first().click();
+  const dialog = page.getByRole("dialog", { name: "Reject photo", exact: true });
+  await dialog.getByLabel("Reason for the buyer").fill("Blurry");
+  await dialog.getByRole("button", { name: "Reject photo", exact: true }).click();
   await expect(page.getByText("This review changed. The queue has been refreshed; read the latest text before deciding.", { exact: true })).toBeVisible();
-  await expect(card(page, 1)).not.toContainText("Photo approved");
+  await expect(card(page, 1)).not.toContainText("Photo rejected");
 });
 
 test("photo previews and decision forms fit both themes at mobile and desktop boundaries", async ({ page, request }, testInfo) => {
@@ -477,13 +481,13 @@ test("photo previews and decision forms fit both themes at mobile and desktop bo
     await page.addInitScript((value) => localStorage.setItem("theme", value), theme);
     for (const width of [390, 1024, 1280, 1536]) {
       await page.setViewportSize({ width, height: 1000 }); await page.goto("/store-reviews");
-      const approve = card(page, 1).getByRole("button", { name: "Approve photo", exact: true }).first();
-      await expect(approve).toBeEnabled();
+      const reject = card(page, 1).getByRole("button", { name: "Reject photo", exact: true }).first();
+      await expect(reject).toBeEnabled();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
       await card(page, 1).screenshot({ path: testInfo.outputPath(`photos-${theme}-${width}.png`) });
-      await approve.click();
-      const dialog = page.getByRole("dialog", { name: "Approve photo", exact: true });
-      await expect(dialog.getByRole("button", { name: "Approve photo", exact: true })).toBeEnabled();
+      await reject.click();
+      const dialog = page.getByRole("dialog", { name: "Reject photo", exact: true });
+      await expect(dialog.getByRole("img", { name: "Photo being moderated" })).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
       await page.screenshot({ path: testInfo.outputPath(`photo-decision-${theme}-${width}.png`) });
       await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
@@ -502,20 +506,22 @@ test("failed photo previews need retry and a lost decision acknowledgement needs
   await page.goto("/store-reviews");
   const review = card(page, 1);
   await expect(review.getByText("Photo could not load.")).toHaveCount(2);
-  await expect(review.getByRole("button", { name: "Approve photo", exact: true }).first()).toBeDisabled();
+  await expect(review.getByRole("button", { name: "Reject photo", exact: true }).first()).toBeDisabled();
   unavailable = false;
   await review.getByRole("button", { name: "Retry photo", exact: true }).first().click();
-  const approve = review.getByRole("button", { name: "Approve photo", exact: true }).first();
-  await expect(approve).toBeEnabled(); await approve.click();
+  const reject = review.getByRole("button", { name: "Reject photo", exact: true }).first();
+  await expect(reject).toBeEnabled(); await reject.click();
+  const dialog = page.getByRole("dialog", { name: "Reject photo", exact: true });
+  await dialog.getByLabel("Reason for the buyer").fill("Blurry");
   await page.route("**/api/admin/reviews/photos", async (route) => {
     if (route.request().method() === "POST") { await route.fetch(); await route.abort("failed"); }
     else await route.continue();
   });
-  await page.getByRole("dialog", { name: "Approve photo", exact: true }).getByRole("button", { name: "Approve photo", exact: true }).click();
+  await dialog.getByRole("button", { name: "Reject photo", exact: true }).click();
   await expect(page.getByRole("alert").filter({ hasText: "could not confirm this decision" })).toBeVisible();
   expect((await state(request)).calls).toHaveLength(1);
   await expect(review).toHaveCount(0);
   await page.getByRole("button", { name: "Refresh queue", exact: true }).click();
-  await expect(review).toContainText("Photo approved");
+  await expect(review).toContainText("Photo rejected");
   expect((await state(request)).calls).toHaveLength(1);
 });

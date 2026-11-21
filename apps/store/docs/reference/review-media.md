@@ -136,7 +136,8 @@ Invalid media rolls back **all** text, revision, version and audit changes and
 returns `invalid_photos` with no review ID. Normal version/idempotency/ownership
 outcomes are preserved. Existing approved revisions keep their photo selection
 while pending edits wait. Each new revision's media decision starts pending;
-text approval does not approve photos. Only separately approved photos on the
+approving the revision approves its still-pending photos, and photos rejected
+first stay rejected (migration `20261121130000`). Only approved photos on the
 current approved revision enter public projections.
 
 ## Implemented private buyer reads

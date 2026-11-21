@@ -68,8 +68,9 @@ cards without ratings rather than failing the page.
 - Verified reviews are unique per shop/order/line, regardless of quantity.
   Unverified reviews are separately unique per shop/buyer/product.
 - Every submission or edit waits for approval. An approved version remains
-  public while an edit waits or is rejected. Text approval does not approve
-  photos or unhide a hidden review.
+  public while an edit waits or is rejected. Approving a version also approves
+  its undecided photos; photos staff rejected first stay rejected. Approval
+  does not unhide a hidden review.
 - Buyers can edit pending, published or rejected reviews and withdraw hidden
   ones. Withdrawal removes public text/rating on subsequent reads; staff cannot
   restore it. Resubmission uses the record again and gets a fresh publication

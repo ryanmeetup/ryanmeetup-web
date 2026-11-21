@@ -90,9 +90,10 @@ there untouched; see [migration profiles](../../../tasks/docs/DATABASE.md#migrat
   exclude anon and ordinary Tasks members; service-only functions run as
   invoker. Staff RPCs additionally recheck an onboarded Tasks owner.
 - Public RPCs expose approved active fields and complete rating totals through
-  the Store backend. Photo projections include only separately approved media
-  on the active approved revision, through revocable Store URLs. Text approval
-  neither approves photos nor restores hidden/withdrawn content.
+  the Store backend. Photo projections include only approved media on the
+  active approved revision, through revocable Store URLs. Approving a revision
+  approves its undecided photos (rejected ones stay rejected) but never
+  restores hidden/withdrawn content.
 
 Store only the purchase references and display snapshots needed for reviews,
 not a mirrored order database, addresses or payment details. Private notes must

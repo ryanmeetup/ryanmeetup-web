@@ -208,8 +208,9 @@ selection rolls back text, versions, audit and media together. Attached photos
 cannot be returned/revived/discarded by draft RPCs and can only be retained by
 the same review. Text-only edits retain the selection; explicit arrays replace
 or remove it on the new pending revision. Approved selections remain intact.
-Every new media decision starts pending; text approval does not approve or
-publish images. Public SQL still emits no custom photos.
+Every new media decision starts pending; approving the revision approves its
+still-pending images, and rejected images stay rejected. Public SQL still emits
+no custom photos.
 
 RMT-only migration `20261121000000` adds service-only invoker reads for the
 buyer's current ordered photo references and server-only preview context.

@@ -87,6 +87,8 @@ export function createReviewModerationFixture(json, readBody, profile) {
     }
     calls.push(command);
     const r = reviews.find((entry) => entry.id === command.p_review_id);
+    // Publishing a version approves its undecided photos; rejected photos stay rejected.
+    const approvePhotos = (v) => v.photos?.forEach((photo) => { if (photo.state === "pending") photo.state = "approved"; });
     const advance = () => `2026-11-18T12:01:00.${String(++tick).padStart(6, "0")}Z`;
     if (url.pathname.endsWith("store_delete_review")) {
       // Any state may be deleted; a stale view answers null. No fixture review has photos.
@@ -124,9 +126,9 @@ export function createReviewModerationFixture(json, readBody, profile) {
       if (!r.published || (r.reply?.body ?? null) === command.p_body) { json(response, 200, false); return true; }
       r.reply = command.p_body === null ? null : { body: command.p_body, publishedAt: r.reply?.publishedAt ?? advance(), updatedAt: advance() };
     }
-    else if (command.p_action === "approve") { r.published = r.pending; r.pending = null; }
+    else if (command.p_action === "approve") { r.published = r.pending; r.pending = null; approvePhotos(r.published); }
     else if (command.p_action === "reject") { r.rejected = r.pending; r.pending = null; }
-    else if (command.p_action === "republish") { r.published = r.rejected; r.rejected = null; }
+    else if (command.p_action === "republish") { r.published = r.rejected; r.rejected = null; approvePhotos(r.published); }
     else if (command.p_action === "hide") { r.state = "hidden"; }
     else if (command.p_action === "restore") { r.state = "active"; }
     r.updatedAt = advance();

@@ -77,13 +77,17 @@ reload fails is reported as saved, with further writes blocked until refresh.
 
 ## Photo decisions
 
-Each current text version shows its ordered photos and separate status. Preview
-or enlarge a photo, then approve or reject it independently. The image must load
-before a decision; failed previews have retry. Rejection requires a reason
+Each current text version shows its ordered photos and their status. Photos
+need no separate approval: publishing a version (Publish review, Publish edit,
+Approve revision, or Publish anyway) approves its undecided photos in the same
+transaction, under the version's own `approved` event. To keep a photo off the
+storefront, reject it before publishing; a rejected photo stays rejected. Approve
+photo remains for undoing a rejection and for an undecided photo already on the
+live version. The image must load before a decision; failed previews have retry. Rejection requires a reason
 written for the buyer: Tasks shows it under the photo, and the buyer reads it on
 My reviews and beside the photo in the editor until a new text version resets the
-photo to pending or staff approve it. Approval notes stay private. Publishing text leaves its undecided photos in the waiting queue and
-badge. New text versions reset retained photos to pending.
+photo to pending or staff approve it. Approval notes stay private. New text
+versions reset retained photos to pending.
 
 Only approved photos on active published text appear in the Store. Hiding,
 withdrawal, replacement, rejection or deletion makes old public paths unavailable.

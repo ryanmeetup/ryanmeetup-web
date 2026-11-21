@@ -32,10 +32,10 @@ decision. Buyer withdrawals stay withdrawn.
 Write, edit, or remove an official public reply from the same queue. Preview
 the exact reply before publishing; hidden reviews stay hidden when you reply.
 
-Preview buyer photos and approve or reject each one separately from the text.
-Photos awaiting a decision keep the review in the waiting queue. Only approved
-photos on the published version appear in the store; hiding, withdrawal,
-replacement, and deletion revoke their public links. Rejecting a photo asks for
+Preview buyer photos alongside the text. Publishing a review publishes its
+photos too, so reject any photo that should stay off the storefront first.
+Only approved photos on the published version appear in the store; hiding,
+withdrawal, replacement, and deletion revoke their public links. Rejecting a photo asks for
 a reason written to the buyer. It shows under the photo in the queue, and the
 buyer sees it on My reviews and beside the photo when they edit.
 

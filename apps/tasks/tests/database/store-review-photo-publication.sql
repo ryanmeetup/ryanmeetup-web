@@ -59,10 +59,11 @@ select is(pg_temp.public_photo(),null::jsonb,'photo approval does not approve te
 select ok(public.store_moderate_review('00000000-0000-4000-8000-000000000921','123',(select id from media_fixture where name='review'),
  (select updated_at from public.store_reviews where id=(select id from media_fixture where name='review')),'approve',(select id from media_fixture where name='original'),null),'publish text');
 select ok(pg_temp.public_photo() is not null,'approved photo on approved active text is readable');
-select is(jsonb_array_length((select value->'photos' from public.store_public_reviews('123',array['100'],20) value)),1,'public projection contains only approved media');
+select is(jsonb_array_length((select value->'photos' from public.store_public_reviews('123',array['100'],20) value)),2,'publishing the review approves its undecided photo too');
 select ok((select value->'photos'->0->>'url' from public.store_public_reviews('123',array['100'],20) value) like '/api/reviews/media/%','public photo uses a Store route, not Storage capability');
-select is(public.store_pending_review_count('00000000-0000-4000-8000-000000000921','123'),1::bigint,'undecided photo keeps published review in count');
-select is((select count(*) from public.store_review_moderation_page_v5('00000000-0000-4000-8000-000000000921','123','pending',null,21)),1::bigint,'undecided photo keeps published review in waiting queue');
+select is(public.store_pending_review_count('00000000-0000-4000-8000-000000000921','123'),0::bigint,'a published review leaves no photo waiting in the count');
+select is((select count(*) from public.store_review_moderation_page_v5('00000000-0000-4000-8000-000000000921','123','pending',null,21)),0::bigint,'a published review leaves no photo waiting in the queue');
+select is((select count(*) from public.store_review_events where review_id=(select id from media_fixture where name='review') and action='photo_approved'),1::bigint,'publication approves photos under its own approved event, not one event per photo');
 select is(public.store_staff_review_photo('00000000-0000-4000-8000-000000000921','123',(select id from media_fixture where name='review'),
  (select id from media_fixture where name='original'),(select id from media_fixture where name='one'),now()-interval '1 day'),null::jsonb,'old staff preview URLs are revoked');
 select ok(public.store_set_review_hidden((select id from media_fixture where name='review'),'123',true,'00000000-0000-4000-8000-000000000921','Policy check'),'hide published review');
@@ -87,17 +88,18 @@ select is(public.store_edit_buyer_review((select id from media_fixture where nam
 insert into media_fixture select 'edit',id from public.store_review_revisions where review_id=(select id from media_fixture where name='review') and status='pending';
 select ok(pg_temp.public_photo() is not null,'pending edits retain the old approved selection');
 select is((select moderation_state from public.store_review_revision_photos where revision_id=(select id from media_fixture where name='edit') and photo_id=(select id from media_fixture where name='one')),'pending','retained photos require a new decision for a new revision');
+select is(pg_temp.decide((select id from media_fixture where name='two'),rev=>(select id from media_fixture where name='edit'),action=>'reject',note=>'Not relevant'),true,'reject one photo before publishing the edit');
 select ok(public.store_moderate_review('00000000-0000-4000-8000-000000000921','123',(select id from media_fixture where name='review'),
  (select updated_at from public.store_reviews where id=(select id from media_fixture where name='review')),'approve',(select id from media_fixture where name='edit'),null),'approve edited text');
 select is(pg_temp.public_photo(),null::jsonb,'replaced revision URLs are revoked');
-select is(pg_temp.public_photo((select id from media_fixture where name='edit')),null::jsonb,'text approval does not auto-approve retained photos');
-select is(pg_temp.decide((select id from media_fixture where name='one'),rev=>(select id from media_fixture where name='edit')),true,'approve retained photo on current edit');
-select is(pg_temp.decide((select id from media_fixture where name='two'),rev=>(select id from media_fixture where name='edit'),action=>'reject',note=>'Not relevant'),true,'reject the other current photo');
+select ok(pg_temp.public_photo((select id from media_fixture where name='edit')) is not null,'approving an edit approves its undecided retained photos');
+select is((select moderation_state from public.store_review_revision_photos where revision_id=(select id from media_fixture where name='edit') and photo_id=(select id from media_fixture where name='two')),'rejected','a photo rejected before approval stays rejected');
+select is(pg_temp.decide((select id from media_fixture where name='one'),rev=>(select id from media_fixture where name='edit')),false,'an approved photo needs no second approval');
 select is((select value->'rejectedPhotos' from public.store_buyer_reviews('123','media-buyer') value),
   jsonb_build_array(jsonb_build_object('id',(select id from media_fixture where name='two'),'reason','Not relevant')),
   'the reason follows the live version, not an older revision');
 select is(public.store_pending_review_count('00000000-0000-4000-8000-000000000921','123'),0::bigint,'no pending text or photos remains');
-select is((select count(*) from public.store_review_events where photo_id=(select id from media_fixture where name='one') and action='photo_approved'),3::bigint,'photo decisions preserve structured photo/revision/actor audit');
+select is((select count(*) from public.store_review_events where photo_id=(select id from media_fixture where name='one') and action='photo_approved'),2::bigint,'deliberate photo decisions preserve structured photo/revision/actor audit');
 select ok(public.store_withdraw_review((select id from media_fixture where name='review'),'123','media-buyer'),'buyer withdraws review');
 select is((select value->'rejectedPhotos' from public.store_buyer_reviews('123','media-buyer') value),'[]'::jsonb,'a withdrawn review carries no photo reasons');
 select is(pg_temp.public_photo((select id from media_fixture where name='edit')),null::jsonb,'withdrawal revokes media');
@@ -105,5 +107,17 @@ select is(pg_temp.decide((select id from media_fixture where name='one'),rev=>(s
 select is(cardinality(public.store_delete_review('00000000-0000-4000-8000-000000000921','123',(select id from media_fixture where name='review'),
  (select updated_at from public.store_reviews where id=(select id from media_fixture where name='review')),'confidential','Fixture cleanup')),2,'policy deletion also removes all media associations');
 select is(pg_temp.public_photo((select id from media_fixture where name='edit')),null::jsonb,'deletion permanently revokes media');
+set local role postgres;
+insert into media_fixture values('three',pg_temp.photo());
+insert into media_fixture select 'second',review_id from public.store_submit_review_with_photos('123','media-buyer','921','1','100',null,
+ 'Shirt',null,4::smallint,'Comfy','Soft after washing.','anonymous','Anonymous',array[(select id from media_fixture where name='three')]);
+insert into media_fixture select 'second-rev',id from public.store_review_revisions where review_id=(select id from media_fixture where name='second');
+set local role service_role;
+select ok(public.store_moderate_review('00000000-0000-4000-8000-000000000921','123',(select id from media_fixture where name='second'),
+ (select updated_at from public.store_reviews where id=(select id from media_fixture where name='second')),'reject',(select id from media_fixture where name='second-rev'),'Too short'),'reject a review with a photo');
+select is((select moderation_state from public.store_review_revision_photos where revision_id=(select id from media_fixture where name='second-rev')),'pending','rejecting the review leaves its photo undecided');
+select ok(public.store_moderate_review('00000000-0000-4000-8000-000000000921','123',(select id from media_fixture where name='second'),
+ (select updated_at from public.store_reviews where id=(select id from media_fixture where name='second')),'republish',(select id from media_fixture where name='second-rev'),null),'publish the rejected review anyway');
+select is((select moderation_state from public.store_review_revision_photos where revision_id=(select id from media_fixture where name='second-rev')),'approved','publishing anyway approves its undecided photo');
 select * from finish();
 rollback;
