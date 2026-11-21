@@ -90,7 +90,7 @@ test("a pending refinement hides partial matches, shares one request and retries
     await page.goto("/reviews");
     await choose(page, "Rating", "0.5–1 stars");
     await expect(page.getByRole("region", { name: "Review results", exact: true })).toHaveAttribute("aria-busy", "true");
-    await expect(page.getByRole("heading", { name: "Finding matching reviews" })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: "Finding matching reviews" })).toBeVisible();
     await expect(cards(page)).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Loading reviews…", exact: true })).toBeDisabled();
     await choose(page, "Sort", "Oldest first");

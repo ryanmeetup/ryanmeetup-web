@@ -7,6 +7,7 @@ import type { CustomReviewAccess } from "@/lib/custom-review-access";
 import { CustomReviewComposer, type CustomReviewResult, type CustomReviewSubmission } from "./custom-review-composer";
 import { PublicReviewCard } from "./public-review-card";
 import { PublicReviewFilters } from "./public-review-filters";
+import { ReviewCardSkeletons } from "./review-card-skeletons";
 import { usePublicReviews } from "./use-public-reviews";
 import { useReviewPermalink } from "./use-review-permalink";
 
@@ -85,10 +86,12 @@ export function Reviews({ data, product, access }: { data: ReviewsData; product:
             <Heading size="h3" className="text-xl">Reviews are taking a short break</Heading>
             <Text className="mt-2">We couldn&apos;t load reviews for this product. Please try again later.</Text>
           </div>
+        ) : publicReviews.needsComplete && publicReviews.pending ? (
+          <ReviewCardSkeletons label="Finding matching reviews" columns="md:columns-2" className="mt-8" />
         ) : publicReviews.needsComplete ? (
           <div className="mt-8 rounded-2xl border border-dashed border-black/20 p-8 text-center dark:border-white/20">
-            <Heading size="h3" className="text-xl">{publicReviews.pending ? "Finding matching reviews" : "More reviews to check"}</Heading>
-            <Text className="mt-2">{publicReviews.pending ? "Checking every review for this product." : "Try loading again to see all reviews that match."}</Text>
+            <Heading size="h3" className="text-xl">More reviews to check</Heading>
+            <Text className="mt-2">Try loading again to see all reviews that match.</Text>
           </div>
         ) : publicReviews.reviews.length ? (
           <ul id={`${formId}-reviews`} aria-label="Customer reviews" aria-busy={publicReviews.pending} className="mt-8 gap-4 md:columns-2">

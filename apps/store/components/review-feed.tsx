@@ -5,6 +5,7 @@ import { Button, ErrorCallout, FilterBar, Heading, PendingResults, SearchInput, 
 import type { ReviewFeedPage } from "@/lib/review-feed";
 import { PublicReviewCard } from "./public-review-card";
 import { PublicReviewFilters } from "./public-review-filters";
+import { ReviewCardSkeletons } from "./review-card-skeletons";
 import { usePublicReviewPages } from "./use-public-review-pages";
 
 function feedPage(value: unknown): ReviewFeedPage | null {
@@ -54,10 +55,12 @@ export function ReviewFeed({ initial }: { initial: ReviewFeedPage }) {
       actions={<PublicReviewFilters rating={feed.rating} sort={feed.sort} origin={feed.origin} onChange={feed.changeView} />} />
     <div id="review-feed-results" role="region" aria-label="Review results" aria-busy={feed.pending || search.isPending}>
       <PendingResults pending={search.isPending} label="Searching reviews" surface="page">
-        {feed.needsComplete ? (
+        {finding ? (
+          <ReviewCardSkeletons label="Finding matching reviews" columns="md:columns-2 xl:columns-3" />
+        ) : feed.needsComplete ? (
           <div className="rounded-2xl border border-dashed border-black/20 p-8 text-center dark:border-white/20">
-            <Heading size="h2" className="text-xl">{feed.pending ? "Finding matching reviews" : "More reviews to check"}</Heading>
-            <Text className="mt-2">{feed.pending ? "Checking every published review across the shop." : "Try loading again to see all reviews that match."}</Text>
+            <Heading size="h2" className="text-xl">More reviews to check</Heading>
+            <Text className="mt-2">Try loading again to see all reviews that match.</Text>
           </div>
         ) : reviews.length ? (
           <ul id="review-feed" aria-label="Customer reviews" aria-busy={feed.pending} className="gap-4 md:columns-2 xl:columns-3">

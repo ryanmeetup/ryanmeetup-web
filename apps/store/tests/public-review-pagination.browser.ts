@@ -226,7 +226,7 @@ test("filter loading never presents partial matches as final and resumes a faile
   try {
     await page.goto("/products/name-tag-shirt");
     await choose(page, "Rating", "0.5–1 stars");
-    await expect(page.getByRole("heading", { name: "Finding matching reviews" })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: "Finding matching reviews" })).toBeVisible();
     await expect(page.getByRole("region", { name: "Review results", exact: true })).toHaveAttribute("aria-busy", "true");
     await expect(cards(page)).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "No reviews match these filters" })).toHaveCount(0);
@@ -255,7 +255,7 @@ test("switching products clears filters and ignores a pending sort response", as
   try {
     await page.goto("/products/name-tag-shirt");
     await choose(page, "Sort", "Oldest first");
-    await expect(page.getByRole("heading", { name: "Finding matching reviews" })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: "Finding matching reviews" })).toBeVisible();
     await page.getByRole("button", { name: /^Style/ }).click();
     await page.getByRole("option", { name: "Ryan’s Dad", exact: true }).click();
     await expect(cards(page)).toHaveCount(1);
