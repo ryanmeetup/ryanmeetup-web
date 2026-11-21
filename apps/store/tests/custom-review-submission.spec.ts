@@ -134,7 +134,7 @@ test("the form state follows the buyer's session and purchases", async () => {
   expect(await access({ status: "sign_in_required" })).toEqual({ status: "signed-out", signInUrl: reviewSignInUrl("/products/name-tag-shirt#reviews") });
   expect(reviewSignInUrl("/products/name-tag-shirt#reviews")).toBe("/api/reviews/auth/start?returnTo=%2Fproducts%2Fname-tag-shirt%23reviews");
   expect(await access(signedIn, { status: "unavailable" })).toEqual({ status: "unavailable" });
-  expect(await access(signedIn)).toEqual({ status: "ready", buyer: { firstName: "Ryan", lastName: "Le" }, purchases: [{ lineId: "1", label: purchase.label }], defaultNameStyle: "first-initial" });
+  expect(await access(signedIn)).toEqual({ status: "ready", buyer: { firstName: "Ryan", lastName: "Le" }, purchases: [{ lineId: "1", label: purchase.label, orderLabel: purchase.orderLabel, variantTitle: purchase.variantTitle }], defaultNameStyle: "first-initial" });
   const reviewedLine = (status: BuyerReview["status"]) => ({ ...myReview, status });
   expect(await access(signedIn, eligible, [reviewedLine("pending")])).toEqual({ status: "reviewed" });
   expect(await access(signedIn, eligible, [reviewedLine("rejected")])).toEqual({ status: "reviewed" });
