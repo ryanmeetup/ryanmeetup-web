@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useEffectEvent } from "react";
-import { FiArrowRight, FiCheckCircle, FiMessageSquare, FiRefreshCw, FiSearch, FiX } from "react-icons/fi";
+import { FiMessageSquare, FiRefreshCw } from "react-icons/fi";
 import { usePagination, useSearchFilter } from "@ryanmeetup/hooks";
 import { Button, Card, DropdownSelect, EmptyState, ErrorCallout, FilterBar, ManagementSurface, Pagination, PendingResults, SearchInput, Spinner, Text } from "@ryanmeetup/ui";
 import { derivePagination } from "@ryanmeetup/utils";
@@ -88,17 +88,7 @@ export function ReviewModerationQueue({ initial, staffNames }: { initial: Modera
     <div aria-label="Review queue" aria-busy={Boolean(queue.busy) || searchPending} className={queue.busy ? "opacity-60" : ""}>
       {reviews.length > 0 && <ReviewModerationTable reviews={reviews} staffNames={staffNames}
         disabled={locked} selectedIds={queue.selectedIds} onToggleReview={queue.toggleReview} onSelect={queue.select} onPhotoSelect={queue.selectPhoto} />}
-      {queue.page && reviews.length === 0 && <EmptyState
-        icon={searching ? <FiSearch /> : queue.filter === "pending" ? <FiCheckCircle /> : <FiMessageSquare />}
-        description={searching ? "Try a different product, reviewer, or phrase in the loaded reviews." :
-          queue.productId ? "Try another product or browse reviews across all products." :
-          queue.filter === "pending" ? "You’re all caught up. New reviews and buyer edits will appear here when they need a decision." :
-          "Reviews will appear here when they enter this queue."}
-        action={searching ? <Button size="sm" variant="secondary" leftIcon={<FiX aria-hidden />} disabled={locked}
-          onClick={() => { setPage(1); setQuery(""); }}>Clear search</Button> :
-          queue.filter !== "all" || queue.productId ? <Button size="sm" variant="secondary" rightIcon={<FiArrowRight aria-hidden />} disabled={locked}
-            onClick={() => { setPage(1); void queue.load({ filter: "all", productId: null }); }}>View all reviews</Button> : undefined}
-        message={searching ? `No loaded reviews match “${query.trim()}”` :
+      {queue.page && reviews.length === 0 && <EmptyState message={searching ? `No loaded reviews match “${query.trim()}”` :
         queue.filter === "pending" ? "No reviews waiting for a decision" :
         queue.filter === "rejected" ? "No rejected reviews" : "No reviews in this queue"} />}
     </div>
