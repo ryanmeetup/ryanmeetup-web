@@ -88,13 +88,10 @@ export function SiteFooter({
   variant = "branded",
 }: SiteFooterProps) {
   if (variant === "minimal") {
-    // The same links the branded variant stacks into titled columns, laid out
-    // as one inline row. Dropping them entirely was the old behavior and it
-    // made the section titles silently meaningless at this size.
-    const inlineLinks = sections.flatMap((section) => [
-      ...(section.href ? [{ href: section.href, label: section.title }] : []),
-      ...section.links,
-    ]);
+    // The same titled sections the branded variant stacks into columns, at a
+    // quieter scale: a small label over each section's inline links. A bare
+    // row of links made the section titles silently disappear.
+    const visibleSections = sections.filter((section) => section.links.length > 0 || section.href);
 
     return (
       <footer
@@ -115,20 +112,38 @@ export function SiteFooter({
             )}
           </div>
 
-          {inlineLinks.length > 0 && (
-            <nav aria-label="Footer">
-              <ul className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm font-medium sm:justify-start">
-                {inlineLinks.map((link) => (
-                  <li key={`${link.href}-${link.label}`}>
-                    <Link
-                      href={link.href}
-                      className={`rounded-sm hover:underline ${focusRing}`}
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+          {visibleSections.length > 0 && (
+            <nav aria-label="Footer" className="flex flex-col items-center gap-4 sm:items-start">
+              {visibleSections.map((section, index) => {
+                const headingId = `footer-section-${index}`;
+                return (
+                  <div key={section.title} className="flex flex-col items-center gap-1 sm:items-start">
+                    <h2 id={headingId} className="text-[11px] font-semibold uppercase tracking-caps-wide">
+                      {section.href ? (
+                        <Link href={section.href} className={`rounded-sm hover:underline ${focusRing}`}>
+                          {section.title}
+                        </Link>
+                      ) : (
+                        section.title
+                      )}
+                    </h2>
+                    {section.links.length > 0 && (
+                      <ul
+                        aria-labelledby={headingId}
+                        className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm font-medium sm:justify-start"
+                      >
+                        {section.links.map((link) => (
+                          <li key={`${link.href}-${link.label}`}>
+                            <Link href={link.href} className={`rounded-sm hover:underline ${focusRing}`}>
+                              {link.label}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })}
             </nav>
           )}
 
