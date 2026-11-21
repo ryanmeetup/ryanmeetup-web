@@ -449,11 +449,12 @@ test("photos need separate decisions and remain in the waiting queue after text 
   const rejecting = page.getByRole("dialog", { name: "Reject photo", exact: true });
   const confirm = rejecting.getByRole("button", { name: "Reject photo", exact: true });
   await expect(confirm).toBeDisabled();
-  await rejecting.getByLabel("Private reason").fill("Private information in the background");
+  await rejecting.getByLabel("Reason for the buyer").fill("Private information in the background");
   await expect(confirm).toBeEnabled(); await confirm.click();
   await expect(card(page, 1)).toHaveCount(0);
   await queue(page, "Published");
   await expect(card(page, 1)).toContainText("Photo approved"); await expect(card(page, 1)).toContainText("Photo rejected");
+  await expect(card(page, 1)).toContainText("Reason shown to the buyer: Private information in the background");
   const { calls } = await state(request);
   expect(calls.at(-1)).toMatchObject({ p_photo_id: id(1002), p_revision_id: id(101), p_action: "reject", p_note: "Private information in the background" });
 });

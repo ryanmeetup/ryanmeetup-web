@@ -93,7 +93,7 @@ export function isPublishAction(action: StaffReviewAction): action is PublishAct
 
 /** A rejection reason is written for the buyer, who reads it on My reviews; other notes stay with staff. */
 export function moderationReasonIsPublic(action: ModerationAction | string) {
-  return action === "reject" || action === "rejected";
+  return action === "reject" || action === "rejected" || action === "photo-reject" || action === "photo_rejected";
 }
 
 export function reviewReplyActions(review: ModerationReview): ReplyAction[] {

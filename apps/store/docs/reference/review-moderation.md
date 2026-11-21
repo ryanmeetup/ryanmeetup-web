@@ -79,8 +79,10 @@ reload fails is reported as saved, with further writes blocked until refresh.
 
 Each current text version shows its ordered photos and separate status. Preview
 or enlarge a photo, then approve or reject it independently. The image must load
-before a decision; failed previews have retry. Rejection requires a private
-reason. Publishing text leaves its undecided photos in the waiting queue and
+before a decision; failed previews have retry. Rejection requires a reason
+written for the buyer: Tasks shows it under the photo, and the buyer reads it on
+My reviews and beside the photo in the editor until a new text version resets the
+photo to pending or staff approve it. Approval notes stay private. Publishing text leaves its undecided photos in the waiting queue and
 badge. New text versions reset retained photos to pending.
 
 Only approved photos on active published text appear in the Store. Hiding,

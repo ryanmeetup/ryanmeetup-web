@@ -27,6 +27,7 @@ function Photo({ review, revisionId, photo, disabled, onSelect }: {
     {failed && <div role="alert" className="space-y-2"><Text className="text-xs">Photo could not load.</Text>
       <Button size="xs" variant="secondary" disabled={disabled} onClick={() => { setFailed(false); setLoaded(false); setAttempt(attempt + 1); }}>Retry photo</Button></div>}
     <Pill size="sm" variant={photo.state === "approved" ? "success" : "neutral"}>{photo.state === "pending" ? "Photo waiting" : photo.state === "approved" ? "Photo approved" : "Photo rejected"}</Pill>
+    {photo.rejectionReason && <Text className="whitespace-pre-wrap text-xs wrap-anywhere">Reason shown to the buyer: {photo.rejectionReason}</Text>}
     {review.state !== "withdrawn" && <div className="flex flex-col gap-2">
       {photo.state !== "approved" && <Button size="xs" variant="secondary" disabled={disabled || !loaded} onClick={() => onSelect(review, revisionId, photo, "photo-approve")}>Approve photo</Button>}
       {photo.state !== "rejected" && <Button size="xs" variant="secondary" disabled={disabled || !loaded} onClick={() => onSelect(review, revisionId, photo, "photo-reject")}>Reject photo</Button>}

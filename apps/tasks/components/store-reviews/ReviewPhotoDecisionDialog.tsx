@@ -22,8 +22,8 @@ export function ReviewPhotoDecisionDialog({ selection, saving, onClose, onSubmit
     <div className="space-y-4">
       <div className="relative aspect-[4/3]"><Image src={staffPhotoUrl(selection.review, selection.revisionId, selection.photo.id)}
         alt="Photo being moderated" fill sizes="(max-width: 639px) 90vw, 480px" unoptimized className="object-contain" onLoad={() => setLoaded(true)} onError={() => setLoaded(false)} /></div>
-      <Text className="text-sm">{rejecting ? "This photo stays private. Rejecting it does not reject the review text." : "This photo can appear only when this exact text version is published and the review is visible."}</Text>
-      <Textarea id={`${id}-note`} name="note" label="Private reason" required={rejecting} maxLength={1000} value={note} disabled={saving}
+      <Text className="text-sm">{rejecting ? "This photo stays off the storefront. Rejecting it does not reject the review text, and the buyer sees your reason until they resubmit." : "This photo can appear only when this exact text version is published and the review is visible."}</Text>
+      <Textarea id={`${id}-note`} name="note" label={rejecting ? "Reason for the buyer" : "Private note"} required={rejecting} maxLength={1000} value={note} disabled={saving}
         onChange={(event) => setNote(event.target.value)} />
       {!loaded && <Text role="status" className="text-sm">The photo must load before you can decide. Close and retry if it is unavailable.</Text>}
     </div>

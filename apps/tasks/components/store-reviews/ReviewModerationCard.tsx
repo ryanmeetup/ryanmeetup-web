@@ -123,7 +123,7 @@ export function ReviewModerationCard({ review, disabled, staffNames, onSelect, o
               {event.note && <Text className="whitespace-pre-wrap text-sm wrap-anywhere">{moderationReasonIsPublic(event.action) ? "Reason given to the buyer" : "Private reason"}: {event.note}</Text>}
             </li>)}
           </ol>
-          <Text className="mt-3 text-xs">Up to 10 recent events. Rejection reasons are shown to the buyer until they resubmit; other reasons stay with staff.</Text>
+          <Text className="mt-3 text-xs">Up to 10 recent events. Review and photo rejection reasons are shown to the buyer until they resubmit; other reasons stay with staff.</Text>
         </AnimatedCollapse>
       </div>}
       <div className="-mx-5 -mb-5 flex items-end justify-between gap-3 border-t border-black/10 px-5 py-4 dark:border-white/10">

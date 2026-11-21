@@ -100,7 +100,7 @@ export function createReviewModerationFixture(json, readBody, profile) {
       const v = r && [r.pending,r.published,r.rejected,r.latest].find((entry) => entry?.id === command.p_revision_id);
       const photo = v?.photos?.find((entry) => entry.id === command.p_photo_id);
       if (!r || r.state === "withdrawn" || r.updatedAt !== command.p_expected_updated_at || !photo) { json(response,200,false); return true; }
-      photo.state = command.p_action === "approve" ? "approved" : "rejected"; r.updatedAt = advance();
+      photo.state = command.p_action === "approve" ? "approved" : "rejected"; photo.rejectionReason = command.p_action === "reject" ? command.p_note : null; r.updatedAt = advance();
       r.recentEvents.unshift({action: command.p_action === "approve" ? "photo_approved" : "photo_rejected",actorKind:"staff",actor:profile.id,note:command.p_note,createdAt:r.updatedAt});
       json(response,200,true); return true;
     }

@@ -35,7 +35,9 @@ the exact reply before publishing; hidden reviews stay hidden when you reply.
 Preview buyer photos and approve or reject each one separately from the text.
 Photos awaiting a decision keep the review in the waiting queue. Only approved
 photos on the published version appear in the store; hiding, withdrawal,
-replacement, and deletion revoke their public links.
+replacement, and deletion revoke their public links. Rejecting a photo asks for
+a reason written to the buyer. It shows under the photo in the queue, and the
+buyer sees it on My reviews and beside the photo when they edit.
 
 Rejected reviews are kept, never deleted. Find them in the Rejected queue and
 publish one anyway if you change your mind. Narrow any queue to a single
