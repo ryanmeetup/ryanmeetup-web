@@ -59,7 +59,6 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
           <div>
             <Heading size="h1" className="text-4xl sm:text-5xl">Customer Reviews</Heading>
             {summary && <ShopRating summary={summary} />}
-            <Text className="mt-3 max-w-prose">Every published review from across the shop.</Text>
           </div>
           <Button.Link href="/reviews/mine" variant="secondary" size="md" leftIcon={<FiMessageSquare aria-hidden />} className="w-full shrink-0 sm:w-auto">My reviews</Button.Link>
         </div>
