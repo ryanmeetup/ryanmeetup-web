@@ -297,14 +297,32 @@ test("customer can quick add a size from the product grid in the previewed color
   await page.goto("/collections/all");
   await page.getByRole("button", { name: /^Preview .*Natural$/ }).first().click();
   await page.getByRole("button", { name: "Quick add Name Tag Shirt", exact: true }).click();
-  const menu = page.getByRole("menu");
-  await expect(menu).toContainText("Natural");
-  await menu.getByRole("menuitem", { name: "S", exact: true }).click();
+  const panel = page.getByRole("dialog", { name: "Quick add Name Tag Shirt" });
+  await expect(panel).toContainText("Natural");
+  await panel.getByRole("button", { name: "S", exact: true }).click();
 
   // The dialog root has no box of its own, so assert on what it contains.
   const drawer = page.getByRole("dialog", { name: "Added to cart" });
   await expect(drawer.getByText("Just added")).toBeVisible();
   await expect(drawer.getByRole("link", { name: "View cart" })).toHaveCount(0);
+  const cart = await page.evaluate(() => JSON.parse(localStorage.getItem("ryan-store-cart")!));
+  expect(cart.lines.map((line: { merchandise: { id: string } }) => line.merchandise.id)).toEqual([
+    "gid://shopify/ProductVariant/demo-ryans-dad-name-tag-shirt-0",
+  ]);
+});
+
+test("customer can change the design from the quick add panel", async ({ page }) => {
+  await page.goto("/collections/all");
+  await page.getByRole("button", { name: "Quick add Name Tag Shirt", exact: true }).click();
+  const panel = page.getByRole("dialog", { name: "Quick add Name Tag Shirt" });
+  await panel.getByRole("button", { name: /^Design/ }).click();
+  await page.getByRole("option", { name: "Ryan’s Dad", exact: true }).click();
+  await expect(panel.getByRole("button", { name: /^Design/ })).toContainText("Ryan’s Dad");
+  // Each demo design comes in one color, which follows the design.
+  await expect(panel).toContainText("Natural");
+  await panel.getByRole("button", { name: "S", exact: true }).click();
+
+  await expect(page.getByRole("dialog", { name: "Added to cart" }).getByText("Just added")).toBeVisible();
   const cart = await page.evaluate(() => JSON.parse(localStorage.getItem("ryan-store-cart")!));
   expect(cart.lines.map((line: { merchandise: { id: string } }) => line.merchandise.id)).toEqual([
     "gid://shopify/ProductVariant/demo-ryans-dad-name-tag-shirt-0",

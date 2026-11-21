@@ -112,7 +112,8 @@ export function ProductCard({ product, eager = false, from }: { product: Product
       {product.availableForSale && !product.externalUrl && (
         // A sibling of the card link, not inside it, so it stays its own control.
         <div className="absolute right-3 top-3">
-          <QuickAdd product={product} href={href} />
+          {/* Keyed by the preview, so choosing a swatch resets its picks. */}
+          <QuickAdd key={href} product={product} href={href} />
         </div>
       )}
       </>}
