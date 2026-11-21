@@ -18,7 +18,7 @@ import {
   SearchInput,
   toast,
 } from "@ryanmeetup/ui";
-import { FiCalendar, FiCheckCircle, FiCheckSquare, FiHash, FiMail, FiSearch, FiX } from "react-icons/fi";
+import { FiCalendar, FiCheckSquare, FiHash, FiMail } from "react-icons/fi";
 import { derivePagination } from "@ryanmeetup/utils";
 import { mutate } from "@/lib/mutation-client";
 import { errorMessage } from "@/lib/presentation";
@@ -355,8 +355,7 @@ export function RydUnmatchedSection({
         >
           {sorted.length === 0 && (
             <EmptyState
-              icon={query.trim() ? <FiSearch /> : <FiCheckCircle />}
-              action={query.trim() ? <Button size="sm" variant="secondary" leftIcon={<FiX aria-hidden />} onClick={() => { setQuery(""); setPage(1); }}>Clear search</Button> : undefined}
+              className="py-12"
               message={
                 query.trim()
                   ? "No submissions match this search. Try another name, email, or answer."
