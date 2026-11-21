@@ -16,7 +16,6 @@ type UpcomingEventsListProps = {
   isLoading?: boolean;
   headerMeta?: React.ReactNode;
   headerAction?: React.ReactNode;
-  footerAction?: React.ReactNode;
 };
 
 const UpcomingEventsList = (props: UpcomingEventsListProps) => {
@@ -29,7 +28,6 @@ const UpcomingEventsList = (props: UpcomingEventsListProps) => {
     isLoading = false,
     headerMeta,
     headerAction,
-    footerAction,
   } = props;
 
   if (isLoading) {
@@ -94,7 +92,6 @@ const UpcomingEventsList = (props: UpcomingEventsListProps) => {
             </Transition>
           ))}
         </div>
-        {footerAction && <div className="flex justify-end">{footerAction}</div>}
       </div>
     );
   }
@@ -135,9 +132,6 @@ const UpcomingEventsList = (props: UpcomingEventsListProps) => {
           );
         })}
       </div>
-      {footerAction && (
-        <div className="mt-4 flex justify-end">{footerAction}</div>
-      )}
     </Card>
   );
 };

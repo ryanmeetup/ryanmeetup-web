@@ -54,6 +54,13 @@ const fixtures: Record<string, RyanEvent[]> = {
       chapter: ["Main"],
     }),
   ],
+  // Enough upcoming events for two pages at the default ten per page.
+  "many-upcoming": Array.from({ length: 12 }, (_, index) => createEvent({
+    title: `Upcoming Ryan Meetup ${index + 1}`,
+    date: addDays(index + 1),
+    dateTime: formatDateTime(addDays(index + 1)),
+    chapter: ["Main"],
+  })),
   "with-chapters": [
     createEvent({
       title: "Chapter Ryan Meetup",

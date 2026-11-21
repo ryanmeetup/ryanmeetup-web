@@ -65,7 +65,6 @@ const UpcomingPage = async ({
         view="upcoming"
         perPageOptions={[5, 10, 25]}
         defaultPerPage={10}
-        showPerPageSelector
         breadcrumbNode={<Breadcrumbs className="flex" crumbs={breadcrumbs} />}
         listTitle="Upcoming Events"
         ctaLabel="RSVP"

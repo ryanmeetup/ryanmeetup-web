@@ -62,10 +62,8 @@ const EventsPreview = (props: EventsPreviewProps) => {
       <EventsListPager
         events={events}
         view={view}
-        pageSize={pageSize}
         perPageOptions={[5, 10, 25]}
         defaultPerPage={pageSize}
-        showPerPageSelector
         listTitle={view === "upcoming" ? "Upcoming Events" : "Past Events"}
         ctaLabel={view === "upcoming" ? "RSVP" : "View event"}
         sortOrder={view === "upcoming" ? "asc" : "desc"}
