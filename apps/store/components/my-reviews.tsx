@@ -45,9 +45,12 @@ function RejectionReason({ reason, editRejected }: { reason: string; editRejecte
   return (
     <div className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-sm ${toneBox.danger}`}>
       <FiAlertCircle aria-hidden className="mt-0.5 shrink-0 text-base" />
-      <div className="min-w-0 space-y-1">
+      <div className="min-w-0 space-y-3">
         <p className="font-semibold">{editRejected ? "Your latest edit wasn't approved" : "Not approved"}</p>
-        <p className="whitespace-pre-wrap wrap-anywhere">{reason}</p>
+        <dl className="space-y-1 border-l-2 border-red-500/35 pl-3 dark:border-red-400/35">
+          <dt className="font-semibold">Message from Ryan</dt>
+          <dd className="whitespace-pre-wrap wrap-anywhere">{reason}</dd>
+        </dl>
         <p className="opacity-80">{editRejected ? "The earlier version stays up. Edit again and we'll take another look." : "Edit it and we'll take another look, or withdraw it."}</p>
       </div>
     </div>
