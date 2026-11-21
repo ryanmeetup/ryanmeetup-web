@@ -38,6 +38,7 @@ const approvalIncludesPhotosMigration = fileURLToPath(new URL("../supabase/migra
 const reviewFeedMigration = fileURLToPath(new URL("../supabase/migrations/20261121060000_store_review_feed.sql", import.meta.url));
 const halfStarRatingsMigration = fileURLToPath(new URL("../supabase/migrations/20261121140000_store_review_half_star_ratings.sql", import.meta.url));
 const etsyImportMigration = fileURLToPath(new URL("../supabase/migrations/20261121150000_store_etsy_review_import.sql", import.meta.url));
+const reviewSearchMigration = fileURLToPath(new URL("../supabase/migrations/20261121160000_store_review_search_pages.sql", import.meta.url));
 const photoRejectionReasonsMigration = fileURLToPath(new URL("../supabase/migrations/20261121070000_store_review_photo_rejection_reasons.sql", import.meta.url));
 
 function run(command, args, input, inherit = false) {
@@ -127,8 +128,10 @@ try {
     sql(readFileSync(halfStarRatingsMigration, "utf8"));
     // After the photo publication replay, which restores the projections without `source`.
     sql(readFileSync(etsyImportMigration, "utf8"));
+    // After the Etsy replay, which restores store_public_reviews with its own projection.
+    sql(readFileSync(reviewSearchMigration, "utf8"));
     console.log("PASS: full migration reset and idempotent auth and review migration replay");
-    run("supabase", ["test", "db", "--workdir", testRoot, join(appRoot, "tests/database/store-customer-auth.sql"), join(appRoot, "tests/database/store-reviews.sql"), join(appRoot, "tests/database/store-buyer-reviews.sql"), join(appRoot, "tests/database/store-review-photo-staging.sql"), join(appRoot, "tests/database/store-review-photo-attachments.sql"), join(appRoot, "tests/database/store-review-photo-reads.sql"), join(appRoot, "tests/database/store-review-deletions.sql"), join(appRoot, "tests/database/store-review-photo-publication.sql"), join(appRoot, "tests/database/store-latest-reviews.sql"), join(appRoot, "tests/database/store-review-feed.sql"), join(appRoot, "tests/database/store-review-write-budgets.sql"), join(appRoot, "tests/database/store-review-half-stars.sql"), join(appRoot, "tests/database/store-etsy-reviews.sql"), join(appRoot, "supabase/tests/access_control.sql")], undefined, true);
+    run("supabase", ["test", "db", "--workdir", testRoot, join(appRoot, "tests/database/store-customer-auth.sql"), join(appRoot, "tests/database/store-reviews.sql"), join(appRoot, "tests/database/store-buyer-reviews.sql"), join(appRoot, "tests/database/store-review-photo-staging.sql"), join(appRoot, "tests/database/store-review-photo-attachments.sql"), join(appRoot, "tests/database/store-review-photo-reads.sql"), join(appRoot, "tests/database/store-review-deletions.sql"), join(appRoot, "tests/database/store-review-photo-publication.sql"), join(appRoot, "tests/database/store-latest-reviews.sql"), join(appRoot, "tests/database/store-review-feed.sql"), join(appRoot, "tests/database/store-review-write-budgets.sql"), join(appRoot, "tests/database/store-review-half-stars.sql"), join(appRoot, "tests/database/store-etsy-reviews.sql"), join(appRoot, "tests/database/store-review-search.sql"), join(appRoot, "supabase/tests/access_control.sql")], undefined, true);
     const integration = spawnSync("npx", ["playwright", "test", "tests/customer-account-storage.spec.ts", "--workers=1"], {
       cwd: fileURLToPath(new URL("../../store/", import.meta.url)),
       env: { ...process.env, STORE_AUTH_TEST_CONTAINER: container, STORE_BASE_URL: "http://127.0.0.1:39999" }, stdio: "inherit",
