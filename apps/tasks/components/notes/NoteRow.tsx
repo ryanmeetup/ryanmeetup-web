@@ -82,7 +82,7 @@ export function NoteRow({
           <h3 className="text-card-title font-semibold wrap-anywhere">
             <button
               type="button"
-              className="rounded text-left hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/30"
+              className="cursor-pointer rounded text-left underline decoration-black/25 decoration-1 underline-offset-4 transition-colors hover:decoration-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:decoration-white/30 dark:focus-visible:ring-white/30"
               onClick={() => onOpen(note)}
             >
               {title}
