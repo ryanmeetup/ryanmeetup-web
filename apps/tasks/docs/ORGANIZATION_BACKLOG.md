@@ -119,7 +119,7 @@ Remaining work:
 - Move activity description generation, actor/resource resolution, and date
   grouping into `lib/activity/activity-presentation.ts` with tests.
 - Extract activity result rows/groups and the filter/query controller.
-- Move `NoteCard` out of `NotesPageClient` and separate note draft/autosave state
+- Move `NoteRow` out of `NotesPageClient` and separate note draft/autosave state
   from collection filtering and pagination.
 - Consolidate generic response parsing with the mutation client rather than
   retaining a notes-local `responseJson` helper.

@@ -14,7 +14,11 @@ import {
   toast,
 } from "@ryanmeetup/ui";
 import { FiFileText, FiPlus } from "react-icons/fi";
-import { CountBadge, WorkspacePageShell } from "@/components/global";
+import {
+  CountBadge,
+  ResponsiveTable,
+  WorkspacePageShell,
+} from "@/components/global";
 import { NewTaskModal } from "@/components/tasks";
 import { ProjectsModal } from "@/components/projects";
 import {
@@ -35,7 +39,7 @@ import { taskPath } from "@/lib/tasks/task-key";
 import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import { mutate } from "@/lib/mutation-client";
 import { archiveFilter } from "@/lib/resources/resource-management";
-import { NoteCard } from "./NoteCard";
+import { NoteRow, noteColumns } from "./NoteRow";
 import { NoteModal } from "./NoteModal";
 import { errorMessage } from "@/lib/presentation";
 export function NotesPageClient({
@@ -369,7 +373,7 @@ export function NotesPageClient({
             </form>
           </section>
 
-          <section className="mt-6 border-t border-black/10 pt-5 dark:border-white/10">
+          <section className="@container mt-6 border-t border-black/10 pt-5 dark:border-white/10">
             <div className="mb-4 flex items-center gap-4">
               <h2 className="text-sm font-semibold uppercase tracking-caps">
                 {showArchived ? "Archived notes" : "Recent notes"}
@@ -439,46 +443,47 @@ export function NotesPageClient({
                 </div>
 
                 {visibleNotes.length ? (
-                  <div className="columns-1 gap-4 xl:columns-3">
+                  <ResponsiveTable
+                    caption={showArchived ? "Archived notes" : "Recent notes"}
+                    columns={noteColumns}
+                  >
                     {visibleNotes.map((note) => (
-                      <div key={note.id} className="mb-4 break-inside-avoid">
-                        <NoteCard
-                          note={note}
-                          category={
-                            data.categories.find(
-                              (category) => category.id === note.category_id,
-                            ) ?? null
-                          }
-                          profiles={data.profiles}
-                          canConvertToProject={canConvertToProject}
-                          commentCount={
-                            comments.filter(
-                              (comment) => comment.note_id === note.id,
-                            ).length
-                          }
-                          convertedTask={data.tasks.find(
-                            (task) => task.id === note.converted_task_id,
-                          )}
-                          convertedProject={data.projects.find(
-                            (project) =>
-                              project.id === note.converted_project_id,
-                          )}
-                          onOpen={(next) => {
-                            setEditingNote(false);
-                            setOpenNoteId(next.id);
-                          }}
-                          onEdit={(next) => {
-                            setEditingNote(true);
-                            setOpenNoteId(next.id);
-                          }}
-                          onArchive={toggleArchived}
-                          onConvert={setConvertTarget}
-                          onConvertToProject={setConvertProjectTarget}
-                          onDelete={setDeleteTarget}
-                        />
-                      </div>
+                      <NoteRow
+                        key={note.id}
+                        note={note}
+                        category={
+                          data.categories.find(
+                            (category) => category.id === note.category_id,
+                          ) ?? null
+                        }
+                        profiles={data.profiles}
+                        canConvertToProject={canConvertToProject}
+                        commentCount={
+                          comments.filter(
+                            (comment) => comment.note_id === note.id,
+                          ).length
+                        }
+                        convertedTask={data.tasks.find(
+                          (task) => task.id === note.converted_task_id,
+                        )}
+                        convertedProject={data.projects.find(
+                          (project) => project.id === note.converted_project_id,
+                        )}
+                        onOpen={(next) => {
+                          setEditingNote(false);
+                          setOpenNoteId(next.id);
+                        }}
+                        onEdit={(next) => {
+                          setEditingNote(true);
+                          setOpenNoteId(next.id);
+                        }}
+                        onArchive={toggleArchived}
+                        onConvert={setConvertTarget}
+                        onConvertToProject={setConvertProjectTarget}
+                        onDelete={setDeleteTarget}
+                      />
                     ))}
-                  </div>
+                  </ResponsiveTable>
                 ) : (
                   <div className="rounded-2xl border border-dashed border-black/15 px-6 py-10 text-center dark:border-white/15">
                     <FiFileText className="mx-auto text-2xl text-black/35 dark:text-white/35" />

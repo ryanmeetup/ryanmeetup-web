@@ -77,7 +77,7 @@ Projects marked Complete or Dropped move out of the Current view, Favorites, the
 
 ### Notes get a title of their own
 
-Quick notes now ask for a title separately from their details, so the first line no longer has to do both jobs. Note cards and the detail dialog group authorship, update time, comments, and body content more clearly, with a roomier composer when a conversation opens.
+Quick notes now ask for a title separately from their details, so the first line no longer has to do both jobs. Notes are listed as a table, with the note, category, author and update time, comment count, and actions in their own columns; narrow screens stack each note into one readable column. The detail dialog groups authorship, update time, comments, and body content more clearly, with a roomier composer when a conversation opens.
 
 ### Category tags can follow the work
 
