@@ -3,6 +3,7 @@ import type { Page } from "@playwright/test";
 import { currencyStorageKey } from "../lib/currency";
 
 const rates = { date: "2026-11-04", rates: { USD: 1, EUR: 0.9, GBP: 0.75, CAD: 1.4, AUD: 1.5 } };
+const currencyButton = { name: /currenc/i };
 const option = (page: Page, code: string) => page.getByRole("menuitem", { name: new RegExp(`^${code}`) });
 
 test("homepage currency menus switch all badges without following links and remember the choice", async ({ page }) => {
@@ -17,16 +18,16 @@ test("homepage currency menus switch all badges without following links and reme
   const badges = page.getByRole("main").locator("p.bg-price");
   const count = await badges.count();
   expect(count).toBeGreaterThan(1);
-  const first = badges.first().getByRole("button");
+  const first = badges.first().getByRole("button", currencyButton);
   expect(await first.evaluate((button) => button.closest("a"))).toBeNull();
   expect(requests).toBe(0);
 
-  await expect(badges.getByRole("button")).toHaveText(Array(count).fill("USD"));
+  await expect(badges.getByRole("button", currencyButton)).toHaveText(Array(count).fill("USD"));
   for (const currency of ["GBP", "AUD", "USD", "EUR"]) {
     await first.click();
     await option(page, currency).click();
     await expect(page.getByRole("menu")).toBeHidden();
-    await expect(badges.getByRole("button")).toHaveText(Array(count).fill(currency));
+    await expect(badges.getByRole("button", currencyButton)).toHaveText(Array(count).fill(currency));
     await expect(page).toHaveURL(/\/$/);
   }
   expect(requests).toBe(1);
@@ -36,7 +37,9 @@ test("homepage currency menus switch all badges without following links and reme
   await expect(page).toHaveURL(/\/products\/ryan-meetup-tee$/);
   const price = page.getByRole("main").locator('[aria-live="polite"] > p');
   await expect(price).toContainText("≈€26.10 EUR");
-  await expect(price.getByText("Approximate conversion · exact price at checkout")).toBeVisible();
+  await expect(price.getByText("Approximate conversion · exact price at checkout")).toBeAttached();
+  await price.getByRole("button", { name: "About converted prices" }).hover();
+  await expect(page.getByRole("tooltip")).toContainText("Approximate conversion from USD");
   expect(requests).toBe(1);
 
   await page.reload();
@@ -49,7 +52,7 @@ test("keyboard currency selection converts both sale prices and leaves cart mone
   await page.route("**/api/currency-rates", (route) => route.fulfill({ json: rates }));
   await page.goto("/products/ryan-society-cap");
   const price = page.getByRole("main").locator('[aria-live="polite"] > p');
-  const currency = price.getByRole("button");
+  const currency = price.getByRole("button", currencyButton);
   await currency.focus();
   await page.keyboard.press("Enter");
   await expect(option(page, "USD")).toHaveAttribute("data-focus");
@@ -88,7 +91,7 @@ test("loading and failed requests keep the original amounts and allow retry", as
   });
   await page.goto("/products/ryan-society-cap");
   const price = page.getByRole("main").locator('[aria-live="polite"] > p');
-  const currency = price.getByRole("button");
+  const currency = price.getByRole("button", currencyButton);
   await currency.click();
   await option(page, "EUR").click();
   await expect(currency).toHaveAttribute("aria-busy", "true");

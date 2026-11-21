@@ -1,8 +1,8 @@
 "use client";
 
 import { useId } from "react";
-import { DropdownMenu, DropdownMenuButton, DropdownMenuItem, DropdownMenuItems } from "@ryanmeetup/ui";
-import { FiCheck, FiChevronDown, FiLoader } from "react-icons/fi";
+import { DropdownMenu, DropdownMenuButton, DropdownMenuItem, DropdownMenuItems, Tooltip } from "@ryanmeetup/ui";
+import { FiCheck, FiChevronDown, FiInfo, FiLoader } from "react-icons/fi";
 import { convertDisplayMoney, currencyNames, displayCurrencies, isDisplayCurrency } from "@/lib/currency";
 import { formatMoney } from "@/lib/money";
 import type { Money } from "@/lib/types";
@@ -51,6 +51,17 @@ export function PriceBadge({ price, compareAt, from = false, size = "sm", classN
         {from && <span className="mr-1.5 text-[0.65em] font-medium uppercase tracking-caps-tight">From </span>}
         {converted && <span aria-hidden className="mr-0.5 font-bold">≈</span>}
         {formatMoney(displayed)}
+        {converted && size === "lg" && (
+          <Tooltip content={<>Approximate conversion from {price.currencyCode}. Checkout shows your exact price in your local currency.</>} triggerClassName="ml-2 align-middle">
+            <button
+              type="button"
+              aria-label="About converted prices"
+              className="pointer-events-auto inline-flex size-6 cursor-help items-center justify-center rounded-full text-white/80 transition hover:bg-white/15 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            >
+              <FiInfo aria-hidden className="size-4" />
+            </button>
+          </Tooltip>
+        )}
       </span>{" "}
       {/* Menu renders no wrapper and its items portal out, so the badge stays a valid <p> outside the card link. */}
       <DropdownMenu>
@@ -85,7 +96,7 @@ export function PriceBadge({ price, compareAt, from = false, size = "sm", classN
         </DropdownMenuItems>
       </DropdownMenu>
       {original && <s className={`col-start-1 row-start-2 whitespace-nowrap ${classes.original}`}><span className="sr-only">, originally </span>{formatMoney(original)}</s>}
-      {converted && <span id={noteId} className={size === "lg" ? "col-span-2 row-start-3 px-4 pb-3 font-sans text-xs leading-snug" : "sr-only"}>Approximate conversion · exact price at checkout</span>}
+      {converted && <span id={noteId} className="sr-only">Approximate conversion · exact price at checkout</span>}
     </p>
   );
 }
