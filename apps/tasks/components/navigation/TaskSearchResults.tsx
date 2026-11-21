@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Avatar } from "@ryanmeetup/ui";
+import { Avatar, SkeletonBar } from "@ryanmeetup/ui";
 import {
   FiArchive,
   FiArrowUpRight,
@@ -22,7 +22,6 @@ import { profileDisplayName } from "@/lib/presentation";
 import { projectStatusDetails } from "@/lib/resources/project-status";
 import { TaskKeyBadge, TaskPriorityBadge } from "@/components/tasks";
 import { formatCalendarDay } from "@/lib/date-format";
-import { SkeletonBar } from "@/components/global/SkeletonBar";
 
 type Props = {
   listboxId: string;

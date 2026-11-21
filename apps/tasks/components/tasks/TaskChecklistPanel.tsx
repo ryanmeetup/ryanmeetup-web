@@ -8,6 +8,7 @@ import {
   Input,
   toast,
   Tooltip,
+  SkeletonBar,
 } from "@ryanmeetup/ui";
 import {
   FiCheck,
@@ -18,7 +19,6 @@ import {
   FiX,
 } from "react-icons/fi";
 import { CountBadge } from "@/components/global";
-import { SkeletonBar } from "@/components/global/SkeletonBar";
 import {
   isChecklistPaste,
   parseChecklistPaste,

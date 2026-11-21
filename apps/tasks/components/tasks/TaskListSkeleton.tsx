@@ -1,4 +1,4 @@
-import { SkeletonBar } from "@/components/global/SkeletonBar";
+import { SkeletonBar } from "@ryanmeetup/ui";
 
 const skeletonRows = Array.from({ length: 10 }, (_, index) => index);
 

@@ -1,4 +1,4 @@
-import { Button, DisclosureCard } from "@ryanmeetup/ui";
+import { Button, DisclosureCard, SkeletonBar } from "@ryanmeetup/ui";
 import { FiClock } from "react-icons/fi";
 import {
   ActivityActorAvatar,
@@ -6,7 +6,6 @@ import {
   ActivityStatusChange,
 } from "@/components/activity";
 import { CountBadge } from "@/components/global";
-import { SkeletonBar } from "@/components/global/SkeletonBar";
 import { profileDisplayName } from "@/lib/presentation";
 import {
   taskActivityChanges,

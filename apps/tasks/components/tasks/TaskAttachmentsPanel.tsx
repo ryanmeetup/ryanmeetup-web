@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import Image from "next/image";
-import { Button, DisclosureCard, IconButton, Tooltip } from "@ryanmeetup/ui";
+import { Button, DisclosureCard, IconButton, Tooltip, SkeletonBar } from "@ryanmeetup/ui";
 import {
   FiExternalLink,
   FiFile,
@@ -11,7 +11,6 @@ import {
   FiX,
 } from "react-icons/fi";
 import { CountBadge } from "@/components/global";
-import { SkeletonBar } from "@/components/global/SkeletonBar";
 import { formatFileSize, formatMimeSubtype } from "@/lib/presentation";
 import type { TaskAttachment } from "@/lib/tasks/task-types";
 import { LinkPreviewThumbnail } from "@/components/global/LinkPreviewThumbnail";

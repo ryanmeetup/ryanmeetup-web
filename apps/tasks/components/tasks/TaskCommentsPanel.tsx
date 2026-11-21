@@ -4,6 +4,7 @@ import {
   FormattedText,
   IconButton,
   Textarea,
+  SkeletonBar,
 } from "@ryanmeetup/ui";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -14,7 +15,6 @@ import {
   FiTrash2,
 } from "react-icons/fi";
 import { CountBadge } from "@/components/global";
-import { SkeletonBar } from "@/components/global/SkeletonBar";
 import { withAccessPreview } from "@/lib/access/access-preview";
 import { profileDisplayName } from "@/lib/presentation";
 import { taskCommentSegments } from "@/lib/tasks/task-comment-references";

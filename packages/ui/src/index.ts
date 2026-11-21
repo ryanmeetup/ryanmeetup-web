@@ -58,6 +58,7 @@ export * from "./SectionHeader";
 export * from "./SiteFooter";
 export * from "./RyanMeetupFooter";
 export * from "./SocialLinkGrid";
+export * from "./SkeletonBar";
 export * from "./Spinner";
 export * from "./SuccessCallout";
 export * from "./TagInput";

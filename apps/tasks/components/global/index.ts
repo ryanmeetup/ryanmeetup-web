@@ -32,7 +32,6 @@ export {
   ResponsiveTableRow,
   type ResponsiveTableColumn,
 } from "./ResponsiveTable";
-export { SkeletonBar } from "./SkeletonBar";
 export { TaskBanners } from "./TaskBanners";
 export {
   PersistentWorkspaceShell,
