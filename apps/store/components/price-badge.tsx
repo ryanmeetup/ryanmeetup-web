@@ -42,7 +42,7 @@ export function PriceBadge({ price, compareAt, from = false, size = "sm", classN
   const original = compareAt ? convertDisplayMoney(compareAt, currency, rates) : null;
   const converted = displayed.currencyCode !== price.currencyCode;
   const canConvert = isDisplayCurrency(price.currencyCode);
-  const hint = `Choose a display currency. Converted prices are estimates; checkout is charged in ${price.currencyCode}.${rates ? ` Rates dated ${rates.date}.` : ""}`;
+  const hint = `Choose a display currency. Converted prices are estimates; checkout shows the final price for your country.${rates ? ` Rates dated ${rates.date}.` : ""}`;
 
   return (
     <p id={id} aria-busy={loading || undefined} aria-describedby={converted ? noteId : undefined} className={`inline-grid max-w-full grid-cols-[minmax(0,1fr)_auto] overflow-hidden rounded-sm bg-price font-mono font-medium leading-none tabular-nums text-white ring-1 ring-inset ring-white/30 ${className}`}>
@@ -84,7 +84,7 @@ export function PriceBadge({ price, compareAt, from = false, size = "sm", classN
         </DropdownMenuItems>
       </DropdownMenu>
       {original && <s className={`col-start-1 row-start-2 whitespace-nowrap ${classes.original}`}><span className="sr-only">, originally </span>{formatMoney(original)}</s>}
-      {converted && <span id={noteId} className={size === "lg" ? "col-span-2 row-start-3 px-4 pb-2 font-sans text-[10px] leading-snug" : "sr-only"}>Estimated · checkout in {price.currencyCode}</span>}
+      {converted && <span id={noteId} className={size === "lg" ? "col-span-2 row-start-3 px-4 pb-2 font-sans text-[10px] leading-snug" : "sr-only"}>Estimated · final price at checkout</span>}
     </p>
   );
 }

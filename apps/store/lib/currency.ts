@@ -38,7 +38,7 @@ export function parseCurrencyRates(value: unknown): CurrencyRates {
   return { date, rates: Object.fromEntries(displayCurrencies.map((currency) => [currency, entries[currency]])) as CurrencyRates["rates"] };
 }
 
-/** Display estimates only. Shopify's original amounts still supply cart and checkout. */
+/** Display estimates only. The cart keeps Shopify's USD amounts; checkout charges in the buyer's market currency. */
 export function convertDisplayMoney(money: Money, currency: DisplayCurrency, rates: CurrencyRates | null): Money {
   if (money.currencyCode === currency || !rates || !isDisplayCurrency(money.currencyCode)) return money;
   return {

@@ -36,7 +36,7 @@ test("homepage currency menus switch all badges without following links and reme
   await expect(page).toHaveURL(/\/products\/ryan-meetup-tee$/);
   const price = page.getByRole("main").locator('[aria-live="polite"] > p');
   await expect(price).toContainText("≈€26.10 EUR");
-  await expect(price.getByText("Estimated · checkout in USD")).toBeVisible();
+  await expect(price.getByText("Estimated · final price at checkout")).toBeVisible();
   expect(requests).toBe(1);
 
   await page.reload();
