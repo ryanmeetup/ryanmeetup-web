@@ -31,20 +31,24 @@ export function useReviewModeration(initial: ModerationInitialState) {
   const active = useRef(false);
   const disabled = initial.status === "disabled";
 
-  async function load({ filter: nextFilter = filter, productId: nextProduct = productId, more = false }: {
-    filter?: ModerationFilter; productId?: string | null; more?: boolean;
+  async function load({ filter: nextFilter = filter, productId: nextProduct = productId, more = false, minimumReviews = 0 }: {
+    filter?: ModerationFilter; productId?: string | null; more?: boolean; minimumReviews?: number;
   } = {}) {
     if (disabled || active.current || selection || bulkSelection) return;
     active.current = true;
     setBusy("loading"); setError(""); setFilter(nextFilter); setProductId(nextProduct);
-    if (!more) setSelectedIds(new Set());
+    setSelectedIds(new Set());
     try {
-      const result = await fetchModerationPage(nextFilter, nextProduct, more ? page?.next : null);
-      setPage((current) => more && current ? {
-        ...result,
-        reviews: [...current.reviews, ...result.reviews.filter((row) => !current.reviews.some((existing) => existing.id === row.id))],
-      } : result);
+      let result = more ? page : null;
+      do {
+        const next = await fetchModerationPage(nextFilter, nextProduct, result?.next ?? null);
+        const reviews = result ? [...result.reviews, ...next.reviews.filter((row) => !result!.reviews.some((existing) => existing.id === row.id))] : next.reviews;
+        if (result && next.next && reviews.length === result.reviews.length) throw new Error("Review page did not advance");
+        result = { ...next, reviews };
+      } while (result.next && result.reviews.length < minimumReviews);
+      setPage(result);
       if (!more) notifyStoreReviewsChanged();
+      return true;
     } catch {
       // An unavailable page is not an empty queue, and stale decisions stay closed.
       setPage(null); setError("Reviews could not load. Refresh the queue to try again.");

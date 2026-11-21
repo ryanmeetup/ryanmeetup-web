@@ -51,6 +51,10 @@ publish one anyway if you change your mind. Narrow any queue to a single
 product with the Product filter, or search the loaded reviews by product, reviewer, or review
 text.
 
+Move between review pages and choose the number of rows with the same
+pagination controls used elsewhere in the workspace. Previous pages stay
+available, and bulk selection applies to the reviews on the displayed page.
+
 Reviews brought over from the Etsy shop arrive already published, dated when
 they were left on Etsy. They carry a Verified Etsy purchase badge instead of
 No matching order, may have no title, and show Imported in their history.

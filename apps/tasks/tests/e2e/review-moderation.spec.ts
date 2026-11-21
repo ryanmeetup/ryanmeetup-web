@@ -156,16 +156,17 @@ test("bulk deletion keeps the policy confirmation and logs a reason for every se
   await expect(card(page, 1)).toHaveCount(0); await expect(card(page, 2)).toHaveCount(0);
 });
 
-test("bulk selection covers loaded reviews only, survives loading more, and clears on a filter change", async ({ page, request }) => {
+test("bulk selection covers the displayed page and clears on page and filter changes", async ({ page, request }) => {
   await request.post(`${fixture}/__reviews/reset`, { data: { many: true } });
   await signIn(page); await page.goto("/store-reviews");
-  await selectLoaded(page).check(); await page.getByRole("button", { name: "Load more reviews" }).click();
-  await expect(page.getByText("20 of 23 loaded reviews selected", { exact: true })).toBeVisible();
-  await expect(selectLoaded(page)).toHaveJSProperty("indeterminate", true);
-  await bulkAction(page, "Publish waiting reviews (20)");
-  await expect(successToast(page, "Publish waiting reviews: saved 20 of 20.")).toBeVisible();
+  await selectLoaded(page).check(); await page.getByRole("button", { name: "Next page", exact: true }).click();
+  await expect(page.getByText("0 of 10 loaded reviews selected", { exact: true })).toBeVisible();
+  await expect(selectLoaded(page)).not.toBeChecked();
+  await selectLoaded(page).check();
+  await bulkAction(page, "Publish waiting reviews (10)");
+  await expect(successToast(page, "Publish waiting reviews: saved 10 of 10.")).toBeVisible();
   await expect(rows(page)).toHaveCount(3);
-  expect((await state(request)).calls).toHaveLength(20);
+  expect((await state(request)).calls.map((call: { p_review_id: string }) => call.p_review_id)).toEqual(Array.from({ length: 10 }, (_, i) => id(i + 11)));
   await selectLoaded(page).check(); await queue(page, "All reviews");
   await expect(page.getByRole("button", { name: "Bulk actions", exact: true })).toBeDisabled();
 });
@@ -421,10 +422,80 @@ test("distinguishes failed initial reads from an empty queue and supports paging
   await expect(page.getByText("No reviews waiting for a decision")).toHaveCount(0);
   expect((await request.post(`${fixture}/__reviews/reset`, { data: { many: true } })).ok()).toBeTruthy();
   await page.getByRole("button", { name: "Refresh queue" }).click();
-  await expect(rows(page)).toHaveCount(20);
-  await page.getByRole("button", { name: "Load more reviews" }).click();
+  await expect(rows(page)).toHaveCount(10);
+  const pagination = page.getByRole("navigation", { name: "reviews pagination" });
+  await expect(pagination).toContainText("Showing 1–10 reviews");
+  await expect(pagination.getByRole("button", { name: "Previous page", exact: true })).toBeDisabled();
+  await selectLoaded(page).check();
+  await pagination.getByRole("button", { name: "Next page", exact: true }).click();
+  await expect(rows(page)).toHaveCount(10);
+  await expect(card(page, 11)).toBeVisible();
+  await expect(selectLoaded(page)).not.toBeChecked();
+  await pagination.getByRole("button", { name: "Next page", exact: true }).click();
+  await expect(rows(page)).toHaveCount(3);
+  await expect(card(page, 21)).toBeVisible();
+  await expect(pagination).toContainText("Showing 21–23 of 23 reviews");
+  await expect(pagination.getByRole("button", { name: "Next page", exact: true })).toBeDisabled();
+  await pagination.getByRole("button", { name: "First page", exact: true }).click();
+  await expect(card(page, 1)).toBeVisible();
+  await expect(rows(page)).toHaveCount(10);
+  await pagination.getByRole("button", { name: /^Rows/ }).click();
+  await page.getByRole("option", { name: "25", exact: true }).click();
   await expect(rows(page)).toHaveCount(23);
-  await expect(page.getByRole("button", { name: "Load more reviews" })).toHaveCount(0);
+  await expect(pagination).toContainText("Page 1 of 1");
+});
+
+test("review page sizes load enough cursor rows and persist across reloads", async ({ page, request }) => {
+  expect((await request.post(`${fixture}/__reviews/reset`, { data: { many: true } })).ok()).toBeTruthy();
+  await signIn(page); await page.goto("/store-reviews");
+  const pagination = page.getByRole("navigation", { name: "reviews pagination" });
+  await pagination.getByRole("button", { name: /^Rows/ }).click();
+  await page.getByRole("option", { name: "25", exact: true }).click();
+  await expect(rows(page)).toHaveCount(23);
+  await expect(pagination).toContainText("Showing 1–23 of 23 reviews");
+  await page.reload();
+  await expect(rows(page)).toHaveCount(23);
+  await expect(pagination).toContainText("Page 1 of 1");
+});
+
+test("shared review pagination fits both themes at mobile and desktop boundaries", async ({ page, request }, testInfo) => {
+  expect((await request.post(`${fixture}/__reviews/reset`, { data: { many: true } })).ok()).toBeTruthy();
+  await signIn(page); await page.goto("/store-reviews");
+  const pagination = page.getByRole("navigation", { name: "reviews pagination" });
+  for (const theme of ["light", "dark"]) {
+    await page.evaluate((value) => {
+      document.documentElement.classList.remove("light", "dark");
+      document.documentElement.classList.add(value);
+    }, theme);
+    for (const width of [390, 1024, 1280, 1536]) {
+      await page.setViewportSize({ width, height: 1000 });
+      await pagination.scrollIntoViewIfNeeded();
+      await expect(pagination.getByRole("button", { name: "Next page", exact: true })).toBeVisible();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await pagination.screenshot({ path: testInfo.outputPath(`pagination-${theme}-${width}.png`) });
+    }
+  }
+});
+
+test("review pagination stays usable while loading and finds older search matches", async ({ page, request }) => {
+  expect((await request.post(`${fixture}/__reviews/reset`, { data: { many: true } })).ok()).toBeTruthy();
+  await signIn(page); await page.goto("/store-reviews");
+  const pagination = page.getByRole("navigation", { name: "reviews pagination" });
+  const search = page.getByRole("textbox", { name: "Search reviews" });
+  await search.fill("Waiting review 23.");
+  await expect(rows(page)).toHaveCount(0);
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => { release = resolve; });
+  await page.route("**/api/admin/reviews?**", async (route) => { await held; await route.continue(); });
+  try {
+    await pagination.getByRole("button", { name: "Next page", exact: true }).click();
+    await expect(pagination.getByRole("button", { name: "Next page", exact: true })).toBeDisabled();
+    await expect(page.locator('[aria-label="Review queue"]')).toHaveAttribute("aria-busy", "true");
+    release();
+    await expect(rows(page)).toHaveCount(1);
+    await expect(card(page, 23)).toBeVisible();
+    await expect(pagination).toContainText("Showing 1–1 of 1 reviews");
+  } finally { release(); }
 });
 
 test("redirects the old admin path to the sidebar page", async ({ page }) => {
