@@ -128,6 +128,10 @@ test("discard uses the authenticated owner and never reveals foreign or attached
   const discard = () => request({ method: "DELETE", body: null, query: `productId=100&photoId=${id}` });
   expect((await handleReviewPhoto(discard(), deps)).status).toBe(200);
   expect(inputs).toEqual([{ subject: session.subject, productId: "100", id }]);
+  // Next.js route handlers receive an empty stream rather than a null body for DELETE.
+  const empty = new ReadableStream<Uint8Array>({ start(controller) { controller.close(); } });
+  expect((await handleReviewPhoto(request({ method: "DELETE", body: empty, query: `productId=100&photoId=${id}` }), deps)).status).toBe(200);
+  expect((await handleReviewPhoto(request({ method: "DELETE", body: "extra", query: `productId=100&photoId=${id}` }), deps)).status).toBe(400);
   deps.staging!.discard = async () => false;
   expect((await handleReviewPhoto(discard(), deps)).status).toBe(404);
 });

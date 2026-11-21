@@ -52,7 +52,8 @@ export async function handleReviewPhoto(request: Request, services: Services): P
   };
   try {
     if (!uploading) {
-      if (request.body !== null) return reply(400, { error: "That photo request could not be read." });
+      // Next.js gives every DELETE an (often empty) body stream, so reject content rather than the stream itself.
+      if (await readReviewPhotoBytes(request.body, 0) !== null) return reply(400, { error: "That photo request could not be read." });
       if (!await current()) return unavailable();
       return await services.staging.discard({ ...scope, id }) ? reply(200, { status: "discarded" }) : reply(404, { error: "That photo is unavailable." });
     }
