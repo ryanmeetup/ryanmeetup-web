@@ -2,7 +2,7 @@ import type { TaskActivity } from "@/lib/activity/activity-types";
 import type { WorkspaceAreaKey } from "@/lib/access/workspace-areas";
 import type { EditorSurfacePreference } from "@/lib/workspace/editor-surface";
 import type { CalendarDefaultView } from "@/lib/calendar/calendar-view-preference";
-import type { PaginationState } from "@/lib/pagination";
+import type { PaginationState } from "@ryanmeetup/utils";
 import type {
   Category,
   CategoryOwner,

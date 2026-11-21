@@ -24,7 +24,7 @@ import {
   FiShield,
   FiTrash2,
 } from "react-icons/fi";
-import { useSearchFilter } from "@ryanmeetup/hooks";
+import { usePagination, useSearchFilter } from "@ryanmeetup/hooks";
 import { useAccessManagement } from "@/hooks/useAccessManagement";
 import { indexGroupsByProfile } from "@/lib/access/access-selectors";
 import {
@@ -40,7 +40,6 @@ import {
   type TeamSortDirection,
   type TeamSortField,
 } from "@/lib/access/access-team-sort";
-import { usePagination } from "@/hooks/usePagination";
 import type { Profile, WorkspaceData } from "@/lib/workspace/workspace-types";
 import { CategoriesModal } from "@/components/categories";
 import { categoryController } from "@/components/categories/category-workspace";

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { derivePagination, parsePagination } from "@/lib/pagination";
+import { derivePagination, parsePagination } from "@ryanmeetup/utils";
 
 describe("pagination", () => {
   it("uses canonical defaults for missing and malformed input", () => {

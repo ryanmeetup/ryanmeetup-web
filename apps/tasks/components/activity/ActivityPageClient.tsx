@@ -26,8 +26,7 @@ import {
   currentFavoriteProjectIds,
   sortFavoriteProjectsFirst,
 } from "@/lib/resources/project-sort";
-import { useQueryParamState } from "@ryanmeetup/hooks";
-import { usePagination } from "@/hooks/usePagination";
+import { usePagination, useQueryParamState } from "@ryanmeetup/hooks";
 import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import { ActivityFilterMenu } from "./ActivityFilterMenu";
 import { ActivityRows } from "./ActivityRows";

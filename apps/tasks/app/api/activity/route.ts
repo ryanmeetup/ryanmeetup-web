@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { authorize } from "@/lib/server/auth";
 import { apiError, databaseFailure } from "@/lib/server/api-response";
-import { derivePagination, parsePagination } from "@/lib/pagination";
+import { derivePagination, parsePagination } from "@ryanmeetup/utils";
 import { WORKSPACE_COLUMNS } from "@/lib/server/workspace-loader";
 import type { Task } from "@/lib/tasks/task-types";
 import type { TaskActivity } from "@/lib/activity/activity-types";

@@ -9,7 +9,7 @@ import {
   TASK_COLUMNS,
   TASK_LABEL_COLUMNS,
 } from "@/lib/workspace/database-shapes";
-import { derivePagination } from "@/lib/pagination";
+import { derivePagination } from "@ryanmeetup/utils";
 import type { Task } from "@/lib/tasks/task-types";
 import {
   ACCESS_PREVIEW_PARAM,

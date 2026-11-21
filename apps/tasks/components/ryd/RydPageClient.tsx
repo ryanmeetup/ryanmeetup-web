@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useQueryParamState } from "@ryanmeetup/hooks";
+import { usePagination, useQueryParamState } from "@ryanmeetup/hooks";
 import {
   Button,
   ErrorCallout,
@@ -25,7 +25,6 @@ import {
   MetricLinkCard,
   WorkspacePageShell,
 } from "@/components/global";
-import { usePagination } from "@/hooks/usePagination";
 import { errorMessage } from "@/lib/presentation";
 import { RYD_STATUS_LABELS, type RydOrderStatus } from "@/lib/ryd/orders";
 import {

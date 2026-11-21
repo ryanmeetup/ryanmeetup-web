@@ -1,4 +1,4 @@
-import { parsePagination } from "../../pagination";
+import { parsePagination } from "@ryanmeetup/utils";
 import { isUuid } from "@/lib/api-schema/shared";
 import { parseCategoryTagFilterValue } from "@/lib/tasks/task-filter-values";
 import type { TaskAssignee } from "@/lib/tasks/task-types";

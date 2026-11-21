@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { groupSubmissions, type RydSubmission } from "@/lib/ryd/matching";
-import { derivePagination } from "@/lib/pagination";
+import { derivePagination } from "@ryanmeetup/utils";
 import {
   rydResponseEvidence,
   rydSubmissionFileIds,

@@ -7,7 +7,7 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-import { useSearchFilter } from "@ryanmeetup/hooks";
+import { usePagination, useSearchFilter } from "@ryanmeetup/hooks";
 import {
   Button,
   ClearFiltersButton,
@@ -18,9 +18,8 @@ import {
   PendingResults,
   SearchInput,
 } from "@ryanmeetup/ui";
-import { FiCheckSquare, FiMail, FiX } from "react-icons/fi";
-import { derivePagination } from "@/lib/pagination";
-import { usePagination } from "@/hooks/usePagination";
+import { FiCheckCircle, FiCheckSquare, FiMail, FiPackage, FiSearch, FiX } from "react-icons/fi";
+import { derivePagination } from "@ryanmeetup/utils";
 import { RYD_STATUS_LABELS } from "@/lib/ryd/orders";
 import { rydDecisionLocked } from "@/lib/ryd/ryd-decisions";
 import type { RydQueue, RydQueueOrder } from "@/lib/ryd/queue-types";
@@ -451,7 +450,8 @@ export function RydOrdersSection({
         <PendingResults pending={searchPending} label="Loading orders">
           {filtered.length === 0 ? (
             <EmptyState
-              className="py-12"
+              icon={query.trim() ? <FiSearch /> : view === "follow-up" ? <FiCheckCircle /> : <FiPackage />}
+              action={query.trim() ? <Button size="sm" variant="secondary" leftIcon={<FiX aria-hidden />} onClick={() => { setQuery(""); setPage(1); }}>Clear search</Button> : undefined}
               message={
                 !queue.orders.length
                   ? "No orders yet. Upload this week's file from fulfillment to start."

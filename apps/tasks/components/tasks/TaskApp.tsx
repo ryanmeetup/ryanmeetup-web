@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { PendingResults, toast } from "@ryanmeetup/ui";
 
-import { useQueryParamState, useSearchFilter } from "@ryanmeetup/hooks";
+import { usePagination, useQueryParamState, useSearchFilter } from "@ryanmeetup/hooks";
 import type { Status, Task } from "@/lib/tasks/task-types";
 import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import { WorkspacePageShell } from "@/components/global";
@@ -14,7 +14,6 @@ import { TaskWorkspaceModals } from "./TaskWorkspaceModals";
 import { useWorkspaceData } from "@/hooks/useWorkspaceData";
 import { useProjectFavorites } from "@/hooks/useProjectFavorites";
 import { useTaskFilters } from "@/hooks/useTaskFilters";
-import { usePagination } from "@/hooks/usePagination";
 import { useCollapsedStatuses } from "@/hooks/useCollapsedStatuses";
 import { useBoardAutoScroll } from "@/hooks/useBoardAutoScroll";
 import { createTaskMutationService } from "@/lib/tasks/task-mutations";
