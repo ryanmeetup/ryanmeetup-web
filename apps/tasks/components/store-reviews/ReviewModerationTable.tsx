@@ -100,11 +100,11 @@ function RowActions({ review, disabled, onSelect, onHistory }: Omit<RowProps, "o
 function ReviewRow({ review, disabled, onSelect, onPhotoSelect, onHistory }: RowProps) {
   const photoRevision = review.pending ?? review.rejected ?? review.published ?? review.latest;
   return <ResponsiveTableRow data-testid={`review-${review.id}`}>
-    <ResponsiveTableCell>
+    <ResponsiveTableCell className="@min-[54rem]:whitespace-nowrap">
       <p className="font-semibold wrap-anywhere">{review.item.productTitle}</p>
       {review.item.variantTitle && <p className="text-xs text-black/70 wrap-anywhere dark:text-white/70">{review.item.variantTitle}</p>}
     </ResponsiveTableCell>
-    <ResponsiveTableCell><ReviewCell review={review} /></ResponsiveTableCell>
+    <ResponsiveTableCell className="@min-[54rem]:max-w-xl"><ReviewCell review={review} /></ResponsiveTableCell>
     {/* A dash keeps the column readable on wide screens; a stacked row simply skips it. */}
     <ResponsiveTableCell className={photoRevision.photos?.length ? "" : "hidden @min-[54rem]:table-cell"}>
       <ReviewModerationPhotos review={review} revision={photoRevision} disabled={disabled} onSelect={onPhotoSelect} />
@@ -119,8 +119,8 @@ function ReviewRow({ review, disabled, onSelect, onPhotoSelect, onHistory }: Row
 }
 
 const columns = [
-  // Leave room for the complete purchase badge at the table's narrowest width.
-  { label: "Product", width: "w-28" }, { label: "Review" }, { label: "Photos", width: "w-20" },
+  // Product names set their own width; review text takes the remaining space.
+  { label: "Product" }, { label: "Review" }, { label: "Photos", width: "w-20" },
   { label: "Reviewer", width: "w-32" }, { label: "Status", width: "w-28" }, { label: "Actions", width: "w-48", hideLabel: true },
 ];
 
@@ -128,7 +128,7 @@ const columns = [
 export function ReviewModerationTable({ reviews, staffNames, ...props }: TableProps) {
   const [history, setHistory] = useState<ModerationReview | null>(null);
   return <>
-    <ResponsiveTable caption="Store reviews" columns={columns}>
+    <ResponsiveTable caption="Store reviews" columns={columns} layout="auto" className="overflow-x-auto">
       {reviews.map((review) => <ReviewRow key={`${review.id}-${review.updatedAt}`} review={review} onHistory={setHistory} {...props} />)}
     </ResponsiveTable>
     <ReviewHistoryDialog review={history} staffNames={staffNames} onClose={() => setHistory(null)} />
