@@ -22,6 +22,10 @@ test("a cart earns the highest tier it reaches and is told the next", () => {
   expect(describeTierProgress(tiers, 2)).toBe("Add 1 more item to get 10% off your order.");
   expect(describeTierProgress(tiers, 3)).toBe("You’ve unlocked 10% off. Add 2 more items for 15% off.");
   expect(describeTierProgress(tiers, 5)).toBe("You’ve unlocked 15% off, the biggest Ryan discount there is.");
+
+  const sitewide = [{ minQuantity: 1, percentOff: 10 }, ...tiers.map((tier) => ({ ...tier, percentOff: tier.percentOff + 5 }))];
+  expect(describeTiers(sitewide)).toBe("10% off everything, 15% off 3+ items, 20% off 5+ items");
+  expect(describeTierProgress(sitewide, 1)).toBe("You’ve unlocked 10% off. Add 2 more items for 15% off.");
 });
 
 test("cart savings add up Shopify's order discounts", () => {

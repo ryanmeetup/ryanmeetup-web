@@ -16,16 +16,18 @@ export type Promotion = {
   tiers: PromotionTier[];
 };
 
-// Mirrors the "Black RYDay: 3+ items, 10% off" and "Black RYDay: 5+ items, 15% off"
-// automatic discounts (started early on Nov 21; end time in America/New_York).
+// Mirrors the "Black RYDay: 10% off everything", "Black RYDay: 3+ items, 15% off" and
+// "Black RYDay: 5+ items, 20% off" automatic discounts. They don't combine, so Shopify applies
+// the biggest one a cart qualifies for (started early on Nov 21; end time in America/New_York).
 export const currentPromotion: Promotion | null = {
   name: "Black RYDay",
   startsAt: "2026-11-21T12:32:24-05:00",
   endsAt: "2026-11-30T23:59:59-05:00",
   endsLabel: "Monday, Nov 30",
   tiers: [
-    { minQuantity: 3, percentOff: 10 },
-    { minQuantity: 5, percentOff: 15 },
+    { minQuantity: 1, percentOff: 10 },
+    { minQuantity: 3, percentOff: 15 },
+    { minQuantity: 5, percentOff: 20 },
   ],
 };
 
@@ -33,9 +35,11 @@ export function isPromotionLive(promotion: Promotion | null, now: number): promo
   return Boolean(promotion) && now >= Date.parse(promotion!.startsAt) && now <= Date.parse(promotion!.endsAt);
 }
 
-/** "10% off 3+ items, 15% off 5+ items" */
+/** "10% off everything, 15% off 3+ items, 20% off 5+ items" */
 export function describeTiers(tiers: PromotionTier[]) {
-  return tiers.map(({ minQuantity, percentOff }) => `${percentOff}% off ${minQuantity}+ items`).join(", ");
+  return tiers
+    .map(({ minQuantity, percentOff }) => `${percentOff}% off ${minQuantity <= 1 ? "everything" : `${minQuantity}+ items`}`)
+    .join(", ");
 }
 
 /** The tier a cart of `quantity` items earns, and the next one it could reach. */
