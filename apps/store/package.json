@@ -10,7 +10,8 @@
     "lint:fix": "eslint . --fix",
     "test:e2e": "playwright test",
     "test:e2e:my-reviews": "playwright test --config=playwright.my-reviews.config.ts",
-    "preview:my-reviews": "jiti scripts/preview-my-reviews.ts"
+    "preview:my-reviews": "jiti scripts/preview-my-reviews.ts",
+    "quote:shipping": "jiti scripts/quote-shipping.ts"
   },
   "dependencies": {
     "@ryanmeetup/brand": "*",
