@@ -45,20 +45,13 @@ export function ReviewFeed({ initial }: { initial: ReviewFeedPage }) {
   const finding = feed.needsComplete && feed.pending;
 
   return <>
-    <div className="space-y-4">
-      <FilterBar
-        search={<SearchInput label="Search reviews" name="review-search" value={search.query}
-          onChange={(event) => search.setQuery(event.target.value)}
-          placeholder="Search by review, reviewer, or product..."
-          pending={search.isPending || finding} pendingLabel="Loading review results"
-          aria-controls="review-feed-results" />}
-        actions={<PublicReviewFilters rating={feed.rating} sort={feed.sort} onChange={feed.changeView} />} />
-      <Text role="status" className="text-sm" aria-live="polite">
-        {feed.needsComplete ? (feed.pending ? "Loading reviews…" : "Finish loading to see matching reviews.") :
-          feed.cursor ? `Showing ${reviews.length} reviews` :
-            `Showing ${reviews.length} of ${feed.loadedCount} review${feed.loadedCount === 1 ? "" : "s"}`}
-      </Text>
-    </div>
+    <FilterBar
+      search={<SearchInput label="Search reviews" name="review-search" value={search.query}
+        onChange={(event) => search.setQuery(event.target.value)}
+        placeholder="Search by review, reviewer, or product..."
+        pending={search.isPending || finding} pendingLabel="Loading review results"
+        aria-controls="review-feed-results" />}
+      actions={<PublicReviewFilters rating={feed.rating} sort={feed.sort} onChange={feed.changeView} />} />
     <div id="review-feed-results" role="region" aria-label="Review results" aria-busy={feed.pending || search.isPending}>
       <PendingResults pending={search.isPending} label="Searching reviews" surface="page">
         {feed.needsComplete ? (
@@ -85,9 +78,17 @@ export function ReviewFeed({ initial }: { initial: ReviewFeedPage }) {
       </PendingResults>
     </div>
     <div className="mt-6 space-y-3">
-      {feed.cursor && <Button variant="secondary" className="w-full sm:w-auto" loading={feed.pending} loadingText="Loading reviews…"
-        aria-label={feed.pending ? "Loading reviews…" : feed.error ? "Retry loading reviews" : "Load more reviews"}
-        aria-controls="review-feed-results" onClick={() => void feed.loadMore()}>{feed.error ? "Retry loading reviews" : "Load more reviews"}</Button>}
+      {/* The count describes paging, so it sits with the control that pages.
+          Empty and still-loading states already speak from the results area. */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Text role="status" aria-live="polite" className="text-sm">
+          {feed.needsComplete || !reviews.length ? "" : feed.cursor ? `Showing ${reviews.length} reviews` :
+            `Showing ${reviews.length} of ${feed.loadedCount} review${feed.loadedCount === 1 ? "" : "s"}`}
+        </Text>
+        {feed.cursor && <Button variant="secondary" className="w-full sm:w-auto" loading={feed.pending} loadingText="Loading reviews…"
+          aria-label={feed.pending ? "Loading reviews…" : feed.error ? "Retry loading reviews" : "Load more reviews"}
+          aria-controls="review-feed-results" onClick={() => void feed.loadMore()}>{feed.error ? "Retry loading reviews" : "Load more reviews"}</Button>}
+      </div>
       <div role="status" aria-live="polite" className="text-sm text-black/70 dark:text-white/70">{feed.pending ? "Loading more reviews…" : feed.message}</div>
       {feed.error && <ErrorCallout>{feed.error}</ErrorCallout>}
     </div>
