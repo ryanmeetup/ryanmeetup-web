@@ -7,6 +7,7 @@ import {
   publicReviewSchema,
   reviewDisplayName,
   reviewSubmissionSchema,
+  reviewSummarySchema,
   summarizeReviewRatings,
   type PublicReview,
 } from "@ryanmeetup/reviews";
@@ -35,11 +36,13 @@ describe("review submissions", () => {
     expect(reviewSubmissionSchema({ rating: 5, title: "  Big\tfan ", body: "Yes", nameStyle: "full" })?.title).toBe("Big fan");
   });
 
-  it("accepts only whole stars, a real title and body, a known name style, and no extra fields", () => {
+  it("accepts only half-star steps, a real title and body, a known name style, and no extra fields", () => {
     const valid = { rating: 3, title: "Fine", body: "Fine", nameStyle: "anonymous" };
     expect(reviewSubmissionSchema(valid)).not.toBeNull();
+    expect(reviewSubmissionSchema({ ...valid, rating: 0.5 })?.rating).toBe(0.5);
+    expect(reviewSubmissionSchema({ ...valid, rating: 4.5 })?.rating).toBe(4.5);
     for (const change of [
-      { rating: 0 }, { rating: 4.5 }, { rating: "5" }, { body: " \n " }, { body: "x".repeat(REVIEW_BODY_MAX + 1) },
+      { rating: 0 }, { rating: 4.25 }, { rating: 5.5 }, { rating: "5" }, { body: " \n " }, { body: "x".repeat(REVIEW_BODY_MAX + 1) },
       { title: null }, { title: "   " }, { title: "t".repeat(101) }, { nameStyle: "email" }, { productId: "8123456789" }, { verifiedPurchase: true },
     ]) {
       expect(reviewSubmissionSchema({ ...valid, ...change })).toBeNull();
@@ -69,6 +72,19 @@ describe("review totals", () => {
     const ratings = Array.from({ length: 120 }, (_, i) => ((i % 5) + 1) as 1 | 2 | 3 | 4 | 5);
     expect(summarizeReviewRatings(ratings)).toEqual({ count: 120, average: 3, distribution: { 1: 24, 2: 24, 3: 24, 4: 24, 5: 24 } });
     expect(summarizeReviewRatings([])).toEqual({ count: 0, average: 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } });
+  });
+
+  it("counts a half star toward the star it fills and keeps the exact average", () => {
+    const summary = summarizeReviewRatings([4.5, 0.5, 3]);
+    expect(summary).toEqual({ count: 3, average: 8 / 3, distribution: { 1: 1, 2: 0, 3: 1, 4: 0, 5: 1 } });
+    expect(reviewSummarySchema(summary)).toEqual(summary);
+  });
+
+  it("bounds a summary's average by its buckets", () => {
+    const distribution = { 1: 0, 2: 0, 3: 0, 4: 2, 5: 0 };
+    for (const average of [3.5, 3.75, 4]) expect(reviewSummarySchema({ count: 2, average, distribution })).not.toBeNull();
+    for (const average of [3.49, 4.01]) expect(reviewSummarySchema({ count: 2, average, distribution })).toBeNull();
+    expect(reviewSummarySchema({ count: 0, average: 1, distribution: { ...distribution, 4: 0 } })).toBeNull();
   });
 });
 

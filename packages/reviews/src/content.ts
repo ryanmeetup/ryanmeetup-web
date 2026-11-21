@@ -16,8 +16,15 @@ export const REVIEW_PAGE_MAX = 50;
 /** Shown when a buyer chooses not to be named, or has no usable name. */
 export const ANONYMOUS_REVIEWER_NAME = "Anonymous";
 
-export type ReviewRating = 1 | 2 | 3 | 4 | 5;
-export const REVIEW_RATINGS: readonly ReviewRating[] = [1, 2, 3, 4, 5];
+/** Half-star steps from 0.5 to 5. */
+export type ReviewRating = 0.5 | 1 | 1.5 | 2 | 2.5 | 3 | 3.5 | 4 | 4.5 | 5;
+export const REVIEW_RATINGS: readonly ReviewRating[] = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
+
+/** A whole star, the unit summaries and filters group ratings by. */
+export type ReviewStar = 1 | 2 | 3 | 4 | 5;
+export const REVIEW_STARS: readonly ReviewStar[] = [1, 2, 3, 4, 5];
+/** The star a rating fills: 4.5 counts toward 5, 0.5 toward 1. */
+export const reviewRatingStar = (rating: ReviewRating) => Math.ceil(rating) as ReviewStar;
 
 /** How a buyer's name appears publicly. */
 export type ReviewNameStyle = "full" | "first-initial" | "anonymous";
@@ -58,7 +65,8 @@ export type PublicReview = {
   reply: PublicReviewReply | null;
 };
 
-export type ReviewDistribution = Record<ReviewRating, number>;
+/** Ratings counted by the star they fill, so a half star joins the star above it. */
+export type ReviewDistribution = Record<ReviewStar, number>;
 
 export type ReviewSummary = {
   count: number;
@@ -165,8 +173,8 @@ export function summarizeReviewRatings(ratings: readonly ReviewRating[]): Review
   const distribution: ReviewDistribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
   let total = 0;
   for (const rating of ratings) {
-    if (!isRating(rating)) throw new Error("A review rating must be a whole number from 1 to 5.");
-    distribution[rating] += 1;
+    if (!isRating(rating)) throw new Error("A review rating must be a half-star step from 0.5 to 5.");
+    distribution[reviewRatingStar(rating)] += 1;
     total += rating;
   }
   return { count: ratings.length, average: ratings.length ? total / ratings.length : 0, distribution };
@@ -204,18 +212,23 @@ export function publicReviewSchema(value: unknown): PublicReview | null {
   return review as PublicReview;
 }
 
-/** A rating summary whose count and average agree with its own distribution. */
+/**
+ * A rating summary whose count and average agree with its own distribution.
+ * Each bucket holds ratings of its star or half a star less, which bounds the
+ * average: all whole stars at the top, all half stars at the bottom.
+ */
 export function reviewSummarySchema(value: unknown): ReviewSummary | null {
   const summary = exactObject(value, ["count", "average", "distribution"]);
-  const distribution = summary && exactObject(summary.distribution, ["1", "2", "3", "4", "5"]);
+  const distribution = summary && exactObject(summary.distribution, REVIEW_STARS.map(String));
   if (!summary || !distribution || !isCount(summary.count) || typeof summary.average !== "number") return null;
-  const counts = REVIEW_RATINGS.map((rating) => distribution[rating]);
+  const counts = REVIEW_STARS.map((star) => distribution[star]);
   if (!counts.every(isCount)) return null;
   const count = (counts as number[]).reduce((sum, n) => sum + n, 0);
-  const total = (counts as number[]).reduce((sum, n, index) => sum + n * (index + 1), 0);
-  const average = count ? total / count : 0;
+  if (count !== summary.count) return null;
+  if (!count) return summary.average === 0 ? (summary as ReviewSummary) : null;
+  const highest = (counts as number[]).reduce((sum, n, index) => sum + n * REVIEW_STARS[index], 0) / count;
   // Totals must add up, so a summary can't drift from its own distribution.
-  return count === summary.count && Math.abs(average - summary.average) < 1e-9 ? (summary as ReviewSummary) : null;
+  return summary.average >= highest - 0.5 - 1e-9 && summary.average <= highest + 1e-9 ? (summary as ReviewSummary) : null;
 }
 
 /**
