@@ -38,20 +38,10 @@ old "not started" or "done" label.
   enabled by default for signed-in reviews, with an explicit collection pause.
   Cleanup, recovery and hosted proof remain open.
 
-The November 15 record confirms paid checkout, Printful SKU mapping, branded
-checkout/accounts and US name-tag shirt/hoodie shipping quote checks. On
-November 21, Ryan confirmed a complete international order (#1004, one shirt
-to Canada): charged $57.00 CAD with $13.00 shipping and $0.00 tax, fulfilled by
-Printful and delivered, with a working confirmation email, email links and
-customer-account order link. The same day Ryan confirmed the International
-market (27 regions plus United States, local-currency checkout), checkout quote
-tests for EU and Australian addresses, a hoodie, a mug or flag and a mixed cart,
-the published 28-country shipping policy, branded notification templates
-(wordmark and black accent) sent from an authenticated `ryanmeetup.com` sender,
-Judge.me uninstalled and Shop review-request emails turned off. Storefront cart
-quotes for the heaviest variants (54 oz doormat, 26.3 oz 5XL hoodie; single,
-doubled and mixed) returned rates to the US, Canada, Germany, the UK, Australia
-and Japan; see [shipping setup](../how-to/shipping-setup.md#heaviest-item-quotes).
+Operating evidence: paid international order #1004 (Canada) delivered with
+working emails and account links; 28-country market, checkout quotes, shipping
+policy and branded notifications confirmed November 21. Details are in
+[shipping setup](../how-to/shipping-setup.md) and Git history.
 
 ## Remaining work
 
@@ -59,7 +49,7 @@ Item numbers remain stable for existing references.
 
 | # | Work | Current evidence / next action |
 | --- | --- | --- |
-| 4 | [Shopify/Printful operating setup](#4-shopify-and-printful-operating-setup) | Markets, shipping, policy and emails verified November 21; NY sales tax (registration pending), accountant questions and January rate cleanup remain. |
+| 4 | [Shopify/Printful operating setup](#4-shopify-and-printful-operating-setup) | NY sales tax (registration pending), accountant questions and January rate cleanup. |
 | 11 | [More from this shop](#11-more-from-this-shop) | Unimplemented product-page recommendations. |
 | 8 | [Note to seller and personalization](#8-note-to-seller-and-personalization) | Neither storefront input is implemented; confirm which personalization is actually needed. |
 | 14 | [Store reviews](#14-store-reviews) | Text and photo publication built; cleanup/recovery and live proof remain. |
@@ -89,9 +79,9 @@ Markets and shipping profiles, plus read-only orders. Policies, notifications
 and taxes are configured by hand in Admin; do not treat speculative scope grants as a storefront feature or
 change credentials as documentation cleanup.
 
-**Complete when:** New York collection is on and verified, the accountant
-questions are answered. The dated end-to-end order/email result exists (#1004, above). Current product/SKU
-counts are catalog data, not a permanent completion criterion.
+**Complete when:** New York collection is on and verified and the accountant
+questions are answered. Current product/SKU counts are catalog data, not a
+permanent completion criterion.
 
 ### 11. More from this shop
 
@@ -147,10 +137,6 @@ unverified product feedback. All submissions wait for approval.
 
 #### Implementation required for media and operations
 
-- [x] Independent staff media decisions, approved-only projections and revocable
-      revision-bound public delivery. The Judge.me image-host allowlist is removed.
-      Synthetic database, route and browser tests cover these contracts; hosted
-      rehearsal and deployed configuration verification remain separate.
 - [ ] Implement bounded auth authorization/session/tombstone, draft and upload-budget
       expiry; abandoned/historical/orphan object cleanup; and retryable cleanup
       after a committed review deletion whose Storage removal failed.
@@ -161,8 +147,9 @@ unverified product feedback. All submissions wait for approval.
       text writes, moderation and standalone media in addition to current
       sanitized backend failures.
 - [ ] Add sign-in abuse controls. Submission/edit write budgets and upload
-      budgets exist; Shopify sign-in and session renewal remain unthrottled. Confirm hosted photo collection settings and record lifecycle,
-      cleanup and recovery evidence.
+      budgets exist; Shopify sign-in and session renewal remain unthrottled.
+      Confirm hosted photo collection settings and record lifecycle, cleanup
+      and recovery evidence.
 
 #### Conditional and optional features
 
@@ -201,8 +188,7 @@ product data; do not hard-code unverified delivery promises.
   currently checks out in USD); storefront labels say the final price is shown
   at checkout rather than promising USD.
 - Custom reviews replaced Judge.me on November 20; legacy reviews were not
-  imported and no provider rollback remains. Ryan confirmed Judge.me
-  uninstalled on November 21.
+  imported and no provider rollback remains.
 
 Earlier item-by-item implementation logs and audit snapshots remain in Git.
 Current procedures belong in the focused guides rather than duplicate logs.
