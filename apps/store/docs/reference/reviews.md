@@ -21,7 +21,7 @@ competing review-request emails turned off, on November 21, 2026.
 | Submission | Half-star ratings from 0.5 to 5, required title/body, signed-in verified and unverified feedback, duplicate protection, pending revisions. |
 | Buyer management | `/reviews/mine`, twenty-row keyset paging, rejection guidance, edit/withdraw, uncertain-write recovery, account isolation and recent-purchase suggestions. |
 | Staff moderation | Owner-only Tasks `/store-reviews`, waiting badge, product and pending/published/hidden/rejected/all filters, paging, approve/reject/hide/restore, publish rejected text, replies and audited permanent deletion. |
-| Public reviews | Approved active text, verified-purchase badges, replies, complete product totals, star-rating filters, date/rating sorting, twenty-row paging and product JSON-LD. |
+| Public reviews | Approved active text, verified-purchase and verified-Etsy-purchase badges (Etsy reviews imported through `scripts/import-etsy-reviews.ts`), replies, complete product totals, star-rating filters, date/rating sorting, twenty-row paging and product JSON-LD. |
 | Photos | Server normalization, private staging, upload budget, atomic revision associations, buyer selection/upload/remove/retry and authenticated blob previews. Owner previews and independent decisions; only approved media on active published text is served through revocable Store routes. |
 | Database | Canonical Store migrations are RMT-only; the [database guide](review-database.md) records applied versions. |
 | Operations | Fixed, sanitized Store backend failure events; feature gates; session-revocation RPCs; isolated tests and CI definitions. |

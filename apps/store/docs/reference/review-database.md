@@ -54,6 +54,10 @@ history under the Store or rewrite applied SQL.
 | `20261121050000` | Bounded latest public reviews across the shop | Applied |
 | `20261121060000` | Paged public review feed across the shop | Applied |
 | `20261121070000` | Photo rejection reasons for staff and the buyer | Applied |
+| `20261121120000` | Shared review write budgets | Applied |
+| `20261121130000` | Approval publishes undecided photos | Applied |
+| `20261121140000` | Half-star ratings | Applied |
+| `20261121150000` | Etsy review import: `source`, untitled imports, import RPC and `source` in projections | Pending: apply after the tolerant code deploys |
 
 The timestamp-shaped versions are identifiers, not evidence of deployment time.
 Photo publication was applied to RMT and verified for private-bucket and
@@ -61,6 +65,22 @@ backend-only invoker grants. PRD receives only
 shared Tasks migrations through the scoped catch-up planner. Never add fake
 Store history on PRD. Leave any previously applied extension objects/history
 there untouched; see [migration profiles](../../../tasks/docs/DATABASE.md#migration-profiles).
+
+## Imported Etsy reviews
+
+`20261121150000` lets `store_reviews` hold reviews imported from the Etsy shop:
+`source = 'etsy'`, `source_review_id` is the Etsy review id (unique, so the
+import re-runs safely) and the owner is the namespaced subject
+`etsy:<review id>`, which no Shopify buyer session can hold. `product_id` is the
+Shopify product when the listing has one and otherwise the Etsy listing id, so
+the review appears only in the feed and home showcase under its stored title,
+like a delisted product's. Only imported revisions may omit a title; a trigger
+keeps titles required for store reviews. Public and staff projections add
+`source`, and their parsers accept rows without it, so code and migration can
+land in either order. `store_import_etsy_review` writes one published review
+with its reply and pre-staged photos. Run the import with
+`apps/store/scripts/import-etsy-reviews.ts`; `etsy-review-products.json` beside
+it decides which Etsy listings attach to Shopify products.
 
 ## Data and permission boundaries
 

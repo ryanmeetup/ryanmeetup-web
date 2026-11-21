@@ -180,8 +180,10 @@ product data; do not hard-code unverified delivery promises.
   Ryan chose local-currency checkout for the International market (Norway
   currently checks out in USD); storefront labels say the final price is shown
   at checkout rather than promising USD.
-- Custom reviews replaced Judge.me on November 20; legacy reviews were not
-  imported and no provider rollback remains.
+- Custom reviews replaced Judge.me on November 20; Judge.me's reviews were not
+  imported and no provider rollback remains. Etsy shop reviews are imported
+  separately as "Verified Etsy purchase" reviews; see
+  [the database guide](../reference/review-database.md#imported-etsy-reviews).
 
 Earlier item-by-item implementation logs and audit snapshots remain in Git.
 Current procedures belong in the focused guides rather than duplicate logs.

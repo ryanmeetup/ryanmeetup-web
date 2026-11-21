@@ -1,0 +1,15 @@
+{
+  "$comment": "Etsy listing handle -> Shopify product handle, for scripts/import-etsy-reviews.ts. Only listings that are the same product belong here: a match puts the review on that product page and in its rating. Any Etsy handle left out is imported under its Etsy listing and appears only in the shop-wide review feed and home showcase. Handles alone are not proof: Etsy's i-heart-ry-shirt is the white shirt, while Shopify's i-heart-ry-shirt is the black one.",
+  "ry-or-die-shirt": "ry-or-die-shirt",
+  "no-bryans-allowed-doormat": "no-bryans-allowed-doormat",
+  "i-heart-ry-shirt": "i-heart-ry-shirt-white",
+  "i-heart-ry-shirt-white": "i-heart-ry-shirt-white",
+  "i-heart-ry-shirt-black": "i-heart-ry-shirt",
+  "i-3-ry-glossy-mug": "i-heart-ry-white-glossy-mug",
+  "ryan-nametag-shirt": "ryan-name-tag-shirt",
+  "youth-ryan-nametag-shirt": "ryan-name-tag-youth-shirt",
+  "ryans-mom-nametag-shirt": "ryans-mom-name-tag-shirt",
+  "ryans-dad-nametag-shirt": "ryans-dad-name-tag-shirt",
+  "ryans-girlfriend-nametag-shirt": "ryans-girlfriend-name-tag-shirt",
+  "ryans-girlfriend-name-tag-tee": "ryans-girlfriend-name-tag-shirt"
+}
