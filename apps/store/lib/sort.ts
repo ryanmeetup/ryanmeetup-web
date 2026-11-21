@@ -4,6 +4,7 @@ import type { ProductListing } from "./types";
 export const sortOptions = [
   { value: "featured", label: "Recommended" },
   { value: "newest", label: "Newest" },
+  { value: "most-reviewed", label: "Most reviewed" },
   { value: "price-low", label: "Price: low to high" },
   { value: "price-high", label: "Price: high to low" },
 ] as const;
@@ -29,11 +30,15 @@ export function recommendListings(listings: ProductListing[], popularHandles: st
   return [...listings].sort((a, b) => rank(a) - rank(b));
 }
 
-/** A sorted copy. Ties keep the featured order, and listings without a date sort last under Newest. */
+/**
+ * A sorted copy. Ties keep the featured order; listings without a date sort last under Newest,
+ * and listings whose reviews couldn't be read sort after confirmed zeros under Most reviewed.
+ */
 export function sortListings(listings: ProductListing[], order: SortOrder) {
   if (order === "featured") return listings;
   const compare: Record<Exclude<SortOrder, "featured">, (a: ProductListing, b: ProductListing) => number> = {
     newest: (a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""),
+    "most-reviewed": (a, b) => (b.reviewCount ?? -1) - (a.reviewCount ?? -1),
     "price-low": (a, b) => price(a) - price(b),
     "price-high": (a, b) => price(b) - price(a),
   };

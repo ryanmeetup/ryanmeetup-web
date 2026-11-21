@@ -79,6 +79,8 @@ export type ProductListing = Product & {
   rating?: ListingRating;
   /** Reviews were read and none are published yet; absent when they couldn't be read. */
   unreviewed?: true;
+  /** Every published review pooled across the listing's designs, below the rating threshold too; absent when they couldn't be read. */
+  reviewCount?: number;
 };
 
 export type ListingRating = { average: number; count: number };

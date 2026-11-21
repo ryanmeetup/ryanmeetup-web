@@ -52,10 +52,12 @@ export async function withListingRatings<T extends Catalog>(catalog: T, backend 
   }
   const rate = (listing: ProductListing): ProductListing => {
     const listingSummaries = reviewProductIds(listing).map((id) => summaries[id]);
+    // A count is only claimed when every design's reviews were read.
+    const read = listingSummaries.length > 0 && listingSummaries.every(Boolean);
+    const counted = read ? { reviewCount: listingSummaries.reduce((sum, summary) => sum + (summary?.count ?? 0), 0) } : {};
     const rating = poolListingRating(listingSummaries);
-    if (rating) return { ...listing, rating };
-    const unreviewed = listingSummaries.length > 0 && listingSummaries.every((summary) => summary?.count === 0);
-    return unreviewed ? { ...listing, unreviewed: true } : listing;
+    if (rating) return { ...listing, rating, ...counted };
+    return counted.reviewCount === 0 ? { ...listing, unreviewed: true, ...counted } : { ...listing, ...counted };
   };
   return {
     ...catalog,

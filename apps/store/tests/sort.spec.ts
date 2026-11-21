@@ -27,3 +27,10 @@ test("popular grouped listings lead while other sorts still override recommendat
   expect(ids(recommended)).toEqual(["hoodie", "tee"]);
   expect(ids(sortListings(recommended, "price-low"))).toEqual(["tee", "hoodie"]);
 });
+
+test("most reviewed leads with the biggest count and puts unread listings after confirmed zeros", () => {
+  const counted = (id: string, reviewCount?: number) => ({ ...listing(id, "10.00"), reviewCount }) as ProductListing;
+  const items = [counted("unread"), counted("few", 2), counted("none", 0), counted("many", 12), counted("tied", 2)];
+  expect(ids(sortListings(items, "most-reviewed"))).toEqual(["many", "few", "tied", "none", "unread"]);
+  expect(parseSort("most-reviewed")).toBe("most-reviewed");
+});
