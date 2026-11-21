@@ -18,7 +18,7 @@ import { getProductGroupForMember, getProductHref, resolveProductDesignValue } f
 import { getCustomReviews } from "@/lib/custom-reviews";
 import { getCustomReviewAccessByProduct } from "@/lib/custom-review-access";
 import { cartOrigin, withProductOrigin } from "@/lib/product-origin";
-import { getCollections, getProduct, getProductHandles } from "@/lib/shopify";
+import { getCanonicalProductHrefs, getCollections, getProduct, getProductHandles } from "@/lib/shopify";
 
 type Props = { params: Promise<{ handle: string }>; searchParams: Promise<{ design?: string; color?: string; from?: string }> };
 
@@ -44,7 +44,8 @@ export default async function ProductPage({ params, searchParams }: Props) {
   const product = await getProduct(handle);
   if (!product) notFound();
   const query = await searchParams;
-  if (getProductGroupForMember(product)) permanentRedirect(withProductOrigin(getProductHref(product), query.from));
+  // A member's own URL goes straight to its listing, by color when the listing is split by color.
+  if (getProductGroupForMember(product)) permanentRedirect(withProductOrigin((await getCanonicalProductHrefs([product]))(product, query.color ? [query.color] : undefined), query.from));
   if (product.handle !== handle) {
     // A renamed listing keeps the requested design and color.
     const search = new URLSearchParams(Object.entries(query).filter((entry): entry is [string, string] => typeof entry[1] === "string" && (Boolean(product.designs) || entry[0] === "from"))).toString();

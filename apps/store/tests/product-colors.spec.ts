@@ -196,13 +196,16 @@ test("a listing of color one-offs and multicolor members is chosen by color alon
 
 test("links naming a color-split listing's printing product resolve to its color alone", () => {
   const [listing] = groupProductListings([superBlack, { ...superBlue, title: "Super Ryan Shirt" }, superRed]);
-  const href = (design: string, color?: string) => getColorListingHref({ ...listing, defaultColor: "royal" }, design, color);
+  const href = (design: string, color?: string | string[]) => getColorListingHref({ ...listing, defaultColor: "royal" }, design, color);
   // The linked color wins when that product prints it, then the listing default, then the product's first color.
   expect(href("super-ryan-blue", "White")).toBe("/products/super-ryan-shirt?color=white");
   expect(href("super-ryan-blue")).toBe("/products/super-ryan-shirt?color=royal");
   expect(href("super-ryan-blue", "red")).toBe("/products/super-ryan-shirt?color=royal");
   expect(href("super-ryan-red")).toBe("/products/super-ryan-shirt?color=red");
   expect(href("retired-member")).toBe("/products/super-ryan-shirt");
+  // A cart line passes its option values; the first color the product prints wins.
+  expect(href("super-ryan-blue", ["L", "White"])).toBe("/products/super-ryan-shirt?color=white");
+  expect(href("super-ryan-blue", ["L"])).toBe("/products/super-ryan-shirt?color=royal");
   // A listing of real designs keeps the design in its URL.
   const [designs] = groupProductListings([ryan, dad]);
   expect(getColorListingHref(designs, "ryans-dad-name-tag-shirt")).toBeUndefined();

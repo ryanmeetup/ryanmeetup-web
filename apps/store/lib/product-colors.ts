@@ -181,15 +181,16 @@ export type ListingColor = { color: string; slug: string; design: string; availa
 /**
  * Which product prints a color is a printing detail, so a listing split across
  * products by color is addressed by color alone. Returns that listing's link for
- * a link naming one of its products (preferring the linked color, then the
- * listing default, then that product's first color), or undefined when the
- * listing isn't split by color and the design stays in the URL.
+ * a link naming one of its products (preferring a linked color that product
+ * prints, then the listing default, then its first color), or undefined when
+ * the listing isn't split by color and the design stays in the URL. `color` may
+ * list candidates, such as a cart line's option values, to try in order.
  */
-export function getColorListingHref(listing: Pick<ProductListing, "handle" | "designs" | "defaultColor">, design: string, color?: string) {
+export function getColorListingHref(listing: Pick<ProductListing, "handle" | "designs" | "defaultColor">, design: string, color?: string | readonly string[]) {
   const colors = listing.designs ? getListingColors(listing.designs) : undefined;
   if (!colors) return undefined;
   const own = colors.filter((entry) => entry.design === design);
-  const wanted = [color, listing.defaultColor].flatMap((value) => value ? [getColorSlug(value)] : []);
+  const wanted = [...(typeof color === "string" ? [color] : color ?? []), listing.defaultColor].flatMap((value) => value ? [getColorSlug(value)] : []);
   const slug = (wanted.map((value) => own.find((entry) => entry.slug === value)).find(Boolean) ?? own[0])?.slug;
   return `/products/${listing.handle}${slug ? `?color=${encodeURIComponent(slug)}` : ""}`;
 }

@@ -103,7 +103,8 @@ export type ProductPage = {
 export type CartLine = {
   id: string;
   merchandise: ProductVariant & {
-    product: Pick<Product, "handle" | "title"> & { tags?: string[] };
+    /** `href` is the canonical product link, resolved on the server; older saved carts lack it. */
+    product: Pick<Product, "handle" | "title"> & { tags?: string[]; href?: string };
   };
   quantity: number;
 };

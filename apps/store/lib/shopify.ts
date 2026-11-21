@@ -571,8 +571,9 @@ export async function getProductCardsByIds(productIds: string[]): Promise<Record
  * product (`?design=`), but a listing split by color is addressed by color
  * alone, since shoppers choose a color and never the product that prints it.
  * Resolving that needs the listing's other members, so they're fetched once.
+ * `colors` names the color to open on, such as a cart line's option values.
  */
-async function getCanonicalProductHrefs(products: GroupableProduct[]) {
+export async function getCanonicalProductHrefs(products: GroupableProduct[]) {
   const groups = new Map(products.flatMap((product) => {
     const group = getProductGroupForMember(product);
     return group ? [[group.handle, group] as const] : [];
@@ -582,10 +583,10 @@ async function getCanonicalProductHrefs(products: GroupableProduct[]) {
     const listing = createProductGroup(group, members);
     return listing ? [[handle, listing] as const] : [];
   }));
-  return (product: GroupableProduct) => {
+  return (product: GroupableProduct, colors?: readonly string[]) => {
     const listing = listings.get(getProductGroupForMember(product)?.handle ?? "");
     const design = listing?.designs?.find((entry) => entry.product.handle === product.handle)?.value;
-    return (listing && design && getColorListingHref(listing, design)) || getProductHref(product);
+    return (listing && design && getColorListingHref(listing, design, colors)) || getProductHref(product);
   };
 }
 
@@ -659,12 +660,15 @@ export async function getCustomerAccountUrl(): Promise<string | null> {
   return shopId ? `https://shopify.com/${shopId}/account` : null;
 }
 
-function reshapeCart(raw: Omit<Cart, "lines"> & { lines: Connection<Cart["lines"][number]> }): Cart {
+async function reshapeCart(raw: Omit<Cart, "lines"> & { lines: Connection<Cart["lines"][number]> }): Promise<Cart> {
+  const nodes = raw.lines.edges.map(({ node }) => ({ ...node.merchandise.product, handle: normalizeHandle(node.merchandise.product.handle) }));
+  // A line links to its own color on a color-split listing rather than naming the printing product.
+  const href = await getCanonicalProductHrefs(nodes);
   return {
     ...raw,
-    lines: raw.lines.edges.map(({ node }) => ({
+    lines: raw.lines.edges.map(({ node }, index) => ({
       ...node,
-      merchandise: { ...node.merchandise, product: { ...node.merchandise.product, handle: normalizeHandle(node.merchandise.product.handle) } },
+      merchandise: { ...node.merchandise, product: { ...nodes[index], href: href(nodes[index], node.merchandise.selectedOptions.map((option) => option.value)) } },
     })),
   };
 }
@@ -674,7 +678,7 @@ type CartPayload = {
   userErrors: { message: string }[];
 };
 
-function readCartPayload(payload: CartPayload): Cart {
+async function readCartPayload(payload: CartPayload): Promise<Cart> {
   if (payload.userErrors.length) {
     throw new ShopifyUserError(payload.userErrors.map((error) => error.message).join("; "));
   }

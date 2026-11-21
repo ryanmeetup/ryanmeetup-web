@@ -16,7 +16,7 @@ import { SaleBadge } from "./sale-badge";
 export function CartLineItem({ line, compact = false, highlighted = false, from }: { line: CartLine; compact?: boolean; highlighted?: boolean; from?: string }) {
   const { loading, removeItem, updateItem } = useCart();
   const { title, options } = getCartLineDisplay(line.merchandise.product, withOneSize(line.merchandise.selectedOptions.filter((option) => !isDefaultTitleOption(option))));
-  const href = withProductOrigin(getProductHref(line.merchandise.product), from);
+  const href = withProductOrigin(line.merchandise.product.href ?? getProductHref(line.merchandise.product), from);
   const compareAtPrice = getCompareAtPrice(line.merchandise);
   const lineTotal = (money: Money) => formatMoney({ ...money, amount: (Number(money.amount) * line.quantity).toFixed(2) });
 
