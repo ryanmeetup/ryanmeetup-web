@@ -50,7 +50,7 @@ test("home cards reuse approved images, preserve low ratings and link to the rev
   expect(commands).toEqual([{ operation: "reviews.latest" }]);
   expect(rows[0].review).toMatchObject({ rating: 1, verification: "purchase", photoUrls: [expect.stringContaining("/api/reviews/media/")] });
   expect(rows[0].review.photoUrls).toHaveLength(1);
-  expect(rows[0].product).toEqual({ title: "Name Tag Shirt", href: `/products/name-tag-shirt#review-${review.id}` });
+  expect(rows[0].product).toEqual({ title: "Name Tag Shirt", href: "/products/name-tag-shirt" });
 });
 
 test("empty and unavailable review reads leave the catalog alone and never fabricate cards", async () => {
@@ -66,9 +66,9 @@ test("missing products keep the original review without inventing a broken produ
   expect(unavailable).toEqual(rows);
 });
 
-test("grouped product links keep the selected design and review anchor", async () => {
+test("grouped product links keep the selected design without a review anchor", async () => {
   const rows = await getHomeReviews({ backend: backend([review]), products: async () => ({
     "100": { handle: "ryans-dad", title: "Dad shirt", image: null, options: [], href: "/products/name-tag-shirt?design=ryans-dad" },
   }) });
-  expect(rows[0].product.href).toBe(`/products/name-tag-shirt?design=ryans-dad#review-${review.id}`);
+  expect(rows[0].product.href).toBe("/products/name-tag-shirt?design=ryans-dad");
 });

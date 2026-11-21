@@ -45,7 +45,7 @@ test("the default shop feed retains bounded paging and links across products", a
   await expect(cards(page)).toHaveCount(46);
   await expect(page.getByRole("button", { name: "Load more reviews", exact: true })).toHaveCount(0);
   expect(await cards(page).evaluateAll((rows) => new Set(rows.map((row) => row.querySelector("article")?.id)).size)).toBe(46);
-  for (const product of [tee, dad]) await expect(page.getByRole("link", { name: `Review of ${product.title}`, exact: true }).first()).toHaveAttribute("href", /#review-/);
+  for (const product of [tee, dad]) await expect(page.getByRole("link", { name: `Review of ${product.title}`, exact: true }).first()).toHaveAttribute("href", /^\/products\/[^#]+$/);
   expect(await (await request.get(`${fixture}/__state`)).json()).toEqual({ privateOperationAttempts: 0 });
 });
 
@@ -59,7 +59,7 @@ test("ratings and every sort include older pages, preserve product details and r
   await expect(page.getByRole("status").filter({ hasText: "Showing 26 of 46 reviews" })).toBeVisible();
   await choose(page, "Sort", "Oldest first");
   await expect(cards(page).first()).toContainText("Shop review 1");
-  await expect(cards(page).first().getByRole("link", { name: `Review of ${tee.title}`, exact: true })).toHaveAttribute("href", /#review-00000000-0000-4000-8000-000000000001$/);
+  await expect(cards(page).first().getByRole("link", { name: `Review of ${tee.title}`, exact: true })).toHaveAttribute("href", `/products/${tee.handle}`);
   await choose(page, "Rating", "3 stars");
   await expect(cards(page)).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "No reviews match this rating" })).toBeVisible();

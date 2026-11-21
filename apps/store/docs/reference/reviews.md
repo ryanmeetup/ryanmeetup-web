@@ -102,7 +102,9 @@ discard both the cached pages and selections.
 The public `/reviews` page uses the same rating filter, four sort orders and
 reset control across the whole shop. It starts with twenty reviews and loads
 the remaining approved-only feed pages on the first refinement, reusing public
-review cards and their product links. Matching results appear only after
+review cards and their product links. Feed product links open the plain
+product/style page without a review anchor, since the reader has already read
+the review there. Matching results appear only after
 every page loads; a failed continuation retains completed pages for a deliberate
 retry. Until the full feed is loaded, the displayed count describes loaded
 reviews rather than claiming a shop-wide total. As with product reviews, large

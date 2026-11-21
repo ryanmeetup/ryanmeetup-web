@@ -32,13 +32,14 @@ test("home ends with the six newest reviews across products, including low ratin
   await photo.getByRole("button", { name: "Close dialog", exact: true }).click();
   const link = section.getByRole("link", { name: `Review of ${tee.title}`, exact: true }).first();
   const target = (await link.getAttribute("href"))!;
-  expect(target).toContain(`#review-${review(7).id}`);
+  expect(target).not.toContain("#");
   await link.click();
-  await expect(page.locator(`#review-${review(7).id}`)).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`/products/[^#]+$`));
+  await expect(page.locator("h1")).toBeInViewport();
   await page.goto("/");
   await page.getByRole("region", { name: "Recent reviews", exact: true }).getByRole("link", { name: `Review of ${dad.title}`, exact: true }).first().click();
-  await expect(page).toHaveURL(new RegExp(`design=.*#review-${review(8).id}`));
-  await expect(page.locator(`#review-${review(8).id}`)).toBeVisible();
+  await expect(page).toHaveURL(/design=[^#]+$/);
+  await expect(page.locator("h1")).toBeInViewport();
 });
 
 test("empty or failed public reads omit the showcase without losing the catalog", async ({ page, request }) => {

@@ -54,13 +54,13 @@ test("feed results reject private fields, duplicates, out-of-order rows and curs
   }
 });
 
-test("feed pages link existing products to the review and keep stored titles for missing ones", async () => {
+test("feed pages link existing products to their page, not the review anchor, and keep stored titles for missing ones", async () => {
   const commands: ReviewCommand[] = [];
   const read = (async (command: ReviewCommand) => { commands.push(command); return { reviews: [review(2), review(1, "200")], nextCursor: null }; }) as ReviewBackend;
   const page = await getReviewFeedPage({ backend: read, products });
   expect(commands).toEqual([{ operation: "reviews.feed", limit: 20, cursor: null }]);
   expect(page?.items.map((item) => item.product)).toEqual([
-    { title: "Name Tag Shirt", href: `/products/name-tag-shirt#review-${review(2).id}` }, { title: "Old shirt title", href: null },
+    { title: "Name Tag Shirt", href: "/products/name-tag-shirt" }, { title: "Old shirt title", href: null },
   ]);
   expect(page?.nextCursor).toBeNull();
 });

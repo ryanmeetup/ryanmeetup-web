@@ -4,12 +4,15 @@ import { getProductHref } from "./product-groups";
 import { PUBLIC_REVIEW_PAGE_SIZE, toReview } from "./public-review-view";
 import { privateJson } from "./request-guard";
 import type { ReviewBackend } from "./review-backend";
-import { reviewPermalink } from "./review-links";
 import { getProductCardsByIds } from "./shopify";
 import type { ProductCard } from "./shopify";
 import type { Review } from "./types";
 
-/** A public review with the product it reviews, linked to its card on that product's page when the product still exists. */
+/**
+ * A public review with the product it reviews, linked to that product's page
+ * (not the review's anchor: the reader has just read the review and wants the
+ * item) when the product still exists.
+ */
 export type ReviewFeedItem = { review: Review; product: { title: string; href: string | null } };
 export type ReviewFeedPage = { items: ReviewFeedItem[]; nextCursor: string | null };
 
@@ -24,7 +27,7 @@ export async function withReviewedProducts(reviews: PublicReview[], products: ty
     const card = cards[review.item.productId];
     return { review: toReview(review), product: {
       title: card?.title ?? review.item.productTitle,
-      href: card ? reviewPermalink("href" in card && typeof card.href === "string" ? card.href : getProductHref(card), review.id) : null,
+      href: card ? ("href" in card && typeof card.href === "string" ? card.href : getProductHref(card)) : null,
     } };
   });
 }
