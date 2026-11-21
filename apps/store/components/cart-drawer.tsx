@@ -32,8 +32,8 @@ export function CartDrawer() {
       footer={cart?.lines.length ? (
         <>
           <div className="flex justify-between"><Text>Subtotal</Text><strong>{formatMoney(cart.cost.subtotalAmount)}</strong></div>
-          <Text className="mt-1 text-sm">Shipping and taxes are calculated at checkout. <FinalSaleNote onNavigate={close} /></Text>
-          <CurrencyEstimateNote className="mt-2" />
+          <CurrencyEstimateNote subtotal={cart.cost.subtotalAmount} className="mt-3" />
+          <Text className="mt-3 text-sm">Shipping and taxes are calculated at checkout. <FinalSaleNote onNavigate={close} /></Text>
           <Button className="mt-4" variant="secondary" size="md" fullWidth onClick={close}>Keep shopping</Button>
           <CheckoutButton className="mt-3" />
         </>

@@ -34,8 +34,8 @@ export function CartPage() {
         <Card size="lg" className="h-fit xl:sticky xl:top-28">
           <Heading size="h2" className="text-2xl">Order summary</Heading>
           <div className="mt-6 flex justify-between border-b border-black/10 pb-5 dark:border-white/10"><Text>Subtotal</Text><strong>{formatMoney(cart.cost.subtotalAmount)}</strong></div>
+          <CurrencyEstimateNote subtotal={cart.cost.subtotalAmount} className="mt-4" />
           <Text className="mt-4 text-sm">Shipping, discounts, and taxes are calculated securely at checkout. <FinalSaleNote /></Text>
-          <CurrencyEstimateNote className="mt-2" />
           <CheckoutButton className="mt-6" />
         </Card>
       </div>

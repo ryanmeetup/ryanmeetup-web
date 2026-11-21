@@ -18,15 +18,16 @@ export type PriceBadgeProps = {
 };
 
 const sizeClasses = {
+  // Cards sit two-up on phones, so the badge stays compact until there is room.
   sm: {
-    currency: "px-2 py-1 text-[10px]",
-    price: "px-3 pt-2 text-sm/none sm:text-base/none",
-    bottom: "pb-2",
-    saleGap: "pb-1.5",
-    original: "px-3 pb-2 text-[10px]/none sm:text-xs/none",
+    currency: "min-w-10 px-1.5 py-1 text-[10px] sm:min-w-12 sm:px-2",
+    price: "px-2.5 pt-1.5 text-xs/none sm:px-3 sm:pt-2 sm:text-base/none",
+    bottom: "pb-1.5 sm:pb-2",
+    saleGap: "pb-1 sm:pb-1.5",
+    original: "px-2.5 pb-1.5 text-[10px]/none sm:px-3 sm:pb-2 sm:text-xs/none",
   },
   lg: {
-    currency: "px-3 py-1 text-xs",
+    currency: "min-w-12 px-3 py-1 text-xs",
     price: "px-4 pt-3 text-3xl/none",
     bottom: "pb-3",
     saleGap: "pb-2",
@@ -48,7 +49,7 @@ export function PriceBadge({ price, compareAt, from = false, size = "sm", classN
     <p id={id} aria-busy={loading || undefined} aria-describedby={converted ? noteId : undefined} className={`inline-grid max-w-full grid-cols-[minmax(0,1fr)_auto] overflow-hidden rounded-sm bg-price font-mono font-medium leading-none tabular-nums text-white ring-1 ring-inset ring-white/30 ${className}`}>
       <span className={`col-start-1 row-start-1 whitespace-nowrap font-semibold tracking-tight ${classes.price} ${compareAt ? classes.saleGap : classes.bottom}`}>
         {from && <span className="mr-1.5 text-[0.65em] font-medium uppercase tracking-caps-tight">From </span>}
-        {converted && <span aria-hidden className="mr-1 text-[0.65em]">≈</span>}
+        {converted && <span aria-hidden className="mr-0.5 font-bold">≈</span>}
         {formatMoney(displayed)}
       </span>{" "}
       {/* Menu renders no wrapper and its items portal out, so the badge stays a valid <p> outside the card link. */}
@@ -61,7 +62,7 @@ export function PriceBadge({ price, compareAt, from = false, size = "sm", classN
           aria-label={loading ? "Loading currency conversions" : `Prices in ${displayed.currencyCode}. Choose a currency`}
           aria-describedby={converted ? noteId : undefined}
           title={canConvert ? hint : `Currency conversion is unavailable for ${price.currencyCode} prices.`}
-          className={`pointer-events-auto col-start-2 row-span-2 row-start-1 inline-flex min-w-12 cursor-pointer items-center justify-center gap-1 self-stretch border-l border-white/25 bg-black/20 font-mono font-medium uppercase leading-none tracking-caps-tight text-white transition hover:bg-black/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white disabled:cursor-not-allowed disabled:opacity-60 aria-busy:cursor-wait ${classes.currency}`}
+          className={`pointer-events-auto col-start-2 row-span-2 row-start-1 inline-flex cursor-pointer items-center justify-center gap-1 self-stretch border-l border-white/25 bg-black/20 font-mono font-medium uppercase leading-none tracking-caps-tight text-white transition hover:bg-black/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white disabled:cursor-not-allowed disabled:opacity-60 aria-busy:cursor-wait ${classes.currency}`}
         >
           {displayed.currencyCode}
           {loading
