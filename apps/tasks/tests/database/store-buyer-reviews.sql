@@ -67,7 +67,7 @@ select is((select r -> 'current' ->> 'body' from pg_temp.mine() r where r ->> 'l
 select is((select count(*) from pg_temp.mine()), 6::bigint, 'every review the buyer wrote is listed');
 select is(
   (select array_agg(distinct key order by key) from pg_temp.mine() r, jsonb_object_keys(r) key),
-  array['createdAt', 'current', 'hasPendingEdit', 'id', 'item', 'lineId', 'publishedAt', 'rejectionReason', 'status', 'updatedAt'],
+  array['createdAt', 'current', 'hasPendingEdit', 'id', 'item', 'lineId', 'publishedAt', 'rejectedPhotos', 'rejectionReason', 'status', 'updatedAt'],
   'only buyer-facing fields are returned');
 select is((select bool_or(r::text ~ 'Looks good|Phone number|Links are not|staff|buyer-a|9000') from pg_temp.mine() r), false, 'no private notes, stale reasons, staff names, subject, or order ID leak');
 

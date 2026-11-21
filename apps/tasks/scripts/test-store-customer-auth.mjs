@@ -35,6 +35,7 @@ const buyerRejectionReasonMigration = fileURLToPath(new URL("../supabase/migrati
 const latestReviewsMigration = fileURLToPath(new URL("../supabase/migrations/20261121050000_store_latest_reviews.sql", import.meta.url));
 const writeBudgetsMigration = fileURLToPath(new URL("../supabase/migrations/20261121120000_store_review_write_budgets.sql", import.meta.url));
 const reviewFeedMigration = fileURLToPath(new URL("../supabase/migrations/20261121060000_store_review_feed.sql", import.meta.url));
+const photoRejectionReasonsMigration = fileURLToPath(new URL("../supabase/migrations/20261121070000_store_review_photo_rejection_reasons.sql", import.meta.url));
 
 function run(command, args, input, inherit = false) {
   const result = spawnSync(command, args, { cwd: appRoot, input, encoding: "utf8", stdio: inherit ? "inherit" : undefined, maxBuffer: 32 * 1024 * 1024 });
@@ -116,6 +117,7 @@ try {
     sql(readFileSync(buyerRejectionReasonMigration, "utf8"));
     sql(readFileSync(latestReviewsMigration, "utf8"));
     sql(readFileSync(reviewFeedMigration, "utf8"));
+    sql(readFileSync(photoRejectionReasonsMigration, "utf8"));
     sql(readFileSync(writeBudgetsMigration, "utf8"));
     console.log("PASS: full migration reset and idempotent auth and review migration replay");
     run("supabase", ["test", "db", "--workdir", testRoot, join(appRoot, "tests/database/store-customer-auth.sql"), join(appRoot, "tests/database/store-reviews.sql"), join(appRoot, "tests/database/store-buyer-reviews.sql"), join(appRoot, "tests/database/store-review-photo-staging.sql"), join(appRoot, "tests/database/store-review-photo-attachments.sql"), join(appRoot, "tests/database/store-review-photo-reads.sql"), join(appRoot, "tests/database/store-review-deletions.sql"), join(appRoot, "tests/database/store-review-photo-publication.sql"), join(appRoot, "tests/database/store-latest-reviews.sql"), join(appRoot, "tests/database/store-review-feed.sql"), join(appRoot, "tests/database/store-review-write-budgets.sql"), join(appRoot, "supabase/tests/access_control.sql")], undefined, true);

@@ -5,7 +5,7 @@ set local search_path = public, extensions;
 select no_plan();
 
 select is_empty($$select proname::text from pg_proc where pronamespace='public'::regnamespace
-  and proname in ('store_staff_revision_photos','store_review_has_pending_photos','store_pending_review_count','store_review_moderation_page_v5','store_staff_review_photo','store_moderate_review_photo','store_public_review_photo')
+  and proname in ('store_staff_revision_photos','store_review_has_pending_photos','store_pending_review_count','store_review_moderation_page_v5','store_staff_review_photo','store_moderate_review_photo','store_public_review_photo','store_review_photo_rejection_reason')
   and (prosecdef or has_function_privilege('anon',oid,'execute') or has_function_privilege('authenticated',oid,'execute') or not has_function_privilege('service_role',oid,'execute'))$$,
   'all media functions are invoker and backend-only');
 select ok(not (select public from storage.buckets where id='store-review-photos'), 'publication never makes the bucket public');
@@ -71,7 +71,17 @@ select ok(public.store_set_review_hidden((select id from media_fixture where nam
 select ok(pg_temp.public_photo() is not null,'restoring restores only approved media');
 select is(pg_temp.decide((select id from media_fixture where name='one'),action=>'reject',note=>'Private information'),true,'approved photo can be rejected later');
 select is(pg_temp.public_photo(),null::jsonb,'rejecting revokes an already-issued path');
+select is((select jsonb_agg(photo->'rejectionReason' order by photo->>'id' = (select id::text from media_fixture where name='two'))
+  from jsonb_array_elements(public.store_staff_revision_photos((select id from media_fixture where name='original'))) photo),
+  '["Private information", null]'::jsonb,'staff see the reason beside the rejected photo only');
+select is((select value->'rejectedPhotos' from public.store_buyer_reviews('123','media-buyer') value),
+  jsonb_build_array(jsonb_build_object('id',(select id from media_fixture where name='one'),'reason','Private information')),
+  'the buyer reads why their photo was rejected');
+select is((select value->'rejectedPhotos' from public.store_buyer_reviews('123','someone-else') value),null,'another buyer reads nothing');
 select is(pg_temp.decide((select id from media_fixture where name='one')),true,'a new deliberate approval restores media');
+select is((select bool_and(photo->'rejectionReason' = 'null'::jsonb)
+  from jsonb_array_elements(public.store_staff_revision_photos((select id from media_fixture where name='original'))) photo),true,'approving again clears the staff reason');
+select is((select value->'rejectedPhotos' from public.store_buyer_reviews('123','media-buyer') value),'[]'::jsonb,'approving again clears the buyer reason');
 select is(public.store_edit_buyer_review((select id from media_fixture where name='review'),'123','media-buyer',
  (select updated_at from public.store_reviews where id=(select id from media_fixture where name='review')),2::smallint,'Updated','Still small after washing.','anonymous','Anonymous'),'pending','edit published text');
 insert into media_fixture select 'edit',id from public.store_review_revisions where review_id=(select id from media_fixture where name='review') and status='pending';
@@ -83,9 +93,13 @@ select is(pg_temp.public_photo(),null::jsonb,'replaced revision URLs are revoked
 select is(pg_temp.public_photo((select id from media_fixture where name='edit')),null::jsonb,'text approval does not auto-approve retained photos');
 select is(pg_temp.decide((select id from media_fixture where name='one'),rev=>(select id from media_fixture where name='edit')),true,'approve retained photo on current edit');
 select is(pg_temp.decide((select id from media_fixture where name='two'),rev=>(select id from media_fixture where name='edit'),action=>'reject',note=>'Not relevant'),true,'reject the other current photo');
+select is((select value->'rejectedPhotos' from public.store_buyer_reviews('123','media-buyer') value),
+  jsonb_build_array(jsonb_build_object('id',(select id from media_fixture where name='two'),'reason','Not relevant')),
+  'the reason follows the live version, not an older revision');
 select is(public.store_pending_review_count('00000000-0000-4000-8000-000000000921','123'),0::bigint,'no pending text or photos remains');
 select is((select count(*) from public.store_review_events where photo_id=(select id from media_fixture where name='one') and action='photo_approved'),3::bigint,'photo decisions preserve structured photo/revision/actor audit');
 select ok(public.store_withdraw_review((select id from media_fixture where name='review'),'123','media-buyer'),'buyer withdraws review');
+select is((select value->'rejectedPhotos' from public.store_buyer_reviews('123','media-buyer') value),'[]'::jsonb,'a withdrawn review carries no photo reasons');
 select is(pg_temp.public_photo((select id from media_fixture where name='edit')),null::jsonb,'withdrawal revokes media');
 select is(pg_temp.decide((select id from media_fixture where name='one'),rev=>(select id from media_fixture where name='edit'),action=>'reject',note=>'No'),false,'withdrawn reviews refuse media decisions');
 select is(cardinality(public.store_delete_review('00000000-0000-4000-8000-000000000921','123',(select id from media_fixture where name='review'),
