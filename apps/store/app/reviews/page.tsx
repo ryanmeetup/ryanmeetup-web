@@ -38,7 +38,7 @@ export default async function ReviewsPage() {
             <Heading size="h1" className="text-4xl sm:text-5xl">Customer Reviews</Heading>
             <Text className="mt-3 max-w-prose">Every published review from across the shop.</Text>
           </div>
-          <Button.Link href="/reviews/mine" variant="secondary" leftIcon={<FiMessageSquare aria-hidden />} className="w-full shrink-0 sm:w-auto">My reviews</Button.Link>
+          <Button.Link href="/reviews/mine" variant="secondary" size="md" leftIcon={<FiMessageSquare aria-hidden />} className="w-full shrink-0 sm:w-auto">My reviews</Button.Link>
         </div>
       </div>
       {!page ? <Notice title="Reviews are taking a short break">We couldn&apos;t load reviews just now. Please try again in a few minutes.</Notice>

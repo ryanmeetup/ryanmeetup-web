@@ -41,11 +41,11 @@ const VIEW_UNAVAILABLE: Record<Exclude<BuyerReviewStatus, "published">, string> 
  */
 function ViewReviewAction({ href, unavailable, productTitle }: { href: string | null; unavailable: string; productTitle: string }) {
   const label = `View your review of ${productTitle}`;
-  if (href) return <Button.Link href={href} prefetch={false} size="sm" variant="ghost" fullWidth className="sm:w-auto" aria-label={label} leftIcon={<FiEye aria-hidden />}>View</Button.Link>;
+  if (href) return <Button.Link href={href} prefetch={false} size="sm" variant="secondary" fullWidth className="sm:w-auto" aria-label={label} leftIcon={<FiEye aria-hidden />}>View</Button.Link>;
   return <Tooltip content={unavailable} triggerClassName="w-full sm:w-auto">
     <span tabIndex={0} role="group" aria-label={`${label} unavailable`} aria-disabled
       className="inline-flex w-full cursor-not-allowed rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 sm:w-auto dark:focus-visible:ring-white/40">
-      <Button size="sm" variant="ghost" fullWidth disabled className="pointer-events-none sm:w-auto" tabIndex={-1} aria-hidden leftIcon={<FiEye aria-hidden />}>View</Button>
+      <Button size="sm" variant="secondary" fullWidth disabled className="pointer-events-none sm:w-auto" tabIndex={-1} aria-hidden leftIcon={<FiEye aria-hidden />}>View</Button>
     </span>
   </Tooltip>;
 }
@@ -119,6 +119,8 @@ export function MyReviews({ initial, suggestions, client, submitReview }: {
       id="your-reviews"
       heading="h2"
       defaultOpen
+      // Last section on the page: drop the default card chrome and the divider.
+      className=""
       buttonClassName={reviewSectionToggle}
       panelClassName="space-y-4 pb-6"
       summary={<SectionTitle title="Your Reviews" count={`${reviewCount}${mine.view?.page.nextCursor ? "+" : ""} review${reviewCount === 1 ? "" : "s"}`} />}
@@ -185,7 +187,7 @@ export function MyReviews({ initial, suggestions, client, submitReview }: {
                     <ViewReviewAction productTitle={review.item.productTitle}
                       href={review.status==="published" && product?.href ? reviewPermalink(product.href, review.id) : null}
                       unavailable={review.status!=="published" ? VIEW_UNAVAILABLE[review.status] : "This product isn't in the shop anymore, so there's no page to show it on."} />
-                    {review.status!=="withdrawn" && <Button size="sm" variant="ghost" fullWidth className="sm:w-auto" aria-label={`Withdraw your review of ${review.item.productTitle}`} disabled={mine.pending}
+                    {review.status!=="withdrawn" && <Button size="sm" variant="secondary" fullWidth className="sm:w-auto" aria-label={`Withdraw your review of ${review.item.productTitle}`} disabled={mine.pending}
                       leftIcon={<FiXCircle aria-hidden />} onClick={()=>mine.select(review,"withdraw")}>Withdraw</Button>}
                     {review.status!=="hidden" && review.status!=="withdrawn" && <Button size="sm" variant="secondary" fullWidth className="sm:w-auto" aria-label={`Edit your review of ${review.item.productTitle}`} disabled={mine.pending}
                       leftIcon={<FiEdit2 aria-hidden />} onClick={()=>mine.select(review,"edit")}>Edit</Button>}

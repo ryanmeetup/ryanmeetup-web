@@ -53,7 +53,7 @@ const ModalActions = ({
       form={confirmForm}
       variant={destructive ? "danger" : "primary"}
       size={size}
-      className="w-full sm:w-auto"
+      className="w-full whitespace-nowrap sm:w-auto"
       leftIcon={confirmIcon}
       loading={pending}
       loadingText={pendingLabel ?? `${confirmLabel}...`}
@@ -71,6 +71,7 @@ const ModalActions = ({
           type="button"
           variant="secondary"
           size={size}
+          className="whitespace-nowrap"
           disabled={cancelDisabled ?? pending}
           onClick={onCancel}
         >

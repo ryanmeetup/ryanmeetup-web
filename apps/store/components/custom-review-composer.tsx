@@ -185,7 +185,7 @@ export function CustomReviewComposer({
       onSubmit={submit}
       bodyClassName="space-y-5"
       panelClassName="max-sm:fixed max-sm:inset-0 max-sm:m-0 max-sm:h-dvh max-sm:!max-h-dvh max-sm:rounded-none max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)]"
-      supportingActions={<Text className="text-sm">We check every review before it goes up. Your order details and email stay private.</Text>}
+      supportingActions={<Text className="text-sm">We check every review before it goes up.<br />Your order details and email stay private.</Text>}
       actions={<ModalActions onCancel={close} confirmForm={formId} confirmLabel={edit ? "Save changes" : "Submit review"}
         confirmDisabled={Boolean(photoScope && !photos.ready)} confirmTooltip={photoScope && !photos.ready ? "Finish preparing your photos, remove any that failed, or refresh if your account changed." : undefined}
         pending={pending} pendingLabel={edit ? "Saving" : "Submitting"} />}
