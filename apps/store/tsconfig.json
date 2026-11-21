@@ -45,7 +45,11 @@
     ".next-e2e/review-photos/types/**/*.ts",
     ".next-e2e/review-photos/dev/types/**/*.ts",
     ".next-verify/types/**/*.ts",
-    ".next-verify/dev/types/**/*.ts"
+    ".next-verify/dev/types/**/*.ts",
+    ".next-e2e/product-reviews-d1/types/**/*.ts",
+    ".next-e2e/product-reviews-d1/dev/types/**/*.ts",
+    ".next-e2e/card-ratings/types/**/*.ts",
+    ".next-e2e/card-ratings/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"
