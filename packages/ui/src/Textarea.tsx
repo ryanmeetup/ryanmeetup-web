@@ -13,6 +13,8 @@ export type TextareaProps = Omit<
   name: string;
   onChange: ChangeEventHandler<HTMLTextAreaElement>;
   hideLabel?: boolean;
+  /** Let the user drag the corner to resize. Turn off where the layout is tight, such as a modal. */
+  resizable?: boolean;
 };
 
 const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
@@ -26,6 +28,7 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
       required,
       rows = 5,
       hideLabel = false,
+      resizable = true,
       ...rest
     } = props;
 
@@ -39,7 +42,7 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           {required && <span className="shrink-0 text-red-500">*</span>}
         </label>
         <textarea
-          className={fieldControlBaseClasses}
+          className={resizable ? fieldControlBaseClasses : `${fieldControlBaseClasses} resize-none`}
           id={id}
           name={name}
           placeholder={placeholder}
