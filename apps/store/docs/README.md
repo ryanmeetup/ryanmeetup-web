@@ -11,7 +11,8 @@ storefront's general code structure.
 | --- | --- |
 | [Add products](how-to/adding-products.md) | Publish products, assign collections/categories, group listings and credit designers. |
 | [Cancel and refund orders](how-to/cancelling-orders.md) | Stop Printful fulfillment and reconcile the separate Shopify/Printful payments. |
-| [Configure shipping](how-to/shipping-setup.md) | Calculate conservative weight tiers and verify destination/profile quotes. |
+| [Configure shipping](how-to/shipping-setup.md) | Calculate conservative weight tiers, keep zones in step with Markets, and run the live quote check. |
+| [Collect sales tax](how-to/sales-tax.md) | Know who sells, register and collect New York sales tax, and track other states and international rules. |
 | [Maintain Shopify-hosted pages](how-to/shopify-hosted-pages.md) | Maintain theme redirects, notification links and checkout/account branding. |
 | [Operate and verify reviews](how-to/review-operations.md) | Diagnose failures, pause/resume collection, rehearse the lifecycle and recover data. |
 

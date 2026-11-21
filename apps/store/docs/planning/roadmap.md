@@ -48,7 +48,10 @@ market (27 regions plus United States, local-currency checkout), checkout quote
 tests for EU and Australian addresses, a hoodie, a mug or flag and a mixed cart,
 the published 28-country shipping policy, branded notification templates
 (wordmark and black accent) sent from an authenticated `ryanmeetup.com` sender,
-Judge.me uninstalled and Shop review-request emails turned off.
+Judge.me uninstalled and Shop review-request emails turned off. Storefront cart
+quotes for the heaviest variants (54 oz doormat, 26.3 oz 5XL hoodie; single,
+doubled and mixed) returned rates to the US, Canada, Germany, the UK, Australia
+and Japan; see [shipping setup](../how-to/shipping-setup.md#heaviest-item-quotes).
 
 ## Remaining work
 
@@ -56,7 +59,7 @@ Item numbers remain stable for existing references.
 
 | # | Work | Current evidence / next action |
 | --- | --- | --- |
-| 4 | [Shopify/Printful operating setup](#4-shopify-and-printful-operating-setup) | Markets, shipping, policy and emails verified November 21; tax decision, heaviest-variant quote and January rate cleanup remain. |
+| 4 | [Shopify/Printful operating setup](#4-shopify-and-printful-operating-setup) | Markets, shipping, policy and emails verified November 21; NY sales tax (registration pending), accountant questions and January rate cleanup remain. |
 | 11 | [More from this shop](#11-more-from-this-shop) | Unimplemented product-page recommendations. |
 | 8 | [Note to seller and personalization](#8-note-to-seller-and-personalization) | Neither storefront input is implemented; confirm which personalization is actually needed. |
 | 14 | [Store reviews](#14-store-reviews) | Text and photo publication built; cleanup/recovery and live proof remain. |
@@ -64,24 +67,30 @@ Item numbers remain stable for existing references.
 
 ### 4. Shopify and Printful operating setup
 
-- [ ] Quote the heaviest supported variant (the earlier audit found up to
-      about 54 oz) to a US and an international address and confirm a rate
-      tier covers it. Use [shipping setup](../how-to/shipping-setup.md).
-- [ ] Decide where to collect sales tax/VAT/GST and verify checkout results in
-      Admin; the repository cannot establish collection settings. Canada
-      currently collects no tax at checkout, and the shipping policy tells
-      international buyers that import charges are theirs.
+- [ ] Turn on New York sales tax once the Certificate of Authority arrives.
+      The store belongs to Ryan Meetup Incorporated (a New York not-for-profit
+      corporation without IRS exemption); its application, tied to the
+      corporation's EIN, was submitted November 21. Then: enter the ID under
+      Settings → Taxes and duties → United States → New York; quote a hoodie
+      and a mug to a New York address (clothing under $110 an item is exempt
+      from the 4% state rate and fully in NYC; other products are taxed); give
+      Printful a NY resale certificate (ST-120) so it stops charging tax on
+      resold goods. See [sales tax](../how-to/sales-tax.md).
+- [ ] Ask an accountant how to report the New York orders shipped before
+      registration, and whether UK VAT applies to orders of £135 or less.
+      International buyers otherwise pay import charges on delivery, as the
+      shipping policy says.
 - [ ] Remove the custom-rate $0.40 holiday allowance after January 17, 2027,
       following a fresh rate check. Printful documents the surcharge through
       that date; custom rates do not update themselves.
 
-The Catalog Admin app's Admin API access covers products and publications
-only. Policies, notifications, Markets, shipping and taxes are configured by
-hand in Admin; do not treat speculative scope grants as a storefront feature or
+The Catalog Admin app's Admin API access covers products, publications,
+Markets and shipping profiles, plus read-only orders. Policies, notifications
+and taxes are configured by hand in Admin; do not treat speculative scope grants as a storefront feature or
 change credentials as documentation cleanup.
 
-**Complete when:** the tax decision is applied and the heaviest-variant quote is
-recorded. The dated end-to-end order/email result exists (#1004, above). Current product/SKU
+**Complete when:** New York collection is on and verified, the accountant
+questions are answered. The dated end-to-end order/email result exists (#1004, above). Current product/SKU
 counts are catalog data, not a permanent completion criterion.
 
 ### 11. More from this shop

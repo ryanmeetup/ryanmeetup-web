@@ -1,6 +1,6 @@
 # Adding products to the Ryan Meetup Store
 
-Reviewed November 20, 2026 against the catalog, grouping, designer and webhook
+Reviewed November 21, 2026 against the catalog, grouping, designer and webhook
 code. Collection names below are examples, not a fresh Shopify inventory audit.
 
 How to set up a product in Shopify so it shows up in the right places on
@@ -53,13 +53,21 @@ Create and sync the product through Printful as usual, then open it in Shopify
 5. **Category.** Pick the closest Shopify category (T-Shirts, Hoodies, Baseball
    Caps, Mugs, Door Mats, …). It decides the product's grouping on the Apparel or
    Accessories page. See [Groupings](#groupings-apparel-and-accessories).
+   Shopify also uses it for sales tax (New York exempts clothing under $110),
+   so don't leave a shirt in a non-clothing category.
 6. **Collection.** Add the product to one theme collection. See
    [Collections](#collections).
 7. **`listing:` tag, only if the product is a version of something else.** See
    [Listings](#listings-combining-similar-products).
 8. **Designer credits.** Add a `designer:Ryan Name` tag for each contributor you
    want to credit. See [Designer credits](#designer-credits).
-9. **Check the store** after about 5 minutes: the product's page, its collection
+9. **Shipping profile.** In **Settings → Shipping and delivery**, add every
+   variant to the matching `RMT standard: …` profile for its Printful rate
+   group. A product left in the General profile gets old flat and
+   carrier-calculated rates. See [shipping setup](shipping-setup.md#current-profiles),
+   then run `npm run quote:shipping` from `apps/store` if it's the heaviest item
+   in its category.
+10. **Check the store** after about 5 minutes: the product's page, its collection
    page, and the Apparel or Accessories page.
 
 ## Designer credits
@@ -284,8 +292,8 @@ do not treat unused storefront tags as proof that they are safe to delete.
 - Add theme collections through Admin. New garment groupings and legacy URL
   redirects require a code change.
 
-Shipping profiles and personalization have separate work in the
-[roadmap](../planning/roadmap.md). Implementation references:
+Personalization has separate work in the [roadmap](../planning/roadmap.md).
+Implementation references:
 [grouping](../../lib/product-groups.ts), [departments](../../lib/catalog-collections.ts),
 [garments](../../lib/garments.ts), [designer credits](../../lib/product-designers.ts)
 and [webhook handling](../../lib/shopify-webhook.ts).

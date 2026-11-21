@@ -21,6 +21,8 @@ npm run test:e2e --workspace=@ryanmeetup/store
 
 Playwright starts its own demo-catalog dev server on `localhost:3102` (override with `PLAYWRIGHT_PORT`) and builds into `.next-e2e`, so it runs beside `npm run dev:store` and never touches the live Shopify store in `.env.local`. To test a server you started yourself, such as a production build or a custom-reviews preview, set `STORE_BASE_URL`. Use `localhost` rather than `127.0.0.1`: Next's dev server refuses its scripts on `127.0.0.1`, so pages never become interactive. A few specs skip themselves unless the server is in the mode they need, such as connected to Shopify.
 
+`npm run quote:shipping` (from `apps/store`) is a live check, not a test: it quotes shipping for each category's heaviest variant against the real Shopify store and fails if any enabled zone has no rate. See [shipping setup](docs/how-to/shipping-setup.md#live-quote-check).
+
 ## Store support
 
 The `/contact` form uses `@ryanmeetup/contact` and the main Ryan Meetup site's
@@ -41,6 +43,8 @@ that EmailJS accepted the request.
 - Create public Storefront API access for products, collections, and carts.
 - After payment, shoppers stay on Shopify's own Thank-you page; Shopify has no setting to send them elsewhere. Its **Continue shopping** button reaches the store home page through the theme redirect, and the store drops a checked-out cart on the next page load.
 - Install/connect Printful in Shopify and map every Shopify variant to the matching Printful SKU.
+- Markets: **United States** plus an **International** market of 27 countries, which checks out in each buyer's local currency (Norway in USD). The storefront's currency picker shows approximate conversions only; the cart stays in USD. Keep shipping zones and the shipping policy's country list in step with Markets; see [shipping setup](docs/how-to/shipping-setup.md).
+- Sales tax is collected only where the store is registered (New York, once its certificate arrives); see [sales tax](docs/how-to/sales-tax.md).
 - To cancel an order, start in Printful, then refund in Shopify; see [cancellation guide](docs/how-to/cancelling-orders.md).
 - Brand checkout and customer accounts, redirect the Online Store theme here, and point the notification emails at the store; see [Shopify-hosted pages guide](docs/how-to/shopify-hosted-pages.md).
 - Keep customer accounts on (Settings → Customer accounts). The **Your orders** links use the Storefront API's `customerAccountUrl`, which is null for this headless shop, so they fall back to `https://shopify.com/<shop id>/account`.
