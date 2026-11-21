@@ -13,10 +13,12 @@ import {
   publicReviewPageSchema,
   publicReviewSchema,
   reviewSubmissionSchema,
+  reviewSummarySchema,
   type PublicReviewItem,
   type PublicReview,
   type PublicReviewPage,
   type ReviewSubmission,
+  type ReviewSummary,
 } from "./content";
 
 /** Staff moderation notes, including a rejection reason the buyer reads, stop at this many characters. */
@@ -85,6 +87,8 @@ export type ReviewCommand =
   | { operation: "review.edit"; subject: string; reviewId: string; expectedUpdatedAt: string; submission: ReviewSubmission; displayName: string; photoIds?: string[] }
   | { operation: "review.withdraw"; subject: string; reviewId: string; expectedUpdatedAt: string }
   | { operation: "reviews.page"; productIds: string[]; limit: number; cursor: string | null }
+  /** Rating totals for each product on its own, for listing cards. */
+  | { operation: "reviews.summaries"; productIds: string[] }
   | { operation: "reviews.latest" }
   | { operation: "reviews.feed"; limit: number; cursor: string | null }
   | { operation: "reviews.mine"; subject: string; cursor: string | null }
@@ -101,6 +105,8 @@ export type ReviewResults = {
   "review.edit": "pending" | "closed" | "not_found" | "conflict" | "invalid_photos";
   "review.withdraw": "withdrawn" | "not_found" | "conflict";
   "reviews.page": PublicReviewPage;
+  /** Keyed by product ID; every requested product is present, with a zero count when it has no reviews. */
+  "reviews.summaries": Record<string, ReviewSummary>;
   "reviews.latest": PublicReview[];
   "reviews.feed": PublicReviewFeedPage;
   "reviews.mine": BuyerReviewPage;
@@ -120,6 +126,9 @@ const uuid = (value: unknown): value is string =>
   typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value);
 const subject = (value: unknown): value is string =>
   typeof value === "string" && value.length > 0 && value.length <= 512 && !/[\u0000-\u001f\u007f]/u.test(value);
+
+const productIdList = (value: unknown): value is string[] =>
+  Array.isArray(value) && value.length > 0 && value.length <= 50 && value.every(numericId) && new Set(value).size === value.length;
 
 /** Ordered private draft IDs, never storage paths or public URLs. Missing means retain on edit. */
 export function reviewPhotoIdsSchema(value: unknown): string[] | null {
@@ -172,6 +181,10 @@ export function reviewCommandSchema(value: unknown): ReviewCommand | null {
         command.productIds.every(numericId) && new Set(command.productIds).size === command.productIds.length &&
         Number.isSafeInteger(command.limit) && (command.limit as number) >= 1 && (command.limit as number) <= REVIEW_PAGE_MAX &&
         (command.cursor === null || (typeof command.cursor === "string" && decodeReviewCursor(command.cursor) !== null)) ? (command as ReviewCommand) : null;
+    }
+    case "reviews.summaries": {
+      const command = exactObject(value, ["operation", "productIds"]);
+      return command && productIdList(command.productIds) ? (command as ReviewCommand) : null;
     }
     case "reviews.latest":
       return exactObject(value, ["operation"]) ? value as ReviewCommand : null;
@@ -286,6 +299,9 @@ export function reviewResultSchema<Operation extends ReviewOperation>(operation:
     valid = data === "withdrawn" || data === "not_found" || data === "conflict";
   } else if (operation === "reviews.page") {
     valid = publicReviewPageSchema(data) !== null;
+  } else if (operation === "reviews.summaries") {
+    const summaries = data && typeof data === "object" && !Array.isArray(data) ? data as Record<string, unknown> : null;
+    valid = Boolean(summaries && productIdList(Object.keys(summaries)) && Object.values(summaries).every((summary) => reviewSummarySchema(summary) !== null));
   } else if (operation === "reviews.latest") {
     valid = Array.isArray(data) && data.length <= 6 && newestFirstReviews(data);
   } else if (operation === "reviews.feed") {

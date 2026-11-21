@@ -99,6 +99,14 @@ async function executeStoreReview(admin: SupabaseClient, shopId: string, command
       data = check(await admin.rpc("store_buyer_reviewed_lines", { p_shop_id:shopId,p_subject:command.subject,p_line_ids:command.lineIds }));
       if (!Array.isArray(data) || data.some((line) => !command.lineIds.includes(line))) throw new ReviewBackendError();
       break;
+    case "reviews.summaries": {
+      // The summary RPC pools every product it's given, so each product gets its own call.
+      const summaries = await Promise.all(command.productIds.map(async (productId) => [productId, check(
+        await admin.rpc("store_review_summary", { p_shop_id: shopId, p_product_ids: [productId] }).abortSignal(AbortSignal.timeout(10_000)),
+      )] as const));
+      data = Object.fromEntries(summaries);
+      break;
+    }
     case "reviews.page": {
       const after = command.cursor ? decodeReviewCursor(command.cursor) : null;
       const [summary, rows] = await Promise.all([

@@ -204,7 +204,8 @@ export function publicReviewSchema(value: unknown): PublicReview | null {
   return review as PublicReview;
 }
 
-function summarySchema(value: unknown): ReviewSummary | null {
+/** A rating summary whose count and average agree with its own distribution. */
+export function reviewSummarySchema(value: unknown): ReviewSummary | null {
   const summary = exactObject(value, ["count", "average", "distribution"]);
   const distribution = summary && exactObject(summary.distribution, ["1", "2", "3", "4", "5"]);
   if (!summary || !distribution || !isCount(summary.count) || typeof summary.average !== "number") return null;
@@ -226,7 +227,7 @@ export function publicReviewPageSchema(value: unknown): PublicReviewPage | null 
   const scope = page && exactObject(page.scope, ["productIds"]);
   if (!page || !scope || !Array.isArray(scope.productIds) || !scope.productIds.length || scope.productIds.length > 50 ||
     !scope.productIds.every(isProductId) || new Set(scope.productIds).size !== scope.productIds.length) return null;
-  const summary = summarySchema(page.summary);
+  const summary = reviewSummarySchema(page.summary);
   if (!summary || !Array.isArray(page.reviews) || page.reviews.length > REVIEW_PAGE_MAX || page.reviews.length > summary.count) return null;
   const productIds = new Set(scope.productIds as string[]);
   const reviews = page.reviews.map(publicReviewSchema);
