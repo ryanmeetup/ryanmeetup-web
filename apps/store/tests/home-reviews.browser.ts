@@ -20,7 +20,7 @@ test.beforeEach(async ({ request }) => {
 
 test("home ends with the six newest reviews across products, including low ratings and product links", async ({ page }) => {
   await page.goto("/");
-  const section = page.getByRole("region", { name: "Fresh from the Ryans", exact: true });
+  const section = page.getByRole("region", { name: "Recent reviews", exact: true });
   await expect(section.getByRole("heading", { level: 3 })).toHaveText([8, 7, 6, 5, 4, 3].map((n) => `Latest review ${n}`));
   await expect(page.locator("main > section").last()).toHaveAttribute("aria-labelledby", "home-reviews");
   await expect(section.getByRole("article", { name: "Review by Ryan 8", exact: true }).getByRole("img", { name: "1 out of 5 stars", exact: true })).toBeVisible();
@@ -36,7 +36,7 @@ test("home ends with the six newest reviews across products, including low ratin
   await link.click();
   await expect(page.locator(`#review-${review(7).id}`)).toBeVisible();
   await page.goto("/");
-  await page.getByRole("region", { name: "Fresh from the Ryans", exact: true }).getByRole("link", { name: `Review of ${dad.title}`, exact: true }).first().click();
+  await page.getByRole("region", { name: "Recent reviews", exact: true }).getByRole("link", { name: `Review of ${dad.title}`, exact: true }).first().click();
   await expect(page).toHaveURL(new RegExp(`design=.*#review-${review(8).id}`));
   await expect(page.locator(`#review-${review(8).id}`)).toBeVisible();
 });
@@ -45,7 +45,7 @@ test("empty or failed public reads omit the showcase without losing the catalog"
   for (const data of [{}, { [numeric(tee.id)]: { unavailable: true } }]) {
     await request.post(`${fixture}/__configure`, { data }); await page.goto("/");
     await expect(page.getByRole("heading", { name: /Merch with your/ })).toBeVisible();
-    await expect(page.getByRole("region", { name: "Fresh from the Ryans", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("region", { name: "Recent reviews", exact: true })).toHaveCount(0);
   }
 });
 
@@ -60,7 +60,7 @@ for (const theme of ["light", "dark"]) for (const width of [390, 1024, 1280, 153
   test(`latest reviews fit ${theme} at ${width}px`, async ({ page }, testInfo) => {
     await page.addInitScript((value) => localStorage.setItem("theme", value), theme);
     await page.setViewportSize({ width, height: 1000 }); await page.goto("/");
-    const section = page.getByRole("region", { name: "Fresh from the Ryans", exact: true });
+    const section = page.getByRole("region", { name: "Recent reviews", exact: true });
     await section.scrollIntoViewIfNeeded(); await expect(section.getByRole("article")).toHaveCount(6);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await section.screenshot({ path: testInfo.outputPath(`home-reviews-${theme}-${width}.png`) });
