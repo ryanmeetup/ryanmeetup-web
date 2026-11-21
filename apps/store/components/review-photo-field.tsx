@@ -32,10 +32,10 @@ export function ReviewPhotoField({ photos, disabled, rejected = [] }: {
     </div>
     {photos.error && <ErrorCallout>{photos.error}</ErrorCallout>}
     {photos.phase === "error" && <Button type="button" variant="secondary" className="w-full sm:w-auto" disabled={disabled} onClick={photos.reload}>Retry loading photos</Button>}
-    {photos.items.length > 0 && <ul aria-label="Selected review photos" className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+    {photos.items.length > 0 && <ul aria-label="Selected review photos" className="grid grid-cols-3 gap-2 sm:grid-cols-5 lg:grid-cols-4">
       {photos.items.map((item, index) => <li key={item.key} className="relative aspect-square min-w-0 overflow-hidden rounded-lg border border-black/10 bg-black/5 dark:border-white/10 dark:bg-white/5">
         {/* A verified private blob stays in this browser; image optimization must never cache it. */}
-        {item.url ? <Image unoptimized src={item.url} alt={`Review photo ${index + 1}`} fill sizes="(max-width: 639px) 33vw, 100px" className="object-cover" />
+        {item.url ? <Image unoptimized src={item.url} alt={`Review photo ${index + 1}`} fill sizes="(max-width: 639px) 33vw, 96px" className="object-cover" />
           : <div className="flex h-full items-center justify-center p-2 text-center text-xs text-black/70 dark:text-white/70">{item.status === "error" ? "Photo unavailable" : <Spinner size={16} label="Preparing photo" />}</div>}
         {turnedDown.some((entry) => entry.item.key === item.key) && <span className="absolute inset-x-0 bottom-0 bg-red-700/90 px-1 py-0.5 text-center text-xs font-semibold text-white">Not approved</span>}
         {/* IconButton renders inside a tooltip wrapper, so the wrapper owns the overlay position. */}

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useId, useRef, useState } from "react";
-import type { FormEvent } from "react";
+import type { FormEvent, ReactNode } from "react";
 import {
   REVIEW_BODY_MAX,
   REVIEW_NAME_STYLES,
@@ -123,10 +123,13 @@ export function CustomReviewComposer({
     }
   }
 
-  const productCard = (
+  const productCard = (note?: ReactNode) => (
     <div className="flex items-center gap-4 rounded-xl border border-black/10 p-3 dark:border-white/10">
-      {product.featuredImage && <Image src={product.featuredImage.url} alt="" width={64} height={64} sizes="64px" className="h-16 w-16 shrink-0 rounded-lg object-cover" />}
-      <Text className="min-w-0 wrap-anywhere font-semibold">{product.title}</Text>
+      {product.featuredImage && <Image src={product.featuredImage.url} alt="" width={56} height={56} sizes="56px" className="h-14 w-14 shrink-0 rounded-lg object-cover" />}
+      <div className="min-w-0 space-y-1">
+        <Text className="wrap-anywhere font-semibold">{product.title}</Text>
+        {note}
+      </div>
     </div>
   );
 
@@ -156,66 +159,75 @@ export function CustomReviewComposer({
           )
         }
       >
-        {productCard}
+        {productCard()}
         <Text>{copy.body}</Text>
         {access.status === "signed-out" && <Text className="text-sm">{signInExplanation.newHere}</Text>}
       </Modal>
     );
   }
 
+  const purchaseNote = ready.purchases.length === 1 ? (
+    <Text className="text-sm wrap-anywhere">Reviewing <span className="font-semibold">{ready.purchases[0].label}</span></Text>
+  ) : ready.purchases.length === 0 ? (
+    <Text className="text-sm">We didn&apos;t find an order for this on your account, so your review shows without the Verified badge.</Text>
+  ) : null;
+
   return (
     <Modal
       open={open}
       setIsOpen={(next) => !next && close()}
       title={edit ? "Edit your review" : "Write a review"}
-      size="lg"
+      // Photos get their own column from `lg`, so the form never grows into a tall single column.
+      size={photoScope ? "xl" : "lg"}
       description={edit ? "Changes are checked before they go up. Until then, your current review stays as it is." : "Tell other Ryans how it went."}
       closable={!pending}
       formId={formId}
       onSubmit={submit}
       bodyClassName="space-y-5"
       panelClassName="max-sm:fixed max-sm:inset-0 max-sm:m-0 max-sm:h-dvh max-sm:!max-h-dvh max-sm:rounded-none max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)]"
+      supportingActions={<Text className="text-sm">We check every review before it goes up. Your order details and email stay private.</Text>}
       actions={<ModalActions onCancel={close} confirmForm={formId} confirmLabel={edit ? "Save changes" : "Submit review"}
         confirmDisabled={Boolean(photoScope && !photos.ready)} confirmTooltip={photoScope && !photos.ready ? "Finish preparing your photos, remove any that failed, or refresh if your account changed." : undefined}
         pending={pending} pendingLabel={edit ? "Saving" : "Submitting"} />}
     >
-      {productCard}
       <fieldset disabled={pending} aria-busy={pending} className="min-w-0 space-y-5">
         <legend className="sr-only">Your review</legend>
-        {ready.purchases.length > 1 ? (
-          <DropdownSelect
-            label="Purchase"
-            variant="field"
-            required
-            value={lineId}
-            disabled={pending}
-            onChange={(lineId) => setDraft((value) => ({ ...value, lineId }))}
-            options={[{ value: "", label: "Choose a purchase" }, ...ready.purchases.map((purchase) => ({ value: purchase.lineId, label: purchase.label }))]}
-          />
-        ) : ready.purchases.length ? (
-          <Text className="text-sm wrap-anywhere">Reviewing <span className="font-semibold">{ready.purchases[0].label}</span></Text>
-        ) : (
-          <Text className="text-sm">We didn&apos;t find an order for this on your account, so your review shows without the Verified badge.</Text>
-        )}
-        <div ref={ratingField} onInvalid={() => setError("Choose a rating before submitting your review.")}>
-          <StarRating label="Rating" name={`${formId}-rating`} step={1} required disabled={pending} value={draft.rating} onChange={(rating) => setDraft((value) => ({ ...value, rating }))} />
+        <div className={ready.purchases.length > 1 ? "grid gap-5 lg:grid-cols-2 lg:items-end" : undefined}>
+          {productCard(purchaseNote)}
+          {ready.purchases.length > 1 && (
+            <DropdownSelect
+              label="Purchase"
+              variant="field"
+              required
+              value={lineId}
+              disabled={pending}
+              onChange={(lineId) => setDraft((value) => ({ ...value, lineId }))}
+              options={[{ value: "", label: "Choose a purchase" }, ...ready.purchases.map((purchase) => ({ value: purchase.lineId, label: purchase.label }))]}
+            />
+          )}
         </div>
-        <Input label="Title" name={`${formId}-title`} required maxLength={REVIEW_TITLE_MAX} placeholder="Sum it up, Ryan" value={draft.title} onChange={(event) => setDraft((value) => ({ ...value, title: event.target.value }))} />
-        <Textarea id={`${formId}-body`} label="Review" name="body" required maxLength={REVIEW_BODY_MAX} placeholder="The good, the bad, the very Ryan. How's it fitting, and how's it holding up?" value={draft.body} onChange={(event) => setDraft((value) => ({ ...value, body: event.target.value }))} />
-        {photoScope && <ReviewPhotoField photos={photos} disabled={pending} rejected={photoScope.review?.rejectedPhotos} />}
-        <div className="space-y-2">
-          <DropdownSelect
-            label="Show my name as"
-            variant="field"
-            required
-            value={draft.nameStyle}
-            disabled={pending}
-            onChange={(nameStyle) => setDraft((value) => ({ ...value, nameStyle: nameStyle as ReviewNameStyle }))}
-            options={nameChoices.map(({ style, displayName }) => ({ value: style, label: `${NAME_STYLE_LABELS[style]}: ${displayName}` }))}
-          />
-          <Text className="text-sm" aria-live="polite">Shown publicly as <span className="font-semibold">{publicName}</span></Text>
+        <div className={photoScope ? "grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] lg:gap-8" : undefined}>
+          <div className="min-w-0 space-y-5">
+            <div ref={ratingField} onInvalid={() => setError("Choose a rating before submitting your review.")}>
+              <StarRating label="Rating" name={`${formId}-rating`} step={1} required disabled={pending} value={draft.rating} onChange={(rating) => setDraft((value) => ({ ...value, rating }))} />
+            </div>
+            <Input label="Title" name={`${formId}-title`} required maxLength={REVIEW_TITLE_MAX} placeholder="Sum it up, Ryan" value={draft.title} onChange={(event) => setDraft((value) => ({ ...value, title: event.target.value }))} />
+            <Textarea id={`${formId}-body`} label="Review" name="body" required maxLength={REVIEW_BODY_MAX} placeholder="The good, the bad, the very Ryan. How's it fitting, and how's it holding up?" value={draft.body} onChange={(event) => setDraft((value) => ({ ...value, body: event.target.value }))} />
+            <div className="space-y-2">
+              <DropdownSelect
+                label="Show my name as"
+                variant="field"
+                required
+                value={draft.nameStyle}
+                disabled={pending}
+                onChange={(nameStyle) => setDraft((value) => ({ ...value, nameStyle: nameStyle as ReviewNameStyle }))}
+                options={nameChoices.map(({ style, displayName }) => ({ value: style, label: `${NAME_STYLE_LABELS[style]}: ${displayName}` }))}
+              />
+              <Text className="text-sm" aria-live="polite">Shown publicly as <span className="font-semibold">{publicName}</span></Text>
+            </div>
+          </div>
+          {photoScope && <ReviewPhotoField photos={photos} disabled={pending} rejected={photoScope.review?.rejectedPhotos} />}
         </div>
-        <Text className="text-sm">We check every review before it goes up. Your order details and email stay private.</Text>
       </fieldset>
       {error && <ErrorCallout>{error}</ErrorCallout>}
     </Modal>
