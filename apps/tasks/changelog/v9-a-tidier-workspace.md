@@ -50,7 +50,7 @@ are eligible. Rejection and hiding still require a reason; deletion keeps its
 policy confirmation and logs every review separately. A changed review is
 skipped, and an unconfirmed save stops the batch with a clear result count.
 
-The queue is a table with one row per review: product, review text, photos,
+The queue is a table with one row per review: review text, product, photos,
 reviewer, status, and actions each get a column. A waiting edit sits above the
 published version it would replace, and an official reply shows under the review.
 Decisions are buttons on the row; replies, hiding, history, and deletion sit in

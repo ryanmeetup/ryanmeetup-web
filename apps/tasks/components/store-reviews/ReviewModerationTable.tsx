@@ -102,19 +102,20 @@ function RowActions({ review, disabled, onSelect, onHistory }: Pick<RowProps, "r
 function ReviewRow({ review, disabled, selectedIds, onToggleReview, onSelect, onPhotoSelect, onHistory }: RowProps) {
   const photoRevision = review.pending ?? review.rejected ?? review.published ?? review.latest;
   return <ResponsiveTableRow data-testid={`review-${review.id}`}>
-    <ResponsiveTableCell className="@min-[54rem]:whitespace-nowrap">
+    {/* Selection stays at the start of the row, whichever column comes first. */}
+    <ResponsiveTableCell className="@min-[54rem]:max-w-xl">
       <div className="flex items-start gap-3">
         <span className="inline-flex h-5 items-center">
           <ReviewSelectionCheckbox label={`Select review for ${review.item.productTitle}`} checked={selectedIds.has(review.id)}
             disabled={disabled} onChange={() => onToggleReview(review.id)} />
         </span>
-        <div className="min-w-0">
-          <p className="font-semibold wrap-anywhere">{review.item.productTitle}</p>
-          {review.item.variantTitle && <p className="text-xs text-black/70 wrap-anywhere dark:text-white/70">{review.item.variantTitle}</p>}
-        </div>
+        <div className="min-w-0 flex-1"><ReviewCell review={review} /></div>
       </div>
     </ResponsiveTableCell>
-    <ResponsiveTableCell className="@min-[54rem]:max-w-xl"><ReviewCell review={review} /></ResponsiveTableCell>
+    <ResponsiveTableCell className="@min-[54rem]:whitespace-nowrap">
+      <p className="font-semibold wrap-anywhere">{review.item.productTitle}</p>
+      {review.item.variantTitle && <p className="text-xs text-black/70 wrap-anywhere dark:text-white/70">{review.item.variantTitle}</p>}
+    </ResponsiveTableCell>
     {/* A dash keeps the column readable on wide screens; a stacked row simply skips it. */}
     <ResponsiveTableCell className={photoRevision.photos?.length ? "" : "hidden @min-[54rem]:table-cell"}>
       <ReviewModerationPhotos review={review} revision={photoRevision} disabled={disabled} onSelect={onPhotoSelect} />
@@ -129,8 +130,8 @@ function ReviewRow({ review, disabled, selectedIds, onToggleReview, onSelect, on
 }
 
 const columns = [
-  // Product names set their own width; review text takes the remaining space.
-  { label: "Product" }, { label: "Review" }, { label: "Photos", width: "w-20" },
+  // Review text takes the remaining space; product names set their own width.
+  { label: "Review" }, { label: "Product" }, { label: "Photos", width: "w-20" },
   { label: "Reviewer", width: "w-32" }, { label: "Status", width: "w-28" }, { label: "Actions", width: "w-48", hideLabel: true },
 ];
 
