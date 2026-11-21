@@ -45,7 +45,7 @@ select is(pg_temp.public_count(), 1::bigint, 'an approved review is public');
 select is(public.store_review_summary('123', array['100']), '{"count": 1, "average": 5, "distribution": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 1}}'::jsonb, 'totals include the approved review');
 select is(
   (select array_agg(key order by key) from public.store_public_reviews('123', array['100'], 1) r, jsonb_object_keys(r) key),
-  array['body', 'displayName', 'editedAt', 'id', 'item', 'photos', 'publishedAt', 'rating', 'reply', 'title', 'verifiedPurchase'],
+  array['body', 'displayName', 'editedAt', 'id', 'item', 'photos', 'publishedAt', 'rating', 'reply', 'source', 'title', 'verifiedPurchase'],
   'public reviews carry exactly the contract fields');
 select ok((select r ->> 'publishedAt' ~ '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$' and r -> 'editedAt' = 'null'::jsonb from public.store_public_reviews('123', array['100'], 1) r), 'dates are ISO UTC and a first approval is not an edit');
 select is((select r::text ~ '9000|buyer-a|staff@' from public.store_public_reviews('123', array['100'], 1) r), false, 'no order, customer, or staff detail leaks into the public row');
