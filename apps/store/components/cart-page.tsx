@@ -10,6 +10,7 @@ import { CurrencyEstimateNote } from "./currency-estimate-note";
 import { EmptyCartButton } from "./empty-cart-button";
 import { EmptyCartPrompt } from "./empty-cart-prompt";
 import { FinalSaleNote } from "./final-sale-note";
+import { CartSavings, PromotionProgress } from "./promotion";
 
 export function CartPage() {
   const { cart, error, loading } = useCart();
@@ -33,7 +34,11 @@ export function CartPage() {
         </div>
         <Card size="lg" className="h-fit xl:sticky xl:top-28">
           <Heading size="h2" className="text-2xl">Order summary</Heading>
-          <div className="mt-6 flex justify-between border-b border-black/10 pb-5 dark:border-white/10"><Text>Subtotal</Text><strong>{formatMoney(cart.cost.subtotalAmount)}</strong></div>
+          <PromotionProgress quantity={cart.totalQuantity} className="mt-6" />
+          <div className="mt-6 border-b border-black/10 pb-5 dark:border-white/10">
+            <div className="flex justify-between"><Text>Subtotal</Text><strong>{formatMoney(cart.cost.subtotalAmount)}</strong></div>
+            <CartSavings cart={cart} className="mt-2" />
+          </div>
           <CurrencyEstimateNote subtotal={cart.cost.subtotalAmount} className="mt-4" />
           <Text className="mt-4 text-sm">Shipping, discounts, and taxes are calculated securely at checkout. <FinalSaleNote /></Text>
           <CheckoutButton className="mt-6" />

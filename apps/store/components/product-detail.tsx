@@ -16,6 +16,7 @@ import { useCart } from "./cart-provider";
 import { PriceBadge } from "./price-badge";
 import { ProductDescription } from "./product-description";
 import { SaleBadge } from "./sale-badge";
+import { PromotionNote } from "./promotion";
 
 export function ProductDetail({ product, title = product.title, breadcrumbs, designField, hideColorOption = false, gallery, initialImage, initialColor, onSelectGalleryImage }: {
   product: Product;
@@ -216,6 +217,7 @@ export function ProductDetail({ product, title = product.title, breadcrumbs, des
           <PriceBadge price={variant ? variant.price : product.priceRange.minVariantPrice} compareAt={compareAtPrice} size="lg" />
           {compareAtPrice && <SaleBadge />}
         </div>
+        <PromotionNote className="mt-3" />
         <ProductDescription description={product.description} descriptionHtml={product.descriptionHtml} part="intro" />
         {designField && <div className="mt-8">{designField({ selections, selectOption })}</div>}
 

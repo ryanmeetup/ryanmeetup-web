@@ -6,6 +6,7 @@ import { FiTool, FiX } from "react-icons/fi";
 import { LuBug } from "react-icons/lu";
 import { Banner, Button, IconButton } from "@ryanmeetup/ui";
 import { getBugReportHref } from "@/lib/support";
+import { usePromotion } from "./promotion";
 
 // Launch-window notice. Remove the <BugReportBanner /> line in the root layout to retire
 // it; the footer's "Report a bug" link stays as the permanent way in.
@@ -47,9 +48,11 @@ export function BugReportBanner() {
   // The server renders it for everyone: most visitors are new, so returning ones who
   // dismissed it get a brief flash instead of everyone getting a late pop-in.
   const dismissed = useSyncExternalStore(subscribe, () => sessionDismissed || isDismissed(), () => false);
+  // A running sale takes the top of the page; two stacked banners bury the header.
+  const promotion = usePromotion();
 
   // The contact page is where the banner leads, so it has nothing to add there.
-  if (dismissed || pathname === "/contact") return null;
+  if (dismissed || promotion || pathname === "/contact") return null;
 
   return (
     <Banner
