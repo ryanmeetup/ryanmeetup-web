@@ -1,8 +1,8 @@
 "use client";
 
-import { Modal, type ModalSize } from "@ryanmeetup/ui";
+import { Modal } from "@ryanmeetup/ui";
 import type { FormEventHandler, ReactNode } from "react";
-import { EditorPageSurface, type EditorCrumb } from "./EditorPageSurface";
+import { EditorPageSurface, type EditorCrumb, type EditorSize } from "./EditorPageSurface";
 
 type EditorSurfaceCommonProps = {
   title: ReactNode;
@@ -40,7 +40,7 @@ type EditorDialogProps = {
    * render the create form underneath the edit form.
    */
   open?: boolean;
-  size?: ModalSize;
+  size?: EditorSize;
   maxHeight?: string;
   maxWidth?: string;
   panelClassName?: string;

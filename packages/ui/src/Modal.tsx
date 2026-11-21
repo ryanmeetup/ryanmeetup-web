@@ -12,7 +12,8 @@ import { EditorFooter, EditorHeader } from "./editorChrome";
 import { IconButton } from "./IconButton";
 import { ScrollRegion } from "./scrollRegion";
 
-export type ModalSize = "sm" | "md" | "lg" | "xl" | "2xl" | "full";
+/** `fit` shrinks the panel around its content, such as a photo at its own aspect ratio. */
+export type ModalSize = "sm" | "md" | "lg" | "xl" | "2xl" | "full" | "fit";
 
 export type ModalProps = {
   open: boolean;
@@ -57,6 +58,7 @@ const sizeStyles: Record<ModalSize, string> = {
   xl: "max-w-5xl",
   "2xl": "max-w-7xl",
   full: "max-w-[calc(100vw-2rem)]",
+  fit: "max-w-[calc(100vw-2rem)]",
 };
 
 const Modal = ({
@@ -85,7 +87,7 @@ const Modal = ({
           ...(maxWidth ? { maxWidth } : {}),
         }
       : undefined;
-  const cardClassName = `mx-auto flex w-full min-h-0 flex-col ${maxWidth ? "" : sizeStyles[size]} ${maxHeight ? "" : "max-h-[min(42rem,calc(100dvh-max(1rem,env(safe-area-inset-top))-max(1rem,env(safe-area-inset-bottom))))] sm:max-h-[calc(100dvh-max(1rem,env(safe-area-inset-top))-max(1rem,env(safe-area-inset-bottom)))]"} overflow-hidden rounded-2xl border border-black/15 bg-white shadow-overlay ring-1 ring-black/5 dark:border-white/20 dark:bg-[#181818] dark:ring-white/10 ${panelClassName ?? ""}`;
+  const cardClassName = `mx-auto flex ${size === "fit" ? "w-fit" : "w-full"} min-h-0 flex-col ${maxWidth ? "" : sizeStyles[size]} ${maxHeight ? "" : "max-h-[min(42rem,calc(100dvh-max(1rem,env(safe-area-inset-top))-max(1rem,env(safe-area-inset-bottom))))] sm:max-h-[calc(100dvh-max(1rem,env(safe-area-inset-top))-max(1rem,env(safe-area-inset-bottom)))]"} overflow-hidden rounded-2xl border border-black/15 bg-white shadow-overlay ring-1 ring-black/5 dark:border-white/20 dark:bg-[#181818] dark:ring-white/10 ${panelClassName ?? ""}`;
 
   const cardContent = (
     <>

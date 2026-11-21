@@ -20,7 +20,10 @@ import { PageHeader } from "./PageHeader";
  * already raises its `size`, and here that widens the whole column instead of
  * cramming a two-column grid into a fixed one.
  */
-const pageWidths: Record<ModalSize, string> = {
+/** Editors use the fixed rungs; `fit` belongs to content-sized dialogs like a photo viewer. */
+export type EditorSize = Exclude<ModalSize, "fit">;
+
+const pageWidths: Record<EditorSize, string> = {
   sm: "max-w-md",
   md: "max-w-xl",
   lg: "max-w-3xl",
@@ -61,7 +64,7 @@ export type EditorPageSurfaceProps = {
    * The column width, on the `pageWidths` scale. Defaults to `lg`; raise it the
    * way the dialog does when the form grows a second column.
    */
-  size?: ModalSize;
+  size?: EditorSize;
   /** Omit when the children carry their own `<form>`. */
   formId?: string;
   onSubmit?: FormEventHandler<HTMLFormElement>;

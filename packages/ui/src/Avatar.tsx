@@ -12,6 +12,11 @@ export type AvatarProps = {
    * are not people — automation, a system account, an unclaimed seat.
    */
   icon?: ReactNode;
+  /**
+   * A quiet translucent disc for someone who is deliberately not identified,
+   * such as an anonymous reviewer. Takes precedence over `colorful`.
+   */
+  muted?: boolean;
   name?: string | null;
   size?: "xs" | "sm" | "md" | "lg";
   src?: string | null;
@@ -50,14 +55,18 @@ function initials(name?: string | null) {
     .toUpperCase();
 }
 
-const Avatar = ({ className, colorful = false, icon, name, size = "md", src }: AvatarProps) => (
+const mutedClasses = "border-black/10 bg-black/5 font-bold text-black/70 dark:border-white/15 dark:bg-white/10 dark:text-white/70";
+
+const Avatar = ({ className, colorful = false, icon, muted = false, name, size = "md", src }: AvatarProps) => (
   <span
     aria-label={name || "Teammate"}
     role="img"
-    style={src ? { backgroundImage: `url(${JSON.stringify(src)})` } : colorful ? { backgroundColor: colorFor(name) } : undefined}
-    className={`inline-grid shrink-0 place-items-center rounded-full border bg-cover bg-center text-white ${colorful
-      ? `border-black/10 font-black dark:border-white/15 ${colorfulSizeClasses[size]}`
-      : `border-white/30 bg-black font-bold dark:border-black/25 dark:bg-white dark:text-black ${sizeClasses[size]}`} ${className ?? ""}`}
+    style={src ? { backgroundImage: `url(${JSON.stringify(src)})` } : colorful && !muted ? { backgroundColor: colorFor(name) } : undefined}
+    className={`inline-grid shrink-0 place-items-center rounded-full border bg-cover bg-center ${muted
+      ? `${mutedClasses} ${colorfulSizeClasses[size]}`
+      : colorful
+      ? `border-black/10 font-black text-white dark:border-white/15 ${colorfulSizeClasses[size]}`
+      : `border-white/30 bg-black font-bold text-white dark:border-black/25 dark:bg-white dark:text-black ${sizeClasses[size]}`} ${className ?? ""}`}
   >
     {!src && <span aria-hidden>{icon ?? initials(name)}</span>}
   </span>
