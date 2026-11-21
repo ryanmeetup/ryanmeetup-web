@@ -353,69 +353,6 @@ test("customer can browse a product and manage the preview cart", async ({
   ).toBeDisabled();
 });
 
-test("customer can switch between the Ryan Meetup light and dark themes", async ({
-  page,
-}) => {
-  const themeErrors: string[] = [];
-  page.on("console", (message) => {
-    if (
-      message.type() === "error" &&
-      (message
-        .text()
-        .includes("Encountered a script tag while rendering React component") ||
-        message
-          .text()
-          .includes(
-            "Hydration failed because the server rendered HTML didn't match the client",
-          ))
-    ) {
-      themeErrors.push(message.text());
-    }
-  });
-
-  await page.goto("/");
-  await expect(page.locator("html")).toHaveClass(/dark/);
-  await page.getByRole("button", { name: "Change to light mode" }).click();
-  await expect(page.locator("html")).toHaveClass(/light/);
-  await expect(
-    page.getByRole("button", { name: "Change to dark mode" }),
-  ).toBeVisible();
-  await page.reload();
-  await expect(page.locator("html")).toHaveClass(/light/);
-  expect(themeErrors).toEqual([]);
-  await page.screenshot({
-    path: screenshotPath("store-light.png"),
-    fullPage: true,
-  });
-});
-
-test("mobile customers change themes inside the navigation menu", async ({ page }) => {
-  await page.setViewportSize({ width: 393, height: 852 });
-  await page.goto("/apparel");
-  const themeButton = page.getByRole("button", { name: "Change to light mode", exact: true });
-  await expect(themeButton).toBeHidden();
-
-  await page.getByRole("button", { name: "Open navigation" }).click();
-  const menu = page.getByRole("navigation", { name: "Mobile navigation" });
-  await menu.getByRole("button", { name: "Change to light mode" }).click();
-  await expect(page.locator("html")).toHaveClass(/light/);
-  await expect(menu.getByRole("button", { name: "Change to dark mode" })).toBeVisible();
-
-  await page.getByRole("button", { name: "Close navigation" }).click();
-  await expect(page.getByRole("button", { name: "Change to dark mode" })).toBeHidden();
-  await page.reload();
-  await expect(page.locator("html")).toHaveClass(/light/);
-  await page.getByRole("button", { name: "Open navigation" }).click();
-  const darkButton = menu.getByRole("button", { name: "Change to dark mode" });
-  await darkButton.focus();
-  await darkButton.press("Enter");
-  await expect(page.locator("html")).toHaveClass(/dark/);
-
-  await page.setViewportSize({ width: 1280, height: 900 });
-  await expect(menu).toBeHidden();
-  await expect(themeButton.filter({ visible: true })).toHaveCount(1);
-});
-
 test("customer can shop from the hero", async ({ page }) => {
   await page.goto("/");
   const hero = page.getByRole("region", { name: "Ryan Meetup merch", exact: true });

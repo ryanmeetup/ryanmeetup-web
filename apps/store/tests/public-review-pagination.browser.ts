@@ -93,12 +93,10 @@ test("a failed review link lookup waits for a deliberate retry", async ({ page }
 });
 
 test("all public pages are reachable while complete totals, JSON-LD and replies retain their scope", async ({ page }, testInfo) => {
-  await page.addInitScript(() => localStorage.setItem("theme", "light"));
   await page.goto("/products/name-tag-shirt");
   await expect(cards(page)).toHaveCount(20);
   const action = page.getByRole("button", { name: "Load more reviews", exact: true });
-  for (const theme of ["light", "dark"]) {
-    if (theme === "dark") await page.getByRole("button", { name: "Change to dark mode", exact: true }).click();
+  for (const theme of ["dark"]) {
     await expect(page.locator("html")).toHaveClass(theme);
     for (const width of [390, 1024, 1280, 1536]) {
       await page.setViewportSize({ width, height: 900 });
@@ -268,14 +266,12 @@ test("switching products clears filters and ignores a pending sort response", as
   } finally { release(); }
 });
 
-test("review controls fit mobile and desktop boundaries in both themes", async ({ page, request }, testInfo) => {
+test("review controls fit mobile and desktop boundaries", async ({ page, request }, testInfo) => {
   expect((await request.post(`${fixture}/__configure`, { data: { [id(ryan)]: dataset(ryan, 2) } })).ok()).toBe(true);
-  await page.addInitScript(() => localStorage.setItem("theme", "light"));
   await page.goto("/products/name-tag-shirt");
   await choose(page, "Sort", "Highest rated");
   const controls = page.getByRole("group", { name: "Filter and sort reviews" });
-  for (const theme of ["light", "dark"]) {
-    if (theme === "dark") await page.getByRole("button", { name: "Change to dark mode", exact: true }).click();
+  for (const theme of ["dark"]) {
     for (const width of [390, 1024, 1280, 1536]) {
       await page.setViewportSize({ width, height: 1000 });
       await controls.scrollIntoViewIfNeeded();

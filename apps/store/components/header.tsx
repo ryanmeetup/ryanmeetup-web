@@ -10,7 +10,6 @@ import type { StoreMenuCollection } from "@/lib/navigation";
 import { AccountMenu } from "./account-menu";
 import { useCart } from "./cart-provider";
 import { useNavSection } from "./nav-section";
-import { ThemeToggle } from "./theme-toggle";
 
 export function Header({ collections, accountUrl }: { collections: StoreMenuCollection[]; accountUrl: string | null }) {
   const [open, setOpen] = useState(false);
@@ -115,9 +114,6 @@ export function Header({ collections, accountUrl }: { collections: StoreMenuColl
               <span className="hidden sm:inline">{open ? "Close" : "Menu"}</span>
             </button>
           </Tooltip>
-          <div className="hidden xl:block">
-            <ThemeToggle />
-          </div>
         </div>
       </div>
       {open && (
@@ -189,9 +185,6 @@ export function Header({ collections, accountUrl }: { collections: StoreMenuColl
               </Link>
             ),
           )}
-          <div className="mt-2 border-t border-black/10 pt-3 dark:border-white/10">
-            <ThemeToggle variant="menu" />
-          </div>
         </nav>
       )}
     </header>

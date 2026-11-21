@@ -11,11 +11,8 @@ for (const viewport of [
   test(`product gallery stays compact and reachable at ${viewport.width}×${viewport.height}`, async ({ page }) => {
     await page.setViewportSize(viewport);
     await page.goto("/products/name-tag-shirt");
-    // Header controls stay clickable above the gallery. Below xl the theme toggle
-    // lives in the navigation menu, so check the menu button there instead.
-    const headerControl = viewport.width >= 1280
-      ? page.getByRole("button", { name: "Change to light mode" })
-      : page.getByRole("button", { name: "Open navigation" });
+    // Header controls stay clickable above the gallery.
+    const headerControl = page.getByRole("button", { name: /^Cart with/ });
     await expect(headerControl).toHaveCSS("pointer-events", "auto");
     const gallery = page.getByRole("region", { name: "Product gallery" });
     const strip = gallery.getByRole("group", { name: "Product photos" });

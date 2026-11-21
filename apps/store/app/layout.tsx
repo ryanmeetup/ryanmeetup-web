@@ -55,7 +55,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
       <body className="antialiased">
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+        <ThemeProvider attribute="class" forcedTheme="dark" enableSystem={false}>
           <CartProvider commerceConfigured={commerceConfigured}>
             <CurrencyProvider>
               <NavSectionProvider>
