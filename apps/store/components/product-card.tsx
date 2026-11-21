@@ -52,6 +52,18 @@ function CardNoReviews() {
   );
 }
 
+/**
+ * Too few reviews for a trustworthy average: say how many without stars, which would
+ * read as a zero rating. Its line height already matches a star row, so card heights agree.
+ */
+function CardFewReviews({ count }: { count: number }) {
+  return (
+    <p className="flex items-center text-xs tabular-nums text-black/70 sm:text-sm dark:text-white/70">
+      {count} review{count === 1 ? "" : "s"}
+    </p>
+  );
+}
+
 /** `from` is the collection the card is listed on, named in the product page's breadcrumb. */
 export function ProductCard({ product, eager = false, from }: { product: ProductListing; eager?: boolean; from?: string }) {
   const colors = getListingColorPreviews(product);
@@ -147,7 +159,9 @@ export function ProductCard({ product, eager = false, from }: { product: Product
       )}
       </>}
     >
-      {product.rating ? <CardRating rating={product.rating} /> : product.unreviewed && <CardNoReviews />}
+      {product.rating ? <CardRating rating={product.rating} />
+        : product.unreviewed ? <CardNoReviews />
+        : product.reviewCount ? <CardFewReviews count={product.reviewCount} /> : null}
     </MediaCard>
   );
 }
