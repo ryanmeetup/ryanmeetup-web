@@ -46,9 +46,8 @@ export function ReviewModerationPhotos({ review, revision, disabled, onSelect }:
 }) {
   if (!revision.photos?.length) return null;
   return <div className="space-y-2">
-    <Text className="text-xs">{publishesWithReview(review, revision.id)
-      ? "Publishing this version publishes its photos too. Reject any photo that should stay off the storefront first."
-      : "Only approved photos on the published version appear in the store."}</Text>
+    {/* Published photos speak for themselves through their chips; only the ride-along rule needs saying. */}
+    {publishesWithReview(review, revision.id) && <Text className="text-xs">Publishing this version publishes its photos too. Reject any that should stay off the storefront first.</Text>}
     <ul aria-label="Review photos" className="grid grid-cols-2 gap-2 @lg/review:grid-cols-3">
       {revision.photos.map((photo) => <Photo key={photo.id} review={review} revisionId={revision.id} photo={photo} disabled={disabled} onSelect={onSelect} />)}
     </ul>

@@ -21,7 +21,6 @@ export function useReviewModeration(initial: ModerationInitialState) {
   const [busy, setBusy] = useState<"loading" | "saving" | null>(null);
   const [selection, setSelection] = useState<ModerationSelection | null>(null);
   const [error, setError] = useState(initial.status === "error" ? "Reviews could not load. Refresh the queue to try again." : "");
-  const [message, setMessage] = useState("");
   // A synchronous gate also refuses a second click before React renders disabled controls.
   const active = useRef(false);
   const disabled = initial.status === "disabled";
@@ -31,7 +30,7 @@ export function useReviewModeration(initial: ModerationInitialState) {
   } = {}) {
     if (disabled || active.current || selection) return;
     active.current = true;
-    setBusy("loading"); setError(""); setMessage(""); setFilter(nextFilter); setProductId(nextProduct);
+    setBusy("loading"); setError(""); setFilter(nextFilter); setProductId(nextProduct);
     try {
       const result = await fetchModerationPage(nextFilter, nextProduct, more ? page?.next : null);
       setPage((current) => more && current ? {
@@ -68,7 +67,7 @@ export function useReviewModeration(initial: ModerationInitialState) {
     const { review, action } = selection;
     if (action === "reply-set" && !note) return;
     if (action === "delete" && !reason) return;
-    active.current = true; setBusy("saving"); setError(""); setMessage("");
+    active.current = true; setBusy("saving"); setError("");
     let outcome: "saved" | "conflict" | "unknown" = "unknown";
     let photosLeft = false;
     try {
@@ -100,7 +99,6 @@ export function useReviewModeration(initial: ModerationInitialState) {
         const message = action === "delete"
           ? `Review deleted and logged.${photosLeft ? " Its photo files could not be removed and stay private." : ""}`
           : `${moderationActionLabel(action, review)}: saved.`;
-        setMessage(message);
         // A confirmed save deserves feedback even if refreshing the queue fails.
         toast.success(message);
       }
@@ -116,5 +114,5 @@ export function useReviewModeration(initial: ModerationInitialState) {
     active.current = false; setBusy(null);
   }
 
-  return { page, filter, productId, busy, selection, error, message, disabled, load, select, selectPhoto, dismiss, decide };
+  return { page, filter, productId, busy, selection, error, disabled, load, select, selectPhoto, dismiss, decide };
 }

@@ -39,7 +39,8 @@ export function ReviewModerationQueue({ initial, staffNames }: { initial: Modera
       ? "Rejected text is kept, never deleted. Publish anyway puts it live, as long as the buyer has not written a newer version."
       : "Oldest first, across every rating. Approve text and photos separately; published content stays live while edits wait."}</Text>
     <div role="status" aria-live="polite" className="text-sm text-black/70 empty:hidden dark:text-white/70">
-      {queue.busy ? <span className="inline-flex items-center gap-2"><Spinner size={16} />{queue.busy === "saving" ? "Saving decision and refreshing reviews…" : "Loading reviews…"}</span> : queue.message}
+      {/* A saved decision is announced by its toast; repeating it here only left a stale line behind. */}
+      {queue.busy && <span className="inline-flex items-center gap-2"><Spinner size={16} />{queue.busy === "saving" ? "Saving decision and refreshing reviews…" : "Loading reviews…"}</span>}
     </div>
     {queue.error && <ErrorCallout>{queue.error}</ErrorCallout>}
     <div aria-label="Review queue" aria-busy={Boolean(queue.busy)} className={`grid items-start gap-4 @3xl:grid-cols-2 ${queue.busy ? "opacity-60" : ""}`}>
