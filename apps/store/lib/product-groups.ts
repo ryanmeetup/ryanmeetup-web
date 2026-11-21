@@ -13,7 +13,7 @@ export type ProductGroup = {
   legacyProductHandles: Record<string, string>;
 };
 
-type GroupableProduct = Pick<Product, "handle"> & { id?: string; tags?: string[] };
+export type GroupableProduct = Pick<Product, "handle"> & { id?: string; tags?: string[] };
 
 const listingTagPattern = /^\s*listing\s*:\s*(.+?)\s*$/i;
 

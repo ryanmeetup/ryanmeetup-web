@@ -3,6 +3,8 @@ import { demoCollections, demoProducts } from "./demo-data";
 import { withExternalListings } from "./external-listings";
 import { findGarment, getGarment, getGarmentSummary, sectionByGarment } from "./garments";
 import { normalizeHandle } from "./handles";
+import { getColorListingHref } from "./product-colors";
+import type { GroupableProduct } from "./product-groups";
 import { createProductGroup, getListingHandles, getProductGroupForMember, getProductHref, groupProductListings, resolveListingHandle, resolveProductHandle } from "./product-groups";
 import { sortOptionValues } from "./product-options";
 import { shopifyCatalogTag } from "./shopify-cache";
@@ -281,7 +283,7 @@ async function getCatalogProducts(query: string | null): Promise<Product[]> {
 // search, so `listing:Name Tag Shirt` and `listing: name tag shirt` share one listing.
 async function getListingProducts(handles: string[]): Promise<Product[]> {
   if (!handles.length) return [];
-  const isMember = (product: Pick<Product, "handle" | "tags">) => handles.includes(getProductGroupForMember(product)?.handle ?? "");
+  const isMember = (product: GroupableProduct) => handles.includes(getProductGroupForMember(product)?.handle ?? "");
   if (!isShopifyConfigured()) return demoProducts.filter(isMember);
   const members = (await getProductSummaries()).filter(isMember);
   const products = await Promise.all(members.map((product) => getShopifyProduct(product.handle)));
@@ -542,13 +544,18 @@ export type ProductCard = {
 export async function getProductCardsByIds(productIds: string[]): Promise<Record<string, ProductCard>> {
   const ids = [...new Set(productIds)].filter((id) => /^[1-9][0-9]{0,19}$/.test(id)).slice(0, 50);
   if (!ids.length) return {};
-  const card = (product: { handle: string; title: string; tags?: string[]; featuredImage?: { url: string; altText?: string | null } | null; options?: { name: string }[] }): ProductCard =>
-    ({ handle: product.handle, href: getProductHref(product), title: product.title, image: product.featuredImage ? { url: product.featuredImage.url, altText: product.featuredImage.altText ?? null } : null,
-      options: (product.options ?? []).map((option) => option.name) });
+  type CardProduct = { handle: string; title: string; tags?: string[]; featuredImage?: { url: string; altText?: string | null } | null; options?: { name: string }[] };
+  const cards = async (entries: [string, CardProduct][]) => {
+    const href = await getCanonicalProductHrefs(entries.map(([, product]) => product));
+    return Object.fromEntries(entries.map(([id, product]) => [id, {
+      handle: product.handle, href: href(product), title: product.title, image: product.featuredImage ? { url: product.featuredImage.url, altText: product.featuredImage.altText ?? null } : null,
+      options: (product.options ?? []).map((option) => option.name),
+    } satisfies ProductCard]));
+  };
   if (!isShopifyConfigured()) {
-    return Object.fromEntries(demoProducts.flatMap((product) => {
+    return cards(demoProducts.flatMap((product) => {
       const id = product.id.split("/").pop()!;
-      return ids.includes(id) ? [[id, card(product)]] : [];
+      return ids.includes(id) ? [[id, product] as [string, CardProduct]] : [];
     }));
   }
   const data = await storefrontRequest<{ nodes: ({ id: string; handle: string; title: string; tags: string[]; featuredImage: { url: string; altText: string | null } | null; options: { name: string }[] } | null)[] }>(
@@ -556,7 +563,30 @@ export async function getProductCardsByIds(productIds: string[]): Promise<Record
     { ids: ids.map((id) => `gid://shopify/Product/${id}`) },
     { revalidate: 300 },
   );
-  return Object.fromEntries(data.nodes.flatMap((node) => node?.id && node.handle ? [[node.id.split("/").pop()!, card(node)]] : []));
+  return cards(data.nodes.flatMap((node) => node?.id && node.handle ? [[node.id.split("/").pop()!, node] as [string, CardProduct]] : []));
+}
+
+/**
+ * Canonical links for listing members. A member link names its printing
+ * product (`?design=`), but a listing split by color is addressed by color
+ * alone, since shoppers choose a color and never the product that prints it.
+ * Resolving that needs the listing's other members, so they're fetched once.
+ */
+async function getCanonicalProductHrefs(products: GroupableProduct[]) {
+  const groups = new Map(products.flatMap((product) => {
+    const group = getProductGroupForMember(product);
+    return group ? [[group.handle, group] as const] : [];
+  }));
+  const members = await getListingProducts([...groups.keys()]).catch(() => []);
+  const listings = new Map([...groups].flatMap(([handle, group]) => {
+    const listing = createProductGroup(group, members);
+    return listing ? [[handle, listing] as const] : [];
+  }));
+  return (product: GroupableProduct) => {
+    const listing = listings.get(getProductGroupForMember(product)?.handle ?? "");
+    const design = listing?.designs?.find((entry) => entry.product.handle === product.handle)?.value;
+    return (listing && design && getColorListingHref(listing, design)) || getProductHref(product);
+  };
 }
 
 /**
