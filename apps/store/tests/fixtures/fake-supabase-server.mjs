@@ -11,7 +11,7 @@ function row(n,status="pending",subject="buyer-a") {
   const content={rating:4,title:"Ryan approved",body:`Review ${n}.`,nameStyle:"first-initial",displayName:"Ryan F."};
   return {subject,published:status==="published"?{...content,body:"Approved original text."}:null,
     value:{id:id(n),lineId:String(n),item:{productId:"100",productTitle:`Fixture shirt ${n}`,variantTitle:"Black / M"},status,
-      hasPendingEdit:status==="published",rejectionReason:status==="rejected"?"Please keep it about the shirt.":null,publishedAt:status==="published"?stamp(1000-n).slice(0,23)+"Z":null,
+      hasPendingEdit:status==="published",rejectionReason:status==="rejected"?"Please keep it about the shirt.":null,rejectedPhotos:[],publishedAt:status==="published"?stamp(1000-n).slice(0,23)+"Z":null,
       createdAt:stamp(1000-n),updatedAt:stamp(1000-n),current:content}};
 }
 /** `records` replaces the default rows; `keepSessions` leaves sign-ins alone, for the local preview's scenario switcher. */
@@ -73,9 +73,9 @@ function review(name,a){
   if(operation==="review.edit"){
     if(["hidden","withdrawn"].includes(record.value.status))return "closed";
     record.value.current={...submission(a),displayName:a.p_display_name};
-    record.value.hasPendingEdit=Boolean(record.published);record.value.rejectionReason=null;record.value.status=record.published?"published":"pending";
+    record.value.hasPendingEdit=Boolean(record.published);record.value.rejectionReason=null;record.value.rejectedPhotos=[];record.value.status=record.published?"published":"pending";
   }else{
-    record.value.status="withdrawn";record.value.hasPendingEdit=false;record.value.rejectionReason=null;record.published=null;
+    record.value.status="withdrawn";record.value.hasPendingEdit=false;record.value.rejectionReason=null;record.value.rejectedPhotos=[];record.published=null;
   }
   record.value.updatedAt=stamp(2000+ ++tick);
   if(options.failReadAfterSave)options.failRead=true;

@@ -12,7 +12,7 @@ const signedIn:CustomerSessionResult={status:"authenticated",session};
 const reviewId="3f1c2a4e-5b6d-4e7f-8a9b-0c1d2e3f4a5b";
 const version="2026-11-17T12:00:00.123456Z";
 const mine:BuyerReview={id:reviewId,lineId:"1",item:{productId:"100",productTitle:"Name Tag Shirt",variantTitle:null},
-  status:"published",hasPendingEdit:false,rejectionReason:null,publishedAt:"2026-11-17T12:00:00.123Z",createdAt:version,updatedAt:version,
+  status:"published",hasPendingEdit:false,rejectionReason:null,rejectedPhotos:[],publishedAt:"2026-11-17T12:00:00.123Z",createdAt:version,updatedAt:version,
   current:{rating:5,title:"Ryan approved",body:"Great shirt.",nameStyle:"first-initial",displayName:"Ryan L."}};
 const edit={action:"edit",reviewId,expectedUpdatedAt:version,rating:4,title:"Ryan approved",body:"  Faded a little. ",nameStyle:"first-initial"};
 function request(body:unknown,headers:HeadersInit={}) {

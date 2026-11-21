@@ -27,7 +27,7 @@ function demo(handle: string) {
 
 type Sample = {
   n: number; status: BuyerReviewStatus; daysAgo: number; rating: number; title: string; body: string;
-  nameStyle?: ReviewNameStyle; verified?: boolean; pendingEdit?: boolean; rejectionReason?: string;
+  nameStyle?: ReviewNameStyle; verified?: boolean; pendingEdit?: boolean; rejectionReason?: string; rejectedPhotos?: BuyerReview["rejectedPhotos"];
 } & ({ handle: string; variant?: string | null } | { offStorefront: { title: string; variant: string | null } });
 
 function review(now: number, sample: Sample): BuyerReview {
@@ -39,6 +39,7 @@ function review(now: number, sample: Sample): BuyerReview {
     id: uuid(sample.n), lineId: sample.verified === false ? null : String(9000 + sample.n), item, status: sample.status,
     hasPendingEdit: sample.status === "published" && Boolean(sample.pendingEdit),
     rejectionReason: sample.rejectionReason ?? null,
+    rejectedPhotos: sample.rejectedPhotos ?? [],
     publishedAt: sample.status === "published" ? iso(now, sample.daysAgo - 1) : null,
     createdAt: version(now, sample.daysAgo, sample.n), updatedAt: version(now, sample.daysAgo, sample.n),
     current: { rating: sample.rating as BuyerReview["current"]["rating"], title: sample.title, body: sample.body, nameStyle, displayName: names[nameStyle] },
@@ -49,6 +50,7 @@ const everyStatus: Sample[] = [
   { n: 1, status: "pending", daysAgo: 1, handle: "ryan-meetup-tee", variant: "M / Black", rating: 5, nameStyle: "anonymous",
     title: "Wore it to three Ryan meetups", body: "Soft, fits true to size, and strangers named Ryan keep nodding at me." },
   { n: 2, status: "published", daysAgo: 6, handle: "hello-my-name-is-ryan-sweatshirt", variant: "L / Cream", rating: 5, nameStyle: "full",
+    rejectedPhotos: [{ id: "00000000-0000-4000-8000-000000000201", reason: "This one shows someone else's face up close. Swap in a photo of just the sweatshirt and we'll put it up." }],
     title: "Warmest name tag I own", body: "Thick, cozy, and saves me introducing myself." },
   { n: 3, status: "published", daysAgo: 12, pendingEdit: true, handle: "ryan-name-tag-shirt", variant: "S / White", rating: 4,
     title: "Still great after a dozen washes", body: "Updated: the print hasn't faded at all. Knocked one star off because I wanted it in more colours." },

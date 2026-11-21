@@ -31,9 +31,9 @@ function mockBackend(seed: BuyerReview[], products: Record<string, MyReviewProdu
       await pause();
       reviews = reviews.map((review) => {
         if (review.id !== change.reviewId) return review;
-        if (change.action === "withdraw") return { ...review, status: "withdrawn", hasPendingEdit: false, rejectionReason: null, publishedAt: null, updatedAt: stamp() };
+        if (change.action === "withdraw") return { ...review, status: "withdrawn", hasPendingEdit: false, rejectionReason: null, rejectedPhotos: [], publishedAt: null, updatedAt: stamp() };
         const live = review.status === "published";
-        return { ...review, status: live ? "published" : "pending", hasPendingEdit: live, rejectionReason: null, updatedAt: stamp(), current: current(change) };
+        return { ...review, status: live ? "published" : "pending", hasPendingEdit: live, rejectionReason: null, rejectedPhotos: [], updatedAt: stamp(), current: current(change) };
       });
     },
   };
@@ -41,7 +41,7 @@ function mockBackend(seed: BuyerReview[], products: Record<string, MyReviewProdu
     await pause();
     const n = 700 + ++created;
     reviews = [{
-      id: `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`, lineId: item.lineId, status: "pending", hasPendingEdit: false, rejectionReason: null, publishedAt: null,
+      id: `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`, lineId: item.lineId, status: "pending", hasPendingEdit: false, rejectionReason: null, rejectedPhotos: [], publishedAt: null,
       item: { productId: item.productId.split("/").pop()!, productTitle: item.productTitle, variantTitle: item.options.map((option) => option.value).join(" / ") || null },
       createdAt: stamp(), updatedAt: stamp(), current: current(review),
     }, ...reviews];

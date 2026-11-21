@@ -42,6 +42,9 @@ export type VerifiedReviewPurchase = ReviewPurchase & { orderId: string; lineId:
 /** How a buyer's own review stands, in words they can act on. */
 export type BuyerReviewStatus = "pending" | "published" | "rejected" | "hidden" | "withdrawn";
 
+/** A photo staff turned down, and why, as the buyer reads it. */
+export type BuyerRejectedPhoto = { id: string; reason: string };
+
 /** One of the signed-in buyer's own reviews, for "My reviews". Never public. */
 export type BuyerReview = {
   id: string;
@@ -58,6 +61,12 @@ export type BuyerReview = {
    * and withdrawn reviews, which the buyer cannot resubmit, never do.
    */
   rejectionReason: string | null;
+  /**
+   * Photos staff rejected on the version the buyer edits from, each with the
+   * reason written for the buyer. Empty once they resubmit, and always empty
+   * for hidden and withdrawn reviews.
+   */
+  rejectedPhotos: BuyerRejectedPhoto[];
   publishedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -201,7 +210,7 @@ export const buyerReviewTimestamp = (value: unknown): value is string =>
 const isoDate = (value: unknown): value is string => typeof value === "string" &&
   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
 
-const BUYER_REVIEW_KEYS = ["id", "lineId", "item", "status", "hasPendingEdit", "rejectionReason", "publishedAt", "createdAt", "updatedAt", "current"] as const;
+const BUYER_REVIEW_KEYS = ["id", "lineId", "item", "status", "hasPendingEdit", "rejectionReason", "rejectedPhotos", "publishedAt", "createdAt", "updatedAt", "current"] as const;
 const BUYER_REVIEW_ITEM_KEYS = ["productId", "productTitle", "variantTitle"] as const;
 const BUYER_REVIEW_CURRENT_KEYS = ["rating", "title", "body", "nameStyle", "displayName"] as const;
 
@@ -221,8 +230,16 @@ export function buyerReviewRow(value: unknown): unknown {
   const row = pick(value, BUYER_REVIEW_KEYS);
   if (!row || typeof row !== "object" || Array.isArray(row)) return row;
   const { item, current } = row as Record<string, unknown>;
-  return { ...row, ...("item" in row ? { item: pick(item, BUYER_REVIEW_ITEM_KEYS) } : {}),
+  // Rows from before photo rejection reasons existed carry none.
+  return { rejectedPhotos: [], ...row, ...("item" in row ? { item: pick(item, BUYER_REVIEW_ITEM_KEYS) } : {}),
     ...("current" in row ? { current: pick(current, BUYER_REVIEW_CURRENT_KEYS) } : {}) };
+}
+
+const BUYER_REJECTED_PHOTO_KEYS = ["id", "reason"] as const;
+function buyerRejectedPhoto(value: unknown): value is BuyerRejectedPhoto {
+  const photo = exactObject(value, BUYER_REJECTED_PHOTO_KEYS);
+  return Boolean(photo && uuid(photo.id) && typeof photo.reason === "string" && photo.reason.trim() !== "" &&
+    [...photo.reason].length <= REVIEW_REJECTION_REASON_MAX);
 }
 
 function buyerReviewSchema(value: unknown): BuyerReview | null {
@@ -235,6 +252,9 @@ function buyerReviewSchema(value: unknown): BuyerReview | null {
     typeof review.hasPendingEdit === "boolean" && (!review.hasPendingEdit || review.status === "published") &&
     (review.rejectionReason === null || (typeof review.rejectionReason === "string" && review.rejectionReason.trim() !== "" &&
       [...review.rejectionReason].length <= REVIEW_REJECTION_REASON_MAX && ["rejected","published"].includes(review.status as string) && !review.hasPendingEdit)) &&
+    Array.isArray(review.rejectedPhotos) && review.rejectedPhotos.length <= REVIEW_PHOTOS_MAX &&
+    review.rejectedPhotos.every(buyerRejectedPhoto) && new Set(review.rejectedPhotos.map((photo) => (photo as BuyerRejectedPhoto).id)).size === review.rejectedPhotos.length &&
+    (review.rejectedPhotos.length === 0 || !["hidden","withdrawn"].includes(review.status as string)) &&
     (review.publishedAt === null || isoDate(review.publishedAt)) && (review.status !== "published" || review.publishedAt !== null) &&
     buyerReviewTimestamp(review.createdAt) && buyerReviewTimestamp(review.updatedAt) &&
     normalizedSubmission({ rating:current.rating,title:current.title,body:current.body,nameStyle:current.nameStyle }) &&

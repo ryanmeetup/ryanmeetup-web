@@ -2,6 +2,7 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { reviewReplyBodySchema, reviewSubmissionSchema, staffReviewPhotoSchema } from "@ryanmeetup/reviews";
+import type { StaffReviewPhoto } from "@ryanmeetup/reviews";
 import { parseUuid } from "@/lib/api-schema";
 import { isModerationProductId, isModerationTimestamp } from "@/lib/store-reviews/moderation";
 import { StoreReviewDatabaseError } from "./errors";
@@ -21,10 +22,11 @@ function revision(value: unknown): ModerationRevision | null {
   if (!row || !parseUuid(row.id) || !isModerationTimestamp(row.submittedAt) || !text(row.displayName, 60)) return null;
   const content = reviewSubmissionSchema({ rating: row.rating, title: row.title, body: row.body, nameStyle: "anonymous" });
   if (!content || content.title !== row.title || content.body !== row.body) return null;
-  const photos = row.photos ?? [];
-  if (!Array.isArray(photos) || photos.length > 5 || photos.some((photo) => !staffReviewPhotoSchema(photo)) ||
-    new Set(photos.map((photo) => photo.id)).size !== photos.length) return null;
-  return { photos, id: row.id as string, rating: content.rating, title: content.title, body: content.body, displayName: row.displayName, submittedAt: row.submittedAt };
+  const rows = row.photos ?? [];
+  if (!Array.isArray(rows) || rows.length > 5) return null;
+  const photos = rows.map(staffReviewPhotoSchema);
+  if (photos.some((photo) => !photo) || new Set(photos.map((photo) => photo!.id)).size !== photos.length) return null;
+  return { photos: photos as StaffReviewPhoto[], id: row.id as string, rating: content.rating, title: content.title, body: content.body, displayName: row.displayName, submittedAt: row.submittedAt };
 }
 const eventActions = ["submitted", "resubmitted", "edited", "withdrawn", "approved", "rejected", "hidden", "restored", "reply_set", "reply_removed", "photo_approved", "photo_rejected"];
 function event(value: unknown): ModerationEvent | null {

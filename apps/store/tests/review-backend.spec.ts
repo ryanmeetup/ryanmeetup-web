@@ -75,7 +75,7 @@ test("malformed commands never reach the database", async () => {
 
 test("buyer review rows ignore fields this build doesn't know, but still require every known one", async () => {
   const mine = {
-    id: review.id, lineId: "200", item: review.item, status: "pending", hasPendingEdit: false, rejectionReason: null, publishedAt: null,
+    id: review.id, lineId: "200", item: review.item, status: "pending", hasPendingEdit: false, rejectionReason: null, rejectedPhotos: [], publishedAt: null,
     createdAt: "2026-11-17T12:00:00.000000Z", updatedAt: "2026-11-17T12:00:00.000000Z",
     current: { rating: 4, title: "Ryan approved", body: "Holding up well.", nameStyle: "anonymous", displayName: "Anonymous Ryan" },
   };
@@ -84,6 +84,14 @@ test("buyer review rows ignore fields this build doesn't know, but still require
   const { backend } = database({ store_buyer_reviews: [[newer]] });
   expect(await backend({ operation: "reviews.mine", subject: "buyer", cursor: null })).toEqual({ reviews: [mine], nextCursor: null });
   expect(await backend({ operation: "review.mine", subject: "buyer", reviewId: review.id })).toEqual(mine);
+  // Rows from before photo rejection reasons existed read as having none.
+  const older: Record<string, unknown> = { ...mine }; delete older.rejectedPhotos;
+  expect(await database({ store_buyer_reviews: [[older]] }).backend({ operation: "review.mine", subject: "buyer", reviewId: review.id })).toEqual(mine);
+  const rejectedPhotos = [{ id: "00000000-0000-4000-8000-000000000201", reason: "Swap in a photo of the shirt." }];
+  expect(await database({ store_buyer_reviews: [[{ ...mine, rejectedPhotos }]] }).backend({ operation: "review.mine", subject: "buyer", reviewId: review.id })).toEqual({ ...mine, rejectedPhotos });
+  for (const invalid of [[{ id: "not-a-uuid", reason: "x" }], [{ id: rejectedPhotos[0].id, reason: " " }], [{ ...rejectedPhotos[0], staff: "Ryan" }], [rejectedPhotos[0], rejectedPhotos[0]]])
+    await expect(database({ store_buyer_reviews: [[{ ...mine, rejectedPhotos: invalid }]] }).backend({ operation: "review.mine", subject: "buyer", reviewId: review.id })).rejects.toThrow(ReviewBackendError);
+  await expect(database({ store_buyer_reviews: [[{ ...mine, status: "hidden", rejectedPhotos }]] }).backend({ operation: "review.mine", subject: "buyer", reviewId: review.id })).rejects.toThrow(ReviewBackendError);
   const { rejectionReason: _dropped, ...missing } = mine;
   await expect(database({ store_buyer_reviews: [[missing]] }).backend({ operation: "reviews.mine", subject: "buyer", cursor: null })).rejects.toThrow(ReviewBackendError);
 });

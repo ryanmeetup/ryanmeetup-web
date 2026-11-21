@@ -1,6 +1,6 @@
 import { REVIEW_PHOTOS_MAX } from "./content";
 
-import { buyerReviewTimestamp } from "./review-backend";
+import { REVIEW_REJECTION_REASON_MAX, buyerReviewTimestamp } from "./review-backend";
 
 /** Private buyer selection, independent of public photo URLs and moderation notes. */
 export type BuyerReviewPhoto = { id: string; width: number; height: number };
@@ -26,9 +26,14 @@ export function buyerReviewPhotoSelectionSchema(value: unknown): BuyerReviewPhot
 
 export const REVIEW_PHOTO_STATES = ["pending", "approved", "rejected"] as const;
 export type ReviewPhotoState = (typeof REVIEW_PHOTO_STATES)[number];
-export type StaffReviewPhoto = BuyerReviewPhoto & { state: ReviewPhotoState };
+/** `rejectionReason` is the note on a rejected photo, which the buyer also reads. */
+export type StaffReviewPhoto = BuyerReviewPhoto & { state: ReviewPhotoState; rejectionReason: string | null };
 export function staffReviewPhotoSchema(value: unknown): StaffReviewPhoto | null {
-  if (!exact(value, ["id", "width", "height", "state"]) || !REVIEW_PHOTO_STATES.includes(value.state as ReviewPhotoState) ||
-    !buyerReviewPhotoSchema({ id: value.id, width: value.width, height: value.height })) return null;
-  return value as StaffReviewPhoto;
+  // Before the reason existed the row had no such key; read it as no reason.
+  const row = exact(value, ["id", "width", "height", "state"]) ? { ...value, rejectionReason: null } : value;
+  if (!exact(row, ["id", "width", "height", "state", "rejectionReason"]) || !REVIEW_PHOTO_STATES.includes(row.state as ReviewPhotoState) ||
+    !buyerReviewPhotoSchema({ id: row.id, width: row.width, height: row.height }) ||
+    (row.rejectionReason !== null && (row.state !== "rejected" || typeof row.rejectionReason !== "string" ||
+      row.rejectionReason.trim() === "" || [...row.rejectionReason].length > REVIEW_REJECTION_REASON_MAX))) return null;
+  return row as StaffReviewPhoto;
 }

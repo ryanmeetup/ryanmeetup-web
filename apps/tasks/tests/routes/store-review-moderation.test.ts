@@ -96,6 +96,17 @@ describe("owner review moderation", () => {
     expect(mocks.rpc).toHaveBeenCalledWith("store_review_moderation_products", { p_actor: actor, p_shop_id: "123" });
   });
 
+  it("carries a rejected photo's buyer-facing reason and reads older photo rows as having none", async () => {
+    const photo = { id: "00000000-0000-4000-8000-000000001001", width: 48, height: 32, state: "rejected", rejectionReason: "Swap in a photo of the shirt." };
+    const older = { id: "00000000-0000-4000-8000-000000001002", width: 48, height: 32, state: "pending" };
+    pageResult = { data: [{ ...row, pending: { ...revision, photos: [photo, older] } }], error: null };
+    expect((await (await GET(get())).json()).reviews[0].pending.photos).toEqual([photo, { ...older, rejectionReason: null }]);
+    for (const bad of [{ ...photo, state: "approved" }, { ...photo, rejectionReason: " " }, { ...photo, rejectionReason: 3 }, { ...photo, staff: "Ryan" }]) {
+      pageResult = { data: [{ ...row, pending: { ...revision, photos: [bad] } }], error: null };
+      expect((await GET(get())).status).toBe(500);
+    }
+  });
+
   it("filters the rejected queue to one product and validates the product list", async () => {
     const rejectedRow = { ...row, pending: null, rejected: revision };
     pageResult = { data: [rejectedRow], error: null };

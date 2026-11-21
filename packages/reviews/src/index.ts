@@ -54,6 +54,7 @@ export {
   reviewResultSchema,
 } from "./review-backend";
 export type {
+  BuyerRejectedPhoto,
   BuyerReview,
   BuyerReviewStatus,
   BuyerReviewPage,
