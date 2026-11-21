@@ -177,8 +177,6 @@ unverified product feedback. All submissions wait for approval.
 
 #### External cleanup
 
-- [ ] Confirm Judge.me is uninstalled in Shopify, including its order-review
-      button/account entry points. Ryan chose no old-review export/import.
 - [ ] Disable competing Shop product-review prompts/feedback-request emails
       where available in Admin and verify the actual buyer-facing entry points.
 
@@ -202,7 +200,8 @@ product data; do not hard-code unverified delivery promises.
   deferred/dropped; they are not unfinished launch blockers.
 - Display currency estimates do not change USD cart/checkout amounts.
 - Custom reviews replaced Judge.me on November 20; legacy reviews were not
-  imported and no provider rollback remains.
+  imported and no provider rollback remains. Ryan confirmed Judge.me
+  uninstalled on November 21.
 
 Earlier item-by-item implementation logs and audit snapshots remain in Git.
 Current procedures belong in the focused guides rather than duplicate logs.
