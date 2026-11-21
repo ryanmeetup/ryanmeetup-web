@@ -172,10 +172,6 @@ unverified product feedback. All submissions wait for approval.
 
 - [ ] Confirm Judge.me is uninstalled in Shopify, including its order-review
       button/account entry points. Ryan chose no old-review export/import.
-- [ ] Remove obsolete `JUDGEME_SHOP_DOMAIN`, `JUDGEME_PUBLIC_TOKEN`,
-      `JUDGEME_PRIVATE_API_TOKEN`, `REVIEWS_PROVIDER` and
-      `REVIEWS_PREVIEW_ENABLED` from local and Vercel environments if present.
-      Current code ignores them; this is cleanup, not a reader switch.
 - [ ] Disable competing Shop product-review prompts/feedback-request emails
       where available in Admin and verify the actual buyer-facing entry points.
 
