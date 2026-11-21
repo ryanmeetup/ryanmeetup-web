@@ -26,7 +26,6 @@ export async function RelatedListings({ product }: { product: ProductListing }) 
       <SectionHeader
         align="left"
         title={<span id="related-listings">More from this shop</span>}
-        description={related.length ? "More Ryan, same checkout." : undefined}
         actions={(
           <Button.Link href={browse.href} size="md" variant="secondary" className="!w-full sm:!w-auto" rightIcon={<FiArrowRight aria-hidden />}>
             {browse.label}
