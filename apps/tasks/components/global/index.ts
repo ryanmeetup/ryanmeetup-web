@@ -33,5 +33,6 @@ export {
   WorkspaceShellSkeleton,
 } from "./WorkspacePageShell";
 export { ThemeProvider, useTheme } from "./ThemeProvider";
+export { WorkspaceSwitch, type WorkspaceSwitchOption } from "./WorkspaceSwitch";
 export { ThemeToggle } from "./ThemeToggle";
 export { useEditorReturnPath } from "./useEditorReturnPath";
