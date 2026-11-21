@@ -41,7 +41,7 @@ export function PromotionBanner() {
       icon={<FiTag className="h-6 w-6 sm:h-8 sm:w-8" aria-hidden />}
       iconAlign="center"
       aria-label={`${promotion.name} sale`}
-      title={`${promotion.name}: the more Ryan, the more you save.`}
+      title={`${promotion.name} sale is live now.`}
       action={<Button.Link href="/collections/all" variant="secondary" size="sm" className="whitespace-nowrap">Shop all</Button.Link>}
     >
       {/* Phones get the offer and the deadline; the reassurance waits for the room to say it. */}
