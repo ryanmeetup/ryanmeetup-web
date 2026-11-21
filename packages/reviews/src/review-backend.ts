@@ -98,6 +98,8 @@ export type ReviewCommand =
   | { operation: "reviews.page"; productIds: string[]; limit: number; cursor: string | null }
   /** Rating totals for each product on its own, for listing cards. */
   | { operation: "reviews.summaries"; productIds: string[] }
+  /** Rating totals pooled across every published review in the shop, including reviews of products it no longer sells. */
+  | { operation: "reviews.shopSummary" }
   | { operation: "reviews.latest" }
   /** A page of published reviews for some products, or the whole shop when `productIds` is null. */
   | { operation: "reviews.search"; productIds: string[] | null; search: PublicReviewSearch; limit: number; offset: number; focusReviewId: string | null }
@@ -117,6 +119,7 @@ export type ReviewResults = {
   "reviews.page": PublicReviewPage;
   /** Keyed by product ID; every requested product is present, with a zero count when it has no reviews. */
   "reviews.summaries": Record<string, ReviewSummary>;
+  "reviews.shopSummary": ReviewSummary;
   "reviews.latest": PublicReview[];
   "reviews.search": PublicReviewSearchPage;
   "reviews.mine": BuyerReviewPage;
@@ -221,6 +224,7 @@ export function reviewCommandSchema(value: unknown): ReviewCommand | null {
       return command && productIdList(command.productIds) ? (command as ReviewCommand) : null;
     }
     case "reviews.latest":
+    case "reviews.shopSummary":
       return exactObject(value, ["operation"]) ? value as ReviewCommand : null;
     case "reviews.search": {
       const command = exactObject(value, ["operation", "productIds", "search", "limit", "offset", "focusReviewId"]);
@@ -338,6 +342,8 @@ export function reviewResultSchema<Operation extends ReviewOperation>(operation:
   } else if (operation === "reviews.summaries") {
     const summaries = data && typeof data === "object" && !Array.isArray(data) ? data as Record<string, unknown> : null;
     valid = Boolean(summaries && productIdList(Object.keys(summaries)) && Object.values(summaries).every((summary) => reviewSummarySchema(summary) !== null));
+  } else if (operation === "reviews.shopSummary") {
+    valid = reviewSummarySchema(data) !== null;
   } else if (operation === "reviews.latest") {
     valid = Array.isArray(data) && data.length <= 6 && newestFirstReviews(data);
   } else if (operation === "reviews.search") {

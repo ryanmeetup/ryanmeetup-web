@@ -105,6 +105,10 @@ async function executeStoreReview(admin: SupabaseClient, shopId: string, command
       data = Object.fromEntries(summaries);
       break;
     }
+    case "reviews.shopSummary":
+      // A null product list pools the whole shop.
+      data = check(await admin.rpc("store_review_summary", { p_shop_id: shopId, p_product_ids: null }).abortSignal(AbortSignal.timeout(10_000)));
+      break;
     case "reviews.page": {
       const after = command.cursor ? decodeReviewCursor(command.cursor) : null;
       const [summary, rows] = await Promise.all([

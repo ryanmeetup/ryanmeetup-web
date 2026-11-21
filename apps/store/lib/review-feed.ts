@@ -1,4 +1,5 @@
-import type { PublicReview } from "@ryanmeetup/reviews";
+import { reviewResultSchema } from "@ryanmeetup/reviews";
+import type { PublicReview, ReviewSummary } from "@ryanmeetup/reviews";
 import { getProductHref } from "./product-groups";
 import { readPublicReviewPage, readReviewPageRequest } from "./public-review-page";
 import { DEFAULT_REVIEW_VIEW, toReview } from "./public-review-view";
@@ -46,6 +47,19 @@ export async function getReviewFeedPage({ backend, view = DEFAULT_REVIEW_VIEW, p
 }): Promise<ReviewFeedPage | null> {
   const page = await readPublicReviewPage({ backend, productIds: null, view });
   return page && { items: await withReviewedProducts(page.reviews, products), total: page.total, offset: page.offset };
+}
+
+/**
+ * The store-wide rating: every published review, Etsy imports and reviews of
+ * products no longer sold included. Null when there are none or the read
+ * fails; the feed still renders without it.
+ */
+export async function getShopReviewSummary(backend: ReviewBackend | null): Promise<ReviewSummary | null> {
+  if (!backend) return null;
+  try {
+    const result = reviewResultSchema("reviews.shopSummary", { data: await backend({ operation: "reviews.shopSummary" }) });
+    return result?.data.count ? result.data : null;
+  } catch { return null; }
 }
 
 /** A numbered feed page for the /reviews controls. Anonymous, approved-only, and the page size is fixed. */

@@ -4,7 +4,7 @@ import type { PublicReview, ReviewCommand } from "@ryanmeetup/reviews";
 import { DEFAULT_REVIEW_VIEW } from "../lib/public-review-view";
 import { createReviewBackend, ReviewBackendError } from "../lib/review-backend";
 import type { ReviewBackend } from "../lib/review-backend";
-import { getReviewFeedPage, handleReviewFeedPage } from "../lib/review-feed";
+import { getReviewFeedPage, getShopReviewSummary, handleReviewFeedPage } from "../lib/review-feed";
 import { fakeSupabase, supabaseCall } from "./fixtures/customer-auth-backend";
 
 const review = (n: number, productId = "100"): PublicReview => ({
@@ -100,4 +100,28 @@ test("the feed route reads only the fixed view parameters and never reads storag
   expect(commands).toEqual([{ ...command, search: { rating: 1, source: "unmatched", sort: "highest", query: "fits" }, limit: 10, offset: 10 }]);
   expect(await ok.json()).toMatchObject({ total: 11, offset: 10, items: [{ review: { id: review(1).id } }] });
   expect((await handleReviewFeedPage(new Request("https://store.test/api/reviews/feed"), { backend: null })).status).toBe(503);
+});
+
+test("the store-wide rating pools every published review and hides when empty or unreadable", async () => {
+  const calls: unknown[] = [];
+  const summary = { count: 4, average: 4.625, distribution: { 1: 0, 2: 0, 3: 0, 4: 1, 5: 3 } };
+  let response: Response = Response.json(summary);
+  const database = fakeSupabase(async (input, init) => { calls.push(supabaseCall(input, init)); return response.clone(); });
+  const backend = createReviewBackend({ database, shopId: "123456" });
+  expect(await getShopReviewSummary(backend)).toEqual(summary);
+  // A null product list is the whole shop, Etsy listings that never came to the store included.
+  expect(calls).toEqual([{ name: "store_review_summary", args: { p_shop_id: "123456", p_product_ids: null } }]);
+
+  // Before the migration lands, a null list matches nothing: no rating rather than "0.0 from 0 reviews".
+  response = Response.json({ count: 0, average: 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } });
+  expect(await getShopReviewSummary(backend)).toBeNull();
+  response = Response.json({ ...summary, count: 9 });
+  expect(await getShopReviewSummary(backend)).toBeNull();
+  response = Response.json({ code: "XX000", message: "down" }, { status: 500 });
+  expect(await getShopReviewSummary(backend)).toBeNull();
+  expect(await getShopReviewSummary(null)).toBeNull();
+
+  expect(reviewCommandSchema({ operation: "reviews.shopSummary" })).not.toBeNull();
+  expect(reviewCommandSchema({ operation: "reviews.shopSummary", productIds: ["100"] })).toBeNull();
+  expect(reviewCommandSchema({ operation: "reviews.shopSummary", shopId: "999" })).toBeNull();
 });
