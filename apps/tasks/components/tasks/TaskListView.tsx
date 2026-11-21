@@ -192,6 +192,7 @@ export function TaskListView({
         pageSize={pageSize}
         totalCount={totalCount}
         itemLabel="tasks"
+        itemLabelSingular="task"
         disabled={loading}
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}

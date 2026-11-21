@@ -173,6 +173,7 @@ const EventsListPager = (props: EventsListPagerProps) => {
           totalCount={sortedEvents.length}
           pageSizeOptions={perPageOptions}
           itemLabel="events"
+          itemLabelSingular="event"
           pageSizeLabel="Per page"
           inset={false}
           onPageChange={setPage}

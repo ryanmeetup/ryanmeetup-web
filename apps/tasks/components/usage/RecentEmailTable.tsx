@@ -210,6 +210,7 @@ export function RecentEmailTable({ emails }: { emails: ResendEmailSummary[] }) {
             pageSize={pageSize}
             totalCount={filtered.length}
             itemLabel="emails"
+            itemLabelSingular="email"
             disabled={isPending}
             onPageChange={setPage}
             onPageSizeChange={setPageSize}

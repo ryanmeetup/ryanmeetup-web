@@ -467,6 +467,7 @@ export function ActivityPageClient({
               pageSize={data.activityPage?.pageSize ?? pageSize}
               totalCount={data.activityPage?.totalCount ?? data.activity.length}
               itemLabel="events"
+              itemLabelSingular="event"
               disabled={activityLoading}
               onPageChange={setPage}
               onPageSizeChange={setPageSize}

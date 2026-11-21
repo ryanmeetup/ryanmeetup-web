@@ -903,6 +903,7 @@ export function AccessPageClient({
               pageSize={pageSize}
               totalCount={searchedProfiles.length}
               itemLabel="people"
+              itemLabelSingular="person"
               onPageChange={setPage}
               onPageSizeChange={setPageSize}
             />

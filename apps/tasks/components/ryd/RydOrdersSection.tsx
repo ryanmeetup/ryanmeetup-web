@@ -489,6 +489,7 @@ export function RydOrdersSection({
                   pageSize={pageSize}
                   totalCount={sorted.length}
                   itemLabel="orders"
+                  itemLabelSingular="order"
                   disabled={searchPending}
                   onPageChange={setPage}
                   onPageSizeChange={setPageSize}

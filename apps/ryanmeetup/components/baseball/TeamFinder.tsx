@@ -337,6 +337,7 @@ const TeamFinder = ({ teams }: TeamFinderProps) => {
                   totalCount={results.length}
                   pageSizeOptions={PAGE_SIZE_OPTIONS}
                   itemLabel="teams"
+                  itemLabelSingular="team"
                   disabled={isPending}
                   onPageChange={(next) => {
                     setPageParam(String(next));

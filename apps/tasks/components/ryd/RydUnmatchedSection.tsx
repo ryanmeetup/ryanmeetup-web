@@ -374,7 +374,8 @@ export function RydUnmatchedSection({
                   page={currentPage}
                   pageSize={pageSize}
                   totalCount={sorted.length}
-                  itemLabel={sorted.length === 1 ? "person" : "people"}
+                  itemLabel="people"
+                  itemLabelSingular="person"
                   disabled={searchPending}
                   onPageChange={setPage}
                   onPageSizeChange={setPageSize}
