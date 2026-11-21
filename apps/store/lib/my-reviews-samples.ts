@@ -1,5 +1,6 @@
 import type { BuyerReview, BuyerReviewStatus, ReviewNameStyle } from "@ryanmeetup/reviews";
 import { demoProductId, demoProducts } from "./demo-data";
+import { getProductHref } from "./product-groups";
 import type { MyReviewProduct } from "./my-review-view";
 import type { ReviewSuggestion } from "./review-suggestions";
 
@@ -118,7 +119,7 @@ export function sampleProducts(reviews?: BuyerReview[]): Record<string, MyReview
   return Object.fromEntries(demoProducts.flatMap((product) => {
     const id = numeric(product.id);
     return !reviews || reviews.some((item) => item.item.productId === id)
-      ? [[id, { href: `/products/${product.handle}#reviews`, image: product.featuredImage ? { url: product.featuredImage.url, altText: product.featuredImage.altText ?? null } : null,
+      ? [[id, { href: `${getProductHref(product)}#reviews`, image: product.featuredImage ? { url: product.featuredImage.url, altText: product.featuredImage.altText ?? null } : null,
         options: product.options.map((option) => option.name) }]]
       : [];
   }));

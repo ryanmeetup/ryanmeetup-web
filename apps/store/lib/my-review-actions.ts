@@ -22,7 +22,7 @@ async function reviewedProducts(page: MyReviewView["page"], productCards: MyRevi
   const cards = await productCards(ids).catch(() => ({} as Record<string, ProductCard>));
   return Object.fromEntries(ids.flatMap((id) => {
     const card = cards[id];
-    return card ? [[id, { href: `/products/${card.handle}#reviews`, image: card.image, options: card.options }]] : [];
+    return card ? [[id, { href: `${card.href ?? `/products/${card.handle}`}#reviews`, image: card.image, options: card.options }]] : [];
   }));
 }
 
