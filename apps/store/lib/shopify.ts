@@ -98,6 +98,7 @@ const cartFragment = `
       subtotalAmount { amount currencyCode }
       totalAmount { amount currencyCode }
     }
+    discountAllocations { discountedAmount { amount currencyCode } }
     lines(first: 100) {
       edges {
         node {

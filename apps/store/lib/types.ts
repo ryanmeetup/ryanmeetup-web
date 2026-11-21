@@ -112,6 +112,8 @@ export type CartLine = {
 export type Cart = {
   checkoutUrl: string;
   cost: { subtotalAmount: Money; totalAmount: Money };
+  /** Order-level discounts Shopify has applied, such as a sale's automatic discount. Older saved carts lack it. */
+  discountAllocations?: { discountedAmount: Money }[];
   id: string;
   lines: CartLine[];
   totalQuantity: number;

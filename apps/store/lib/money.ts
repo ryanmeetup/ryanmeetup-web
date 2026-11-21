@@ -7,6 +7,13 @@ export function formatMoney(money: Money) {
   }).format(Number(money.amount));
 }
 
+/** What the cart's order-level discounts take off, or null when nothing applies. */
+export function getCartSavings(cart: { discountAllocations?: { discountedAmount: Money }[] }): Money | null {
+  const allocations = cart.discountAllocations ?? [];
+  const amount = allocations.reduce((total, { discountedAmount }) => total + Number(discountedAmount.amount), 0);
+  return amount > 0 ? { amount: amount.toFixed(2), currencyCode: allocations[0].discountedAmount.currencyCode } : null;
+}
+
 /** The variant's original price when Shopify marks it down, otherwise null. */
 export function getCompareAtPrice(variant: Pick<ProductVariant, "price" | "compareAtPrice">) {
   const compareAt = variant.compareAtPrice;
