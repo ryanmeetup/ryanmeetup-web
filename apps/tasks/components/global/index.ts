@@ -28,6 +28,7 @@ export { ResourceOwnerSelect } from "./ResourceOwnerSelect";
 export {
   ResponsiveTable,
   ResponsiveTableCell,
+  ResponsiveTableMenuButton,
   ResponsiveTableRow,
   type ResponsiveTableColumn,
 } from "./ResponsiveTable";

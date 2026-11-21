@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { FiClock, FiMoreHorizontal } from "react-icons/fi";
-import { Button, DropdownMenu, DropdownMenuButton, DropdownMenuItem, DropdownMenuItems, DropdownMenuSeparator, RatingStars } from "@ryanmeetup/ui";
+import { FiClock } from "react-icons/fi";
+import { Button, DropdownMenu, DropdownMenuItem, DropdownMenuItems, DropdownMenuSeparator, RatingStars } from "@ryanmeetup/ui";
 import { ReviewVerificationBadge } from "@ryanmeetup/reviews/ui";
-import { ResponsiveTable, ResponsiveTableCell, ResponsiveTableRow } from "@/components/global";
+import { ResponsiveTable, ResponsiveTableCell, ResponsiveTableMenuButton, ResponsiveTableRow } from "@/components/global";
 import { formatTimestamp } from "@/lib/date-format";
 import { moderationActionLabel } from "@/lib/store-reviews/moderation";
 import type { ModerationReview, ModerationRevision, StaffReviewAction } from "@/lib/store-reviews/moderation";
@@ -82,10 +82,7 @@ function RowActions({ review, disabled, onSelect, onHistory }: Omit<RowProps, "o
     </Button>)}
     {/* Dense rows keep one trigger for everything that is not a decision. */}
     <DropdownMenu>
-      <DropdownMenuButton unstyled disabled={disabled} aria-label={`More actions for ${review.item.productTitle}`}
-        className="inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-black/10 text-black transition hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 disabled:cursor-not-allowed disabled:opacity-50 data-open:bg-black/5 dark:border-white/10 dark:text-white dark:hover:bg-white/10 dark:focus-visible:ring-white/30 dark:data-open:bg-white/10">
-        <FiMoreHorizontal aria-hidden />
-      </DropdownMenuButton>
+      <ResponsiveTableMenuButton disabled={disabled} label={`More actions for ${review.item.productTitle}`} />
       <DropdownMenuItems align="end">
         {everyday.map(({ action, label, Icon }) => <DropdownMenuItem key={action} destructive={action === "reply-remove"} onClick={() => onSelect(review, action)}>
           <Icon aria-hidden /> {label}
@@ -122,8 +119,9 @@ function ReviewRow({ review, disabled, onSelect, onPhotoSelect, onHistory }: Row
 }
 
 const columns = [
-  { label: "Product", width: "w-32" }, { label: "Review" }, { label: "Photos", width: "w-32" },
-  { label: "Reviewer", width: "w-36" }, { label: "Status", width: "w-36" }, { label: "Actions", width: "w-52", hideLabel: true },
+  // Leave room for the complete purchase badge at the table's narrowest width.
+  { label: "Product", width: "w-28" }, { label: "Review" }, { label: "Photos", width: "w-20" },
+  { label: "Reviewer", width: "w-32" }, { label: "Status", width: "w-28" }, { label: "Actions", width: "w-48", hideLabel: true },
 ];
 
 /** The moderation queue: one row per review, every detail in its own column. */
