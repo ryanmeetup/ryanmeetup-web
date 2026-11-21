@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FiClock, FiMoreHorizontal } from "react-icons/fi";
 import { Button, DropdownMenu, DropdownMenuButton, DropdownMenuItem, DropdownMenuItems, DropdownMenuSeparator, RatingStars } from "@ryanmeetup/ui";
 import { ReviewVerificationBadge } from "@ryanmeetup/reviews/ui";
+import { ResponsiveTable, ResponsiveTableCell, ResponsiveTableRow } from "@/components/global";
 import { formatTimestamp } from "@/lib/date-format";
 import { moderationActionLabel } from "@/lib/store-reviews/moderation";
 import type { ModerationReview, ModerationRevision, StaffReviewAction } from "@/lib/store-reviews/moderation";
@@ -99,51 +100,39 @@ function RowActions({ review, disabled, onSelect, onHistory }: Omit<RowProps, "o
   </div>;
 }
 
-// Below the breakpoint each row restacks as a single column; above it, the cells line up under the headers.
-const cell = "min-w-0 @min-[54rem]:px-3 @min-[54rem]:py-3 @min-[54rem]:align-middle";
-
 function ReviewRow({ review, disabled, onSelect, onPhotoSelect, onHistory }: RowProps) {
   const photoRevision = review.pending ?? review.rejected ?? review.published ?? review.latest;
-  return <tr data-testid={`review-${review.id}`}
-    className="grid gap-3 border-t border-black/10 p-4 text-sm first:border-t-0 dark:border-white/10 @min-[54rem]:table-row @min-[54rem]:p-0 @min-[54rem]:first:border-t">
-    <td className={`${cell} @min-[54rem]:pl-4`}>
+  return <ResponsiveTableRow data-testid={`review-${review.id}`}>
+    <ResponsiveTableCell>
       <p className="font-semibold wrap-anywhere">{review.item.productTitle}</p>
       {review.item.variantTitle && <p className="text-xs text-black/70 wrap-anywhere dark:text-white/70">{review.item.variantTitle}</p>}
-    </td>
-    <td className={cell}><ReviewCell review={review} /></td>
+    </ResponsiveTableCell>
+    <ResponsiveTableCell><ReviewCell review={review} /></ResponsiveTableCell>
     {/* A dash keeps the column readable on wide screens; a stacked row simply skips it. */}
-    <td className={`${cell} @min-[54rem]:px-2 ${photoRevision.photos?.length ? "" : "hidden @min-[54rem]:table-cell"}`}><ReviewModerationPhotos review={review} revision={photoRevision} disabled={disabled} onSelect={onPhotoSelect} /></td>
-    <td className={cell}>
+    <ResponsiveTableCell className={photoRevision.photos?.length ? "" : "hidden @min-[54rem]:table-cell"}>
+      <ReviewModerationPhotos review={review} revision={photoRevision} disabled={disabled} onSelect={onPhotoSelect} />
+    </ResponsiveTableCell>
+    <ResponsiveTableCell>
       <p className="font-semibold wrap-anywhere">{photoRevision.displayName}</p>
       <p className="text-xs text-black/70 dark:text-white/70"><time dateTime={photoRevision.submittedAt}>{formatTimestamp(photoRevision.submittedAt)}</time></p>
-    </td>
-    <td className={cell}><StatusCell review={review} /></td>
-    <td className={`${cell} @min-[54rem]:pl-2 @min-[54rem]:pr-4`}><RowActions review={review} disabled={disabled} onSelect={onSelect} onHistory={onHistory} /></td>
-  </tr>;
+    </ResponsiveTableCell>
+    <ResponsiveTableCell><StatusCell review={review} /></ResponsiveTableCell>
+    <ResponsiveTableCell><RowActions review={review} disabled={disabled} onSelect={onSelect} onHistory={onHistory} /></ResponsiveTableCell>
+  </ResponsiveTableRow>;
 }
+
+const columns = [
+  { label: "Product", width: "w-32" }, { label: "Review" }, { label: "Photos", width: "w-32" },
+  { label: "Reviewer", width: "w-36" }, { label: "Status", width: "w-36" }, { label: "Actions", width: "w-52", hideLabel: true },
+];
 
 /** The moderation queue: one row per review, every detail in its own column. */
 export function ReviewModerationTable({ reviews, staffNames, ...props }: TableProps) {
   const [history, setHistory] = useState<ModerationReview | null>(null);
-  return <div className="overflow-hidden rounded-xl border border-black/10 dark:border-white/10">
-    <table className="block w-full text-left @min-[54rem]:table @min-[54rem]:table-fixed">
-      <caption className="sr-only">Store reviews</caption>
-      <colgroup><col className="w-32" /><col /><col className="w-28" /><col className="w-36" /><col className="w-36" /><col className="w-52" /></colgroup>
-      {/* Stacked rows read top to bottom, so the header row is only for screen readers there. */}
-      <thead className="sr-only bg-black/[0.025] text-[10px] uppercase tracking-caps-tight text-black/60 dark:bg-white/[0.025] dark:text-white/60 @min-[54rem]:not-sr-only @min-[54rem]:table-header-group">
-        <tr>
-          <th className="py-3 pl-4 pr-3 font-semibold">Product</th>
-          <th className="px-3 py-3 font-semibold">Review</th>
-          <th className="px-2 py-3 font-semibold">Photos</th>
-          <th className="px-3 py-3 font-semibold">Reviewer</th>
-          <th className="px-3 py-3 font-semibold">Status</th>
-          <th className="py-3 pl-3 pr-4"><span className="sr-only">Actions</span></th>
-        </tr>
-      </thead>
-      <tbody className="block @min-[54rem]:table-row-group">
-        {reviews.map((review) => <ReviewRow key={`${review.id}-${review.updatedAt}`} review={review} onHistory={setHistory} {...props} />)}
-      </tbody>
-    </table>
+  return <>
+    <ResponsiveTable caption="Store reviews" columns={columns}>
+      {reviews.map((review) => <ReviewRow key={`${review.id}-${review.updatedAt}`} review={review} onHistory={setHistory} {...props} />)}
+    </ResponsiveTable>
     <ReviewHistoryDialog review={history} staffNames={staffNames} onClose={() => setHistory(null)} />
-  </div>;
+  </>;
 }
