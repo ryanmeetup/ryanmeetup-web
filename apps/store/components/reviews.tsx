@@ -1,12 +1,12 @@
 "use client";
 
 import { useId, useState } from "react";
-import { Button, DropdownSelect, ErrorCallout, Heading, RatingStars, SuccessCallout, Text } from "@ryanmeetup/ui";
+import { Button, ErrorCallout, Heading, RatingStars, SuccessCallout, Text } from "@ryanmeetup/ui";
 import type { Product, ReviewsData } from "@/lib/types";
 import type { CustomReviewAccess } from "@/lib/custom-review-access";
-import { REVIEW_RATING_OPTIONS, REVIEW_SORT_OPTIONS } from "@/lib/public-review-view";
 import { CustomReviewComposer, type CustomReviewResult, type CustomReviewSubmission } from "./custom-review-composer";
 import { PublicReviewCard } from "./public-review-card";
+import { PublicReviewFilters } from "./public-review-filters";
 import { usePublicReviews } from "./use-public-reviews";
 import { useReviewPermalink } from "./use-review-permalink";
 
@@ -71,16 +71,7 @@ export function Reviews({ data, product, access }: { data: ReviewsData; product:
 
       {data.status === "available" && data.count > 0 && (
         <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-          <div role="group" aria-label="Filter and sort reviews" className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <DropdownSelect label="Rating" variant="compact" options={REVIEW_RATING_OPTIONS} value={publicReviews.rating}
-              onChange={(rating) => publicReviews.changeView({ rating })} active={publicReviews.rating !== "all"}
-              searchPlaceholder="Search by rating..." className="w-full sm:w-auto" />
-            <DropdownSelect label="Sort" variant="compact" options={REVIEW_SORT_OPTIONS} value={publicReviews.sort}
-              onChange={(sort) => publicReviews.changeView({ sort })} active={publicReviews.sort !== "newest"}
-              searchPlaceholder="Search by sort order..." className="w-full sm:w-auto" />
-            {publicReviews.refined && <Button variant="ghost" size="sm" className="w-full sm:w-auto"
-              onClick={() => publicReviews.changeView({ rating: "all", sort: "newest" })}>Reset filters</Button>}
-          </div>
+          <PublicReviewFilters rating={publicReviews.rating} sort={publicReviews.sort} onChange={publicReviews.changeView} />
           <Text role="status" className="text-sm" aria-live="polite">
             {publicReviews.needsComplete ? (publicReviews.pending ? "Loading reviews…" : "Finish loading to see matching reviews.") :
               `Showing ${publicReviews.reviews.length} of ${data.count} review${data.count === 1 ? "" : "s"}`}
@@ -100,7 +91,7 @@ export function Reviews({ data, product, access }: { data: ReviewsData; product:
             <Text className="mt-2">{publicReviews.pending ? "Checking every review for this product." : "Try loading again to see all reviews that match."}</Text>
           </div>
         ) : publicReviews.reviews.length ? (
-          <ul id={`${formId}-reviews`} aria-label="Customer reviews" aria-busy={publicReviews.pending} className="mt-8 grid items-start gap-4 md:grid-cols-2">
+          <ul id={`${formId}-reviews`} aria-label="Customer reviews" aria-busy={publicReviews.pending} className="mt-8 grid items-stretch gap-4 md:grid-cols-2">
             {publicReviews.reviews.map((review) => (
               <li key={review.id}>
                 <PublicReviewCard review={review} />

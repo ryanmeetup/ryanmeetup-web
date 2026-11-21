@@ -1,6 +1,6 @@
 import { connection } from "next/server";
-import { Breadcrumbs, Heading, Text } from "@ryanmeetup/ui";
-import { FiStar } from "react-icons/fi";
+import { Breadcrumbs, Button, Heading, Text } from "@ryanmeetup/ui";
+import { FiMessageSquare, FiStar } from "react-icons/fi";
 import { ReviewFeed } from "@/components/review-feed";
 import { buildPageMetadata, DEFAULT_IMAGE } from "@/lib/metadata";
 import { StoreHomeIcon } from "@/lib/navigation";
@@ -9,7 +9,7 @@ import { getReviewFeedPage } from "@/lib/review-feed";
 
 export const metadata = buildPageMetadata({
   title: "Customer Reviews",
-  description: "Every published review from across the Ryan Meetup store, newest first.",
+  description: "Explore published reviews from across the Ryan Meetup store. Filter by star rating or sort by date and rating.",
   canonical: "/reviews",
   image: DEFAULT_IMAGE,
 });
@@ -33,8 +33,13 @@ export default async function ReviewsPage() {
           { href: "/", title: "Store", icon: <StoreHomeIcon aria-hidden className="shrink-0" /> },
           { href: "/reviews", title: "Reviews", current: true, icon: <FiStar aria-hidden className="shrink-0" /> },
         ]} />
-        <Heading size="h1" className="mt-3 text-4xl sm:text-5xl">Customer Reviews</Heading>
-        <Text className="mt-3 max-w-prose">Every published review from across the shop, newest first.</Text>
+        <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <Heading size="h1" className="text-4xl sm:text-5xl">Customer Reviews</Heading>
+            <Text className="mt-3 max-w-prose">Every published review from across the shop.</Text>
+          </div>
+          <Button.Link href="/reviews/mine" variant="secondary" leftIcon={<FiMessageSquare aria-hidden />} className="w-full shrink-0 sm:w-auto">My reviews</Button.Link>
+        </div>
       </div>
       {!page ? <Notice title="Reviews are taking a short break">We couldn&apos;t load reviews just now. Please try again in a few minutes.</Notice>
         : !page.items.length ? <Notice title="No reviews yet">The first official Ryan review is still out there. Check back soon.</Notice>

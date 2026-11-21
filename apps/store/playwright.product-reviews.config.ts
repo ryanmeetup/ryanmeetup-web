@@ -8,7 +8,7 @@ export default defineConfig({
   testDir: "./tests",
   outputDir: "./test-results-public-reviews/browser",
   // Kept out of the ordinary suite, which uses an empty public-review fixture.
-  testMatch: ["home-reviews.browser.ts", "product-review-scope.browser.ts", "public-review-replies.browser.ts", "public-review-pagination.browser.ts", "private-review-photos.browser.ts"],
+  testMatch: ["home-reviews.browser.ts", "review-feed.browser.ts", "product-review-scope.browser.ts", "public-review-replies.browser.ts", "public-review-pagination.browser.ts", "private-review-photos.browser.ts"],
   workers: 1,
   use: { baseURL: `http://localhost:${port}`, trace: "retain-on-failure" },
   webServer: [

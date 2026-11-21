@@ -16,7 +16,7 @@ export const REVIEW_SORT_OPTIONS = [
   { value: "lowest", label: "Lowest rated" },
 ];
 
-export function selectPublicReviews(reviews: Review[], rating: string, sort: string) {
+export function selectPublicReviews<T extends Review>(reviews: T[], rating: string, sort: string): T[] {
   return reviews.filter((review) => rating === "all" || String(review.rating) === rating).sort((a, b) => {
     const newest = Date.parse(b.createdAt) - Date.parse(a.createdAt) || b.id.localeCompare(a.id);
     if (sort === "oldest") return -newest;
@@ -65,7 +65,7 @@ export function productReviewPage(value: unknown, productId: string, after: stri
 }
 
 /** Keep first-seen order while refreshing overlapping public rows, without duplicate cards. */
-export function appendPublicReviews(current: Review[], next: Review[]) {
+export function appendPublicReviews<T extends Review>(current: T[], next: T[]): T[] {
   const reviews = new Map(current.map((review) => [review.id, review]));
   for (const review of next) reviews.set(review.id, review);
   return [...reviews.values()];

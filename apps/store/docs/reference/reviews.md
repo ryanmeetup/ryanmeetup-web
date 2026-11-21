@@ -99,6 +99,15 @@ should move filtering and sorting into database paging. Loading is announced,
 failed reads can be retried from the last completed page, and product changes
 discard both the cached pages and selections.
 
+The public `/reviews` page uses the same rating filter, four sort orders and
+reset control across the whole shop. It starts with twenty reviews and loads
+the remaining approved-only feed pages on the first refinement, reusing public
+review cards and their product links. Matching results appear only after
+every page loads; a failed continuation retains completed pages for a deliberate
+retry. Until the full feed is loaded, the displayed count describes loaded
+reviews rather than claiming a shop-wide total. As with product reviews, large
+volumes should move these refinements into database paging.
+
 Buyer management preserves a stored public name when its style is unchanged.
 Changing to a named style requires a fresh Shopify profile; anonymous remains
 available without that name lookup. Private paging, mutations and suggestion
