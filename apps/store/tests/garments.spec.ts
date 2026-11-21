@@ -40,7 +40,7 @@ test("every garment has its own page under its department", () => {
   expect(getGarmentParams()).toContainEqual({ department: "accessories", garment: "flags" });
   expect(getGarmentPath("apparel", "kids")).toBe("/apparel/kids");
   expect(findGarment("apparel", "flags")).toBeUndefined();
-  // RY-Ds already has a collection page, so its grouping links there instead.
-  expect(getGarmentPath("accessories", "ryd")).toBe("/collections/ryd");
+  // RY-Ds links directly to the membership site instead of a store page.
+  expect(getGarmentPath("accessories", "ryd")).toBe("https://ryanmeetup.com/cards");
   expect(getGarmentParams()).not.toContainEqual({ department: "accessories", garment: "ryd" });
 });

@@ -37,14 +37,6 @@ export const catalogCollections: CatalogCollection[] = [
     productType: "Accessory",
     department: true,
   },
-  {
-    id: "catalog:ryd",
-    handle: "ryd",
-    title: "RY-Ds",
-    description: "Your official Ryan identification, made just for you.",
-    image: null,
-    productType: "Membership",
-  },
 ];
 
 export function getCatalogCollection(handle: string) {
@@ -58,8 +50,9 @@ export function isDepartment(handle: string) {
   return departments.some((collection) => collection.handle === handle);
 }
 
-/** Where a collection lives: `/apparel` for a department, `/collections/<handle>` for the rest. */
+/** Departments and themes live in the store; RY-Ds goes straight to the membership site. */
 export function getCollectionPath(handle: string) {
+  if (handle === "ryd") return "https://ryanmeetup.com/cards";
   return isDepartment(handle) ? `/${handle}` : `/collections/${handle}`;
 }
 

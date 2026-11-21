@@ -472,7 +472,7 @@ test("apparel, accessories, and collections are header menus ending in shop all"
   // The shared NavMenu opens on hover, as it does on ryanmeetup.com.
   await mainNavigation.getByRole("button", { name: "Collections" }).hover();
   await expect(page.getByRole("link", { name: "Shop All" })).toHaveAttribute("href", "/collections/all");
-  await expect(page.getByRole("link", { name: /RY-Ds/ })).toHaveAttribute("href", "/collections/ryd");
+  await expect(page.getByRole("link", { name: /RY-Ds/ })).toHaveAttribute("href", "https://ryanmeetup.com/cards");
   await page.mouse.move(0, 0);
   await mainNavigation.getByRole("button", { name: "Apparel" }).hover();
   await expect(page.getByRole("link", { name: /^Hats/ })).toHaveAttribute("href", "/apparel/hats");
@@ -577,14 +577,22 @@ for (const viewport of [
   });
 }
 
-test("RY-Ds can be found in the mobile dropdown and ordered from its own page", async ({ page }) => {
+test("RY-Ds in the mobile Collections menu goes directly to the membership site", async ({ page }) => {
+  await page.route("https://ryanmeetup.com/cards", (route) => route.fulfill({ contentType: "text/html", body: "<h1>Membership cards</h1>" }));
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   await page.getByRole("button", { name: "Open navigation" }).click();
   const navigation = page.getByRole("navigation", { name: "Mobile navigation" });
   await navigation.getByRole("button", { name: /^Collections/ }).click();
+  await expect(navigation.getByRole("link", { name: /RY-Ds/ })).toHaveAttribute("href", "https://ryanmeetup.com/cards");
   await navigation.getByRole("link", { name: /RY-Ds/ }).click();
-  await expect(page).toHaveURL(/\/collections\/ryd$/);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("RY-Ds");
-  await expect(page.getByRole("main").getByRole("link", { name: /RY-D Membership Card/ })).toHaveAttribute("href", "https://ryanmeetup.com/ryd");
+  await expect(page).toHaveURL("https://ryanmeetup.com/cards");
+});
+
+test("retired RY-D store URLs redirect directly to the membership site", async ({ request }) => {
+  for (const path of ["/collections/ryd", "/accessories/ryd"]) {
+    const response = await request.get(path, { maxRedirects: 0 });
+    expect(response.status()).toBe(308);
+    expect(response.headers().location).toBe("https://ryanmeetup.com/cards");
+  }
 });

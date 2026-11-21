@@ -10,7 +10,7 @@ export type Garment = {
   categories: string[];
   /** Listing handles placed here whatever their category, such as an external listing with none. */
   listings?: string[];
-  /** An existing collection page that stands in for this grouping's own page. */
+  /** A collection destination that stands in for this grouping's own page. */
   collection?: string;
 };
 
@@ -38,7 +38,7 @@ export function findGarment(department: string, handle: string) {
   return garmentsByDepartment[department]?.find((garment) => garment.handle === handle);
 }
 
-/** A garment's page under its department, or the collection that stands in for it, as RY-Ds does. */
+/** A garment's page under its department, or its collection destination, including external RY-Ds. */
 export function getGarmentPath(department: string, handle: string) {
   const collection = findGarment(department, handle)?.collection;
   return collection ? getCollectionPath(collection) : `/${department}/${handle}`;

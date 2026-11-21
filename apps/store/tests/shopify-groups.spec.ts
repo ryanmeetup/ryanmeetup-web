@@ -103,7 +103,7 @@ test("a spotlight collection picks the featured drop and stays out of the collec
 test("without Shopify collections the home page tiles the type pages", async () => {
   delete process.env.SHOPIFY_STORE_DOMAIN;
   const home = await getHomeCatalog();
-  expect(home.collections.map(({ collection }) => collection.handle)).toEqual(["apparel", "accessories", "ryd"]);
+  expect(home.collections.map(({ collection }) => collection.handle)).toEqual(["apparel", "accessories"]);
   expect(home.collections.every(({ image }) => image)).toBe(true);
   expect(home.favorites.products).toHaveLength(4);
 });
@@ -152,7 +152,7 @@ test("type pages split into garment groupings from each product's Shopify catego
 
 test("the type pages lead the collection list, shadow same-handle Shopify collections, and omit the home page collection", async () => {
   const requests = mockCatalog();
-  expect((await getCollections()).map((collection) => collection.title)).toEqual(["Collections", "Apparel", "Accessories", "RY-Ds", "Shirts", "Empty"]);
+  expect((await getCollections()).map((collection) => collection.title)).toEqual(["Collections", "Apparel", "Accessories", "Shirts", "Empty"]);
   expect(requests.filter((request) => request.query.includes("CollectionMemberships")).map((request) => request.variables.after)).toEqual([null, "collections-page-1"]);
 });
 
@@ -165,15 +165,17 @@ test("a collection whose Shopify handle has a heart emoji is served at its heart
   expect(await getCollection("i-heart-nothing")).toBeNull();
 });
 
-test("RY-Ds has a standalone collection with a working external order link in live and preview catalogs", async () => {
+test("RY-Ds has no store collection page in live or preview catalogs", async () => {
   for (const configured of [true, false]) {
-    if (!configured) delete process.env.SHOPIFY_STORE_DOMAIN;
     const requests = mockCatalog();
-    const page = await getCollection("ryd");
-    expect(page?.collection.title).toBe("RY-Ds");
-    expect(page?.products).toHaveLength(1);
-    expect(page?.products[0]).toMatchObject({ handle: "ryd", externalUrl: "https://ryanmeetup.com/ryd" });
+    if (!configured) delete process.env.SHOPIFY_STORE_DOMAIN;
+    expect(await getCollection("ryd")).toBeNull();
     expect(requests).toHaveLength(0);
+    expect((await getCollections()).map(({ handle }) => handle)).not.toContain("ryd");
+    // The card remains available on Accessories and Shop All.
+    expect((await getCollection("accessories"))?.products).toContainEqual(
+      expect.objectContaining({ handle: "ryd", externalUrl: "https://ryanmeetup.com/ryd" }),
+    );
   }
 });
 

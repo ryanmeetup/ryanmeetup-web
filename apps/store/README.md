@@ -126,13 +126,14 @@ tiles. On mobile, the copy and shopping links come before the photo. Below it:
 
 ### Catalog pages and ordering
 
-`/collections/all`, `/apparel`, `/accessories`, and `/collections/ryd` are
+`/collections/all`, `/apparel`, and `/accessories` are
 defined in [lib/catalog-collections.ts](lib/catalog-collections.ts). Apparel and
 Accessories are departments, so they live at the top level rather than under
-`/collections`, which is reserved for themes, RY-Ds, and Shop All; build any
+`/collections`, which is reserved for themes and Shop All; build any
 collection link with `getCollectionPath`. Apparel and Accessories
 search by Shopify Product type (`Apparel` or `Accessory`); Shop All has no type
-filter. RY-Ds lists the membership card sold at ryanmeetup.com. These handles
+filter. RY-Ds links directly to `https://ryanmeetup.com/cards` and has no store
+collection page. These catalog handles
 shadow same-handle Shopify collections.
 
 The default **Recommended** order puts matching hand-picked Best Sellers first,
@@ -149,7 +150,8 @@ Goods, then Flags. Each grouping has its own page (`/apparel/hats`) and a
 collapsible section on its department page anchored by its handle
 (`/apparel#hats`); sorts apply within it. RY-Ds is placed by listing handle,
 since the membership card has no Shopify category, and links to
-`/collections/ryd` instead of a page of its own. Uncategorized listings fall under **More Ryan Goods**.
+`https://ryanmeetup.com/cards` instead of a page of its own. The retired
+`/collections/ryd` and `/accessories/ryd` URLs permanently redirect there. Uncategorized listings fall under **More Ryan Goods**.
 `next.config.ts` redirects the retired garment collections to their garment page
 and the old `/collections/apparel` and `/collections/accessories` URLs to the
 top level.
@@ -166,7 +168,8 @@ The **Apparel** and **Accessories** dropdowns list their page's garment grouping
 from [lib/garments.ts](lib/garments.ts), each with its own page such as
 `/apparel/hats`, then **Shop All** for the whole type page. Give a new grouping
 an icon in `garmentIcons` in [lib/navigation.ts](lib/navigation.ts). The
-**Collections** dropdown starts with **RY-Ds**, followed by published Shopify
+**Collections** dropdown starts with **RY-Ds**, linking directly to
+`https://ryanmeetup.com/cards`, followed by published Shopify
 theme collections and **Shop All**. New Shopify collections appear within five minutes. Give each one
 an icon in `collectionIcons` in [lib/navigation.ts](lib/navigation.ts); otherwise
 it uses stacked boxes.

@@ -5,7 +5,7 @@ import { FaAddressCard, FaBaby, FaBagShopping, FaBoxesStacked, FaBurger, FaFlag,
 import { PiBaseballCapFill, PiHoodieFill } from "react-icons/pi";
 import type { IconType } from "react-icons";
 import { getCatalogCollection, getCollectionPath } from "./catalog-collections";
-import { garmentsByDepartment, getGarmentPath } from "./garments";
+import { findGarment, garmentsByDepartment, getGarmentPath } from "./garments";
 import type { CollectionSummary } from "./types";
 
 export const StoreHomeIcon = FaStore;
@@ -95,8 +95,8 @@ export type StoreMenuCollection = Pick<CollectionSummary, "handle" | "title" | "
 /** RY-Ds and featured Shopify collections, then Shop All; type pages have their own links. */
 export function getCollectionMenuRoutes(collections: StoreMenuCollection[]): NavRoute[] {
   const shopAll = getCatalogCollection("all");
-  const ryd = getCatalogCollection("ryd");
-  const featured = collections.filter(({ handle }) => !getCatalogCollection(handle));
+  const ryd = findGarment("accessories", "ryd");
+  const featured = collections.filter(({ handle }) => handle !== "ryd" && !getCatalogCollection(handle));
   return [
     ...(ryd ? [ryd] : []),
     ...featured,

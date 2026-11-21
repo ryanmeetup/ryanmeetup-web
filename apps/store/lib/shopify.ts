@@ -224,7 +224,7 @@ export async function getCollections(): Promise<CollectionSummary[]> {
 }
 
 function isBrowsingCollection(collection: Pick<CollectionSummary, "handle">) {
-  return collection.handle !== featuredCollectionHandle && collection.handle !== spotlightCollectionHandle && !getCatalogCollection(collection.handle);
+  return collection.handle !== "ryd" && collection.handle !== featuredCollectionHandle && collection.handle !== spotlightCollectionHandle && !getCatalogCollection(collection.handle);
 }
 
 // Follows Shopify's cursors to the last page and fails rather than returning a partial
@@ -431,9 +431,10 @@ export async function getProductHandles(): Promise<string[]> {
 }
 
 export async function getCollection(handle: string): Promise<ProductPage | null> {
+  if (handle === "ryd") return null;
   // The same hand-picked favorites lead every page where they belong, and Shopify's
   // best-selling order fills the rest. Department pages split into garment groupings.
-  const memberships = isShopifyConfigured() && handle !== "ryd" ? await getCollectionMemberships() : [];
+  const memberships = isShopifyConfigured() ? await getCollectionMemberships() : [];
   const page = await loadCollection(handle, memberships);
   if (!page) return null;
   const popularHandles = memberships.find((collection) => collection.handle === featuredCollectionHandle)?.products.edges.map(({ node }) => node.handle) ?? [];
@@ -451,10 +452,6 @@ export async function getGarmentCollection(department: string, handle: string): 
 
 async function loadCollection(handle: string, memberships: CollectionMembership[]): Promise<ProductPage | null> {
   const catalogCollection = getCatalogCollection(handle);
-
-  if (handle === "ryd" && catalogCollection) {
-    return { collection: getCatalogCollectionSummary(catalogCollection), products: withExternalListings(handle, []) };
-  }
 
   if (!isShopifyConfigured()) {
     if (!catalogCollection) return null;
