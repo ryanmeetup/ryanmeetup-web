@@ -89,11 +89,24 @@ describe("owner review moderation", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(response.headers.get("referrer-policy")).toBe("no-referrer");
-    expect(await response.json()).toEqual({ reviews: [row], next: null, products });
+    // A backend from before the Etsy import sends no source; those are all store reviews.
+    expect(await response.json()).toEqual({ reviews: [{ ...row, source: "store" }], next: null, products });
     expect(mocks.rpc).toHaveBeenCalledWith("store_review_moderation_page_v5", {
       p_actor: actor, p_shop_id: "123", p_filter: "pending", p_product_id: null, p_limit: 21, p_after_created_at: null, p_after_id: null,
     });
     expect(mocks.rpc).toHaveBeenCalledWith("store_review_moderation_products", { p_actor: actor, p_shop_id: "123" });
+  });
+
+  it("shows imported Etsy reviews without a title, but never a store review without one", async () => {
+    const untitled = { ...revision, title: null, displayName: "Kelly" };
+    const imported = { ...row, source: "etsy", verifiedPurchase: false, pending: null, published: untitled, latest: untitled,
+      recentEvents: [{ action: "imported", actorKind: "staff", actor: "Etsy import", note: "Etsy review 5154389154", createdAt: time }] };
+    pageResult = { data: [imported], error: null };
+    expect((await (await GET(get())).json()).reviews[0]).toMatchObject({ source: "etsy", latest: { title: null } });
+    for (const bad of [{ ...imported, source: "store" }, { ...imported, source: "judgeme" }]) {
+      pageResult = { data: [bad], error: null };
+      expect((await GET(get())).status).toBe(500);
+    }
   });
 
   it("carries a rejected photo's buyer-facing reason and reads older photo rows as having none", async () => {

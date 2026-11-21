@@ -11,7 +11,7 @@ import type { ModerationReview, ModerationRevision, StaffReviewAction } from "@/
 
 const eventLabels: Record<string, string> = {
   submitted: "Submitted", resubmitted: "Resubmitted", edited: "Edit submitted", withdrawn: "Withdrawn",
-  photo_approved: "Photo approved", photo_rejected: "Photo rejected", approved: "Approved", rejected: "Rejected", hidden: "Hidden", restored: "Restored", reply_set: "Reply saved", reply_removed: "Reply removed",
+  photo_approved: "Photo approved", photo_rejected: "Photo rejected", approved: "Approved", rejected: "Rejected", hidden: "Hidden", restored: "Restored", reply_set: "Reply saved", reply_removed: "Reply removed", imported: "Imported",
 };
 
 /** A full revision, as the decision dialogs show the text being decided on. */

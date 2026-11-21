@@ -7,7 +7,7 @@ const timestamp = "2026-11-18T12:00:00.123456Z";
 function review(id: string, overrides: Partial<ModerationReview> = {}): ModerationReview {
   const latest: ModerationRevision = { id: `revision-${id}`, rating: 1, title: null, body: "Review text", displayName: "Ryan", submittedAt: timestamp };
   return { id, state: "active", createdAt: timestamp, updatedAt: timestamp,
-    item: { productId: "100", productTitle: "Shirt", variantTitle: null }, verifiedPurchase: false,
+    item: { productId: "100", productTitle: "Shirt", variantTitle: null }, verifiedPurchase: false, source: "store",
     pending: latest, published: null, rejected: null, latest, reply: null, recentEvents: [], ...overrides };
 }
 

@@ -1,5 +1,5 @@
 import type { StaffReviewPhoto } from "@ryanmeetup/reviews";
-import type { PublicReviewItem, ReviewRating } from "@ryanmeetup/reviews";
+import type { PublicReviewItem, ReviewRating, ReviewSource } from "@ryanmeetup/reviews";
 
 export const MODERATION_FILTERS = ["pending", "published", "hidden", "rejected", "all"] as const;
 export type ModerationFilter = (typeof MODERATION_FILTERS)[number];
@@ -68,6 +68,8 @@ export type ModerationReview = {
   createdAt: string; updatedAt: string; item: PublicReviewItem;
   /** False when the buyer had no matching order; the review still needs the same approval. */
   verifiedPurchase: boolean;
+  /** "etsy" for a review imported from the Etsy shop: published as left there, with no title. */
+  source: ReviewSource;
   pending: ModerationRevision | null; published: ModerationRevision | null;
   latest: ModerationRevision;
   /** The latest revision when staff rejected it and the buyer has not written since. */
@@ -80,6 +82,11 @@ export type ModerationInitialState =
   | { status: "ready"; page: ModerationPage }
   | { status: "disabled" }
   | { status: "error" };
+
+/** The badge staff see: an Etsy review was a real Etsy purchase even though no store order matches it. */
+export function moderationVerification(review: Pick<ModerationReview, "source" | "verifiedPurchase">) {
+  return review.source === "etsy" ? "etsy" as const : review.verifiedPurchase ? "purchase" as const : "unmatched" as const;
+}
 
 export function reviewModerationActions(review: ModerationReview): ModerationAction[] {
   if (review.state === "withdrawn") return [];

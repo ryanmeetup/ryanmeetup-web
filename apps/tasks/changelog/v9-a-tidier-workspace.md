@@ -44,6 +44,10 @@ publish one anyway if you change your mind. Narrow any queue to a single
 product with the Product filter, or search the loaded reviews by product, reviewer, or review
 text.
 
+Reviews brought over from the Etsy shop arrive already published, dated when
+they were left on Etsy. They carry a Verified Etsy purchase badge instead of
+No matching order, may have no title, and show Imported in their history.
+
 Select individual reviews or all loaded reviews, then publish, reject, hide,
 restore, or delete them in bulk. Each action shows how many selected reviews
 are eligible. Rejection and hiding still require a reason; deletion keeps its

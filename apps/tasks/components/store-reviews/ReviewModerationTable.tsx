@@ -6,7 +6,7 @@ import { Button, DropdownMenu, DropdownMenuItem, DropdownMenuItems, DropdownMenu
 import { ReviewVerificationBadge } from "@ryanmeetup/reviews/ui";
 import { ResponsiveTable, ResponsiveTableCell, ResponsiveTableMenuButton, ResponsiveTableRow } from "@/components/global";
 import { formatTimestamp } from "@/lib/date-format";
-import { moderationActionLabel } from "@/lib/store-reviews/moderation";
+import { moderationActionLabel, moderationVerification } from "@/lib/store-reviews/moderation";
 import type { ModerationReview, ModerationRevision, StaffReviewAction } from "@/lib/store-reviews/moderation";
 
 import { ReviewModerationPhotos } from "./ReviewModerationPhotos";
@@ -47,7 +47,7 @@ function ReviewCell({ review }: { review: ModerationReview }) {
       {labelled && <p className="text-[10px] font-semibold uppercase tracking-caps-tight text-black/60 dark:text-white/60">{label}</p>}
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <RatingStars rating={revision.rating} />
-        {index === 0 && <ReviewVerificationBadge kind={review.verifiedPurchase ? "purchase" : "unmatched"} />}
+        {index === 0 && <ReviewVerificationBadge kind={moderationVerification(review)} />}
       </div>
       {revision.title && <p className="font-semibold wrap-anywhere">{revision.title}</p>}
       <p className="whitespace-pre-wrap text-black/70 wrap-anywhere dark:text-white/70">{revision.body}</p>
