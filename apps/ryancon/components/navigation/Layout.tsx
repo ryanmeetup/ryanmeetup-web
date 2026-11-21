@@ -48,10 +48,10 @@ const Layout = (props: LayoutProps) => {
               { href: "https://vercel.com", label: "Vercel" },
               { href: "https://nextjs.org/", label: "Next.js" },
               { href: "https://react.dev/", label: "React" },
+              { href: "https://www.typescriptlang.org/", label: "TypeScript" },
               { href: "https://tailwindcss.com/", label: "Tailwind CSS" },
               { href: "https://headlessui.com/", label: "Headless UI" },
               { href: "https://www.contentful.com/", label: "Contentful" },
-              { href: "https://www.mapbox.com/", label: "Mapbox" },
             ],
           },
         ]}

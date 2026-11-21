@@ -6,7 +6,11 @@ import {
 } from "react-icons/fa";
 import { FaThreads as Threads } from "react-icons/fa6";
 import { PiLetterCirclePBold as Partiful } from "react-icons/pi";
-import { SiteFooter, type SiteFooterSection } from "./SiteFooter";
+import {
+  SiteFooter,
+  type SiteFooterLink,
+  type SiteFooterSection,
+} from "./SiteFooter";
 
 export type RyanMeetupFooterProps = {
   className?: string;
@@ -15,6 +19,8 @@ export type RyanMeetupFooterProps = {
   sections?: SiteFooterSection[];
   /** Repeat the social links as a text column. Off where the labelled icon row is enough. */
   followColumn?: boolean;
+  /** The site's own stack. Each site runs on different services, so none is assumed. */
+  builtWith: SiteFooterLink[];
 };
 
 const socialLinks = [
@@ -55,6 +61,7 @@ export function RyanMeetupFooter({
   homeHref = "/",
   sections = [],
   followColumn = true,
+  builtWith,
 }: RyanMeetupFooterProps) {
   return (
     <SiteFooter
@@ -70,15 +77,7 @@ export function RyanMeetupFooter({
         {
           title: "Built with",
           columns: 2,
-          links: [
-            { href: "https://vercel.com", label: "Vercel" },
-            { href: "https://nextjs.org/", label: "Next.js" },
-            { href: "https://react.dev/", label: "React" },
-            { href: "https://tailwindcss.com/", label: "Tailwind CSS" },
-            { href: "https://headlessui.com/", label: "Headless UI" },
-            { href: "https://www.contentful.com/", label: "Contentful" },
-            { href: "https://www.mapbox.com/", label: "Mapbox" },
-          ],
+          links: builtWith,
         },
       ]}
       socialLinks={socialLinks}

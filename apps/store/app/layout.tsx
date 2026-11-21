@@ -13,6 +13,18 @@ import { getCollections, getCustomerAccountUrl, getPolicies, isShopifyConfigured
 import { getBugReportHref } from "@/lib/support";
 import "./globals.css";
 
+const builtWith = [
+  { href: "https://vercel.com", label: "Vercel" },
+  { href: "https://nextjs.org/", label: "Next.js" },
+  { href: "https://react.dev/", label: "React" },
+  { href: "https://www.typescriptlang.org/", label: "TypeScript" },
+  { href: "https://tailwindcss.com/", label: "Tailwind CSS" },
+  { href: "https://headlessui.com/", label: "Headless UI" },
+  { href: "https://www.shopify.com/", label: "Shopify" },
+  { href: "https://supabase.com/", label: "Supabase" },
+  { href: "https://playwright.dev/", label: "Playwright" },
+];
+
 export const metadata: Metadata = {
   ...buildPageMetadata({
     title: SITE_NAME,
@@ -73,6 +85,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
                 ...(policyLinks.length ? [{ title: "Policies", href: "/policies", links: policyLinks }] : []),
               ]}
               followColumn={false}
+              builtWith={builtWith}
               className="store-container"
             />
             <CartDrawer />

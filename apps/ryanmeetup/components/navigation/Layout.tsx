@@ -18,6 +18,18 @@ import { siteBanners } from "@/lib/banners";
 // Types
 import type { ReactNode } from "react";
 
+const builtWith = [
+  { href: "https://vercel.com", label: "Vercel" },
+  { href: "https://nextjs.org/", label: "Next.js" },
+  { href: "https://react.dev/", label: "React" },
+  { href: "https://www.typescriptlang.org/", label: "TypeScript" },
+  { href: "https://tailwindcss.com/", label: "Tailwind CSS" },
+  { href: "https://headlessui.com/", label: "Headless UI" },
+  { href: "https://www.contentful.com/", label: "Contentful" },
+  { href: "https://www.mapbox.com/", label: "Mapbox" },
+  { href: "https://playwright.dev/", label: "Playwright" },
+];
+
 type LayoutProps = {
   className?: string;
   children: ReactNode;
@@ -109,7 +121,11 @@ const Layout = (props: LayoutProps) => {
         icon={<FiSun className="h-7 w-7" aria-hidden />}
       />
 
-      <RyanMeetupFooter className={layoutPaddingX} followColumn={false} />
+      <RyanMeetupFooter
+        className={layoutPaddingX}
+        followColumn={false}
+        builtWith={builtWith}
+      />
     </main>
   );
 };

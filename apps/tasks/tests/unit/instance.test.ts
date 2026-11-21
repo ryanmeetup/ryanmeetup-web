@@ -407,9 +407,12 @@ describe("instance footer content", () => {
       "Vercel",
       "Next.js",
       "React",
+      "TypeScript",
       "Tailwind CSS",
-      "Supabase",
       "Headless UI",
+      "Supabase",
+      "Vitest",
+      "Playwright",
     ]);
     expect(instanceDefaults.creditPrefix).toBe(
       "Website designed and developed by ",
