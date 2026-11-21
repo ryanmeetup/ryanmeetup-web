@@ -26,9 +26,17 @@ test("home ends with the six newest reviews across products, including low ratin
   await expect(section.getByRole("article", { name: "Review by Ryan 8", exact: true }).getByRole("img", { name: "1 out of 5 stars", exact: true })).toBeVisible();
   const card = section.getByRole("article", { name: "Review by Ryan 7", exact: true });
   await expect(card.getByText("Verified purchase", { exact: true })).toHaveCount(0);
+  // Hold the full-size photo so the viewer's loading state is observable.
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => { release = resolve; });
+  await page.route("**/api/reviews/media/**", async (route) => { await held; await route.continue(); });
   await section.getByRole("button", { name: "View photo 1 from Ryan 8", exact: true }).click();
   const photo = page.getByRole("dialog", { name: "Photo from Ryan 8", exact: true });
+  await expect(photo.getByRole("status", { name: "Loading photo", exact: true })).toBeVisible();
+  release();
   await expect(photo.getByRole("img", { name: "Merch photo from Ryan 8's review", exact: true })).toBeVisible();
+  await expect(photo.getByRole("status", { name: "Loading photo", exact: true })).toHaveCount(0);
+  await page.unroute("**/api/reviews/media/**");
   await photo.getByRole("button", { name: "Close dialog", exact: true }).click();
   const link = section.getByRole("link", { name: `Review of ${tee.title}`, exact: true }).first();
   const target = (await link.getAttribute("href"))!;
