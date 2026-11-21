@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { ComponentType, ReactNode } from "react";
 
 import { useId, useState } from "react";
 import { FiCheckCircle, FiChevronDown, FiClock, FiEdit2, FiEye, FiEyeOff, FiMessageSquare, FiSlash, FiTrash2, FiXCircle } from "react-icons/fi";
@@ -35,43 +35,60 @@ export function ModerationVersion({ revision, label, showLabel = true, verifiedP
   </section>;
 }
 
-export function ReviewModerationCard({ review, disabled, staffNames, onSelect, onPhotoSelect }: {
+type ModerationSelect = (review: ModerationReview, action: StaffReviewAction) => void;
+export type ReviewModerationItemProps = {
   review: ModerationReview; disabled: boolean; staffNames: Record<string, string>;
-  onSelect: (review: ModerationReview, action: StaffReviewAction) => void;
-  onPhotoSelect: PhotoChoice;
-}) {
+  onSelect: ModerationSelect; onPhotoSelect: PhotoChoice;
+};
+
+/** Short enough for a chip; the notes beside a review's text explain what each state means. */
+export function reviewStatus(review: ModerationReview): { label: string; Icon: ComponentType<{ className?: string; "aria-hidden"?: boolean }>; tone: string } {
+  const quiet = "border-black/10 text-black/70 dark:border-white/10 dark:text-white/70";
+  if (review.state === "hidden") return { label: "Hidden", Icon: FiEyeOff, tone: quiet };
+  if (review.state === "withdrawn") return { label: "Withdrawn", Icon: FiSlash, tone: quiet };
+  if (review.pending) return { label: review.published ? "Edit waiting" : "Waiting", Icon: FiClock, tone: "border-sky-500/30 bg-sky-500/10 text-sky-900 dark:text-sky-100" };
+  if (review.rejected) return { label: review.published ? "Edit rejected" : "Rejected", Icon: FiXCircle, tone: "border-red-500/30 bg-red-500/10 text-red-800 dark:text-red-100" };
+  if (review.published) return { label: "Published", Icon: FiCheckCircle, tone: "border-emerald-500/30 bg-emerald-500/10 text-emerald-900 dark:text-emerald-100" };
+  return { label: "Not published", Icon: FiMessageSquare, tone: quiet };
+}
+
+export function ReviewStatusChip({ review }: { review: ModerationReview }) {
+  const { label, Icon, tone } = reviewStatus(review);
+  return <span className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold ${tone}`}>
+    <Icon aria-hidden className="shrink-0" />{label}
+  </span>;
+}
+
+/** The decisions a review is waiting on: publish, reject, or publish anyway. */
+export function reviewDecisions(review: ModerationReview) {
+  return reviewModerationActions(review).filter((action) => action !== "hide" && action !== "restore");
+}
+
+/**
+ * Everything besides a decision: writing a reply, then visibility beside Delete,
+ * since both take the whole review off the storefront.
+ */
+export function reviewSecondaryActions(review: ModerationReview) {
+  const visibility = reviewModerationActions(review).filter((action) => action === "hide" || action === "restore");
+  return [
+    ...(!review.reply && reviewReplyActions(review).includes("reply-set") ? [{ action: "reply-set" as const, label: "Write reply", Icon: FiMessageSquare }] : []),
+    ...visibility.map((action) => ({ action, label: moderationActionLabel(action, review), Icon: action === "hide" ? FiEyeOff : FiEye })),
+    { action: "delete" as const, label: "Delete review", Icon: FiTrash2 },
+  ];
+}
+
+/** A review's versions, photos, notes, reply, and history: what a card shows and a table row expands to. */
+export function ReviewModerationDetails({ review, disabled, staffNames, onSelect, onPhotoSelect }: ReviewModerationItemProps) {
   const [historyOpen, setHistoryOpen] = useState(false);
   const historyId = useId();
-  const headingId = useId();
-  const actions = reviewModerationActions(review);
   const second = Boolean(review.published && (review.pending || review.rejected));
   const version = (revision: ModerationRevision, label: string) => <ModerationVersion revision={revision} label={label} showLabel={second} verifiedPurchase={review.verifiedPurchase}>
     <ReviewModerationPhotos review={review} revision={revision} disabled={disabled} onSelect={onPhotoSelect} />
   </ModerationVersion>;
-  // Short enough for a header chip; the notes below the text explain what each state means.
-  const state = review.state === "hidden" ? "Hidden" : review.state === "withdrawn" ? "Withdrawn" :
-    review.pending ? review.published ? "Edit waiting" : "Waiting" :
-    review.rejected ? review.published ? "Edit rejected" : "Rejected" : review.published ? "Published" : "Not published";
-  const StateIcon = review.state === "hidden" ? FiEyeOff : review.state === "withdrawn" ? FiSlash :
-    review.pending ? FiClock : review.rejected ? FiXCircle : review.published ? FiCheckCircle : FiMessageSquare;
-  const statusTone = review.state !== "active" ? "border-black/10 text-black/70 dark:border-white/10 dark:text-white/70" :
-    review.pending ? "border-sky-500/30 bg-sky-500/10 text-sky-900 dark:text-sky-100" :
-    review.rejected ? "border-red-500/30 bg-red-500/10 text-red-800 dark:text-red-100" :
-    review.published ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-900 dark:text-emerald-100" : "border-black/10 text-black/70 dark:border-white/10 dark:text-white/70";
   const replyActions = reviewReplyActions(review);
   // recentEvents is newest first, so this is the reason for the rejection on screen.
   const rejectionNote = review.rejected ? review.recentEvents.find((event) => event.action === "rejected")?.note : null;
-  return <article aria-labelledby={headingId} data-testid={`review-${review.id}`} className="@container/review min-w-0">
-    <Card variant="outline" className="space-y-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 space-y-1">
-          <Heading id={headingId} size="h2" className="text-base wrap-anywhere">{review.item.productTitle}</Heading>
-          {review.item.variantTitle && <Text className="text-sm wrap-anywhere">{review.item.variantTitle}</Text>}
-        </div>
-        <span className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold ${statusTone}`}>
-          <StateIcon aria-hidden className="shrink-0" />{state}
-        </span>
-      </div>
+  return <div className="space-y-4">
       <div className="space-y-4 [&>section+section]:border-t [&>section+section]:border-black/10 [&>section+section]:pt-4 dark:[&>section+section]:border-white/10">
         {review.pending && version(review.pending, review.published ? "Waiting edit" : "Waiting for review")}
         {review.rejected && version(review.rejected, review.published ? "Rejected edit" : "Rejected version")}
@@ -115,28 +132,36 @@ export function ReviewModerationCard({ review, disabled, staffNames, onSelect, o
           <Text className="mt-3 text-xs">Up to 10 recent events. Review and photo rejection reasons are shown to the buyer until they resubmit; other reasons stay with staff.</Text>
         </AnimatedCollapse>
       </div>}
+  </div>;
+}
+
+export function ReviewModerationCard(props: ReviewModerationItemProps) {
+  const { review, disabled, onSelect } = props;
+  const headingId = useId();
+  return <article aria-labelledby={headingId} data-testid={`review-${review.id}`} className="@container/review min-w-0">
+    <Card variant="outline" className="space-y-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 space-y-1">
+          <Heading id={headingId} size="h2" className="text-base wrap-anywhere">{review.item.productTitle}</Heading>
+          {review.item.variantTitle && <Text className="text-sm wrap-anywhere">{review.item.variantTitle}</Text>}
+        </div>
+        <ReviewStatusChip review={review} />
+      </div>
+      <ReviewModerationDetails {...props} />
       <div className="-mx-5 -mb-5 flex items-center justify-between gap-3 border-t border-black/10 px-5 py-4 dark:border-white/10">
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-          {actions.filter((action) => action !== "hide" && action !== "restore").map((action) =>
+          {reviewDecisions(review).map((action) =>
             <Button key={action} size="sm" className="w-full sm:w-auto" variant={action === "approve" ? "primary" : "secondary"} disabled={disabled} onClick={() => onSelect(review, action)}>
               {moderationActionLabel(action, review)}
             </Button>)}
         </div>
-        {/* Secondary actions stay compact so the decisions keep one row. Visibility sits with Delete: both take the whole review off the storefront. */}
+        {/* Secondary actions stay compact so the decisions keep one row. */}
         <div className="flex shrink-0 items-center gap-2">
-          {!review.reply && replyActions.includes("reply-set") && <IconButton size="md" label={`Write reply for ${review.item.productTitle}`}
-            disabled={disabled} onClick={() => onSelect(review, "reply-set")}>
-            <FiMessageSquare aria-hidden />
-          </IconButton>}
-          {actions.filter((action) => action === "hide" || action === "restore").map((action) =>
-            <IconButton key={action} size="md" label={`${moderationActionLabel(action, review)} for ${review.item.productTitle}`}
+          {reviewSecondaryActions(review).map(({ action, label, Icon }) =>
+            <IconButton key={action} size="md" variant={action === "delete" ? "danger" : "subtle"} label={`${label} for ${review.item.productTitle}`}
               disabled={disabled} onClick={() => onSelect(review, action)}>
-              {action === "hide" ? <FiEyeOff aria-hidden /> : <FiEye aria-hidden />}
+              <Icon aria-hidden />
             </IconButton>)}
-          <IconButton size="md" variant="danger" label={`Delete review for ${review.item.productTitle}`}
-            disabled={disabled} onClick={() => onSelect(review, "delete")}>
-            <FiTrash2 aria-hidden />
-          </IconButton>
         </div>
       </div>
     </Card>
