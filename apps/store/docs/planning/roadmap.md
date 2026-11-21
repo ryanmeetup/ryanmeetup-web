@@ -20,6 +20,10 @@ old "not started" or "done" label.
   status and customer accounts.
 - Signed catalog webhooks with five-minute cache freshness as a fallback;
   About, support, policy pages, sitemap and branded error pages.
+- "More from this shop" on product pages (November 21): purchasable listings
+  from Shopify's `productRecommendations` (intent `RELATED`), then shared
+  collections, then the same product type; grouped designs collapse into one
+  listing and never recommend their own listing, with a browse fallback.
 - Six newest published reviews on the home page, with ratings, approved photos
   and links to their product reviews.
 - A paginated shop-wide review feed at `/reviews` with debounced search,
@@ -50,7 +54,6 @@ Item numbers remain stable for existing references.
 | # | Work | Current evidence / next action |
 | --- | --- | --- |
 | 4 | [Shopify/Printful operating setup](#4-shopify-and-printful-operating-setup) | NY sales tax (registration pending), accountant questions and January rate cleanup. |
-| 11 | [More from this shop](#11-more-from-this-shop) | Unimplemented product-page recommendations. |
 | 8 | [Note to seller and personalization](#8-note-to-seller-and-personalization) | Neither storefront input is implemented; confirm which personalization is actually needed. |
 | 14 | [Store reviews](#14-store-reviews) | Text and photo publication built; cleanup/recovery and live proof remain. |
 | 9 | [Optional processing and delivery summary](#9-optional-processing-and-delivery-summary) | Optional product-page guidance; no storefront rate estimator is required. |
@@ -82,16 +85,6 @@ change credentials as documentation cleanup.
 **Complete when:** New York collection is on and verified and the accountant
 questions are answered. Current product/SKU counts are catalog data, not a
 permanent completion criterion.
-
-### 11. More from this shop
-
-Product pages render their selected listing and reviews but no related-listings
-section. Add recommendations using the current product/collection context and
-existing cards/grid, deduplicating grouped listings and excluding the current
-one. Confirm an appropriate Shopify operation/schema if using API recommendations.
-
-**Complete when:** product pages offer other relevant, purchasable listings with
-an empty-state fallback. Existing popularity sorting is not this feature.
 
 ### 8. Note to seller and personalization
 
