@@ -1,12 +1,13 @@
 import { connection } from "next/server";
-import { Breadcrumbs, Button, Heading, Text } from "@ryanmeetup/ui";
+import { Breadcrumbs, Button, Heading, RatingStars, Text } from "@ryanmeetup/ui";
+import type { ReviewSummary } from "@ryanmeetup/reviews";
 import { FiMessageSquare, FiStar } from "react-icons/fi";
 import { ReviewFeed } from "@/components/review-feed";
 import { buildPageMetadata, DEFAULT_IMAGE } from "@/lib/metadata";
 import { StoreHomeIcon } from "@/lib/navigation";
 import { getReviewBackend } from "@/lib/review-backend";
 import { FEED_REVIEW_PARAMS, isRefinedReviewView, parseReviewView, reviewPageNumber } from "@/lib/public-review-view";
-import { getReviewFeedPage } from "@/lib/review-feed";
+import { getReviewFeedPage, getShopReviewSummary } from "@/lib/review-feed";
 
 export const metadata = buildPageMetadata({
   title: "Customer Reviews",
@@ -22,6 +23,22 @@ function Notice({ title, children }: { title: string; children: React.ReactNode 
   </div>;
 }
 
+/** Stars, average, and count across the whole shop; spoken once as a sentence. */
+function ShopRating({ summary }: { summary: ReviewSummary }) {
+  const average = summary.average.toFixed(1);
+  const reviews = `${summary.count.toLocaleString("en-US")} review${summary.count === 1 ? "" : "s"}`;
+  return (
+    <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-black/70 dark:text-white/70">
+      <span aria-hidden className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <RatingStars rating={Number(average)} className="text-base" />
+        <span className="font-semibold tabular-nums text-black dark:text-white">{average} out of 5</span>
+        <span>from {reviews} across the shop</span>
+      </span>
+      <span className="sr-only">Rated {average} out of 5 from {reviews} across the shop</span>
+    </p>
+  );
+}
+
 /** Every published review across the shop. A buyer's own reviews live at /reviews/mine. */
 export default async function ReviewsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   // Moderation and withdrawals must reach the next request; review text is never cached into the page.
@@ -29,7 +46,8 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
   const query = await searchParams;
   // A shared link renders the page it names; anything unreadable falls back to the first, unfiltered page.
   const view = parseReviewView({ get: (name) => { const value = query[name]; return typeof value === "string" ? value : null; } }, FEED_REVIEW_PARAMS);
-  const page = await getReviewFeedPage({ backend: getReviewBackend(), view });
+  const backend = getReviewBackend();
+  const [page, summary] = await Promise.all([getReviewFeedPage({ backend, view }), getShopReviewSummary(backend)]);
   return (
     <main data-analytics-placement="reviews" data-analytics-section="reviews" className="store-container space-y-8 py-10 sm:py-14">
       <div>
@@ -40,6 +58,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
         <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <Heading size="h1" className="text-4xl sm:text-5xl">Customer Reviews</Heading>
+            {summary && <ShopRating summary={summary} />}
             <Text className="mt-3 max-w-prose">Every published review from across the shop.</Text>
           </div>
           <Button.Link href="/reviews/mine" variant="secondary" size="md" leftIcon={<FiMessageSquare aria-hidden />} className="w-full shrink-0 sm:w-auto">My reviews</Button.Link>

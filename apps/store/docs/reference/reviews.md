@@ -63,6 +63,16 @@ product. Ratings follow the listing pages' five-minute revalidation, so a newly
 approved review can take that long to move a card. A failed read leaves the
 cards without ratings rather than failing the page.
 
+## Store-wide rating on /reviews
+
+The /reviews header shows stars, the average and the count across every
+published review in the shop: store and Etsy reviews alike, including Etsy
+listings that never came to the store and products no longer sold. It reads the
+service-only `reviews.shopSummary` command, which calls `store_review_summary`
+with a null product list (migration `20261121170000`). It is read per request
+with the feed and has no minimum count. When there are no published reviews, or
+the read fails, the line is left out and the feed still renders.
+
 ## Buyer and publication rules
 
 - Shopify sign-in is required. Identity, purchase snapshots and public names
