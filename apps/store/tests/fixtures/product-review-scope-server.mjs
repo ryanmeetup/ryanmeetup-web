@@ -60,6 +60,14 @@ createServer(async (request, response) => {
       const offset = focus >= 0 ? Math.floor(focus / limit) * limit : rows.length ? Math.min(input.p_offset, Math.floor((rows.length - 1) / limit) * limit) : 0;
       return json(response, 200, { total: rows.length, offset, reviews: rows.slice(offset, offset + limit) });
     }
+    // A null product list is the store-wide rating on /reviews: every fixture review, pooled.
+    if (request.url === "/rest/v1/rpc/store_review_summary" && input.p_product_ids === null) {
+      if (Object.values(products).some((product) => product.unavailable)) return json(response, 503, { message: "Synthetic review outage" });
+      const ratings = Object.values(products).flatMap((product) => product.reviews ?? []).map((review) => review.rating);
+      const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+      for (const rating of ratings) distribution[Math.ceil(rating)] += 1;
+      return json(response, 200, { count: ratings.length, average: ratings.length ? ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length : 0, distribution });
+    }
     const product = products[input.p_product_ids?.[0]];
     if (!product || product.unavailable) return json(response, 503, { message: "Synthetic review outage" });
     if (request.url === "/rest/v1/rpc/store_review_summary") return json(response, 200, product.summary);
