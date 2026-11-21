@@ -12,7 +12,7 @@ import {
   SuccessCallout,
   Textarea,
 } from "@ryanmeetup/ui";
-import { getAdminOrderSearchUrl, type SupportPrefill } from "@/lib/support";
+import { getAdminOrderSearchUrl, SITE_BUG_TOPIC, type SupportPrefill } from "@/lib/support";
 
 type StoreContactFields = {
   firstName: string;
@@ -21,6 +21,7 @@ type StoreContactFields = {
   topic: string;
   orderNumber: string;
   orderEmail: string;
+  page: string;
   resolution: string;
   message: string;
 };
@@ -32,6 +33,7 @@ const initialFields: StoreContactFields = {
   topic: "order-status",
   orderNumber: "",
   orderEmail: "",
+  page: "",
   resolution: "information",
   message: "",
 };
@@ -43,6 +45,7 @@ const topics = [
   { label: "Change or cancel an order", value: "change-order" },
   { label: "Damaged or incorrect item", value: "item-problem" },
   { label: "Product or sizing question", value: "product-question" },
+  { label: "Something’s broken on the site", value: SITE_BUG_TOPIC },
   { label: "Something else", value: "other" },
 ];
 
@@ -59,6 +62,8 @@ export function StoreContactForm({ prefill, adminOrdersUrl }: { prefill?: Suppor
     ...initialFields,
     email: prefill?.email ?? "",
     orderNumber: prefill?.order ?? "",
+    topic: prefill?.topic || initialFields.topic,
+    page: prefill?.page ?? "",
   });
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
@@ -74,17 +79,24 @@ export function StoreContactForm({ prefill, adminOrdersUrl }: { prefill?: Suppor
       setField(name, event.target.value);
     };
 
+  const isBugReport = fields.topic === SITE_BUG_TOPIC;
+
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setStatus("sending");
     setErrorMessage("");
 
+    if (isBugReport) {
+      await send(sendBugReport);
+      return;
+    }
+
     const topic = topics.find((option) => option.value === fields.topic)?.label ?? fields.topic;
     const resolution = resolutions.find((option) => option.value === fields.resolution)?.label ?? fields.resolution;
     const orderReference = fields.orderNumber.trim() || "Not provided";
 
-    try {
-      await sendContactMessage({
+    await send(() =>
+      sendContactMessage({
         firstName: fields.firstName,
         lastName: fields.lastName,
         email: fields.email,
@@ -107,8 +119,46 @@ export function StoreContactForm({ prefill, adminOrdersUrl }: { prefill?: Suppor
           "Customer message:",
           fields.message,
         ].join("\n"),
-      });
-      setFields(initialFields);
+      }),
+    );
+  };
+
+  // The browser and window size come along automatically, so the visitor only has to
+  // describe what happened.
+  const sendBugReport = () => {
+    const page = fields.page.trim();
+    return sendContactMessage({
+      firstName: fields.firstName,
+      lastName: fields.lastName,
+      email: fields.email,
+      topic: "Site bug",
+      topicValue: SITE_BUG_TOPIC,
+      detail: "Thank-you coupon if confirmed",
+      detailValue: "coupon-if-confirmed",
+      routeTo: "ryan@ryanmeetup.com",
+      source: "store-bug-report",
+      subject: `[Store: Site bug] ${page || `${fields.firstName} ${fields.lastName}`}`,
+      message: [
+        "Ryan Meetup Store bug report",
+        "",
+        // A prefilled path becomes a clickable link; anything typed by hand stays as written.
+        `Page: ${page.startsWith("/") ? `${window.location.origin}${page}` : page || "Not provided"}`,
+        `Browser: ${navigator.userAgent}`,
+        `Window: ${window.innerWidth} × ${window.innerHeight}`,
+        `Reported: ${new Date().toISOString()}`,
+        "",
+        "If this bug is confirmed, send the reporter a thank-you coupon.",
+        "",
+        "What happened:",
+        fields.message,
+      ].join("\n"),
+    });
+  };
+
+  const send = async (deliver: () => Promise<unknown>) => {
+    try {
+      await deliver();
+      setFields({ ...initialFields, topic: fields.topic });
       setStatus("success");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Your message could not be sent. Please try again.");
@@ -127,24 +177,38 @@ export function StoreContactForm({ prefill, adminOrdersUrl }: { prefill?: Suppor
 
       <div className="grid gap-6 sm:grid-cols-2">
         <DropdownSelect label="What can we help with?" variant="field" required value={fields.topic} onChange={(topic) => setField("topic", topic)} options={topics} />
-        <DropdownSelect label="Preferred resolution" variant="field" required value={fields.resolution} onChange={(resolution) => setField("resolution", resolution)} options={resolutions} />
+        {isBugReport ? (
+          <Input label="Page with the problem" name="page" placeholder="The cart, a product page, wherever it happened" value={fields.page} onChange={update("page")} />
+        ) : (
+          <DropdownSelect label="Preferred resolution" variant="field" required value={fields.resolution} onChange={(resolution) => setField("resolution", resolution)} options={resolutions} />
+        )}
       </div>
 
-      <div className="grid gap-6 sm:grid-cols-2">
-        <Input label="Order number" name="orderNumber" placeholder="#RM-1234" value={fields.orderNumber} onChange={update("orderNumber")} />
-        <Input label="Email used for the order" name="orderEmail" type="email" placeholder="If different from above" value={fields.orderEmail} onChange={update("orderEmail")} />
-      </div>
+      {!isBugReport && (
+        <div className="grid gap-6 sm:grid-cols-2">
+          <Input label="Order number" name="orderNumber" placeholder="#RM-1234" value={fields.orderNumber} onChange={update("orderNumber")} />
+          <Input label="Email used for the order" name="orderEmail" type="email" placeholder="If different from above" value={fields.orderEmail} onChange={update("orderEmail")} />
+        </div>
+      )}
 
-      <Textarea id="message" label="How can we help?" name="message" placeholder="Tell us what happened and what would make it right." required rows={7} value={fields.message} onChange={update("message")} />
+      {isBugReport ? (
+        <Textarea id="message" label="What went weird?" name="message" placeholder="What did you click, and what happened instead?" required rows={7} value={fields.message} onChange={update("message")} />
+      ) : (
+        <Textarea id="message" label="How can we help?" name="message" placeholder="Tell us what happened and what would make it right." required rows={7} value={fields.message} onChange={update("message")} />
+      )}
 
       {status === "success" && (
-        <SuccessCallout>Message sent. A Ryan will follow up by email.</SuccessCallout>
+        <SuccessCallout>
+          {isBugReport
+            ? "Bug report sent. Nice catch! If we can confirm it, a Ryan will email you a thank-you coupon."
+            : "Message sent. A Ryan will follow up by email."}
+        </SuccessCallout>
       )}
       {status === "error" && <ErrorCallout>{errorMessage}</ErrorCallout>}
 
       <FormActions>
         <Button type="submit" size="md" leftIcon={<FiSend aria-hidden />} loading={status === "sending"} loadingText="Sending..." className="w-full sm:w-auto sm:min-w-48">
-          Send to customer service
+          {isBugReport ? "Send bug report" : "Send to customer service"}
         </Button>
       </FormActions>
     </form>

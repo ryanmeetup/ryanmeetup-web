@@ -1,13 +1,24 @@
 import { expect, test } from "@playwright/test";
-import { getAdminOrderSearchUrl, getAdminOrdersUrl, parseSupportPrefill } from "../lib/support";
+import { getAdminOrderSearchUrl, getAdminOrdersUrl, getBugReportHref, parseSupportPrefill } from "../lib/support";
 import { validateEmail } from "@ryanmeetup/utils";
 
+const blank = { order: "", email: "", topic: "", page: "" };
+
 test("order links from Shopify prefill a readable order number and drop anything malformed", () => {
-  expect(parseSupportPrefill({ order: "1042", email: " ryan@example.com " })).toEqual({ order: "#1042", email: "ryan@example.com" });
-  expect(parseSupportPrefill({ order: "#RM-1042" })).toEqual({ order: "#RM-1042", email: "" });
-  expect(parseSupportPrefill({ order: ["1001", "1002"], email: ["a@b.co"] })).toEqual({ order: "#1001", email: "a@b.co" });
-  expect(parseSupportPrefill({ order: "<script>", email: "not-an-email" })).toEqual({ order: "", email: "" });
-  expect(parseSupportPrefill({})).toEqual({ order: "", email: "" });
+  expect(parseSupportPrefill({ order: "1042", email: " ryan@example.com " })).toEqual({ ...blank, order: "#1042", email: "ryan@example.com" });
+  expect(parseSupportPrefill({ order: "#RM-1042" })).toEqual({ ...blank, order: "#RM-1042" });
+  expect(parseSupportPrefill({ order: ["1001", "1002"], email: ["a@b.co"] })).toEqual({ ...blank, order: "#1001", email: "a@b.co" });
+  expect(parseSupportPrefill({ order: "<script>", email: "not-an-email" })).toEqual(blank);
+  expect(parseSupportPrefill({})).toEqual(blank);
+});
+
+test("bug-report links open the bug topic and keep only an on-site page", () => {
+  expect(parseSupportPrefill({ topic: "site-bug", from: "/products/ryan-tee?color=black" })).toEqual({ ...blank, topic: "site-bug", page: "/products/ryan-tee?color=black" });
+  expect(parseSupportPrefill({ topic: "refund", from: "https://evil.example" })).toEqual(blank);
+  expect(parseSupportPrefill({ topic: "site-bug", from: "//evil.example/path" })).toEqual({ ...blank, topic: "site-bug" });
+  expect(getBugReportHref("/cart")).toBe("/contact?topic=site-bug&from=%2Fcart");
+  expect(getBugReportHref("/contact")).toBe("/contact?topic=site-bug");
+  expect(getBugReportHref()).toBe("/contact?topic=site-bug");
 });
 
 test("the Shopify Admin link searches by order number, falling back to the customer's email", () => {

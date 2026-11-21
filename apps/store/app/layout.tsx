@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/react";
 import { RyanMeetupFooter, ToastHost } from "@ryanmeetup/ui";
 import { ThemeProvider } from "next-themes";
+import { BugReportBanner } from "@/components/bug-report-banner";
 import { CartDrawer } from "@/components/cart-drawer";
 import { CartProvider } from "@/components/cart-provider";
 import { CurrencyProvider } from "@/components/currency-provider";
@@ -9,6 +10,7 @@ import { Header } from "@/components/header";
 import { NavSectionProvider } from "@/components/nav-section";
 import { buildPageMetadata, DEFAULT_IMAGE, SITE_NAME, SITE_URL } from "@/lib/metadata";
 import { getCollections, getCustomerAccountUrl, getPolicies, isShopifyConfigured } from "@/lib/shopify";
+import { getBugReportHref } from "@/lib/support";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -59,13 +61,17 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           <CartProvider commerceConfigured={commerceConfigured}>
             <CurrencyProvider>
               <NavSectionProvider>
+                <BugReportBanner />
                 <Header collections={collections} accountUrl={accountUrl} />
                 {children}
               </NavSectionProvider>
             </CurrencyProvider>
             <RyanMeetupFooter
               homeHref="https://ryanmeetup.com"
-              sections={policyLinks.length ? [{ title: "Policies", href: "/policies", links: policyLinks }] : []}
+              sections={[
+                { title: "Help", links: [{ href: "/contact", label: "Customer service" }, { href: getBugReportHref(), label: "Report a bug" }] },
+                ...(policyLinks.length ? [{ title: "Policies", href: "/policies", links: policyLinks }] : []),
+              ]}
               followColumn={false}
               className="store-container"
             />
