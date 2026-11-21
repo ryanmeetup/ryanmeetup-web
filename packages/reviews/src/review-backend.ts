@@ -17,6 +17,7 @@ import {
   type PublicReviewItem,
   type PublicReview,
   type PublicReviewPage,
+  type ReviewStar,
   type ReviewSubmission,
   type ReviewSummary,
 } from "./content";
@@ -76,8 +77,16 @@ export type BuyerReview = {
   current: ReviewSubmission & { displayName: string };
 };
 
-/** One page of every published review across the shop, newest first. */
-export type PublicReviewFeedPage = { reviews: PublicReview[]; nextCursor: string | null };
+/** How a public review list is narrowed and ordered. Every field is applied by storage, across every page. */
+export type PublicReviewSort = "newest" | "oldest" | "highest" | "lowest";
+export const PUBLIC_REVIEW_SORTS: readonly PublicReviewSort[] = ["newest", "oldest", "highest", "lowest"];
+/** Where a review came from: a checked store order, an Etsy import, or a store review with no matching order. */
+export type PublicReviewSource = "verified" | "etsy" | "unmatched";
+export const PUBLIC_REVIEW_SOURCES: readonly PublicReviewSource[] = ["verified", "etsy", "unmatched"];
+export const PUBLIC_REVIEW_QUERY_MAX = 200;
+export type PublicReviewSearch = { rating: ReviewStar | null; source: PublicReviewSource | null; sort: PublicReviewSort; query: string };
+/** One numbered page of matches. `offset` is where the served page starts, which a focused review or a stale page number can move. */
+export type PublicReviewSearchPage = { reviews: PublicReview[]; total: number; offset: number };
 
 export type BuyerReviewPage = { reviews: BuyerReview[]; nextCursor: string | null };
 export type BuyerReviewCursor = { createdAt: string; id: string };
@@ -90,7 +99,8 @@ export type ReviewCommand =
   /** Rating totals for each product on its own, for listing cards. */
   | { operation: "reviews.summaries"; productIds: string[] }
   | { operation: "reviews.latest" }
-  | { operation: "reviews.feed"; limit: number; cursor: string | null }
+  /** A page of published reviews for some products, or the whole shop when `productIds` is null. */
+  | { operation: "reviews.search"; productIds: string[] | null; search: PublicReviewSearch; limit: number; offset: number; focusReviewId: string | null }
   | { operation: "reviews.mine"; subject: string; cursor: string | null }
   | { operation: "review.mine"; subject: string; reviewId: string }
   | { operation: "reviews.reviewedLines"; subject: string; lineIds: string[] }
@@ -108,7 +118,7 @@ export type ReviewResults = {
   /** Keyed by product ID; every requested product is present, with a zero count when it has no reviews. */
   "reviews.summaries": Record<string, ReviewSummary>;
   "reviews.latest": PublicReview[];
-  "reviews.feed": PublicReviewFeedPage;
+  "reviews.search": PublicReviewSearchPage;
   "reviews.mine": BuyerReviewPage;
   "review.mine": BuyerReview | null;
   "reviews.reviewedLines": string[];
@@ -136,6 +146,30 @@ export function reviewPhotoIdsSchema(value: unknown): string[] | null {
 }
 const singleLine = (value: unknown, max: number): value is string =>
   typeof value === "string" && value.length > 0 && [...value].length <= max && value === value.trim() && !/[\u0000-\u001f\u007f]|\s{2,}/u.test(value);
+
+/** Deepest offset storage serves; far beyond any real shop, it only bounds a hostile page number. */
+export const PUBLIC_REVIEW_OFFSET_MAX = 100_000;
+
+/** Only the fixed filters and sorts, and already-trimmed search text. */
+export function publicReviewSearchSchema(value: unknown): PublicReviewSearch | null {
+  const search = exactObject(value, ["rating", "source", "sort", "query"]);
+  return search && (search.rating === null || (Number.isInteger(search.rating) && (search.rating as number) >= 1 && (search.rating as number) <= 5)) &&
+    (search.source === null || PUBLIC_REVIEW_SOURCES.includes(search.source as PublicReviewSource)) &&
+    PUBLIC_REVIEW_SORTS.includes(search.sort as PublicReviewSort) && typeof search.query === "string" &&
+    search.query === search.query.trim() && [...search.query].length <= PUBLIC_REVIEW_QUERY_MAX && !/[\u0000-\u001f\u007f]/u.test(search.query)
+    ? (search as PublicReviewSearch) : null;
+}
+
+/** Public and unique; the order follows the requested sort, so it is the reader's to trust. */
+export function publicReviewSearchPageSchema(value: unknown): PublicReviewSearchPage | null {
+  const page = exactObject(value, ["reviews", "total", "offset"]);
+  if (!page || !Array.isArray(page.reviews) || page.reviews.length > REVIEW_PAGE_MAX || !page.reviews.every((review) => publicReviewSchema(review) !== null)) return null;
+  const reviews = page.reviews as PublicReview[];
+  return new Set(reviews.map((review) => review.id)).size === reviews.length &&
+    Number.isSafeInteger(page.total) && Number.isSafeInteger(page.offset) && (page.offset as number) >= 0 &&
+    (page.offset as number) + reviews.length <= (page.total as number) && (reviews.length > 0 || page.total === 0 || (page.offset as number) >= (page.total as number))
+    ? (page as PublicReviewSearchPage) : null;
+}
 
 function purchaseSchema(value: unknown): ReviewPurchase | null {
   const purchase = exactObject(value, ["orderId", "lineId", "productId", "variantId", "productTitle", "variantTitle"]);
@@ -188,10 +222,12 @@ export function reviewCommandSchema(value: unknown): ReviewCommand | null {
     }
     case "reviews.latest":
       return exactObject(value, ["operation"]) ? value as ReviewCommand : null;
-    case "reviews.feed": {
-      const command = exactObject(value, ["operation", "limit", "cursor"]);
-      return command && Number.isSafeInteger(command.limit) && (command.limit as number) >= 1 && (command.limit as number) <= REVIEW_PAGE_MAX &&
-        (command.cursor === null || (typeof command.cursor === "string" && decodeReviewCursor(command.cursor) !== null)) ? (command as ReviewCommand) : null;
+    case "reviews.search": {
+      const command = exactObject(value, ["operation", "productIds", "search", "limit", "offset", "focusReviewId"]);
+      return command && (command.productIds === null || productIdList(command.productIds)) && publicReviewSearchSchema(command.search) &&
+        Number.isSafeInteger(command.limit) && (command.limit as number) >= 1 && (command.limit as number) <= REVIEW_PAGE_MAX &&
+        Number.isSafeInteger(command.offset) && (command.offset as number) >= 0 && (command.offset as number) <= PUBLIC_REVIEW_OFFSET_MAX &&
+        (command.focusReviewId === null || uuid(command.focusReviewId)) ? (command as ReviewCommand) : null;
     }
     case "reviews.mine": {
       const command = exactObject(value, ["operation", "subject", "cursor"]);
@@ -304,13 +340,8 @@ export function reviewResultSchema<Operation extends ReviewOperation>(operation:
     valid = Boolean(summaries && productIdList(Object.keys(summaries)) && Object.values(summaries).every((summary) => reviewSummarySchema(summary) !== null));
   } else if (operation === "reviews.latest") {
     valid = Array.isArray(data) && data.length <= 6 && newestFirstReviews(data);
-  } else if (operation === "reviews.feed") {
-    const page = exactObject(data, ["reviews", "nextCursor"]);
-    if (page && Array.isArray(page.reviews) && page.reviews.length <= REVIEW_PAGE_MAX && newestFirstReviews(page.reviews)) {
-      const last = (page.reviews as PublicReview[]).at(-1);
-      const cursor = typeof page.nextCursor === "string" ? decodeReviewCursor(page.nextCursor) : null;
-      valid = page.nextCursor === null || Boolean(cursor && last && cursor.id === last.id && cursor.publishedAt === last.publishedAt);
-    }
+  } else if (operation === "reviews.search") {
+    valid = publicReviewSearchPageSchema(data) !== null;
   } else if (operation === "reviews.mine") {
     const page = exactObject(data,["reviews","nextCursor"]);
     if (page && Array.isArray(page.reviews) && page.reviews.length <= 20 && page.reviews.every((review) => buyerReviewSchema(review) !== null)) {

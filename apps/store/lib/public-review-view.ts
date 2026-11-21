@@ -1,9 +1,12 @@
-import { decodeReviewCursor, publicReviewPageSchema, reviewRatingStar } from "@ryanmeetup/reviews";
-import type { PublicReview, PublicReviewPage, ReviewRating } from "@ryanmeetup/reviews";
+import { PUBLIC_REVIEW_OFFSET_MAX, PUBLIC_REVIEW_QUERY_MAX, PUBLIC_REVIEW_SORTS, PUBLIC_REVIEW_SOURCES } from "@ryanmeetup/reviews";
+import type { PublicReview, PublicReviewPage, PublicReviewSearch, PublicReviewSort, PublicReviewSource, ReviewStar } from "@ryanmeetup/reviews";
+import { parsePagination } from "@ryanmeetup/utils";
 import { publishedReviewPhotoUrl } from "./review-photo-hosts";
 import type { Review, ReviewsData } from "./types";
 
-export const PUBLIC_REVIEW_PAGE_SIZE = 20;
+/** Page sizes a reader may choose for review cards; storage serves at most 50 a page. */
+export const REVIEW_PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
+export const PUBLIC_REVIEW_PAGE_SIZE = 25;
 
 export const REVIEW_RATING_OPTIONS = [
   { value: "all", label: "All ratings" },
@@ -17,25 +20,79 @@ export const REVIEW_SORT_OPTIONS = [
   { value: "lowest", label: "Lowest rated" },
 ];
 
-/** Where a review came from, named as its badge names it. Values stay readable in case they reach a URL. */
+/** Where a review came from, named as its badge names it. Values stay readable because they reach the URL. */
 export const REVIEW_ORIGIN_OPTIONS = [
   { value: "all", label: "All sources" },
   { value: "verified", label: "Verified purchase" },
   { value: "etsy", label: "Verified Etsy purchase" },
   { value: "unmatched", label: "No matching order" },
 ];
-const originVerification: Record<string, Review["verification"]> = { verified: "purchase", etsy: "etsy", unmatched: null };
 
-export function selectPublicReviews<T extends Review>(reviews: T[], rating: string, sort: string, origin = "all"): T[] {
-  return reviews.filter((review) => (rating === "all" || String(reviewRatingStar(review.rating as ReviewRating)) === rating) &&
-    (origin === "all" || review.verification === originVerification[origin])).sort((a, b) => {
-    const newest = Date.parse(b.createdAt) - Date.parse(a.createdAt) || b.id.localeCompare(a.id);
-    if (sort === "oldest") return -newest;
-    if (sort === "highest") return b.rating - a.rating || newest;
-    if (sort === "lowest") return a.rating - b.rating || newest;
-    return newest;
+/**
+ * What a reader chose for a review list, as it appears in a shareable URL.
+ * Storage does the filtering, sorting and searching, so every page agrees.
+ */
+export type ReviewView = { page: number; pageSize: number; rating: string; origin: string; sort: string; query: string };
+export const DEFAULT_REVIEW_VIEW: ReviewView = { page: 1, pageSize: PUBLIC_REVIEW_PAGE_SIZE, rating: "all", origin: "all", sort: "newest", query: "" };
+
+/** URL parameter names for one review list. Product pages prefix theirs so they never meet the product's own. */
+export type ReviewViewParams = Record<keyof ReviewView, string>;
+export const FEED_REVIEW_PARAMS: ReviewViewParams = { page: "page", pageSize: "pageSize", rating: "rating", origin: "source", sort: "sort", query: "q" };
+export const PRODUCT_REVIEW_PARAMS: ReviewViewParams = {
+  page: "reviewPage", pageSize: "reviewPageSize", rating: "reviewRating", origin: "reviewSource", sort: "reviewSort", query: "reviewQuery",
+};
+
+type ParamReader = { get(name: string): string | null };
+
+/** Unknown or malformed values fall back to the default, so an old or mistyped link still shows reviews. */
+export function parseReviewView(params: ParamReader, names: ReviewViewParams): ReviewView {
+  const { requestedPage, pageSize: requestedSize } = parsePagination(params, {
+    pageParam: names.page, pageSizeParam: names.pageSize, defaultPageSize: PUBLIC_REVIEW_PAGE_SIZE, maxPageSize: Math.max(...REVIEW_PAGE_SIZE_OPTIONS),
   });
+  const pageSize = (REVIEW_PAGE_SIZE_OPTIONS as readonly number[]).includes(requestedSize) ? requestedSize : PUBLIC_REVIEW_PAGE_SIZE;
+  const rating = params.get(names.rating) ?? "";
+  const origin = params.get(names.origin) ?? "";
+  const sort = params.get(names.sort) ?? "";
+  const query = (params.get(names.query) ?? "").trim();
+  return {
+    // Storage clamps a page past the end to the real last page; this only bounds a hostile number.
+    page: Math.min(requestedPage, Math.floor(PUBLIC_REVIEW_OFFSET_MAX / pageSize) + 1),
+    pageSize,
+    rating: /^[1-5]$/.test(rating) ? rating : "all",
+    origin: PUBLIC_REVIEW_SOURCES.includes(origin as PublicReviewSource) ? origin : "all",
+    sort: PUBLIC_REVIEW_SORTS.includes(sort as PublicReviewSort) ? sort : "newest",
+    query: [...query].length <= PUBLIC_REVIEW_QUERY_MAX && !/[\u0000-\u001f\u007f]/u.test(query) ? query : "",
+  };
 }
+
+/** Writes only what differs from the default, onto existing parameters. */
+export function writeReviewView(params: URLSearchParams, view: ReviewView, names: ReviewViewParams) {
+  for (const key of Object.keys(names) as (keyof ReviewView)[]) {
+    const value = String(view[key]);
+    if (value === String(DEFAULT_REVIEW_VIEW[key])) params.delete(names[key]);
+    else params.set(names[key], value);
+  }
+  return params;
+}
+
+export const reviewViewKey = (view: ReviewView) => writeReviewView(new URLSearchParams(), view, FEED_REVIEW_PARAMS).toString();
+export const isRefinedReviewView = (view: ReviewView) =>
+  view.rating !== "all" || view.origin !== "all" || view.sort !== "newest" || view.query !== "";
+
+export function reviewViewSearch(view: ReviewView): PublicReviewSearch {
+  return {
+    rating: view.rating === "all" ? null : Number(view.rating) as ReviewStar,
+    source: view.origin === "all" ? null : view.origin as PublicReviewSource,
+    sort: view.sort as PublicReviewSort,
+    query: view.query,
+  };
+}
+
+export const reviewViewOffset = (view: ReviewView) => (view.page - 1) * view.pageSize;
+export const reviewPageNumber = (offset: number, pageSize: number) => Math.floor(offset / pageSize) + 1;
+
+/** A numbered page of review cards: the served page, how many match, and where the page starts. */
+export type ReviewListPage<T> = { reviews: T[]; total: number; offset: number };
 
 /** The same public fields and approved photo paths in every Store review card. */
 export function toReview(review: PublicReview): Review {
@@ -56,28 +113,6 @@ export function toReviewsData(page: PublicReviewPage): Extract<ReviewsData, { st
     averageRating: page.summary.average,
     count: page.summary.count,
     reviews: page.reviews.map(toReview),
-    ...(page.nextCursor && page.scope.productIds.length === 1 ? {
-      pagination: { productId: page.scope.productIds[0], nextCursor: page.nextCursor },
-    } : {}),
+    ...(page.scope.productIds.length === 1 ? { productId: page.scope.productIds[0] } : {}),
   };
-}
-
-/** A continuation must remain public, bounded, scoped to this product and able to advance. */
-export function productReviewPage(value: unknown, productId: string, after: string | null): PublicReviewPage | null {
-  const page = publicReviewPageSchema(value);
-  if (!page || page.scope.productIds.length !== 1 || page.scope.productIds[0] !== productId ||
-    page.reviews.length > PUBLIC_REVIEW_PAGE_SIZE) return null;
-  if (page.nextCursor !== null) {
-    const cursor = decodeReviewCursor(page.nextCursor);
-    const last = page.reviews.at(-1);
-    if (!cursor || page.nextCursor === after || !last || cursor.id !== last.id || cursor.publishedAt !== last.publishedAt) return null;
-  }
-  return page;
-}
-
-/** Keep first-seen order while refreshing overlapping public rows, without duplicate cards. */
-export function appendPublicReviews<T extends Review>(current: T[], next: T[]): T[] {
-  const reviews = new Map(current.map((review) => [review.id, review]));
-  for (const review of next) reviews.set(review.id, review);
-  return [...reviews.values()];
 }

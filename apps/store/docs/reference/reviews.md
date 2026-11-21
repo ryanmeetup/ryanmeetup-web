@@ -21,7 +21,7 @@ competing review-request emails turned off, on November 21, 2026.
 | Submission | Half-star ratings from 0.5 to 5, required title/body, signed-in verified and unverified feedback, duplicate protection, pending revisions. |
 | Buyer management | `/reviews/mine`, twenty-row keyset paging, rejection guidance, edit/withdraw, uncertain-write recovery, account isolation and recent-purchase suggestions. |
 | Staff moderation | Owner-only Tasks `/store-reviews`, waiting badge, product and pending/published/hidden/rejected/all filters, paging, approve/reject/hide/restore, publish rejected text, replies and audited permanent deletion. |
-| Public reviews | Approved active text, verified-purchase and verified-Etsy-purchase badges (Etsy reviews imported through `scripts/import-etsy-reviews.ts`), replies, complete product totals, star-rating filters, date/rating sorting, twenty-row paging and product JSON-LD. |
+| Public reviews | Approved active text, verified-purchase and verified-Etsy-purchase badges (Etsy reviews imported through `scripts/import-etsy-reviews.ts`), replies, complete product totals, star-rating and source filters, date/rating sorting, text search on `/reviews`, numbered server-side pages and product JSON-LD. |
 | Photos | Server normalization, private staging, upload budget, atomic revision associations, buyer selection/upload/remove/retry and authenticated blob previews. Owner previews and independent decisions; only approved media on active published text is served through revocable Store routes. |
 | Database | Canonical Store migrations are RMT-only; the [database guide](review-database.md) records applied versions. |
 | Operations | Fixed, sanitized Store backend failure events; feature gates; session-revocation RPCs; isolated tests and CI definitions. |
@@ -85,33 +85,39 @@ cards without ratings rather than failing the page.
   staff identity, concurrency versions and private photo context.
 
 Product reviews default to newest first. Readers can filter by star, where each
-option covers that star and the half star below it (4.5–5 stars), and sort by newest, oldest, highest rated or lowest rated. Rating ties use
+option covers that star and the half star below it (4.5–5 stars), filter by
+source (verified purchase, verified Etsy purchase, or no matching order), and
+sort by newest, oldest, highest rated or lowest rated. Rating ties use
 newest first, then the review ID for a stable order. The average and total always
 describe the whole product. A filtered empty state is separate from a product
-without reviews, and reset restores all ratings and newest first.
+without reviews, and reset restores all ratings, all sources and newest first.
 
-The default list loads twenty reviews at a time. Selecting a filter or a
-nondefault sort loads the remaining approved-only pages before displaying the
-result, then reuses them for subsequent selections. This avoids treating the first
-page as the whole product without a new database API. The tradeoff is that this
-first selection reads every public review for that product; large review volumes
-should move filtering and sorting into database paging. Loading is announced,
-failed reads can be retried from the last completed page, and product changes
-discard both the cached pages and selections.
+Review lists use numbered pages: the shared `Pagination` control from
+`@ryanmeetup/ui` and the shared `usePagination` hook, the same pair as the
+Tasks list views. Readers choose 10, 25 (the default) or 50 reviews per page,
+and the browser remembers that choice. Storage does the filtering, sorting,
+searching and counting through the service-only `store_public_review_search`
+reader, so each page change reads only the page on screen, and the count in
+the pager ("Showing 26–50 of 168 reviews") covers every match. Changing a
+filter, sort or search starts again at page one; a page number past the end
+lands on the last page. While a page loads, skeleton cards stand in for the
+results and paging is disabled; a failed read keeps the current page and offers
+a deliberate retry.
 
-The public `/reviews` page uses the same rating filter, four sort orders and
-reset control across the whole shop. It starts with twenty reviews and loads
-the remaining approved-only feed pages on the first refinement, reusing public
-review cards and their product links. Feed product links open the plain
-product/style page without a review anchor, since the reader has already read
-the review there. A debounced search box matches review titles and text,
-reviewer names and product titles, and keeps the settled query in a shareable
-`?q=` parameter; like a rating, a search counts as a refinement and loads the
-remaining pages first. Matching results appear only after
-every page loads; a failed continuation retains completed pages for a deliberate
-retry. Until the full feed is loaded, the displayed count describes loaded
-reviews rather than claiming a shop-wide total. As with product reviews, large
-volumes should move these refinements into database paging.
+The page, page size, filters and search live in the URL, so a view can be
+shared. `/reviews` uses `page`, `pageSize`, `rating`, `source`, `sort` and
+`q`, and renders the requested page on the server. Product pages prefix their
+names (`reviewPage`, `reviewPageSize`, `reviewRating`, `reviewSource`,
+`reviewSort`) so they never collide with the product's own parameters; the
+server renders the first unfiltered page and the browser reads any other page
+the URL names. Switching a style resets the review view. Unreadable URL values
+fall back to the defaults, while the public `/api/reviews/page` and
+`/api/reviews/feed` routes refuse unknown, repeated or malformed parameters.
+
+The public `/reviews` page uses the same controls across the whole shop.
+Feed product links open the plain product/style page without a review anchor,
+since the reader has already read the review there. A debounced search box
+matches review titles and text, reviewer names and saved product titles.
 
 Buyer management preserves a stored public name when its style is unchanged.
 Changing to a named style requires a fresh Shopify profile; anonymous remains
@@ -122,8 +128,8 @@ stale list/editor from being reused; they are not sign-in credentials.
 Published reviews with a current storefront product include a direct link to
 their public review, including when a newer edit is waiting or rejected. Links
 use the canonical product/style URL and a `#review-<id>` anchor. The product page
-loads approved public pages until it finds that review, then scrolls to and
-focuses it. Removed or hidden reviews show an unavailable message; failed reads
+asks storage which approved page holds that review, clearing filters that could
+hide it, then opens that page and scrolls to and focuses the review. Removed or hidden reviews show an unavailable message; failed reads
 wait for a deliberate retry and never fall back to private buyer content.
 
 ## Planning and operating procedures

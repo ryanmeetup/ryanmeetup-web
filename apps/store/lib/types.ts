@@ -139,8 +139,8 @@ export type ReviewsData = {
   averageRating: number;
   count: number;
   reviews: Review[];
-  /** Custom public reads only. The API uses this internal numeric product ID, not browser navigation. */
-  pagination?: { productId: string; nextCursor: string };
+  /** Custom public reads only. Later pages are read by this internal numeric product ID, never shown in browser navigation. */
+  productId?: string;
 } | {
   status: "unavailable";
   averageRating: 0;

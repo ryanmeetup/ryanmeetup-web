@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
-  buyerReviewRow, decodeBuyerReviewCursor, decodeReviewCursor, encodeBuyerReviewCursor, encodeReviewCursor, publicReviewPageSchema,
+  buyerReviewRow, decodeBuyerReviewCursor, decodeReviewCursor, encodeBuyerReviewCursor, encodeReviewCursor, publicReviewPageSchema, publicReviewSearchPageSchema,
   reviewCommandSchema, reviewResultSchema,
 } from "@ryanmeetup/reviews";
 import type { BuyerReview, PublicReview, ReviewCommand, ReviewResults } from "@ryanmeetup/reviews";
@@ -30,17 +30,15 @@ async function executeStoreReview(admin: SupabaseClient, shopId: string, command
     case "reviews.latest":
       data = check(await admin.rpc("store_latest_reviews", { p_shop_id: shopId }).abortSignal(AbortSignal.timeout(10_000)));
       break;
-    case "reviews.feed": {
-      const after = command.cursor ? decodeReviewCursor(command.cursor) : null;
-      // One extra row tells us whether another page exists.
-      const rows = check(await admin.rpc("store_review_feed", {
-        p_shop_id: shopId, p_limit: command.limit + 1, p_after_published_at: after?.publishedAt ?? null, p_after_id: after?.id ?? null,
+    case "reviews.search": {
+      const { search } = command;
+      data = check(await admin.rpc("store_public_review_search", {
+        p_shop_id: shopId, p_product_ids: command.productIds, p_rating: search.rating, p_source: search.source, p_sort: search.sort,
+        p_query: search.query || null, p_limit: command.limit, p_offset: command.offset, p_focus_id: command.focusReviewId,
       }).abortSignal(AbortSignal.timeout(10_000)));
-      if (!Array.isArray(rows) || rows.length > command.limit + 1) throw new ReviewBackendError();
-      const reviews = rows as PublicReview[];
-      const page = reviews.slice(0, command.limit);
-      const last = page.at(-1);
-      data = { reviews: page, nextCursor: reviews.length > command.limit && last ? encodeReviewCursor({ publishedAt: last.publishedAt, id: last.id }) : null };
+      // A page that fails the public contract is never sent, even from our own database.
+      const page = publicReviewSearchPageSchema(data);
+      if (!page || page.reviews.length > command.limit) throw new ReviewBackendError();
       break;
     }
     case "review.submit": {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { reviewAnchorId, reviewIdFromHash } from "@/lib/review-links";
 import type { ReviewsData } from "@/lib/types";
 import type { usePublicReviews } from "./use-public-reviews";
@@ -16,38 +16,41 @@ function subscribeToHash(onChange: () => void) {
 const readHash = () => reviewIdFromHash(window.location.hash);
 const serverHash = () => null;
 
-/** Resolve a permalink through the same approved-only pages as the public list. */
-export function useReviewPermalink(data: ReviewsData, productKey: string, page: ReturnType<typeof usePublicReviews>) {
+/** Opens a permalinked review: on screen already, or the page storage says holds it, through the same approved-only reads. */
+export function useReviewPermalink(data: ReviewsData, list: ReturnType<typeof usePublicReviews>) {
   const target = useSyncExternalStore(subscribeToHash, readHash, serverHash);
-  const opened = useRef<{ target: string; productKey: string; data: ReviewsData } | null>(null);
+  const opened = useRef<{ target: string; data: ReviewsData } | null>(null);
+  const looked = useRef<{ target: string; data: ReviewsData } | null>(null);
+  const [lookup, setLookup] = useState<{ target: string; status: "finding" | "missing" } | null>(null);
+  const { reviews, pending, error, focusReview } = list;
 
   useEffect(() => {
     if (!target) {
       opened.current = null;
+      looked.current = null;
       return;
     }
-    if ((opened.current?.target === target && opened.current.productKey === productKey && opened.current.data === data) ||
-      data.status !== "available" || page.pending || page.error) return;
-    // A newly opened permalink must remain visible even after filtering by rating.
-    if (page.rating !== "all") {
-      page.changeView({ rating: "all" });
-      return;
-    }
+    if ((opened.current?.target === target && opened.current.data === data) || data.status !== "available" || pending || error) return;
     const element = document.getElementById(reviewAnchorId(target));
     if (element) {
-      opened.current = { target, productKey, data };
+      opened.current = { target, data };
       element.scrollIntoView({ block: "start", behavior: "instant" });
       element.focus({ preventScroll: true });
-    } else if (page.cursor) {
-      void page.loadMore();
+      return;
     }
-  }, [data, productKey, target, page]);
+    if (looked.current?.target === target && looked.current.data === data) return;
+    looked.current = { target, data };
+    setLookup({ target, status: "finding" });
+    void focusReview(target).then((found) => {
+      // A failed read is not a missing review: the retry that clears the error looks again.
+      if (found === null) looked.current = null;
+      setLookup(found === false ? { target, status: "missing" } : null);
+    });
+  }, [data, target, reviews, pending, error, focusReview]);
 
-  const missing = Boolean(target && data.status === "available" && page.rating === "all" &&
-    !page.reviews.some((review) => review.id === target));
+  const current = lookup?.target === target ? lookup.status : null;
   return {
-    finding: missing && Boolean(page.cursor) && !page.error,
-    message: missing && !page.cursor && !page.pending && !page.error
-      ? "This review is no longer available on this product page." : "",
+    finding: current === "finding",
+    message: current === "missing" ? "This review is no longer available on this product page." : "",
   };
 }

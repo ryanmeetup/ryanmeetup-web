@@ -8,6 +8,7 @@ import { CustomReviewComposer, type CustomReviewResult, type CustomReviewSubmiss
 import { PublicReviewCard } from "./public-review-card";
 import { PublicReviewFilters } from "./public-review-filters";
 import { ReviewCardSkeletons } from "./review-card-skeletons";
+import { ReviewPagination } from "./review-pagination";
 import { usePublicReviews } from "./use-public-reviews";
 import { useReviewPermalink } from "./use-review-permalink";
 
@@ -36,8 +37,9 @@ async function submitCustomReview({viewerKey,...review}: CustomReviewSubmission 
 
 export function Reviews({ data, product, access }: { data: ReviewsData; product: Pick<Product, "id" | "title" | "featuredImage">; access: CustomReviewAccess }) {
   const formId = useId();
-  const publicReviews = usePublicReviews(data, product.id);
-  const permalink = useReviewPermalink(data, product.id, publicReviews);
+  const publicReviews = usePublicReviews(data);
+  const permalink = useReviewPermalink(data, publicReviews);
+  const resultsId = `${formId}-results`;
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -71,30 +73,21 @@ export function Reviews({ data, product, access }: { data: ReviewsData; product:
       />
 
       {data.status === "available" && data.count > 0 && (
-        <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-          <PublicReviewFilters rating={publicReviews.rating} sort={publicReviews.sort} origin={publicReviews.origin} onChange={publicReviews.changeView} />
-          <Text role="status" className="text-sm" aria-live="polite">
-            {publicReviews.needsComplete ? (publicReviews.pending ? "Loading reviews…" : "Finish loading to see matching reviews.") :
-              `Showing ${publicReviews.reviews.length} of ${data.count} review${data.count === 1 ? "" : "s"}`}
-          </Text>
+        <div className="mt-8">
+          <PublicReviewFilters rating={publicReviews.view.rating} sort={publicReviews.view.sort} origin={publicReviews.view.origin} onChange={publicReviews.changeView} />
         </div>
       )}
 
-      <div id={`${formId}-results`} role="region" aria-label="Review results" aria-busy={publicReviews.pending}>
+      <div id={resultsId} role="region" aria-label="Review results" aria-busy={publicReviews.pending || permalink.finding} className="scroll-mt-24">
         {data.status === "unavailable" ? (
           <div className="mt-8 rounded-2xl border border-dashed border-black/20 p-8 text-center dark:border-white/20">
             <Heading size="h3" className="text-xl">Reviews are taking a short break</Heading>
             <Text className="mt-2">We couldn&apos;t load reviews for this product. Please try again later.</Text>
           </div>
-        ) : publicReviews.needsComplete && publicReviews.pending ? (
-          <ReviewCardSkeletons label="Finding matching reviews" columns="md:columns-2" className="mt-8" />
-        ) : publicReviews.needsComplete ? (
-          <div className="mt-8 rounded-2xl border border-dashed border-black/20 p-8 text-center dark:border-white/20">
-            <Heading size="h3" className="text-xl">More reviews to check</Heading>
-            <Text className="mt-2">Try loading again to see all reviews that match.</Text>
-          </div>
+        ) : publicReviews.pending || permalink.finding ? (
+          <ReviewCardSkeletons label={permalink.finding ? "Finding the linked review" : "Finding matching reviews"} columns="md:columns-2" className="mt-8" />
         ) : publicReviews.reviews.length ? (
-          <ul id={`${formId}-reviews`} aria-label="Customer reviews" aria-busy={publicReviews.pending} className="mt-8 gap-4 md:columns-2">
+          <ul id={`${formId}-reviews`} aria-label="Customer reviews" className="mt-8 gap-4 md:columns-2">
             {/* Masonry: cards keep their own height, filling each column top to bottom. */}
             {publicReviews.reviews.map((review) => (
               <li key={review.id} className="mb-4 min-w-0 break-inside-avoid last:mb-0">
@@ -109,15 +102,13 @@ export function Reviews({ data, product, access }: { data: ReviewsData; product:
           </div>
         )}
       </div>
-      {(publicReviews.cursor || publicReviews.pending || publicReviews.message || publicReviews.error || permalink.message) && <div className="mt-6 space-y-3">
-        {publicReviews.cursor && <Button variant="secondary" className="w-full sm:w-auto" loading={publicReviews.pending} loadingText="Loading reviews…"
-          aria-label={publicReviews.pending ? "Loading reviews…" : publicReviews.needsComplete ? "Retry loading reviews" : "Load more reviews"}
-          aria-controls={`${formId}-results`} onClick={() => void publicReviews.loadMore()}>{publicReviews.needsComplete ? "Retry loading reviews" : "Load more reviews"}</Button>}
-        <div role="status" aria-live="polite" className="text-sm text-black/70 dark:text-white/70">
-          {publicReviews.pending ? permalink.finding ? "Loading your review…" : "Loading more reviews…" : permalink.message || publicReviews.message}
-        </div>
-        {publicReviews.error && <ErrorCallout>{publicReviews.error}</ErrorCallout>}
+      <div role="status" aria-live="polite" className="mt-6 text-sm text-black/70 empty:hidden dark:text-white/70">{permalink.message}</div>
+      {publicReviews.error && <div className="mt-6 space-y-3">
+        <ErrorCallout>{publicReviews.error}</ErrorCallout>
+        <Button variant="secondary" className="w-full sm:w-auto" aria-controls={resultsId} onClick={publicReviews.retry}>Retry loading reviews</Button>
       </div>}
+      {data.status === "available" && <ReviewPagination resultsId={resultsId} page={publicReviews.page} pageSize={publicReviews.pageSize}
+        total={publicReviews.total} pending={publicReviews.pending || !publicReviews.ready} onPageChange={publicReviews.setPage} onPageSizeChange={publicReviews.setPageSize} />}
     </section>
   );
 }

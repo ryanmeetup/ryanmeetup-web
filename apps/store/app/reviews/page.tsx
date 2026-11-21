@@ -5,11 +5,12 @@ import { ReviewFeed } from "@/components/review-feed";
 import { buildPageMetadata, DEFAULT_IMAGE } from "@/lib/metadata";
 import { StoreHomeIcon } from "@/lib/navigation";
 import { getReviewBackend } from "@/lib/review-backend";
+import { FEED_REVIEW_PARAMS, isRefinedReviewView, parseReviewView, reviewPageNumber } from "@/lib/public-review-view";
 import { getReviewFeedPage } from "@/lib/review-feed";
 
 export const metadata = buildPageMetadata({
   title: "Customer Reviews",
-  description: "Explore published reviews from across the Ryan Meetup store. Filter by star rating or sort by date and rating.",
+  description: "Explore published reviews from across the Ryan Meetup store. Search them, filter by star rating or source, or sort by date and rating.",
   canonical: "/reviews",
   image: DEFAULT_IMAGE,
 });
@@ -22,10 +23,13 @@ function Notice({ title, children }: { title: string; children: React.ReactNode 
 }
 
 /** Every published review across the shop. A buyer's own reviews live at /reviews/mine. */
-export default async function ReviewsPage() {
+export default async function ReviewsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   // Moderation and withdrawals must reach the next request; review text is never cached into the page.
   await connection();
-  const page = await getReviewFeedPage({ backend: getReviewBackend() });
+  const query = await searchParams;
+  // A shared link renders the page it names; anything unreadable falls back to the first, unfiltered page.
+  const view = parseReviewView({ get: (name) => { const value = query[name]; return typeof value === "string" ? value : null; } }, FEED_REVIEW_PARAMS);
+  const page = await getReviewFeedPage({ backend: getReviewBackend(), view });
   return (
     <main className="store-container space-y-8 py-10 sm:py-14">
       <div>
@@ -42,8 +46,8 @@ export default async function ReviewsPage() {
         </div>
       </div>
       {!page ? <Notice title="Reviews are taking a short break">We couldn&apos;t load reviews just now. Please try again in a few minutes.</Notice>
-        : !page.items.length ? <Notice title="No reviews yet">The first official Ryan review is still out there. Check back soon.</Notice>
-        : <ReviewFeed initial={page} />}
+        : !page.total && !isRefinedReviewView(view) ? <Notice title="No reviews yet">The first official Ryan review is still out there. Check back soon.</Notice>
+        : <ReviewFeed initial={page} initialView={{ ...view, page: reviewPageNumber(page.offset, view.pageSize) }} />}
     </main>
   );
 }

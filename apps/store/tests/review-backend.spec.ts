@@ -112,7 +112,7 @@ test("unexpected, leaky, or failed responses become one generic error", async ()
 
 test("custom reads map a page to the storefront shape, keeping only renderable photo hosts", async () => {
   expect(await getCustomReviews("gid://shopify/Product/100", database().backend)).toEqual({
-    status: "available", averageRating: 4, count: 25,
+    status: "available", averageRating: 4, count: 25, productId: "100",
     reviews: [{ id: review.id, rating: 4, title: "Ryan approved", body: "Holding up well.", reviewerName: "Ryan L.", createdAt: review.publishedAt, verification: "purchase", photoUrls: ["/api/reviews/media/00000000-0000-4000-8000-000000000001/00000000-0000-4000-8000-000000000002/00000000-0000-4000-8000-000000000003"] }],
   });
 });

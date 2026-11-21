@@ -78,7 +78,7 @@ test("HTTP callers retain the generic unavailable response while server diagnost
   expect(response.status).toBe(503);
   expect(response.headers.get("cache-control")).toBe("no-store");
   expect(await response.json()).toEqual({ error: "More reviews are temporarily unavailable. Please try again." });
-  expect(parsedLogs()).toEqual([event("reviews.page", "storage_error", "42501")]);
+  expect(parsedLogs()).toEqual([event("reviews.search", "storage_error", "42501")]);
 });
 
 test("successful reads, normal domain outcomes and rejected commands do not emit failure events", async () => {

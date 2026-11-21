@@ -1,7 +1,8 @@
-import { decodeReviewCursor, reviewResultSchema } from "@ryanmeetup/reviews";
 import type { PublicReview } from "@ryanmeetup/reviews";
 import { getProductHref } from "./product-groups";
-import { PUBLIC_REVIEW_PAGE_SIZE, toReview } from "./public-review-view";
+import { readPublicReviewPage, readReviewPageRequest } from "./public-review-page";
+import { DEFAULT_REVIEW_VIEW, toReview } from "./public-review-view";
+import type { ReviewView } from "./public-review-view";
 import { privateJson } from "./request-guard";
 import type { ReviewBackend } from "./review-backend";
 import { getProductCardsByIds } from "./shopify";
@@ -14,7 +15,8 @@ import type { Review } from "./types";
  * item) when the product still exists.
  */
 export type ReviewFeedItem = { review: Review; product: { title: string; href: string | null } };
-export type ReviewFeedPage = { items: ReviewFeedItem[]; nextCursor: string | null };
+/** One numbered feed page: the served items, how many reviews match, and where the page starts. */
+export type ReviewFeedPage = { items: ReviewFeedItem[]; total: number; offset: number };
 
 /**
  * Pairs public reviews with their current product titles and links. A product
@@ -33,30 +35,23 @@ export async function withReviewedProducts(reviews: PublicReview[], products: ty
 }
 
 /**
- * One page of every published review across the shop, newest first. Null
- * means the read failed, so callers can say so rather than show "no reviews".
+ * One numbered page of published reviews across the shop, filtered, sorted
+ * and searched by storage. Null means the read failed, so callers can say so
+ * rather than show "no reviews".
  */
-export async function getReviewFeedPage({ backend, cursor = null, products = getProductCardsByIds }: {
-  backend: ReviewBackend | null; cursor?: string | null; products?: typeof getProductCardsByIds;
+export async function getReviewFeedPage({ backend, view = DEFAULT_REVIEW_VIEW, products = getProductCardsByIds }: {
+  backend: ReviewBackend | null; view?: ReviewView; products?: typeof getProductCardsByIds;
 }): Promise<ReviewFeedPage | null> {
-  if (!backend || (cursor !== null && !decodeReviewCursor(cursor))) return null;
-  try {
-    const result = reviewResultSchema("reviews.feed", { data: await backend({ operation: "reviews.feed", limit: PUBLIC_REVIEW_PAGE_SIZE, cursor }) });
-    // A continuation that cannot advance would loop the "Load more" button.
-    if (!result || (result.data.nextCursor !== null && result.data.nextCursor === cursor)) return null;
-    return { items: await withReviewedProducts(result.data.reviews, products), nextCursor: result.data.nextCursor };
-  } catch { return null; }
+  const page = await readPublicReviewPage({ backend, productIds: null, view });
+  return page && { items: await withReviewedProducts(page.reviews, products), total: page.total, offset: page.offset };
 }
 
-/** The next page of the shop-wide feed for "Load more". Anonymous, approved-only, and the page size is fixed. */
+/** A numbered feed page for the /reviews controls. Anonymous, approved-only, and the page size is fixed. */
 export async function handleReviewFeedPage(request: Request, { backend, products }: {
   backend: ReviewBackend | null; products?: typeof getProductCardsByIds;
 }) {
-  const params = new URL(request.url).searchParams;
-  const cursor = params.get("cursor");
-  if ([...params.keys()].some((key) => key !== "cursor") || params.getAll("cursor").length !== 1 || !cursor || !decodeReviewCursor(cursor)) {
-    return privateJson(400, { error: "That review page could not be read." });
-  }
-  const page = await getReviewFeedPage({ backend, cursor, products });
+  const parsed = readReviewPageRequest(new URL(request.url).searchParams);
+  if (!parsed || parsed.focusReviewId) return privateJson(400, { error: "That review page could not be read." });
+  const page = await getReviewFeedPage({ backend, view: parsed.view, products });
   return page ? privateJson(200, page) : privateJson(503, { error: "More reviews are temporarily unavailable. Please try again." });
 }
