@@ -136,10 +136,10 @@ export function ReviewModerationCard({ review, disabled, staffNames, onSelect, o
               {moderationActionLabel(action, review)}
             </Button>)}
         </div>
-        <IconButton size="md" variant="danger" label={`Delete review for ${review.item.productTitle}`}
-          tooltip="Delete review" disabled={disabled} onClick={() => onSelect(review, "delete")}>
-          <FiTrash2 aria-hidden />
-        </IconButton>
+        <Button size="sm" variant="danger" aria-label={`Delete review for ${review.item.productTitle}`}
+          disabled={disabled} onClick={() => onSelect(review, "delete")}>
+          Delete
+        </Button>
       </div>
     </Card>
   </article>;

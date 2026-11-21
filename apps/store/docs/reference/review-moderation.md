@@ -92,7 +92,7 @@ Storage URLs or image-optimizer caching. See [media](review-media.md) for limits
 
 ## Permanent deletion
 
-The trash action is available on any review, including a withdrawn one. The
+The Delete action is available on any review, including a withdrawn one. The
 confirmation shows the review, requires a reason and an affirmation that its
 rating/positive-or-negative opinion played no part. The supported policy codes
 are `spam`, `false_or_misleading`, `unrelated`, `confidential`, `abusive` and

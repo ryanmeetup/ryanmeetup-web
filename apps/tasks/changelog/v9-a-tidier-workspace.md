@@ -47,7 +47,7 @@ The queue uses compact cards with the store's author, rating, and purchase
 details, clearer status messages, and grouped actions. Wide screens show two
 reviews side by side; narrow screens keep each review in one readable column.
 
-Delete spam for good with the trash button on any review. The confirmation
+Delete spam for good with the Delete button on any review. The confirmation
 lists the FTC's rules on removing reviews, asks for one of the allowed reasons,
 and has you confirm the rating played no part. Each deletion is logged with its
 reason, rating, and who deleted it, but not the review text.
