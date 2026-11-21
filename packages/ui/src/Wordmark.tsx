@@ -6,7 +6,7 @@ export type WordmarkProps = Omit<HTMLAttributes<HTMLSpanElement>, "children"> & 
   name: string;
   /** A small line set beneath the name. */
   tagline?: string;
-  /** Steps the name down below `sm` so a long name stays on one line. */
+  /** Steps the name down below `sm` so a long name stays on one line beside phone header controls. */
   compact?: boolean;
 };
 
@@ -31,15 +31,15 @@ const Wordmark = ({
   >
     <span
       className={clsx(
-        "font-cooper tracking-wider sm:text-3xl",
-        compact ? "text-xl" : "text-2xl",
+        "whitespace-nowrap font-cooper tracking-wider sm:text-3xl",
+        compact ? "text-lg" : "text-2xl",
         tagline && "leading-none",
       )}
     >
       {name}
     </span>
     {tagline && (
-      <span className="text-[10px] font-bold uppercase leading-none tracking-caps text-black/70 dark:text-white/70">
+      <span className="whitespace-nowrap text-[10px] font-bold uppercase leading-none tracking-caps text-black/70 dark:text-white/70">
         {tagline}
       </span>
     )}
