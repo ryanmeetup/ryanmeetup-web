@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 
 import { useId, useState } from "react";
-import { FiCheckCircle, FiChevronDown, FiClock, FiEdit2, FiEye, FiEyeOff, FiMessageSquare, FiSlash, FiTrash2, FiUser, FiXCircle } from "react-icons/fi";
+import { FiCheckCircle, FiChevronDown, FiClock, FiEdit2, FiEyeOff, FiMessageSquare, FiSlash, FiTrash2, FiUser, FiXCircle } from "react-icons/fi";
 import { AnimatedCollapse, Avatar, Button, Card, Heading, IconButton, Kicker, RatingStars, Text } from "@ryanmeetup/ui";
 import { formatTimestamp } from "@/lib/date-format";
 import { moderationActionLabel, moderationReasonIsPublic, reviewModerationActions, reviewReplyActions } from "@/lib/store-reviews/moderation";
@@ -128,18 +128,23 @@ export function ReviewModerationCard({ review, disabled, staffNames, onSelect, o
       </div>}
       <div className="-mx-5 -mb-5 flex items-end justify-between gap-3 border-t border-black/10 px-5 py-4 dark:border-white/10">
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-          {actions.map((action) => action === "hide" || action === "restore" ?
-            <IconButton key={action} size="md" label={`${moderationActionLabel(action, review)} for ${review.item.productTitle}`} disabled={disabled} onClick={() => onSelect(review, action)}>
-              {action === "hide" ? <FiEyeOff aria-hidden /> : <FiEye aria-hidden />}
-            </IconButton> :
+          {actions.filter((action) => action !== "hide" && action !== "restore").map((action) =>
             <Button key={action} size="sm" className="w-full sm:w-auto" variant={action === "approve" ? "primary" : "secondary"} disabled={disabled} onClick={() => onSelect(review, action)}>
               {moderationActionLabel(action, review)}
             </Button>)}
         </div>
-        <Button size="sm" variant="danger" aria-label={`Delete review for ${review.item.productTitle}`}
-          disabled={disabled} onClick={() => onSelect(review, "delete")}>
-          Delete
-        </Button>
+        {/* Visibility sits with Delete: both take the whole review off the storefront. */}
+        <div className="flex shrink-0 items-center gap-2">
+          {actions.filter((action) => action === "hide" || action === "restore").map((action) =>
+            <Button key={action} size="sm" variant="secondary" aria-label={`${moderationActionLabel(action, review)} for ${review.item.productTitle}`}
+              disabled={disabled} onClick={() => onSelect(review, action)}>
+              {action === "hide" ? "Hide" : review.published ? "Restore" : "Unhide"}
+            </Button>)}
+          <Button size="sm" variant="danger" aria-label={`Delete review for ${review.item.productTitle}`}
+            disabled={disabled} onClick={() => onSelect(review, "delete")}>
+            Delete
+          </Button>
+        </div>
       </div>
     </Card>
   </article>;
