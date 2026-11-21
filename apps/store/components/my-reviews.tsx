@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import type { BuyerRejectedPhoto, BuyerReviewStatus } from "@ryanmeetup/reviews";
 import { Button, Card, ConfirmationDialog, DisclosureCard, ErrorCallout, Heading, RatingStars, Spinner, Text } from "@ryanmeetup/ui";
 import { ReviewAuthor, ReviewContent, ReviewVerificationBadge } from "@ryanmeetup/reviews/ui";
@@ -155,16 +154,13 @@ export function MyReviews({ initial, suggestions, client, submitReview }: {
                     ? <RejectionReason reason={review.rejectionReason} editRejected={review.status==="published"} />
                     : <p className={`flex items-start gap-2 rounded-xl border px-4 py-3 text-sm ${toneBox[tone]}`}><StatusIcon aria-hidden className="mt-0.5 shrink-0" /><span><span className="font-semibold">{review.hasPendingEdit ? "Edit waiting for approval" : status.label}.</span> {note}</span></p>}
                   {review.rejectedPhotos.length > 0 && <RejectedPhotos photos={review.rejectedPhotos} />}
-                  {review.status === "published" && product?.href && <Link href={reviewPermalink(product.href, review.id)} prefetch={false}
-                    aria-label={`View your review of ${review.item.productTitle}`}
-                    className="inline-flex items-center gap-1.5 rounded-sm text-sm font-semibold underline decoration-black/30 underline-offset-4 hover:decoration-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:decoration-white/30 dark:hover:decoration-white dark:focus-visible:ring-white/40">
-                    <FiEye aria-hidden />View your review
-                  </Link>}
                 </div>
                 {/* Footer: who the review is shown as, then what the buyer can do. */}
                 <div className="-mx-6 -mb-6 flex flex-col gap-3 border-t border-black/10 px-6 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-white/10">
                   <ReviewAuthor name={review.current.displayName} label="Posted as" />
                   {review.status!=="withdrawn" && <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    {review.status === "published" && product?.href && <Button.Link href={reviewPermalink(product.href, review.id)} prefetch={false} size="sm" variant="ghost" fullWidth className="sm:w-auto"
+                      aria-label={`View your review of ${review.item.productTitle}`} leftIcon={<FiEye aria-hidden />}>View</Button.Link>}
                     {review.status!=="hidden" && <Button size="sm" variant="secondary" fullWidth className="sm:w-auto" aria-label={`Edit your review of ${review.item.productTitle}`} disabled={mine.pending}
                       leftIcon={<FiEdit2 aria-hidden />} onClick={()=>mine.select(review,"edit")}>Edit</Button>}
                     <Button size="sm" variant="ghost" fullWidth className="sm:w-auto" aria-label={`Withdraw your review of ${review.item.productTitle}`} disabled={mine.pending}
