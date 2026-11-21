@@ -33,6 +33,8 @@ test("keeps a quick note title separate from its details", async ({
   await page.goto("/notes");
   await page.waitForLoadState("networkidle");
 
+  await page.getByRole("button", { name: "New note", exact: true }).click();
+  await expect(page.getByLabel("Note title")).toBeFocused();
   await page
     .getByPlaceholder("Give this note a clear title")
     .fill("Launch-day follow-up");
@@ -40,6 +42,7 @@ test("keeps a quick note title separate from its details", async ({
     .getByPlaceholder("Add the context, idea, or decision…")
     .fill("Observe Dry January by giving your drinks to your friend, Ryan.");
   await page.getByRole("button", { name: "Save note" }).click();
+  await expect(page.getByRole("dialog", { name: "New note" })).toHaveCount(0);
 
   await expect(
     page.getByRole("heading", { level: 3, name: "Launch-day follow-up" }),
@@ -50,6 +53,45 @@ test("keeps a quick note title separate from its details", async ({
       name: "Observe Dry January by giving your drinks to your friend, Ryan.",
     }),
   ).toHaveCount(0);
+});
+
+test("filters notes by category and keeps note actions in the row menu", async ({
+  page,
+  baseURL,
+}) => {
+  await enterDemoWorkspace(page, baseURL);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/notes");
+  await page.waitForLoadState("networkidle");
+  const titles = page.getByRole("table").getByRole("heading", { level: 3 });
+  await expect(titles).toHaveCount(4);
+
+  // Search narrows as you type, debounced into the address.
+  await page.getByLabel("Search notes").fill("lantern");
+  await expect(page).toHaveURL(/note-search=lantern/);
+  await expect(titles).toHaveText(["Vendor shortlist"]);
+  await page.getByLabel("Search notes").fill("");
+  await expect(titles).toHaveCount(4);
+
+  await page.getByRole("button", { name: /^Category/ }).click();
+  await page.getByRole("option", { name: /^Events/ }).click();
+  await expect(page).toHaveURL(/note-category=Events/);
+  await expect(titles).toHaveText(["Vendor shortlist"]);
+
+  await page
+    .getByRole("button", { name: "More actions for “Vendor shortlist”" })
+    .click();
+  await expect(page.getByRole("menuitem")).toHaveText([
+    "Convert to task",
+    "Convert to project",
+    "Edit note",
+    "Archive note",
+    "Delete note",
+  ]);
+  await page.getByRole("menuitem", { name: "Delete note" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Delete this note?" }),
+  ).toBeVisible();
 });
 
 test("adds and removes contact methods in the person editor", async ({
@@ -563,7 +605,9 @@ test("keeps the task due date inside the create form on mobile", async ({
         .locator(".tasks-footer")
         .evaluate((footer) =>
           Math.round(
-            Math.abs(footer.getBoundingClientRect().bottom - window.innerHeight),
+            Math.abs(
+              footer.getBoundingClientRect().bottom - window.innerHeight,
+            ),
           ),
         ),
     )

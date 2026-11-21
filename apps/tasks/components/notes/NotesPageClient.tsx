@@ -2,15 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useQueryParamState } from "@ryanmeetup/hooks";
+import { useQueryParamState, useSearchFilter } from "@ryanmeetup/hooks";
 import {
   Button,
   ConfirmationDialog,
   DropdownSelect,
-  FilterChip,
-  Input,
   ManagementSurface,
-  Textarea,
+  PendingResults,
+  SearchInput,
   toast,
 } from "@ryanmeetup/ui";
 import { FiFileText, FiPlus } from "react-icons/fi";
@@ -28,6 +27,7 @@ import {
   linkNoteToProject,
   noteConversionDraft,
   noteConversionProjectDraft,
+  noteTitle,
 } from "@/lib/resources/notes";
 import type {
   Note,
@@ -41,6 +41,7 @@ import { mutate } from "@/lib/mutation-client";
 import { archiveFilter } from "@/lib/resources/resource-management";
 import { NoteRow, noteColumns } from "./NoteRow";
 import { NoteModal } from "./NoteModal";
+import { NewNoteModal, type NewNoteDraft } from "./NewNoteModal";
 import { errorMessage } from "@/lib/presentation";
 export function NotesPageClient({
   initialData,
@@ -58,10 +59,7 @@ export function NotesPageClient({
   const [notes, setNotes] = useState(initialNotes);
   const [comments, setComments] = useState(initialComments);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
-  const [categoryId, setCategoryId] = useState("");
-  const [creating, setCreating] = useState(false);
+  const [creatingNote, setCreatingNote] = useState(false);
   const [noteStatusParam, setNoteStatus] = useQueryParamState(
     "note-status",
     "active",
@@ -81,9 +79,8 @@ export function NotesPageClient({
   const canConvertToProject =
     demoMode || data.currentProfile.app_role === "owner";
 
-  async function createNote() {
-    if (!title.trim() || !body.trim()) return;
-    setCreating(true);
+  async function createNote({ title, body, categoryId }: NewNoteDraft) {
+    if (!title.trim() || !body.trim()) return false;
     try {
       const note: Note = demoMode
         ? {
@@ -105,14 +102,11 @@ export function NotesPageClient({
             })
           ).note;
       setNotes((current) => [note, ...current]);
-      setTitle("");
-      setBody("");
-      setCategoryId("");
       toast.success("Note saved.");
+      return true;
     } catch (error) {
       toast.error(errorMessage(error, "The note could not be saved."));
-    } finally {
-      setCreating(false);
+      return false;
     }
   }
 
@@ -206,8 +200,25 @@ export function NotesPageClient({
       group.category.id === noteCategoryParam
     );
   });
-  const visibleNotes =
+  const categoryNotes =
     noteCategoryParam === "all" ? activeNotes : (selectedGroup?.notes ?? []);
+  const authorNames = new Map(
+    data.profiles.map((profile) => [profile.id, profile.full_name ?? ""]),
+  );
+  // Keep the placeholder in step with these fields.
+  const {
+    query,
+    setQuery,
+    filtered: visibleNotes,
+    isPending: searchPending,
+  } = useSearchFilter({
+    data: categoryNotes,
+    buildHaystack: (note: Note) =>
+      [noteTitle(note), note.body, authorNames.get(note.created_by ?? "") ?? ""]
+        .join(" ")
+        .toLowerCase(),
+    queryParam: "note-search",
+  });
   const conversionDraft = convertTarget
     ? noteConversionDraft(convertTarget, data.statuses, data.currentProfile.id)
     : null;
@@ -289,216 +300,140 @@ export function NotesPageClient({
           }
           description="Catch quick thoughts before they escape. When an idea becomes real work, turn it into a task."
           actions={
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              className="w-full sm:w-auto"
-              onClick={() =>
-                setNoteStatus(showArchived ? "active" : "archived")
-              }
-            >
-              {showArchived ? "View active" : "View archive"}
-            </Button>
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="w-full sm:w-auto"
+                onClick={() =>
+                  setNoteStatus(showArchived ? "active" : "archived")
+                }
+              >
+                {showArchived ? "View active" : "View archive"}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                className="w-full sm:w-auto"
+                leftIcon={<FiPlus aria-hidden />}
+                onClick={() => setCreatingNote(true)}
+              >
+                New note
+              </Button>
+            </div>
           }
         >
-          <section className="rounded-xl border border-black/15 bg-black/[0.035] p-4 shadow-sm shadow-black/5 dark:border-white/10 dark:bg-white/[0.025] dark:shadow-none sm:p-5">
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                void createNote();
-              }}
-            >
-              <div className="mb-4">
-                <h2 className="text-sm font-semibold">Quick note</h2>
-                <p className="mt-1 text-xs text-black/55 dark:text-white/55">
-                  Name the thought, then capture the useful detail.
-                </p>
-              </div>
-              <div className="space-y-4">
-                <Input
-                  id="quick-note-title"
-                  label="Note title"
-                  required
-                  name="quick-note-title"
-                  value={title}
-                  maxLength={200}
-                  placeholder="Give this note a clear title"
-                  disabled={creating}
-                  onChange={(event) => setTitle(event.target.value)}
-                />
-                <Textarea
-                  id="quick-note"
-                  label="Details"
-                  required
-                  name="quick-note"
-                  value={body}
-                  rows={4}
-                  maxLength={10000}
-                  placeholder="Add the context, idea, or decision…"
-                  disabled={creating}
-                  onChange={(event) => setBody(event.target.value)}
-                />
-              </div>
-              <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                <DropdownSelect
-                  variant="field"
-                  label="Category"
-                  value={categoryId}
-                  onChange={setCategoryId}
-                  options={[
-                    { label: "Uncategorized", value: "" },
-                    ...data.categories
-                      .filter((category) => !category.archived_at)
-                      .map((category) => ({
-                        label: category.name,
-                        value: category.id,
-                        color: category.color,
-                      })),
-                  ]}
-                  disabled={creating}
-                />
-                <Button
-                  type="submit"
-                  size="field"
-                  className="w-full sm:w-auto"
-                  leftIcon={<FiPlus />}
-                  loading={creating}
-                  loadingText="Saving…"
-                  disabled={!title.trim() || !body.trim()}
-                >
-                  Save note
-                </Button>
-              </div>
-            </form>
-          </section>
-
-          <section className="@container mt-6 border-t border-black/10 pt-5 dark:border-white/10">
-            <div className="mb-4 flex items-center gap-4">
-              <h2 className="text-sm font-semibold uppercase tracking-caps">
-                {showArchived ? "Archived notes" : "Recent notes"}
+          <section
+            className="@container"
+            aria-label={showArchived ? "Archived notes" : "Notes"}
+          >
+            {/* Only the archive needs saying; the page title already names active notes. */}
+            {showArchived && (
+              <h2 className="mb-4 text-sm font-semibold uppercase tracking-caps">
+                Archived notes
               </h2>
-            </div>
+            )}
 
             {activeNotes.length ? (
               <div>
-                <div
-                  className="-mx-5 mb-5 flex gap-2 overflow-x-auto px-5 pb-1 scroll-px-5"
-                  aria-label="Filter notes by category"
-                >
-                  <FilterChip
-                    active={noteCategoryParam === "all"}
-                    variant="soft"
-                    className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap"
-                    onClick={() => setNoteCategory("all")}
-                  >
-                    All
-                    <CountBadge
-                      label="note"
-                      hideLabel
-                      className={
-                        noteCategoryParam === "all"
-                          ? "!bg-black/10 !text-black/65 dark:!bg-black/15 dark:!text-black"
-                          : undefined
-                      }
-                    >
-                      {activeNotes.length}
-                    </CountBadge>
-                  </FilterChip>
-                  {noteGroups.map((group) => {
-                    const value = group.category?.name ?? "uncategorized";
-                    const label = group.category?.name ?? "Uncategorized";
-                    const active =
-                      noteCategoryParam === value ||
-                      noteCategoryParam === group.category?.id;
-                    return (
-                      <FilterChip
-                        key={group.category?.id ?? "uncategorized"}
-                        active={active}
-                        variant="soft"
-                        className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap"
-                        onClick={() => setNoteCategory(value)}
-                      >
-                        <i
-                          className="h-2 w-2 shrink-0 rounded-full ring-1 ring-black/10 dark:ring-white/15"
-                          style={{
-                            backgroundColor: group.category?.color ?? "#8a8a8a",
-                          }}
-                        />
-                        {label}
-                        <CountBadge
-                          label="note"
-                          hideLabel
-                          className={
-                            active
-                              ? "!bg-black/10 !text-black/65 dark:!bg-black/15 dark:!text-black"
-                              : undefined
-                          }
-                        >
-                          {group.notes.length}
-                        </CountBadge>
-                      </FilterChip>
-                    );
-                  })}
+                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <div className="min-w-0 flex-1">
+                    <SearchInput
+                      label="Search notes"
+                      name="note-search"
+                      value={query}
+                      onChange={(event) => setQuery(event.target.value)}
+                      placeholder="Search by title, details, or author..."
+                      pending={searchPending}
+                      pendingLabel="Loading note results"
+                    />
+                  </div>
+                  <DropdownSelect
+                    label="Category"
+                    active={noteCategoryParam !== "all"}
+                    value={
+                      selectedGroup
+                        ? (selectedGroup.category?.name ?? "uncategorized")
+                        : "all"
+                    }
+                    onChange={setNoteCategory}
+                    options={[
+                      {
+                        label: `All categories (${activeNotes.length})`,
+                        value: "all",
+                      },
+                      ...noteGroups.map((group) => ({
+                        label: `${group.category?.name ?? "Uncategorized"} (${group.notes.length})`,
+                        value: group.category?.name ?? "uncategorized",
+                        color: group.category?.color ?? "#8a8a8a",
+                      })),
+                    ]}
+                  />
                 </div>
 
-                {visibleNotes.length ? (
-                  <ResponsiveTable
-                    caption={showArchived ? "Archived notes" : "Recent notes"}
-                    columns={noteColumns}
-                  >
-                    {visibleNotes.map((note) => (
-                      <NoteRow
-                        key={note.id}
-                        note={note}
-                        category={
-                          data.categories.find(
-                            (category) => category.id === note.category_id,
-                          ) ?? null
-                        }
-                        profiles={data.profiles}
-                        canConvertToProject={canConvertToProject}
-                        commentCount={
-                          comments.filter(
-                            (comment) => comment.note_id === note.id,
-                          ).length
-                        }
-                        convertedTask={data.tasks.find(
-                          (task) => task.id === note.converted_task_id,
-                        )}
-                        convertedProject={data.projects.find(
-                          (project) => project.id === note.converted_project_id,
-                        )}
-                        onOpen={(next) => {
-                          setEditingNote(false);
-                          setOpenNoteId(next.id);
-                        }}
-                        onEdit={(next) => {
-                          setEditingNote(true);
-                          setOpenNoteId(next.id);
-                        }}
-                        onArchive={toggleArchived}
-                        onConvert={setConvertTarget}
-                        onConvertToProject={setConvertProjectTarget}
-                        onDelete={setDeleteTarget}
-                      />
-                    ))}
-                  </ResponsiveTable>
-                ) : (
-                  <div className="rounded-2xl border border-dashed border-black/15 px-6 py-10 text-center dark:border-white/15">
-                    <FiFileText className="mx-auto text-2xl text-black/35 dark:text-white/35" />
-                    <p className="mt-3 font-semibold">
-                      No notes in this category
-                    </p>
-                    <button
-                      type="button"
-                      className="mt-2 text-sm font-semibold text-black/60 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:text-white/60 dark:focus-visible:ring-white/30"
-                      onClick={() => setNoteCategory("all")}
+                <PendingResults pending={searchPending} label="Loading notes">
+                  {visibleNotes.length ? (
+                    <ResponsiveTable
+                      caption={showArchived ? "Archived notes" : "Notes"}
+                      columns={noteColumns}
+                      layout="auto"
                     >
-                      View all notes
-                    </button>
-                  </div>
-                )}
+                      {visibleNotes.map((note) => (
+                        <NoteRow
+                          key={note.id}
+                          note={note}
+                          category={
+                            data.categories.find(
+                              (category) => category.id === note.category_id,
+                            ) ?? null
+                          }
+                          profiles={data.profiles}
+                          canConvertToProject={canConvertToProject}
+                          commentCount={
+                            comments.filter(
+                              (comment) => comment.note_id === note.id,
+                            ).length
+                          }
+                          convertedTask={data.tasks.find(
+                            (task) => task.id === note.converted_task_id,
+                          )}
+                          convertedProject={data.projects.find(
+                            (project) =>
+                              project.id === note.converted_project_id,
+                          )}
+                          onOpen={(next) => {
+                            setEditingNote(false);
+                            setOpenNoteId(next.id);
+                          }}
+                          onEdit={(next) => {
+                            setEditingNote(true);
+                            setOpenNoteId(next.id);
+                          }}
+                          onArchive={toggleArchived}
+                          onConvert={setConvertTarget}
+                          onConvertToProject={setConvertProjectTarget}
+                          onDelete={setDeleteTarget}
+                        />
+                      ))}
+                    </ResponsiveTable>
+                  ) : (
+                    <div className="rounded-2xl border border-dashed border-black/15 px-6 py-10 text-center dark:border-white/15">
+                      <FiFileText className="mx-auto text-2xl text-black/35 dark:text-white/35" />
+                      <p className="mt-3 font-semibold">No notes match</p>
+                      <button
+                        type="button"
+                        className="mt-2 text-sm font-semibold text-black/60 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:text-white/60 dark:focus-visible:ring-white/30"
+                        onClick={() => {
+                          setQuery("");
+                          setNoteCategory("all");
+                        }}
+                      >
+                        View all notes
+                      </button>
+                    </div>
+                  )}
+                </PendingResults>
               </div>
             ) : (
               <div className="rounded-2xl border border-dashed border-black/15 px-6 py-12 text-center dark:border-white/15">
@@ -509,7 +444,7 @@ export function NotesPageClient({
                 <p className="mt-1 text-sm text-black/55 dark:text-white/55">
                   {showArchived
                     ? "Archived notes will wait here."
-                    : "Add the first note above—polish is optional."}
+                    : "Start one with New note—polish is optional."}
                 </p>
               </div>
             )}
@@ -553,6 +488,13 @@ export function NotesPageClient({
           }}
         />
       )}
+
+      <NewNoteModal
+        open={creatingNote}
+        setOpen={setCreatingNote}
+        categories={data.categories}
+        onCreate={createNote}
+      />
 
       <ConfirmationDialog
         open={Boolean(deleteTarget)}

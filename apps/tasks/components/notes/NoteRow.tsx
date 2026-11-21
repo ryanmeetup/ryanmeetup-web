@@ -2,19 +2,16 @@
 
 import {
   Avatar,
-  Button,
   DropdownMenu,
-  DropdownMenuButton,
   DropdownMenuItem,
   DropdownMenuItems,
+  DropdownMenuSeparator,
   FormattedTextPreview,
-  IconButton,
 } from "@ryanmeetup/ui";
 import {
   FiArchive,
   FiBriefcase,
   FiCheck,
-  FiChevronDown,
   FiClock,
   FiEdit2,
   FiMessageSquare,
@@ -23,6 +20,7 @@ import {
 } from "react-icons/fi";
 import {
   ResponsiveTableCell,
+  ResponsiveTableMenuButton,
   ResponsiveTableRow,
   type ResponsiveTableColumn,
 } from "@/components/global";
@@ -33,12 +31,13 @@ import type { Task } from "@/lib/tasks/task-types";
 import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import { NoteLinks } from "./NoteLinks";
 
+/** Sized by content (the table's auto layout): only the note's text wraps. */
 export const noteColumns: ResponsiveTableColumn[] = [
   { label: "Note" },
-  { label: "Category", width: "w-32" },
-  { label: "Author", width: "w-44" },
-  { label: "Comments", width: "w-24" },
-  { label: "Actions", width: "w-64", hideLabel: true },
+  { label: "Category" },
+  { label: "Author" },
+  { label: "Comments" },
+  { label: "Actions", hideLabel: true },
 ];
 
 /** One note as a row of the notes table; its title opens the note. */
@@ -74,50 +73,54 @@ export function NoteRow({
   const author = profiles.find((profile) => profile.id === note.created_by);
   const title = noteTitle(note);
   const archived = Boolean(note.archived_at);
+  const convertible =
+    !note.converted_task_id && !note.converted_project_id && !archived;
   return (
     <ResponsiveTableRow>
       <ResponsiveTableCell>
-        <h3 className="text-card-title font-semibold wrap-anywhere">
-          <button
-            type="button"
-            className="rounded text-left hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/30"
-            onClick={() => onOpen(note)}
-          >
-            {title}
-          </button>
-        </h3>
-        <FormattedTextPreview
-          text={note.body}
-          maxLines={3}
-          maxLength={240}
-          className="mt-1 min-w-0 break-words text-secondary text-black/70 dark:text-white/70"
-        />
-        <NoteLinks
-          note={note}
-          convertedTask={convertedTask}
-          convertedProject={convertedProject}
-          className="mt-2"
-        />
+        <div className="max-w-xl">
+          <h3 className="text-card-title font-semibold wrap-anywhere">
+            <button
+              type="button"
+              className="rounded text-left hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/30"
+              onClick={() => onOpen(note)}
+            >
+              {title}
+            </button>
+          </h3>
+          <FormattedTextPreview
+            text={note.body}
+            maxLines={3}
+            maxLength={240}
+            className="mt-1 min-w-0 break-words text-secondary text-black/70 dark:text-white/70"
+          />
+          <NoteLinks
+            note={note}
+            convertedTask={convertedTask}
+            convertedProject={convertedProject}
+            className="mt-2"
+          />
+        </div>
       </ResponsiveTableCell>
       <ResponsiveTableCell>
-        <span className="inline-flex min-w-0 max-w-full items-center gap-2 text-xs font-semibold text-black/70 dark:text-white/70">
+        <span className="inline-flex items-center gap-2 whitespace-nowrap text-xs font-semibold text-black/70 dark:text-white/70">
           <i
             aria-hidden
             className="h-2 w-2 shrink-0 rounded-full ring-1 ring-black/10 dark:ring-white/15"
             style={{ backgroundColor: category?.color ?? "#8a8a8a" }}
           />
-          <span className="truncate">{category?.name ?? "Uncategorized"}</span>
+          <span>{category?.name ?? "Uncategorized"}</span>
         </span>
       </ResponsiveTableCell>
       <ResponsiveTableCell>
-        <div className="flex min-w-0 items-center gap-2.5">
+        <div className="flex items-center gap-2.5 whitespace-nowrap">
           <Avatar
             name={author?.full_name ?? "Unknown teammate"}
             src={author?.avatar_url}
             size="sm"
           />
-          <div className="min-w-0">
-            <p className="truncate text-xs font-semibold">
+          <div>
+            <p className="text-xs font-semibold">
               {author?.full_name ?? "Unknown teammate"}
             </p>
             <time
@@ -131,7 +134,7 @@ export function NoteRow({
         </div>
       </ResponsiveTableCell>
       <ResponsiveTableCell>
-        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-black/70 dark:text-white/70">
+        <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-semibold text-black/70 dark:text-white/70">
           <FiMessageSquare className="shrink-0" aria-hidden />
           {commentCount}
           <span className="sr-only">
@@ -139,68 +142,43 @@ export function NoteRow({
           </span>
         </span>
       </ResponsiveTableCell>
-      <ResponsiveTableCell>
-        <div className="flex flex-wrap items-center gap-2 @min-[54rem]:flex-nowrap @min-[54rem]:justify-end">
-          {/* Converting is the row's call to action; the icon buttons manage the note itself. */}
-          <div className="flex items-center gap-2">
-            {!note.converted_task_id &&
-              !note.converted_project_id &&
-              !archived &&
-              (canConvertToProject ? (
-                <DropdownMenu>
-                  <DropdownMenuButton
-                    unstyled
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-black/10 bg-white px-3 py-1.5 text-xs font-semibold text-black transition hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 dark:focus-visible:ring-white/30"
-                  >
-                    Convert
-                    <FiChevronDown aria-hidden />
-                  </DropdownMenuButton>
-                  <DropdownMenuItems align="end">
-                    <DropdownMenuItem onClick={() => onConvert(note)}>
-                      <FiCheck aria-hidden /> Convert to task
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onConvertToProject(note)}>
-                      <FiBriefcase aria-hidden /> Convert to project
-                    </DropdownMenuItem>
-                  </DropdownMenuItems>
-                </DropdownMenu>
-              ) : (
-                <Button
-                  type="button"
-                  size="xs"
-                  variant="secondary"
-                  onClick={() => onConvert(note)}
-                >
-                  Convert to task
-                </Button>
-              ))}
-          </div>
-          <div className="flex items-center gap-2">
-            {!archived && (
-              <IconButton
-                label={`Edit “${title}”`}
-                variant="edit"
-                onClick={() => onEdit(note)}
-              >
-                <FiEdit2 />
-              </IconButton>
+      {/* w-px shrinks the column to its one button. */}
+      <ResponsiveTableCell className="@min-[54rem]:w-px">
+        <DropdownMenu>
+          <ResponsiveTableMenuButton label={`More actions for “${title}”`} />
+          <DropdownMenuItems align="end">
+            {convertible && (
+              <>
+                <DropdownMenuItem onClick={() => onConvert(note)}>
+                  <FiCheck aria-hidden /> Convert to task
+                </DropdownMenuItem>
+                {canConvertToProject && (
+                  <DropdownMenuItem onClick={() => onConvertToProject(note)}>
+                    <FiBriefcase aria-hidden /> Convert to project
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+              </>
             )}
-            <IconButton
-              label={archived ? `Restore “${title}”` : `Archive “${title}”`}
-              variant="archive"
-              onClick={() => onArchive(note)}
-            >
-              {archived ? <FiRotateCcw /> : <FiArchive />}
-            </IconButton>
-            <IconButton
-              label={`Delete “${title}”`}
-              variant="danger"
-              onClick={() => onDelete(note)}
-            >
-              <FiTrash2 />
-            </IconButton>
-          </div>
-        </div>
+            {!archived && (
+              <DropdownMenuItem onClick={() => onEdit(note)}>
+                <FiEdit2 aria-hidden /> Edit note
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem onClick={() => onArchive(note)}>
+              {archived ? (
+                <FiRotateCcw aria-hidden />
+              ) : (
+                <FiArchive aria-hidden />
+              )}
+              {archived ? "Restore note" : "Archive note"}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem destructive onClick={() => onDelete(note)}>
+              <FiTrash2 aria-hidden /> Delete note
+            </DropdownMenuItem>
+          </DropdownMenuItems>
+        </DropdownMenu>
       </ResponsiveTableCell>
     </ResponsiveTableRow>
   );
