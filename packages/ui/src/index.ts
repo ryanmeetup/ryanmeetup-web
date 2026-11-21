@@ -12,6 +12,7 @@ export * from "./DisclosureCard";
 export * from "./Divider";
 export * from "./Drawer";
 export * from "./DropdownMenu";
+export * from "./DropdownPanel";
 export * from "./DropdownSelect";
 export * from "./useDropdownSearch";
 export * from "./useProximityOptions";
