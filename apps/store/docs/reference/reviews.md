@@ -45,6 +45,18 @@ The showcase reads per request so hiding, withdrawal and deletion are reflected
 on the next load. Catalog caching is unchanged. Empty or unavailable reads omit
 the section; no demo testimonials or partial-feed rating average is shown.
 
+## Ratings on product cards
+
+Product cards on the home page, collections, departments, and garment pages
+show stars, the average, and the review count once a listing has at least
+`MIN_LISTING_RATING_REVIEWS` (5) published reviews, so one outlier can't define
+it. A design group's card pools every design's reviews, weighted by count.
+`lib/listing-ratings.ts` reads per-product totals through the service-only
+`reviews.summaries` command, which calls `store_review_summary` once per
+product. Ratings follow the listing pages' five-minute revalidation, so a newly
+approved review can take that long to move a card. A failed read leaves the
+cards without ratings rather than failing the page.
+
 ## Buyer and publication rules
 
 - Shopify sign-in is required. Identity, purchase snapshots and public names

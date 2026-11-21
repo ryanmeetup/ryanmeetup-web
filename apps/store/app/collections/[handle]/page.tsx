@@ -4,6 +4,7 @@ import { Breadcrumbs, SectionHeader } from "@ryanmeetup/ui";
 import { CollectionGrid } from "@/components/collection-grid";
 import { isDepartment } from "@/lib/catalog-collections";
 import { decodeRouteHandle, normalizeHandle } from "@/lib/handles";
+import { withListingRatings } from "@/lib/listing-ratings";
 import { buildPageMetadata, DEFAULT_IMAGE, toMetadataImage, toMetaDescription } from "@/lib/metadata";
 import { getStoreCollectionIcon, StoreHomeIcon } from "@/lib/navigation";
 import { getCollection, getCollections } from "@/lib/shopify";
@@ -34,8 +35,9 @@ export default async function CollectionPage({ params }: Props) {
   const requested = decodeRouteHandle((await params).handle);
   const handle = normalizeHandle(requested);
   if (handle !== requested) permanentRedirect(`/collections/${handle}`);
-  const result = await getCollection(handle);
-  if (!result) notFound();
+  const found = await getCollection(handle);
+  if (!found) notFound();
+  const result = await withListingRatings(found);
   return (
     <main className="store-container py-10 sm:py-14">
       <Breadcrumbs variant="compact" crumbs={[{ href: "/", title: "Store", icon: <StoreHomeIcon aria-hidden className="shrink-0" /> }, { href: `/collections/${handle}`, title: result.collection.title, current: true, icon: getStoreCollectionIcon(handle) }]} />

@@ -3,11 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
-import { Tooltip } from "@ryanmeetup/ui";
+import { RatingStars, Tooltip } from "@ryanmeetup/ui";
 import { getListingSale } from "@/lib/money";
 import { getListingColorPreviews } from "@/lib/product-colors";
 import { withProductOrigin } from "@/lib/product-origin";
-import type { ProductListing } from "@/lib/types";
+import type { ListingRating, ProductListing } from "@/lib/types";
 import { MediaCard } from "./media-card";
 import { PriceBadge } from "./price-badge";
 import { QuickAdd } from "./quick-add";
@@ -22,6 +22,21 @@ const initialSwatches = 5;
 /** How many slots of a single swatch row fit in `width`. */
 function countSlots(width: number) {
   return Math.max(1, Math.floor((width + swatchGap) / (swatchSlot + swatchGap)));
+}
+
+/** Stars, average, and count on one line; spoken once as a sentence rather than piece by piece. */
+function CardRating({ rating }: { rating: ListingRating }) {
+  const average = rating.average.toFixed(1);
+  return (
+    <p className="flex items-center gap-1.5 text-xs font-semibold tabular-nums text-black/70 sm:text-sm dark:text-white/70">
+      <span aria-hidden className="flex items-center gap-1.5">
+        <RatingStars rating={Number(average)} className="text-sm sm:text-base" />
+        {average}
+        <span className="font-normal">({rating.count})</span>
+      </span>
+      <span className="sr-only">Rated {average} out of 5 from {rating.count} reviews</span>
+    </p>
+  );
 }
 
 /** `from` is the collection the card is listed on, named in the product page's breadcrumb. */
@@ -117,6 +132,8 @@ export function ProductCard({ product, eager = false, from }: { product: Product
         </div>
       )}
       </>}
-    />
+    >
+      {product.rating && <CardRating rating={product.rating} />}
+    </MediaCard>
   );
 }

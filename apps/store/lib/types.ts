@@ -75,7 +75,11 @@ export type ProductListing = Product & {
   defaultColor?: string;
   /** Sold off Shopify; the card links here instead of a product page and can't be quick added. */
   externalUrl?: string;
+  /** Published review totals, present only once there are enough that one review can't swing the average. */
+  rating?: ListingRating;
 };
+
+export type ListingRating = { average: number; count: number };
 
 export type CollectionSummary = {
   description: string;

@@ -4,6 +4,7 @@ import { Breadcrumbs, SectionHeader } from "@ryanmeetup/ui";
 import { CollectionGrid } from "@/components/collection-grid";
 import { getCatalogCollection, getCollectionPath } from "@/lib/catalog-collections";
 import { getGarmentParams, getGarmentPath } from "@/lib/garments";
+import { withListingRatings } from "@/lib/listing-ratings";
 import { buildPageMetadata, DEFAULT_IMAGE, toMetadataImage, toMetaDescription } from "@/lib/metadata";
 import { getGarmentIcon, getStoreCollectionIcon, StoreHomeIcon } from "@/lib/navigation";
 import { getGarmentCollection } from "@/lib/shopify";
@@ -34,8 +35,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function GarmentPage({ params }: Props) {
   const { department: handle, garment } = await params;
   const department = getCatalogCollection(handle);
-  const result = await getGarmentCollection(handle, garment);
-  if (!department || !result) notFound();
+  const found = await getGarmentCollection(handle, garment);
+  if (!department || !found) notFound();
+  const result = await withListingRatings(found);
   return (
     <main className="store-container py-10 sm:py-14">
       <Breadcrumbs

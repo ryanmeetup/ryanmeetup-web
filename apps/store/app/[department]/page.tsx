@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Breadcrumbs, SectionHeader } from "@ryanmeetup/ui";
 import { CollectionGrid } from "@/components/collection-grid";
 import { departments, getCollectionPath, isDepartment } from "@/lib/catalog-collections";
+import { withListingRatings } from "@/lib/listing-ratings";
 import { buildPageMetadata, DEFAULT_IMAGE, toMetadataImage, toMetaDescription } from "@/lib/metadata";
 import { getStoreCollectionIcon, StoreHomeIcon } from "@/lib/navigation";
 import { getCollection } from "@/lib/shopify";
@@ -37,8 +38,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function DepartmentPage({ params }: Props) {
   const { department } = await params;
-  const result = await getDepartment(department);
-  if (!result) notFound();
+  const found = await getDepartment(department);
+  if (!found) notFound();
+  const result = await withListingRatings(found);
   return (
     <main className="store-container py-10 sm:py-14">
       <Breadcrumbs variant="compact" crumbs={[{ href: "/", title: "Store", icon: <StoreHomeIcon aria-hidden className="shrink-0" /> }, { href: getCollectionPath(department), title: result.collection.title, current: true, icon: getStoreCollectionIcon(department) }]} />

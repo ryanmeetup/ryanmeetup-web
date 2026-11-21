@@ -11,12 +11,14 @@ import { HomeCollectionTiles } from "@/components/home-collection-tiles";
 import { HomeSpotlight } from "@/components/home-spotlight";
 import { HomeReviews } from "@/components/home-reviews";
 import { ProductGrid } from "@/components/product-grid";
+import { withListingRatings } from "@/lib/listing-ratings";
 import { getHomeCatalog } from "@/lib/shopify";
 
 export const revalidate = 300;
 
 export default async function HomePage() {
-  const { spotlight, favorites, collections } = await getHomeCatalog();
+  const { spotlight, favorites: shelf, collections } = await getHomeCatalog();
+  const favorites = await withListingRatings(shelf);
   return (
     <main className="flex flex-col gap-8 py-6 sm:gap-12 sm:py-8 lg:py-10">
       <section aria-label="Ryan Meetup merch" className="store-container">
