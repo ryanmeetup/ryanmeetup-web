@@ -1,7 +1,7 @@
 import { Button, EmptyState, SectionHeader } from "@ryanmeetup/ui";
 import { FiArrowRight } from "react-icons/fi";
-import { getCollectionPath, getProductTypeCollection } from "@/lib/catalog-collections";
 import { withListingRatings } from "@/lib/listing-ratings";
+import { getRelatedBrowseLink } from "@/lib/related-listings";
 import { getRelatedListings } from "@/lib/shopify";
 import type { ProductListing } from "@/lib/types";
 import { ProductGrid } from "./product-grid";
@@ -19,10 +19,7 @@ export async function RelatedListings({ product }: { product: ProductListing }) 
     console.error("Could not load related listings", error);
     return null;
   }
-  const typeCollection = getProductTypeCollection(product);
-  const browse = typeCollection
-    ? { href: getCollectionPath(typeCollection.handle), label: `Browse all ${typeCollection.title.toLowerCase()}` }
-    : { href: getCollectionPath("all"), label: "Shop all merch" };
+  const browse = getRelatedBrowseLink(product, related);
 
   return (
     <section aria-labelledby="related-listings" className="border-t border-black/10 py-16 dark:border-white/10 sm:py-20">

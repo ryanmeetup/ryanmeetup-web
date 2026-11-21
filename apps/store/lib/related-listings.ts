@@ -1,3 +1,4 @@
+import { getCollectionPath, getProductTypeCollection } from "./catalog-collections";
 import type { ProductListing } from "./types";
 
 /** How many listings the product page's "More from this shop" row shows. */
@@ -44,4 +45,16 @@ export function pickRelatedListings(
   for (const listing of candidates) if (getListingMemberHandles(listing).some((handle) => shared.has(handle))) add(listing);
   if (current.productType) for (const listing of candidates) if (listing.productType === current.productType) add(listing);
   return [...picks];
+}
+
+/**
+ * Where the row's browse link leads: the product's type page only when every
+ * card shown is that type, so "Browse all accessories" never sits above shirts.
+ * Mixed or empty rows send shoppers to Shop All.
+ */
+export function getRelatedBrowseLink(current: Pick<ProductListing, "productType">, related: Pick<ProductListing, "productType">[]) {
+  const typeCollection = getProductTypeCollection(current);
+  return typeCollection && related.length && related.every((listing) => listing.productType === current.productType)
+    ? { href: getCollectionPath(typeCollection.handle), label: `Browse all ${typeCollection.title.toLowerCase()}` }
+    : { href: getCollectionPath("all"), label: "Shop all merch" };
 }

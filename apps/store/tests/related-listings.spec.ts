@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { demoProducts } from "../lib/demo-data";
 import { groupProductListings } from "../lib/product-groups";
-import { pickRelatedListings } from "../lib/related-listings";
+import { getRelatedBrowseLink, pickRelatedListings } from "../lib/related-listings";
 import { getRelatedListings } from "../lib/shopify";
 import type { ProductListing } from "../lib/types";
 
@@ -40,6 +40,13 @@ test("only purchasable store listings are offered, up to the limit", () => {
 test("nothing related leaves the row empty for its fallback", () => {
   const current = listing("flag", { productType: "Flag" });
   expect(pickRelatedListings(current, [current, listing("tee")])).toEqual([]);
+});
+
+test("the browse link names the product type only when every card shares it", () => {
+  const pins = listing("pins", { productType: "Accessory" });
+  expect(getRelatedBrowseLink(pins, [listing("tote", { productType: "Accessory" })])).toEqual({ href: "/accessories", label: "Browse all accessories" });
+  expect(getRelatedBrowseLink(pins, [listing("tote", { productType: "Accessory" }), listing("shirt")])).toEqual({ href: "/collections/all", label: "Shop all merch" });
+  expect(getRelatedBrowseLink(pins, [])).toEqual({ href: "/collections/all", label: "Shop all merch" });
 });
 
 test.describe("from Shopify", () => {
