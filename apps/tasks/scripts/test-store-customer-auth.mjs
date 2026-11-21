@@ -33,6 +33,7 @@ const deletionsMigration = fileURLToPath(new URL("../supabase/migrations/2026112
 const photoPublicationMigration = fileURLToPath(new URL("../supabase/migrations/20261121030000_store_review_photo_publication.sql", import.meta.url));
 const buyerRejectionReasonMigration = fileURLToPath(new URL("../supabase/migrations/20261121040000_store_review_buyer_rejection_reason.sql", import.meta.url));
 const latestReviewsMigration = fileURLToPath(new URL("../supabase/migrations/20261121050000_store_latest_reviews.sql", import.meta.url));
+const writeBudgetsMigration = fileURLToPath(new URL("../supabase/migrations/20261121120000_store_review_write_budgets.sql", import.meta.url));
 const reviewFeedMigration = fileURLToPath(new URL("../supabase/migrations/20261121060000_store_review_feed.sql", import.meta.url));
 
 function run(command, args, input, inherit = false) {
@@ -97,7 +98,7 @@ try {
   if (target === "prd") {
     const privateObjectsAbsent = sql("select to_regclass('public.store_customer_authorizations') is null and to_regclass('public.store_customer_sessions') is null and to_regclass('public.store_reviews') is null and not exists(select 1 from pg_proc where pronamespace='public'::regnamespace and proname like 'store_%review%') and not exists(select 1 from pg_proc where pronamespace='public'::regnamespace and proname in ('store_get_customer_authorization','store_consume_customer_authorization','store_get_customer_session','store_rotate_customer_session','store_revoke_customer_session','store_revoke_customer_buyer_sessions'))");
     if (privateObjectsAbsent !== "t") throw new Error("RMT-only store objects leaked into the PRD profile");
-    if (sql("select to_regclass('public.store_review_photo_drafts') is null and to_regclass('public.store_review_revision_photos') is null and to_regclass('public.store_review_photo_budgets') is null and not exists(select 1 from storage.buckets where id='store-review-photos')") !== "t") throw new Error("Photo staging leaked into PRD");
+    if (sql("select to_regclass('public.store_review_photo_drafts') is null and to_regclass('public.store_review_revision_photos') is null and to_regclass('public.store_review_photo_budgets') is null and to_regclass('public.store_review_write_budgets') is null and not exists(select 1 from storage.buckets where id='store-review-photos')") !== "t") throw new Error("Photo staging leaked into PRD");
     run("supabase", ["test", "db", "--workdir", testRoot, join(appRoot, "supabase/tests/access_control.sql"), join(appRoot, "tests/database/guest-access.sql")], undefined, true);
     console.log("PASS: PRD profile resets and supports Tasks without store auth objects or synthetic history");
   } else {
@@ -115,8 +116,9 @@ try {
     sql(readFileSync(buyerRejectionReasonMigration, "utf8"));
     sql(readFileSync(latestReviewsMigration, "utf8"));
     sql(readFileSync(reviewFeedMigration, "utf8"));
+    sql(readFileSync(writeBudgetsMigration, "utf8"));
     console.log("PASS: full migration reset and idempotent auth and review migration replay");
-    run("supabase", ["test", "db", "--workdir", testRoot, join(appRoot, "tests/database/store-customer-auth.sql"), join(appRoot, "tests/database/store-reviews.sql"), join(appRoot, "tests/database/store-buyer-reviews.sql"), join(appRoot, "tests/database/store-review-photo-staging.sql"), join(appRoot, "tests/database/store-review-photo-attachments.sql"), join(appRoot, "tests/database/store-review-photo-reads.sql"), join(appRoot, "tests/database/store-review-deletions.sql"), join(appRoot, "tests/database/store-review-photo-publication.sql"), join(appRoot, "tests/database/store-latest-reviews.sql"), join(appRoot, "tests/database/store-review-feed.sql"), join(appRoot, "supabase/tests/access_control.sql")], undefined, true);
+    run("supabase", ["test", "db", "--workdir", testRoot, join(appRoot, "tests/database/store-customer-auth.sql"), join(appRoot, "tests/database/store-reviews.sql"), join(appRoot, "tests/database/store-buyer-reviews.sql"), join(appRoot, "tests/database/store-review-photo-staging.sql"), join(appRoot, "tests/database/store-review-photo-attachments.sql"), join(appRoot, "tests/database/store-review-photo-reads.sql"), join(appRoot, "tests/database/store-review-deletions.sql"), join(appRoot, "tests/database/store-review-photo-publication.sql"), join(appRoot, "tests/database/store-latest-reviews.sql"), join(appRoot, "tests/database/store-review-feed.sql"), join(appRoot, "tests/database/store-review-write-budgets.sql"), join(appRoot, "supabase/tests/access_control.sql")], undefined, true);
     const integration = spawnSync("npx", ["playwright", "test", "tests/customer-account-storage.spec.ts", "--workers=1"], {
       cwd: fileURLToPath(new URL("../../store/", import.meta.url)),
       env: { ...process.env, STORE_AUTH_TEST_CONTAINER: container, STORE_BASE_URL: "http://127.0.0.1:39999" }, stdio: "inherit",
@@ -156,6 +158,11 @@ try {
     const budget = "select (public.store_consume_review_photo_budget('123','budget-race')->>'allowed')::boolean";
     await race(budget, budget);
     console.log("PASS: concurrent uploads cannot exceed the shared buyer attempt budget");
+    const writeRule = `jsonb_build_array(jsonb_build_object('bucket','submit:buyer','actor','write-race','limit',5,'windowSeconds',3600))`;
+    sql(`select public.store_consume_review_write_budget('123',${writeRule}) from generate_series(1,4)`);
+    const write = `select (public.store_consume_review_write_budget('123',${writeRule})->>'allowed')::boolean`;
+    await race(write, write);
+    console.log("PASS: concurrent review writes cannot exceed the shared write budget");
   }
 } finally {
   try {
