@@ -27,9 +27,11 @@ export function ProductGroupDetail({ title, handle, url, breadcrumbs, designs, d
   const [selectedImage, setSelectedImage] = useState<{ design: string; image: StoreImage } | null>(null);
   const gallery = useMemo(() => designs.length ? getProductGallery(designs[0].product, designs) : [], [designs]);
   const colors = useMemo(() => getListingColors(designs), [designs]);
-  const selected = designs.find((design) => design.value === searchParams.get("design")) ?? designs[0];
   // The listing's default color applies only to a bare link; a chosen design keeps its own colors.
   const color = searchParams.get("color") ?? (searchParams.has("design") ? null : defaultColor ?? null);
+  // Which product prints a color is a printing detail, so a color-split listing's URL names only the color.
+  const colorDesign = colors && color ? colors.find((entry) => entry.slug === getColorSlug(color))?.design : undefined;
+  const selected = designs.find((design) => design.value === (colorDesign ?? searchParams.get("design"))) ?? designs[0];
 
   useLayoutEffect(() => {
     const direction = navigationFocus.current;
@@ -45,10 +47,12 @@ export function ProductGroupDetail({ title, handle, url, breadcrumbs, designs, d
     navigationFocus.current = document.activeElement?.getAttribute("data-photo-navigation") ?? null;
     setSelectedImage(image ? { design: value, image } : null);
     const query = new URLSearchParams(searchParams.toString());
-    query.set("design", value);
     const product = designs.find((design) => design.value === value)?.product;
     const color = product ? image ? getImageColor(product, image) : getColorValue(product, colorSlug ?? query.get("color")) : undefined;
-    if (color) query.set("color", getColorSlug(color));
+    const slug = color ? getColorSlug(color) : colors?.find((entry) => entry.design === value)?.slug;
+    if (colors && slug) query.delete("design");
+    else query.set("design", value);
+    if (slug) query.set("color", slug);
     else query.delete("color");
     // Next.js syncs native history with useSearchParams, including back/forward navigation.
     window.history.pushState(null, "", `/products/${handle}?${query.toString()}`);
@@ -56,7 +60,7 @@ export function ProductGroupDetail({ title, handle, url, breadcrumbs, designs, d
 
   return (
     <>
-      <ProductSchema product={selected.product} title={title} reviews={reviewsByProduct[selected.product.id]} url={`${url}?${new URLSearchParams({ design: selected.value })}`} />
+      <ProductSchema product={selected.product} title={title} reviews={reviewsByProduct[selected.product.id]} url={`${url}?${new URLSearchParams(colors ? { color: colorDesign && color ? getColorSlug(color) : colors.find((entry) => entry.design === selected.value)?.slug ?? "" } : { design: selected.value })}`} />
       <ProductDetail
         key={`product-${selected.product.id}`}
         product={selected.product}

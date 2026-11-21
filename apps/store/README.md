@@ -283,6 +283,10 @@ individually, use a collection and keep their standalone pages.
 - Member product URLs redirect to the shared page with `?design=...` selecting
   that member. Cart links reopen the matching design. This parameter identifies
   the member product; color and size are selected separately on the page.
+- A listing split across products by color (each member prints different
+  colors and shoppers pick only a color) never shows `?design=`. Its URL names
+  just `?color=...`, which picks the member, and member or `?design=` links
+  redirect to the color they open on.
 - Listing metadata uses one canonical shared URL, and the sitemap lists the
   listing once. Catalog discovery follows Shopify pagination to find every published
   member; product detail requests also load every image and variant.

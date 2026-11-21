@@ -88,9 +88,11 @@ export function getVariantForColor(product: Pick<Product, "options" | "variants"
 
 export function getListingColorPreviews(product: ProductListing): ListingColorPreview[] {
   const sources = product.designs?.length ? product.designs : [{ product, label: product.title, value: undefined }];
+  // When a listing splits its colors across products, the color alone picks the product.
+  const byColor = Boolean(product.designs?.length && getListingColors(product.designs));
   const previews = sources.flatMap((source) => {
     const href = `/products/${product.handle}`;
-    const query = source.value ? `design=${encodeURIComponent(source.value)}` : "";
+    const query = source.value && !byColor ? `design=${encodeURIComponent(source.value)}` : "";
     if (getColorOption(source.product)) {
       // Shopify's actual Color values take precedence over a style's title.
       return getProductColorOptions(source.product).map((preview) => ({
@@ -105,7 +107,7 @@ export function getListingColorPreviews(product: ProductListing): ListingColorPr
     const swatch = Object.hasOwn(fallbackSwatches, slug) ? fallbackSwatches[slug] : undefined;
     const image = source.product.featuredImage ?? source.product.images[0] ?? source.product.variants.find((variant) => variant.image)?.image ?? null;
     return source.value && swatch ? [{
-      value: source.label, slug, image, swatch, href: `${href}?${query}`, designLabel: source.label,
+      value: source.label, slug, image, swatch, href: `${href}?${query || `color=${encodeURIComponent(slug)}`}`, designLabel: source.label,
     }] : [];
   });
   // Choices come from catalog options, even when photos or swatches are missing.
@@ -176,6 +178,22 @@ export type ListingColor = { color: string; slug: string; design: string; availa
 // product, from that title color. Returns undefined when any member names a
 // design ("Ryan’s Dad") or two members offer the same color, so the listing
 // keeps its Style field.
+/**
+ * Which product prints a color is a printing detail, so a listing split across
+ * products by color is addressed by color alone. Returns that listing's link for
+ * a link naming one of its products (preferring the linked color, then the
+ * listing default, then that product's first color), or undefined when the
+ * listing isn't split by color and the design stays in the URL.
+ */
+export function getColorListingHref(listing: Pick<ProductListing, "handle" | "designs" | "defaultColor">, design: string, color?: string) {
+  const colors = listing.designs ? getListingColors(listing.designs) : undefined;
+  if (!colors) return undefined;
+  const own = colors.filter((entry) => entry.design === design);
+  const wanted = [color, listing.defaultColor].flatMap((value) => value ? [getColorSlug(value)] : []);
+  const slug = (wanted.map((value) => own.find((entry) => entry.slug === value)).find(Boolean) ?? own[0])?.slug;
+  return `/products/${listing.handle}${slug ? `?color=${encodeURIComponent(slug)}` : ""}`;
+}
+
 export function getListingColors(designs: ProductDesign[]): ListingColor[] | undefined {
   const colors: ListingColor[] = [];
   for (const { label, value, product } of designs) {

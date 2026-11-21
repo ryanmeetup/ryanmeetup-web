@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { getColorOption, getColorPreview, getColorPreviews, getColorSlug, getListingColors, getImageColor, getListingColorPreviews, getVariantForColor } from "../lib/product-colors";
+import { getColorListingHref, getColorOption, getColorPreview, getColorPreviews, getColorSlug, getListingColors, getImageColor, getListingColorPreviews, getVariantForColor } from "../lib/product-colors";
 import { groupProductListings } from "../lib/product-groups";
 import type { Product, StoreImage } from "../lib/types";
 import { dad, ryan, superBlack, superBlue, superRed, tee } from "./fixtures/products";
@@ -80,8 +80,8 @@ test("colors stored as separate styles preview both photos and link to their mat
   const [listing] = groupProductListings([whiteStyle, blackStyle]);
   expect(listing.options.map((option) => option.name)).toEqual(["Size"]);
   expect(getListingColorPreviews(listing)).toEqual([
-    { value: "Black", slug: "black", image: blackStyle.featuredImage, swatch: "#111111", href: "/products/i-heart-ry-shirt?design=i-heart-ry-shirt" },
-    { value: "White", slug: "white", image: whiteImage, swatch: "#ffffff", href: "/products/i-heart-ry-shirt?design=i-heart-ry-shirt-white" },
+    { value: "Black", slug: "black", image: blackStyle.featuredImage, swatch: "#111111", href: "/products/i-heart-ry-shirt?color=black" },
+    { value: "White", slug: "white", image: whiteImage, swatch: "#ffffff", href: "/products/i-heart-ry-shirt?color=white" },
   ]);
 });
 
@@ -129,9 +129,9 @@ test("a color-named style with multiple variant colors keeps its variant preview
     const [listing] = groupProductListings(products);
     const expected = multicolorChoices.map((preview) => ({
       ...preview,
-      href: `/products/i-heart-ry-shirt?design=i-heart-ry-shirt&color=${preview.slug}`,
+      href: `/products/i-heart-ry-shirt?color=${preview.slug}`,
     }));
-    if (products.length > 1) expected.push({ value: "White", slug: "white", image: whiteImage, swatch: "#ffffff", href: "/products/i-heart-ry-shirt?design=i-heart-ry-shirt-white" });
+    if (products.length > 1) expected.push({ value: "White", slug: "white", image: whiteImage, swatch: "#ffffff", href: "/products/i-heart-ry-shirt?color=white" });
     expect(getListingColorPreviews(listing)).toEqual(expected);
   }
 });
@@ -192,6 +192,20 @@ test("a listing of color one-offs and multicolor members is chosen by color alon
     ["Black", "super-ryan-shirt"],
     ["Red", "super-ryan-red"],
   ]);
+});
+
+test("links naming a color-split listing's printing product resolve to its color alone", () => {
+  const [listing] = groupProductListings([superBlack, { ...superBlue, title: "Super Ryan Shirt" }, superRed]);
+  const href = (design: string, color?: string) => getColorListingHref({ ...listing, defaultColor: "royal" }, design, color);
+  // The linked color wins when that product prints it, then the listing default, then the product's first color.
+  expect(href("super-ryan-blue", "White")).toBe("/products/super-ryan-shirt?color=white");
+  expect(href("super-ryan-blue")).toBe("/products/super-ryan-shirt?color=royal");
+  expect(href("super-ryan-blue", "red")).toBe("/products/super-ryan-shirt?color=royal");
+  expect(href("super-ryan-red")).toBe("/products/super-ryan-shirt?color=red");
+  expect(href("retired-member")).toBe("/products/super-ryan-shirt");
+  // A listing of real designs keeps the design in its URL.
+  const [designs] = groupProductListings([ryan, dad]);
+  expect(getColorListingHref(designs, "ryans-dad-name-tag-shirt")).toBeUndefined();
 });
 
 test("a listing keeps its styles when a member is a design or a color repeats", () => {

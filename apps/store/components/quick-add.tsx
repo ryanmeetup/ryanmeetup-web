@@ -27,9 +27,13 @@ export function QuickAdd({ product, href }: { product: ProductListing; href: str
   // Local, so adding from one card doesn't spin every card in the grid.
   const [loading, setLoading] = useState(false);
   const params = new URLSearchParams(href.split("?")[1] ?? "");
-  const [designValue, setDesignValue] = useState(params.get("design"));
-  const [colorSlug, setColorSlug] = useState(params.get("color") ?? (params.has("design") ? null : product.defaultColor ?? null));
   const designs = product.designs ?? [];
+  // Members of a colors-only listing are colors, not designs; a size-only
+  // member like "I Heart RY Shirt - Black" names its color in its title.
+  const listingColors = designs.length ? getListingColors(designs) : undefined;
+  const [colorSlug, setColorSlug] = useState(params.get("color") ?? (params.has("design") ? null : product.defaultColor ?? null));
+  // A color-split listing's link names only the color, which picks the member.
+  const [designValue, setDesignValue] = useState(() => (colorSlug && listingColors?.find((entry) => entry.slug === getColorSlug(colorSlug))?.design) || params.get("design"));
   const design = designs.find((entry) => entry.value === designValue) ?? designs[0];
   const target = design?.product ?? product;
   const base = getVariantForColor(target, colorSlug)
@@ -38,9 +42,6 @@ export function QuickAdd({ product, href }: { product: ProductListing; href: str
   const selections = getSelections(base);
   const colorOption = getColorOption(target);
   const remaining = target.options.filter((option) => option !== colorOption && !isDefaultTitleOption(option));
-  // Members of a colors-only listing are colors, not designs; a size-only
-  // member like "I Heart RY Shirt - Black" names its color in its title.
-  const listingColors = designs.length ? getListingColors(designs) : undefined;
   const color = (colorOption && selections[colorOption.name]) || (listingColors ? design?.label : undefined);
   const currentColorSlug = color ? getColorSlug(color) : "";
 

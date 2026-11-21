@@ -13,7 +13,7 @@ import { formatMoney } from "@/lib/money";
 import { findGarment, getGarmentPath } from "@/lib/garments";
 import { getGarmentIcon, getStoreCollectionIcon, StoreHomeIcon, StoreProductIcon } from "@/lib/navigation";
 import { decodeRouteHandle } from "@/lib/handles";
-import { getColorPreview } from "@/lib/product-colors";
+import { getColorListingHref, getColorPreview } from "@/lib/product-colors";
 import { getProductGroupForMember, getProductHref, resolveProductDesignValue } from "@/lib/product-groups";
 import { getCustomReviews } from "@/lib/custom-reviews";
 import { getCustomReviewAccessByProduct } from "@/lib/custom-review-access";
@@ -56,6 +56,9 @@ export default async function ProductPage({ params, searchParams }: Props) {
     const color = query.color ? `&color=${encodeURIComponent(query.color)}` : "";
     permanentRedirect(withProductOrigin(`/products/${product.handle}?design=${encodeURIComponent(requestedDesign)}${color}`, query.from));
   }
+  // Member, cart, and older links name the printing product; a color-split listing's URL names only the color.
+  const colorHref = requestedDesign ? getColorListingHref(product, requestedDesign, query.color) : undefined;
+  if (colorHref) permanentRedirect(withProductOrigin(colorHref, query.from));
   const reviewProducts = product.designs?.map((design) => design.product) ?? [product];
   const [reviewEntries, reviewAccess] = await Promise.all([
     Promise.all(reviewProducts.map(async (item) => [item.id, await getCustomReviews(item.id)] as const)),
