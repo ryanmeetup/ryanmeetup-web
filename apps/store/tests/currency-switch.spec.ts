@@ -36,7 +36,7 @@ test("homepage currency menus switch all badges without following links and reme
   await expect(page).toHaveURL(/\/products\/ryan-meetup-tee$/);
   const price = page.getByRole("main").locator('[aria-live="polite"] > p');
   await expect(price).toContainText("≈€26.10 EUR");
-  await expect(price.getByText("Estimated · final price at checkout")).toBeVisible();
+  await expect(price.getByText("Approximate conversion · exact price at checkout")).toBeVisible();
   expect(requests).toBe(1);
 
   await page.reload();
@@ -68,6 +68,7 @@ test("keyboard currency selection converts both sale prices and leaves cart mone
 
   await page.getByRole("main").getByRole("button", { name: "Add to cart" }).click();
   await expect(page.getByRole("heading", { name: /^Added to cart/ })).toBeVisible();
+  await expect(page.getByRole("dialog").getByText("GBP prices are approximate.")).toBeVisible();
   const cart = await page.evaluate(() => JSON.parse(localStorage.getItem("ryan-store-cart")!));
   expect(cart.lines[0].merchandise.price).toEqual({ amount: "26.00", currencyCode: "USD" });
   expect(cart.lines[0].merchandise.compareAtPrice).toEqual({ amount: "32.00", currencyCode: "USD" });

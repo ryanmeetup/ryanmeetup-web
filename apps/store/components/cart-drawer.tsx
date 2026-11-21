@@ -5,6 +5,7 @@ import { formatMoney } from "@/lib/money";
 import { CartLineItem } from "./cart-line";
 import { useCart } from "./cart-provider";
 import { CheckoutButton } from "./checkout-button";
+import { CurrencyEstimateNote } from "./currency-estimate-note";
 import { EmptyCartButton } from "./empty-cart-button";
 import { EmptyCartPrompt } from "./empty-cart-prompt";
 import { FinalSaleNote } from "./final-sale-note";
@@ -32,6 +33,7 @@ export function CartDrawer() {
         <>
           <div className="flex justify-between"><Text>Subtotal</Text><strong>{formatMoney(cart.cost.subtotalAmount)}</strong></div>
           <Text className="mt-1 text-sm">Shipping and taxes are calculated at checkout. <FinalSaleNote onNavigate={close} /></Text>
+          <CurrencyEstimateNote className="mt-2" />
           <Button className="mt-4" variant="secondary" size="md" fullWidth onClick={close}>Keep shopping</Button>
           <CheckoutButton className="mt-3" />
         </>

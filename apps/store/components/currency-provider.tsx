@@ -70,7 +70,7 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     try {
       if (next !== "USD") setRates(await loadRates());
       setCurrency(next);
-      setAnnouncement(next === "USD" ? "Prices shown in USD." : `Estimated prices shown in ${next}. Checkout shows the final price for your country.`);
+      setAnnouncement(next === "USD" ? "Prices shown in USD." : `Approximate prices shown in ${next}. Checkout shows the exact price in your local currency.`);
       try {
         window.localStorage.setItem(currencyStorageKey, next);
       } catch {

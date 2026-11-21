@@ -6,6 +6,7 @@ import { cartOrigin } from "@/lib/product-origin";
 import { CartLineItem } from "./cart-line";
 import { useCart } from "./cart-provider";
 import { CheckoutButton } from "./checkout-button";
+import { CurrencyEstimateNote } from "./currency-estimate-note";
 import { EmptyCartButton } from "./empty-cart-button";
 import { EmptyCartPrompt } from "./empty-cart-prompt";
 import { FinalSaleNote } from "./final-sale-note";
@@ -34,6 +35,7 @@ export function CartPage() {
           <Heading size="h2" className="text-2xl">Order summary</Heading>
           <div className="mt-6 flex justify-between border-b border-black/10 pb-5 dark:border-white/10"><Text>Subtotal</Text><strong>{formatMoney(cart.cost.subtotalAmount)}</strong></div>
           <Text className="mt-4 text-sm">Shipping, discounts, and taxes are calculated securely at checkout. <FinalSaleNote /></Text>
+          <CurrencyEstimateNote className="mt-2" />
           <CheckoutButton className="mt-6" />
         </Card>
       </div>

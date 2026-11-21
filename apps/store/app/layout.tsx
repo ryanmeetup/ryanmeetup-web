@@ -77,18 +77,19 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
                 <Header collections={collections} accountUrl={accountUrl} />
                 {children}
               </NavSectionProvider>
+              <RyanMeetupFooter
+                homeHref="https://ryanmeetup.com"
+                sections={[
+                  { title: "Help", links: [{ href: "/contact", label: "Customer service" }, { href: getBugReportHref(), label: "Report a bug" }] },
+                  ...(policyLinks.length ? [{ title: "Policies", href: "/policies", links: policyLinks }] : []),
+                ]}
+                followColumn={false}
+                builtWith={builtWith}
+                className="store-container"
+              />
+              {/* Inside the currency provider so the cart can explain converted estimates. */}
+              <CartDrawer />
             </CurrencyProvider>
-            <RyanMeetupFooter
-              homeHref="https://ryanmeetup.com"
-              sections={[
-                { title: "Help", links: [{ href: "/contact", label: "Customer service" }, { href: getBugReportHref(), label: "Report a bug" }] },
-                ...(policyLinks.length ? [{ title: "Policies", href: "/policies", links: policyLinks }] : []),
-              ]}
-              followColumn={false}
-              builtWith={builtWith}
-              className="store-container"
-            />
-            <CartDrawer />
             <ToastHost />
             <Analytics />
           </CartProvider>
