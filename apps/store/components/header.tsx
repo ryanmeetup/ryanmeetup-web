@@ -5,8 +5,8 @@ import { useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { FiChevronDown, FiMenu, FiShoppingBag, FiX } from "react-icons/fi";
 import { AnimatedCollapse, NavMenu, Tooltip, Wordmark } from "@ryanmeetup/ui";
-import { getCollectionMenuRoutes, getDepartmentMenuRoutes, storeNavigation } from "@/lib/navigation";
-import type { StoreMenuCollection } from "@/lib/navigation";
+import { getCollectionMenuRoutes, getDepartmentMenuRoutes, getStoreNavigationSelection, storeNavigation } from "@/lib/navigation";
+import type { StoreMenu, StoreMenuCollection } from "@/lib/navigation";
 import { AccountMenu } from "./account-menu";
 import { useCart } from "./cart-provider";
 import { useNavSection } from "./nav-section";
@@ -15,9 +15,8 @@ export function Header({ collections, accountUrl }: { collections: StoreMenuColl
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const section = useNavSection();
-  // A product page sits under its type's link even though its path doesn't match it.
-  const isCurrent = (href: string) => pathname === href || section === href;
-  const currentPath = section ?? pathname;
+  const { path: currentPath, menu: activeMenu } = getStoreNavigationSelection(pathname, section);
+  const isCurrent = (href: string) => currentPath === href;
   const menuRoutes = useMemo(
     () => ({
       apparel: getDepartmentMenuRoutes("apparel"),
@@ -27,10 +26,14 @@ export function Header({ collections, accountUrl }: { collections: StoreMenuColl
     [collections],
   );
   // The menu holding the current page starts expanded so the mobile menu shows where you are.
-  const [openMenu, setOpenMenu] = useState<string | null>(
-    () => Object.entries(menuRoutes).find(([, routes]) => routes.some((route) => route.href === currentPath))?.[0] ?? null,
-  );
+  const [expandedMenu, setExpandedMenu] = useState<{ path: string; menu: StoreMenu | null } | null>(null);
+  const openMenu = expandedMenu?.path === currentPath ? expandedMenu.menu : activeMenu;
   const { cart, drawerOpen, setDrawerOpen } = useCart();
+
+  function closeNavigation() {
+    setOpen(false);
+    setExpandedMenu(null);
+  }
 
   return (
     <header className="sticky top-0 z-40 border-b border-black/10 bg-white/80 backdrop-blur dark:border-white/10 dark:bg-black/70">
@@ -58,6 +61,7 @@ export function Header({ collections, accountUrl }: { collections: StoreMenuColl
                   title={label}
                   routes={menuRoutes[item.menu]}
                   pathname={currentPath}
+                  active={activeMenu === item.menu}
                 />
               ) : (
                 <Link
@@ -131,7 +135,7 @@ export function Header({ collections, accountUrl }: { collections: StoreMenuColl
                   type="button"
                   aria-expanded={openMenu === item.menu}
                   aria-controls={`mobile-${item.menu}`}
-                  onClick={() => setOpenMenu((value) => (value === item.menu ? null : item.menu))}
+                  onClick={() => setExpandedMenu({ path: currentPath, menu: openMenu === item.menu ? null : item.menu })}
                   className="grid w-full grid-cols-[auto_1fr_auto] items-start gap-3 rounded-xl border border-black/10 bg-white/70 px-3 py-3 text-left text-sm shadow-sm transition hover:border-black/20 hover:bg-black/5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:border-white/15 dark:bg-white/5 dark:hover:border-white/30 dark:hover:bg-white/10 dark:focus-visible:ring-white/40"
                 >
                   <Icon aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
@@ -154,9 +158,9 @@ export function Header({ collections, accountUrl }: { collections: StoreMenuColl
                       <Link
                         key={route.href}
                         href={route.href}
-                        aria-current={currentPath === route.href ? "page" : undefined}
-                        onClick={() => setOpen(false)}
-                        className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[13px] font-semibold tracking-wide shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/40 ${currentPath === route.href ? "border-black/30 bg-black/5 dark:border-white/40 dark:bg-white/10" : "border-black/10 bg-white hover:border-black/20 hover:bg-black/5 dark:border-white/15 dark:bg-white/5 dark:hover:border-white/30 dark:hover:bg-white/10"}`}
+                        aria-current={activeMenu === item.menu && currentPath === route.href ? "page" : undefined}
+                        onClick={closeNavigation}
+                        className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[13px] font-semibold tracking-wide shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/40 ${activeMenu === item.menu && currentPath === route.href ? "border-black/30 bg-black/5 dark:border-white/40 dark:bg-white/10" : "border-black/10 bg-white hover:border-black/20 hover:bg-black/5 dark:border-white/15 dark:bg-white/5 dark:hover:border-white/30 dark:hover:bg-white/10"}`}
                       >
                         {route.icon}
                         {route.text}
@@ -170,7 +174,7 @@ export function Header({ collections, accountUrl }: { collections: StoreMenuColl
                 key={item.href}
                 href={item.href}
                 aria-current={isCurrent(item.href) ? "page" : undefined}
-                onClick={() => setOpen(false)}
+                onClick={closeNavigation}
                 className={`grid grid-cols-[auto_1fr] items-start gap-3 rounded-xl border px-3 py-3 text-sm shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/40 ${isCurrent(item.href) ? "border-black/30 bg-black/5 dark:border-white/40 dark:bg-white/10" : "border-black/10 bg-white/70 hover:border-black/20 hover:bg-black/5 dark:border-white/15 dark:bg-white/5 dark:hover:border-white/30 dark:hover:bg-white/10"}`}
               >
                 <Icon aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />

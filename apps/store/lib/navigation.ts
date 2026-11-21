@@ -48,6 +48,18 @@ export const storeNavigation = [
   },
 ] as const;
 
+export type StoreMenu = Extract<(typeof storeNavigation)[number], { menu: string }>["menu"];
+
+/** Canonical page paths own their menu; duplicate shortcut links do not. */
+export function getStoreNavigationSelection(pathname: string, productSection: string | null) {
+  // Only products need a page-supplied department. Ignore a departing product's
+  // claim on other routes while React cleans up its effect during navigation.
+  const path = pathname.startsWith("/products/") && productSection ? productSection : pathname;
+  const menu = storeNavigation.find((item) => "menu" in item &&
+    (path === `/${item.menu}` || path.startsWith(`/${item.menu}/`)));
+  return { path, menu: menu && "menu" in menu ? menu.menu : null };
+}
+
 // Keyed by Shopify handle. Give each new collection its own icon here; one without an
 // entry falls back to the stacked boxes.
 const collectionIcons: Record<string, IconType> = {

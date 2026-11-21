@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { FaBoxesStacked } from "react-icons/fa6";
-import { getCollectionMenuRoutes, getDepartmentMenuRoutes, getStoreCollectionIcon } from "../lib/navigation";
+import { getCollectionMenuRoutes, getDepartmentMenuRoutes, getStoreCollectionIcon, getStoreNavigationSelection } from "../lib/navigation";
 
 const collection = (handle: string, title: string, description = "") => ({ handle, title, description });
 
@@ -55,4 +55,22 @@ test("the apparel and accessories menus link each garment page, then the whole t
   const icons = getDepartmentMenuRoutes("accessories").map(({ icon }) => (icon as { type: unknown }).type);
   expect(new Set(icons).size).toBe(icons.length);
   expect(getDepartmentMenuRoutes("not-a-department")).toEqual([]);
+});
+
+test("canonical routes own one menu even when another menu contains a shortcut", () => {
+  // RY-Ds is deliberately offered by both menus, whether it lives in the Store
+  // or links directly to the membership site.
+  expect(getDepartmentMenuRoutes("accessories")[0].href).toBe(getCollectionMenuRoutes([])[0].href);
+  for (const [path, menu] of [
+    ["/collections/ryd", "collections"], ["/collections/name-tag", "collections"], ["/collections/not-in-the-menu", "collections"],
+    ["/apparel", "apparel"], ["/apparel/hats", "apparel"], ["/accessories", "accessories"], ["/accessories/pins", "accessories"],
+    ["/about", null], ["/contact", null], ["/reviews", null],
+  ] as const) expect(getStoreNavigationSelection(path, "/apparel")).toEqual({ path, menu });
+});
+
+test("product department claims use the same single canonical owner", () => {
+  expect(getStoreNavigationSelection("/products/ryd", "/collections/ryd")).toEqual({ path: "/collections/ryd", menu: "collections" });
+  expect(getStoreNavigationSelection("/products/tee", "/apparel")).toEqual({ path: "/apparel", menu: "apparel" });
+  expect(getStoreNavigationSelection("/products/mug", "/accessories")).toEqual({ path: "/accessories", menu: "accessories" });
+  expect(getStoreNavigationSelection("/products/unknown", null)).toEqual({ path: "/products/unknown", menu: null });
 });

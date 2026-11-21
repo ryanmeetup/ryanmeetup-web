@@ -34,6 +34,8 @@ export type NavMenuProps = {
   title: string;
   routes: NavRoute[];
   pathname: string;
+  /** Override route matching when several menus link to the same destination. */
+  active?: boolean;
   className?: string;
 };
 
@@ -42,9 +44,10 @@ const NavMenu = ({
   title,
   routes,
   pathname,
+  active: selected,
   className,
 }: NavMenuProps) => {
-  const active = routes.some((route) => route.href === pathname);
+  const active = selected ?? routes.some((route) => route.href === pathname);
   const hasDescriptions = routes.some((route) => route.description);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const caretCleanupRef = useRef<(() => void) | null>(null);
@@ -98,6 +101,7 @@ const NavMenu = ({
         >
           <PopoverButton
             ref={buttonRef}
+            aria-current={active ? "true" : undefined}
             onFocus={() => setOpenedByHover(false)}
             onKeyDown={() => setOpenedByHover(false)}
             className={`flex cursor-pointer items-center gap-x-2 rounded-full px-3 py-2 text-xs font-semibold tracking-wide text-black transition hover:bg-black/5 hover:shadow-sm focus:outline-none dark:text-white dark:hover:bg-white/10 2xl:px-4 2xl:text-sm ${openedByHover ? "" : "focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/30 dark:focus-visible:ring-white/40"} ${
