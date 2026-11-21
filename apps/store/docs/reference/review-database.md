@@ -57,7 +57,7 @@ history under the Store or rewrite applied SQL.
 | `20261121120000` | Shared review write budgets | Applied |
 | `20261121130000` | Approval publishes undecided photos | Applied |
 | `20261121140000` | Half-star ratings | Applied |
-| `20261121150000` | Etsy review import: `source`, untitled imports, import RPC and `source` in projections | Pending: apply after the tolerant code deploys |
+| `20261121150000` | Etsy review import: `source`, untitled imports, import RPC and `source` in projections | Applied; 148 Etsy reviews imported November 21 |
 
 The timestamp-shaped versions are identifiers, not evidence of deployment time.
 Photo publication was applied to RMT and verified for private-bucket and
