@@ -20,7 +20,7 @@ import { getProductGroupForMember, getProductHref, resolveProductDesignValue } f
 import { getCustomReviews } from "@/lib/custom-reviews";
 import { getCustomReviewAccessByProduct } from "@/lib/custom-review-access";
 import { cartOrigin, withProductOrigin } from "@/lib/product-origin";
-import { getCanonicalProductHrefs, getCollections, getProduct, getProductHandles } from "@/lib/shopify";
+import { getCanonicalProductHrefs, getCollections, getGarments, getProduct, getProductHandles } from "@/lib/shopify";
 
 type Props = { params: Promise<{ handle: string }>; searchParams: Promise<{ design?: string; color?: string; from?: string }> };
 
@@ -99,6 +99,6 @@ async function getOriginCrumbs(from: string | undefined): Promise<Breadcrumb[]> 
   const collection = (await getCollections()).find((entry) => entry.handle === handle);
   if (!collection) return [];
   const crumb = { href: getCollectionPath(collection.handle), title: collection.title, icon: getStoreCollectionIcon(collection.handle) };
-  const garment = garmentHandle ? findGarment(handle, garmentHandle) : undefined;
-  return garment ? [crumb, { href: getGarmentPath(handle, garment.handle), title: garment.title, icon: getGarmentIcon(handle, garment.handle) }] : [crumb];
+  const garment = garmentHandle ? findGarment(await getGarments(), handle, garmentHandle) : undefined;
+  return garment ? [crumb, { href: getGarmentPath(garment, handle), title: garment.title, icon: getGarmentIcon(handle, garment.handle) }] : [crumb];
 }

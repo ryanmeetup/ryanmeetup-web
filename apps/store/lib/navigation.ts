@@ -5,7 +5,8 @@ import { FaAddressCard, FaBaby, FaBagShopping, FaBoxesStacked, FaBurger, FaFlag,
 import { PiBaseballCapFill, PiHoodieFill } from "react-icons/pi";
 import type { IconType } from "react-icons";
 import { getCatalogCollection, getCollectionPath } from "./catalog-collections";
-import { findGarment, garmentsByDepartment, getGarmentPath } from "./garments";
+import { findGarment, getGarmentPath } from "./garments";
+import type { GarmentTable } from "./garments";
 import type { CollectionSummary } from "./types";
 
 export const StoreHomeIcon = FaStore;
@@ -81,8 +82,8 @@ const collectionIcons: Record<string, IconType> = {
   "limited-edition": FaStar,
 };
 
-// Keyed by garment handle from `garmentsByDepartment`; a new grouping without an entry
-// falls back to its department's icon.
+// Keyed by the handle of a Shopify "Store grouping" entry; a new grouping without an
+// entry here falls back to its department's icon.
 const garmentIcons: Record<string, IconType> = {
   "t-shirts": FaShirt,
   hoodies: PiHoodieFill,
@@ -99,9 +100,9 @@ const garmentIcons: Record<string, IconType> = {
 export type StoreMenuCollection = Pick<CollectionSummary, "handle" | "title" | "description">;
 
 /** RY-Ds and featured Shopify collections, then Shop All; type pages have their own links. */
-export function getCollectionMenuRoutes(collections: StoreMenuCollection[]): NavRoute[] {
+export function getCollectionMenuRoutes(collections: StoreMenuCollection[], garments: GarmentTable): NavRoute[] {
   const shopAll = getCatalogCollection("all");
-  const ryd = findGarment("accessories", "ryd");
+  const ryd = findGarment(garments, "accessories", "ryd");
   const featured = collections.filter(({ handle }) => handle !== "ryd" && !getCatalogCollection(handle));
   return [
     ...(ryd ? [ryd] : []),
@@ -115,20 +116,16 @@ export function getCollectionMenuRoutes(collections: StoreMenuCollection[]): Nav
   }));
 }
 
-/** Garment handles with at least one listing, keyed by department; null lists every grouping. */
-export type StockedGarments = Record<string, readonly string[]> | null;
-
 /**
  * A type page's garment groupings, each linking to its own page, then the whole type page.
- * Pass `stocked` to leave out groupings with nothing in them, such as a sold-out door mat.
+ * The layout passes only groupings with something in them, so a sold-out door mat drops out.
  */
-export function getDepartmentMenuRoutes(department: string, stocked: StockedGarments = null): NavRoute[] {
+export function getDepartmentMenuRoutes(department: string, garments: GarmentTable): NavRoute[] {
   const page = getCatalogCollection(department);
   if (!page) return [];
-  const inStock = stocked?.[department];
   return [
-    ...(garmentsByDepartment[department] ?? []).filter(({ handle }) => !inStock || inStock.includes(handle)).map(({ handle, title, description }) => ({
-      href: getGarmentPath(department, handle),
+    ...(garments[department] ?? []).map(({ handle, title, description, collection }) => ({
+      href: getGarmentPath({ handle, collection }, department),
       text: title,
       description,
       icon: getGarmentIcon(department, handle),

@@ -3,20 +3,19 @@ import { notFound } from "next/navigation";
 import { Breadcrumbs, SectionHeader } from "@ryanmeetup/ui";
 import { CollectionGrid } from "@/components/collection-grid";
 import { getCatalogCollection, getCollectionPath } from "@/lib/catalog-collections";
-import { getGarmentParams, getGarmentPath } from "@/lib/garments";
+import { getGarmentParams } from "@/lib/garments";
 import { withListingRatings } from "@/lib/listing-ratings";
 import { buildPageMetadata, DEFAULT_IMAGE, toMetadataImage, toMetaDescription } from "@/lib/metadata";
 import { getGarmentIcon, getStoreCollectionIcon, StoreHomeIcon } from "@/lib/navigation";
-import { getGarmentCollection } from "@/lib/shopify";
+import { getGarmentCollection, getGarments } from "@/lib/shopify";
 
 // One garment grouping of Apparel or Accessories, such as /apparel/hats.
 type Props = { params: Promise<{ department: string; garment: string }> };
 
-export function generateStaticParams() {
-  return getGarmentParams();
+// Groupings come from Shopify, so one added after the build renders on its first visit.
+export async function generateStaticParams() {
+  return getGarmentParams(await getGarments());
 }
-
-export const dynamicParams = false;
 
 // An empty grouping, such as Home Goods after its only door mat is archived, is a 404
 // rather than a page that says "0 items"; the header menu leaves it out too.
@@ -34,7 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return buildPageMetadata({
     title: collection.title,
     description: toMetaDescription(collection.description),
-    canonical: getGarmentPath(handle, garment),
+    canonical: `/${handle}/${garment}`,
     image: image ? toMetadataImage(image, collection.title) : DEFAULT_IMAGE,
   });
 }
@@ -52,7 +51,7 @@ export default async function GarmentPage({ params }: Props) {
         crumbs={[
           { href: "/", title: "Store", icon: <StoreHomeIcon aria-hidden className="shrink-0" /> },
           { href: getCollectionPath(handle), title: department.title, icon: getStoreCollectionIcon(handle) },
-          { href: getGarmentPath(handle, garment), title: result.collection.title, current: true, icon: getGarmentIcon(handle, garment) },
+          { href: `/${handle}/${garment}`, title: result.collection.title, current: true, icon: getGarmentIcon(handle, garment) },
         ]}
       />
       <SectionHeader align="left" layout="split" className="mt-3" headingLevel="h1" title={result.collection.title} description={result.collection.description} meta={`${result.products.length} item${result.products.length === 1 ? "" : "s"}`} headingClassName="text-4xl sm:text-6xl" />

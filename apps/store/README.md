@@ -147,10 +147,14 @@ gets one card.
 
 Shopify collections are themes (I ❤️ RY, Not A Cult, …), never kinds of product.
 Apparel and Accessories split into garment groupings instead, built from each
-product's Shopify standard **Category** in
-[lib/garments.ts](lib/garments.ts): Apparel runs T-Shirts, Hoodies &
+product's Shopify standard **Category**. The groupings are Shopify **Store
+grouping** metaobjects (Content → Metaobjects), read by `getGarments` in
+[lib/shopify.ts](lib/shopify.ts) and matched in
+[lib/garments.ts](lib/garments.ts), whose `demoGarments` copy serves only the
+demo catalog. Apparel runs T-Shirts, Hoodies &
 Sweatshirts, Hats, then Kids; Accessories runs RY-Ds, Pins, Bags, Mugs, Home
-Goods, then Flags. Each grouping has its own page (`/apparel/hats`) and a
+Goods, then Flags. A grouping with no products leaves the menu, sitemap, and
+404s until something matches it again. Each grouping has its own page (`/apparel/hats`) and a
 collapsible section on its department page anchored by its handle
 (`/apparel#hats`); sorts apply within it. RY-Ds is placed by listing handle,
 since the membership card has no Shopify category, and links to
@@ -168,8 +172,8 @@ Picks** above them in the default order. Those picks are removed from the sectio
 below. **More Ryan Goods** holds products in no theme collection. Type and size
 filters also update the popular picks. Other sort choices apply within sections.
 
-The **Apparel** and **Accessories** dropdowns list their page's garment groupings
-from [lib/garments.ts](lib/garments.ts), each with its own page such as
+The **Apparel** and **Accessories** dropdowns list their page's stocked garment
+groupings from Shopify, each with its own page such as
 `/apparel/hats`, then **Shop All** for the whole type page. Give a new grouping
 an icon in `garmentIcons` in [lib/navigation.ts](lib/navigation.ts). The
 **Collections** dropdown starts with **RY-Ds**, linking directly to
