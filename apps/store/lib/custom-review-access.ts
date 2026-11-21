@@ -11,8 +11,18 @@ import type { ReviewEligibilityLookup } from "./review-purchases";
 import { reviewViewerKey } from "./review-viewer";
 import { reviewPhotosEnabled } from "./review-photo-policy";
 
-/** One purchased order line the buyer can review. The label is safe to show; the ID is opaque. */
-export type ReviewablePurchase = { lineId: string; label: string };
+/**
+ * One purchased order line the buyer can review. The label, order name and
+ * variant are safe to show; the ID is opaque. The composer lays the order and
+ * variant out as labelled rows when it has them, and falls back to the label.
+ */
+export type ReviewablePurchase = {
+  lineId: string; label: string; orderLabel?: string;
+  /** Shopify's "Blue / M"; the composer pairs it with the product's option names. */
+  variantTitle?: string | null;
+  /** Already-paired options, when the caller has them instead of a title. */
+  options?: { name: string | null; value: string }[];
+};
 
 type BuyerName = { firstName: string | null; lastName: string | null };
 
@@ -66,7 +76,7 @@ export async function getCustomReviewAccess({ productId, productPath, loadSessio
     const reviewed = new Set(lines);
     const open = eligibility.purchases.filter((purchase) => !reviewed.has(purchase.lineId));
     if (!open.length) return { status: "reviewed" };
-    return { status: "ready", buyer: eligibility.buyer, purchases: open.map(({ lineId, label }) => ({ lineId, label })), defaultNameStyle: "first-initial" };
+    return { status: "ready", buyer: eligibility.buyer, purchases: open.map(({ lineId, label, orderLabel, variantTitle }) => ({ lineId, label, orderLabel, variantTitle })), defaultNameStyle: "first-initial" };
   }
 
   // No matching order (or one the store would have to check by hand): one unverified review per product.

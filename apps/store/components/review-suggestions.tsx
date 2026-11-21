@@ -93,7 +93,7 @@ export function ReviewSuggestions({ suggestions, onReviewed, photoViewerKey, sub
           key={reviewing.lineId}
           open
           photos={photoViewerKey ? {productId:reviewing.productId,viewerKey:photoViewerKey} : undefined}
-          access={{ status: "ready", buyer: suggestions.buyer, purchases: [{ lineId: reviewing.lineId, label: reviewing.label }], defaultNameStyle: "first-initial" }}
+          access={{ status: "ready", buyer: suggestions.buyer, purchases: [{ lineId: reviewing.lineId, label: reviewing.label, orderLabel: reviewing.orderLabel, options: reviewing.options }], defaultNameStyle: "first-initial" }}
           product={{ title: reviewing.productTitle, featuredImage: reviewing.image ? { ...reviewing.image, width: null, height: null } : null }}
           onClose={() => setReviewing(null)}
           onSubmit={async (review) => {

@@ -23,7 +23,7 @@ const mine: BuyerReview = { id: reviewId, lineId: "1", item: { productId: "100",
   status: "published", hasPendingEdit: false, rejectionReason: null, rejectedPhotos: [], publishedAt: "2026-11-17T12:00:00.123Z", createdAt: version, updatedAt: version,
   current: { rating: 5, title: "Ryan approved", body: "Great shirt.", nameStyle: "first-initial", displayName: "Ryan L." } };
 const review = { productId: "gid://shopify/Product/100", lineId: "1", rating: 5, title: "Big fan", body: "Great shirt.", nameStyle: "first-initial" };
-const purchase = { orderId: "9000", lineId: "1", productId: "100", variantId: "200", productTitle: "Name Tag Shirt", variantTitle: "Black / M", label: "Order #1001" };
+const purchase = { orderId: "9000", lineId: "1", productId: "100", variantId: "200", productTitle: "Name Tag Shirt", variantTitle: "Black / M", label: "Order #1001", orderLabel: "#1001" };
 const eligible: ReviewEligibility = { status: "eligible", buyer: { firstName: "Ryan", lastName: "Le" }, purchases: [purchase] };
 
 function limiter(decision: ReviewWriteLimit | Error) {

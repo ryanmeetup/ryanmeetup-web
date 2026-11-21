@@ -175,7 +175,10 @@ test("signed in, My reviews offers recent purchases to review and reviews them i
 
   await ready.getByRole("button",{name:"Write a review of Official Ryan Meetup Tee",exact:true}).click();
   const dialog=page.getByRole("dialog",{name:"Write a review",exact:true});
-  await expect(dialog).toContainText("Reviewing Order #100 · M / White");
+  // The same labelled order and variant rows as the card it came from.
+  await expect(dialog.getByText("#100",{exact:true})).toBeVisible();
+  await expect(dialog).toContainText("White");
+  await expect(dialog).not.toContainText("Tell other Ryans");
   await dialog.getByRole("radio",{name:"5 stars",exact:true}).check();
   await dialog.getByLabel(/^Title/).fill("Wore it to the meetup");
   await dialog.getByLabel(/^Review/).fill("Every Ryan asked where I got it.");

@@ -6,7 +6,6 @@ import { screenshotPath } from "./fixtures/screenshots";
 
 // A signed-in synthetic buyer with one shipped purchase of the demo tee.
 const productPath = "/products/ryan-meetup-tee#reviews";
-const label = "Order #100 · Blue / M";
 
 async function buyTee(request: Parameters<typeof reset>[0]) {
   const purchase = customerPurchasePage();
@@ -36,7 +35,10 @@ for (const theme of ["light", "dark"]) {
       await page.addInitScript((value) => localStorage.setItem("theme", value), theme);
       await page.setViewportSize({ width, height: 844 });
       const { reviews, dialog } = await openComposer(page);
-      await expect(dialog).toContainText(`Reviewing ${label}`);
+      // Order and variant read as labelled rows, matching the Ready to Review cards.
+      await expect(dialog.getByText("#100", { exact: true })).toBeVisible();
+      await expect(dialog).toContainText("Blue");
+      await expect(dialog.getByLabel(/^Review/)).toHaveCSS("resize", "none");
       await expect(dialog).toContainText("Shown publicly as Ryan F.");
       await expect(dialog.getByLabel("Email")).toHaveCount(0);
       await expect(dialog.getByLabel("Photos", { exact: true })).toHaveCount(0);

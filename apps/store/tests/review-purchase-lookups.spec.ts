@@ -89,7 +89,7 @@ test("the picker returns only owned qualifying lines and exact normalized backen
   const { session } = await seed();
   const result = await findReviewablePurchases(session, "102");
   expect(result).toEqual({ status: "eligible", buyer: { firstName: "Ryan", lastName: "Le" }, purchases: [{
-    orderId: "100", lineId: "101", productId: "102", variantId: "104", productTitle: "Ryan tee", variantTitle: "Blue / M", label: "Order #100 · Blue / M",
+    orderId: "100", lineId: "101", productId: "102", variantId: "104", productTitle: "Ryan tee", variantTitle: "Blue / M", label: "Order #100 · Blue / M", orderLabel: "#100",
   }] });
   expect(JSON.stringify(result)).not.toContain("stored-private-access");
   expect(JSON.stringify(result)).not.toContain("opaque-buyer-subject");

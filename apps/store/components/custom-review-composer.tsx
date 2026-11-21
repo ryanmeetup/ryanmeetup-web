@@ -13,10 +13,12 @@ import {
   type ReviewSubmission,
 } from "@ryanmeetup/reviews";
 import { Button, DropdownSelect, ErrorCallout, Input, Modal, ModalActions, StarRating, Text, Textarea } from "@ryanmeetup/ui";
-import type { CustomReviewAccess } from "@/lib/custom-review-access";
+import type { CustomReviewAccess, ReviewablePurchase } from "@/lib/custom-review-access";
+import { variantOptions } from "@/lib/review-suggestions";
 import { reviewSignInRel, signInExplanation } from "@/lib/review-sign-in";
 import type { Product } from "@/lib/types";
 import type { ReviewPhotoEditorScope } from "@/lib/review-photo-client";
+import { ReviewItemDetails, variantRows } from "./review-item";
 import { useReviewPhotos } from "./use-review-photos";
 import { ReviewPhotoField } from "./review-photo-field";
 
@@ -59,7 +61,7 @@ export function CustomReviewComposer({
   photos: photoScope,
 }: {
   access: CustomReviewAccess;
-  product: Pick<Product, "title"> & { featuredImage: Product["featuredImage"] | null };
+  product: Pick<Product, "title"> & Partial<Pick<Product, "options">> & { featuredImage: Product["featuredImage"] | null };
   open: boolean;
   onClose: () => void;
   /** `lineId` is null for a review written without a matching order. */
@@ -166,9 +168,12 @@ export function CustomReviewComposer({
     );
   }
 
-  const purchaseNote = ready.purchases.length === 1 ? (
-    <Text className="text-sm wrap-anywhere">Reviewing <span className="font-semibold">{ready.purchases[0].label}</span></Text>
-  ) : ready.purchases.length === 0 ? (
+  // The same labelled rows as the Ready to Review cards; an older caller without an order name keeps the one-line label.
+  const purchaseDetails = (purchase: ReviewablePurchase) => purchase.orderLabel ? <ReviewItemDetails rows={[
+    ...variantRows(purchase.options ?? variantOptions(purchase.variantTitle ?? null, product.options?.map((option) => option.name) ?? [])),
+    { label: "Order", value: <span className="font-mono">{purchase.orderLabel}</span> },
+  ]} /> : <Text className="text-sm wrap-anywhere">Reviewing <span className="font-semibold">{purchase.label}</span></Text>;
+  const purchaseNote = ready.purchases.length === 1 ? purchaseDetails(ready.purchases[0]) : ready.purchases.length === 0 ? (
     <Text className="text-sm">We didn&apos;t find an order for this on your account, so your review shows without the Verified badge.</Text>
   ) : null;
 
@@ -179,7 +184,7 @@ export function CustomReviewComposer({
       title={edit ? "Edit your review" : "Write a review"}
       // Photos get their own column from `lg`, so the form never grows into a tall single column.
       size={photoScope ? "xl" : "lg"}
-      description={edit ? "Changes are checked before they go up. Until then, your current review stays as it is." : "Tell other Ryans how it went."}
+      description={edit ? "Changes are checked before they go up. Until then, your current review stays as it is." : undefined}
       closable={!pending}
       formId={formId}
       onSubmit={submit}
@@ -212,7 +217,7 @@ export function CustomReviewComposer({
               <StarRating label="Rating" name={`${formId}-rating`} required disabled={pending} value={draft.rating} onChange={(rating) => setDraft((value) => ({ ...value, rating }))} />
             </div>
             <Input label="Title" name={`${formId}-title`} required maxLength={REVIEW_TITLE_MAX} placeholder="Sum it up, Ryan" value={draft.title} onChange={(event) => setDraft((value) => ({ ...value, title: event.target.value }))} />
-            <Textarea id={`${formId}-body`} label="Review" name="body" required maxLength={REVIEW_BODY_MAX} placeholder="The good, the bad, the very Ryan. How's it fitting, and how's it holding up?" value={draft.body} onChange={(event) => setDraft((value) => ({ ...value, body: event.target.value }))} />
+            <Textarea id={`${formId}-body`} label="Review" name="body" required maxLength={REVIEW_BODY_MAX} placeholder="The good, the bad, the very Ryan. How's it fitting, and how's it holding up?" resizable={false} value={draft.body} onChange={(event) => setDraft((value) => ({ ...value, body: event.target.value }))} />
             <div className="space-y-2">
               <DropdownSelect
                 label="Show my name as"

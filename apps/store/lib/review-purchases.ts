@@ -2,8 +2,8 @@ import type { VerifiedReviewPurchase } from "@ryanmeetup/reviews";
 import type { CustomerAccountSession } from "./customer-account/storage";
 import { lookupRecentReviewablePurchases, lookupReviewBuyerName, lookupReviewablePurchases } from "./customer-account/review-lookups";
 
-/** A purchased line the signed-in buyer may review, with a label safe to show them. */
-export type ReviewablePurchaseLine = VerifiedReviewPurchase & { label: string };
+/** A purchased line the signed-in buyer may review, with a label and order name safe to show them. */
+export type ReviewablePurchaseLine = VerifiedReviewPurchase & { label: string; orderLabel: string };
 
 /**
  * Why a buyer has nothing to review for a product. `not_shipped` will open on

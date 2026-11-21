@@ -12,7 +12,7 @@ const part = (value: object) => Buffer.from(JSON.stringify(value)).toString("bas
 const idToken = `${part({ alg: "RS256" })}.${part({ sub: "synthetic-buyer", email: "ryan@example.com" })}.signature`;
 const session = { sessionHash: "a".repeat(64), subject: "synthetic-buyer", createdAt: 1, expiresAt: 2, accessExpiresAt: 2, revision: 0, tokens: { accessToken: "a", refreshToken: "r", idToken } } as CustomerAccountSession;
 const signedIn: CustomerSessionResult = { status: "authenticated", session };
-const purchase = { orderId: "9000", lineId: "1", productId: "100", variantId: "200", productTitle: "Name Tag Shirt", variantTitle: "Black / M", label: "Order #1001 · Black / M" };
+const purchase = { orderId: "9000", lineId: "1", productId: "100", variantId: "200", productTitle: "Name Tag Shirt", variantTitle: "Black / M", label: "Order #1001 · Black / M", orderLabel: "#1001" };
 const eligible: ReviewEligibility = { status: "eligible", buyer: { firstName: "Ryan", lastName: "Le" }, purchases: [purchase] };
 const myReview: BuyerReview = {
   id: "3f1c2a4e-5b6d-4e7f-8a9b-0c1d2e3f4a5b", lineId: "1", item: { productId: "100", productTitle: "Name Tag Shirt", variantTitle: "Black / M" },

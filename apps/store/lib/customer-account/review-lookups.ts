@@ -100,7 +100,7 @@ export async function lookupReviewablePurchases(session: CustomerAccountSession,
         const verified = reviewBackendPurchase(checked.purchase);
         if (!verified || verified.productId !== productId || seenLines.has(verified.lineId)) return { status: "unavailable" };
         seenLines.add(verified.lineId);
-        purchases.push({ ...verified, label: `Order ${read.purchase.orderLabel}${verified.variantTitle ? ` · ${verified.variantTitle}` : ""}` });
+        purchases.push({ ...verified, label: `Order ${read.purchase.orderLabel}${verified.variantTitle ? ` · ${verified.variantTitle}` : ""}`, orderLabel: read.purchase.orderLabel });
       }
     }
     if (!await client.active()) return { status: "unavailable" };
@@ -112,7 +112,7 @@ export async function lookupReviewablePurchases(session: CustomerAccountSession,
 }
 
 /** A reviewable line with the order details a suggestion shows. */
-export type RecentReviewablePurchase = ReviewablePurchaseLine & { orderLabel: string; quantity: number; shippedAt: string | null };
+export type RecentReviewablePurchase = ReviewablePurchaseLine & { quantity: number; shippedAt: string | null };
 
 /**
  * Every line from the buyer's newest orders that passes the review rules, for
