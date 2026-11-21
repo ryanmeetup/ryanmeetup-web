@@ -49,7 +49,7 @@ export function HomeSpotlight({ spotlight: { listing, label, description: collec
         )}
         <div className="flex flex-col items-start gap-6">
           <PriceBadge price={listing.priceRange.minVariantPrice} compareAt={sale.compareAt} from={listing.priceVaries} size="lg" />
-          <Button.Link href={href} {...external} size="lg" className="!w-full sm:!w-auto" rightIcon={<FiArrowRight aria-hidden />}>
+          <Button.Link data-analytics-product={listing.handle} href={href} {...external} size="lg" className="!w-full sm:!w-auto" rightIcon={<FiArrowRight aria-hidden />}>
             {curated ? "Shop the drop" : "Take a closer look"}
             {listing.externalUrl && <span className="sr-only"> (opens in a new tab)</span>}
           </Button.Link>

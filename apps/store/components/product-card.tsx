@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { trackStoreEvent } from "@/lib/analytics";
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import { RatingStars, Tooltip } from "@ryanmeetup/ui";
@@ -66,7 +67,7 @@ export function ProductCard({ product, eager = false, from }: { product: Product
   return (
     <MediaCard
       href={href}
-      linkProps={{ "aria-describedby": priceId, ...(product.externalUrl && { target: "_blank", rel: "noopener noreferrer" }) }}
+      linkProps={{ "aria-describedby": priceId, ...{ "data-analytics-product": product.handle }, ...(product.externalUrl && { target: "_blank", rel: "noopener noreferrer" }) }}
       media={image ? (
         <Image
           src={image.url}
@@ -104,7 +105,7 @@ export function ProductCard({ product, eager = false, from }: { product: Product
                   type="button"
                   aria-label={`Preview ${preview.label ?? preview.value}`}
                   aria-pressed={pressed}
-                  onClick={() => setSelectedColor(pressed ? null : preview.href)}
+                  onClick={() => { setSelectedColor(pressed ? null : preview.href); trackStoreEvent("card_color_previewed", { product: product.handle, color: pressed ? "default" : preview.label ?? preview.value }); }}
                   className={`grid h-8 w-8 shrink-0 place-items-center rounded-full transition hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40 dark:hover:bg-white/10 dark:focus-visible:ring-white/40 ${pressed ? "ring-2 ring-black dark:ring-white" : ""}`}
                 >
                   <span

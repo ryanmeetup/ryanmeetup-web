@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { trackStoreEvent } from "@/lib/analytics";
 import { useQueryParamState } from "@ryanmeetup/hooks";
 import { AnchorNav, AnimatedCollapse, DropdownSelect, EmptyState, FilterPanel, Heading, SectionHeader, Text } from "@ryanmeetup/ui";
 import { FiChevronDown } from "react-icons/fi";
@@ -37,6 +38,13 @@ export function CollectionGrid({ handle, products, sections, more = [] }: { hand
       ));
   const arrange = (listings: ProductListing[]) => sortListings(listings.filter(matches), sort);
   const visible = arrange(products);
+  const lastResults = useRef("");
+  useEffect(() => {
+    const key = JSON.stringify([handle, type, size, sort, visible.length]);
+    if (lastResults.current === key) return;
+    lastResults.current = key;
+    trackStoreEvent("catalog_results", { collection: handle, count: visible.length });
+  }, [handle, type, size, sort, visible.length]);
   // Shop All keeps its collection sections, with Popular Picks above them. A pick still
   // appears in its own section too, so every section lists its whole collection.
   // Department pages open straight onto their garment groupings instead.
@@ -52,7 +60,7 @@ export function CollectionGrid({ handle, products, sections, more = [] }: { hand
   );
 
   return (
-    <div className="space-y-6">
+    <div data-analytics-placement="catalog" data-analytics-section="catalog" className="space-y-6">
       {products.length > 1 && (
         <FilterPanel
           count={Number(type !== "all") + Number(size !== "all")}
@@ -62,7 +70,7 @@ export function CollectionGrid({ handle, products, sections, more = [] }: { hand
             <DropdownSelect
               label="Type"
               value={type}
-              onChange={setType}
+              onChange={(value) => { setType(value); trackStoreEvent("catalog_filter_changed", { filter: "type", value }); }}
               options={[{ label: "All types", value: "all" }, ...types.map((value) => ({ label: value, value }))]}
               stackLabelOnMobile
             />
@@ -71,7 +79,7 @@ export function CollectionGrid({ handle, products, sections, more = [] }: { hand
             <DropdownSelect
               label="Size"
               value={size}
-              onChange={setSize}
+              onChange={(value) => { setSize(value); trackStoreEvent("catalog_filter_changed", { filter: "size", value }); }}
               options={[{ label: "All sizes", value: "all" }, ...sizes.map((value) => ({ label: value, value }))]}
               stackLabelOnMobile
             />
@@ -80,7 +88,7 @@ export function CollectionGrid({ handle, products, sections, more = [] }: { hand
           <DropdownSelect
             label="Sort"
             value={sort}
-            onChange={setSortParam}
+            onChange={(value) => { setSortParam(value); trackStoreEvent("catalog_sort_changed", { collection: handle, sort: value }); }}
             options={sortOptions.map(({ label, value }) => ({ label, value }))}
             stackLabelOnMobile
             className="lg:ml-auto"
@@ -92,7 +100,7 @@ export function CollectionGrid({ handle, products, sections, more = [] }: { hand
       ) : visibleSections.length || popular.length ? (
         <div className="space-y-6">
           {popular.length > 0 && (
-            <section aria-labelledby="popular-picks">
+            <section data-analytics-placement="popular_picks" data-analytics-section="popular_picks" aria-labelledby="popular-picks">
               <SectionHeader align="left" title={<span id="popular-picks">Popular Picks</span>} />
               <ProductGrid products={popular} from={handle} className="mt-6" />
             </section>
@@ -126,7 +134,7 @@ function CollapsibleCollection({ from, collection, grouping = false, products, e
           aria-describedby={`${id}-count`}
           aria-expanded={open}
           aria-controls={`${id}-panel`}
-          onClick={() => setOpen((current) => !current)}
+          onClick={() => { setOpen(!open); trackStoreEvent("collection_toggled", { collection: collection?.handle ?? "more", expanded: !open }); }}
           className="grid min-h-11 w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40 sm:gap-4 dark:focus-visible:ring-white/40"
         >
           <span id={id} className="min-w-0">{collection ? (grouping ? collection.title : collectionHeading(collection.title)) : "More Ryan Goods"}</span>

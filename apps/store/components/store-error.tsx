@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { trackStoreEvent } from "@/lib/analytics";
+import { analyticsPath } from "@/lib/analytics-events";
 import { NotFoundCard } from "@ryanmeetup/ui";
 import { FiRefreshCw, FiShoppingBag } from "react-icons/fi";
 
@@ -9,7 +11,12 @@ import { FiRefreshCw, FiShoppingBag } from "react-icons/fi";
  * timeout. Used by both the route and root-layout error boundaries.
  */
 export function StoreError({ error, retry }: { error: unknown; retry: () => void }) {
+  const lastError = useRef<unknown>(null);
   useEffect(() => {
+    if (lastError.current !== error) {
+      lastError.current = error;
+      trackStoreEvent("page_error", { page: analyticsPath(window.location.pathname) });
+    }
     console.error(error);
   }, [error]);
 
@@ -25,7 +32,7 @@ export function StoreError({ error, retry }: { error: unknown; retry: () => void
         tagName="Oops"
         title={<>The shelves are<br />having a moment.</>}
         description="We couldn’t load this page. It’s usually a brief hiccup on our end, so give it another go."
-        primaryAction={{ label: "Try again", onClick: retry, icon: <FiRefreshCw aria-hidden /> }}
+        primaryAction={{ label: "Try again", onClick: () => { trackStoreEvent("page_retry", { page: analyticsPath(window.location.pathname) }); retry(); }, icon: <FiRefreshCw aria-hidden /> }}
         secondaryAction={{ href: "/collections/all", label: "Shop All", icon: <FiShoppingBag aria-hidden /> }}
         helpText={
           digest ? (

@@ -31,7 +31,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
   const view = parseReviewView({ get: (name) => { const value = query[name]; return typeof value === "string" ? value : null; } }, FEED_REVIEW_PARAMS);
   const page = await getReviewFeedPage({ backend: getReviewBackend(), view });
   return (
-    <main className="store-container space-y-8 py-10 sm:py-14">
+    <main data-analytics-placement="reviews" data-analytics-section="reviews" className="store-container space-y-8 py-10 sm:py-14">
       <div>
         <Breadcrumbs variant="compact" crumbs={[
           { href: "/", title: "Store", icon: <StoreHomeIcon aria-hidden className="shrink-0" /> },

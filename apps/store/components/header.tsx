@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { trackStoreEvent } from "@/lib/analytics";
 import { useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { FiChevronDown, FiMenu, FiShoppingBag, FiX } from "react-icons/fi";
@@ -106,7 +107,7 @@ export function Header({ collections, garments, accountUrl }: { collections: Sto
               type="button"
               aria-label={open ? "Close navigation" : "Open navigation"}
               aria-expanded={open}
-              onClick={() => setOpen((value) => !value)}
+              onClick={() => { setOpen(!open); trackStoreEvent("mobile_navigation_toggled", { expanded: !open }); }}
               className="inline-flex h-10 items-center justify-center gap-2 rounded-lg px-2 text-sm font-semibold tracking-wide transition hover:bg-black/5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 sm:px-3 dark:hover:bg-white/10 dark:focus-visible:ring-white/40"
             >
               {open ? (
@@ -121,6 +122,7 @@ export function Header({ collections, garments, accountUrl }: { collections: Sto
       </div>
       {open && (
         <nav
+          data-analytics-placement="mobile_navigation"
           aria-label="Mobile navigation"
           className="store-container relative grid max-h-[calc(100dvh-4rem)] gap-1 overflow-y-auto overscroll-contain border-t border-black/10 py-3 xl:hidden dark:border-white/10"
         >

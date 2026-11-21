@@ -19,6 +19,7 @@ export function ProductDescription({ description, descriptionHtml, part }: Pick<
       {part !== "intro" && content.details && (
         <DisclosureCard
           summary="Product details"
+          data-analytics-disclosure="product_details"
           className="border-b border-black/10 dark:border-white/10"
           buttonClassName="flex w-full items-center justify-between gap-4 rounded-sm py-5 text-left font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/40"
           panelClassName="pb-5"

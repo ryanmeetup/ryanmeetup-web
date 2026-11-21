@@ -38,12 +38,12 @@ export function CartDrawer() {
           <CurrencyEstimateNote subtotal={cart.cost.subtotalAmount} className="mt-3" />
           <Text className="mt-3 text-sm">Shipping and taxes are calculated at checkout. <FinalSaleNote onNavigate={close} /></Text>
           <Button className="mt-4" variant="secondary" size="md" fullWidth onClick={close}>Keep shopping</Button>
-          <CheckoutButton className="mt-3" />
+          <CheckoutButton placement="cart_drawer" className="mt-3" />
         </>
       ) : undefined}
     >
       {cart?.lines.length ? (
-        <div className="space-y-4" aria-busy={loading}>
+        <div data-analytics-placement="cart_drawer" className="space-y-4" aria-busy={loading}>
           {cart.lines.map((line) => <CartLineItem key={line.id} line={line} compact highlighted={line.merchandise.id === justAdded} />)}
           {error && <ErrorCallout>{error}</ErrorCallout>}
         </div>

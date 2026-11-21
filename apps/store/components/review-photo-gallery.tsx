@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { trackStoreEvent } from "@/lib/analytics";
 import { ReviewPhoto, ReviewPhotoViewer } from "@ryanmeetup/reviews/ui";
 
 export function ReviewPhotoGallery({ urls, reviewerName }: { urls: string[]; reviewerName: string }) {
@@ -10,7 +11,7 @@ export function ReviewPhotoGallery({ urls, reviewerName }: { urls: string[]; rev
       <ul aria-label={`Photos from ${reviewerName}`} className="mt-4 flex flex-wrap gap-2">
         {urls.map((url, index) => (
           <li key={url}>
-            <button type="button" className="relative block size-20 overflow-hidden rounded-lg border border-black/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black/50 dark:border-white/10 dark:focus-visible:outline-white/60" aria-label={`View photo ${index + 1} from ${reviewerName}`} onClick={() => setSelected(url)}>
+            <button type="button" className="relative block size-20 overflow-hidden rounded-lg border border-black/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black/50 dark:border-white/10 dark:focus-visible:outline-white/60" aria-label={`View photo ${index + 1} from ${reviewerName}`} onClick={() => { setSelected(url); trackStoreEvent("review_photo_opened", { photo: index + 1, count: urls.length }); }}>
               <ReviewPhoto url={url} alt={`Photo ${index + 1} from ${reviewerName}'s review`} thumbnail />
             </button>
           </li>

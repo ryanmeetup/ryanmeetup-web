@@ -3,13 +3,14 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { cartUnavailableMessage, readCartResponse } from "@/lib/cart-action";
 import { parseStoredCart } from "@/lib/stored-cart";
+import { trackStoreEvent } from "@/lib/analytics";
 import type { Cart, CartLine, Product, ProductVariant } from "@/lib/types";
 
 const storageKey = "ryan-store-cart";
 
 
 type CartContextValue = {
-  addItem: (product: Product, variant: ProductVariant, quantity: number) => Promise<void>;
+  addItem: (product: Product, variant: ProductVariant, quantity: number, source?: "product_page" | "quick_add") => Promise<void>;
   cart: Cart | null;
   /** Forgets the cart: after a completed checkout, or when the shopper empties it. */
   clearCart: () => void;
@@ -20,7 +21,7 @@ type CartContextValue = {
   justAdded: string | null;
   loading: boolean;
   removeItem: (lineId: string) => Promise<void>;
-  setDrawerOpen: (open: boolean) => void;
+  setDrawerOpen: (open: boolean, source?: "navigation" | "product_page") => void;
   updateItem: (lineId: string, quantity: number) => Promise<void>;
 };
 
@@ -58,6 +59,8 @@ export function CartProvider({
   const [justAdded, setJustAdded] = useState<string | null>(null);
   // Counts cart changes, so a refresh that started before one doesn't overwrite its result.
   const changes = useRef(0);
+  // Development uses Vercel's logging-only script; production demo carts aren't sales signals.
+  const recordCommerce = commerceConfigured || process.env.NODE_ENV === "development";
 
   const saveCart = useCallback((nextCart: Cart | null) => {
     setCart(nextCart);
@@ -69,10 +72,14 @@ export function CartProvider({
     }
   }, []);
 
-  const setDrawerOpen = useCallback((open: boolean) => {
+  const setDrawerOpen = useCallback((open: boolean, source: "navigation" | "product_page" = "navigation") => {
+    if (open !== drawerOpen) {
+      if (open) trackStoreEvent("cart_drawer_opened", { quantity: cart?.totalQuantity ?? 0, source });
+      else trackStoreEvent("cart_drawer_closed", { quantity: cart?.totalQuantity ?? 0 });
+    }
     setDrawerOpenState(open);
     if (!open) setJustAdded(null);
-  }, []);
+  }, [cart?.totalQuantity, drawerOpen]);
 
   const request = useCallback(async (payload: Record<string, unknown>) => {
     const response = await fetch("/api/cart", {
@@ -80,9 +87,15 @@ export function CartProvider({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     }).catch(() => {
+      trackStoreEvent("cart_error", { operation: String(payload.action), reason: "network" });
       throw new Error(cartUnavailableMessage);
     });
-    return readCartResponse(response);
+    try {
+      return await readCartResponse(response);
+    } catch (error) {
+      trackStoreEvent("cart_error", { operation: String(payload.action), reason: response.ok ? "invalid_response" : response.status >= 500 ? "server" : "rejected" });
+      throw error;
+    }
   }, []);
 
   const startChange = useCallback(() => {
@@ -133,19 +146,25 @@ export function CartProvider({
 
   // Shopify keeps the abandoned cart until it expires; forgetting its ID is enough.
   const clearCart = useCallback(() => {
+    if (recordCommerce && cart?.totalQuantity) trackStoreEvent("cart_emptied", { quantity: cart.totalQuantity });
     changes.current += 1;
     setError("");
     setJustAdded(null);
     saveCart(null);
-  }, [saveCart]);
+  }, [cart, recordCommerce, saveCart]);
 
   const addItem = useCallback(
-    async (product: Product, variant: ProductVariant, quantity: number) => {
+    async (product: Product, variant: ProductVariant, quantity: number, source: "product_page" | "quick_add" = "product_page") => {
       startChange();
       try {
+        let nextQuantity = (cart?.totalQuantity ?? 0) + quantity;
+        let added = true;
         if (commerceConfigured) {
           const cartId = cart?.id.startsWith("demo-") ? undefined : cart?.id;
-          saveCart(await request({ action: "add", cartId, merchandiseId: variant.id, quantity }));
+          const next = await request({ action: "add", cartId, merchandiseId: variant.id, quantity });
+          saveCart(next);
+          added = Boolean(next);
+          nextQuantity = next?.totalQuantity ?? 0;
         } else {
           const existing = cart?.lines.find((line) => line.merchandise.id === variant.id);
           const lines = existing
@@ -165,6 +184,8 @@ export function CartProvider({
               ];
           saveCart(demoCart(lines));
         }
+        if (recordCommerce && added) trackStoreEvent("add_to_cart", { product: product.handle, source });
+        if (!drawerOpen && added) trackStoreEvent("cart_drawer_opened", { quantity: nextQuantity, source: "add_to_cart" });
         setJustAdded(variant.id);
         setDrawerOpenState(true);
       } catch (caught) {
@@ -174,7 +195,7 @@ export function CartProvider({
         setLoading(false);
       }
     },
-    [cart, commerceConfigured, request, saveCart, startChange],
+    [cart, commerceConfigured, drawerOpen, recordCommerce, request, saveCart, startChange],
   );
 
   const updateItem = useCallback(
@@ -182,37 +203,44 @@ export function CartProvider({
       if (quantity < 1) return;
       startChange();
       try {
+        const line = cart?.lines.find((entry) => entry.id === lineId);
+        let savedQuantity = quantity;
         if (commerceConfigured && cart) {
-          saveCart(await request({ action: "update", cartId: cart.id, lineId, quantity }));
+          const next = await request({ action: "update", cartId: cart.id, lineId, quantity });
+          saveCart(next);
+          savedQuantity = next?.lines.find((entry) => entry.id === lineId)?.quantity ?? 0;
         } else {
           saveCart(demoCart((cart?.lines ?? []).map((line) => (line.id === lineId ? { ...line, quantity } : line))));
         }
+        if (recordCommerce && line && line.quantity !== savedQuantity) trackStoreEvent("cart_quantity_changed", { product: line.merchandise.product.handle, quantity: savedQuantity });
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : cartUnavailableMessage);
       } finally {
         setLoading(false);
       }
     },
-    [cart, commerceConfigured, request, saveCart, startChange],
+    [cart, commerceConfigured, recordCommerce, request, saveCart, startChange],
   );
 
   const removeItem = useCallback(
     async (lineId: string) => {
       startChange();
       try {
+        const line = cart?.lines.find((entry) => entry.id === lineId);
         if (commerceConfigured && cart) {
           saveCart(await request({ action: "remove", cartId: cart.id, lineId }));
         } else {
           const lines = (cart?.lines ?? []).filter((line) => line.id !== lineId);
           saveCart(lines.length ? demoCart(lines) : null);
         }
+        if (recordCommerce && line) trackStoreEvent("remove_from_cart", { product: line.merchandise.product.handle, quantity: line.quantity });
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : cartUnavailableMessage);
       } finally {
         setLoading(false);
       }
     },
-    [cart, commerceConfigured, request, saveCart, startChange],
+    [cart, commerceConfigured, recordCommerce, request, saveCart, startChange],
   );
 
   const value = useMemo(

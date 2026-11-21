@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
+import { trackStoreEvent } from "@/lib/analytics";
 import { Button, ErrorCallout, Heading, RatingStars, SuccessCallout, Text } from "@ryanmeetup/ui";
 import type { Product, ReviewsData } from "@/lib/types";
 import type { CustomReviewAccess } from "@/lib/custom-review-access";
@@ -44,14 +45,14 @@ export function Reviews({ data, product, access }: { data: ReviewsData; product:
   const [message, setMessage] = useState("");
 
   return (
-    <section id="reviews" className="border-t border-black/10 py-16 dark:border-white/10 sm:py-20">
+    <section data-analytics-placement="reviews" data-analytics-section="reviews" id="reviews" className="border-t border-black/10 py-16 dark:border-white/10 sm:py-20">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <Heading size="h2" className="text-3xl sm:text-4xl">The Ryans have spoken</Heading>
           <RatingSummary data={data} className="mt-3" />
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-start lg:max-w-xs lg:items-end lg:text-right">
-          <Button size="sm" variant="secondary" className="w-full sm:w-auto" disabled={access.status === "unavailable"} onClick={() => { setMessage(""); setOpen(true); }}>Write a review</Button>
+          <Button size="sm" variant="secondary" className="w-full sm:w-auto" disabled={access.status === "unavailable"} onClick={() => { setMessage(""); setOpen(true); trackStoreEvent("review_composer_opened", { access: access.status }); }}>Write a review</Button>
           {access.status === "unavailable" && <Text className="text-sm">Review collection is temporarily unavailable. Please try again later.</Text>}
         </div>
       </div>
@@ -67,6 +68,7 @@ export function Reviews({ data, product, access }: { data: ReviewsData; product:
         onClose={() => setOpen(false)}
         onSubmit={async (review) => {
           const result = await submitCustomReview({ ...review, productId: product.id });
+          trackStoreEvent("review_submitted", { outcome: result.ok ? "success" : "error" });
           if (result.ok) setMessage(result.message);
           return result;
         }}

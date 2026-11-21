@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { toast } from "@ryanmeetup/ui";
+import { trackStoreEvent } from "@/lib/analytics";
 import { currencyStorageKey, isDisplayCurrency, parseCurrencyRates } from "@/lib/currency";
 import type { CurrencyRates, DisplayCurrency } from "@/lib/currency";
 
@@ -69,6 +70,7 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     try {
       if (next !== "USD") setRates(await loadRates());
+      trackStoreEvent("currency_changed", { from: currency, to: next });
       setCurrency(next);
       setAnnouncement(next === "USD" ? "Prices shown in USD." : `Approximate prices shown in ${next}. Checkout shows the exact price in your local currency.`);
       try {
@@ -77,6 +79,7 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
         // The active preference still lasts until the page is closed.
       }
     } catch {
+      trackStoreEvent("currency_error", { currency: next });
       toast.error(unavailable, { id: "currency-unavailable" });
     } finally {
       busy.current = false;

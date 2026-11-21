@@ -22,7 +22,7 @@ export async function RelatedListings({ product }: { product: ProductListing }) 
   const browse = getRelatedBrowseLink(product, related);
 
   return (
-    <section aria-labelledby="related-listings" className="border-t border-black/10 py-16 dark:border-white/10 sm:py-20">
+    <section data-analytics-placement="related_products" data-analytics-section="related_products" aria-labelledby="related-listings" className="border-t border-black/10 py-16 dark:border-white/10 sm:py-20">
       <SectionHeader
         align="left"
         title={<span id="related-listings">More from this shop</span>}

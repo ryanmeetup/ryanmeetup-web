@@ -1,6 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
+import { trackStoreEvent } from "@/lib/analytics";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { DropdownSelect } from "@ryanmeetup/ui";
@@ -44,6 +45,7 @@ export function ProductGroupDetail({ title, handle, url, breadcrumbs, designs, d
   if (!selected) return null;
 
   function selectDesign(value: string, image?: StoreImage, colorSlug?: string) {
+    trackStoreEvent("product_design_changed", { product: handle, design: colorSlug ?? value });
     navigationFocus.current = document.activeElement?.getAttribute("data-photo-navigation") ?? null;
     setSelectedImage(image ? { design: value, image } : null);
     const query = new URLSearchParams(searchParams.toString());

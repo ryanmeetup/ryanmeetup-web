@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { trackStoreEvent } from "@/lib/analytics";
 import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Button, DropdownSelect, ErrorCallout, IconButton, Kicker, getFieldLabelClasses } from "@ryanmeetup/ui";
@@ -61,6 +62,7 @@ export function ProductDetail({ product, title = product.title, breadcrumbs, des
   }
 
   function selectOption(name: string, value: string) {
+    if (selections[name] !== value) trackStoreEvent("product_option_changed", { product: product.handle, choice: `${name}: ${value}` });
     const nextSelections = { ...selections, [name]: value };
     setSelections(nextSelections);
     const nextVariant = findVariant(product, nextSelections);
@@ -70,6 +72,9 @@ export function ProductDetail({ product, title = product.title, breadcrumbs, des
   }
 
   function selectGalleryImage(entry: ProductGalleryImage) {
+    if (entry.image.url !== activeImage?.url || entry.productId !== product.id) {
+      trackStoreEvent("product_photo_selected", { product: product.handle, photo: galleryImages.indexOf(entry) + 1 });
+    }
     if (entry.productId !== product.id) {
       onSelectGalleryImage?.(entry);
       return;
@@ -162,10 +167,10 @@ export function ProductDetail({ product, title = product.title, breadcrumbs, des
   }
 
   return (
-    <div className="grid gap-8 pb-8 sm:pb-12 lg:grid-cols-2 lg:gap-12">
+    <div data-analytics-placement="product" className="grid gap-8 pb-8 sm:pb-12 lg:grid-cols-2 lg:gap-12">
       <div className="min-w-0 space-y-8 lg:sticky lg:top-28 lg:self-start">
         {breadcrumbs}
-        <div ref={galleryRef} role="region" aria-label="Product gallery" aria-describedby={hasMultipleImages ? galleryHintId : undefined} className="mx-auto w-full min-w-0 max-w-xl space-y-4">
+        <div data-analytics-section="product_gallery" ref={galleryRef} role="region" aria-label="Product gallery" aria-describedby={hasMultipleImages ? galleryHintId : undefined} className="mx-auto w-full min-w-0 max-w-xl space-y-4">
           <div className={`relative mx-auto aspect-square w-full overflow-hidden rounded-3xl border border-black/10 bg-white/60 dark:border-white/10 dark:bg-white/5 ${breadcrumbs ? "lg:max-w-[max(12rem,calc(100svh-24rem))]" : "lg:max-w-[max(12rem,calc(100svh-20rem))]"}`}>
             {activeImage ? <Image src={activeImage.url} alt={activeImage.altText || product.title} fill preload sizes="(min-width: 1152px) 528px, (min-width: 1024px) calc(50vw - 48px), (min-width: 608px) 576px, calc(100vw - 32px)" className="object-contain" /> : <div className="grid h-full place-items-center font-cooper text-8xl text-black/10 dark:text-white/10">R</div>}
             {hasMultipleImages && (
@@ -211,7 +216,7 @@ export function ProductDetail({ product, title = product.title, breadcrumbs, des
           )}
         </div>
       </div>
-      <div className="min-w-0">
+      <div data-analytics-section="product" className="min-w-0">
         <h1 className="font-cooper text-4xl leading-[1.05] tracking-wide text-black dark:text-white sm:text-5xl">{title}</h1>
         <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2" aria-live="polite">
           <PriceBadge price={variant ? variant.price : product.priceRange.minVariantPrice} compareAt={compareAtPrice} size="lg" />
@@ -241,7 +246,7 @@ export function ProductDetail({ product, title = product.title, breadcrumbs, des
             variant="field"
             required
             value={quantity}
-            onChange={setQuantity}
+            onChange={(value) => { setQuantity(value); trackStoreEvent("product_option_changed", { product: product.handle, choice: `Quantity: ${value}` }); }}
             options={[1, 2, 3, 4, 5].map((value) => ({ label: String(value), value: String(value) }))}
           />
         </div>
@@ -250,7 +255,7 @@ export function ProductDetail({ product, title = product.title, breadcrumbs, des
           <Button fullWidth size="lg" loading={loading} loadingText="Adding" disabled={!variant?.availableForSale} leftIcon={added ? <FiCheck /> : <FiShoppingBag />} onClick={handleAdd}>
             {!variant ? "Unavailable" : !variant.availableForSale ? "Sold out" : added ? "Added" : "Add to cart"}
           </Button>
-          <Button fullWidth size="lg" variant="secondary" onClick={() => setDrawerOpen(true)}>View cart</Button>
+          <Button fullWidth size="lg" variant="secondary" onClick={() => setDrawerOpen(true, "product_page")}>View cart</Button>
         </div>
         {error && <ErrorCallout className="mt-4">{error}</ErrorCallout>}
         <div className="mt-8 border-t border-black/10 dark:border-white/10">

@@ -2,6 +2,7 @@
 
 import { DropdownPanel, DropdownPanelButton, DropdownPanelContent, DropdownSelect, IconButton, Spinner, getIconButtonClasses, toast, type DropdownSelectOption } from "@ryanmeetup/ui";
 import { useState } from "react";
+import { trackStoreEvent } from "@/lib/analytics";
 import { FiPlus } from "react-icons/fi";
 import { getColorOption, getColorPreview, getColorSlug, getKnownSwatch, getListingColors, getVariantForColor } from "@/lib/product-colors";
 import { getVariantForImage } from "@/lib/product-gallery";
@@ -73,7 +74,7 @@ export function QuickAdd({ product, href }: { product: ProductListing; href: str
   async function add(variant: ProductVariant, close?: () => void) {
     setLoading(true);
     try {
-      await addItem(target, variant, 1);
+      await addItem(target, variant, 1, "quick_add");
       close?.();
     } catch (caught) {
       toast.error(caught instanceof Error ? caught.message : cartUnavailableMessage);
@@ -85,7 +86,7 @@ export function QuickAdd({ product, href }: { product: ProductListing; href: str
   // More than one open choice doesn't fit a menu; the product page handles it.
   if (remaining.length > 1 || !base) {
     return (
-      <IconButton.Link href={href} label={label} tooltip="Choose options" variant="overlay" size="md">
+      <IconButton.Link href={href} onClick={() => trackStoreEvent("quick_add_opened", { product: product.handle, mode: "product_page" })} label={label} tooltip="Choose options" variant="overlay" size="md">
         <FiPlus aria-hidden className="h-5 w-5" />
       </IconButton.Link>
     );
@@ -94,7 +95,7 @@ export function QuickAdd({ product, href }: { product: ProductListing; href: str
   // Nothing to choose: one click adds it.
   if (remaining.length === 0 && !editable) {
     return (
-      <IconButton label={label} tooltip="Add to cart" variant="overlay" size="md" disabled={loading || !base.availableForSale} onClick={() => add(base)}>
+      <IconButton label={label} tooltip="Add to cart" variant="overlay" size="md" disabled={loading || !base.availableForSale} onClick={() => { trackStoreEvent("quick_add_opened", { product: product.handle, mode: "direct" }); void add(base); }}>
         {loading ? <Spinner aria-hidden /> : <FiPlus aria-hidden className="h-5 w-5" />}
       </IconButton>
     );
@@ -103,7 +104,7 @@ export function QuickAdd({ product, href }: { product: ProductListing; href: str
   const option = remaining[0];
   return (
     <DropdownPanel>
-      <DropdownPanelButton aria-label={label} disabled={loading} className={getIconButtonClasses("md", "overlay")}>
+      <DropdownPanelButton onClick={() => trackStoreEvent("quick_add_opened", { product: product.handle, mode: "options" })} aria-label={label} disabled={loading} className={getIconButtonClasses("md", "overlay")}>
         {loading ? <Spinner aria-hidden /> : <FiPlus aria-hidden className="h-5 w-5" />}
       </DropdownPanelButton>
       <DropdownPanelContent role="dialog" aria-label={label} className="!w-64">

@@ -10,7 +10,7 @@ export async function HomeReviews() {
   await connection();
   const reviews = await getHomeReviews();
   if (!reviews.length) return null;
-  return <section aria-labelledby="home-reviews" className="store-container border-t border-black/10 pt-8 dark:border-white/10 sm:pt-12">
+  return <section data-analytics-placement="home_reviews" data-analytics-section="home_reviews" aria-labelledby="home-reviews" className="store-container border-t border-black/10 pt-8 dark:border-white/10 sm:pt-12">
     <SectionHeader align="left" title={<span id="home-reviews">Recent reviews</span>}
       description="What buyers are saying about the merch."
       actions={<Button.Link href="/reviews" size="md" variant="secondary" className="!w-full sm:!w-auto" rightIcon={<FiArrowRight aria-hidden />}>

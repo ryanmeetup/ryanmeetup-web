@@ -17,14 +17,14 @@ export function CartPage() {
 
   if (!cart?.lines.length) {
     return (
-      <main className="store-container min-h-[62vh] py-16 sm:py-24">
+      <main data-analytics-placement="cart_page" className="store-container min-h-[62vh] py-16 sm:py-24">
         <EmptyCartPrompt className="mx-auto max-w-xl" />
       </main>
     );
   }
 
   return (
-    <main className="store-container py-12 sm:py-16">
+    <main data-analytics-placement="cart_page" className="store-container py-12 sm:py-16">
       <Heading size="h1" className="text-4xl sm:text-5xl">Your cart</Heading>
       <div className="mt-10 grid gap-8 xl:grid-cols-[minmax(0,1fr)_24rem]">
         <div className="space-y-4" aria-busy={loading}>
@@ -41,7 +41,7 @@ export function CartPage() {
           </div>
           <CurrencyEstimateNote subtotal={cart.cost.subtotalAmount} className="mt-4" />
           <Text className="mt-4 text-sm">Shipping, discounts, and taxes are calculated securely at checkout. <FinalSaleNote /></Text>
-          <CheckoutButton className="mt-6" />
+          <CheckoutButton placement="cart_page" className="mt-6" />
         </Card>
       </div>
     </main>

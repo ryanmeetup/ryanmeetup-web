@@ -22,7 +22,7 @@ export default async function HomePage() {
   const favorites = await withListingRatings(shelf);
   return (
     <main className="flex flex-col gap-8 py-6 sm:gap-12 sm:py-8 lg:py-10">
-      <section aria-label="Ryan Meetup merch" className="store-container">
+      <section data-analytics-placement="home_hero" data-analytics-section="home_hero" aria-label="Ryan Meetup merch" className="store-container">
         <div className="overflow-hidden rounded-3xl bg-white/65 shadow-drop dark:bg-white/5">
           <div className="grid items-start gap-6 p-5 sm:gap-8 sm:p-8 lg:grid-cols-2 lg:gap-10 xl:gap-12 xl:p-10">
             <div className="relative min-w-0 text-left">
@@ -79,7 +79,7 @@ export default async function HomePage() {
       </section>
 
       {favorites.products.length > 0 && (
-        <section aria-labelledby="home-favorites" className="store-container">
+        <section data-analytics-placement="home_favorites" data-analytics-section="home_favorites" aria-labelledby="home-favorites" className="store-container">
           <SectionHeader
             align="left"
             title={<span id="home-favorites">{favorites.collection.title}</span>}
@@ -96,13 +96,13 @@ export default async function HomePage() {
       )}
 
       {spotlight && (
-        <section aria-label={spotlight.label} className="store-container">
+        <section data-analytics-placement="home_spotlight" data-analytics-section="home_spotlight" aria-label={spotlight.label} className="store-container">
           <HomeSpotlight spotlight={spotlight} />
         </section>
       )}
 
       {collections.length > 0 && (
-        <section id="collections" aria-labelledby="home-collections" className="store-container scroll-mt-24">
+        <section data-analytics-placement="home_collections" data-analytics-section="home_collections" id="collections" aria-labelledby="home-collections" className="store-container scroll-mt-24">
           <SectionHeader
             align="left"
             title={<span id="home-collections">Pick your Ryan lane</span>}

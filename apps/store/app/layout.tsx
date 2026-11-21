@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { Analytics } from "@vercel/analytics/react";
 import { RyanMeetupFooter, ToastHost } from "@ryanmeetup/ui";
 import { ThemeProvider } from "next-themes";
 import { BugReportBanner } from "@/components/bug-report-banner";
 import { CartDrawer } from "@/components/cart-drawer";
 import { CartProvider } from "@/components/cart-provider";
+import { StoreAnalytics } from "@/components/store-analytics";
 import { CurrencyProvider } from "@/components/currency-provider";
 import { Header } from "@/components/header";
 import { NavSectionProvider } from "@/components/nav-section";
@@ -112,7 +112,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
               </CurrencyProvider>
             </PromotionProvider>
             <ToastHost />
-            <Analytics />
+            <StoreAnalytics />
           </CartProvider>
         </ThemeProvider>
       </body>
