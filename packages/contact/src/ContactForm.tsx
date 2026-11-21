@@ -151,10 +151,11 @@ const ContactForm = ({
   };
 
   const required = (name: keyof ContactFormFields) => ({
+    validate: (value: string) => value.trim() !== "" || requiredMessages[name],
     onBlur: (
       event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>,
     ) =>
-      event.target.value === ""
+      event.target.value.trim() === ""
         ? setError(name, { message: requiredMessages[name] })
         : clearErrors(name),
   });
@@ -234,6 +235,9 @@ const ContactForm = ({
     <>
       <form
         onSubmit={handleSubmit(send)}
+        // The form shows its own field errors; the browser's bubble lands in
+        // the wrong place on this two-column page and doubles the message.
+        noValidate
         className={
           layout === "compact"
             ? "grid w-full grid-cols-2 gap-6"
@@ -312,6 +316,7 @@ const ContactForm = ({
           <div className={fullClass}>
             <Input
               label={followUp.label}
+              error={Boolean(errors.detailNote)}
               placeholder={followUp.placeholder}
               required
               {...register("detailNote", {
@@ -338,16 +343,20 @@ const ContactForm = ({
             label="First Name"
             placeholder="Ryan"
             required
+            error={Boolean(errors.firstName)}
             {...register("firstName", required("firstName"))}
           />
+          <FieldError>{errors.firstName?.message}</FieldError>
         </div>
         <div className={fieldClass}>
           <Input
             label="Last Name"
             placeholder="Smith"
             required
+            error={Boolean(errors.lastName)}
             {...register("lastName", required("lastName"))}
           />
+          <FieldError>{errors.lastName?.message}</FieldError>
         </div>
         <div className={fieldClass}>
           <Input
@@ -355,7 +364,10 @@ const ContactForm = ({
             placeholder="ryan@ryanmeetup.com"
             type="email"
             required
+            error={Boolean(errors.email)}
             {...register("email", {
+              validate: (value) =>
+                validateEmail(value) || "Error: invalid email address",
               onBlur: (event) =>
                 validateEmail(event.target.value)
                   ? clearErrors("email")
@@ -371,8 +383,10 @@ const ContactForm = ({
             label="Subject"
             placeholder="Official Ryan Business"
             required
+            error={Boolean(errors.subject)}
             {...register("subject", required("subject"))}
           />
+          <FieldError>{errors.subject?.message}</FieldError>
         </div>
         <div className={fullClass}>
           <Textarea
@@ -386,6 +400,7 @@ const ContactForm = ({
             required
             {...register("message", required("message"))}
           />
+          <FieldError>{errors.message?.message}</FieldError>
         </div>
         <FormActions className={fullClass}>
           <RequiredFieldsNote />
