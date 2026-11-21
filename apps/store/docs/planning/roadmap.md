@@ -39,8 +39,12 @@ than inheriting an old "not started" or "done" label.
   Cleanup, recovery and hosted proof remain open.
 
 The November 15 record confirms paid checkout, Printful SKU mapping, branded
-checkout/accounts and US name-tag shirt/hoodie shipping quote checks. It does
-not prove every current Admin setting, delivery, tax or notification case.
+checkout/accounts and US name-tag shirt/hoodie shipping quote checks. On
+November 21, Ryan confirmed a complete international order (#1004, one shirt
+to Canada): charged $57.00 CAD with $13.00 shipping and $0.00 tax, fulfilled by
+Printful and delivered, with a working confirmation email, email links and
+customer-account order link. This does not prove every current Admin setting,
+destination, product family or tax case.
 
 ## Remaining work
 
@@ -48,7 +52,7 @@ Item numbers remain stable for existing references.
 
 | # | Work | Current evidence / next action |
 | --- | --- | --- |
-| 4 | [Shopify/Printful operating setup](#4-shopify-and-printful-operating-setup) | Partially verified historically; finish/verify markets, other shipping families, taxes, emails and a real order lifecycle. |
+| 4 | [Shopify/Printful operating setup](#4-shopify-and-printful-operating-setup) | End-to-end international order verified November 21; finish market currency/policy, other shipping families and taxes. |
 | 11 | [More from this shop](#11-more-from-this-shop) | Unimplemented product-page recommendations. |
 | 8 | [Note to seller and personalization](#8-note-to-seller-and-personalization) | Neither storefront input is implemented; confirm which personalization is actually needed. |
 | 14 | [Store reviews](#14-store-reviews) | Text and photo publication built; cleanup/recovery, external cleanup and live proof remain. |
@@ -56,20 +60,23 @@ Item numbers remain stable for existing references.
 
 ### 4. Shopify and Printful operating setup
 
-- [ ] Confirm the countries the store should serve. The last recorded Markets
-      check (November 15) was US-only. Align policy wording with the actual
-      enabled countries, Printful restrictions and available checkout rates.
+- [ ] Finish the international market. As of November 21 the International
+      market is active with 27 regions alongside United States, and Canada
+      checks out in CAD. Decide whether International checks out in local
+      currency or USD; the storefront currency switcher currently says
+      "checkout in USD". Align shipping-policy wording (countries served,
+      customs/import charges) with the enabled regions and Printful restrictions.
 - [ ] Verify shipping profiles for every product family and intended destination,
       including highest supported weights and mixed profiles. Only US name-tag
-      shirts/hoodies have recorded quote evidence. Use [shipping setup](../how-to/shipping-setup.md).
+      shirts/hoodies and one Canadian shirt order have recorded evidence. Use [shipping setup](../how-to/shipping-setup.md).
 - [ ] Verify tax configuration and checkout results for the intended regions in
-      Admin; the repository cannot establish collection settings.
-- [ ] Finish/verify notification branding and direct store links using
+      Admin; the repository cannot establish collection settings. Canada
+      currently collects no tax at checkout.
+- [ ] Optional email polish: links were verified November 21, but notifications
+      still use Shopify's default template (no logo, default accent colour) and
+      send from `shopifyemail.com`. Add the logo/colour and an authenticated
+      sender domain if wanted; see
       [hosted pages](../how-to/shopify-hosted-pages.md#2-point-the-emails-at-the-store).
-- [ ] Complete a real buyer order through charge, correct shipping/tax,
-      Printful fulfillment, confirmation/shipping email and account/order links.
-      The second order was recorded as in fulfillment, not delivered, on
-      November 15. Do not assume a later delivery outcome.
 - [ ] Remove the custom-rate $0.40 holiday allowance after January 17, 2027,
       following a fresh rate check. Printful documents the surcharge through
       that date; custom rates do not update themselves.
@@ -80,7 +87,7 @@ scope grants as a storefront feature or change credentials as documentation
 cleanup. Manual Admin configuration remains a valid path.
 
 **Complete when:** intended destinations have appropriate rates/policy/tax
-settings and a dated end-to-end order/email result exists. Current product/SKU
+settings. The dated end-to-end order/email result exists (#1004, above). Current product/SKU
 counts are catalog data, not a permanent completion criterion.
 
 ### 11. More from this shop
