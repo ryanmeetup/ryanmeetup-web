@@ -1,7 +1,7 @@
 "use client";
 
 import type { BuyerRejectedPhoto, BuyerReviewStatus } from "@ryanmeetup/reviews";
-import { Button, Card, ConfirmationDialog, DisclosureCard, ErrorCallout, Heading, RatingStars, Spinner, Text } from "@ryanmeetup/ui";
+import { Button, Card, ConfirmationDialog, DisclosureCard, ErrorCallout, Heading, RatingStars, Spinner, Text, Tooltip } from "@ryanmeetup/ui";
 import { ReviewAuthor, ReviewContent, ReviewVerificationBadge } from "@ryanmeetup/reviews/ui";
 import { FiAlertCircle, FiCheckCircle, FiClock, FiEdit2, FiEye, FiEyeOff, FiMessageSquare, FiRefreshCw, FiSlash, FiXCircle } from "react-icons/fi";
 import type { IconType } from "react-icons";
@@ -26,6 +26,30 @@ const STATUS: Record<BuyerReviewStatus, StatusStyle> = {
   hidden: { label: "Hidden", note: "We've taken this off the product page. You can withdraw it here.", tone: "warning", icon: FiEyeOff },
   withdrawn: { label: "Withdrawn", note: "Removed by you. Write a new review from the product page whenever you like.", tone: "neutral", icon: FiSlash },
 };
+/** Why a review that isn't live has nothing to view, shown on the disabled View button. */
+const VIEW_UNAVAILABLE: Record<Exclude<BuyerReviewStatus, "published">, string> = {
+  pending: "It goes live on the product page once we've approved it.",
+  rejected: "It wasn't approved, so it isn't on the product page.",
+  hidden: "We've taken it off the product page, so there's nothing to view.",
+  withdrawn: "You withdrew it, so it's off the product page.",
+};
+
+/**
+ * Always present so the footer keeps its shape. When there's nothing live to
+ * open, the button is disabled and a focusable wrapper carries the reason,
+ * since a disabled button can't take focus or hover for its own tooltip.
+ */
+function ViewReviewAction({ href, unavailable, productTitle }: { href: string | null; unavailable: string; productTitle: string }) {
+  const label = `View your review of ${productTitle}`;
+  if (href) return <Button.Link href={href} prefetch={false} size="sm" variant="ghost" fullWidth className="sm:w-auto" aria-label={label} leftIcon={<FiEye aria-hidden />}>View</Button.Link>;
+  return <Tooltip content={unavailable} triggerClassName="w-full sm:w-auto">
+    <span tabIndex={0} role="group" aria-label={`${label} unavailable`} aria-disabled
+      className="inline-flex w-full cursor-not-allowed rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 sm:w-auto dark:focus-visible:ring-white/40">
+      <Button size="sm" variant="ghost" fullWidth disabled className="pointer-events-none sm:w-auto" tabIndex={-1} aria-hidden leftIcon={<FiEye aria-hidden />}>View</Button>
+    </span>
+  </Tooltip>;
+}
+
 /** One colour per state, for the status message under the review. */
 const toneBox: Record<Tone, string> = {
   info: "border-sky-500/30 bg-sky-500/10 text-sky-900 dark:border-sky-400/30 dark:bg-sky-950/40 dark:text-sky-100",
@@ -95,7 +119,6 @@ export function MyReviews({ initial, suggestions, client, submitReview }: {
       id="your-reviews"
       heading="h2"
       defaultOpen
-      className="border-b border-black/10 dark:border-white/10"
       buttonClassName={reviewSectionToggle}
       panelClassName="space-y-4 pb-6"
       summary={<SectionTitle title="Your Reviews" count={`${reviewCount}${mine.view?.page.nextCursor ? "+" : ""} review${reviewCount === 1 ? "" : "s"}`} />}
@@ -158,14 +181,15 @@ export function MyReviews({ initial, suggestions, client, submitReview }: {
                 {/* Footer: who the review is shown as, then what the buyer can do. */}
                 <div className="-mx-6 -mb-6 flex flex-col gap-3 border-t border-black/10 px-6 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-white/10">
                   <ReviewAuthor name={review.current.displayName} label="Posted as" />
-                  {review.status!=="withdrawn" && <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                    {review.status === "published" && product?.href && <Button.Link href={reviewPermalink(product.href, review.id)} prefetch={false} size="sm" variant="ghost" fullWidth className="sm:w-auto"
-                      aria-label={`View your review of ${review.item.productTitle}`} leftIcon={<FiEye aria-hidden />}>View</Button.Link>}
-                    <Button size="sm" variant="ghost" fullWidth className="sm:w-auto" aria-label={`Withdraw your review of ${review.item.productTitle}`} disabled={mine.pending}
-                      leftIcon={<FiXCircle aria-hidden />} onClick={()=>mine.select(review,"withdraw")}>Withdraw</Button>
-                    {review.status!=="hidden" && <Button size="sm" variant="secondary" fullWidth className="sm:w-auto" aria-label={`Edit your review of ${review.item.productTitle}`} disabled={mine.pending}
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <ViewReviewAction productTitle={review.item.productTitle}
+                      href={review.status==="published" && product?.href ? reviewPermalink(product.href, review.id) : null}
+                      unavailable={review.status!=="published" ? VIEW_UNAVAILABLE[review.status] : "This product isn't in the shop anymore, so there's no page to show it on."} />
+                    {review.status!=="withdrawn" && <Button size="sm" variant="ghost" fullWidth className="sm:w-auto" aria-label={`Withdraw your review of ${review.item.productTitle}`} disabled={mine.pending}
+                      leftIcon={<FiXCircle aria-hidden />} onClick={()=>mine.select(review,"withdraw")}>Withdraw</Button>}
+                    {review.status!=="hidden" && review.status!=="withdrawn" && <Button size="sm" variant="secondary" fullWidth className="sm:w-auto" aria-label={`Edit your review of ${review.item.productTitle}`} disabled={mine.pending}
                       leftIcon={<FiEdit2 aria-hidden />} onClick={()=>mine.select(review,"edit")}>Edit</Button>}
-                  </div>}
+                  </div>
                 </div>
               </article>
             </Card>
