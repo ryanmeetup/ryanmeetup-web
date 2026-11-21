@@ -8,6 +8,9 @@ vi.mock("@/lib/server/workspace-page-loader", () => ({ loadWorkspacePage: mocks.
 vi.mock("@/components/store-reviews/StoreReviewsPageClient", () => ({ StoreReviewsPageClient: () => null }));
 import { loadReviewModerationScreen } from "@/lib/server/store-reviews/moderation-screen";
 import StoreReviewsPage from "@/app/(workspace)/store-reviews/page";
+import { moderationView } from "@/lib/store-reviews/moderation";
+
+const props = (view?: string | string[]) => ({ searchParams: Promise.resolve(view === undefined ? {} : { view }) });
 
 describe("review moderation screen boundary", () => {
   beforeEach(() => {
@@ -19,22 +22,29 @@ describe("review moderation screen boundary", () => {
   });
   afterEach(() => vi.restoreAllMocks());
   it("requires an owner workspace before loading private moderation data", async () => {
-    await StoreReviewsPage();
+    await StoreReviewsPage(props());
     expect(mocks.workspace).toHaveBeenCalledWith(["profiles", "statuses", "categories", "projects"], { owner: true });
     expect(mocks.load).toHaveBeenCalledWith({ marker: "private-client" }, "owner", "123", { filter: "pending", productId: null, after: null });
     mocks.load.mockClear(); mocks.scope.mockClear();
     mocks.workspace.mockRejectedValue(new Error("Owner required"));
-    await expect(StoreReviewsPage()).rejects.toThrow("Owner required");
+    await expect(StoreReviewsPage(props())).rejects.toThrow("Owner required");
     expect(mocks.scope).not.toHaveBeenCalled(); expect(mocks.load).not.toHaveBeenCalled();
+  });
+  it("reads the layout from a readable view parameter, defaulting to cards", async () => {
+    expect((await StoreReviewsPage(props("table"))).props.initialView).toBe("table");
+    expect((await StoreReviewsPage(props())).props.initialView).toBe("cards");
+    expect(moderationView("cards")).toBe("cards");
+    expect(moderationView(["table"])).toBe("cards");
+    expect(moderationView("grid")).toBe("cards");
   });
   it("answers 404 on an instance without the store backend, after the owner check", async () => {
     mocks.scope.mockReturnValue(null);
-    await expect(StoreReviewsPage()).rejects.toThrow("NEXT_HTTP_ERROR_FALLBACK;404");
+    await expect(StoreReviewsPage(props())).rejects.toThrow("NEXT_HTTP_ERROR_FALLBACK;404");
     expect(mocks.workspace).toHaveBeenCalled(); expect(mocks.load).not.toHaveBeenCalled();
   });
   it("never loads workspace or review data for demo preview", async () => {
     mocks.demo.mockResolvedValue(true);
-    await expect(StoreReviewsPage()).rejects.toThrow("NEXT_REDIRECT");
+    await expect(StoreReviewsPage(props())).rejects.toThrow("NEXT_REDIRECT");
     expect(mocks.workspace).not.toHaveBeenCalled(); expect(mocks.load).not.toHaveBeenCalled();
   });
   it("keeps disabled instances explicit without constructing an admin client", async () => {

@@ -417,6 +417,47 @@ test("wraps long names and review text without horizontal overflow", async ({ pa
   }
 });
 
+test("offers a table layout with expandable rows and a shareable view parameter", async ({ page }, testInfo) => {
+  await signIn(page);
+  for (const theme of ["light", "dark"]) {
+    await page.addInitScript((value) => localStorage.setItem("theme", value), theme);
+    await page.setViewportSize({ width: 1536, height: 1000 }); await page.goto("/store-reviews");
+    await page.getByRole("group", { name: "Review layout" }).getByRole("button", { name: "Table" }).click();
+    await expect(page).toHaveURL(/[?&]view=table/);
+    const row = page.getByTestId(`review-row-${id(2)}`);
+    await expect(row).toContainText("Fixture shirt 2");
+    await expect(row).toContainText("Edit waiting");
+    await expect(card(page, 2)).toBeHidden();
+    // Details stay closed until asked for, then show the same versions a card does.
+    const details = page.locator(`#review-details-${id(2)}`);
+    await expect(details.getByRole("region", { name: "Published version" })).toHaveCount(0);
+    await row.getByRole("button", { name: "Show details for Fixture shirt 2" }).click();
+    await expect(details.getByRole("region", { name: "Published version" })).toContainText("Original approved text.");
+    await expect(row.getByRole("button", { name: "Publish edit for Fixture shirt 2" })).toHaveText("Publish");
+    await row.getByRole("button", { name: "More actions for Fixture shirt 2" }).click();
+    for (const item of ["Write reply", "Hide review", "Delete review"]) await expect(page.getByRole("menuitem", { name: item })).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath(`table-${theme}-1536.png`), fullPage: true });
+    await page.getByRole("menuitem", { name: "Delete review" }).click();
+    const deleting = page.getByRole("dialog", { name: "Delete review" });
+    await expect(deleting.getByRole("heading", { name: "Delete review" })).toBeVisible();
+    await deleting.getByRole("button", { name: "Cancel", exact: true }).click();
+    // The parameter survives a reload; narrow screens fall back to cards without the switch.
+    await page.reload();
+    await expect(page.getByTestId(`review-row-${id(2)}`)).toBeVisible();
+    await page.setViewportSize({ width: 1280, height: 1000 });
+    await expect(page.getByTestId(`review-row-${id(2)}`)).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath(`table-${theme}-1280.png`) });
+    await page.setViewportSize({ width: 390, height: 1000 });
+    await expect(card(page, 2)).toBeVisible();
+    await expect(page.getByRole("group", { name: "Review layout" })).toBeHidden();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.setViewportSize({ width: 1536, height: 1000 });
+    await page.getByRole("group", { name: "Review layout" }).getByRole("button", { name: "Cards" }).click();
+    await expect(page).not.toHaveURL(/view=/);
+  }
+});
+
 test("deletes spam only after a policy reason and a rating-neutral confirmation", async ({ page, request }) => {
   await signIn(page); await page.goto("/store-reviews");
   await card(page, 1).getByRole("button", { name: "Delete review for Fixture shirt 1" }).click();
