@@ -5,6 +5,8 @@ export type BannerVariant = "brand" | "info" | "warning" | "neutral";
 export type BannerProps = Omit<HTMLAttributes<HTMLElement>, "title"> & {
   variant?: BannerVariant;
   icon?: ReactNode;
+  /** `start` pins the icon to the first line of a title-and-body banner instead of centring it. */
+  iconAlign?: "center" | "start";
   title?: ReactNode;
   action?: ReactNode;
   compact?: boolean;
@@ -24,6 +26,7 @@ const variantClasses: Record<BannerVariant, string> = {
 export function Banner({
   variant = "neutral",
   icon,
+  iconAlign = "center",
   title,
   action,
   compact = false,
@@ -41,8 +44,8 @@ export function Banner({
       <div
         className={`flex w-full ${mobileInline ? "flex-row items-center justify-between gap-3" : "flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"} ${contentClassName ?? ""}`}
       >
-        <div className="flex min-w-0 items-center gap-2 text-left">
-          {icon && <span className="shrink-0">{icon}</span>}
+        <div className={`flex min-w-0 gap-2 text-left ${iconAlign === "start" ? "items-start" : "items-center"}`}>
+          {icon && <span className={`shrink-0 ${iconAlign === "start" ? "mt-0.5" : ""}`}>{icon}</span>}
           <div className="min-w-0">
             {title && <p className="font-semibold">{title}</p>}
             {children && <div>{children}</div>}
