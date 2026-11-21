@@ -94,7 +94,7 @@ test("the buyer must pick a rating and give a title before submitting", async ({
   await expect(dialog.getByText(/^Give your review a title/)).toBeVisible();
 });
 
-test("stars preview whole ratings without changing the saved selection", async ({ page, baseURL }) => {
+test("stars preview ratings without changing the saved selection", async ({ page, baseURL }) => {
   await signIn(page, baseURL!);
   const { dialog } = await openComposer(page);
   const rating = dialog.getByRole("radiogroup", { name: "Rating" });
@@ -108,24 +108,25 @@ test("stars preview whole ratings without changing the saved selection", async (
   await expect(rating.getByText("Rated 4 out of 5", { exact: true })).toBeVisible();
 });
 
-test("keyboard arrows select whole stars with a full-star keyboard-only focus outline", async ({ page, baseURL }) => {
+test("keyboard arrows step by half stars with a full-star keyboard-only focus outline", async ({ page, baseURL }) => {
   await signIn(page, baseURL!);
   const { dialog } = await openComposer(page);
   const four = dialog.getByRole("radio", { name: "4 stars", exact: true });
-  const five = dialog.getByRole("radio", { name: "5 stars", exact: true });
-  await expect(dialog.getByRole("radio")).toHaveCount(5);
+  const fourHalf = dialog.getByRole("radio", { name: "4.5 stars", exact: true });
+  await expect(dialog.getByRole("radio")).toHaveCount(10);
   await four.check();
   await expect(four.locator("../..")).toHaveCSS("outline-style", "none");
   await four.press("ArrowRight");
-  await expect(five).toBeChecked();
-  await expect(five).toBeFocused();
-  await expect(five.locator("../..")).toHaveCSS("outline-width", "2px");
-  await expect(five.locator("..")).toHaveCSS("box-shadow", "none");
-  await five.press("ArrowLeft");
+  await expect(fourHalf).toBeChecked();
+  await expect(fourHalf).toBeFocused();
+  await expect(fourHalf.locator("../..")).toHaveCSS("outline-width", "2px");
+  await expect(fourHalf.locator("..")).toHaveCSS("box-shadow", "none");
+  await expect(dialog.getByRole("radiogroup", { name: "Rating" })).toContainText("Rated 4.5 out of 5");
+  await fourHalf.press("ArrowLeft");
   await expect(four).toBeChecked();
 });
 
-test("touch selects full stars", async ({ browser, baseURL }) => {
+test("touch selects whole and half stars", async ({ browser, baseURL }) => {
   const context = await browser.newContext({ baseURL, hasTouch: true, viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   await signIn(page, baseURL!);
@@ -133,10 +134,10 @@ test("touch selects full stars", async ({ browser, baseURL }) => {
   const four = dialog.getByRole("radio", { name: "4 stars", exact: true });
   await four.tap();
   await expect(four).toBeChecked();
-  const five = dialog.getByRole("radio", { name: "5 stars", exact: true });
-  await five.tap();
-  await expect(five).toBeChecked();
-  await expect(dialog.getByRole("radiogroup", { name: "Rating" })).toContainText("5 out of 5");
+  const half = dialog.getByRole("radio", { name: "4.5 stars", exact: true });
+  await half.tap();
+  await expect(half).toBeChecked();
+  await expect(dialog.getByRole("radiogroup", { name: "Rating" })).toContainText("4.5 out of 5");
   await context.close();
 });
 

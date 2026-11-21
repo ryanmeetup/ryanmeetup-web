@@ -53,14 +53,14 @@ test("ratings and every sort include older pages, preserve product details and r
   let reads = 0;
   page.on("request", (request) => { if (request.url().includes("/api/reviews/feed?")) reads += 1; });
   await page.goto("/reviews");
-  await choose(page, "Rating", "1 star");
+  await choose(page, "Rating", "0.5–1 stars");
   await expect(cards(page)).toHaveCount(26);
   await expect(cards(page).first()).toContainText("Shop review 26");
   await expect(page.getByRole("status").filter({ hasText: "Showing 26 of 46 reviews" })).toBeVisible();
   await choose(page, "Sort", "Oldest first");
   await expect(cards(page).first()).toContainText("Shop review 1");
   await expect(cards(page).first().getByRole("link", { name: `Review of ${tee.title}`, exact: true })).toHaveAttribute("href", `/products/${tee.handle}`);
-  await choose(page, "Rating", "3 stars");
+  await choose(page, "Rating", "2.5–3 stars");
   await expect(cards(page)).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "No reviews match this rating" })).toBeVisible();
   await page.getByRole("button", { name: "Reset filters", exact: true }).click();
@@ -88,7 +88,7 @@ test("a pending refinement hides partial matches, shares one request and retries
   });
   try {
     await page.goto("/reviews");
-    await choose(page, "Rating", "1 star");
+    await choose(page, "Rating", "0.5–1 stars");
     await expect(page.getByRole("region", { name: "Review results", exact: true })).toHaveAttribute("aria-busy", "true");
     await expect(page.getByRole("heading", { name: "Finding matching reviews" })).toBeVisible();
     await expect(cards(page)).toHaveCount(0);
@@ -158,7 +158,7 @@ test("search debounces into the URL, checks every page and works from a shared l
   await expect(cards(page)).toHaveCount(1);
   await expect(cards(page).first()).toContainText("Shop review 7");
   await expect(page).toHaveURL(/[?&]q=shop\+review\+7/);
-  await choose(page, "Rating", "5 stars");
+  await choose(page, "Rating", "4.5–5 stars");
   await expect(cards(page)).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "No reviews match your search" })).toBeVisible();
   await page.getByRole("button", { name: "Clear search", exact: true }).click();

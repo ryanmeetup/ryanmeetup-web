@@ -348,7 +348,7 @@ Rules:
   field and `variant="compact"` for a toolbar or filter control. Reach for
   `MultiSelect` when more than one value may be chosen.
 - Exception: star-review ratings use the shared `StarRating` control. Match its
-  step to the review: the store's own reviews use whole stars, while
+  step to the review: the store's own reviews use half stars (0.5 to 5), and
   fractional averages remain supported. Keep other single-choice controls on
   `DropdownSelect`.
 - All search inputs must use the shared debounced search behavior established by

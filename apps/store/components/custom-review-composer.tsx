@@ -209,7 +209,7 @@ export function CustomReviewComposer({
         <div className={photoScope ? "grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] lg:gap-8" : undefined}>
           <div className="min-w-0 space-y-5">
             <div ref={ratingField} onInvalid={() => setError("Choose a rating before submitting your review.")}>
-              <StarRating label="Rating" name={`${formId}-rating`} step={1} required disabled={pending} value={draft.rating} onChange={(rating) => setDraft((value) => ({ ...value, rating }))} />
+              <StarRating label="Rating" name={`${formId}-rating`} required disabled={pending} value={draft.rating} onChange={(rating) => setDraft((value) => ({ ...value, rating }))} />
             </div>
             <Input label="Title" name={`${formId}-title`} required maxLength={REVIEW_TITLE_MAX} placeholder="Sum it up, Ryan" value={draft.title} onChange={(event) => setDraft((value) => ({ ...value, title: event.target.value }))} />
             <Textarea id={`${formId}-body`} label="Review" name="body" required maxLength={REVIEW_BODY_MAX} placeholder="The good, the bad, the very Ryan. How's it fitting, and how's it holding up?" value={draft.body} onChange={(event) => setDraft((value) => ({ ...value, body: event.target.value }))} />

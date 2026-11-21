@@ -18,7 +18,7 @@ in the [roadmap](../planning/roadmap.md#14-store-reviews).
 | --- | --- |
 | Buyer authentication | Confidential Shopify Customer Account client, PKCE/state/nonce, verified ID tokens, encrypted persistence, renewal, ordinary logout and account switching. |
 | Purchase verification | Owned exact-line checks, bounded order discovery, current-session rechecks and Shopify-derived names. Customer API is pinned to 2026-10. |
-| Submission | Whole stars, required title/body, signed-in verified and unverified feedback, duplicate protection, pending revisions. |
+| Submission | Half-star ratings from 0.5 to 5, required title/body, signed-in verified and unverified feedback, duplicate protection, pending revisions. |
 | Buyer management | `/reviews/mine`, twenty-row keyset paging, rejection guidance, edit/withdraw, uncertain-write recovery, account isolation and recent-purchase suggestions. |
 | Staff moderation | Owner-only Tasks `/store-reviews`, waiting badge, product and pending/published/hidden/rejected/all filters, paging, approve/reject/hide/restore, publish rejected text, replies and audited permanent deletion. |
 | Public reviews | Approved active text, verified-purchase badges, replies, complete product totals, star-rating filters, date/rating sorting, twenty-row paging and product JSON-LD. |
@@ -84,8 +84,8 @@ cards without ratings rather than failing the page.
 - Public payloads exclude tokens, buyer/order identifiers, private reasons,
   staff identity, concurrency versions and private photo context.
 
-Product reviews default to newest first. Readers can filter by an exact whole-star
-rating and sort by newest, oldest, highest rated or lowest rated. Rating ties use
+Product reviews default to newest first. Readers can filter by star, where each
+option covers that star and the half star below it (4.5–5 stars), and sort by newest, oldest, highest rated or lowest rated. Rating ties use
 newest first, then the review ID for a stable order. The average and total always
 describe the whole product. A filtered empty state is separate from a product
 without reviews, and reset restores all ratings and newest first.

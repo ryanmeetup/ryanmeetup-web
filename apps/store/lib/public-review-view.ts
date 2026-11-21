@@ -1,5 +1,5 @@
-import { decodeReviewCursor, publicReviewPageSchema } from "@ryanmeetup/reviews";
-import type { PublicReview, PublicReviewPage } from "@ryanmeetup/reviews";
+import { decodeReviewCursor, publicReviewPageSchema, reviewRatingStar } from "@ryanmeetup/reviews";
+import type { PublicReview, PublicReviewPage, ReviewRating } from "@ryanmeetup/reviews";
 import { publishedReviewPhotoUrl } from "./review-photo-hosts";
 import type { Review, ReviewsData } from "./types";
 
@@ -7,7 +7,8 @@ export const PUBLIC_REVIEW_PAGE_SIZE = 20;
 
 export const REVIEW_RATING_OPTIONS = [
   { value: "all", label: "All ratings" },
-  ...[5, 4, 3, 2, 1].map((rating) => ({ value: String(rating), label: `${rating} star${rating === 1 ? "" : "s"}` })),
+  // Each option is a star and the half star below it, matching the summary buckets.
+  ...[5, 4, 3, 2, 1].map((star) => ({ value: String(star), label: `${star - 0.5}–${star} stars` })),
 ];
 export const REVIEW_SORT_OPTIONS = [
   { value: "newest", label: "Newest first" },
@@ -17,7 +18,7 @@ export const REVIEW_SORT_OPTIONS = [
 ];
 
 export function selectPublicReviews<T extends Review>(reviews: T[], rating: string, sort: string): T[] {
-  return reviews.filter((review) => rating === "all" || String(review.rating) === rating).sort((a, b) => {
+  return reviews.filter((review) => rating === "all" || String(reviewRatingStar(review.rating as ReviewRating)) === rating).sort((a, b) => {
     const newest = Date.parse(b.createdAt) - Date.parse(a.createdAt) || b.id.localeCompare(a.id);
     if (sort === "oldest") return -newest;
     if (sort === "highest") return b.rating - a.rating || newest;

@@ -189,7 +189,7 @@ test("rating filters include older pages, combine with sorts, and reset without 
   page.on("request", (request) => { if (request.url().includes("/api/reviews/page?")) reads += 1; });
   await page.goto("/products/name-tag-shirt");
   await expect(cards(page)).toHaveCount(20);
-  await choose(page, "Rating", "1 star");
+  await choose(page, "Rating", "0.5–1 stars");
   await expect(cards(page)).toHaveCount(25);
   await expect(cards(page).first()).toContainText("Fixture review 25");
   await expect(page.locator("#reviews")).toContainText("Showing 25 of 45 reviews");
@@ -197,7 +197,7 @@ test("rating filters include older pages, combine with sorts, and reset without 
   await choose(page, "Sort", "Oldest first");
   await expect(cards(page).first()).toContainText("Fixture review 1");
   await expect(cards(page).first()).toContainText("The oldest review has a public reply.");
-  await choose(page, "Rating", "3 stars");
+  await choose(page, "Rating", "2.5–3 stars");
   await expect(cards(page)).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "No reviews match this rating" })).toBeVisible();
   await expect(page.locator("#reviews")).toContainText("Showing 0 of 45 reviews");
@@ -225,7 +225,7 @@ test("filter loading never presents partial matches as final and resumes a faile
   });
   try {
     await page.goto("/products/name-tag-shirt");
-    await choose(page, "Rating", "1 star");
+    await choose(page, "Rating", "0.5–1 stars");
     await expect(page.getByRole("heading", { name: "Finding matching reviews" })).toBeVisible();
     await expect(page.getByRole("region", { name: "Review results", exact: true })).toHaveAttribute("aria-busy", "true");
     await expect(cards(page)).toHaveCount(0);
