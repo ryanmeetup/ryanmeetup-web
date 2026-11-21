@@ -244,6 +244,14 @@ test("name tag gallery shows every design and thumbnails choose the matching car
   await expect(ryanPhoto).toHaveAttribute("aria-pressed", "true");
 });
 
+test("a product page offers other listings without repeating its own designs", async ({ page }) => {
+  await page.goto("/products/name-tag-shirt");
+  const related = page.getByRole("region", { name: "More from this shop" });
+  await expect(related.locator('a[href="/products/ryan-meetup-tee"]').first()).toBeVisible();
+  await expect(related.locator('a[href^="/products/name-tag-shirt"], a[href^="/products/ryan-name-tag-shirt"], a[href^="/products/ryans-dad-name-tag-shirt"]')).toHaveCount(0);
+  await expect(related.getByRole("link", { name: "Browse all apparel" })).toHaveAttribute("href", "/apparel");
+});
+
 test("name tag designs share one listing and add their own merchandise to the cart", async ({ page }) => {
   const renderingErrors: string[] = [];
   page.on("pageerror", (error) => renderingErrors.push(error.message));

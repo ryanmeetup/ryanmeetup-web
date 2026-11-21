@@ -8,6 +8,7 @@ import type { GroupableProduct } from "./product-groups";
 import { createProductGroup, getListingHandles, getProductGroupForMember, getProductHref, groupProductListings, resolveListingHandle, resolveProductHandle } from "./product-groups";
 import { sortOptionValues } from "./product-options";
 import { shopifyCatalogTag } from "./shopify-cache";
+import { getListingMemberHandles, pickRelatedListings } from "./related-listings";
 import { recommendListings } from "./sort";
 import type {
   Cart,
@@ -296,15 +297,11 @@ async function getGroupedListings(products: Product[]): Promise<ProductListing[]
   return groupProductListings(products, await getListingProducts(handles));
 }
 
-function getMemberHandles(listing: ProductListing) {
-  return listing.designs?.map((design) => design.product.handle) ?? [listing.handle];
-}
-
 // Orders curated picks by their earliest member in the collection.
 function getListingsInCollection(listings: ProductListing[], handles: string[], preserveSalesOrder = false) {
   const positions = new Map(handles.map((handle, index) => [handle, index]));
   return listings
-    .map((listing) => ({ listing, position: Math.min(...getMemberHandles(listing).map((handle) => positions.get(handle) ?? Infinity)) }))
+    .map((listing) => ({ listing, position: Math.min(...getListingMemberHandles(listing).map((handle) => positions.get(handle) ?? Infinity)) }))
     .filter(({ position }) => position !== Infinity)
     .sort((a, b) => preserveSalesOrder ? 0 : a.position - b.position)
     .map(({ listing }) => listing);
@@ -527,6 +524,42 @@ export async function getProduct(handle: string): Promise<ProductListing | null>
   const group = members[0] && getProductGroupForMember(members[0]);
   if (group) return createProductGroup(group, members);
   return getShopifyProduct(resolveProductHandle(handle));
+}
+
+// A listing's Shopify recommendations come from its first few designs; the rest
+// mostly recommend each other.
+const recommendationSources = 3;
+
+/** Shopify's related products for one product handle, best match first. */
+async function getRecommendedHandles(handle: string): Promise<string[]> {
+  const data = await storefrontRequest<{ productRecommendations: { handle: string }[] | null }>(
+    `query RelatedProducts($handle: String!) {
+      productRecommendations(productHandle: $handle, intent: RELATED) { handle }
+    }`,
+    { handle },
+    { revalidate: 300 },
+  );
+  return (data.productRecommendations ?? []).map((product) => normalizeHandle(product.handle));
+}
+
+/**
+ * The product page's "More from this shop" row: purchasable listings related
+ * to `listing` by Shopify's recommendations, shared collections, or product
+ * type. Recommendations are a garnish; if Shopify can't give them, the
+ * collection and type tiers still fill the row.
+ */
+export async function getRelatedListings(listing: ProductListing): Promise<ProductListing[]> {
+  if (!isShopifyConfigured()) return pickRelatedListings(listing, groupProductListings(demoProducts));
+  const sources = getListingMemberHandles(listing).slice(0, recommendationSources);
+  const [products, memberships, recommended] = await Promise.all([
+    getCatalogProducts(null),
+    getCollectionMemberships(),
+    Promise.all(sources.map((handle) => getRecommendedHandles(handle).catch(() => []))),
+  ]);
+  return pickRelatedListings(listing, groupProductListings(products), {
+    recommended: recommended.flat(),
+    collections: memberships.filter(isBrowsingCollection).map(({ products: members }) => members.edges.map(({ node }) => node.handle)),
+  });
 }
 
 /** What a review suggestion card needs about a product: where it lives and what it looks like. */

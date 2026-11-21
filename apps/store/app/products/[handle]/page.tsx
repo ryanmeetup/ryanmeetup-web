@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
+import { Suspense } from "react";
 import { Breadcrumbs, type Breadcrumb } from "@ryanmeetup/ui";
 import { FiShoppingBag } from "react-icons/fi";
 import { NavSection } from "@/components/nav-section";
 import { ProductDetail } from "@/components/product-detail";
 import { ProductGroupDetail } from "@/components/product-group-detail";
 import { ProductSchema } from "@/components/product-schema";
+import { RelatedListings } from "@/components/related-listings";
 import { Reviews } from "@/components/reviews";
 import { getCollectionPath, getProductTypeCollection } from "@/lib/catalog-collections";
 import { buildPageMetadata, DEFAULT_IMAGE, getProductMetaDescription, SITE_URL, toMetadataImage } from "@/lib/metadata";
@@ -82,6 +84,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
           <Reviews data={reviewsByProduct[product.id]} product={product} access={reviewAccess[product.id]} />
         </>
       )}
+      <Suspense fallback={null}><RelatedListings product={product} /></Suspense>
       <p className="sr-only">Price: {formatMoney(product.priceRange.minVariantPrice)}</p>
     </main>
   );
