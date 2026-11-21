@@ -53,7 +53,7 @@ history under the Store or rewrite applied SQL.
 | `20261121040000` | Buyer-facing rejection reasons until resubmission | Applied |
 | `20261121050000` | Bounded latest public reviews across the shop | Applied |
 | `20261121060000` | Paged public review feed across the shop | Applied |
-| `20261121070000` | Photo rejection reasons for staff and the buyer | Not yet applied |
+| `20261121070000` | Photo rejection reasons for staff and the buyer | Applied |
 
 The timestamp-shaped versions are identifiers, not evidence of deployment time.
 Photo publication was applied to RMT and verified for private-bucket and
