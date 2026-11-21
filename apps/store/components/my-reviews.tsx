@@ -161,10 +161,10 @@ export function MyReviews({ initial, suggestions, client, submitReview }: {
                   {review.status!=="withdrawn" && <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                     {review.status === "published" && product?.href && <Button.Link href={reviewPermalink(product.href, review.id)} prefetch={false} size="sm" variant="ghost" fullWidth className="sm:w-auto"
                       aria-label={`View your review of ${review.item.productTitle}`} leftIcon={<FiEye aria-hidden />}>View</Button.Link>}
-                    {review.status!=="hidden" && <Button size="sm" variant="secondary" fullWidth className="sm:w-auto" aria-label={`Edit your review of ${review.item.productTitle}`} disabled={mine.pending}
-                      leftIcon={<FiEdit2 aria-hidden />} onClick={()=>mine.select(review,"edit")}>Edit</Button>}
                     <Button size="sm" variant="ghost" fullWidth className="sm:w-auto" aria-label={`Withdraw your review of ${review.item.productTitle}`} disabled={mine.pending}
                       leftIcon={<FiXCircle aria-hidden />} onClick={()=>mine.select(review,"withdraw")}>Withdraw</Button>
+                    {review.status!=="hidden" && <Button size="sm" variant="secondary" fullWidth className="sm:w-auto" aria-label={`Edit your review of ${review.item.productTitle}`} disabled={mine.pending}
+                      leftIcon={<FiEdit2 aria-hidden />} onClick={()=>mine.select(review,"edit")}>Edit</Button>}
                   </div>}
                 </div>
               </article>
