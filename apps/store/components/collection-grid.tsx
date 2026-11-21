@@ -37,16 +37,14 @@ export function CollectionGrid({ handle, products, sections, more = [] }: { hand
       ));
   const arrange = (listings: ProductListing[]) => sortListings(listings.filter(matches), sort);
   const visible = arrange(products);
-  // Shop All keeps its collection sections, with Popular Picks above them. Each pick
-  // appears once; choosing a different sort restores that order within sections.
+  // Shop All keeps its collection sections, with Popular Picks above them. A pick still
+  // appears in its own section too, so every section lists its whole collection.
   // Department pages open straight onto their garment groupings instead.
   const showPopular = sort === defaultSort && Boolean(sections?.length) && !sections?.some((section) => section.grouping);
   const popular = showPopular ? visible.filter((product) => !product.externalUrl).slice(0, 4) : [];
-  const popularIds = new Set(popular.map(({ id }) => id));
-  const arrangeSection = (listings: ProductListing[]) => arrange(listings).filter(({ id }) => !popularIds.has(id));
   const visibleSections = [
-    ...(sections ?? []).map((section) => ({ ...section, products: arrangeSection(section.products) })),
-    ...(sections?.length ? [{ collection: null, products: arrangeSection(more), grouping: false }] : []),
+    ...(sections ?? []).map((section) => ({ ...section, products: arrange(section.products) })),
+    ...(sections?.length ? [{ collection: null, products: arrange(more), grouping: false }] : []),
   ].filter((section) => section.products.length);
   // Apparel and Accessories float a jump link for each garment grouping still showing.
   const anchors = visibleSections.flatMap(({ collection, grouping }) =>
