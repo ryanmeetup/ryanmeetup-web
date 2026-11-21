@@ -8,6 +8,8 @@ import type { CustomerAccountSession } from "./customer-account/storage";
 import type { ReviewBackend } from "./review-backend";
 import type { CustomerSessionResult } from "./customer-account/session";
 import type { ReviewEligibilityLookup } from "./review-purchases";
+import { reviewWriteLimited } from "./review-write-limits";
+import type { ReviewWriteLimiter } from "./review-write-limits";
 
 const unavailable = () => reply(503, { error: "Review collection is temporarily unavailable. Please try again later." });
 
@@ -18,13 +20,15 @@ const unavailable = () => reply(503, { error: "Review collection is temporarily 
  * is saved without one. The browser sends only the line and the review; the
  * buyer, purchase details, product title, and public name come from the server.
  */
-export async function submitCustomReview(request: Request, { loadSession, findPurchases, findBuyerName, findProductTitle, backend, photosEnabled = false }: {
+export async function submitCustomReview(request: Request, { loadSession, findPurchases, findBuyerName, findProductTitle, backend, photosEnabled = false, limitWrites }: {
   loadSession: () => Promise<CustomerSessionResult>;
   findPurchases: ReviewEligibilityLookup;
   findBuyerName: (session: CustomerAccountSession) => Promise<{ firstName: string | null; lastName: string | null } | null>;
   findProductTitle: (productId: string) => Promise<string | null>;
   backend: ReviewBackend | null;
   photosEnabled?: boolean;
+  /** Per-buyer and per-network submission budget. Omitted, submissions are not budgeted. */
+  limitWrites?: ReviewWriteLimiter | null;
 }): Promise<Response> {
   if (!backend) return unavailable();
   if (!isSameOriginRequest(request)) return reply(403, { error: "Submit reviews from this storefront." });
@@ -46,6 +50,12 @@ export async function submitCustomReview(request: Request, { loadSession, findPu
   if (session.status === "unavailable") return unavailable();
   if (session.status === "sign_in_required") return reply(401, { error: "Sign in to write a review." });
   if (!matchesReviewViewer(request, session.session)) return reviewViewerChanged();
+  // Spent on every authenticated attempt, before any Shopify or storage lookup.
+  if (limitWrites) {
+    const limit = await limitWrites("submit", { subject: session.session.subject, request }).catch(() => null);
+    if (!limit) return unavailable();
+    if (!limit.allowed) return reviewWriteLimited("submit", limit.retryAfter);
+  }
 
   // Ownership and eligibility are rechecked on every write, never trusted from the page.
   const eligibility = await findPurchases(session.session, product).catch(() => ({ status: "unavailable" as const }));

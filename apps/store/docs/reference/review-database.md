@@ -72,6 +72,16 @@ there untouched; see [migration profiles](../../../tasks/docs/DATABASE.md#migrat
 - `store_review_photo_drafts`, `store_review_revision_photos` and
   `store_review_photo_budgets` own private staging, revision selections and abuse
   limits. Bytes live in the private `store-review-photos` bucket.
+- `store_review_write_budgets` throttles review writes so one buyer, or one
+  network cycling throwaway Shopify accounts, cannot flood moderation. The Store
+  server checks every rule for a write in one `store_consume_review_write_budget`
+  call (all consumed or none): submissions allow 10 per buyer per hour, 30 per
+  buyer per day and 20 per network per hour; edits allow 20 per buyer per hour;
+  withdrawals are never limited. Network actors are HMACs of the client IPv4
+  address or IPv6 /64, never raw addresses, and rows older than two days are
+  pruned on the next allowed write. Budgets live in `lib/review-write-limits.ts`.
+  Until the migration lands, a missing function lets writes through; any other
+  failure refuses the write.
 - `store_review_deletions` is a restricted append-only audit: reason, product,
   latest rating, publication/verification flags, actor/time and photo count;
   no retained review body or buyer identity. Staff may write a private note.

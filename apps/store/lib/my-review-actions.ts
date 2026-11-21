@@ -7,6 +7,8 @@ import type { ReviewBackend } from "./review-backend";
 import type { ReviewBuyerNameLookup } from "./review-purchases";
 import type { MyReviewProduct, MyReviewView } from "./my-review-view";
 import type { ProductCard } from "./shopify";
+import { reviewWriteLimited } from "./review-write-limits";
+import type { ReviewWriteLimiter } from "./review-write-limits";
 
 const unavailable = () => reply(503, { error: "Your reviews are temporarily unavailable. Please try again later." });
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
@@ -14,6 +16,8 @@ export type MyReviewServices = {
   loadSession: () => Promise<CustomerSessionResult>; findBuyerName: ReviewBuyerNameLookup; backend: ReviewBackend | null; photosEnabled?: boolean;
   /** Storefront cards by numeric product ID, for thumbnails and links. A failed lookup only leaves them out. */
   productCards?: (productIds: string[]) => Promise<Record<string, ProductCard>>;
+  /** Per-buyer edit budget. Omitted, edits are not budgeted; withdrawing never is. */
+  limitWrites?: ReviewWriteLimiter | null;
 };
 
 async function reviewedProducts(page: MyReviewView["page"], productCards: MyReviewServices["productCards"]): Promise<Record<string, MyReviewProduct>> {
@@ -68,7 +72,7 @@ export async function handleMyReviewPage(request: Request, services: MyReviewSer
 }
 
 /** The authenticated subject and public name come only from the server. */
-export async function handleMyReviewAction(request: Request, { loadSession, findBuyerName, backend, photosEnabled = false }: MyReviewServices): Promise<Response> {
+export async function handleMyReviewAction(request: Request, { loadSession, findBuyerName, backend, photosEnabled = false, limitWrites }: MyReviewServices): Promise<Response> {
   if (!backend) return unavailable();
   if (!isSameOriginRequest(request)) return reply(403, { error: "Manage reviews from this storefront." });
   if (!hasJsonBody(request)) return reply(415, { error: "That change could not be read. Please try again." });
@@ -88,6 +92,11 @@ export async function handleMyReviewAction(request: Request, { loadSession, find
   if (session.status !== "authenticated") return sessionFailure(session);
   if (!matchesReviewViewer(request, session.session)) return reviewViewerChanged();
   const subject = session.session.subject;
+  if (action === "edit" && limitWrites) {
+    const limit = await limitWrites("edit", { subject, request }).catch(() => null);
+    if (!limit) return unavailable();
+    if (!limit.allowed) return reviewWriteLimited("edit", limit.retryAfter);
+  }
   try {
     // A direct scoped read also finds reviews beyond the first page.
     const existing = await backend({ operation: "review.mine", subject, reviewId });
