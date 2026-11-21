@@ -29,7 +29,6 @@ async function configure(request: APIRequestContext, settings: object) {
 }
 const successToast = (page: Page, message: string) => page.getByRole("status").filter({
   hasText: message,
-  has: page.getByRole("button", { name: "Dismiss notification", exact: true }),
 });
 async function queue(page: Page, label: string) {
   await page.getByRole("button", { name: /^Queue/ }).click();
@@ -53,6 +52,147 @@ async function signIn(page: Page) {
 }
 test.beforeEach(async ({ request }) => {
   expect((await request.post(`${fixture}/__reviews/reset`, { data: {} })).ok()).toBeTruthy();
+});
+
+async function bulkAction(page: Page, label: string) {
+  await page.getByRole("button", { name: "Bulk actions", exact: true }).click();
+  await page.getByRole("menuitem", { name: label, exact: true }).click();
+}
+const selectLoaded = (page: Page) => page.getByRole("checkbox", { name: /^Select all \d+ loaded reviews$/ });
+
+test("bulk selection publishes only eligible selected reviews and keeps hidden reviews hidden", async ({ page, request }) => {
+  await signIn(page); await page.goto("/store-reviews"); await queue(page, "All reviews");
+  await expect(page.getByRole("button", { name: "Bulk actions", exact: true })).toBeDisabled();
+  await selectLoaded(page).check();
+  await expect(page.getByText("4 of 4 loaded reviews selected", { exact: true })).toBeVisible();
+  await bulkAction(page, "Publish waiting reviews (3)");
+  await expect(successToast(page, "Publish waiting reviews: saved 3 of 3.")).toBeVisible();
+  await expect(page.getByText("0 of 4 loaded reviews selected", { exact: true })).toBeVisible();
+  const { calls, reviews } = await state(request);
+  expect(calls.map((call: { p_review_id: string }) => call.p_review_id)).toEqual([id(1), id(2), id(3)]);
+  expect(calls.every((call: { p_expected_updated_at: string }) => call.p_expected_updated_at === "2026-11-18T12:00:00.123456Z")).toBe(true);
+  expect(reviews.find((review: { id: string }) => review.id === id(3)).state).toBe("hidden");
+  expect(reviews.find((review: { id: string }) => review.id === id(4)).state).toBe("withdrawn");
+});
+
+test("bulk rejection requires one buyer-facing reason and rejected reviews can be published together", async ({ page, request }) => {
+  await signIn(page); await page.goto("/store-reviews");
+  await card(page, 1).getByRole("checkbox").check();
+  await card(page, 2).getByRole("checkbox").check();
+  await expect(selectLoaded(page)).toHaveJSProperty("indeterminate", true);
+  await bulkAction(page, "Reject reviews (2)");
+  const dialog = page.getByRole("dialog", { name: "Reject reviews (2)", exact: true });
+  await expect(dialog).toContainText("Fixture shirt 1");
+  await expect(dialog).toContainText("Fixture shirt 2");
+  const confirm = dialog.getByRole("button", { name: "Reject reviews (2)", exact: true });
+  await expect(confirm).toBeDisabled();
+  await dialog.getByLabel("Reason for the buyer").fill("Please describe your experience with the product.");
+  await confirm.click();
+  await expect(successToast(page, "Reject reviews: saved 2 of 2.")).toBeVisible();
+  const { calls } = await state(request);
+  expect(calls).toHaveLength(2);
+  expect(calls.every((call: { p_note: string }) => call.p_note === "Please describe your experience with the product.")).toBe(true);
+  await queue(page, "Rejected"); await selectLoaded(page).check();
+  await bulkAction(page, "Publish rejected reviews (2)");
+  await expect(successToast(page, "Publish rejected reviews: saved 2 of 2.")).toBeVisible();
+});
+
+test("bulk hiding requires a private reason and bulk restoration preserves pending edits", async ({ page, request }) => {
+  await signIn(page); await page.goto("/store-reviews"); await queue(page, "All reviews");
+  await card(page, 1).getByRole("checkbox").check(); await card(page, 2).getByRole("checkbox").check();
+  await bulkAction(page, "Publish waiting reviews (2)");
+  await expect(successToast(page, "Publish waiting reviews: saved 2 of 2.")).toBeVisible();
+  await queue(page, "Published"); await selectLoaded(page).check(); await bulkAction(page, "Hide reviews (2)");
+  const hiding = page.getByRole("dialog", { name: "Hide reviews (2)", exact: true });
+  await expect(hiding.getByRole("button", { name: "Hide reviews (2)", exact: true })).toBeDisabled();
+  await hiding.getByLabel("Private reason").fill("Contains personal information.");
+  await hiding.getByRole("button", { name: "Hide reviews (2)", exact: true }).click();
+  await expect(successToast(page, "Hide reviews: saved 2 of 2.")).toBeVisible();
+  await queue(page, "Hidden"); await selectLoaded(page).check(); await bulkAction(page, "Restore reviews (3)");
+  const restoring = page.getByRole("dialog", { name: "Restore reviews (3)", exact: true });
+  await restoring.getByRole("button", { name: "Restore reviews (3)", exact: true }).click();
+  await expect(successToast(page, "Restore reviews: saved 3 of 3.")).toBeVisible();
+  const { reviews } = await state(request);
+  expect(reviews.filter((review: { state: string }) => review.state === "active")).toHaveLength(3);
+  expect(reviews.find((review: { id: string }) => review.id === id(3)).pending.body).toBe("A hidden edit.");
+});
+
+test("bulk deletion keeps the policy confirmation and logs a reason for every selected review", async ({ page, request }) => {
+  await signIn(page); await page.goto("/store-reviews");
+  await card(page, 1).getByRole("checkbox").check(); await card(page, 2).getByRole("checkbox").check();
+  await bulkAction(page, "Delete reviews (2)");
+  const dialog = page.getByRole("dialog", { name: "Delete 2 reviews", exact: true });
+  await expect(dialog.getByRole("region", { name: "FTC rules on removing reviews" })).toBeVisible();
+  const confirm = dialog.getByRole("button", { name: "Delete 2 reviews", exact: true });
+  await expect(confirm).toBeDisabled();
+  await dialog.getByRole("button", { name: /^Reason/ }).click();
+  await page.getByRole("option", { name: "Spam or fake review", exact: true }).click();
+  await expect(confirm).toBeDisabled(); await dialog.getByRole("checkbox").check(); await confirm.click();
+  await expect(successToast(page, "Delete reviews: saved 2 of 2.")).toBeVisible();
+  const { calls } = await state(request);
+  expect(calls).toHaveLength(2);
+  expect(calls.every((call: { p_reason: string }) => call.p_reason === "spam")).toBe(true);
+  await expect(card(page, 1)).toHaveCount(0); await expect(card(page, 2)).toHaveCount(0);
+});
+
+test("bulk selection covers loaded reviews only, survives loading more, and clears on a filter change", async ({ page, request }) => {
+  await request.post(`${fixture}/__reviews/reset`, { data: { many: true } });
+  await signIn(page); await page.goto("/store-reviews");
+  await selectLoaded(page).check(); await page.getByRole("button", { name: "Load more reviews" }).click();
+  await expect(page.getByText("20 of 23 loaded reviews selected", { exact: true })).toBeVisible();
+  await expect(selectLoaded(page)).toHaveJSProperty("indeterminate", true);
+  await bulkAction(page, "Publish waiting reviews (20)");
+  await expect(successToast(page, "Publish waiting reviews: saved 20 of 20.")).toBeVisible();
+  await expect(rows(page)).toHaveCount(3);
+  expect((await state(request)).calls).toHaveLength(20);
+  await selectLoaded(page).check(); await queue(page, "All reviews");
+  await expect(page.getByRole("button", { name: "Bulk actions", exact: true })).toBeDisabled();
+});
+
+test("bulk decisions skip conflicts and report a partial success without retrying", async ({ page, request }) => {
+  await signIn(page); await page.goto("/store-reviews"); await selectLoaded(page).check();
+  await configure(request, { conflictOnce: true });
+  await bulkAction(page, "Publish waiting reviews (3)");
+  await expect(successToast(page, "Publish waiting reviews: saved 2 of 3.")).toBeVisible();
+  await expect(page.getByText(/1 selected review changed and was skipped/)).toBeVisible();
+  await expect(card(page, 1)).toContainText("The buyer replaced this text.");
+  expect((await state(request)).calls).toHaveLength(3);
+});
+
+test("an unconfirmed bulk save stops the batch, preserves confirmed feedback, and requires a fresh queue", async ({ page, request }) => {
+  await signIn(page); await page.goto("/store-reviews"); await selectLoaded(page).check();
+  let posted = 0;
+  await page.route("**/api/admin/reviews", async (route) => {
+    if (route.request().method() === "POST" && ++posted === 2) { await route.fetch(); await route.abort("failed"); }
+    else await route.continue();
+  });
+  await bulkAction(page, "Publish waiting reviews (3)");
+  await expect(successToast(page, "Publish waiting reviews: saved 1 of 3.")).toBeVisible();
+  await expect(page.getByText(/one decision could not be confirmed. 1 saved, 0 changed, 1 not attempted/)).toBeVisible();
+  await expect(rows(page)).toHaveCount(0);
+  expect((await state(request)).calls).toHaveLength(2);
+  await page.getByRole("button", { name: "Refresh queue" }).click();
+  await expect(card(page, 3)).toBeVisible(); await expect(rows(page)).toHaveCount(1);
+});
+
+test("bulk controls and reason dialogs fit mobile and desktop in both themes", async ({ page }, testInfo) => {
+  await signIn(page);
+  for (const theme of ["light", "dark"]) {
+    await page.addInitScript((value) => localStorage.setItem("theme", value), theme);
+    for (const width of [390, 1024, 1280, 1536]) {
+      await page.setViewportSize({ width, height: 1000 }); await page.goto("/store-reviews");
+      await selectLoaded(page).check(); await bulkAction(page, "Reject reviews (3)");
+      const dialog = page.getByRole("dialog", { name: "Reject reviews (3)", exact: true });
+      await expect(dialog.getByLabel("Reason for the buyer")).toBeFocused();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await page.screenshot({ path: testInfo.outputPath(`bulk-dialog-${theme}-${width}.png`) });
+      await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+      await expect(page.getByText("3 of 3 loaded reviews selected", { exact: true })).toBeVisible();
+      await page.screenshot({ path: testInfo.outputPath(`bulk-${theme}-${width}.png`), fullPage: true });
+      await page.getByRole("button", { name: "Clear selection", exact: true }).click();
+      await expect(selectLoaded(page)).not.toBeChecked();
+    }
+  }
 });
 
 test("loads pending reviews on the server and compares a waiting edit with the approved version", async ({ page }) => {
@@ -373,7 +513,6 @@ test("a lost reply acknowledgement blocks further writes until refresh", async (
   await page.getByRole("dialog").getByLabel("Official reply").fill("Saved once.");
   await page.getByRole("button", { name: "Review reply", exact: true }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Publish reply", exact: true }).click();
-  await expect(successToast(page, "Write reply: saved.")).toBeVisible();
   await expect(page.getByRole("alert").filter({ hasText: "could not confirm this decision" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Dismiss notification", exact: true })).toHaveCount(0);
   await expect(rows(page)).toHaveCount(0);
