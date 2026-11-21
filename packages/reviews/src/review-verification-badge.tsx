@@ -16,7 +16,7 @@ export function ReviewVerificationBadge({ kind = "purchase", className = "" }: R
   const label = unmatched ? "No matching order" : kind === "purchase" ? "Verified purchase" : "Verified review";
   const meaning = unmatched ? unmatchedMeaning : kind === "purchase" ? purchaseMeaning : null;
   const Icon = unmatched ? FiShoppingBag : HiMiniCheckBadge;
-  return <span className={`inline-flex items-center gap-1 rounded-full py-0.5 pl-1.5 pr-1 text-xs font-semibold ring-1 ring-inset ${unmatched
+  return <span className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full py-0.5 pl-1.5 pr-1 text-xs font-semibold ring-1 ring-inset ${unmatched
     ? "bg-black/5 text-black/70 ring-black/15 dark:bg-white/5 dark:text-white/70 dark:ring-white/20"
     : "bg-emerald-500/10 text-emerald-800 ring-emerald-600/25 dark:bg-emerald-400/10 dark:text-emerald-200 dark:ring-emerald-400/30"} ${className}`}>
     <Icon aria-hidden className="size-4 shrink-0" />

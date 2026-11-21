@@ -445,13 +445,24 @@ test("lists one row per review with its versions, at mobile and desktop widths",
   await signIn(page);
   for (const theme of ["light", "dark"]) {
     await page.addInitScript((value) => localStorage.setItem("theme", value), theme);
-    for (const width of [390, 1280, 1536]) {
+    for (const width of [390, 1024, 1280, 1536]) {
       await page.setViewportSize({ width, height: 1000 }); await page.goto("/store-reviews");
       const row = card(page, 2);
       await expect(row).toContainText("Fixture shirt 2");
       await expect(row).toContainText("Edit waiting");
       await expect(row.getByRole("region", { name: "Published version" })).toContainText("Original approved text.");
       await expect(decision(page, 2, "Publish edit")).toHaveText("Publish");
+      for (const [number, label] of [[1, "No matching order"], [2, "Verified purchase"]] as const) {
+        const badge = card(page, number).getByText(label, { exact: true }).first();
+        expect(await badge.evaluate((element) => {
+          const bounds = element.getBoundingClientRect();
+          const cell = element.closest("td")!.getBoundingClientRect();
+          const text = Array.from(element.childNodes).find((node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim());
+          const range = document.createRange();
+          range.selectNode(text!);
+          return range.getClientRects().length === 1 && bounds.left >= cell.left && bounds.right <= cell.right;
+        })).toBe(true);
+      }
       await openMenu(page, 2);
       await expect(page.getByRole("menuitem")).toHaveText(["Write reply", "Hide review", "Delete review"]);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
