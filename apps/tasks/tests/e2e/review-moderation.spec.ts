@@ -41,6 +41,7 @@ test("loads pending reviews on the server and compares a waiting edit with the a
   // A review written without a matching order is labelled in words, not only by colour.
   await expect(card(page, 1)).toContainText("No matching order");
   await expect(card(page, 2)).not.toContainText("No matching order");
+  await expect(card(page, 2)).toContainText("Verified purchase");
   await expect(card(page, 2).getByRole("region", { name: "Waiting edit" })).toContainText("Updated after washing.");
   await expect(card(page, 2).getByRole("region", { name: "Published version" })).toContainText("Original approved text.");
   // Its own sidebar entry, not an admin tab, counting every waiting review.
@@ -282,7 +283,8 @@ test("previews, creates, updates, and removes the official reply without changin
   await card(page, 2).getByRole("button", { name: "Remove reply for Fixture shirt 2" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Remove reply", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expect(card(page, 2)).toContainText("No official reply yet.");
+  await expect(card(page, 2).getByRole("region", { name: "Official reply" })).not.toContainText("Updated public reply.");
+  await expect(card(page, 2).getByRole("button", { name: "Write reply for Fixture shirt 2" })).toBeVisible();
   expect((await state(request)).calls[2].p_body).toBeNull();
   await card(page, 2).getByRole("button", { name: /Recent history/ }).click();
   await expect(card(page, 2)).toContainText("Reply removed");
@@ -354,6 +356,17 @@ test("fits mobile and desktop boundary widths in both themes", async ({ page }, 
       await page.setViewportSize({ width, height: 1000 }); await page.goto("/store-reviews");
       await expect(card(page, 2)).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      const first = await card(page, 1).boundingBox();
+      const second = await card(page, 2).boundingBox();
+      expect(first).not.toBeNull();
+      expect(second).not.toBeNull();
+      if (width === 390) {
+        expect(second!.y).toBeGreaterThanOrEqual(first!.y + first!.height);
+      } else if (width >= 1280) {
+        // Use desktop space for another review while preserving oldest-first row order.
+        expect(second!.y).toBe(first!.y);
+        expect(second!.x).toBeGreaterThan(first!.x + first!.width);
+      }
       await page.screenshot({ path: testInfo.outputPath(`${theme}-${width}.png`), fullPage: true });
       if (width === 390 || width === 1280) {
         await card(page, 1).getByRole("button", { name: "Reject review" }).click();
