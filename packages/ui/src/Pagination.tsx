@@ -14,6 +14,8 @@ export type PaginationProps = {
   page: number;
   pageSize: number;
   totalCount: number;
+  /** More cursor pages exist; totalCount is the number loaded so far. */
+  hasMore?: boolean;
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
   pageSizeOptions?: readonly number[];
@@ -30,6 +32,7 @@ export function Pagination({
   page,
   pageSize,
   totalCount,
+  hasMore = false,
   onPageChange,
   onPageSizeChange,
   pageSizeOptions = [10, 25, 50, 100],
@@ -44,7 +47,7 @@ export function Pagination({
   const start = totalCount === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const end = Math.min(currentPage * pageSize, totalCount);
   const atStart = currentPage === 1;
-  const atEnd = totalCount === 0 || currentPage === totalPages;
+  const atEnd = !hasMore && (totalCount === 0 || currentPage === totalPages);
 
   return (
     <nav
@@ -56,7 +59,7 @@ export function Pagination({
       )}
     >
       <p className="text-black/60 dark:text-white/60">
-        Showing {start}–{end} of {totalCount} {itemLabel}
+        Showing {start}–{end}{!hasMore && ` of ${totalCount}`} {itemLabel}
       </p>
       <div className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-start">
         <DropdownSelect
@@ -70,7 +73,7 @@ export function Pagination({
           }))}
         />
         <span className="whitespace-nowrap px-1 text-xs text-black/60 dark:text-white/60">
-          Page {currentPage} of {totalPages}
+          Page {currentPage}{!hasMore && ` of ${totalPages}`}
         </span>
         <IconButton
           className="max-sm:hidden disabled:cursor-not-allowed disabled:opacity-40 sm:inline-flex"
@@ -96,14 +99,14 @@ export function Pagination({
         >
           <FiChevronRight />
         </IconButton>
-        <IconButton
+        {!hasMore && <IconButton
           className="max-sm:hidden disabled:cursor-not-allowed disabled:opacity-40 sm:inline-flex"
           label="Last page"
           disabled={disabled || atEnd}
           onClick={() => onPageChange(totalPages)}
         >
           <FiChevronsRight />
-        </IconButton>
+        </IconButton>}
       </div>
     </nav>
   );
