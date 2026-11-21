@@ -108,15 +108,16 @@ export function QuickAdd({ product, href }: { product: ProductListing; href: str
       <DropdownPanelContent role="dialog" aria-label={label} className="!w-64">
         {({ close }) => (
           <>
-            <div className="space-y-2 px-2 pb-1 pt-1.5">
-              <p className={labelClasses}>Add to cart</p>
+            {/* Gap, not space-y: a compact DropdownSelect renders as `display: contents`. */}
+            <div className="flex flex-col gap-2 pb-1 pt-1.5">
+              <p className={`px-2 ${labelClasses}`}>Add to cart</p>
               {designOptions.length > 0 && (
                 <DropdownSelect label="Design" options={designOptions} value={design?.value ?? ""} onChange={setDesignValue} className="w-full" />
               )}
               {colorOptions.length > 0 ? (
                 <DropdownSelect label="Color" options={colorOptions} value={currentColorSlug} onChange={chooseColor} className="w-full" />
               ) : color && (
-                <p className="flex min-w-0 items-center gap-1.5 text-sm">
+                <p className="flex min-w-0 items-center gap-1.5 px-2 text-sm">
                   <span className="text-black/70 dark:text-white/70">Color</span>
                   <span aria-hidden style={{ backgroundColor: getSwatch(target, color) }} className="ml-1.5 h-3 w-3 shrink-0 rounded-full border border-black/20 dark:border-white/40" />
                   <span className="truncate font-semibold">{color}</span>
@@ -125,8 +126,8 @@ export function QuickAdd({ product, href }: { product: ProductListing; href: str
             </div>
             <div role="separator" className="my-1 border-t border-black/10 dark:border-white/10" />
             {option ? (
-              <div role="group" aria-label={option.name} className="space-y-1">
-                <p aria-hidden className={`px-2 pt-0.5 ${labelClasses}`}>{option.name}</p>
+              <div role="group" aria-label={option.name} className="flex flex-col gap-2">
+                <p aria-hidden className={`px-2 pt-1 ${labelClasses}`}>{option.name}</p>
                 <div className="grid grid-cols-4 gap-1">
                   {option.values.map((value) => {
                     const variant = findVariant(target, { ...selections, [option.name]: value });
