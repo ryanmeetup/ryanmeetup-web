@@ -657,6 +657,28 @@ test("deletes spam only after a policy reason and a rating-neutral confirmation"
     p_expected_updated_at: "2026-11-18T12:00:00.123456Z", p_reason: "spam", p_note: "Link to a follower shop" });
 });
 
+test("the deletion dialog shows each review's photos and folds the rules and reviews away", async ({ page, request }) => {
+  await request.post(`${fixture}/__reviews/reset`, { data: { photos: true } });
+  await signIn(page); await page.goto("/store-reviews");
+  await menuAction(page, 1, "Delete review");
+  const dialog = page.getByRole("dialog", { name: "Delete review" });
+  const review = dialog.getByRole("region", { name: "Review being deleted" });
+  await expect(review.getByRole("list", { name: "Review photos" }).getByRole("button")).toHaveCount(2);
+  await review.getByRole("button", { name: "View photo 1 of 2" }).click();
+  const viewer = page.getByRole("dialog", { name: "Review photo" });
+  await expect(viewer.getByRole("img", { name: "Buyer-submitted product photo" })).toBeVisible();
+  await page.keyboard.press("Escape"); await expect(viewer).toHaveCount(0);
+  await dialog.getByRole("button", { name: "Collapse review of Fixture shirt 1" }).click();
+  await expect(review).toBeHidden();
+  await dialog.getByRole("button", { name: "Expand review of Fixture shirt 1" }).click();
+  await expect(review).toBeVisible();
+  const rules = dialog.getByRole("region", { name: "FTC rules on removing reviews" });
+  await dialog.getByRole("button", { name: "Collapse FTC rules" }).click();
+  await expect(rules.getByRole("list")).toBeHidden();
+  await dialog.getByRole("button", { name: "Expand FTC rules" }).click();
+  await expect(rules.getByRole("list")).toBeVisible();
+});
+
 test("a withdrawn review can still be deleted, and a stale view is refused", async ({ page, request }) => {
   await signIn(page); await page.goto("/store-reviews"); await queue(page, "All reviews");
   await configure(request, { conflictOnce: true });

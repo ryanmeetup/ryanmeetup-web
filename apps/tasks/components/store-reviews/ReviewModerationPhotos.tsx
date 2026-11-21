@@ -5,7 +5,7 @@ import { useState } from "react";
 import { FiAlertTriangle, FiCheck, FiCheckCircle, FiClock, FiMaximize2, FiRefreshCw, FiX, FiXCircle } from "react-icons/fi";
 import { DropdownMenu, DropdownMenuButton, DropdownMenuItem, DropdownMenuItems, DropdownMenuSeparator } from "@ryanmeetup/ui";
 import type { StaffReviewPhoto } from "@ryanmeetup/reviews";
-import { ReviewPhotoViewer } from "@ryanmeetup/reviews/ui";
+import { ReviewPhoto, ReviewPhotoViewer } from "@ryanmeetup/reviews/ui";
 import type { ModerationReview, ModerationRevision } from "@/lib/store-reviews/moderation";
 
 export type PhotoChoice = (review: ModerationReview, revisionId: string, photo: StaffReviewPhoto, action: "photo-approve" | "photo-reject") => void;
@@ -64,4 +64,24 @@ export function ReviewModerationPhotos({ review, revision, disabled, onSelect }:
   return <ul aria-label="Review photos" className="flex flex-wrap gap-1.5">
     {revision.photos.map((photo, index) => <PhotoThumb key={photo.id} review={review} revisionId={revision.id} photo={photo} index={index} disabled={disabled} onSelect={onSelect} />)}
   </ul>;
+}
+
+/** Every photo on a version, view-only: for dialogs that act on the whole review, not on a photo. */
+export function ReviewPhotoStrip({ review, revision }: { review: ModerationReview; revision: ModerationRevision }) {
+  const [openId, setOpenId] = useState<string | null>(null);
+  if (!revision.photos?.length) return null;
+  const count = revision.photos.length;
+  return <>
+    <ul aria-label="Review photos" className="flex flex-wrap gap-2">
+      {revision.photos.map((photo, index) => <li key={photo.id}>
+        <button type="button" onClick={() => setOpenId(photo.id)}
+          className="relative block size-16 overflow-hidden rounded-md border border-black/10 bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40 dark:border-white/10 dark:bg-white/5 dark:focus-visible:ring-white/50">
+          <ReviewPhoto url={staffPhotoUrl(review, revision.id, photo.id)} alt="" thumbnail />
+          <span className="sr-only">View photo {index + 1} of {count}</span>
+        </button>
+      </li>)}
+    </ul>
+    <ReviewPhotoViewer url={openId ? staffPhotoUrl(review, revision.id, openId) : null} onClose={() => setOpenId(null)}
+      title="Review photo" alt="Buyer-submitted product photo" />
+  </>;
 }

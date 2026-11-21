@@ -1,12 +1,32 @@
 "use client";
 
 import { useId, useState } from "react";
-import { DropdownSelect, Modal, ModalActions, Text, Textarea } from "@ryanmeetup/ui";
+import type { ReactNode } from "react";
+import { FaChevronDown } from "react-icons/fa";
+import { AnimatedCollapse, DropdownSelect, Modal, ModalActions, Text, Textarea } from "@ryanmeetup/ui";
 import { isReviewDeletionReason, REVIEW_DELETION_REASONS, reviewDeletionReasonLabels } from "@/lib/store-reviews/moderation";
 import type { ModerationReview, ReviewDeletionReason } from "@/lib/store-reviews/moderation";
 import { ModerationVersion } from "./ReviewModerationParts";
+import { ReviewPhotoStrip } from "./ReviewModerationPhotos";
 
 const reasonOptions = REVIEW_DELETION_REASONS.map((value) => ({ value, label: reviewDeletionReasonLabels[value] }));
+
+/** A section whose body folds away under its title, starting open. */
+function Collapsible({ title, label, className, children }: { title: ReactNode; label: string; className?: string; children: ReactNode }) {
+  const [open, setOpen] = useState(true);
+  const id = useId();
+  return <div className={className}>
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0 flex-1">{title}</div>
+      <button type="button" aria-expanded={open} aria-controls={id} aria-label={`${open ? "Collapse" : "Expand"} ${label}`}
+        onClick={() => setOpen(!open)}
+        className="-m-1 inline-flex size-7 shrink-0 items-center justify-center rounded-full text-current/70 hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:hover:bg-white/10 dark:focus-visible:ring-white/40">
+        <FaChevronDown aria-hidden className={`size-3 transition-transform duration-200 motion-reduce:transition-none ${open ? "-rotate-180" : ""}`} />
+      </button>
+    </div>
+    <AnimatedCollapse id={id} open={open}>{children}</AnimatedCollapse>
+  </div>;
+}
 
 /**
  * Permanent deletion, limited to the grounds the FTC consumer review rule
@@ -39,26 +59,36 @@ export function ReviewDeletionDialog({ reviews, saving, onClose, onSubmit }: {
           the form column beside it, so those rules are its scroll edges. */}
       <div tabIndex={0} aria-label={bulk ? `${reviews.length} reviews being deleted` : "Review being deleted"}
         className="max-h-80 min-h-0 divide-y divide-black/10 overflow-y-auto overscroll-contain border-y border-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/30 dark:focus-visible:ring-white/40 lg:col-start-2 lg:row-start-1 lg:max-h-none lg:border-y-0 lg:border-l lg:border-black/20 lg:py-2 lg:pl-6 dark:divide-white/10 dark:border-white/10 dark:lg:border-white/20">
-        {reviews.map((review) => <div key={review.id} className="space-y-3 py-4">
-          <Text className="font-semibold wrap-anywhere">{review.item.productTitle}</Text>
-          <ModerationVersion revision={review.pending ?? review.published ?? review.rejected ?? review.latest} label="Review being deleted" showLabel={false} />
-        </div>)}
+        {reviews.map((review) => {
+          const revision = review.pending ?? review.published ?? review.rejected ?? review.latest;
+          return <Collapsible key={review.id} className="py-4" label={`review of ${review.item.productTitle}`}
+            title={<Text className="font-semibold wrap-anywhere">{review.item.productTitle}</Text>}>
+            <div className="pt-3">
+              <ModerationVersion revision={revision} label="Review being deleted" showLabel={false}>
+                <ReviewPhotoStrip review={review} revision={revision} />
+              </ModerationVersion>
+            </div>
+          </Collapsible>;
+        })}
       </div>
       <div className="min-h-0 space-y-5 lg:col-start-1 lg:row-start-1 lg:overflow-y-auto lg:overscroll-contain lg:py-6 lg:pr-1">
-        <section aria-labelledby={`${id}-ftc`} className="space-y-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-950 dark:border-amber-300/30 dark:bg-amber-950/40 dark:text-amber-50">
-          <p id={`${id}-ftc`} className="font-semibold">FTC rules on removing reviews</p>
-          <p>
-            The FTC&apos;s consumer review rule (16 CFR 465.7) bars removing or hiding reviews because they are negative or
-            low-rated. Deleting is allowed only for the reasons below, applied the same way to every review, whatever its stars.
-          </p>
-          <ul className="list-disc space-y-1 pl-5">
-            <li>Spam, fake, or clearly false or misleading</li>
-            <li>Wholly unrelated to the product</li>
-            <li>Trade secrets or private or confidential information</li>
-            <li>Defamatory, harassing, abusive, obscene, vulgar, or sexually explicit</li>
-            <li>Demeaning about race, gender, sexuality, ethnicity, or another intrinsic characteristic</li>
-          </ul>
-          <p>Not allowed: a low rating, criticism, or complaints about shipping or quality. Reply instead. Violations can bring civil penalties. This is guidance, not legal advice.</p>
+        <section aria-labelledby={`${id}-ftc`} className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-950 dark:border-amber-300/30 dark:bg-amber-950/40 dark:text-amber-50">
+          <Collapsible label="FTC rules" title={<p id={`${id}-ftc`} className="font-semibold">FTC rules on removing reviews</p>}>
+            <div className="space-y-3 pt-3">
+              <p>
+                The FTC&apos;s consumer review rule (16 CFR 465.7) bars removing or hiding reviews because they are negative or
+                low-rated. Deleting is allowed only for the reasons below, applied the same way to every review, whatever its stars.
+              </p>
+              <ul className="list-disc space-y-1 pl-5">
+                <li>Spam, fake, or clearly false or misleading</li>
+                <li>Wholly unrelated to the product</li>
+                <li>Trade secrets or private or confidential information</li>
+                <li>Defamatory, harassing, abusive, obscene, vulgar, or sexually explicit</li>
+                <li>Demeaning about race, gender, sexuality, ethnicity, or another intrinsic characteristic</li>
+              </ul>
+              <p>Not allowed: a low rating, criticism, or complaints about shipping or quality. Reply instead. Violations can bring civil penalties. This is guidance, not legal advice.</p>
+            </div>
+          </Collapsible>
         </section>
         <DropdownSelect label="Reason" variant="field" required value={reason} disabled={saving}
           options={[{ value: "", label: "Choose a reason" }, ...reasonOptions]}
