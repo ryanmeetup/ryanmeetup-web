@@ -1,12 +1,14 @@
 "use client";
 
 import { useId, useState } from "react";
-import { Button, ErrorCallout, Heading, RatingStars, SuccessCallout, Text } from "@ryanmeetup/ui";
+import { Button, DropdownSelect, ErrorCallout, Heading, RatingStars, SuccessCallout, Text } from "@ryanmeetup/ui";
 import type { Product, ReviewsData } from "@/lib/types";
 import type { CustomReviewAccess } from "@/lib/custom-review-access";
+import { REVIEW_RATING_OPTIONS, REVIEW_SORT_OPTIONS } from "@/lib/public-review-view";
 import { CustomReviewComposer, type CustomReviewResult, type CustomReviewSubmission } from "./custom-review-composer";
 import { PublicReviewCard } from "./public-review-card";
 import { usePublicReviews } from "./use-public-reviews";
+import { useReviewPermalink } from "./use-review-permalink";
 
 function RatingSummary({ data, className = "" }: { data: ReviewsData; className?: string }) {
   if (data.status === "unavailable") {
@@ -34,6 +36,7 @@ async function submitCustomReview({viewerKey,...review}: CustomReviewSubmission 
 export function Reviews({ data, product, access }: { data: ReviewsData; product: Pick<Product, "id" | "title" | "featuredImage">; access: CustomReviewAccess }) {
   const formId = useId();
   const publicReviews = usePublicReviews(data, product.id);
+  const permalink = useReviewPermalink(data, product.id, publicReviews);
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -66,31 +69,57 @@ export function Reviews({ data, product, access }: { data: ReviewsData; product:
         }}
       />
 
-      {data.status === "unavailable" ? (
-        <div className="mt-8 rounded-2xl border border-dashed border-black/20 p-8 text-center dark:border-white/20">
-          <Heading size="h3" className="text-xl">Reviews are taking a short break</Heading>
-          <Text className="mt-2">We couldn&apos;t load reviews for this product. Please try again later.</Text>
-        </div>
-      ) : publicReviews.reviews.length ? (
-        <ul id={`${formId}-reviews`} aria-label="Customer reviews" aria-busy={publicReviews.pending} className="mt-8 grid items-start gap-4 md:grid-cols-2">
-          {publicReviews.reviews.map((review) => (
-            <li key={review.id}>
-              <PublicReviewCard review={review} />
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <div className="mt-8 rounded-2xl border border-dashed border-black/20 p-8 text-center dark:border-white/20">
-          <Heading size="h3" className="text-xl">Be the first to report back</Heading>
-          <Text className="mt-2">This product is waiting for its first official Ryan review.</Text>
+      {data.status === "available" && data.count > 0 && (
+        <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+          <div role="group" aria-label="Filter and sort reviews" className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            <DropdownSelect label="Rating" variant="compact" options={REVIEW_RATING_OPTIONS} value={publicReviews.rating}
+              onChange={(rating) => publicReviews.changeView({ rating })} active={publicReviews.rating !== "all"}
+              searchPlaceholder="Search by rating..." className="w-full sm:w-auto" />
+            <DropdownSelect label="Sort" variant="compact" options={REVIEW_SORT_OPTIONS} value={publicReviews.sort}
+              onChange={(sort) => publicReviews.changeView({ sort })} active={publicReviews.sort !== "newest"}
+              searchPlaceholder="Search by sort order..." className="w-full sm:w-auto" />
+            {publicReviews.refined && <Button variant="ghost" size="sm" className="w-full sm:w-auto"
+              onClick={() => publicReviews.changeView({ rating: "all", sort: "newest" })}>Reset filters</Button>}
+          </div>
+          <Text role="status" className="text-sm" aria-live="polite">
+            {publicReviews.needsComplete ? (publicReviews.pending ? "Loading reviews…" : "Finish loading to see matching reviews.") :
+              `Showing ${publicReviews.reviews.length} of ${data.count} review${data.count === 1 ? "" : "s"}`}
+          </Text>
         </div>
       )}
-      {(publicReviews.cursor || publicReviews.pending || publicReviews.message || publicReviews.error) && <div className="mt-6 space-y-3">
+
+      <div id={`${formId}-results`} role="region" aria-label="Review results" aria-busy={publicReviews.pending}>
+        {data.status === "unavailable" ? (
+          <div className="mt-8 rounded-2xl border border-dashed border-black/20 p-8 text-center dark:border-white/20">
+            <Heading size="h3" className="text-xl">Reviews are taking a short break</Heading>
+            <Text className="mt-2">We couldn&apos;t load reviews for this product. Please try again later.</Text>
+          </div>
+        ) : publicReviews.needsComplete ? (
+          <div className="mt-8 rounded-2xl border border-dashed border-black/20 p-8 text-center dark:border-white/20">
+            <Heading size="h3" className="text-xl">{publicReviews.pending ? "Finding matching reviews" : "More reviews to check"}</Heading>
+            <Text className="mt-2">{publicReviews.pending ? "Checking every review for this product." : "Try loading again to see all reviews that match."}</Text>
+          </div>
+        ) : publicReviews.reviews.length ? (
+          <ul id={`${formId}-reviews`} aria-label="Customer reviews" aria-busy={publicReviews.pending} className="mt-8 grid items-start gap-4 md:grid-cols-2">
+            {publicReviews.reviews.map((review) => (
+              <li key={review.id}>
+                <PublicReviewCard review={review} />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="mt-8 rounded-2xl border border-dashed border-black/20 p-8 text-center dark:border-white/20">
+            <Heading size="h3" className="text-xl">{publicReviews.refined ? "No reviews match this rating" : "Be the first to report back"}</Heading>
+            <Text className="mt-2">{publicReviews.refined ? "Try another star rating or reset the filters to see every review." : "This product is waiting for its first official Ryan review."}</Text>
+          </div>
+        )}
+      </div>
+      {(publicReviews.cursor || publicReviews.pending || publicReviews.message || publicReviews.error || permalink.message) && <div className="mt-6 space-y-3">
         {publicReviews.cursor && <Button variant="secondary" className="w-full sm:w-auto" loading={publicReviews.pending} loadingText="Loading reviews…"
-          aria-label={publicReviews.pending ? "Loading reviews…" : "Load more reviews"}
-          aria-controls={`${formId}-reviews`} onClick={() => void publicReviews.loadMore()}>Load more reviews</Button>}
+          aria-label={publicReviews.pending ? "Loading reviews…" : publicReviews.needsComplete ? "Retry loading reviews" : "Load more reviews"}
+          aria-controls={`${formId}-results`} onClick={() => void publicReviews.loadMore()}>{publicReviews.needsComplete ? "Retry loading reviews" : "Load more reviews"}</Button>}
         <div role="status" aria-live="polite" className="text-sm text-black/70 dark:text-white/70">
-          {publicReviews.pending ? "Loading more reviews…" : publicReviews.message}
+          {publicReviews.pending ? permalink.finding ? "Loading your review…" : "Loading more reviews…" : permalink.message || publicReviews.message}
         </div>
         {publicReviews.error && <ErrorCallout>{publicReviews.error}</ErrorCallout>}
       </div>}

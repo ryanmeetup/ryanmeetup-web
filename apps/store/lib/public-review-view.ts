@@ -5,6 +5,27 @@ import type { Review, ReviewsData } from "./types";
 
 export const PUBLIC_REVIEW_PAGE_SIZE = 20;
 
+export const REVIEW_RATING_OPTIONS = [
+  { value: "all", label: "All ratings" },
+  ...[5, 4, 3, 2, 1].map((rating) => ({ value: String(rating), label: `${rating} star${rating === 1 ? "" : "s"}` })),
+];
+export const REVIEW_SORT_OPTIONS = [
+  { value: "newest", label: "Newest first" },
+  { value: "oldest", label: "Oldest first" },
+  { value: "highest", label: "Highest rated" },
+  { value: "lowest", label: "Lowest rated" },
+];
+
+export function selectPublicReviews(reviews: Review[], rating: string, sort: string) {
+  return reviews.filter((review) => rating === "all" || String(review.rating) === rating).sort((a, b) => {
+    const newest = Date.parse(b.createdAt) - Date.parse(a.createdAt) || b.id.localeCompare(a.id);
+    if (sort === "oldest") return -newest;
+    if (sort === "highest") return b.rating - a.rating || newest;
+    if (sort === "lowest") return a.rating - b.rating || newest;
+    return newest;
+  });
+}
+
 /** The same public fields and approved photo paths in every Store review card. */
 export function toReview(review: PublicReview): Review {
   const photoUrls = review.photos.flatMap((photo) => publishedReviewPhotoUrl(photo.url) ?? []);

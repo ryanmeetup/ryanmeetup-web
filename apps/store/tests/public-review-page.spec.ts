@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { encodeReviewCursor } from "@ryanmeetup/reviews";
 import type { PublicReview, PublicReviewPage, ReviewCommand } from "@ryanmeetup/reviews";
 import { handlePublicReviewPage } from "../lib/public-review-page";
-import { appendPublicReviews, productReviewPage, toReviewsData } from "../lib/public-review-view";
+import { appendPublicReviews, productReviewPage, selectPublicReviews, toReviewsData } from "../lib/public-review-view";
 import type { ReviewBackend } from "../lib/review-backend";
 
 const review: PublicReview = {
@@ -92,4 +92,23 @@ test("overlapping pages update existing rows in place without duplicate cards or
   const second = { ...first, id: "00000000-0000-4000-8000-000000000002" };
   expect(appendPublicReviews([first], [updated, second])).toEqual([updated, second]);
   expect(first.reply).toBeUndefined();
+});
+
+test("rating filters and all sort orders use stable ties without mutating the source", () => {
+  const base = toReviewsData(page).reviews[0];
+  const reviews = [
+    { ...base, id: "a", rating: 5, createdAt: "2026-11-17T12:00:00.000Z" },
+    { ...base, id: "b", rating: 1, createdAt: "2026-11-18T12:00:00.000Z" },
+    { ...base, id: "c", rating: 5, createdAt: "2026-11-19T12:00:00.000Z" },
+    { ...base, id: "d", rating: 5, createdAt: "2026-11-19T12:00:00.000Z" },
+  ];
+  const ids = (rating: string, sort: string) => selectPublicReviews(reviews, rating, sort).map((row) => row.id);
+  expect(ids("all", "newest")).toEqual(["d", "c", "b", "a"]);
+  expect(ids("all", "oldest")).toEqual(["a", "b", "c", "d"]);
+  expect(ids("all", "highest")).toEqual(["d", "c", "a", "b"]);
+  expect(ids("all", "lowest")).toEqual(["b", "d", "c", "a"]);
+  expect(ids("5", "newest")).toEqual(["d", "c", "a"]);
+  expect(ids("1", "highest")).toEqual(["b"]);
+  expect(ids("3", "newest")).toEqual([]);
+  expect(reviews.map((row) => row.id)).toEqual(["a", "b", "c", "d"]);
 });

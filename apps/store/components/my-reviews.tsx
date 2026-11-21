@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import type { BuyerReviewStatus } from "@ryanmeetup/reviews";
 import { Avatar, Button, Card, ConfirmationDialog, DisclosureCard, ErrorCallout, Heading, RatingStars, Spinner, Text } from "@ryanmeetup/ui";
-import { FiAlertCircle, FiCheckCircle, FiClock, FiEdit2, FiEyeOff, FiMessageSquare, FiRefreshCw, FiSlash, FiUser, FiXCircle } from "react-icons/fi";
+import { FiAlertCircle, FiCheckCircle, FiClock, FiEdit2, FiEye, FiEyeOff, FiMessageSquare, FiRefreshCw, FiSlash, FiUser, FiXCircle } from "react-icons/fi";
 import type { IconType } from "react-icons";
 import { buyerReviewNameChoices } from "@/lib/my-review-view";
 import { reviewSignInRel, reviewSignInUrl } from "@/lib/review-sign-in";
+import { reviewPermalink } from "@/lib/review-links";
 import type { MyReviewView } from "@/lib/my-review-view";
 import { variantOptions, type ReviewSuggestions as Suggestions } from "@/lib/review-suggestions";
 import { CustomReviewComposer } from "./custom-review-composer";
@@ -126,9 +128,16 @@ export function MyReviews({ initial, suggestions, client, submitReview }: {
                   {review.current.title && <Heading size="h4" variant="normal" bold className="text-base tracking-normal wrap-anywhere">{review.current.title}</Heading>}
                   <Text className="whitespace-pre-wrap wrap-anywhere">{review.current.body}</Text>
                 </div>
-                {review.rejectionReason
-                  ? <RejectionReason reason={review.rejectionReason} editRejected={review.status==="published"} />
-                  : <p className={`flex items-start gap-2 rounded-xl border px-4 py-3 text-sm ${toneBox[tone]}`}><StatusIcon aria-hidden className="mt-0.5 shrink-0" /><span><span className="font-semibold">{review.hasPendingEdit ? "Edit waiting for approval" : status.label}.</span> {note}</span></p>}
+                <div className="space-y-2">
+                  {review.rejectionReason
+                    ? <RejectionReason reason={review.rejectionReason} editRejected={review.status==="published"} />
+                    : <p className={`flex items-start gap-2 rounded-xl border px-4 py-3 text-sm ${toneBox[tone]}`}><StatusIcon aria-hidden className="mt-0.5 shrink-0" /><span><span className="font-semibold">{review.hasPendingEdit ? "Edit waiting for approval" : status.label}.</span> {note}</span></p>}
+                  {review.status === "published" && product?.href && <Link href={reviewPermalink(product.href, review.id)} prefetch={false}
+                    aria-label={`View your review of ${review.item.productTitle}`}
+                    className="inline-flex items-center gap-1.5 rounded-sm text-sm font-semibold underline decoration-black/30 underline-offset-4 hover:decoration-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:decoration-white/30 dark:hover:decoration-white dark:focus-visible:ring-white/40">
+                    <FiEye aria-hidden />View your review
+                  </Link>}
+                </div>
                 {/* Footer: who the review is shown as, then what the buyer can do. */}
                 <div className="-mx-6 -mb-6 flex flex-col gap-3 border-t border-black/10 px-6 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-white/10">
                   <div className="flex min-w-0 items-center gap-2 text-sm">

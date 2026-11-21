@@ -8,6 +8,28 @@ const id=(n:number)=>`00000000-0000-4000-8000-${String(n).padStart(12,"0")}`;
 const card=(page:Page,n:number)=>page.getByTestId(`my-review-${id(n)}`);
 test.beforeEach(async({page,request,baseURL})=>{await reset(request);await signIn(page,baseURL!);});
 
+test("published reviews link to their exact public review, including a waiting edit", async ({ page, request }, testInfo) => {
+  const snapshot = await state(request);
+  const records = snapshot.records;
+  for (const record of records) record.value.item.productId = demoProductId("ryans-dad-name-tag-shirt").split("/").at(-1)!;
+  await reset(request, { records, keepSessions: true });
+  for (const theme of ["light", "dark"]) {
+    await page.addInitScript((value) => localStorage.setItem("theme", value), theme);
+    for (const width of [390, 1280]) {
+      await page.setViewportSize({ width, height: 1000 });
+      await page.goto("/reviews/mine");
+      const link = card(page, 2).getByRole("link", { name: "View your review of Fixture shirt 2", exact: true });
+      await expect(link).toHaveAttribute("href", `/products/name-tag-shirt?design=ryans-dad-name-tag-shirt#review-${id(2)}`);
+      await expect(card(page, 2)).toContainText("Edit waiting for approval");
+      for (const n of [1, 3, 4, 5]) await expect(card(page, n).getByRole("link", { name: /View your review of/ })).toHaveCount(0);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await card(page, 2).screenshot({ path: testInfo.outputPath(`published-review-link-${theme}-${width}.png`) });
+    }
+  }
+  await card(page, 2).getByRole("link", { name: /View your review of/ }).click();
+  await expect(page).toHaveURL(new RegExp(`/products/name-tag-shirt\\?design=ryans-dad-name-tag-shirt#review-${id(2)}$`));
+});
+
 test("shows only the signed-in buyer's statuses and allowed actions",async({page})=>{
   await page.goto("/reviews/mine");await expect(page.getByRole("heading",{name:"My Reviews",exact:true})).toBeVisible();
   await expect(page.locator("article[data-testid^='my-review-']")).toHaveCount(5);
