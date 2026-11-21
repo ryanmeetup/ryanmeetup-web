@@ -24,48 +24,46 @@ export function ReviewDeletionDialog({ reviews, saving, onClose, onSubmit }: {
   const ready = Boolean(reason) && affirmed && !saving;
   const bulk = reviews.length > 1;
   const label = bulk ? `Delete ${reviews.length} reviews` : "Delete review";
-  return <Modal open setIsOpen={(open) => { if (!open && !saving) onClose(); }} closable={!saving} size="xl"
+  return <Modal open setIsOpen={(open) => { if (!open && !saving) onClose(); }} closable={!saving} size="xl" panelClassName="lg:h-[44rem]" bodyClassName="lg:h-full lg:py-0"
     title={label} description={bulk ? "This permanently removes every listed review, its history, reply, and photos. It cannot be undone." : "This permanently removes the review, its history, reply, and photos. It cannot be undone."}
     formId={id}
     onSubmit={(event) => { event.preventDefault(); if (ready && reason) void onSubmit(note.trim() || null, reason); }}
     actions={<ModalActions onCancel={onClose} confirmLabel={label} confirmForm={id} pending={saving} pendingLabel="Deleting..."
       confirmDisabled={!ready} destructive
       confirmTooltip={!reason ? "Choose a reason first." : !affirmed ? "Confirm the rating played no part." : undefined} />}>
-    <div className="grid gap-5 lg:grid-cols-2 lg:grid-rows-[auto_1fr] lg:gap-x-6">
-      <section aria-labelledby={`${id}-ftc`} className="space-y-3 self-start rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-950 dark:border-amber-300/30 dark:bg-amber-950/40 dark:text-amber-50">
-        <p id={`${id}-ftc`} className="font-semibold">FTC rules on removing reviews</p>
-        <p>
-          The FTC&apos;s consumer review rule (16 CFR 465.7) bars removing or hiding reviews because they are negative or
-          low-rated. Deleting is allowed only for the reasons below, applied the same way to every review, whatever its stars.
-        </p>
-        <ul className="list-disc space-y-1 pl-5">
-          <li>Spam, fake, or clearly false or misleading</li>
-          <li>Wholly unrelated to the product</li>
-          <li>Trade secrets or private or confidential information</li>
-          <li>Defamatory, harassing, abusive, obscene, vulgar, or sexually explicit</li>
-          <li>Demeaning about race, gender, sexuality, ethnicity, or another intrinsic characteristic</li>
-        </ul>
-        <p>Not allowed: a low rating, criticism, or complaints about shipping or quality. Reply instead. Violations can bring civil penalties. This is guidance, not legal advice.</p>
-      </section>
-      {/* Pinned to the second column on desktop and absolutely filled, so the
-          list never sets the row height: the guidance and form do, and the
-          reviews scroll inside that height however many are selected. */}
-      <section aria-labelledby={`${id}-reviews`} className="flex flex-col gap-3 lg:relative lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:border-l lg:border-black/20 lg:pl-6 dark:lg:border-white/20">
-        <div className="flex flex-col gap-3 lg:absolute lg:inset-y-0 lg:right-0 lg:left-6">
-          <div className="space-y-1">
-            <Text id={`${id}-reviews`} className="font-semibold">{bulk ? `${reviews.length} reviews selected` : "Selected review"}</Text>
-            {bulk && <Text className="text-sm">The reason must apply to every one. Each deletion is logged separately.</Text>}
-          </div>
-          <div tabIndex={0} aria-labelledby={`${id}-reviews`}
-            className="max-h-80 min-h-0 divide-y divide-black/10 overflow-y-auto overscroll-contain border-y border-black/10 focus-visible:outline-2 focus-visible:outline-offset-2 lg:max-h-none lg:flex-1 dark:divide-white/10 dark:border-white/10">
-            {reviews.map((review) => <div key={review.id} className="space-y-3 py-4">
-              <Text className="font-semibold wrap-anywhere">{review.item.productTitle}</Text>
-              <ModerationVersion revision={review.pending ?? review.published ?? review.rejected ?? review.latest} label="Review being deleted" />
-            </div>)}
-          </div>
+    {/* On desktop the panel has a fixed height and each column scrolls on its
+        own, so the dialog body never does. The reviews come first in the DOM
+        so a phone shows what is being deleted before the form. */}
+    <div className="grid gap-5 lg:h-full lg:grid-cols-2 lg:grid-rows-[minmax(0,1fr)]">
+      <section aria-labelledby={`${id}-reviews`} className="flex min-h-0 flex-col gap-3 lg:col-start-2 lg:row-start-1 lg:border-l lg:border-black/20 lg:py-6 lg:pl-6 dark:lg:border-white/20">
+        <div className="space-y-1">
+          <Text id={`${id}-reviews`} className="font-semibold">{bulk ? `${reviews.length} reviews selected` : "Selected review"}</Text>
+          {bulk && <Text className="text-sm">The reason must apply to every one. Each deletion is logged separately.</Text>}
+        </div>
+        <div tabIndex={0} aria-labelledby={`${id}-reviews`}
+          className="max-h-80 min-h-0 divide-y divide-black/10 overflow-y-auto overscroll-contain border-y border-black/10 focus-visible:outline-2 focus-visible:outline-offset-2 lg:max-h-none lg:flex-1 dark:divide-white/10 dark:border-white/10">
+          {reviews.map((review) => <div key={review.id} className="space-y-3 py-4">
+            <Text className="font-semibold wrap-anywhere">{review.item.productTitle}</Text>
+            <ModerationVersion revision={review.pending ?? review.published ?? review.rejected ?? review.latest} label="Review being deleted" />
+          </div>)}
         </div>
       </section>
-      <div className="space-y-5 lg:col-start-1">
+      <div className="min-h-0 space-y-5 lg:col-start-1 lg:row-start-1 lg:overflow-y-auto lg:overscroll-contain lg:py-6 lg:pr-1">
+        <section aria-labelledby={`${id}-ftc`} className="space-y-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-950 dark:border-amber-300/30 dark:bg-amber-950/40 dark:text-amber-50">
+          <p id={`${id}-ftc`} className="font-semibold">FTC rules on removing reviews</p>
+          <p>
+            The FTC&apos;s consumer review rule (16 CFR 465.7) bars removing or hiding reviews because they are negative or
+            low-rated. Deleting is allowed only for the reasons below, applied the same way to every review, whatever its stars.
+          </p>
+          <ul className="list-disc space-y-1 pl-5">
+            <li>Spam, fake, or clearly false or misleading</li>
+            <li>Wholly unrelated to the product</li>
+            <li>Trade secrets or private or confidential information</li>
+            <li>Defamatory, harassing, abusive, obscene, vulgar, or sexually explicit</li>
+            <li>Demeaning about race, gender, sexuality, ethnicity, or another intrinsic characteristic</li>
+          </ul>
+          <p>Not allowed: a low rating, criticism, or complaints about shipping or quality. Reply instead. Violations can bring civil penalties. This is guidance, not legal advice.</p>
+        </section>
         <DropdownSelect label="Reason" variant="field" required value={reason} disabled={saving}
           options={[{ value: "", label: "Choose a reason" }, ...reasonOptions]}
           onChange={(value) => setReason(isReviewDeletionReason(value) ? value : "")} />
