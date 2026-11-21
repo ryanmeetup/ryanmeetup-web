@@ -428,6 +428,8 @@ export function DashboardPageClient({
                   </ul>
                 ) : (
                   <EmptyState
+                    icon={<FiFileText />}
+                    size="compact"
                     variant="plain"
                     message="No saved drafts right now."
                   />
@@ -567,6 +569,8 @@ export function DashboardPageClient({
                   </ul>
                 ) : (
                   <EmptyState
+                    icon={<FiCheckCircle />}
+                    size="compact"
                     variant="plain"
                     message="No recent status changes on your tasks."
                   />

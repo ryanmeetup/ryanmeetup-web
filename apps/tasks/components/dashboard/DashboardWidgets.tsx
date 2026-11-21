@@ -11,6 +11,7 @@ import {
 } from "@ryanmeetup/ui";
 import {
   FiArrowRight,
+  FiCheckCircle,
   FiChevronDown,
   FiChevronLeft,
   FiChevronRight,
@@ -54,7 +55,7 @@ export function DashboardTaskList({
   const profiles = new Map(
     data.profiles.map((profile) => [profile.id, profile]),
   );
-  if (!tasks.length) return <EmptyState variant="plain" message={empty} />;
+  if (!tasks.length) return <EmptyState icon={<FiCheckCircle />} size="compact" variant="plain" message={empty} />;
   return (
     <ul className="divide-y divide-black/10 dark:divide-white/10">
       {tasks.map((task) => {

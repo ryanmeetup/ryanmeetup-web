@@ -1,5 +1,7 @@
 "use client";
 
+import { FiFolder } from "react-icons/fi";
+
 import { useState } from "react";
 import {
   Avatar,
@@ -300,7 +302,7 @@ export function ProjectDetailsCard({
             />
           )}
           {emptyContext && !canEdit && (
-            <EmptyState
+            <EmptyState icon={<FiFolder />}
               variant="plain"
               message="No links, notes, or files on this project."
             />

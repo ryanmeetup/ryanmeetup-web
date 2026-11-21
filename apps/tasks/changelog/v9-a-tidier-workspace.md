@@ -17,6 +17,13 @@ overview:
 
 ## New
 
+### More welcoming empty states
+
+Empty views now have more breathing room, a context icon, and readable guidance.
+Create a first item or clear a search right from the empty view where available.
+Review queues make it clear when you’re caught up, and boards, notes, contacts,
+projects, categories, and dashboard cards share the same treatment.
+
 ### Moderate store reviews
 
 App owners can review buyer submissions from Store Reviews in the sidebar,

@@ -486,17 +486,20 @@ export function ProjectOverviewPageClient({
                     ))}
                   </ul>
                 ) : (
-                  <>
-                    <EmptyState
-                      variant="plain"
-                      message={
-                        tasks.length
-                          ? "Nothing is overdue or urgently unassigned."
-                          : "No tasks yet. Add the first piece of work when this project is ready."
-                      }
-                    />
-                    {tasks.length === 0 && (
-                      <div className="flex justify-center pb-8">
+                  <EmptyState
+                    variant="plain"
+                    size="compact"
+                    icon={<FiCheckCircle />}
+                    message={
+                      tasks.length ? "Nothing needs attention" : "No tasks yet"
+                    }
+                    description={
+                      tasks.length
+                        ? "Nothing is overdue or urgently unassigned."
+                        : "Add the first piece of work when this project is ready."
+                    }
+                    action={
+                      tasks.length === 0 && (
                         <Button
                           size="sm"
                           leftIcon={<FiPlus aria-hidden />}
@@ -504,9 +507,9 @@ export function ProjectOverviewPageClient({
                         >
                           Create the first task
                         </Button>
-                      </div>
-                    )}
-                  </>
+                      )
+                    }
+                  />
                 )}
                 <GroupHeading
                   divider
@@ -552,6 +555,8 @@ export function ProjectOverviewPageClient({
                 ) : (
                   <EmptyState
                     variant="plain"
+                    size="compact"
+                    icon={<FiCalendar />}
                     message="No task deadlines or project events in the next 90 days."
                   />
                 )}
@@ -639,6 +644,8 @@ export function ProjectOverviewPageClient({
                 ) : (
                   <EmptyState
                     variant="plain"
+                    size="compact"
+                    icon={<FiActivity />}
                     message="Progress appears once this project has tasks."
                   />
                 )}

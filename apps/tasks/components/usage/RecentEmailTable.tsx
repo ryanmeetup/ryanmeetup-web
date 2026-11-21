@@ -9,7 +9,7 @@ import {
   Pagination,
   PendingResults,
 } from "@ryanmeetup/ui";
-import { FiLoader, FiSearch } from "react-icons/fi";
+import { FiLoader, FiMail, FiSearch } from "react-icons/fi";
 import type { ResendEmailSummary } from "@/lib/usage/resend-usage-types";
 import { EmailDetailModal } from "./EmailDetailModal";
 import { EmailStatusBadge, emailStatusLabel } from "./EmailStatusBadge";
@@ -129,7 +129,7 @@ export function RecentEmailTable({ emails }: { emails: ResendEmailSummary[] }) {
               </article>
             ))}
             {visibleEmails.length === 0 && (
-              <EmptyState
+              <EmptyState icon={<FiMail />}
                 variant="plain"
                 message={
                   emails.length === 0
@@ -191,7 +191,7 @@ export function RecentEmailTable({ emails }: { emails: ResendEmailSummary[] }) {
                 {visibleEmails.length === 0 && (
                   <tr>
                     <td colSpan={4}>
-                      <EmptyState
+                      <EmptyState icon={<FiMail />}
                         variant="plain"
                         message={
                           emails.length === 0

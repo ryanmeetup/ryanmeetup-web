@@ -24,7 +24,10 @@ import {
   FiMail,
   FiPhone,
   FiPlus,
+  FiSearch,
   FiTrash2,
+  FiUsers,
+  FiX,
 } from "react-icons/fi";
 import { CountBadge, WorkspacePageShell } from "@/components/global";
 import { contactEditPath } from "@/lib/contacts/contact-slug";
@@ -247,11 +250,36 @@ export function ContactsPageClient({
           <PendingResults pending={searchPending} label="Loading contacts">
             {sortedContacts.length === 0 ? (
               <EmptyState
-                className="py-12"
+                icon={query.trim() ? <FiSearch /> : <FiUsers />}
                 message={
                   contacts.length === 0
-                    ? "No contacts yet. Add one using the button above."
+                    ? "No contacts yet"
                     : "No contacts or people match that search."
+                }
+                description={
+                  contacts.length === 0
+                    ? "Keep the organizations you know and the people to reach in one place."
+                    : "Try another name, email, or phone number, or clear your search to see everyone."
+                }
+                action={
+                  query.trim() ? (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      leftIcon={<FiX aria-hidden />}
+                      onClick={() => setQuery("")}
+                    >
+                      Clear search
+                    </Button>
+                  ) : (
+                    <Button.Link
+                      href="/contacts/new"
+                      size="sm"
+                      leftIcon={<FiPlus aria-hidden />}
+                    >
+                      New contact
+                    </Button.Link>
+                  )
                 }
               />
             ) : (

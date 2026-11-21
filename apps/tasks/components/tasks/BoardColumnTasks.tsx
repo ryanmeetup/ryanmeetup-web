@@ -1,6 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { Button, EmptyState } from "@ryanmeetup/ui";
+import { FiCheckSquare, FiPlus, FiSearch } from "react-icons/fi";
 import type { Task } from "@/lib/tasks/task-types";
 
 export function BoardColumnTasks({
@@ -35,18 +37,34 @@ export function BoardColumnTasks({
         className={`space-y-2 px-1 py-3 transition-opacity sm:space-y-3 sm:py-4 ${isPending ? "pointer-events-none opacity-55" : ""}`}
       >
         {tasks.map(renderTask)}
-        {tasks.length === 0 && query.trim() && (
-          <div className="rounded-xl border border-dashed border-black/15 px-3 py-6 text-center text-xs text-black/50 sm:py-8 dark:border-white/15 dark:text-white/50">
-            No {statusName} tasks match this search.
-          </div>
-        )}
-        {tasks.length === 0 && !query.trim() && (
-          <button
-            onClick={onCreate}
-            className="w-full rounded-xl border border-dashed border-black/15 px-3 py-6 text-xs text-black/40 hover:border-black/30 hover:text-black/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 sm:py-8 dark:border-white/15 dark:text-white/40 dark:hover:border-white/30 dark:hover:text-white/60 dark:focus-visible:ring-white/30"
-          >
-            Drop a task here or add one
-          </button>
+        {tasks.length === 0 && (
+          <EmptyState
+            size="compact"
+            icon={query.trim() ? <FiSearch /> : <FiCheckSquare />}
+            message={
+              query.trim()
+                ? `No ${statusName} tasks match this search.`
+                : "Room for the next thing"
+            }
+            description={
+              query.trim()
+                ? "Try another task title, key, or description."
+                : "Drop a task here or add one to get started."
+            }
+            action={
+              !query.trim() && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  leftIcon={<FiPlus aria-hidden />}
+                  disabled={isPending}
+                  onClick={onCreate}
+                >
+                  Add task
+                </Button>
+              )
+            }
+          />
         )}
       </div>
     </div>

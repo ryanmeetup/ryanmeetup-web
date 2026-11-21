@@ -1,5 +1,6 @@
 "use client";
 
+import { FiClock } from "react-icons/fi";
 import { Card, EmptyState } from "@ryanmeetup/ui";
 import { formatTimestamp } from "@/lib/date-format";
 import {
@@ -54,7 +55,7 @@ export function DigestRunLedger({ runs }: { runs: DigestRun[] }) {
       </h3>
       <Card variant="solid" size="none" className="overflow-hidden">
         {runs.length === 0 ? (
-          <EmptyState
+          <EmptyState icon={<FiClock />}
             variant="plain"
             message="No digest runs have been recorded yet. Runs appear here once the worker has executed on this schedule."
           />

@@ -11,6 +11,7 @@ import {
   Avatar,
   Button,
   ConfirmationDialog,
+  EmptyState,
   DropdownSelect,
   FilterChip,
   IconButton,
@@ -32,6 +33,8 @@ import {
   FiArrowRight,
   FiEdit2,
   FiPlus,
+  FiSearch,
+  FiX,
   FiRefreshCw,
   FiRotateCcw,
   FiTag,
@@ -687,6 +690,33 @@ export function CategoriesModal({
     />
   );
 
+  const createAction =
+    onCreate && !readOnly ? (
+      <>
+        {triggers.route && (
+          <Button.Link
+            href={`/categories/new?from=${encodeURIComponent(listPath)}`}
+            size="sm"
+            className={`w-full ${triggers.routeClassName}`}
+            leftIcon={<FiPlus aria-hidden />}
+          >
+            New category
+          </Button.Link>
+        )}
+        {triggers.dialog && (
+          <Button
+            type="button"
+            size="sm"
+            className={triggers.dialogClassName}
+            leftIcon={<FiPlus aria-hidden />}
+            onClick={onCreate}
+          >
+            New category
+          </Button>
+        )}
+      </>
+    ) : undefined;
+
   const renderSurface = (children: ReactNode) => {
     const title = createOnly ? (
       "New Category"
@@ -701,33 +731,7 @@ export function CategoriesModal({
         <ManagementSurface
           title={title}
           description="Categories make work easier to scan and filter across projects."
-          actions={
-            onCreate && !readOnly ? (
-              <>
-                {triggers.route && (
-                  <Button.Link
-                    href={`/categories/new?from=${encodeURIComponent(listPath)}`}
-                    size="sm"
-                    className={`w-full ${triggers.routeClassName}`}
-                    leftIcon={<FiPlus aria-hidden />}
-                  >
-                    New Category
-                  </Button.Link>
-                )}
-                {triggers.dialog && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    className={triggers.dialogClassName}
-                    leftIcon={<FiPlus aria-hidden />}
-                    onClick={onCreate}
-                  >
-                    New Category
-                  </Button>
-                )}
-              </>
-            ) : undefined
-          }
+          actions={createAction}
         >
           {children}
         </ManagementSurface>
@@ -1091,11 +1095,37 @@ export function CategoriesModal({
                     );
                   })}
                   {categories.length === 0 && (
-                    <div
-                      className={`rounded-xl border border-dashed border-black/10 px-4 py-10 text-center text-sm text-black/55 dark:border-white/10 dark:text-white/55 md:col-span-2 ${embedded ? "lg:col-span-1 xl:col-span-2 2xl:col-span-3" : ""}`}
-                    >
-                      No categories match this search.
-                    </div>
+                    <EmptyState
+                      className="col-span-full"
+                      icon={query.trim() ? <FiSearch /> : <FiTag />}
+                      message={
+                        data.categories.length === 0
+                          ? "No categories yet"
+                          : "No categories match this search."
+                      }
+                      description={
+                        data.categories.length === 0
+                          ? "Organize work into categories that are easy to find across projects."
+                          : "Try another name or include categories with a different status."
+                      }
+                      action={
+                        query.trim() || (categoryStatus !== "all" && data.categories.length > 0) ? (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            leftIcon={<FiX aria-hidden />}
+                            onClick={() => {
+                              setQuery("");
+                              setCategoryStatus("all");
+                            }}
+                          >
+                            View all categories
+                          </Button>
+                        ) : (
+                          createAction
+                        )
+                      }
+                    />
                   )}
                 </div>
               </PendingResults>

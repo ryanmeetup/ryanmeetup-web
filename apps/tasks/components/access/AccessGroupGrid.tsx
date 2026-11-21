@@ -1,4 +1,4 @@
-import { Avatar, Button, Card, IconButton, Tooltip } from "@ryanmeetup/ui";
+import { Avatar, Button, Card, EmptyState, IconButton, Tooltip } from "@ryanmeetup/ui";
 import {
   FiCalendar,
   FiEdit2,
@@ -105,9 +105,7 @@ export function AccessGroupGrid({
   return (
     <>
       {groups.length === 0 && (
-        <Card className="p-5 text-sm text-black/65 dark:text-white/65">
-          {emptyLabel}
-        </Card>
+        <EmptyState icon={<FiUsers />} message={emptyLabel} />
       )}
       <div className="grid auto-rows-fr gap-4 md:grid-cols-2 xl:grid-cols-3">
         {groups.map((group) => {

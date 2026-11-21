@@ -13,6 +13,7 @@ import {
   Avatar,
   Button,
   ConfirmationDialog,
+  EmptyState,
   FilterChip,
   ManagementSurface,
   ModalActions,
@@ -27,6 +28,8 @@ import {
   FiEdit2,
   FiFolder,
   FiPlus,
+  FiSearch,
+  FiX,
   FiStar,
   FiTrash2,
   FiUsers,
@@ -885,6 +888,33 @@ export function ProjectsModal({
     />
   );
 
+  const createAction =
+    onCreate && !readOnly ? (
+      <>
+        {triggers.route && (
+          <Button.Link
+            href={`/projects/new?from=${encodeURIComponent(listPath)}`}
+            size="sm"
+            className={`w-full ${triggers.routeClassName}`}
+            leftIcon={<FiPlus aria-hidden />}
+          >
+            New project
+          </Button.Link>
+        )}
+        {triggers.dialog && (
+          <Button
+            type="button"
+            size="sm"
+            className={triggers.dialogClassName}
+            leftIcon={<FiPlus aria-hidden />}
+            onClick={onCreate}
+          >
+            New project
+          </Button>
+        )}
+      </>
+    ) : undefined;
+
   const renderSurface = (children: ReactNode) => {
     const title = createOnly ? (
       "New Project"
@@ -899,33 +929,7 @@ export function ProjectsModal({
         <ManagementSurface
           title={title}
           description="Projects collect related work across categories. Set owners and access groups while creating or editing each work stream."
-          actions={
-            onCreate && !readOnly ? (
-              <>
-                {triggers.route && (
-                  <Button.Link
-                    href={`/projects/new?from=${encodeURIComponent(listPath)}`}
-                    size="sm"
-                    className={`w-full ${triggers.routeClassName}`}
-                    leftIcon={<FiPlus aria-hidden />}
-                  >
-                    New project
-                  </Button.Link>
-                )}
-                {triggers.dialog && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    className={triggers.dialogClassName}
-                    leftIcon={<FiPlus aria-hidden />}
-                    onClick={onCreate}
-                  >
-                    New project
-                  </Button>
-                )}
-              </>
-            ) : undefined
-          }
+          actions={createAction}
         >
           {children}
         </ManagementSurface>
@@ -1034,9 +1038,37 @@ export function ProjectsModal({
               </div>
               <PendingResults pending={searchPending} label="Loading projects">
                 {projects.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-black/10 px-4 py-10 text-center text-sm text-black/55 dark:border-white/10 dark:text-white/55">
-                    No projects match this search and filter.
-                  </div>
+                  <EmptyState
+                    icon={projectQuery.trim() ? <FiSearch /> : <FiFolder />}
+                    message={
+                      data.projects.length === 0
+                        ? "No projects yet"
+                        : "No projects match this search and filter."
+                    }
+                    description={
+                      data.projects.length === 0
+                        ? "Give related work a home, with the right people and a clear direction."
+                        : "Try another name or include projects with a different status."
+                    }
+                    action={
+                      projectQuery.trim() ||
+                      (projectFilter !== "all" && data.projects.length > 0) ? (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          leftIcon={<FiX aria-hidden />}
+                          onClick={() => {
+                            setProjectQuery("");
+                            setProjectFilter("all");
+                          }}
+                        >
+                          View all projects
+                        </Button>
+                      ) : (
+                        createAction
+                      )
+                    }
+                  />
                 ) : (
                   <div className="grid min-w-0 gap-8">
                     {projectGroups.map((group) => (

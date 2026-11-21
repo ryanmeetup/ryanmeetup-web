@@ -1,5 +1,7 @@
 "use client";
 
+import { FiMail } from "react-icons/fi";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -218,7 +220,7 @@ export function EmailDetailModal({
                 {detail.text}
               </pre>
             ) : (
-              <EmptyState
+              <EmptyState icon={<FiMail />}
                 variant="plain"
                 message="Resend did not return a body for this email."
               />

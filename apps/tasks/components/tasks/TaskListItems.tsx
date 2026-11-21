@@ -1,11 +1,6 @@
 import { Fragment } from "react";
-import {
-  AnimatedCollapse,
-  Avatar,
-  EmptyState,
-  Tooltip,
-} from "@ryanmeetup/ui";
-import { FiChevronDown } from "react-icons/fi";
+import { AnimatedCollapse, Avatar, EmptyState, Tooltip } from "@ryanmeetup/ui";
+import { FiArchive, FiCheckSquare, FiChevronDown } from "react-icons/fi";
 import type { Category, Project } from "@/lib/resources/resource-types";
 import type { Profile } from "@/lib/workspace/workspace-types";
 import type { Status, Task } from "@/lib/tasks/task-types";
@@ -147,10 +142,12 @@ export function TaskListCards({
     return (
       <EmptyState
         variant="plain"
-        message={
+        icon={archived ? <FiArchive /> : <FiCheckSquare />}
+        message={archived ? "Nothing archived yet" : "No tasks found"}
+        description={
           archived
-            ? "Nothing archived yet. Finished and declined work moves here once it has been closed for two weeks."
-            : "No tasks found. Try clearing a filter or add the first task in this view."
+            ? "Finished and declined work moves here once it has been closed for two weeks."
+            : "Try clearing a filter or add the first task in this view."
         }
       />
     );
@@ -256,10 +253,12 @@ export function TaskListRows({
         <td colSpan={7}>
           <EmptyState
             variant="plain"
-            message={
+            icon={archived ? <FiArchive /> : <FiCheckSquare />}
+            message={archived ? "Nothing archived yet" : "No tasks found"}
+            description={
               archived
-                ? "Nothing archived yet. Finished and declined work moves here once it has been closed for two weeks."
-                : "No tasks found. Try clearing a filter or add the first task in this view."
+                ? "Finished and declined work moves here once it has been closed for two weeks."
+                : "Try clearing a filter or add the first task in this view."
             }
           />
         </td>

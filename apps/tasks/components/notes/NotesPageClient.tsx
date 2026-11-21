@@ -7,12 +7,13 @@ import {
   Button,
   ConfirmationDialog,
   DropdownSelect,
+  EmptyState,
   ManagementSurface,
   PendingResults,
   SearchInput,
   toast,
 } from "@ryanmeetup/ui";
-import { FiFileText, FiPlus } from "react-icons/fi";
+import { FiArchive, FiFileText, FiPlus, FiSearch, FiX } from "react-icons/fi";
 import {
   CountBadge,
   ResponsiveTable,
@@ -418,35 +419,59 @@ export function NotesPageClient({
                       ))}
                     </ResponsiveTable>
                   ) : (
-                    <div className="rounded-2xl border border-dashed border-black/15 px-6 py-10 text-center dark:border-white/15">
-                      <FiFileText className="mx-auto text-2xl text-black/35 dark:text-white/35" />
-                      <p className="mt-3 font-semibold">No notes match</p>
-                      <button
-                        type="button"
-                        className="mt-2 text-sm font-semibold text-black/60 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:text-white/60 dark:focus-visible:ring-white/30"
-                        onClick={() => {
-                          setQuery("");
-                          setNoteCategory("all");
-                        }}
-                      >
-                        View all notes
-                      </button>
-                    </div>
+                    <EmptyState
+                      icon={<FiSearch />}
+                      message="No notes match"
+                      description="Try another phrase or category, or clear your filters to see all notes."
+                      action={
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          leftIcon={<FiX aria-hidden />}
+                          onClick={() => {
+                            setQuery("");
+                            setNoteCategory("all");
+                          }}
+                        >
+                          View all notes
+                        </Button>
+                      }
+                    />
                   )}
                 </PendingResults>
               </div>
             ) : (
-              <div className="rounded-2xl border border-dashed border-black/15 px-6 py-12 text-center dark:border-white/15">
-                <FiFileText className="mx-auto text-2xl text-black/35 dark:text-white/35" />
-                <p className="mt-3 font-semibold">
-                  {showArchived ? "Nothing archived" : "No loose thoughts yet"}
-                </p>
-                <p className="mt-1 text-sm text-black/55 dark:text-white/55">
-                  {showArchived
+              <EmptyState
+                icon={showArchived ? <FiArchive /> : <FiFileText />}
+                message={
+                  showArchived ? "Nothing archived" : "No loose thoughts yet"
+                }
+                description={
+                  showArchived
                     ? "Archived notes will wait here."
-                    : "Start one with New note—polish is optional."}
-                </p>
-              </div>
+                    : "Capture an idea now. Turn it into a task or project when it’s ready."
+                }
+                action={
+                  showArchived ? (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      leftIcon={<FiFileText aria-hidden />}
+                      onClick={() => setNoteStatus("active")}
+                    >
+                      View active notes
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      leftIcon={<FiPlus aria-hidden />}
+                      onClick={() => setCreatingNote(true)}
+                    >
+                      New note
+                    </Button>
+                  )
+                }
+              />
             )}
           </section>
         </ManagementSurface>

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { EmptyState } from "@ryanmeetup/ui";
-import { FiFolder } from "react-icons/fi";
+import { FiActivity, FiFolder } from "react-icons/fi";
 import { CategoryLabel } from "@/components/categories";
 import { TaskKeyBadge } from "@/components/tasks";
 import { withAccessPreview } from "@/lib/access/access-preview";
@@ -17,7 +17,10 @@ import {
   ActivityStatusChange,
   activityChangeSummary,
 } from "./ActivityChangeList";
-import { ActivityCardSkeletons, ActivityRowSkeletons } from "./ActivitySkeleton";
+import {
+  ActivityCardSkeletons,
+  ActivityRowSkeletons,
+} from "./ActivitySkeleton";
 
 function activityDescription(
   description: ActivityDescription,
@@ -46,9 +49,7 @@ function activityDescription(
     );
   }
   if (description.kind === "status") {
-    return (
-      <ActivityStatusChange from={description.from} to={description.to} />
-    );
+    return <ActivityStatusChange from={description.from} to={description.to} />;
   }
   return description.detail ? (
     <span>
@@ -161,16 +162,14 @@ export function ActivityRows({
                       Item unavailable
                     </span>
                   )}
-                  {showProject &&
-                    project &&
-                    !projectNameRepeatsItem(row) && (
-                      <span className="inline-flex min-w-0 items-center gap-1.5 text-black/60 dark:text-white/60">
-                        <FiFolder aria-hidden className="shrink-0" />
-                        <span className="min-w-0 break-words">
-                          {project.name}
-                        </span>
+                  {showProject && project && !projectNameRepeatsItem(row) && (
+                    <span className="inline-flex min-w-0 items-center gap-1.5 text-black/60 dark:text-white/60">
+                      <FiFolder aria-hidden className="shrink-0" />
+                      <span className="min-w-0 break-words">
+                        {project.name}
                       </span>
-                    )}
+                    </span>
+                  )}
                 </div>
               </article>
             );
@@ -189,7 +188,11 @@ export function ActivityRows({
           })}
           {loading && <ActivityCardSkeletons />}
           {!loading && rows.length === 0 && (
-            <EmptyState variant="plain" message={emptyMessage} />
+            <EmptyState
+              icon={<FiActivity />}
+              variant="plain"
+              message={emptyMessage}
+            />
           )}
         </div>
       </div>
@@ -296,7 +299,11 @@ export function ActivityRows({
             {!loading && rows.length === 0 && (
               <tr>
                 <td colSpan={showProject ? 5 : 4}>
-                  <EmptyState variant="plain" message={emptyMessage} />
+                  <EmptyState
+                    icon={<FiActivity />}
+                    variant="plain"
+                    message={emptyMessage}
+                  />
                 </td>
               </tr>
             )}

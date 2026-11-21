@@ -275,7 +275,7 @@ export function CalendarGridAgenda({
           ) : googleSyncing ? (
             <SyncingItems rows={3} />
           ) : (
-            <EmptyState message="Nothing scheduled this month. A suspiciously peaceful calendar." />
+            <EmptyState icon={<FiCalendar />} message="Nothing scheduled this month" description="A suspiciously peaceful calendar. Events and task deadlines will appear here." />
           )}
         </div>
       </section>
