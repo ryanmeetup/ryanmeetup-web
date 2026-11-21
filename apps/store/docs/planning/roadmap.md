@@ -1,6 +1,6 @@
 # Store readiness and remaining work
 
-Reviewed November 20, 2026 against the repository and the prior dated operating
+Reviewed November 21, 2026 against the repository and the prior dated operating
 records. The store already accepts orders; this is a remaining-work list, not
 an assertion that checkout is still waiting to launch. Etsy stays alongside it
 until Ryan chooses otherwise.
@@ -22,12 +22,19 @@ than inheriting an old "not started" or "done" label.
   About, support, policy pages, sitemap and branded error pages.
 - Six newest published reviews on the home page, with ratings, approved photos
   and links to their product reviews.
-- Custom text reviews with Shopify sign-in, verified/unverified feedback,
-  management/suggestions, full product totals, paging, replies and owner
-  moderation in Tasks, including rejected/product filters and audited deletion.
+- A paginated shop-wide review feed at `/reviews` with debounced search,
+  filters and sorting; rating summaries on product cards.
+- Custom text reviews with Shopify sign-in, half-star ratings (0.5 to 5),
+  verified/unverified feedback, management/suggestions, full product totals,
+  paging, replies and owner moderation in Tasks, including rejected/product
+  filters and audited deletion.
+- Review write budgets (`store_review_write_budgets`): per-buyer hourly/daily
+  and per-network hourly limits on submissions, per-buyer hourly limits on
+  edits. Sign-in itself is not yet throttled.
 - Photo processing/staging/associations and buyer controls, separately gated;
-  owner previews and per-photo approval/rejection in Tasks; approved-only public
-  images with revocation on hide/withdraw/replacement/deletion. Attachments are
+  owner previews and per-photo approval/rejection with reasons shown to the
+  buyer in Tasks; approving a review approves its undecided photos;
+  approved-only public images with revocation on hide/withdraw/replacement/deletion. Attachments are
   enabled by default for signed-in reviews, with an explicit collection pause.
   Cleanup, recovery and hosted proof remain open.
 
@@ -143,8 +150,8 @@ unverified product feedback. All submissions wait for approval.
       an observation window and response ownership. Cover auth, Shopify reads,
       text writes, moderation and standalone media in addition to current
       sanitized backend failures.
-- [ ] Add auth/text-write abuse controls; current upload budgets are partial
-      protection. Confirm hosted photo collection settings and record lifecycle,
+- [ ] Add sign-in abuse controls. Submission/edit write budgets and upload
+      budgets exist; Shopify sign-in and session renewal remain unthrottled. Confirm hosted photo collection settings and record lifecycle,
       cleanup and recovery evidence.
 
 #### Conditional and optional features
