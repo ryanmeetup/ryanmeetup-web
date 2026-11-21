@@ -21,6 +21,11 @@ independent of the Store's sign-in/photo flags. A Shopify buyer session does not
 grant moderation. Browser requests cannot choose their shop or actor; write
 RPCs recheck owner authority inside the transaction.
 
+Moderation links a product title to the Store's `/products/id/<shopify id>`,
+which redirects to that product's canonical page (404 when unpublished or
+deleted). `NEXT_PUBLIC_STORE_REVIEWS_STOREFRONT_URL` sets the Store origin and
+defaults to `https://store.ryanmeetup.com`; it is inlined at build time.
+
 The server loads the first queue page. The client provides pending, published,
 hidden, rejected and all filters, a product filter, twenty-row pagination and
 refresh. Rows show pending/published/rejected text, verification, a nullable

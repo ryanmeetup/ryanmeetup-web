@@ -657,12 +657,15 @@ test("deletes spam only after a policy reason and a rating-neutral confirmation"
     p_expected_updated_at: "2026-11-18T12:00:00.123456Z", p_reason: "spam", p_note: "Link to a follower shop" });
 });
 
-test("the deletion dialog shows each review's photos and folds the rules and reviews away", async ({ page, request }) => {
+test("the deletion dialog links each product, shows its photos, and folds the rules and reviews away", async ({ page, request }) => {
   await request.post(`${fixture}/__reviews/reset`, { data: { photos: true } });
   await signIn(page); await page.goto("/store-reviews");
   await menuAction(page, 1, "Delete review");
   const dialog = page.getByRole("dialog", { name: "Delete review" });
   const review = dialog.getByRole("region", { name: "Review being deleted" });
+  const product = dialog.getByRole("link", { name: /^Fixture shirt 1/ });
+  await expect(product).toHaveAttribute("href", /^https:\/\/store\.ryanmeetup\.com\/products\/id\/[1-9][0-9]*$/);
+  await expect(product).toHaveAttribute("target", "_blank");
   await expect(review.getByRole("list", { name: "Review photos" }).getByRole("button")).toHaveCount(2);
   await review.getByRole("button", { name: "View photo 1 of 2" }).click();
   const viewer = page.getByRole("dialog", { name: "Review photo" });

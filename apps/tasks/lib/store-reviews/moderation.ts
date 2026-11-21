@@ -33,6 +33,15 @@ export type ReviewDeletionCommand = {
   reason: ReviewDeletionReason;
   note: string | null;
 };
+/**
+ * The storefront a review's product lives on. Store reviews run on RMT only, so
+ * the default is the Ryan Meetup store; a literal member read so Next inlines it.
+ */
+const storefrontOrigin = (process.env.NEXT_PUBLIC_STORE_REVIEWS_STOREFRONT_URL?.trim() || "https://store.ryanmeetup.com").replace(/\/+$/, "");
+/** The store resolves a numeric Shopify product ID to that product's canonical page. */
+export function storefrontProductHref(productId: string) {
+  return `${storefrontOrigin}/products/id/${encodeURIComponent(productId)}`;
+}
 export type ModerationCursor = { createdAt: string; id: string };
 export type ModerationQuery = { filter: ModerationFilter; productId: string | null; after: ModerationCursor | null };
 export type ModerationProduct = { productId: string; productTitle: string };

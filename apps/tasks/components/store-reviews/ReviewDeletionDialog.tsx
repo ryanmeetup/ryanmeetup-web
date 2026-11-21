@@ -3,8 +3,9 @@
 import { useId, useState } from "react";
 import type { ReactNode } from "react";
 import { FaChevronDown } from "react-icons/fa";
+import { FiExternalLink } from "react-icons/fi";
 import { AnimatedCollapse, DropdownSelect, Modal, ModalActions, Text, Textarea } from "@ryanmeetup/ui";
-import { isReviewDeletionReason, REVIEW_DELETION_REASONS, reviewDeletionReasonLabels } from "@/lib/store-reviews/moderation";
+import { isReviewDeletionReason, REVIEW_DELETION_REASONS, reviewDeletionReasonLabels, storefrontProductHref } from "@/lib/store-reviews/moderation";
 import type { ModerationReview, ReviewDeletionReason } from "@/lib/store-reviews/moderation";
 import { ModerationVersion } from "./ReviewModerationParts";
 import { ReviewPhotoStrip } from "./ReviewModerationPhotos";
@@ -62,7 +63,12 @@ export function ReviewDeletionDialog({ reviews, saving, onClose, onSubmit }: {
         {reviews.map((review) => {
           const revision = review.pending ?? review.published ?? review.rejected ?? review.latest;
           return <Collapsible key={review.id} className="py-4" label={`review of ${review.item.productTitle}`}
-            title={<Text className="font-semibold wrap-anywhere">{review.item.productTitle}</Text>}>
+            title={<a href={storefrontProductHref(review.item.productId)} target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-baseline gap-1.5 font-semibold text-black/80 underline-offset-2 wrap-anywhere hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:text-white/80 dark:focus-visible:ring-white/40">
+              {review.item.productTitle}
+              <FiExternalLink aria-hidden className="size-3 shrink-0 self-center opacity-70" />
+              <span className="sr-only">(opens the product page in a new tab)</span>
+            </a>}>
             <div className="pt-3">
               <ModerationVersion revision={revision} label="Review being deleted" showLabel={false}>
                 <ReviewPhotoStrip review={review} revision={revision} />
