@@ -24,15 +24,15 @@ export function ReviewDeletionDialog({ reviews, saving, onClose, onSubmit }: {
   const ready = Boolean(reason) && affirmed && !saving;
   const bulk = reviews.length > 1;
   const label = bulk ? `Delete ${reviews.length} reviews` : "Delete review";
-  return <Modal open setIsOpen={(open) => { if (!open && !saving) onClose(); }} closable={!saving} size="lg"
+  return <Modal open setIsOpen={(open) => { if (!open && !saving) onClose(); }} closable={!saving} size="xl"
     title={label} description={bulk ? "This permanently removes every listed review, its history, reply, and photos. It cannot be undone." : "This permanently removes the review, its history, reply, and photos. It cannot be undone."}
     formId={id}
     onSubmit={(event) => { event.preventDefault(); if (ready && reason) void onSubmit(note.trim() || null, reason); }}
     actions={<ModalActions onCancel={onClose} confirmLabel={label} confirmForm={id} pending={saving} pendingLabel="Deleting..."
       confirmDisabled={!ready} destructive
       confirmTooltip={!reason ? "Choose a reason first." : !affirmed ? "Confirm the rating played no part." : undefined} />}>
-    <div className="space-y-5">
-      <section aria-labelledby={`${id}-ftc`} className="space-y-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-950 dark:border-amber-300/30 dark:bg-amber-950/40 dark:text-amber-50">
+    <div className="grid gap-5 lg:grid-cols-2 lg:grid-rows-[auto_1fr] lg:gap-x-6">
+      <section aria-labelledby={`${id}-ftc`} className="space-y-3 self-start rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-950 dark:border-amber-300/30 dark:bg-amber-950/40 dark:text-amber-50">
         <p id={`${id}-ftc`} className="font-semibold">FTC rules on removing reviews</p>
         <p>
           The FTC&apos;s consumer review rule (16 CFR 465.7) bars removing or hiding reviews because they are negative or
@@ -47,29 +47,44 @@ export function ReviewDeletionDialog({ reviews, saving, onClose, onSubmit }: {
         </ul>
         <p>Not allowed: a low rating, criticism, or complaints about shipping or quality. Reply instead. Violations can bring civil penalties. This is guidance, not legal advice.</p>
       </section>
-      {bulk && <Text className="text-sm">The reason must apply to every review below. Each deletion is logged separately.</Text>}
-      {reviews.map((review) => <div key={review.id} className="space-y-3 border-b border-black/10 pb-4 dark:border-white/10">
-        <Text className="font-semibold wrap-anywhere">{review.item.productTitle}</Text>
-        <ModerationVersion revision={review.pending ?? review.published ?? review.rejected ?? review.latest} label="Review being deleted" />
-      </div>)}
-      <DropdownSelect label="Reason" variant="field" required value={reason} disabled={saving}
-        options={[{ value: "", label: "Choose a reason" }, ...reasonOptions]}
-        onChange={(value) => setReason(isReviewDeletionReason(value) ? value : "")} />
-      <div className="space-y-2">
-        <Textarea id={`${id}-note`} name="note" label="Private note" rows={3} maxLength={1000} value={note} disabled={saving}
-          placeholder="What made this spam? A link, a bot pattern, a copy of another review..."
-          onChange={(event) => setNote(event.target.value)} aria-describedby={`${id}-note-hint`} />
-        <Text id={`${id}-note-hint`} className="text-xs">Kept in the deletion log with the reason, rating, and your name. The review text is not kept.</Text>
+      {/* Pinned to the second column on desktop and absolutely filled, so the
+          list never sets the row height: the guidance and form do, and the
+          reviews scroll inside that height however many are selected. */}
+      <section aria-labelledby={`${id}-reviews`} className="flex flex-col gap-3 lg:relative lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:border-l lg:border-black/20 lg:pl-6 dark:lg:border-white/20">
+        <div className="flex flex-col gap-3 lg:absolute lg:inset-y-0 lg:right-0 lg:left-6">
+          <div className="space-y-1">
+            <Text id={`${id}-reviews`} className="font-semibold">{bulk ? `${reviews.length} reviews selected` : "Selected review"}</Text>
+            {bulk && <Text className="text-sm">The reason must apply to every one. Each deletion is logged separately.</Text>}
+          </div>
+          <div tabIndex={0} aria-labelledby={`${id}-reviews`}
+            className="max-h-80 min-h-0 divide-y divide-black/10 overflow-y-auto overscroll-contain border-y border-black/10 focus-visible:outline-2 focus-visible:outline-offset-2 lg:max-h-none lg:flex-1 dark:divide-white/10 dark:border-white/10">
+            {reviews.map((review) => <div key={review.id} className="space-y-3 py-4">
+              <Text className="font-semibold wrap-anywhere">{review.item.productTitle}</Text>
+              <ModerationVersion revision={review.pending ?? review.published ?? review.rejected ?? review.latest} label="Review being deleted" />
+            </div>)}
+          </div>
+        </div>
+      </section>
+      <div className="space-y-5 lg:col-start-1">
+        <DropdownSelect label="Reason" variant="field" required value={reason} disabled={saving}
+          options={[{ value: "", label: "Choose a reason" }, ...reasonOptions]}
+          onChange={(value) => setReason(isReviewDeletionReason(value) ? value : "")} />
+        <div className="space-y-2">
+          <Textarea id={`${id}-note`} name="note" label="Private note" rows={3} maxLength={1000} value={note} disabled={saving}
+            placeholder="What made this spam? A link, a bot pattern, a copy of another review..."
+            onChange={(event) => setNote(event.target.value)} aria-describedby={`${id}-note-hint`} />
+          <Text id={`${id}-note-hint`} className="text-xs">Kept in the deletion log with the reason, rating, and your name. The review text is not kept.</Text>
+        </div>
+        <label className="flex items-start gap-3 rounded-xl border border-black/10 p-4 text-sm dark:border-white/10">
+          <input type="checkbox" required checked={affirmed} disabled={saving} onChange={(event) => setAffirmed(event.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border-black/30 accent-black dark:border-white/30 dark:accent-white" />
+          <span>
+            {bulk ? "I'm deleting every listed review for the reason above. Their ratings, and whether they are positive or negative, played no part."
+              : "I'm deleting this for the reason above. Its rating, and whether it is positive or negative, played no part."}
+            <span aria-hidden className="ml-0.5 text-red-600 dark:text-red-400">*</span>
+          </span>
+        </label>
       </div>
-      <label className="flex items-start gap-3 rounded-xl border border-black/10 p-4 text-sm dark:border-white/10">
-        <input type="checkbox" required checked={affirmed} disabled={saving} onChange={(event) => setAffirmed(event.target.checked)}
-          className="mt-0.5 h-4 w-4 shrink-0 rounded border-black/30 accent-black dark:border-white/30 dark:accent-white" />
-        <span>
-          {bulk ? "I'm deleting every listed review for the reason above. Their ratings, and whether they are positive or negative, played no part."
-            : "I'm deleting this for the reason above. Its rating, and whether it is positive or negative, played no part."}
-          <span aria-hidden className="ml-0.5 text-red-600 dark:text-red-400">*</span>
-        </span>
-      </label>
     </div>
   </Modal>;
 }
