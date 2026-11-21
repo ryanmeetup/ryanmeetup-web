@@ -33,7 +33,7 @@ export function CartLineItem({ line, compact = false, highlighted = false, from 
             {options.length > 0 && <ul className="mt-1 space-y-0.5 text-xs text-black/70 dark:text-white/70">{options.map((option) => <li key={option.name}>{option.name}: {option.value}</li>)}</ul>}
           </div>
           <div className="shrink-0 text-right">
-            {compareAtPrice && <SaleBadge markedDown promotable={false} className="mb-1.5" />}
+            {compareAtPrice && <SaleBadge markedDown promotable={false} size="sm" className="mb-1" />}
             <span className="block text-sm font-semibold">{lineTotal(line.merchandise.price)}</span>
             {compareAtPrice && <s className="mt-0.5 block text-xs text-black/70 dark:text-white/70"><span className="sr-only">Originally </span>{lineTotal(compareAtPrice)}</s>}
             {line.quantity > 1 && <span className="mt-1 block text-xs text-black/70 dark:text-white/70">{formatMoney(line.merchandise.price)} each</span>}

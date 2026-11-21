@@ -93,7 +93,7 @@ export function ProductCard({ product, eager = false, from }: { product: Product
       ) : (
         <div className="grid h-full place-items-center font-cooper text-5xl text-black/10 dark:text-white/10">R</div>
       )}
-      badges={product.availableForSale ? <SaleBadge markedDown={sale.onSale} promotable={!product.externalUrl} className="absolute left-3 top-3" /> : <span className="absolute left-3 top-3 rounded-full bg-black px-3 py-1 text-[10px] font-bold uppercase tracking-caps-tight text-white">Sold out</span>}
+      badges={product.availableForSale ? <SaleBadge markedDown={sale.onSale} promotable={!product.externalUrl} className="absolute left-2 top-2" /> : <span className="absolute left-3 top-3 rounded-full bg-black px-3 py-1 text-[10px] font-bold uppercase tracking-caps-tight text-white">Sold out</span>}
       // The currency action is a sibling of the link, so switching never opens the product.
       mediaOverlay={
         <PriceBadge

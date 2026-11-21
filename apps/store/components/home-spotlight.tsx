@@ -33,7 +33,7 @@ export function HomeSpotlight({ spotlight: { listing, label, description: collec
         ) : (
           <div aria-hidden className="grid aspect-square place-items-center font-cooper text-8xl text-black/10 dark:text-white/10">R</div>
         )}
-        {listing.availableForSale && <SaleBadge markedDown={sale.onSale} promotable={!listing.externalUrl} className="absolute left-4 top-4" />}
+        {listing.availableForSale && <SaleBadge markedDown={sale.onSale} promotable={!listing.externalUrl} size="lg" className="absolute left-4 top-4" />}
       </Card>
       <div className="flex min-w-0 flex-1 flex-col justify-center gap-6 p-6 sm:p-10 xl:p-14">
         <div>
