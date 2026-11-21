@@ -202,7 +202,7 @@ export function CustomReviewComposer({
         </div>
         <Input label="Title" name={`${formId}-title`} required maxLength={REVIEW_TITLE_MAX} placeholder="Sum it up, Ryan" value={draft.title} onChange={(event) => setDraft((value) => ({ ...value, title: event.target.value }))} />
         <Textarea id={`${formId}-body`} label="Review" name="body" required maxLength={REVIEW_BODY_MAX} placeholder="The good, the bad, the very Ryan. How's it fitting, and how's it holding up?" value={draft.body} onChange={(event) => setDraft((value) => ({ ...value, body: event.target.value }))} />
-        {photoScope && <ReviewPhotoField photos={photos} disabled={pending} />}
+        {photoScope && <ReviewPhotoField photos={photos} disabled={pending} rejected={photoScope.review?.rejectedPhotos} />}
         <div className="space-y-2">
           <DropdownSelect
             label="Show my name as"

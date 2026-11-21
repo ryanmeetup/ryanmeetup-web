@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { BuyerReviewStatus } from "@ryanmeetup/reviews";
+import type { BuyerRejectedPhoto, BuyerReviewStatus } from "@ryanmeetup/reviews";
 import { Avatar, Button, Card, ConfirmationDialog, DisclosureCard, ErrorCallout, Heading, RatingStars, Spinner, Text } from "@ryanmeetup/ui";
 import { FiAlertCircle, FiCheckCircle, FiClock, FiEdit2, FiEye, FiEyeOff, FiMessageSquare, FiRefreshCw, FiSlash, FiUser, FiXCircle } from "react-icons/fi";
 import type { IconType } from "react-icons";
@@ -41,6 +41,26 @@ const toneBox: Record<Tone, string> = {
  * buyer's latest edit was turned down while the earlier version stays live.
  * Static page content, so not an alert.
  */
+/** Photos staff turned down, each with its reason. The review text is judged separately. */
+function RejectedPhotos({ photos }: { photos: BuyerRejectedPhoto[] }) {
+  const one = photos.length === 1;
+  return (
+    <div className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-sm ${toneBox.danger}`}>
+      <FiAlertCircle aria-hidden className="mt-0.5 shrink-0 text-base" />
+      <div className="min-w-0 space-y-3">
+        <p className="font-semibold">{one ? "A photo wasn't approved" : `${photos.length} photos weren't approved`}</p>
+        <dl className="space-y-2 border-l-2 border-red-500/35 pl-3 dark:border-red-400/35">
+          {photos.map((photo, index) => <div key={photo.id} className="space-y-1">
+            <dt className="font-semibold">{one ? "Message from Ryan" : `Photo ${index + 1}: message from Ryan`}</dt>
+            <dd className="whitespace-pre-wrap wrap-anywhere">{photo.reason}</dd>
+          </div>)}
+        </dl>
+        <p className="opacity-80">{one ? "It stays off the product page" : "They stay off the product page"}. Edit your review to swap {one ? "it" : "them"} and we&apos;ll take another look.</p>
+      </div>
+    </div>
+  );
+}
+
 function RejectionReason({ reason, editRejected }: { reason: string; editRejected: boolean }) {
   return (
     <div className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-sm ${toneBox.danger}`}>
@@ -135,6 +155,7 @@ export function MyReviews({ initial, suggestions, client, submitReview }: {
                   {review.rejectionReason
                     ? <RejectionReason reason={review.rejectionReason} editRejected={review.status==="published"} />
                     : <p className={`flex items-start gap-2 rounded-xl border px-4 py-3 text-sm ${toneBox[tone]}`}><StatusIcon aria-hidden className="mt-0.5 shrink-0" /><span><span className="font-semibold">{review.hasPendingEdit ? "Edit waiting for approval" : status.label}.</span> {note}</span></p>}
+                  {review.rejectedPhotos.length > 0 && <RejectedPhotos photos={review.rejectedPhotos} />}
                   {review.status === "published" && product?.href && <Link href={reviewPermalink(product.href, review.id)} prefetch={false}
                     aria-label={`View your review of ${review.item.productTitle}`}
                     className="inline-flex items-center gap-1.5 rounded-sm text-sm font-semibold underline decoration-black/30 underline-offset-4 hover:decoration-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:decoration-white/30 dark:hover:decoration-white dark:focus-visible:ring-white/40">
@@ -167,7 +188,7 @@ export function MyReviews({ initial, suggestions, client, submitReview }: {
       access={{status:"ready",buyer:{firstName:null,lastName:null},purchases:editing.lineId?[{lineId:editing.lineId,label:editing.item.variantTitle ? `${editing.item.productTitle} · ${editing.item.variantTitle}`:editing.item.productTitle}]:[],defaultNameStyle:editing.current.nameStyle}}
       product={{title:editing.item.productTitle,featuredImage:mine.view?.products[editing.item.productId]?.image ? {...mine.view.products[editing.item.productId].image!,width:null,height:null} : null}}
       edit={{initial:editing.current,nameChoices:buyerReviewNameChoices(editing,mine.view?.buyerName??null)}}
-      photos={mine.view?.photosEnabled ? {productId:editing.item.productId,viewerKey:mine.view.viewerKey,review:{id:editing.id,updatedAt:editing.updatedAt}} : undefined}
+      photos={mine.view?.photosEnabled ? {productId:editing.item.productId,viewerKey:mine.view.viewerKey,review:{id:editing.id,updatedAt:editing.updatedAt,rejectedPhotos:editing.rejectedPhotos}} : undefined}
       onClose={mine.dismiss} onSubmit={(review)=>mine.save(editing,{rating:review.rating,title:review.title,body:review.body,nameStyle:review.nameStyle,
         ...(review.photoIds ? {photoIds:review.photoIds,viewerKey:review.viewerKey} : {})})} />}
     <ConfirmationDialog open={Boolean(mine.withdrawing)} setOpen={(open)=>{if(!open)mine.dismiss();}}

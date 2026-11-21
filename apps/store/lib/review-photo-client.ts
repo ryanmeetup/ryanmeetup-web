@@ -1,9 +1,11 @@
 "use client";
 
 import { buyerReviewPhotoSelectionSchema, buyerReviewPhotoSchema } from "@ryanmeetup/reviews";
+import type { BuyerRejectedPhoto } from "@ryanmeetup/reviews";
 
 export const REVIEW_PHOTO_PICKER_MAX_BYTES = 4 * 1024 * 1024;
-export type ReviewPhotoEditorScope = { productId: string; viewerKey: string; review?: { id: string; updatedAt: string } };
+/** `rejectedPhotos` only labels the editor; requests never send it. */
+export type ReviewPhotoEditorScope = { productId: string; viewerKey: string; review?: { id: string; updatedAt: string; rejectedPhotos?: BuyerRejectedPhoto[] } };
 export class ReviewPhotoClientError extends Error {
   constructor(message: string, readonly refreshRequired = false) { super(message); }
 }
