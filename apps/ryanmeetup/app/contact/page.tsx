@@ -56,7 +56,7 @@ const ContactPage = async ({ searchParams }: ContactPageProps) => {
         <div className="absolute -right-24 -top-24 hidden h-64 w-64 rounded-full border border-black/10 bg-white/70 blur-3xl dark:border-white/10 dark:bg-white/10 lg:block" />
         <div className="absolute -bottom-24 left-10 hidden h-64 w-64 rounded-full border border-black/10 bg-white/60 blur-3xl dark:border-white/10 dark:bg-white/10 lg:block" />
         <div className="relative grid gap-10 xl:grid-cols-[1.05fr_0.95fr] xl:items-center xl:gap-16">
-          <div className="space-y-6 xl:flex xl:self-stretch xl:flex-col xl:space-y-0 xl:py-6">
+          <div className="space-y-10">
             <div className="space-y-6">
               <Heading
                 className="text-4xl title sm:text-5xl lg:text-6xl"
@@ -71,9 +71,7 @@ const ContactPage = async ({ searchParams }: ContactPageProps) => {
               </Text>
             </div>
 
-            <div className="xl:mt-auto xl:pt-10">
-              <FollowUs />
-            </div>
+            <FollowUs />
           </div>
 
           <Card
