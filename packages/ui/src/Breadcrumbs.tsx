@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Text } from "./Text";
 
 export type Breadcrumb = {
   current?: boolean;
@@ -45,6 +44,8 @@ const Breadcrumbs = ({
               }
               key={`${crumb.href}-${crumb.title}`}
             >
+              {/* Labels are spans, not Text: Text's own colour would win
+                  over the link's and make every crumb look the same. */}
               {current ? (
                 <span
                   aria-current="page"
@@ -56,15 +57,9 @@ const Breadcrumbs = ({
                   }
                 >
                   {crumb.icon}
-                  <Text
-                    className={
-                      compact
-                        ? "truncate text-inherit"
-                        : "title truncate text-inherit"
-                    }
-                  >
+                  <span className={compact ? "truncate tracking-wide" : "title truncate tracking-wide"}>
                     {crumb.title}
-                  </Text>
+                  </span>
                 </span>
               ) : (
                 <Link
@@ -77,15 +72,15 @@ const Breadcrumbs = ({
                   }
                 >
                   {crumb.icon}
-                  <Text
+                  <span
                     className={
                       compact
-                        ? "whitespace-nowrap text-inherit"
-                        : "whitespace-nowrap text-gray-700 group-hover:text-black dark:text-gray-400 dark:group-hover:text-white"
+                        ? "whitespace-nowrap tracking-wide"
+                        : "whitespace-nowrap tracking-wide text-gray-700 group-hover:text-black dark:text-gray-400 dark:group-hover:text-white"
                     }
                   >
                     {crumb.title}
-                  </Text>
+                  </span>
                 </Link>
               )}
 
