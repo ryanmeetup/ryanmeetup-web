@@ -1,6 +1,7 @@
 "use client";
 
-import { Button, ErrorCallout, Heading, Text } from "@ryanmeetup/ui";
+import { useQueryParamState, useSearchFilter } from "@ryanmeetup/hooks";
+import { Button, ErrorCallout, Heading, PendingResults, SearchInput, Text } from "@ryanmeetup/ui";
 import type { ReviewFeedPage } from "@/lib/review-feed";
 import { PublicReviewCard } from "./public-review-card";
 import { PublicReviewFilters } from "./public-review-filters";
@@ -14,14 +15,24 @@ function feedPage(value: unknown): ReviewFeedPage | null {
 
 // Keep each product attached through shared review sorting, filtering and paging.
 const feedReviews = (page: ReviewFeedPage) => page.items.map(({ review, product }) => ({ ...review, product }));
+type FeedReview = ReturnType<typeof feedReviews>[number];
+
+const SEARCH_PARAM = "q";
+// Keep the search placeholder in step with these fields ("review" covers title and body).
+const reviewHaystack = ({ title, body, reviewerName, product }: FeedReview) =>
+  [title, body, reviewerName, product.title].join(" ").toLowerCase();
 
 /** Shop-wide public reviews, using the same controls and complete-list refinement as product pages. */
 export function ReviewFeed({ initial }: { initial: ReviewFeedPage }) {
+  // The settled query lives in the URL; a search, like a rating, must see every page before it can say what matches.
+  const [appliedQuery] = useQueryParamState(SEARCH_PARAM);
+  const searching = appliedQuery.trim() !== "";
   const feed = usePublicReviewPages({
     source: initial,
     scopeKey: "shop",
     reviews: feedReviews(initial),
     cursor: initial.nextCursor,
+    searching,
     readPage: async (cursor, signal) => {
       const response = await fetch(`/api/reviews/feed?${new URLSearchParams({ cursor })}`, { cache: "no-store", signal });
       const page = response.ok ? feedPage(await response.json()) : null;
@@ -29,32 +40,52 @@ export function ReviewFeed({ initial }: { initial: ReviewFeedPage }) {
       return { reviews: feedReviews(page), nextCursor: page.nextCursor };
     },
   });
+  const search = useSearchFilter({ data: feed.reviews, buildHaystack: reviewHaystack, queryParam: SEARCH_PARAM });
+  const reviews = search.filtered;
+  const finding = feed.needsComplete && feed.pending;
 
   return <>
-    <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-      <PublicReviewFilters rating={feed.rating} sort={feed.sort} onChange={feed.changeView} />
-      <Text role="status" className="text-sm" aria-live="polite">
-        {feed.needsComplete ? (feed.pending ? "Loading reviews…" : "Finish loading to see matching reviews.") :
-          feed.cursor ? `Showing ${feed.reviews.length} reviews` :
-            `Showing ${feed.reviews.length} of ${feed.loadedCount} review${feed.loadedCount === 1 ? "" : "s"}`}
-      </Text>
+    <div className="space-y-4">
+      <div className="sm:max-w-md">
+        <SearchInput label="Search reviews" name="review-search" value={search.query}
+          onChange={(event) => search.setQuery(event.target.value)}
+          placeholder="Search by review, reviewer, or product..."
+          pending={search.isPending || finding} pendingLabel="Loading review results"
+          aria-controls="review-feed-results" />
+      </div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <PublicReviewFilters rating={feed.rating} sort={feed.sort} onChange={feed.changeView} />
+        <Text role="status" className="text-sm" aria-live="polite">
+          {feed.needsComplete ? (feed.pending ? "Loading reviews…" : "Finish loading to see matching reviews.") :
+            feed.cursor ? `Showing ${reviews.length} reviews` :
+              `Showing ${reviews.length} of ${feed.loadedCount} review${feed.loadedCount === 1 ? "" : "s"}`}
+        </Text>
+      </div>
     </div>
-    <div id="review-feed-results" role="region" aria-label="Review results" aria-busy={feed.pending}>
-      {feed.needsComplete ? (
-        <div className="rounded-2xl border border-dashed border-black/20 p-8 text-center dark:border-white/20">
-          <Heading size="h2" className="text-xl">{feed.pending ? "Finding matching reviews" : "More reviews to check"}</Heading>
-          <Text className="mt-2">{feed.pending ? "Checking every published review across the shop." : "Try loading again to see all reviews that match."}</Text>
-        </div>
-      ) : feed.reviews.length ? (
-        <ul id="review-feed" aria-label="Customer reviews" aria-busy={feed.pending} className="grid items-stretch gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {feed.reviews.map(({ product, ...review }) => <li key={review.id} className="min-w-0"><PublicReviewCard review={review} product={product} /></li>)}
-        </ul>
-      ) : (
-        <div className="rounded-2xl border border-dashed border-black/20 p-8 text-center dark:border-white/20">
-          <Heading size="h2" className="text-xl">No reviews match this rating</Heading>
-          <Text className="mt-2">Try another star rating or reset the filters to see every review.</Text>
-        </div>
-      )}
+    <div id="review-feed-results" role="region" aria-label="Review results" aria-busy={feed.pending || search.isPending}>
+      <PendingResults pending={search.isPending} label="Searching reviews" surface="page">
+        {feed.needsComplete ? (
+          <div className="rounded-2xl border border-dashed border-black/20 p-8 text-center dark:border-white/20">
+            <Heading size="h2" className="text-xl">{feed.pending ? "Finding matching reviews" : "More reviews to check"}</Heading>
+            <Text className="mt-2">{feed.pending ? "Checking every published review across the shop." : "Try loading again to see all reviews that match."}</Text>
+          </div>
+        ) : reviews.length ? (
+          <ul id="review-feed" aria-label="Customer reviews" aria-busy={feed.pending} className="grid items-stretch gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {reviews.map(({ product, ...review }) => <li key={review.id} className="min-w-0"><PublicReviewCard review={review} product={product} /></li>)}
+          </ul>
+        ) : searching ? (
+          <div className="rounded-2xl border border-dashed border-black/20 p-8 text-center dark:border-white/20">
+            <Heading size="h2" className="text-xl">No reviews match your search</Heading>
+            <Text className="mt-2">Not even one Ryan said that. Try different words, another star rating, or clear the search.</Text>
+            <Button variant="secondary" size="sm" className="mt-4 w-full sm:w-auto" onClick={() => search.setQuery("")}>Clear search</Button>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-black/20 p-8 text-center dark:border-white/20">
+            <Heading size="h2" className="text-xl">No reviews match this rating</Heading>
+            <Text className="mt-2">Try another star rating or reset the filters to see every review.</Text>
+          </div>
+        )}
+      </PendingResults>
     </div>
     <div className="mt-6 space-y-3">
       {feed.cursor && <Button variant="secondary" className="w-full sm:w-auto" loading={feed.pending} loadingText="Loading reviews…"

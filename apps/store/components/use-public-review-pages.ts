@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { appendPublicReviews, selectPublicReviews } from "@/lib/public-review-view";
 import type { Review } from "@/lib/types";
 
@@ -10,11 +10,13 @@ function initialState<T extends Review>(source: object, scopeKey: string, review
 }
 
 /** Shared public paging for product reviews and the shop feed. Each server snapshot owns its cached pages and selections. */
-export function usePublicReviewPages<T extends Review>({ source, scopeKey, reviews: initialReviews, cursor: initialCursor, readPage }: {
+export function usePublicReviewPages<T extends Review>({ source, scopeKey, reviews: initialReviews, cursor: initialCursor, readPage, searching = false }: {
   source: object;
   scopeKey: string;
   reviews: T[];
   cursor: string | null;
+  /** A settled text search narrows the list, so like a rating it must see every page. */
+  searching?: boolean;
   readPage: (cursor: string, signal: AbortSignal) => Promise<{ reviews: T[]; nextCursor: string | null }>;
 }) {
   const [state, setState] = useState(() => initialState(source, scopeKey, initialReviews, initialCursor));
@@ -68,7 +70,12 @@ export function usePublicReviewPages<T extends Review>({ source, scopeKey, revie
     }
   }
 
-  const refined = state.rating !== "all" || state.sort !== "newest";
+  const refined = searching || state.rating !== "all" || state.sort !== "newest";
+  const startSearch = useEffectEvent(() => void loadMore(true));
+  // The settled query arrives from the URL (typing, a shared link, or back/forward), not from an event this hook owns.
+  // Starting the page reads marks the feed pending before the first fetch, which is the one synchronous setState here.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { if (searching) startSearch(); }, [searching, source, scopeKey]);
   const needsComplete = refined && state.cursor !== null;
 
   function changeView(view: { rating?: string; sort?: string }) {

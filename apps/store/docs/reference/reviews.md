@@ -104,7 +104,10 @@ reset control across the whole shop. It starts with twenty reviews and loads
 the remaining approved-only feed pages on the first refinement, reusing public
 review cards and their product links. Feed product links open the plain
 product/style page without a review anchor, since the reader has already read
-the review there. Matching results appear only after
+the review there. A debounced search box matches review titles and text,
+reviewer names and product titles, and keeps the settled query in a shareable
+`?q=` parameter; like a rating, a search counts as a refinement and loads the
+remaining pages first. Matching results appear only after
 every page loads; a failed continuation retains completed pages for a deliberate
 retry. Until the full feed is loaded, the displayed count describes loaded
 reviews rather than claiming a shop-wide total. As with product reviews, large

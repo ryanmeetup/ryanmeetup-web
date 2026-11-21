@@ -148,3 +148,26 @@ test("shop review controls fit both themes at mobile and desktop boundaries", as
     }
   }
 });
+
+test("search debounces into the URL, checks every page and works from a shared link", async ({ page }) => {
+  await page.goto("/reviews");
+  const search = page.getByRole("textbox", { name: "Search reviews" });
+  await expect(search).toHaveAttribute("placeholder", "Search by review, reviewer, or product...");
+  // Review 7 sits on the third page, so a match proves the search loaded the whole feed.
+  await search.fill("shop review 7");
+  await expect(cards(page)).toHaveCount(1);
+  await expect(cards(page).first()).toContainText("Shop review 7");
+  await expect(page).toHaveURL(/[?&]q=shop\+review\+7/);
+  await choose(page, "Rating", "5 stars");
+  await expect(cards(page)).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "No reviews match your search" })).toBeVisible();
+  await page.getByRole("button", { name: "Clear search", exact: true }).click();
+  await expect(search).toHaveValue("");
+  await expect(cards(page)).toHaveCount(20);
+  await expect(page).not.toHaveURL(/[?&]q=/);
+
+  await page.goto(`/reviews?q=${encodeURIComponent(dad.title)}`);
+  await expect(search).toHaveValue(dad.title);
+  await expect(cards(page)).toHaveCount(23);
+  for (const row of await cards(page).all()) await expect(row).toContainText(dad.title);
+});
