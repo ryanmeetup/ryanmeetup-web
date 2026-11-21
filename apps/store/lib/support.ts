@@ -4,28 +4,37 @@ import { validateEmail } from "@ryanmeetup/utils";
 
 /** The contact topic for a broken or weird bit of the site rather than an order. */
 export const SITE_BUG_TOPIC = "site-bug";
+export const PRODUCT_RETURN_TOPIC = "product-return";
 
-export type SupportPrefill = { order: string; email: string; topic: string; page: string };
+export type SupportPrefill = { order: string; email: string; topic: string; page: string; product: string };
 
-type SupportQuery = Partial<Record<"order" | "email" | "topic" | "from", string | string[]>>;
+type SupportQuery = Partial<Record<"order" | "email" | "topic" | "from" | "product", string | string[]>>;
 
 /**
  * Reads `?order=` and `?email=` from a "Need help with this order?" link in a Shopify
- * notification, and `?topic=site-bug&from=/path` from a bug-report link. Anything
- * malformed is dropped rather than shown back to the customer.
+ * notification, bug-report links, and product-return requests from reviews.
+ * Anything malformed is dropped rather than shown back to the customer.
  */
 export function parseSupportPrefill(query: SupportQuery): SupportPrefill {
   const first = (value?: string | string[]) => (Array.isArray(value) ? value[0] : value)?.trim() ?? "";
   const order = first(query.order).replace(/^#/, "");
   const email = first(query.email);
   const from = first(query.from);
+  const topic = first(query.topic);
+  const product = first(query.product);
   return {
     order: /^[A-Za-z0-9-]{1,32}$/.test(order) ? `#${order}` : "",
     email: validateEmail(email) ? email : "",
-    topic: first(query.topic) === SITE_BUG_TOPIC ? SITE_BUG_TOPIC : "",
+    topic: [SITE_BUG_TOPIC, PRODUCT_RETURN_TOPIC].includes(topic) ? topic : "",
     // Only a path on this site, so the field never echoes someone else's URL.
     page: /^\/(?!\/)[^\s]{0,199}$/.test(from) ? from : "",
+    product: topic === PRODUCT_RETURN_TOPIC && product.length <= 300 && !/[\u0000-\u001f\u007f]/u.test(product) ? product : "",
   };
+}
+
+/** A readable product name keeps requests useful even after an item is deleted. */
+export function getProductReturnHref(product: string) {
+  return `/contact?${new URLSearchParams({ topic: PRODUCT_RETURN_TOPIC, product })}`;
 }
 
 /** The contact form opened on the bug topic, remembering the page the visitor was on. */

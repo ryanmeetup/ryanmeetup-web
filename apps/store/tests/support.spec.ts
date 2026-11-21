@@ -1,8 +1,8 @@
 import { expect, test } from "@playwright/test";
-import { getAdminOrderSearchUrl, getAdminOrdersUrl, getBugReportHref, parseSupportPrefill } from "../lib/support";
+import { getAdminOrderSearchUrl, getAdminOrdersUrl, getBugReportHref, getProductReturnHref, parseSupportPrefill } from "../lib/support";
 import { validateEmail } from "@ryanmeetup/utils";
 
-const blank = { order: "", email: "", topic: "", page: "" };
+const blank = { order: "", email: "", topic: "", page: "", product: "" };
 
 test("order links from Shopify prefill a readable order number and drop anything malformed", () => {
   expect(parseSupportPrefill({ order: "1042", email: " ryan@example.com " })).toEqual({ ...blank, order: "#1042", email: "ryan@example.com" });
@@ -28,6 +28,18 @@ test("the Shopify Admin link searches by order number, falling back to the custo
   expect(getAdminOrderSearchUrl(orders!, " ", "ryan+merch@example.com")).toBe(`${orders}?query=ryan%2Bmerch%40example.com`);
   expect(getAdminOrdersUrl("store.ryanmeetup.com")).toBeNull();
   expect(getAdminOrdersUrl(undefined)).toBeNull();
+});
+
+test("product-return links round-trip the item name and reject malformed prefills", () => {
+  const product = "Ryan’s pin & sticker set / original";
+  const url = new URL(getProductReturnHref(product), "https://store.test");
+  expect(url.pathname).toBe("/contact");
+  expect(url.searchParams.get("product")).toBe(product);
+  expect(parseSupportPrefill(Object.fromEntries(url.searchParams))).toEqual({ ...blank, topic: "product-return", product });
+  for (const value of ["r".repeat(301), "Ryan\npin", "Ryan\u0000pin"]) {
+    expect(parseSupportPrefill({ topic: "product-return", product: value })).toEqual({ ...blank, topic: "product-return" });
+  }
+  expect(parseSupportPrefill({ product })).toEqual(blank);
 });
 
 test("an email must be the whole value, not just contain an address", () => {

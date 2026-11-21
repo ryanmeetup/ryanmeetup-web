@@ -4,9 +4,9 @@ import { readPublicReviewPage, readReviewPageRequest } from "./public-review-pag
 import { DEFAULT_REVIEW_VIEW, toReview } from "./public-review-view";
 import type { ReviewView } from "./public-review-view";
 import { privateJson } from "./request-guard";
+import { getProductReturnHref } from "./support";
 import type { ReviewBackend } from "./review-backend";
 import { getProductCardsByIds } from "./shopify";
-import type { ProductCard } from "./shopify";
 import type { Review } from "./types";
 
 /**
@@ -14,7 +14,7 @@ import type { Review } from "./types";
  * (not the review's anchor: the reader has just read the review and wants the
  * item) when the product still exists.
  */
-export type ReviewFeedItem = { review: Review; product: { title: string; href: string | null } };
+export type ReviewFeedItem = { review: Review; product: { title: string; href: string | null; returnRequestHref?: string } };
 /** One numbered feed page: the served items, how many reviews match, and where the page starts. */
 export type ReviewFeedPage = { items: ReviewFeedItem[]; total: number; offset: number };
 
@@ -24,12 +24,14 @@ export type ReviewFeedPage = { items: ReviewFeedItem[]; total: number; offset: n
  */
 export async function withReviewedProducts(reviews: PublicReview[], products: typeof getProductCardsByIds = getProductCardsByIds): Promise<ReviewFeedItem[]> {
   if (!reviews.length) return [];
-  const cards = await products([...new Set(reviews.map((review) => review.item.productId))]).catch(() => ({} as Record<string, ProductCard>));
+  const cards = await products([...new Set(reviews.map((review) => review.item.productId))]).catch(() => null);
   return reviews.map((review) => {
-    const card = cards[review.item.productId];
+    const card = cards?.[review.item.productId];
     return { review: toReview(review), product: {
       title: card?.title ?? review.item.productTitle,
       href: card ? ("href" in card && typeof card.href === "string" ? card.href : getProductHref(card)) : null,
+      // An outage cannot establish that a product was removed from the shop.
+      ...(cards && !card ? { returnRequestHref: getProductReturnHref(review.item.productTitle) } : {}),
     } };
   });
 }

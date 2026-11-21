@@ -35,9 +35,15 @@ for the evidence to collect rather than treating unrecorded checks as passed.
 
 The bottom of the home page shows up to six newest published reviews across the
 shop, including low ratings. It reuses product review cards, approved photo
-paths and verified-purchase badges. Product links open the exact review when
-the product still has a storefront page; unavailable products keep their saved
-review title without a broken link. Long bodies have a compact preview.
+paths and verified-purchase badges. Product links open the product/style page
+when it still exists. Removed products keep their saved product title with a
+question-mark button beside it. Its popover explains the item’s availability and
+offers “Request its return,” which opens `/contact` on the product-return topic with
+the item name filled in. This also appears on the shop-wide `/reviews` feed.
+The request goes through the existing contact delivery to store support; it
+requires contact details and an item name, with no order details required.
+A failed catalog lookup keeps the saved title without claiming the item was
+removed or offering a return request. Long bodies have a compact preview.
 
 The server uses the service-only `store_latest_reviews` reader and the canonical
 public projection. It never requests buyer sessions or private moderation data.

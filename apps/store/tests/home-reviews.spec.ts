@@ -61,9 +61,9 @@ test("empty and unavailable review reads leave the catalog alone and never fabri
 
 test("missing products keep the original review without inventing a broken product link", async () => {
   const rows = await getHomeReviews({ backend: backend([review]), products: async () => ({}) });
-  expect(rows[0].product).toEqual({ title: "Old shirt title", href: null });
+  expect(rows[0].product).toEqual({ title: "Old shirt title", href: null, returnRequestHref: "/contact?topic=product-return&product=Old+shirt+title" });
   const unavailable = await getHomeReviews({ backend: backend([review]), products: async () => { throw Error("Shopify unavailable"); } });
-  expect(unavailable).toEqual(rows);
+  expect(unavailable[0].product).toEqual({ title: "Old shirt title", href: null });
 });
 
 test("grouped product links keep the selected design without a review anchor", async () => {

@@ -4,7 +4,7 @@ import { FiHash, FiMail, FiMonitor, FiMousePointer, FiNavigation, FiPackage } fr
 import { StoreContactForm } from "@/components/store-contact-form";
 import { buildPageMetadata, DEFAULT_IMAGE } from "@/lib/metadata";
 import { getCustomerAccountUrl } from "@/lib/shopify";
-import { getAdminOrdersUrl, parseSupportPrefill, SITE_BUG_TOPIC } from "@/lib/support";
+import { getAdminOrdersUrl, parseSupportPrefill, PRODUCT_RETURN_TOPIC, SITE_BUG_TOPIC } from "@/lib/support";
 
 export const metadata = buildPageMetadata({
   title: "Store customer service",
@@ -29,12 +29,13 @@ const bugReportDetails = [
 ];
 
 type SearchParam = string | string[];
-type Props = { searchParams: Promise<{ order?: SearchParam; email?: SearchParam; topic?: SearchParam; from?: SearchParam }> };
+type Props = { searchParams: Promise<{ order?: SearchParam; email?: SearchParam; topic?: SearchParam; from?: SearchParam; product?: SearchParam }> };
 
 export default async function ContactPage({ searchParams }: Props) {
   const prefill = parseSupportPrefill(await searchParams);
   const isBugReport = prefill.topic === SITE_BUG_TOPIC;
-  const helpfulDetails = isBugReport ? bugReportDetails : getHelpfulDetails(Boolean(await getCustomerAccountUrl().catch(() => null)));
+  const isProductReturn = prefill.topic === PRODUCT_RETURN_TOPIC;
+  const helpfulDetails = isBugReport ? bugReportDetails : isProductReturn ? [] : getHelpfulDetails(Boolean(await getCustomerAccountUrl().catch(() => null)));
   return (
     <main className="store-container py-8 sm:py-12 lg:py-16">
       <section className="relative overflow-hidden rounded-3xl border border-black/10 bg-white/80 p-5 shadow-drop-lg backdrop-blur-[2px] sm:p-8 dark:border-white/10 dark:bg-white/5 lg:p-10">
@@ -43,16 +44,17 @@ export default async function ContactPage({ searchParams }: Props) {
           <div className="space-y-8 xl:py-4">
             <div className="space-y-5">
               <Heading size="h1" className="text-4xl leading-[1.05] sm:text-5xl lg:text-6xl">
-                {isBugReport ? "Found a bug? Nice catch." : "Let’s sort out your order."}
+                {isBugReport ? "Found a bug? Nice catch." : isProductReturn ? "Want to see it back?" : "Let’s sort out your order."}
               </Heading>
               <Text className="text-lg text-black/80 dark:text-white/80">
                 {isBugReport
                   ? "The store is new, and you’ve spotted something we missed. Tell us what went sideways, and if we can confirm the bug, we’ll email you a thank-you coupon."
-                  : "Questions about a product, shipment, or something that arrived less Ryan-ready than expected? Send the details to the same team behind RyanMeetup.com."}
+                  : isProductReturn ? "Tell us which item you miss. We’ll pass your request to the Ryan Meetup team."
+                    : "Questions about a product, shipment, or something that arrived less Ryan-ready than expected? Send the details to the same team behind RyanMeetup.com."}
               </Text>
             </div>
 
-            <Card variant="solid" size="lg" className="space-y-5 bg-white/85 dark:bg-black/40">
+            {!!helpfulDetails.length && <Card variant="solid" size="lg" className="space-y-5 bg-white/85 dark:bg-black/40">
               <Kicker>Helpful details</Kicker>
               <div className="grid gap-5">
                 {helpfulDetails.map(({ icon: Icon, title, text }) => (
@@ -67,9 +69,9 @@ export default async function ContactPage({ searchParams }: Props) {
                   </div>
                 ))}
               </div>
-            </Card>
+            </Card>}
 
-            <Text className="text-sm">
+            {!isProductReturn && <Text className="text-sm">
               Shipping times, final sales, or privacy?{" "}
               <Link
                 href="/policies"
@@ -78,14 +80,14 @@ export default async function ContactPage({ searchParams }: Props) {
                 Our store policies
               </Link>{" "}
               may answer it before you hit send.
-            </Text>
+            </Text>}
           </div>
 
           <Card variant="solid" size="lg" className="bg-white/95 shadow-drop dark:border-white/15 dark:bg-black/80 sm:p-8">
-            <Heading size="h2" className="text-2xl sm:text-3xl">Contact customer service</Heading>
+            <Heading size="h2" className="text-2xl sm:text-3xl">{isProductReturn ? "Request an item’s return" : "Contact customer service"}</Heading>
             <Text className="mt-2 text-sm sm:text-base">Give us the clearest clues you have. We’ll route everything through the Ryan Meetup contact team.</Text>
             <div className="mt-6 border-t border-black/10 pt-6 dark:border-white/10">
-              <StoreContactForm key={prefill.topic} prefill={prefill} adminOrdersUrl={getAdminOrdersUrl()} />
+              <StoreContactForm key={`${prefill.topic}:${prefill.product}`} prefill={prefill} adminOrdersUrl={getAdminOrdersUrl()} />
             </div>
           </Card>
         </div>

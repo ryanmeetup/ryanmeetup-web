@@ -1,14 +1,15 @@
 import Link from "next/link";
-import { Card, RatingStars, Text } from "@ryanmeetup/ui";
+import { Button, Card, DropdownPanel, DropdownPanelButton, DropdownPanelContent, RatingStars, Text, getIconButtonClasses } from "@ryanmeetup/ui";
 import { ReviewAuthor, ReviewContent, ReviewVerificationBadge } from "@ryanmeetup/reviews/ui";
-import { FiArrowUpRight, FiCalendar } from "react-icons/fi";
+import { FiArrowUpRight, FiCalendar, FiHelpCircle } from "react-icons/fi";
 import type { Review } from "@/lib/types";
 import { reviewAnchorId } from "@/lib/review-links";
+import type { ReviewFeedItem } from "@/lib/review-feed";
 import { ReviewPhotoGallery } from "./review-photo-gallery";
 import { ReviewReply } from "./review-reply";
 
 /** The same public review presentation on product pages and the home showcase. */
-export function PublicReviewCard({ review, product }: { review: Review; product?: { title: string; href: string | null } }) {
+export function PublicReviewCard({ review, product }: { review: Review; product?: ReviewFeedItem["product"] }) {
   // Header, content, then one bordered footer. Lists lay cards out as masonry,
   // so each card keeps its natural height.
   return <Card size="lg" variant="outline" className="flex flex-col">
@@ -30,7 +31,20 @@ export function PublicReviewCard({ review, product }: { review: Review; product?
             ? <Link href={product.href} className="inline-flex max-w-full items-start gap-1 text-sm underline decoration-black/30 underline-offset-4 hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-4 dark:decoration-white/30">
               <span className="min-w-0 wrap-anywhere"><span className="sr-only">Review of </span>{product.title}</span><FiArrowUpRight aria-hidden className="mt-0.5 shrink-0" />
             </Link>
-            : <Text className="text-sm wrap-anywhere"><span className="sr-only">Review of </span>{product.title}</Text>)}
+            : <div className="flex max-w-full items-center gap-1">
+              <Text className="min-w-0 text-sm wrap-anywhere"><span className="sr-only">Review of </span>{product.title}</Text>
+              {product.returnRequestHref && <DropdownPanel className="inline-flex shrink-0">
+                <DropdownPanelButton aria-label={`Availability of ${product.title}`}
+                  className={getIconButtonClasses("sm", "plain", "!size-7 text-black/70 dark:text-white/70")}>
+                  <FiHelpCircle className="size-4" aria-hidden />
+                </DropdownPanelButton>
+                <DropdownPanelContent role="dialog" aria-label={`Availability of ${product.title}`} className="!w-64 !gap-3 !p-4">
+                  <Text className="text-sm">This item is no longer in the store.</Text>
+                  <Button.Link href={product.returnRequestHref} variant="secondary" size="sm" className="w-full"
+                    aria-label={`Request its return: ${product.title}`}>Request its return</Button.Link>
+                </DropdownPanelContent>
+              </DropdownPanel>}
+            </div>)}
         </div>
       </footer>
       {!product && review.reply && <ReviewReply reply={review.reply} />}
