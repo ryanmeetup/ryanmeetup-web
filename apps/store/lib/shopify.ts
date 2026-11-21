@@ -1,4 +1,4 @@
-import { catalogCollections, getCatalogCollection, getCatalogCollectionSummary, getCatalogProductQuery, isInCatalogCollection } from "./catalog-collections";
+import { catalogCollections, departments, getCatalogCollection, getCatalogCollectionSummary, getCatalogProductQuery, isInCatalogCollection } from "./catalog-collections";
 import { demoCollections, demoProducts } from "./demo-data";
 import { withExternalListings } from "./external-listings";
 import { findGarment, getGarment, getGarmentSummary, sectionByGarment } from "./garments";
@@ -448,6 +448,15 @@ export async function getGarmentCollection(department: string, handle: string): 
   const page = garment ? await getCollection(department) : null;
   if (!garment || !page) return null;
   return { collection: getGarmentSummary(garment), products: page.products.filter((listing) => getGarment(department, listing)?.handle === handle) };
+}
+
+/** Each department's garment groupings that hold at least one listing, keyed by department. */
+export async function getStockedGarments(): Promise<Record<string, string[]>> {
+  const entries = await Promise.all(departments.map(async ({ handle }) => {
+    const page = await getCollection(handle);
+    return [handle, page?.sections?.map(({ collection }) => collection.handle) ?? []] as const;
+  }));
+  return Object.fromEntries(entries);
 }
 
 async function loadCollection(handle: string, memberships: CollectionMembership[]): Promise<ProductPage | null> {

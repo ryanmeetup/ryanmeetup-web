@@ -18,9 +18,16 @@ export function generateStaticParams() {
 
 export const dynamicParams = false;
 
+// An empty grouping, such as Home Goods after its only door mat is archived, is a 404
+// rather than a page that says "0 items"; the header menu leaves it out too.
+async function getStockedGarmentCollection(department: string, garment: string) {
+  const result = await getGarmentCollection(department, garment);
+  return result?.products.length ? result : null;
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { department: handle, garment } = await params;
-  const result = await getGarmentCollection(handle, garment);
+  const result = await getStockedGarmentCollection(handle, garment);
   if (!result) return { title: "Collection not found" };
   const { collection } = result;
   const image = result.products.find((product) => product.featuredImage)?.featuredImage;
@@ -35,7 +42,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function GarmentPage({ params }: Props) {
   const { department: handle, garment } = await params;
   const department = getCatalogCollection(handle);
-  const found = await getGarmentCollection(handle, garment);
+  const found = await getStockedGarmentCollection(handle, garment);
   if (!department || !found) notFound();
   const result = await withListingRatings(found);
   return (

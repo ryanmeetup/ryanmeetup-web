@@ -109,12 +109,19 @@ export function getCollectionMenuRoutes(collections: StoreMenuCollection[]): Nav
   }));
 }
 
-/** A type page's garment groupings, each linking to its own page, then the whole type page. */
-export function getDepartmentMenuRoutes(department: string): NavRoute[] {
+/** Garment handles with at least one listing, keyed by department; null lists every grouping. */
+export type StockedGarments = Record<string, readonly string[]> | null;
+
+/**
+ * A type page's garment groupings, each linking to its own page, then the whole type page.
+ * Pass `stocked` to leave out groupings with nothing in them, such as a sold-out door mat.
+ */
+export function getDepartmentMenuRoutes(department: string, stocked: StockedGarments = null): NavRoute[] {
   const page = getCatalogCollection(department);
   if (!page) return [];
+  const inStock = stocked?.[department];
   return [
-    ...(garmentsByDepartment[department] ?? []).map(({ handle, title, description }) => ({
+    ...(garmentsByDepartment[department] ?? []).filter(({ handle }) => !inStock || inStock.includes(handle)).map(({ handle, title, description }) => ({
       href: getGarmentPath(department, handle),
       text: title,
       description,

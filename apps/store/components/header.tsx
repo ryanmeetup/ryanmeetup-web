@@ -6,12 +6,12 @@ import { usePathname } from "next/navigation";
 import { FiChevronDown, FiMenu, FiShoppingBag, FiX } from "react-icons/fi";
 import { AnimatedCollapse, NavMenu, Tooltip, Wordmark } from "@ryanmeetup/ui";
 import { getCollectionMenuRoutes, getDepartmentMenuRoutes, getStoreNavigationSelection, storeNavigation } from "@/lib/navigation";
-import type { StoreMenu, StoreMenuCollection } from "@/lib/navigation";
+import type { StockedGarments, StoreMenu, StoreMenuCollection } from "@/lib/navigation";
 import { AccountMenu } from "./account-menu";
 import { useCart } from "./cart-provider";
 import { useNavSection } from "./nav-section";
 
-export function Header({ collections, accountUrl }: { collections: StoreMenuCollection[]; accountUrl: string | null }) {
+export function Header({ collections, garments, accountUrl }: { collections: StoreMenuCollection[]; garments: StockedGarments; accountUrl: string | null }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const section = useNavSection();
@@ -19,11 +19,11 @@ export function Header({ collections, accountUrl }: { collections: StoreMenuColl
   const isCurrent = (href: string) => currentPath === href;
   const menuRoutes = useMemo(
     () => ({
-      apparel: getDepartmentMenuRoutes("apparel"),
-      accessories: getDepartmentMenuRoutes("accessories"),
+      apparel: getDepartmentMenuRoutes("apparel", garments),
+      accessories: getDepartmentMenuRoutes("accessories", garments),
       collections: getCollectionMenuRoutes(collections),
     }),
-    [collections],
+    [collections, garments],
   );
   // The menu holding the current page starts expanded so the mobile menu shows where you are.
   const [expandedMenu, setExpandedMenu] = useState<{ path: string; menu: StoreMenu | null } | null>(null);

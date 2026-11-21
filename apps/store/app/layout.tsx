@@ -10,7 +10,7 @@ import { Header } from "@/components/header";
 import { NavSectionProvider } from "@/components/nav-section";
 import { PromotionBanner, PromotionProvider } from "@/components/promotion";
 import { buildPageMetadata, DEFAULT_IMAGE, SITE_NAME, SITE_URL } from "@/lib/metadata";
-import { getCollections, getCustomerAccountUrl, getPolicies, isShopifyConfigured } from "@/lib/shopify";
+import { getCollections, getCustomerAccountUrl, getPolicies, getStockedGarments, isShopifyConfigured } from "@/lib/shopify";
 import { currentPromotion, isPromotionLive } from "@/lib/promotion";
 import { getBugReportHref } from "@/lib/support";
 import "./globals.css";
@@ -48,6 +48,15 @@ async function getMenuCollections() {
   return collections.map(({ handle, title, description }) => ({ handle, title, description }));
 }
 
+// Apparel and Accessories list only the groupings with something in them. An outage
+// lists every grouping rather than emptying both menus.
+async function getMenuGarments() {
+  return getStockedGarments().catch((error: unknown) => {
+    console.error("Could not load garment groupings for the header menu.", error);
+    return null;
+  });
+}
+
 // Only the policies written in Shopify Admin get a footer link.
 async function getPolicyLinks() {
   const policies = await getPolicies().catch((error: unknown) => {
@@ -74,7 +83,7 @@ function isPromotionLiveNow() {
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const commerceConfigured = isShopifyConfigured();
-  const [collections, policyLinks, accountUrl] = await Promise.all([getMenuCollections(), getPolicyLinks(), getHeaderAccountUrl()]);
+  const [collections, garments, policyLinks, accountUrl] = await Promise.all([getMenuCollections(), getMenuGarments(), getPolicyLinks(), getHeaderAccountUrl()]);
   return (
     <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
       <body className="antialiased">
@@ -85,7 +94,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
                 <NavSectionProvider>
                   <PromotionBanner />
                   <BugReportBanner />
-                  <Header collections={collections} accountUrl={accountUrl} />
+                  <Header collections={collections} garments={garments} accountUrl={accountUrl} />
                   {children}
                 </NavSectionProvider>
                 <RyanMeetupFooter

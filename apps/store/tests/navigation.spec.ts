@@ -57,6 +57,18 @@ test("the apparel and accessories menus link each garment page, then the whole t
   expect(getDepartmentMenuRoutes("not-a-department")).toEqual([]);
 });
 
+test("department menus leave out groupings with nothing in them", () => {
+  const stocked = { accessories: ["ryd", "pins", "mugs"] };
+  expect(getDepartmentMenuRoutes("accessories", stocked).map(({ href }) => href)).toEqual([
+    "https://ryanmeetup.com/cards",
+    "/accessories/pins",
+    "/accessories/mugs",
+    "/accessories",
+  ]);
+  // A department missing from the stock list, as during an outage, keeps every grouping.
+  expect(getDepartmentMenuRoutes("apparel", stocked)).toHaveLength(getDepartmentMenuRoutes("apparel").length);
+});
+
 test("canonical routes own one menu even when another menu contains a shortcut", () => {
   // RY-Ds is deliberately offered by both menus, whether it lives in the Store
   // or links directly to the membership site.
