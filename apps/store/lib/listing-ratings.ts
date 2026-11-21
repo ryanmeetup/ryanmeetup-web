@@ -33,9 +33,10 @@ export function poolListingRating(summaries: (ReviewSummary | undefined)[]): Lis
 type Catalog = { products: ProductListing[] } & Partial<CatalogSections>;
 
 /**
- * Adds a rating to every listing with enough published reviews, across the
- * catalog's products, sections, and leftovers alike. Reviews are a garnish
- * here: if they can't be read, the catalog comes back unchanged.
+ * Adds a rating to every listing with enough published reviews, and marks
+ * listings confirmed to have none, across the catalog's products, sections,
+ * and leftovers alike. Reviews are a garnish here: if they can't be read, the
+ * catalog comes back unchanged, so a missing read never claims "no reviews".
  */
 export async function withListingRatings<T extends Catalog>(catalog: T, backend = getReviewBackend()): Promise<T> {
   if (!backend) return catalog;
@@ -50,8 +51,11 @@ export async function withListingRatings<T extends Catalog>(catalog: T, backend 
     return catalog;
   }
   const rate = (listing: ProductListing): ProductListing => {
-    const rating = poolListingRating(reviewProductIds(listing).map((id) => summaries[id]));
-    return rating ? { ...listing, rating } : listing;
+    const listingSummaries = reviewProductIds(listing).map((id) => summaries[id]);
+    const rating = poolListingRating(listingSummaries);
+    if (rating) return { ...listing, rating };
+    const unreviewed = listingSummaries.length > 0 && listingSummaries.every((summary) => summary?.count === 0);
+    return unreviewed ? { ...listing, unreviewed: true } : listing;
   };
   return {
     ...catalog,

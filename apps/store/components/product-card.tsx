@@ -40,6 +40,18 @@ function CardRating({ rating }: { rating: ListingRating }) {
   );
 }
 
+/** Empty stars keep unreviewed cards the same height as rated ones. */
+function CardNoReviews() {
+  return (
+    <p className="flex items-center gap-1.5 text-xs text-black/70 sm:text-sm dark:text-white/70">
+      <span aria-hidden className="flex">
+        <RatingStars rating={0} className="text-sm sm:text-base" />
+      </span>
+      No reviews yet
+    </p>
+  );
+}
+
 /** `from` is the collection the card is listed on, named in the product page's breadcrumb. */
 export function ProductCard({ product, eager = false, from }: { product: ProductListing; eager?: boolean; from?: string }) {
   const colors = getListingColorPreviews(product);
@@ -135,7 +147,7 @@ export function ProductCard({ product, eager = false, from }: { product: Product
       )}
       </>}
     >
-      {product.rating && <CardRating rating={product.rating} />}
+      {product.rating ? <CardRating rating={product.rating} /> : product.unreviewed && <CardNoReviews />}
     </MediaCard>
   );
 }

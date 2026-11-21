@@ -65,6 +65,11 @@ test("catalogs gain ratings across products, sections, and design groups, and su
   expect(rated.products.map((product) => product.rating)).toEqual([{ average: 28 / 6, count: 6 }, undefined, { average: 5, count: 5 }]);
   expect(rated.sections[0].products[0].rating).toEqual({ average: 28 / 6, count: 6 });
   expect(rated.more[0].rating).toBeUndefined();
+  // Only a confirmed zero reads as unreviewed; a few reviews below the threshold do not.
+  expect(rated.products.map((product) => product.unreviewed)).toEqual([undefined, undefined, undefined]);
+  expect(rated.more[0].unreviewed).toBeUndefined();
+  const empty = { products: [listing("500"), listing("200")] };
+  expect((await withListingRatings(empty, backend)).products.map((product) => product.unreviewed)).toEqual([true, undefined]);
 
   const failing = database({}, 503).backend;
   expect(await withListingRatings(catalog, failing)).toBe(catalog);
