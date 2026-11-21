@@ -31,6 +31,7 @@ describes the current owner screen and decisions.
 | [Purchase verification](reference/review-purchase-verification.md) | Exact-line eligibility, bounded lookups, unverified feedback and suggestions. |
 | [Review media](reference/review-media.md) | Processing, staging, buyer controls, staff decisions, public delivery and current limits. |
 | [Review moderation](reference/review-moderation.md) | Owner authorization, queue/API contracts, decisions, replies and policy deletion. |
+| [Analytics](reference/analytics.md) | Vercel events, privacy rules, placements and how to read them for design decisions. |
 
 ## Roadmap and feature planning
 

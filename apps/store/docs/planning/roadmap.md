@@ -174,8 +174,10 @@ product data; do not hard-code unverified delivery promises.
 - Basic and conservative custom shipping tiers remain the recorded choice;
   do not change the plan, prices or variant weights as routine setup.
 - Etsy stays live until Ryan decides to retire it. Favorites, a separate gift
-  feature, storefront product search and Shopify conversion analytics were
-  deferred/dropped; they are not unfinished launch blockers.
+  feature and storefront product search were deferred/dropped; they are not
+  unfinished launch blockers. Vercel Web Analytics with custom shopping
+  events went live on November 21; purchases and revenue still come from
+  Shopify (see [the analytics guide](../reference/analytics.md)).
 - Display currency estimates do not change USD cart amounts. On November 21
   Ryan chose local-currency checkout for the International market (Norway
   currently checks out in USD); storefront labels say the final price is shown
