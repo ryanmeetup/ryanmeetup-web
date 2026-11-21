@@ -2,6 +2,7 @@
 @import "@ryanmeetup/brand/theme.css";
 
 @source "../../../packages/ui/src";
+@source "../../../packages/reviews/src";
 
 @theme {
   /* Price badges sit on product photos, so they need a color no photo uses. */

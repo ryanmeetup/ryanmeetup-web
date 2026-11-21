@@ -2,8 +2,9 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { Button, Modal, Pill, Text } from "@ryanmeetup/ui";
+import { Button, Pill, Text } from "@ryanmeetup/ui";
 import type { StaffReviewPhoto } from "@ryanmeetup/reviews";
+import { ReviewPhotoViewer } from "@ryanmeetup/reviews/ui";
 import type { ModerationReview, ModerationRevision } from "@/lib/store-reviews/moderation";
 
 export type PhotoChoice = (review: ModerationReview, revisionId: string, photo: StaffReviewPhoto, action: "photo-approve" | "photo-reject") => void;
@@ -37,9 +38,7 @@ function Photo({ review, revisionId, photo, disabled, onSelect }: {
       {(photo.state === "rejected" || (photo.state === "pending" && !withReview)) && <Button size="xs" variant="secondary" disabled={disabled || !loaded} onClick={() => onSelect(review, revisionId, photo, "photo-approve")}>Approve photo</Button>}
       {photo.state !== "rejected" && <Button size="xs" variant="secondary" disabled={disabled || !loaded} onClick={() => onSelect(review, revisionId, photo, "photo-reject")}>Reject photo</Button>}
     </div>}
-    <Modal open={open} setIsOpen={setOpen} title="Review photo" size="lg">
-      <div className="relative aspect-[4/3]"><Image src={src} alt="Buyer-submitted product photo" fill sizes="(max-width: 639px) 90vw, 624px" unoptimized className="object-contain" /></div>
-    </Modal>
+    <ReviewPhotoViewer url={open ? src : null} onClose={() => setOpen(false)} title="Review photo" alt="Buyer-submitted product photo" />
   </li>;
 }
 export function ReviewModerationPhotos({ review, revision, disabled, onSelect }: {

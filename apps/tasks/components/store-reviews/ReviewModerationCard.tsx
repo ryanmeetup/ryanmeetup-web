@@ -3,8 +3,9 @@
 import type { ReactNode } from "react";
 
 import { useId, useState } from "react";
-import { FiCheckCircle, FiChevronDown, FiClock, FiEdit2, FiEyeOff, FiMessageSquare, FiSlash, FiTrash2, FiUser, FiXCircle } from "react-icons/fi";
-import { AnimatedCollapse, Avatar, Button, Card, Heading, IconButton, Kicker, RatingStars, Text } from "@ryanmeetup/ui";
+import { FiCheckCircle, FiChevronDown, FiClock, FiEdit2, FiEyeOff, FiMessageSquare, FiSlash, FiTrash2, FiXCircle } from "react-icons/fi";
+import { AnimatedCollapse, Button, Card, Heading, IconButton, Kicker, RatingStars, Text } from "@ryanmeetup/ui";
+import { ReviewAuthor, ReviewContent, ReviewReplyContent, ReviewVerificationBadge } from "@ryanmeetup/reviews/ui";
 import { formatTimestamp } from "@/lib/date-format";
 import { moderationActionLabel, moderationReasonIsPublic, reviewModerationActions, reviewReplyActions } from "@/lib/store-reviews/moderation";
 import type { ModerationReview, ModerationRevision, StaffReviewAction } from "@/lib/store-reviews/moderation";
@@ -22,22 +23,13 @@ export function ModerationVersion({ revision, label, showLabel = true, verifiedP
 }) {
   return <section className="min-w-0 space-y-3" aria-label={label}>
     {showLabel && <Kicker className="text-xs tracking-caps-tight">{label}</Kicker>}
-    <div className="flex min-w-0 items-center gap-2">
-      <span aria-hidden className="contents"><Avatar colorful name={revision.displayName} icon={revision.displayName === "Anonymous" ? <FiUser /> : undefined} /></span>
-      <div className="min-w-0">
-        <Text className="text-sm font-semibold wrap-anywhere">{revision.displayName}</Text>
-        <Text className="text-xs">Submitted <time dateTime={revision.submittedAt}>{formatTimestamp(revision.submittedAt)}</time></Text>
-      </div>
-    </div>
+    <ReviewAuthor name={revision.displayName} detail={<>Submitted <time dateTime={revision.submittedAt}>{formatTimestamp(revision.submittedAt)}</time></>} />
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <RatingStars rating={revision.rating} />
-        {verifiedPurchase !== undefined && (verifiedPurchase
-          ? <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-800 dark:text-emerald-200"><FiCheckCircle aria-hidden />Verified purchase</span>
-          : <Text className="text-xs">No matching order</Text>)}
+        {verifiedPurchase !== undefined && <ReviewVerificationBadge kind={verifiedPurchase ? "purchase" : "unmatched"} />}
       </div>
-      {revision.title && <Heading size="h3" variant="normal" className="text-base font-semibold wrap-anywhere">{revision.title}</Heading>}
-      <Text className="whitespace-pre-wrap text-sm wrap-anywhere">{revision.body}</Text>
+      <ReviewContent title={revision.title} body={revision.body} bodyClassName="text-sm" />
     </div>
     {children}
   </section>;
@@ -91,23 +83,18 @@ export function ReviewModerationCard({ review, disabled, staffNames, onSelect, o
       </div>}
       {review.state === "hidden" && <Text className="text-sm">Hidden from the storefront and rating totals. Approving an edit keeps it hidden.</Text>}
       {review.state === "withdrawn" && <Text className="text-sm">Withdrawn by the buyer. Staff cannot restore this review.</Text>}
-      {(review.reply || reviewReplyActions(review).length > 0) && <section aria-label="Official reply" className="space-y-3 border-t border-black/10 pt-4 dark:border-white/10">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <Heading size="h3" variant="normal" className="text-sm font-semibold">Official reply</Heading>
-          <div className="flex gap-2">
+      {/* A published reply looks as it does on the storefront; the empty state stays plain. */}
+      {(review.reply || reviewReplyActions(review).length > 0) && <ReviewReplyContent official={Boolean(review.reply)} label={review.reply ? "Reply from Ryan Meetup" : "Official reply"} heading="h3" body={review.reply?.body}
+        metadata={review.reply && <Text className="text-xs">Updated <time dateTime={review.reply.updatedAt}>{formatTimestamp(review.reply.updatedAt)}</time></Text>}
+        actions={<div className="flex gap-2">
             {reviewReplyActions(review).map((action) => <IconButton key={action} size="md"
               label={`${moderationActionLabel(action, review)} for ${review.item.productTitle}`} disabled={disabled}
               variant={action === "reply-remove" ? "danger" : "subtle"} onClick={() => onSelect(review, action)}>
               {action === "reply-remove" ? <FiTrash2 aria-hidden /> : review.reply ? <FiEdit2 aria-hidden /> : <FiMessageSquare aria-hidden />}
             </IconButton>)}
-          </div>
-        </div>
-        {review.reply ? <>
-          <Text className="whitespace-pre-wrap text-sm wrap-anywhere">{review.reply.body}</Text>
-          <Text className="text-xs">Updated <time dateTime={review.reply.updatedAt}>{formatTimestamp(review.reply.updatedAt)}</time></Text>
-        </> : null}
+        </div>}>
         {review.reply && review.state !== "active" && <Text className="text-xs">This reply is not public while the review is {review.state}.</Text>}
-      </section>}
+      </ReviewReplyContent>}
       {/* A lone "Submitted" event repeats what the card already shows. */}
       {review.recentEvents.length > 1 && <div className="border-t border-black/10 pt-3 dark:border-white/10">
         <Button variant="ghost" size="xs" aria-expanded={historyOpen} aria-controls={historyId}

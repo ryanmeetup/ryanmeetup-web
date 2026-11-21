@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import type { BuyerRejectedPhoto, BuyerReviewStatus } from "@ryanmeetup/reviews";
-import { Avatar, Button, Card, ConfirmationDialog, DisclosureCard, ErrorCallout, Heading, RatingStars, Spinner, Text } from "@ryanmeetup/ui";
-import { FiAlertCircle, FiCheckCircle, FiClock, FiEdit2, FiEye, FiEyeOff, FiMessageSquare, FiRefreshCw, FiSlash, FiUser, FiXCircle } from "react-icons/fi";
+import { Button, Card, ConfirmationDialog, DisclosureCard, ErrorCallout, Heading, RatingStars, Spinner, Text } from "@ryanmeetup/ui";
+import { ReviewAuthor, ReviewContent, ReviewVerificationBadge } from "@ryanmeetup/reviews/ui";
+import { FiAlertCircle, FiCheckCircle, FiClock, FiEdit2, FiEye, FiEyeOff, FiMessageSquare, FiRefreshCw, FiSlash, FiXCircle } from "react-icons/fi";
 import type { IconType } from "react-icons";
 import { buyerReviewNameChoices } from "@/lib/my-review-view";
 import { reviewSignInRel, reviewSignInUrl } from "@/lib/review-sign-in";
@@ -14,7 +15,6 @@ import { CustomReviewComposer } from "./custom-review-composer";
 import { ReviewItemDetails, ReviewItemThumbnail, ReviewItemTitle, reviewItemDate, variantRows } from "./review-item";
 import { ReviewSuggestions, SectionTitle, reviewSectionToggle } from "./review-suggestions";
 import { useMyReviews, type MyReviewsClient } from "./use-my-reviews";
-import { VerifiedBadge } from "./verified-badge";
 import type { CustomReviewResult, CustomReviewSubmission } from "./custom-review-composer";
 import type { ReviewSuggestion } from "@/lib/review-suggestions";
 
@@ -146,10 +146,9 @@ export function MyReviews({ initial, suggestions, client, submitReview }: {
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <RatingStars rating={review.current.rating} />
-                    {review.lineId && <VerifiedBadge />}
+                    {review.lineId && <ReviewVerificationBadge />}
                   </div>
-                  {review.current.title && <Heading size="h4" variant="normal" bold className="text-base tracking-normal wrap-anywhere">{review.current.title}</Heading>}
-                  <Text className="whitespace-pre-wrap wrap-anywhere">{review.current.body}</Text>
+                  <ReviewContent title={review.current.title} body={review.current.body} heading="h4" titleClassName="text-base font-bold tracking-normal" />
                 </div>
                 <div className="space-y-2">
                   {review.rejectionReason
@@ -164,10 +163,7 @@ export function MyReviews({ initial, suggestions, client, submitReview }: {
                 </div>
                 {/* Footer: who the review is shown as, then what the buyer can do. */}
                 <div className="-mx-6 -mb-6 flex flex-col gap-3 border-t border-black/10 px-6 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-white/10">
-                  <div className="flex min-w-0 items-center gap-2 text-sm">
-                    <span aria-hidden className="contents"><Avatar size="md" colorful name={review.current.displayName} icon={review.current.nameStyle==="anonymous" ? <FiUser /> : undefined} /></span>
-                    <span className="min-w-0 wrap-anywhere"><span className="block text-xs text-black/60 dark:text-white/60">Posted as</span><span className="font-semibold">{review.current.displayName}</span></span>
-                  </div>
+                  <ReviewAuthor name={review.current.displayName} label="Posted as" />
                   {review.status!=="withdrawn" && <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                     {review.status!=="hidden" && <Button size="sm" variant="secondary" fullWidth className="sm:w-auto" aria-label={`Edit your review of ${review.item.productTitle}`} disabled={mine.pending}
                       leftIcon={<FiEdit2 aria-hidden />} onClick={()=>mine.select(review,"edit")}>Edit</Button>}
