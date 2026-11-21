@@ -44,7 +44,7 @@ export function ReviewDeletionDialog({ reviews, saving, onClose, onSubmit }: {
           className="max-h-80 min-h-0 divide-y divide-black/10 overflow-y-auto overscroll-contain border-y border-black/10 focus-visible:outline-2 focus-visible:outline-offset-2 lg:max-h-none lg:flex-1 dark:divide-white/10 dark:border-white/10">
           {reviews.map((review) => <div key={review.id} className="space-y-3 py-4">
             <Text className="font-semibold wrap-anywhere">{review.item.productTitle}</Text>
-            <ModerationVersion revision={review.pending ?? review.published ?? review.rejected ?? review.latest} label="Review being deleted" />
+            <ModerationVersion revision={review.pending ?? review.published ?? review.rejected ?? review.latest} label="Review being deleted" showLabel={false} />
           </div>)}
         </div>
       </section>
