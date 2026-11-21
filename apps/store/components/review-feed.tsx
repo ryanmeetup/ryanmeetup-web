@@ -51,7 +51,7 @@ export function ReviewFeed({ initial }: { initial: ReviewFeedPage }) {
         placeholder="Search by review, reviewer, or product..."
         pending={search.isPending || finding} pendingLabel="Loading review results"
         aria-controls="review-feed-results" />}
-      actions={<PublicReviewFilters rating={feed.rating} sort={feed.sort} onChange={feed.changeView} />} />
+      actions={<PublicReviewFilters rating={feed.rating} sort={feed.sort} origin={feed.origin} onChange={feed.changeView} />} />
     <div id="review-feed-results" role="region" aria-label="Review results" aria-busy={feed.pending || search.isPending}>
       <PendingResults pending={search.isPending} label="Searching reviews" surface="page">
         {feed.needsComplete ? (
@@ -67,13 +67,13 @@ export function ReviewFeed({ initial }: { initial: ReviewFeedPage }) {
         ) : searching ? (
           <div className="rounded-2xl border border-dashed border-black/20 p-8 text-center dark:border-white/20">
             <Heading size="h2" className="text-xl">No reviews match your search</Heading>
-            <Text className="mt-2">Not even one Ryan said that. Try different words, another star rating, or clear the search.</Text>
+            <Text className="mt-2">Not even one Ryan said that. Try different words, another star rating or source, or clear the search.</Text>
             <Button variant="secondary" size="sm" className="mt-4 w-full sm:w-auto" onClick={() => search.setQuery("")}>Clear search</Button>
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-black/20 p-8 text-center dark:border-white/20">
-            <Heading size="h2" className="text-xl">No reviews match this rating</Heading>
-            <Text className="mt-2">Try another star rating or reset the filters to see every review.</Text>
+            <Heading size="h2" className="text-xl">No reviews match these filters</Heading>
+            <Text className="mt-2">Try another star rating or source, or reset the filters to see every review.</Text>
           </div>
         )}
       </PendingResults>

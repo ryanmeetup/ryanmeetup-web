@@ -199,7 +199,7 @@ test("rating filters include older pages, combine with sorts, and reset without 
   await expect(cards(page).first()).toContainText("The oldest review has a public reply.");
   await choose(page, "Rating", "2.5–3 stars");
   await expect(cards(page)).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: "No reviews match this rating" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "No reviews match these filters" })).toBeVisible();
   await expect(page.locator("#reviews")).toContainText("Showing 0 of 45 reviews");
   await page.getByRole("button", { name: "Reset filters", exact: true }).click();
   await expect(cards(page)).toHaveCount(45);
@@ -229,7 +229,7 @@ test("filter loading never presents partial matches as final and resumes a faile
     await expect(page.getByRole("heading", { name: "Finding matching reviews" })).toBeVisible();
     await expect(page.getByRole("region", { name: "Review results", exact: true })).toHaveAttribute("aria-busy", "true");
     await expect(cards(page)).toHaveCount(0);
-    await expect(page.getByRole("heading", { name: "No reviews match this rating" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "No reviews match these filters" })).toHaveCount(0);
     await choose(page, "Sort", "Oldest first");
     expect(cursors).toHaveLength(1);
     release();

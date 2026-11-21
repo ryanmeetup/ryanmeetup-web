@@ -112,3 +112,18 @@ test("rating filters and all sort orders use stable ties without mutating the so
   expect(ids("3", "newest")).toEqual([]);
   expect(reviews.map((row) => row.id)).toEqual(["a", "b", "c", "d"]);
 });
+
+test("the source filter matches each badge and combines with the rating", () => {
+  const base = toReviewsData(page).reviews[0];
+  const reviews = [
+    { ...base, id: "store", rating: 5, verification: "purchase" as const, createdAt: "2026-11-19T12:00:00.000Z" },
+    { ...base, id: "etsy", rating: 5, verification: "etsy" as const, createdAt: "2026-11-18T12:00:00.000Z" },
+    { ...base, id: "unmatched", rating: 1, verification: null, createdAt: "2026-11-17T12:00:00.000Z" },
+  ];
+  const ids = (origin: string, rating = "all") => selectPublicReviews(reviews, rating, "newest", origin).map((row) => row.id);
+  expect(ids("all")).toEqual(["store", "etsy", "unmatched"]);
+  expect(ids("verified")).toEqual(["store"]);
+  expect(ids("etsy")).toEqual(["etsy"]);
+  expect(ids("unmatched")).toEqual(["unmatched"]);
+  expect(ids("etsy", "1")).toEqual([]);
+});

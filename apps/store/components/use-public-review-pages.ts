@@ -6,7 +6,7 @@ import type { Review } from "@/lib/types";
 
 function initialState<T extends Review>(source: object, scopeKey: string, reviews: T[], cursor: string | null) {
   return { source, scopeKey, reviews, cursor,
-    rating: "all", sort: "newest", pending: false, error: "", message: "" };
+    rating: "all", sort: "newest", origin: "all", pending: false, error: "", message: "" };
 }
 
 /** Shared public paging for product reviews and the shop feed. Each server snapshot owns its cached pages and selections. */
@@ -70,7 +70,7 @@ export function usePublicReviewPages<T extends Review>({ source, scopeKey, revie
     }
   }
 
-  const refined = searching || state.rating !== "all" || state.sort !== "newest";
+  const refined = searching || state.rating !== "all" || state.sort !== "newest" || state.origin !== "all";
   const startSearch = useEffectEvent(() => void loadMore(true));
   // The settled query arrives from the URL (typing, a shared link, or back/forward), not from an event this hook owns.
   // Starting the page reads marks the feed pending before the first fetch, which is the one synchronous setState here.
@@ -78,14 +78,14 @@ export function usePublicReviewPages<T extends Review>({ source, scopeKey, revie
   useEffect(() => { if (searching) startSearch(); }, [searching, source, scopeKey]);
   const needsComplete = refined && state.cursor !== null;
 
-  function changeView(view: { rating?: string; sort?: string }) {
-    const next = { rating: state.rating, sort: state.sort, ...view };
+  function changeView(view: { rating?: string; sort?: string; origin?: string }) {
+    const next = { rating: state.rating, sort: state.sort, origin: state.origin, ...view };
     setState((current) => ({ ...current, ...next, message: "" }));
     // Sorting or filtering only the first page would hide matching older reviews.
     // Reuse the approved-only endpoint and cache the remaining pages for this snapshot.
-    if (next.rating !== "all" || next.sort !== "newest") void loadMore(true);
+    if (next.rating !== "all" || next.sort !== "newest" || next.origin !== "all") void loadMore(true);
   }
 
-  return { ...state, loadedCount: state.reviews.length, reviews: selectPublicReviews(state.reviews, state.rating, state.sort), needsComplete, refined,
+  return { ...state, loadedCount: state.reviews.length, reviews: selectPublicReviews(state.reviews, state.rating, state.sort, state.origin), needsComplete, refined,
     changeView, loadMore: () => loadMore(refined) };
 }

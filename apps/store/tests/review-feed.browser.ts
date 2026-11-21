@@ -62,7 +62,7 @@ test("ratings and every sort include older pages, preserve product details and r
   await expect(cards(page).first().getByRole("link", { name: `Review of ${tee.title}`, exact: true })).toHaveAttribute("href", `/products/${tee.handle}`);
   await choose(page, "Rating", "2.5–3 stars");
   await expect(cards(page)).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: "No reviews match this rating" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "No reviews match these filters" })).toBeVisible();
   await page.getByRole("button", { name: "Reset filters", exact: true }).click();
   await expect(cards(page)).toHaveCount(46);
   await expect(cards(page).first()).toContainText("Shop review 46");
@@ -98,7 +98,7 @@ test("a pending refinement hides partial matches, shares one request and retries
     release();
     await expect(page.locator("main").getByRole("alert")).toContainText("More reviews couldn't load.");
     await expect(cards(page)).toHaveCount(0);
-    await expect(page.getByRole("heading", { name: "No reviews match this rating" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "No reviews match these filters" })).toHaveCount(0);
     await page.getByRole("button", { name: "Retry loading reviews", exact: true }).click();
     await expect(cards(page)).toHaveCount(26);
     await expect(cards(page).first()).toContainText("Shop review 1");

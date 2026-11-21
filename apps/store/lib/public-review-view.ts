@@ -17,8 +17,18 @@ export const REVIEW_SORT_OPTIONS = [
   { value: "lowest", label: "Lowest rated" },
 ];
 
-export function selectPublicReviews<T extends Review>(reviews: T[], rating: string, sort: string): T[] {
-  return reviews.filter((review) => rating === "all" || String(reviewRatingStar(review.rating as ReviewRating)) === rating).sort((a, b) => {
+/** Where a review came from, named as its badge names it. Values stay readable in case they reach a URL. */
+export const REVIEW_ORIGIN_OPTIONS = [
+  { value: "all", label: "All sources" },
+  { value: "verified", label: "Verified purchase" },
+  { value: "etsy", label: "Verified Etsy purchase" },
+  { value: "unmatched", label: "No matching order" },
+];
+const originVerification: Record<string, Review["verification"]> = { verified: "purchase", etsy: "etsy", unmatched: null };
+
+export function selectPublicReviews<T extends Review>(reviews: T[], rating: string, sort: string, origin = "all"): T[] {
+  return reviews.filter((review) => (rating === "all" || String(reviewRatingStar(review.rating as ReviewRating)) === rating) &&
+    (origin === "all" || review.verification === originVerification[origin])).sort((a, b) => {
     const newest = Date.parse(b.createdAt) - Date.parse(a.createdAt) || b.id.localeCompare(a.id);
     if (sort === "oldest") return -newest;
     if (sort === "highest") return b.rating - a.rating || newest;

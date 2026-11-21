@@ -71,7 +71,7 @@ export function Reviews({ data, product, access }: { data: ReviewsData; product:
 
       {data.status === "available" && data.count > 0 && (
         <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-          <PublicReviewFilters rating={publicReviews.rating} sort={publicReviews.sort} onChange={publicReviews.changeView} />
+          <PublicReviewFilters rating={publicReviews.rating} sort={publicReviews.sort} origin={publicReviews.origin} onChange={publicReviews.changeView} />
           <Text role="status" className="text-sm" aria-live="polite">
             {publicReviews.needsComplete ? (publicReviews.pending ? "Loading reviews…" : "Finish loading to see matching reviews.") :
               `Showing ${publicReviews.reviews.length} of ${data.count} review${data.count === 1 ? "" : "s"}`}
@@ -101,8 +101,8 @@ export function Reviews({ data, product, access }: { data: ReviewsData; product:
           </ul>
         ) : (
           <div className="mt-8 rounded-2xl border border-dashed border-black/20 p-8 text-center dark:border-white/20">
-            <Heading size="h3" className="text-xl">{publicReviews.refined ? "No reviews match this rating" : "Be the first to report back"}</Heading>
-            <Text className="mt-2">{publicReviews.refined ? "Try another star rating or reset the filters to see every review." : "This product is waiting for its first official Ryan review."}</Text>
+            <Heading size="h3" className="text-xl">{publicReviews.refined ? "No reviews match these filters" : "Be the first to report back"}</Heading>
+            <Text className="mt-2">{publicReviews.refined ? "Try another star rating or source, or reset the filters to see every review." : "This product is waiting for its first official Ryan review."}</Text>
           </div>
         )}
       </div>
