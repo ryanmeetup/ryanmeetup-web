@@ -11,16 +11,17 @@ export function CollectionLink({
   total?: number;
 }) {
   const label = total === undefined
-    ? "Shop Collection"
-    : `Shop All ${total} Item${total === 1 ? "" : "s"}`;
+    ? "Shop collection"
+    : `Shop all ${total} item${total === 1 ? "" : "s"}`;
 
   return (
     <Button.Link
       href={getCollectionPath(collection.handle)}
       aria-label={`${label}: ${collection.title}`}
-      variant="ghost"
+      variant="link"
       size="md"
-      className="min-h-11 !w-full !px-0 !normal-case !tracking-normal underline-offset-4 hover:underline focus-visible:underline focus-visible:!ring-black/40 sm:!w-auto dark:focus-visible:!ring-white/40"
+      fullWidth
+      className="min-h-11 sm:w-auto"
       rightIcon={<FiArrowRight aria-hidden className="h-4 w-4" />}
     >
       {label}

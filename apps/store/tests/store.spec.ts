@@ -180,7 +180,7 @@ test("apparel groups listings by garment, t-shirts first, and sorts within each 
   await expect(main.getByRole("button", { name: "Hoodies & Sweatshirts" })).toBeVisible();
   // A grouping's own page is in the header menu, so its section has no button.
   await expect(main.getByRole("link", { name: "View Collection" })).toHaveCount(0);
-  await expect(main.getByRole("link", { name: /^Shop All/ })).toHaveCount(0);
+  await expect(main.getByRole("link", { name: /^Shop all/i })).toHaveCount(0);
   await expect(titles).toHaveText(["Official Ryan Meetup Tee", "Name Tag Shirt", "Hello, My Name Is Ryan Sweatshirt"]);
 
   // A grouped listing is as new as its newest design.

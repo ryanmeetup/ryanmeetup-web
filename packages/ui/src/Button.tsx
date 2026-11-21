@@ -40,7 +40,13 @@ export type ButtonVariant =
   | "outline"
   | "ghost"
   /** A compact action beside filter dropdowns, using their shared treatment. */
-  | "filter";
+  | "filter"
+  /**
+   * A standalone text action, such as "Shop all items →", that reads as a link
+   * rather than a button. Keeps the size's height so it lines up beside other
+   * buttons, but drops the side padding so the text sits flush.
+   */
+  | "link";
 export type ButtonSize = "xs" | "sm" | "field" | "md" | "lg";
 
 const sizeStyles: Record<ButtonSize, string> = {
@@ -51,6 +57,14 @@ const sizeStyles: Record<ButtonSize, string> = {
   lg: "px-6 py-3 text-sm",
 };
 
+const linkSizeStyles: Record<ButtonSize, string> = {
+  xs: "py-1.5 text-xs",
+  sm: "py-2 text-sm/4",
+  field: "h-[42px] py-0 text-sm",
+  md: "py-2.5 text-sm",
+  lg: "py-3 text-sm",
+};
+
 const getBaseClasses = (
   variant: ButtonVariant,
   size: ButtonSize,
@@ -59,10 +73,12 @@ const getBaseClasses = (
   const width = fullWidth ? "w-full" : "w-auto";
   if (variant === "filter")
     return `relative h-8 whitespace-nowrap ${getFilterControlClasses()} ${width}`;
+  if (variant === "link")
+    return `relative inline-flex items-center justify-center gap-2 rounded-sm font-semibold text-black underline decoration-black/30 underline-offset-4 transition hover:decoration-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40 dark:text-white dark:decoration-white/30 dark:hover:decoration-white dark:focus-visible:ring-white/40 ${linkSizeStyles[size]} ${width}`;
   const base =
     "relative inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition focus:outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/10 group";
 
-  const variantStyles: Record<Exclude<ButtonVariant, "filter">, string> = {
+  const variantStyles: Record<Exclude<ButtonVariant, "filter" | "link">, string> = {
     primary:
       "border border-black/60 bg-black text-white shadow-lg hover:border-black/80 hover:bg-black/90 hover:-translate-y-0.5 dark:border-white/10 dark:bg-white dark:text-black dark:hover:bg-white/90 dark:hover:text-black",
     secondary:

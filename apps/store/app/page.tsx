@@ -56,8 +56,7 @@ export default async function HomePage() {
                 <Button.Link
                   href="#collections"
                   size="lg"
-                  variant="ghost"
-                  className="!w-full underline decoration-black/30 underline-offset-4 hover:decoration-black sm:!w-auto dark:decoration-white/30 dark:hover:decoration-white"
+                  variant="link"
                 >
                   Browse collections
                 </Button.Link>
