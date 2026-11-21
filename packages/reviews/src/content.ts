@@ -38,6 +38,10 @@ export type ReviewSubmission = {
   nameStyle: ReviewNameStyle;
 };
 
+/** Where a review was written: on this store, or imported from the Ryan Meetup Etsy shop. */
+export type ReviewSource = "store" | "etsy";
+export const REVIEW_SOURCES: readonly ReviewSource[] = ["store", "etsy"];
+
 export type PublicReviewPhoto = { url: string; width: number; height: number };
 export type PublicReviewReply = { body: string; publishedAt: string };
 
@@ -52,7 +56,8 @@ export type PublicReviewItem = {
 export type PublicReview = {
   id: string;
   rating: ReviewRating;
-  title: string;
+  /** Null only for an imported review; Etsy reviews have no title. */
+  title: string | null;
   body: string;
   displayName: string;
   publishedAt: string;
@@ -61,6 +66,8 @@ export type PublicReview = {
   item: PublicReviewItem;
   /** True only when the exact purchased order line was verified. */
   verifiedPurchase: boolean;
+  /** An Etsy review was left by an Etsy buyer; Etsy only lets buyers review. */
+  source: ReviewSource;
   photos: PublicReviewPhoto[];
   reply: PublicReviewReply | null;
 };
@@ -166,6 +173,19 @@ export function reviewDisplayName(style: ReviewNameStyle, name: { firstName?: st
   return [...display].slice(0, REVIEW_DISPLAY_NAME_MAX).join("").trim();
 }
 
+/**
+ * Normalizes an imported review's text, which has no title. Returns null when
+ * the rating, body or name can't be published. The same rules as a buyer's
+ * submission, so stored text always passes the public schema.
+ */
+export function importedReviewContentSchema(value: { rating: unknown; body: unknown; displayName: unknown }): { rating: ReviewRating; body: string; displayName: string } | null {
+  if (!isRating(value.rating) || typeof value.body !== "string" || typeof value.displayName !== "string") return null;
+  const body = cleanText(value.body, true);
+  const displayName = cleanText(value.displayName, false);
+  return body && characters(body) <= REVIEW_BODY_MAX && displayName && characters(displayName) <= REVIEW_DISPLAY_NAME_MAX
+    ? { rating: value.rating, body, displayName } : null;
+}
+
 // --- totals ------------------------------------------------------------------
 
 /** Totals from every published rating in scope, independent of which page is shown. */
@@ -202,14 +222,18 @@ function replySchema(value: unknown): PublicReviewReply | null {
 
 /** Accepts one published review only if it has exactly the public fields, all well formed. */
 export function publicReviewSchema(value: unknown): PublicReview | null {
-  const review = exactObject(value, ["id", "rating", "title", "body", "displayName", "publishedAt", "editedAt", "item", "verifiedPurchase", "photos", "reply"]);
-  if (!review || !isUuid(review.id) || !isRating(review.rating) || typeof review.verifiedPurchase !== "boolean") return null;
-  if (!isCleanText(review.title, REVIEW_TITLE_MAX, false)) return null;
+  const fields = ["id", "rating", "title", "body", "displayName", "publishedAt", "editedAt", "item", "verifiedPurchase", "photos", "reply"];
+  // A backend from before 20261121150000 sends no source; every review it holds was written here.
+  const review = exactObject(value, [...fields, "source"]) ?? exactObject(value, fields);
+  const source = review ? review.source ?? "store" : null;
+  if (!review || !isUuid(review.id) || !isRating(review.rating) || typeof review.verifiedPurchase !== "boolean" ||
+    !REVIEW_SOURCES.includes(source as ReviewSource)) return null;
+  if (!(review.title === null ? source !== "store" : isCleanText(review.title, REVIEW_TITLE_MAX, false))) return null;
   if (!isCleanText(review.body, REVIEW_BODY_MAX, true) || !isCleanText(review.displayName, REVIEW_DISPLAY_NAME_MAX, false)) return null;
   if (!isIsoDate(review.publishedAt) || !(review.editedAt === null || isIsoDate(review.editedAt))) return null;
   if (!itemSchema(review.item) || !(review.reply === null || replySchema(review.reply))) return null;
   if (!Array.isArray(review.photos) || review.photos.length > REVIEW_PHOTOS_MAX || !review.photos.every((photo) => photoSchema(photo))) return null;
-  return review as PublicReview;
+  return { ...review, source } as PublicReview;
 }
 
 /**

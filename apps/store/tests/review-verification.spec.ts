@@ -13,7 +13,7 @@ const page: PublicReviewPage = {
   reviews: [true, false].map((verifiedPurchase, index) => ({
     id: `00000000-0000-4000-8000-00000000000${index + 1}`, rating: 4, title: "Ryan approved", body: "Public feedback.",
     displayName: `Ryan ${index}`, publishedAt: "2026-11-20T12:00:00.000Z", editedAt: null,
-    item: { productId: "100", productTitle: "Shirt", variantTitle: null }, verifiedPurchase, photos: [], reply: null,
+    item: { productId: "100", productTitle: "Shirt", variantTitle: null }, verifiedPurchase, source: "store", photos: [], reply: null,
   })),
   nextCursor: null,
 };
@@ -28,15 +28,18 @@ test("only the canonical custom purchase flag gives a purchase badge, while tota
   expect(data).toMatchObject({ count: 2, averageRating: 4 });
   const html = render(data);
   expect(html.match(/Verified purchase/g)).toHaveLength(1);
-  expect(html).not.toContain("Verified review");
+  expect(html).not.toContain("Verified Etsy purchase");
   expect(html).toContain("Review by Ryan 1");
 });
 
-test("legacy review verification keeps its meaning even alongside custom purchase verification", () => {
-  const data = toReviewsData(page);
-  const html = render({ ...data, reviews: [data.reviews[0], { ...data.reviews[1], verification: "review" }] });
+test("an imported Etsy review is labelled as a verified Etsy purchase, with or without a title", () => {
+  const etsy = { ...page.reviews[1], title: null, source: "etsy" as const };
+  const data = toReviewsData({ ...page, reviews: [page.reviews[0], etsy] });
+  expect(data.reviews.map((review) => review.verification)).toEqual(["purchase", "etsy"]);
+  const html = render(data);
   expect(html.match(/Verified purchase/g)).toHaveLength(1);
-  expect(html.match(/Verified review/g)).toHaveLength(1);
+  expect(html.match(/Verified Etsy purchase/g)).toHaveLength(1);
+  expect(html).toContain("Public feedback.");
 });
 
 test("an unverified public review remains visible without either verification badge", () => {
@@ -45,5 +48,5 @@ test("an unverified public review remains visible without either verification ba
   expect(html).toContain("Public feedback.");
   expect(html).toContain("Review by Ryan 1");
   expect(html).not.toContain("Verified purchase");
-  expect(html).not.toContain("Verified review");
+  expect(html).not.toContain("Verified Etsy purchase");
 });

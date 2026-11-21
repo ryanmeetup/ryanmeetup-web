@@ -9,7 +9,7 @@ const page: PublicReviewPage = {
   reviews: [{
     id: "00000000-0000-4000-8000-000000000001", rating: 4, title: "Ryan approved", body: "Still looking good.",
     displayName: "Ryan F.", publishedAt: "2026-11-17T12:00:00.000Z", editedAt: null,
-    item: { productId: "100", productTitle: "Name Tag Shirt", variantTitle: null }, verifiedPurchase: true,
+    item: { productId: "100", productTitle: "Name Tag Shirt", variantTitle: null }, verifiedPurchase: true, source: "store",
     photos: [], reply,
   }],
   nextCursor: null,

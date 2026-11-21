@@ -8,7 +8,7 @@ import type { ReviewBackend } from "../lib/review-backend";
 const review: PublicReview = {
   id: "00000000-0000-4000-8000-000000000001", rating: 4, title: "Ryan approved", body: "Still looking good.", displayName: "Ryan F.",
   publishedAt: "2026-11-18T12:00:00.000Z", editedAt: null, item: { productId: "100", productTitle: "Shirt", variantTitle: null },
-  verifiedPurchase: true, photos: [], reply: null,
+  verifiedPurchase: true, source: "store", photos: [], reply: null,
 };
 const nextCursor = encodeReviewCursor({ id: review.id, publishedAt: review.publishedAt });
 const after = encodeReviewCursor({ id: review.id, publishedAt: "2026-11-20T12:00:00.000Z" });

@@ -3,6 +3,7 @@ import {
   ANONYMOUS_REVIEWER_NAME,
   REVIEW_BODY_MAX,
   REVIEW_PAGE_MAX,
+  importedReviewContentSchema,
   publicReviewPageSchema,
   publicReviewSchema,
   reviewDisplayName,
@@ -22,6 +23,7 @@ const review: PublicReview = {
   editedAt: null,
   item: { productId: "8123456789", productTitle: "Name Tag Shirt", variantTitle: "Black / M" },
   verifiedPurchase: true,
+  source: "store",
   photos: [{ url: "https://cdn.example.test/reviews/a.webp", width: 1200, height: 900 }],
   reply: { body: "Thanks, Ryan!", publishedAt: "2026-11-18T09:00:00.000Z" },
 };
@@ -92,6 +94,24 @@ describe("public review payloads", () => {
   it("accepts exactly the public fields", () => {
     expect(publicReviewSchema(review)).toEqual(review);
     expect(publicReviewPageSchema(page)).toEqual(page);
+  });
+
+  it("reads a backend without a source as store reviews, and lets only an imported review omit its title", () => {
+    const legacy: Partial<PublicReview> = { ...review };
+    delete legacy.source;
+    expect(publicReviewSchema(legacy)).toEqual(review);
+    expect(publicReviewSchema({ ...review, source: "etsy", title: null, verifiedPurchase: false })).toMatchObject({ source: "etsy", title: null });
+    expect(publicReviewSchema({ ...review, title: null })).toBeNull();
+    expect(publicReviewSchema({ ...legacy, title: null })).toBeNull();
+    expect(publicReviewSchema({ ...review, source: "judgeme" })).toBeNull();
+  });
+
+  it("normalizes imported review text the way a submission is normalized", () => {
+    expect(importedReviewContentSchema({ rating: 5, body: "  Thanks Ryan,\r\n\r\n\r\nI love it ", displayName: " Ryan " }))
+      .toEqual({ rating: 5, body: "Thanks Ryan,\n\nI love it", displayName: "Ryan" });
+    for (const change of [{ body: " " }, { rating: 0 }, { displayName: "" }, { body: "x".repeat(REVIEW_BODY_MAX + 1) }]) {
+      expect(importedReviewContentSchema({ rating: 5, body: "Great", displayName: "Ryan", ...change })).toBeNull();
+    }
   });
 
   it("refuses private, unsafe, or malformed review data", () => {

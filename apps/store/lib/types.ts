@@ -125,9 +125,10 @@ export type Review = {
   id: string;
   rating: number;
   reviewerName: string;
-  title: string;
+  /** Null only for a review imported from Etsy, which has no title. */
+  title: string | null;
   /** The badge's meaning comes from the public data adapter, never the selected UI mode. */
-  verification: "purchase" | "review" | null;
+  verification: "purchase" | "etsy" | null;
   photoUrls?: string[];
   /** Public reply only; staff identity and moderation fields stay on the server. */
   reply?: PublicReviewReply;

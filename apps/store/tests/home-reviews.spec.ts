@@ -9,7 +9,7 @@ import { fakeSupabase, supabaseCall } from "./fixtures/customer-auth-backend";
 const review: PublicReview = {
   id: "00000000-0000-4000-8000-000000000001", rating: 1, title: "Runs small", body: "Try the next size up.", displayName: "Ryan F.",
   publishedAt: "2026-11-20T12:00:00.000Z", editedAt: null, item: { productId: "100", productTitle: "Old shirt title", variantTitle: null },
-  verifiedPurchase: true, photos: [], reply: null,
+  verifiedPurchase: true, source: "store", photos: [], reply: null,
 };
 const backend = (value: unknown) => (async () => value) as ReviewBackend;
 

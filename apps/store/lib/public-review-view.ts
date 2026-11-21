@@ -33,7 +33,7 @@ export function toReview(review: PublicReview): Review {
   return {
     id: review.id, rating: review.rating, title: review.title, body: review.body,
     reviewerName: review.displayName, createdAt: review.publishedAt,
-    verification: review.verifiedPurchase ? "purchase" as const : null,
+    verification: review.source === "etsy" ? "etsy" as const : review.verifiedPurchase ? "purchase" as const : null,
     ...(photoUrls.length ? { photoUrls } : {}),
     ...(review.reply ? { reply: { body: review.reply.body, publishedAt: review.reply.publishedAt } } : {}),
   };

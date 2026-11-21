@@ -4,28 +4,39 @@ import { Tooltip } from "@ryanmeetup/ui";
 import { FiInfo, FiShoppingBag } from "react-icons/fi";
 import { HiMiniCheckBadge } from "react-icons/hi2";
 
-export type ReviewVerification = "purchase" | "review" | "unmatched";
+export type ReviewVerification = "purchase" | "etsy" | "unmatched";
 export type ReviewVerificationBadgeProps = { kind?: ReviewVerification; className?: string };
 
-const purchaseMeaning = "We matched this review to the reviewer's own order of this item, so you know they actually bought it.";
-const unmatchedMeaning = "We couldn't match this review to the reviewer's own order of this item. This does not mean the review is fake.";
+const badges: Record<ReviewVerification, { label: string; question: string; meaning: string }> = {
+  purchase: {
+    label: "Verified purchase", question: "What does verified purchase mean?",
+    meaning: "We matched this review to the reviewer's own order of this item, so you know they actually bought it.",
+  },
+  etsy: {
+    label: "Verified Etsy purchase", question: "What does verified Etsy purchase mean?",
+    meaning: "This review was left on the Ryan Meetup Etsy shop, where only buyers can leave a review, and brought over to this store.",
+  },
+  unmatched: {
+    label: "No matching order", question: "What does no matching order mean?",
+    meaning: "We couldn't match this review to the reviewer's own order of this item. This does not mean the review is fake.",
+  },
+};
 
 /** Matching order status has the same shape everywhere, with a neutral unmatched state. */
 export function ReviewVerificationBadge({ kind = "purchase", className = "" }: ReviewVerificationBadgeProps) {
   const unmatched = kind === "unmatched";
-  const label = unmatched ? "No matching order" : kind === "purchase" ? "Verified purchase" : "Verified review";
-  const meaning = unmatched ? unmatchedMeaning : kind === "purchase" ? purchaseMeaning : null;
+  const { label, question, meaning } = badges[kind];
   const Icon = unmatched ? FiShoppingBag : HiMiniCheckBadge;
   return <span className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full py-0.5 pl-1.5 pr-1 text-xs font-semibold ring-1 ring-inset ${unmatched
     ? "bg-black/5 text-black/70 ring-black/15 dark:bg-white/5 dark:text-white/70 dark:ring-white/20"
     : "bg-emerald-500/10 text-emerald-800 ring-emerald-600/25 dark:bg-emerald-400/10 dark:text-emerald-200 dark:ring-emerald-400/30"} ${className}`}>
     <Icon aria-hidden className="size-4 shrink-0" />
     {label}
-    {meaning && <Tooltip content={meaning}>
-      <button type="button" aria-label={unmatched ? "What does no matching order mean?" : "What does verified purchase mean?"}
+    <Tooltip content={meaning}>
+      <button type="button" aria-label={question}
         className="inline-grid size-4 shrink-0 place-items-center rounded-full opacity-80 transition hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current">
         <FiInfo aria-hidden className="size-3.5" />
       </button>
-    </Tooltip>}
+    </Tooltip>
   </span>;
 }

@@ -9,7 +9,7 @@ import { fakeSupabase, supabaseCall } from "./fixtures/customer-auth-backend";
 const review = (n: number, productId = "100"): PublicReview => ({
   id: `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`, rating: 5, title: "Fits", body: "Fits like a Ryan.", displayName: "Ryan F.",
   publishedAt: new Date(Date.UTC(2026, 10, 20, 12, 0, n)).toISOString(), editedAt: null,
-  item: { productId, productTitle: "Old shirt title", variantTitle: null }, verifiedPurchase: false, photos: [], reply: null,
+  item: { productId, productTitle: "Old shirt title", variantTitle: null }, verifiedPurchase: false, source: "store", photos: [], reply: null,
 });
 const newestFirst = (count: number) => Array.from({ length: count }, (_, index) => review(count - index, String(100 + (index % 3))));
 const products = async () => ({ "100": { handle: "name-tag-shirt", title: "Name Tag Shirt", image: null, options: [] } });
