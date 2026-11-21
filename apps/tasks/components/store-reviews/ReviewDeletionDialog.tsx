@@ -21,7 +21,7 @@ function Collapsible({ title, label, className, children }: { title: ReactNode; 
       <div className="min-w-0 flex-1">{title}</div>
       <button type="button" aria-expanded={open} aria-controls={id} aria-label={`${open ? "Collapse" : "Expand"} ${label}`}
         onClick={() => setOpen(!open)}
-        className="-m-1 inline-flex size-7 shrink-0 items-center justify-center rounded-full text-current/70 hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:hover:bg-white/10 dark:focus-visible:ring-white/40">
+        className="-my-1 inline-flex size-7 shrink-0 items-center justify-center rounded-full text-current/70 hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:hover:bg-white/10 dark:focus-visible:ring-white/40">
         <FaChevronDown aria-hidden className={`size-3 transition-transform duration-200 motion-reduce:transition-none ${open ? "-rotate-180" : ""}`} />
       </button>
     </div>
@@ -59,7 +59,7 @@ export function ReviewDeletionDialog({ reviews, saving, onClose, onSubmit }: {
       {/* On desktop the list runs from the header rule to the footer rule, like
           the form column beside it, so those rules are its scroll edges. */}
       <div tabIndex={0} aria-label={bulk ? `${reviews.length} reviews being deleted` : "Review being deleted"}
-        className="max-h-80 min-h-0 divide-y divide-black/10 overflow-y-auto overscroll-contain border-y border-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/30 dark:focus-visible:ring-white/40 lg:col-start-2 lg:row-start-1 lg:max-h-none lg:border-y-0 lg:border-l lg:border-black/20 lg:py-2 lg:pl-6 dark:divide-white/10 dark:border-white/10 dark:lg:border-white/20">
+        className="max-h-80 min-h-0 divide-y divide-black/10 overflow-y-auto overscroll-contain border-y border-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/30 dark:focus-visible:ring-white/40 lg:col-start-2 lg:row-start-1 lg:max-h-none lg:border-y-0 lg:border-l lg:border-black/20 lg:py-2 lg:pl-6 lg:pr-1 dark:divide-white/10 dark:border-white/10 dark:lg:border-white/20">
         {reviews.map((review) => {
           const revision = review.pending ?? review.published ?? review.rejected ?? review.latest;
           return <Collapsible key={review.id} className="py-4" label={`review of ${review.item.productTitle}`}
