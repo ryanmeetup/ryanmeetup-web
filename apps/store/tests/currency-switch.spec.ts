@@ -30,6 +30,10 @@ test("homepage currency menus switch all badges without following links and reme
     await expect(badges.getByRole("button", currencyButton)).toHaveText(Array(count).fill(currency));
     await expect(page).toHaveURL(/\/$/);
   }
+  const info = badges.first().getByRole("button", { name: "About converted prices" });
+  await info.click();
+  await expect(page.getByRole("tooltip")).toContainText("Approximate conversion from USD");
+  await expect(page).toHaveURL(/\/$/);
   expect(requests).toBe(1);
   expect(await page.evaluate((key) => localStorage.getItem(key), currencyStorageKey)).toBe("EUR");
 

@@ -25,6 +25,7 @@ const sizeClasses = {
     bottom: "pb-1.5 sm:pb-2",
     saleGap: "pb-1 sm:pb-1.5",
     original: "px-2.5 pb-1.5 text-[10px]/none sm:px-3 sm:pb-2 sm:text-xs/none",
+    info: "ml-1 size-5 [&>svg]:size-3.5",
   },
   lg: {
     currency: "min-w-12 px-3 py-1 text-xs",
@@ -32,6 +33,7 @@ const sizeClasses = {
     bottom: "pb-3",
     saleGap: "pb-2",
     original: "px-4 pb-3 text-sm/none",
+    info: "ml-2 size-6 [&>svg]:size-4",
   },
 };
 
@@ -51,14 +53,14 @@ export function PriceBadge({ price, compareAt, from = false, size = "sm", classN
         {from && <span className="mr-1.5 text-[0.65em] font-medium uppercase tracking-caps-tight">From </span>}
         {converted && <span aria-hidden className="mr-0.5 font-bold">≈</span>}
         {formatMoney(displayed)}
-        {converted && size === "lg" && (
-          <Tooltip content={<>Approximate conversion from {price.currencyCode}. Checkout shows your exact price in your local currency.</>} triggerClassName="ml-2 align-middle">
+        {converted && (
+          <Tooltip content={<>Approximate conversion from {price.currencyCode}. Checkout shows your exact price in your local currency.</>} triggerClassName="align-middle">
             <button
               type="button"
               aria-label="About converted prices"
-              className="pointer-events-auto inline-flex size-6 cursor-help items-center justify-center rounded-full text-white/80 transition hover:bg-white/15 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              className={`pointer-events-auto inline-flex cursor-help items-center justify-center rounded-full text-white/80 transition hover:bg-white/15 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${classes.info}`}
             >
-              <FiInfo aria-hidden className="size-4" />
+              <FiInfo aria-hidden />
             </button>
           </Tooltip>
         )}
