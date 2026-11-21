@@ -116,12 +116,6 @@ export function moderationActionLabel(action: StaffReviewAction, review: Moderat
   }
 }
 
-/** Cards are the default layout; `?view=table` asks for one row per review. */
-export type ModerationView = "cards" | "table";
-export function moderationView(value: unknown): ModerationView {
-  return value === "table" ? "table" : "cards";
-}
-
 /** Shopify numeric product IDs, as stored on each review. */
 export function isModerationProductId(value: unknown): value is string {
   return typeof value === "string" && /^[1-9][0-9]{0,19}$/.test(value);

@@ -43,19 +43,18 @@ Rejected reviews are kept, never deleted. Find them in the Rejected queue and
 publish one anyway if you change your mind. Narrow any queue to a single
 product with the Product filter.
 
-The queue uses compact cards with the store's author, rating, and purchase
-details, a status chip beside each product, and grouped actions: decisions as
-buttons, and reply, hide, and delete as icon buttons. Wide screens show two
-reviews side by side; narrow screens keep each review in one readable column.
-On wide screens, switch to Table for one row per review with the decisions
-beside it. Expand a row to see its versions, photos, reply, and history. The
-layout is part of the address, so a link keeps it.
+The queue is a table with one row per review: product, review text, photos,
+reviewer, status, and actions each get a column. A waiting edit sits above the
+published version it would replace, and an official reply shows under the review.
+Decisions are buttons on the row; replies, hiding, history, and deletion sit in
+its menu, and each photo's menu views, approves, or rejects it. Narrow screens
+stack each row into one readable column.
 Every saved review decision, reply, photo decision, and deletion shows a success
 notification, even if the queue cannot reload afterward.
 Purchase badges match the store, including a neutral “No matching order” badge
 with an explanation of what the order check means.
 
-Delete spam for good with the delete button on any review. The confirmation
+Delete spam for good from any review's menu. The confirmation
 lists the FTC's rules on removing reviews, asks for one of the allowed reasons,
 and has you confirm the rating played no part. Each deletion is logged with its
 reason, rating, and who deleted it, but not the review text.

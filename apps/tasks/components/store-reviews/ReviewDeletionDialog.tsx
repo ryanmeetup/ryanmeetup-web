@@ -4,7 +4,7 @@ import { useId, useState } from "react";
 import { DropdownSelect, Modal, ModalActions, Text, Textarea } from "@ryanmeetup/ui";
 import { isReviewDeletionReason, REVIEW_DELETION_REASONS, reviewDeletionReasonLabels } from "@/lib/store-reviews/moderation";
 import type { ModerationReview, ReviewDeletionReason } from "@/lib/store-reviews/moderation";
-import { ModerationVersion } from "./ReviewModerationCard";
+import { ModerationVersion } from "./ReviewModerationParts";
 
 const reasonOptions = REVIEW_DELETION_REASONS.map((value) => ({ value, label: reviewDeletionReasonLabels[value] }));
 

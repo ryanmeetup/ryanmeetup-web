@@ -4,7 +4,7 @@ import { useId, useState } from "react";
 import { Modal, ModalActions, Text, Textarea } from "@ryanmeetup/ui";
 import { moderationActionLabel, moderationReasonIsPublic, moderationReasonRequired } from "@/lib/store-reviews/moderation";
 import type { ModerationAction, ModerationReview, PublishAction } from "@/lib/store-reviews/moderation";
-import { ModerationVersion } from "./ReviewModerationCard";
+import { ModerationVersion } from "./ReviewModerationParts";
 
 export function ReviewModerationDialog({ selection, saving, onClose, onSubmit }: {
   selection: { action: Exclude<ModerationAction, PublishAction>; review: ModerationReview }; saving: boolean; onClose: () => void; onSubmit: (note: string | null) => Promise<void>;
