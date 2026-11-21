@@ -36,6 +36,7 @@ const latestReviewsMigration = fileURLToPath(new URL("../supabase/migrations/202
 const writeBudgetsMigration = fileURLToPath(new URL("../supabase/migrations/20261121120000_store_review_write_budgets.sql", import.meta.url));
 const approvalIncludesPhotosMigration = fileURLToPath(new URL("../supabase/migrations/20261121130000_store_review_approval_includes_photos.sql", import.meta.url));
 const reviewFeedMigration = fileURLToPath(new URL("../supabase/migrations/20261121060000_store_review_feed.sql", import.meta.url));
+const halfStarRatingsMigration = fileURLToPath(new URL("../supabase/migrations/20261121140000_store_review_half_star_ratings.sql", import.meta.url));
 const photoRejectionReasonsMigration = fileURLToPath(new URL("../supabase/migrations/20261121070000_store_review_photo_rejection_reasons.sql", import.meta.url));
 
 function run(command, args, input, inherit = false) {
@@ -121,8 +122,10 @@ try {
     sql(readFileSync(photoRejectionReasonsMigration, "utf8"));
     sql(readFileSync(writeBudgetsMigration, "utf8"));
     sql(readFileSync(approvalIncludesPhotosMigration, "utf8"));
+    // Last again: earlier replays restore the smallint rating overloads it drops.
+    sql(readFileSync(halfStarRatingsMigration, "utf8"));
     console.log("PASS: full migration reset and idempotent auth and review migration replay");
-    run("supabase", ["test", "db", "--workdir", testRoot, join(appRoot, "tests/database/store-customer-auth.sql"), join(appRoot, "tests/database/store-reviews.sql"), join(appRoot, "tests/database/store-buyer-reviews.sql"), join(appRoot, "tests/database/store-review-photo-staging.sql"), join(appRoot, "tests/database/store-review-photo-attachments.sql"), join(appRoot, "tests/database/store-review-photo-reads.sql"), join(appRoot, "tests/database/store-review-deletions.sql"), join(appRoot, "tests/database/store-review-photo-publication.sql"), join(appRoot, "tests/database/store-latest-reviews.sql"), join(appRoot, "tests/database/store-review-feed.sql"), join(appRoot, "tests/database/store-review-write-budgets.sql"), join(appRoot, "supabase/tests/access_control.sql")], undefined, true);
+    run("supabase", ["test", "db", "--workdir", testRoot, join(appRoot, "tests/database/store-customer-auth.sql"), join(appRoot, "tests/database/store-reviews.sql"), join(appRoot, "tests/database/store-buyer-reviews.sql"), join(appRoot, "tests/database/store-review-photo-staging.sql"), join(appRoot, "tests/database/store-review-photo-attachments.sql"), join(appRoot, "tests/database/store-review-photo-reads.sql"), join(appRoot, "tests/database/store-review-deletions.sql"), join(appRoot, "tests/database/store-review-photo-publication.sql"), join(appRoot, "tests/database/store-latest-reviews.sql"), join(appRoot, "tests/database/store-review-feed.sql"), join(appRoot, "tests/database/store-review-write-budgets.sql"), join(appRoot, "tests/database/store-review-half-stars.sql"), join(appRoot, "supabase/tests/access_control.sql")], undefined, true);
     const integration = spawnSync("npx", ["playwright", "test", "tests/customer-account-storage.spec.ts", "--workers=1"], {
       cwd: fileURLToPath(new URL("../../store/", import.meta.url)),
       env: { ...process.env, STORE_AUTH_TEST_CONTAINER: container, STORE_BASE_URL: "http://127.0.0.1:39999" }, stdio: "inherit",
@@ -154,7 +157,7 @@ try {
     const photoId = sql("insert into public.store_review_photo_drafts(shop_id,customer_subject,product_id,request_key,sha256,byte_size,width,height,state) values('123','photo-claim','100',gen_random_uuid(),repeat('a',64),100,48,32,'ready') returning id").split(/\r?\n/)[0];
     if (!/^[0-9a-f-]{36}$/.test(photoId)) throw new Error("Invalid synthetic photo ID");
     sql(`insert into storage.objects(bucket_id,name) values('store-review-photos','123/${photoId}.webp')`);
-    const claim = (line) => `select outcome='created' from public.store_submit_review_with_photos('123','photo-claim','900','${line}','100',null,'Shirt',null,5::smallint,'Great shirt','Love it','anonymous','Anonymous Ryan',array['${photoId}'::uuid])`;
+    const claim = (line) => `select outcome='created' from public.store_submit_review_with_photos('123','photo-claim','900','${line}','100',null,'Shirt',null,4.5,'Great shirt','Love it','anonymous','Anonymous Ryan',array['${photoId}'::uuid])`;
     await race(claim("777"), claim("778"));
     if (sql("select count(*)=1 from public.store_reviews where customer_subject='photo-claim'") !== "t") throw new Error("Rejected photo claim left a review");
     console.log("PASS: a competing photo claim has one owner and rolls back the rejected review");
