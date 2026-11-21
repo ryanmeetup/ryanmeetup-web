@@ -106,7 +106,7 @@ export function ReviewModerationQueue({ initial, staffNames }: { initial: Modera
     {/* Search runs over the reviews already loaded; say so while more pages exist so a miss is not read as "none". */}
     {searching && queue.page?.next && <Text className="text-sm">Searching loaded reviews only. Use Next page to search further back.</Text>}
     {queue.page && <Pagination page={page} pageSize={pageSize} totalCount={filtered.length} hasMore={Boolean(queue.page.next)}
-      itemLabel="reviews" disabled={locked || searchPending} onPageChange={(next) => void changePage(next)} onPageSizeChange={(next) => void changePageSize(next)} />}
+      itemLabel="reviews" itemLabelSingular="review" disabled={locked || searchPending} onPageChange={(next) => void changePage(next)} onPageSizeChange={(next) => void changePageSize(next)} />}
     {queue.selection && "photo" in queue.selection ? <ReviewPhotoDecisionDialog selection={queue.selection} saving={Boolean(queue.busy)} onClose={queue.dismiss} onSubmit={queue.decide} /> :
     queue.selection?.action === "delete" ? <ReviewDeletionDialog key={`${queue.selection.review.id}-delete`} reviews={[queue.selection.review]}
       saving={Boolean(queue.busy)} onClose={queue.dismiss} onSubmit={queue.decide} /> :

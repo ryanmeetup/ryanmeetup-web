@@ -20,6 +20,8 @@ export type PaginationProps = {
   onPageSizeChange: (pageSize: number) => void;
   pageSizeOptions?: readonly number[];
   itemLabel?: string;
+  /** Names one item, for a total of exactly 1. Defaults to itemLabel. */
+  itemLabelSingular?: string;
   /** Names the page size control; "Rows" suits tables, card lists may say "Per page". */
   pageSizeLabel?: string;
   /** Pads the bar for a card footer. Turn off when it sits in open page flow. */
@@ -37,6 +39,7 @@ export function Pagination({
   onPageSizeChange,
   pageSizeOptions = [10, 25, 50, 100],
   itemLabel = "items",
+  itemLabelSingular = itemLabel === "items" ? "item" : itemLabel,
   pageSizeLabel = "Rows",
   inset = true,
   disabled = false,
@@ -48,6 +51,7 @@ export function Pagination({
   const end = Math.min(currentPage * pageSize, totalCount);
   const atStart = currentPage === 1;
   const atEnd = !hasMore && (totalCount === 0 || currentPage === totalPages);
+  const countLabel = !hasMore && totalCount === 1 ? itemLabelSingular : itemLabel;
 
   return (
     <nav
@@ -59,7 +63,7 @@ export function Pagination({
       )}
     >
       <p className="text-black/60 dark:text-white/60">
-        Showing {start}–{end}{!hasMore && ` of ${totalCount}`} {itemLabel}
+        Showing {start}–{end}{!hasMore && ` of ${totalCount}`} {countLabel}
       </p>
       <div className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-start">
         <DropdownSelect

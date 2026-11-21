@@ -21,7 +21,7 @@ export function ReviewPagination({ resultsId, page, pageSize, total, pending, on
   const toResults = () => document.getElementById(resultsId)?.scrollIntoView({ block: "start", behavior: "instant" });
   const pages = Math.max(1, Math.ceil(total / pageSize));
   return <>
-    <Pagination page={page} pageSize={pageSize} totalCount={total} itemLabel="reviews" pageSizeLabel="Per page"
+    <Pagination page={page} pageSize={pageSize} totalCount={total} itemLabel="reviews" itemLabelSingular="review" pageSizeLabel="Per page"
       pageSizeOptions={REVIEW_PAGE_SIZE_OPTIONS} inset={false} disabled={pending} className="mt-8"
       onPageChange={(next) => { onPageChange(next); toResults(); }}
       onPageSizeChange={(next) => { onPageSizeChange(next); toResults(); }} />

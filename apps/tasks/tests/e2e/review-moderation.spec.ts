@@ -494,7 +494,7 @@ test("review pagination stays usable while loading and finds older search matche
     release();
     await expect(rows(page)).toHaveCount(1);
     await expect(card(page, 23)).toBeVisible();
-    await expect(pagination).toContainText("Showing 1–1 of 1 reviews");
+    await expect(pagination).toContainText(/Showing 1–1 of 1 review(?!s)/);
   } finally { release(); }
 });
 
