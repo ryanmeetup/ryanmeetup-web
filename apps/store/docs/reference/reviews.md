@@ -11,8 +11,8 @@ The Store uses its own reviews in RMT. Judge.me's reader, anonymous submission
 path, provider switch and localhost review-mode selector have been removed.
 Old `REVIEWS_PROVIDER`, `REVIEWS_PREVIEW_ENABLED` and `JUDGEME_*` settings have
 no effect. Ryan chose retirement without exporting or importing the old reviews;
-Judge.me is not a recovery path. External uninstall/settings cleanup is tracked
-in the [roadmap](../planning/roadmap.md#14-store-reviews).
+Judge.me is not a recovery path. Ryan confirmed it uninstalled, and Shop's
+competing review-request emails turned off, on November 21, 2026.
 
 | Area | Current implementation |
 | --- | --- |

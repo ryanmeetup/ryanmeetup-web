@@ -5,10 +5,10 @@ records. The store already accepts orders; this is a remaining-work list, not
 an assertion that checkout is still waiting to launch. Etsy stays alongside it
 until Ryan chooses otherwise.
 
-This audit read RMT migration history and current provider documentation. It
-did not log into Shopify/Printful Admin, change deployments, place an order or
-exercise a real buyer login. Items requiring those checks stay explicit rather
-than inheriting an old "not started" or "done" label.
+Shopify/Printful Admin results below are Ryan's dated confirmations; the
+repository audit itself did not log into either Admin or exercise a real buyer
+login. Items still needing those checks stay explicit rather than inheriting an
+old "not started" or "done" label.
 
 ## Already implemented
 
@@ -43,8 +43,12 @@ checkout/accounts and US name-tag shirt/hoodie shipping quote checks. On
 November 21, Ryan confirmed a complete international order (#1004, one shirt
 to Canada): charged $57.00 CAD with $13.00 shipping and $0.00 tax, fulfilled by
 Printful and delivered, with a working confirmation email, email links and
-customer-account order link. This does not prove every current Admin setting,
-destination, product family or tax case.
+customer-account order link. The same day Ryan confirmed the International
+market (27 regions plus United States, local-currency checkout), checkout quote
+tests for EU and Australian addresses, a hoodie, a mug or flag and a mixed cart,
+the published 28-country shipping policy, branded notification templates
+(wordmark and black accent) sent from an authenticated `ryanmeetup.com` sender,
+Judge.me uninstalled and Shop review-request emails turned off.
 
 ## Remaining work
 
@@ -52,39 +56,32 @@ Item numbers remain stable for existing references.
 
 | # | Work | Current evidence / next action |
 | --- | --- | --- |
-| 4 | [Shopify/Printful operating setup](#4-shopify-and-printful-operating-setup) | End-to-end international order verified November 21; finish market currency/policy, other shipping families and taxes. |
+| 4 | [Shopify/Printful operating setup](#4-shopify-and-printful-operating-setup) | Markets, shipping, policy and emails verified November 21; tax decision, heaviest-variant quote and January rate cleanup remain. |
 | 11 | [More from this shop](#11-more-from-this-shop) | Unimplemented product-page recommendations. |
 | 8 | [Note to seller and personalization](#8-note-to-seller-and-personalization) | Neither storefront input is implemented; confirm which personalization is actually needed. |
-| 14 | [Store reviews](#14-store-reviews) | Text and photo publication built; cleanup/recovery, external cleanup and live proof remain. |
+| 14 | [Store reviews](#14-store-reviews) | Text and photo publication built; cleanup/recovery and live proof remain. |
 | 9 | [Optional processing and delivery summary](#9-optional-processing-and-delivery-summary) | Optional product-page guidance; no storefront rate estimator is required. |
 
 ### 4. Shopify and Printful operating setup
 
-- [ ] Publish the updated shipping policy listing the 28 enabled countries
-      (International market, 27 regions, plus United States) and keep it in
-      step with Markets and Printful restrictions.
-- [ ] Verify shipping profiles for every product family and intended destination,
-      including highest supported weights and mixed profiles. Only US name-tag
-      shirts/hoodies and one Canadian shirt order have recorded evidence. Use [shipping setup](../how-to/shipping-setup.md).
-- [ ] Verify tax configuration and checkout results for the intended regions in
+- [ ] Quote the heaviest supported variant (the earlier audit found up to
+      about 54 oz) to a US and an international address and confirm a rate
+      tier covers it. Use [shipping setup](../how-to/shipping-setup.md).
+- [ ] Decide where to collect sales tax/VAT/GST and verify checkout results in
       Admin; the repository cannot establish collection settings. Canada
-      currently collects no tax at checkout.
-- [ ] Optional email polish: links were verified November 21, but notifications
-      still use Shopify's default template (no logo, default accent colour) and
-      send from `shopifyemail.com`. Add the logo/colour and an authenticated
-      sender domain if wanted; see
-      [hosted pages](../how-to/shopify-hosted-pages.md#2-point-the-emails-at-the-store).
+      currently collects no tax at checkout, and the shipping policy tells
+      international buyers that import charges are theirs.
 - [ ] Remove the custom-rate $0.40 holiday allowance after January 17, 2027,
       following a fresh rate check. Printful documents the surcharge through
       that date; custom rates do not update themselves.
 
-Admin API access previously returned access-denied responses. Verify current
-permissions only when an Admin operation is needed; do not treat speculative
-scope grants as a storefront feature or change credentials as documentation
-cleanup. Manual Admin configuration remains a valid path.
+The Catalog Admin app's Admin API access covers products and publications
+only. Policies, notifications, Markets, shipping and taxes are configured by
+hand in Admin; do not treat speculative scope grants as a storefront feature or
+change credentials as documentation cleanup.
 
-**Complete when:** intended destinations have appropriate rates/policy/tax
-settings. The dated end-to-end order/email result exists (#1004, above). Current product/SKU
+**Complete when:** the tax decision is applied and the heaviest-variant quote is
+recorded. The dated end-to-end order/email result exists (#1004, above). Current product/SKU
 counts are catalog data, not a permanent completion criterion.
 
 ### 11. More from this shop
@@ -171,11 +168,6 @@ unverified product feedback. All submissions wait for approval.
 - Customer-account extensions, support session-revocation UI, staff verification
   overrides, delegated moderators and full audit/deletion-log browsing need
   explicit scope, authorization and audit design before implementation.
-
-#### External cleanup
-
-- [ ] Disable competing Shop product-review prompts/feedback-request emails
-      where available in Admin and verify the actual buyer-facing entry points.
 
 **Complete when:** the selected text/media scope has live lifecycle and recovery
 proof. A photo requirement is not met merely by private uploads or text approval.

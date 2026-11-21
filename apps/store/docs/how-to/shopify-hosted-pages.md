@@ -1,9 +1,10 @@
 # Shopify-hosted pages
 
-Reviewed November 20, 2026. The November 15 record confirms light-scheme
-wordmark branding and theme redirects. Current Admin settings and notification
-templates were not inspected during this audit. The steps below maintain that
-setup and identify the checks still needed.
+Reviewed November 21, 2026. The November 15 record confirms light-scheme
+wordmark branding and theme redirects. On November 21 Ryan confirmed the
+notification templates use the wordmark and black accent, emails send from an
+authenticated `ryan@ryanmeetup.com` sender, and order #1004's email and account
+links worked. The steps below maintain that setup.
 
 The store is headless. Shoppers browse, review, and fill their cart on
 `store.ryanmeetup.com`; Shopify only takes over for the parts that have to run on
@@ -84,13 +85,18 @@ Shopify's notification emails link the store name and the **Visit our store**
 button to `{{ shop.url }}`, the theme's domain. The redirect above catches those
 clicks, but pointing them here directly skips the hop.
 
-1. **Settings → Notifications → Customer notifications → Customize email
-   templates**:
+1. **Settings → Notifications → Sender email** is `ryan@ryanmeetup.com`, with
+   Email domain authentication complete. Its DNS records live at Porkbun with
+   the rest of `ryanmeetup.com`; the existing `_dmarc` record (`p=none`)
+   satisfies Shopify. If authentication lapses, Shopify falls back to sending
+   from `store+71870054511@shopifyemail.com`.
+2. **Settings → Notifications → Customer notifications → Customize email
+   templates** (the button at the top right of Customer notifications):
    - Logo: upload [the black wordmark](../assets/shopify/wordmark-black.png)
      (emails have a white background), width about 220px.
    - Accent color: `#000000`, matching the store's black buttons. The nametag
      red `#EE1A25` is too light for white button text.
-2. Open each customer notification you use and choose **Edit code**. Search for
+3. Optionally, open each customer notification you use and choose **Edit code**. Search for
    `shop.url` and replace each `{{ shop.url }}` with
    `https://store.ryanmeetup.com`. The templates that normally have it:
    - Order confirmation, Order edited, Order invoice, Order canceled, Refund;
@@ -99,7 +105,7 @@ clicks, but pointing them here directly skips the hop.
    Leave `{{ order_status_url }}` (the **View your order** button) and
    `{{ url }}` in Abandoned checkout alone: those open Shopify's order status
    page and the shopper's saved checkout, which is where they should go.
-3. **Preview** and **Send test email** for Order confirmation and Shipping
+4. **Preview** and **Send test email** for Order confirmation and Shipping
    confirmation, then click every link in the test email.
 
 ## 3. Brand checkout and customer accounts
@@ -132,8 +138,7 @@ The Basic editor is not a workflow for uploading this repository's WOFF font.
   clearly labelled test emails and inspect their links before claiming completion.
 - Confirm the current hosted light-scheme branding and links on all three
   surfaces, rather than requesting unsupported custom font work.
-- Complete the dated real order/notification check in the
-  [roadmap](../planning/roadmap.md#4-shopify-and-printful-operating-setup). No new
-  storefront implementation is needed for those Admin checks.
+- The dated real order/notification check was completed with order #1004 on
+  November 21; repeat it after template, domain or sender changes.
 
 This guide's images are upload assets for Shopify; keep them with the procedure.

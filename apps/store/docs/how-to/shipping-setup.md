@@ -1,10 +1,12 @@
 # Shipping on Shopify Basic
 
-Reviewed November 20, 2026. **Partly verified:** the November 15 operating
-record says the US name tag shirt/hoodie tiers were applied and matched quotes
-for 1–3 and 10 shirts, 1–2 hoodies and a mixed cart. This audit did not inspect
-today's Admin assignments or obtain new quotes. Other families/international
-rates and the highest supported weights still need recorded verification.
+Reviewed November 21, 2026. The November 15 operating record says the US name
+tag shirt/hoodie tiers were applied and matched quotes for 1–3 and 10 shirts,
+1–2 hoodies and a mixed cart. On November 21 Ryan enabled the International
+market (27 regions), completed a delivered Canadian order (one shirt, $13.00 CAD
+shipping) and confirmed checkout quotes for EU and Australian addresses, a
+hoodie, a mug or flag and a mixed cart. The heaviest supported variant still
+needs a recorded quote; see the [roadmap](../planning/roadmap.md#4-shopify-and-printful-operating-setup).
 
 Ryan chose to keep Basic and use conservative weight-based tiers on November
 14, 2026. Shipping charges may appear entirely in hosted checkout. Do not change
@@ -85,13 +87,17 @@ the current Admin layout before following profile-era labels. Keep the verified
 rate logic and quote checks if the controls have moved.
 
 In **Shopify → Settings → Shipping and delivery**, create each custom profile,
-assign confirmed products and the Printful fulfillment location, and add a US
-zone. Add **Standard shipping → Rate type → Weight**, enter the verified ranges
+assign confirmed products and the Printful fulfillment location, and add a
+zone for the US and for the International market's countries, with
+international rates calculated from Printful's costs for that destination. Add **Standard shipping → Rate type → Weight**, enter the verified ranges
 and prices, and save. Capture original assignments for rollback first.
 
 Ensure old unrestricted flat or express options do not still apply to the same
 products and location, allowing an underpriced choice. Preserve unrelated
-products' rates. International rates and restrictions require a separate review.
+products' rates. Every profile needs a rate for every enabled country: one
+missing zone makes a mixed cart fail with no shipping available. When countries
+are added to or removed from Markets, update the zones and the shipping policy's
+country list together.
 
 Test one item, multiple identical items, mixed sizes, mixed products and
 profiles, tier boundaries, package weight, and the highest supported weight.

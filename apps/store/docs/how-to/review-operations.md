@@ -29,7 +29,7 @@ an applied migration list do not establish a working live buyer lifecycle.
 | Store `STORE_REVIEW_PHOTOS_ENABLED` unset, blank or `true` | Default. Makes photo attachments available in product reviews, Ready to Review and My reviews edits, with configured RMT storage and buyer sign-in. |
 | Store `STORE_REVIEW_PHOTOS_ENABLED=false` | Stops upload/discard/context/selection/preview operations and nonempty photo selections in writes. Text-only edits retain private selections; an explicit empty edit array may remove them. Already-approved public images remain available independently of this collection flag. |
 | Tasks `STORE_REVIEWS_CUSTOMER_AUTH_ENABLED=false` | Stops configured staff queue, decision/reply/photo/deletion reads or writes independently of Store collection and other Tasks data. |
-| Old Judge.me/provider settings | Ignored. They cannot restore a legacy reader or provide recovery. External cleanup is in the roadmap. |
+| Old Judge.me/provider settings | Ignored. They cannot restore a legacy reader or provide recovery. Judge.me was uninstalled on November 21. |
 
 Retain database, client and encryption configuration during a pause. Ordinary
 review logout can still revoke its Store session; **switch account** needs the
