@@ -317,8 +317,9 @@ individually, use a collection and keep their standalone pages.
 
 Product reviews are the store's own, stored in the shared Ryan Meetup backend
 (RMT). A buyer signs in with their Shopify customer account to write one; it
-shows **Verified purchase** when it matches one of their orders, and every
-review waits for approval in Tasks. **Customer Reviews** (`/reviews`) lists
+shows a **Verified** badge when it matches one of their orders (imported Etsy
+reviews get one too; the badge's info tooltip says which), and every review
+waits for approval in Tasks. **Customer Reviews** (`/reviews`) lists
 every published review across the shop, newest first, and **My reviews**
 (`/reviews/mine`) lets a buyer edit or withdraw theirs.
 

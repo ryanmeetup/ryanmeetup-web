@@ -27,8 +27,10 @@ test("only the canonical custom purchase flag gives a purchase badge, while tota
   expect(data.reviews.map((review) => review.verification)).toEqual(["purchase", null]);
   expect(data).toMatchObject({ count: 2, averageRating: 4 });
   const html = render(data);
-  expect(html.match(/Verified purchase/g)).toHaveLength(1);
-  expect(html).not.toContain("Verified Etsy purchase");
+  expect(html.match(/What does verified purchase mean\?/g)).toHaveLength(1);
+  expect(html).not.toContain("What does verified Etsy purchase mean?");
+  // The badge shows one word; the source is announced, and spelled out in the tooltip.
+  expect(html).toContain('Verified<span class="sr-only"> purchase</span>');
   expect(html).toContain("Review by Ryan 1");
 });
 
@@ -37,8 +39,9 @@ test("an imported Etsy review is labelled as a verified Etsy purchase, with or w
   const data = toReviewsData({ ...page, reviews: [page.reviews[0], etsy] });
   expect(data.reviews.map((review) => review.verification)).toEqual(["purchase", "etsy"]);
   const html = render(data);
-  expect(html.match(/Verified purchase/g)).toHaveLength(1);
-  expect(html.match(/Verified Etsy purchase/g)).toHaveLength(1);
+  expect(html.match(/What does verified purchase mean\?/g)).toHaveLength(1);
+  expect(html.match(/What does verified Etsy purchase mean\?/g)).toHaveLength(1);
+  expect(html).toContain('Verified<span class="sr-only"> Etsy purchase</span>');
   expect(html).toContain("Public feedback.");
 });
 
@@ -47,6 +50,6 @@ test("an unverified public review remains visible without either verification ba
   const html = render(data);
   expect(html).toContain("Public feedback.");
   expect(html).toContain("Review by Ryan 1");
-  expect(html).not.toContain("Verified purchase");
-  expect(html).not.toContain("Verified Etsy purchase");
+  expect(html).not.toContain("What does verified");
+  expect(html).not.toContain(">Verified<");
 });
