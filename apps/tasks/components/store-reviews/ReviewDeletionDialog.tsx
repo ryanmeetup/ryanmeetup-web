@@ -35,19 +35,15 @@ export function ReviewDeletionDialog({ reviews, saving, onClose, onSubmit }: {
         own, so the dialog body never does. The reviews come first in the DOM
         so a phone shows what is being deleted before the form. */}
     <div className="grid gap-5 lg:h-full lg:grid-cols-2 lg:grid-rows-[minmax(0,1fr)]">
-      <section aria-labelledby={`${id}-reviews`} className="flex min-h-0 flex-col gap-3 lg:col-start-2 lg:row-start-1 lg:border-l lg:border-black/20 lg:py-6 lg:pl-6 dark:lg:border-white/20">
-        <div className="space-y-1">
-          <Text id={`${id}-reviews`} className="font-semibold">{bulk ? `${reviews.length} reviews selected` : "Selected review"}</Text>
-          {bulk && <Text className="text-sm">The reason must apply to every one. Each deletion is logged separately.</Text>}
-        </div>
-        <div tabIndex={0} aria-labelledby={`${id}-reviews`}
-          className="max-h-80 min-h-0 divide-y divide-black/10 overflow-y-auto overscroll-contain border-y border-black/10 focus-visible:outline-2 focus-visible:outline-offset-2 lg:max-h-none lg:flex-1 dark:divide-white/10 dark:border-white/10">
-          {reviews.map((review) => <div key={review.id} className="space-y-3 py-4">
-            <Text className="font-semibold wrap-anywhere">{review.item.productTitle}</Text>
-            <ModerationVersion revision={review.pending ?? review.published ?? review.rejected ?? review.latest} label="Review being deleted" showLabel={false} />
-          </div>)}
-        </div>
-      </section>
+      {/* On desktop the list runs from the header rule to the footer rule, like
+          the form column beside it, so those rules are its scroll edges. */}
+      <div tabIndex={0} aria-label={bulk ? `${reviews.length} reviews being deleted` : "Review being deleted"}
+        className="max-h-80 min-h-0 divide-y divide-black/10 overflow-y-auto overscroll-contain border-y border-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/30 dark:focus-visible:ring-white/40 lg:col-start-2 lg:row-start-1 lg:max-h-none lg:border-y-0 lg:border-l lg:border-black/20 lg:py-2 lg:pl-6 dark:divide-white/10 dark:border-white/10 dark:lg:border-white/20">
+        {reviews.map((review) => <div key={review.id} className="space-y-3 py-4">
+          <Text className="font-semibold wrap-anywhere">{review.item.productTitle}</Text>
+          <ModerationVersion revision={review.pending ?? review.published ?? review.rejected ?? review.latest} label="Review being deleted" showLabel={false} />
+        </div>)}
+      </div>
       <div className="min-h-0 space-y-5 lg:col-start-1 lg:row-start-1 lg:overflow-y-auto lg:overscroll-contain lg:py-6 lg:pr-1">
         <section aria-labelledby={`${id}-ftc`} className="space-y-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-950 dark:border-amber-300/30 dark:bg-amber-950/40 dark:text-amber-50">
           <p id={`${id}-ftc`} className="font-semibold">FTC rules on removing reviews</p>
