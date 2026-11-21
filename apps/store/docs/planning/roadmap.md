@@ -60,12 +60,9 @@ Item numbers remain stable for existing references.
 
 ### 4. Shopify and Printful operating setup
 
-- [ ] Finish the international market. As of November 21 the International
-      market is active with 27 regions alongside United States, and Canada
-      checks out in CAD. Decide whether International checks out in local
-      currency or USD; the storefront currency switcher currently says
-      "checkout in USD". Align shipping-policy wording (countries served,
-      customs/import charges) with the enabled regions and Printful restrictions.
+- [ ] Publish the updated shipping policy listing the 28 enabled countries
+      (International market, 27 regions, plus United States) and keep it in
+      step with Markets and Printful restrictions.
 - [ ] Verify shipping profiles for every product family and intended destination,
       including highest supported weights and mixed profiles. Only US name-tag
       shirts/hoodies and one Canadian shirt order have recorded evidence. Use [shipping setup](../how-to/shipping-setup.md).
@@ -198,7 +195,10 @@ product data; do not hard-code unverified delivery promises.
 - Etsy stays live until Ryan decides to retire it. Favorites, a separate gift
   feature, storefront product search and Shopify conversion analytics were
   deferred/dropped; they are not unfinished launch blockers.
-- Display currency estimates do not change USD cart/checkout amounts.
+- Display currency estimates do not change USD cart amounts. On November 21
+  Ryan chose local-currency checkout for the International market (Norway
+  currently checks out in USD); storefront labels say the final price is shown
+  at checkout rather than promising USD.
 - Custom reviews replaced Judge.me on November 20; legacy reviews were not
   imported and no provider rollback remains. Ryan confirmed Judge.me
   uninstalled on November 21.
