@@ -53,11 +53,11 @@ export function Header({ collections, garments, accountUrl }: { collections: Sto
           className="hidden min-w-0 flex-1 items-center justify-center xl:flex"
         >
           <div className="flex max-w-full items-center gap-1 overflow-x-auto rounded-full border border-black/10 bg-white/70 p-1 shadow-sm backdrop-blur dark:border-white/20 dark:bg-white/10 dark:ring-1 dark:ring-white/10 2xl:p-1.5">
-            {storeNavigation.map(({ icon: Icon, label, ...item }) =>
+            {/* Text only: six labels with icons overflow the pill at 1280px. The mobile menu keeps the icons. */}
+            {storeNavigation.map(({ label, ...item }) =>
               "menu" in item ? (
                 <NavMenu
                   key={label}
-                  icon={<Icon aria-hidden className="shrink-0" />}
                   title={label}
                   routes={menuRoutes[item.menu]}
                   pathname={currentPath}
@@ -70,7 +70,6 @@ export function Header({ collections, garments, accountUrl }: { collections: Sto
                   aria-current={isCurrent(item.href) ? "page" : undefined}
                   className={`flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold tracking-wide transition hover:bg-black/5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/30 dark:hover:bg-white/10 dark:focus-visible:ring-white/40 2xl:text-sm ${isCurrent(item.href) ? "bg-black/15 shadow-sm ring-1 ring-black/10 dark:bg-white/25 dark:ring-white/20" : ""}`}
                 >
-                  <Icon aria-hidden className="shrink-0" />
                   {label}
                 </Link>
               ),

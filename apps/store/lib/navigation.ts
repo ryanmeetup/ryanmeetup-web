@@ -41,6 +41,12 @@ export const storeNavigation = [
     icon: FaBoxesStacked,
   },
   {
+    href: "/reviews",
+    label: "Reviews",
+    description: "What Ryans (and the people who love them) say about the goods.",
+    icon: FaStar,
+  },
+  {
     href: "/contact",
     label: "Contact",
     description: "Get help with an order or product.",

@@ -15,7 +15,7 @@ test("desktop headers highlight one canonical section for every route family", a
   for (const [path, label] of [
     ["/collections/all", "Collections"],
     ["/accessories", "Accessories"], ["/accessories/pins", "Accessories"],
-    ["/apparel", "Apparel"], ["/apparel/hats", "Apparel"], ["/about", "About"], ["/contact", "Contact"],
+    ["/apparel", "Apparel"], ["/apparel/hats", "Apparel"], ["/about", "About"], ["/reviews", "Reviews"], ["/contact", "Contact"],
     ["/products/ryan-meetup-tee", "Apparel"],
   ]) {
     await page.goto(path);
