@@ -39,7 +39,7 @@ export async function handleReviewPhoto(request: Request, services: Services): P
     return reply(400, { error: "That photo request could not be read." });
   }
   const contentType = request.headers.get("content-type")?.split(";")[0].trim().toLowerCase() ?? "";
-  if (uploading && !["image/jpeg", "image/png", "image/webp"].includes(contentType)) return reply(415, { error: "Choose a JPEG, PNG or WebP photo." });
+  if (uploading && !["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"].includes(contentType)) return reply(415, { error: "Choose a JPEG, PNG, WebP or HEIC photo." });
   const load = () => services.loadSession().catch((): CustomerSessionResult => ({ status: "unavailable" }));
   const session = await load();
   if (session.status === "sign_in_required") return reply(401, { error: "Sign in to add review photos." });
@@ -76,7 +76,7 @@ export async function handleReviewPhoto(request: Request, services: Services): P
       if (bytes === "too_large") return reply(413, { error: "Choose a photo no larger than 4 MiB." });
       if (!bytes) return reply(400, { error: "That photo could not be read. Please try again." });
       const prepared = await prepareReviewPhoto(bytes, contentType);
-      if (!prepared.ok) return reply(422, { error: "Choose a still JPEG, PNG or WebP photo that can be opened." });
+      if (!prepared.ok) return reply(422, { error: "Choose a still JPEG, PNG, WebP or HEIC photo that can be opened." });
       if (!await current()) return unavailable();
       const result = await services.staging.stage({ ...scope, requestKey: id, photo: prepared.photo });
       if (!await current()) return unavailable();

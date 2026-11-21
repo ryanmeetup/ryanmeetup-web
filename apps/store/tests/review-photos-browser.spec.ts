@@ -85,9 +85,9 @@ test("preview retry does not upload twice and removing a new photo confirms disc
 test("five photos includes saved/new selections, and type and size limits are visible",async({page,baseURL})=>{
   const transport=await photos(page);await signIn(page,baseURL!);const dialog=await composer(page);
   await pick(dialog,{name:"bad.svg",mimeType:"image/svg+xml",buffer:Buffer.from("<svg/>")});
-  await expect(dialog.getByRole("alert")).toContainText("still JPEG, PNG or WebP");expect(transport.uploads).toHaveLength(0);
-  await pick(dialog,{name:"huge.png",mimeType:"image/png",buffer:Buffer.alloc(4*1024*1024+1)});
-  await expect(dialog.getByRole("alert")).toContainText("4 MB or smaller");
+  await expect(dialog.getByRole("alert")).toContainText("still JPEG, PNG, WebP or HEIC");expect(transport.uploads).toHaveLength(0);
+  await pick(dialog,{name:"huge.png",mimeType:"image/png",buffer:Buffer.alloc(25*1024*1024+1)});
+  await expect(dialog.getByRole("alert")).toContainText("25 MB or smaller");
   await pick(dialog,Array.from({length:5},(_,index)=>file(`photo-${index}.png`)));
   await expect(dialog.getByRole("img",{name:"Review photo 5",exact:true})).toBeVisible();await expect(dialog.getByLabel("Photos",{exact:true})).toBeDisabled();expect(transport.uploads).toHaveLength(5);
 });

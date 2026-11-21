@@ -5,7 +5,7 @@ import { Button, ErrorCallout, FileDropField, IconButton, Spinner, Text } from "
 import { FiTrash2 } from "react-icons/fi";
 import { REVIEW_PHOTOS_MAX } from "@ryanmeetup/reviews";
 import type { BuyerRejectedPhoto } from "@ryanmeetup/reviews";
-import { REVIEW_PHOTO_PICKER_MAX_BYTES } from "@/lib/review-photo-client";
+import { REVIEW_PHOTO_ACCEPT, REVIEW_PHOTO_PICKER_MAX_BYTES } from "@/lib/review-photo-client";
 import type { useReviewPhotos } from "./use-review-photos";
 
 export function ReviewPhotoField({ photos, disabled, rejected = [] }: {
@@ -23,9 +23,9 @@ export function ReviewPhotoField({ photos, disabled, rejected = [] }: {
   const failed = photos.items.flatMap((item, index) => item.status === "error" || item.error ? [{ item, index }] : []);
   return <div className="min-w-0 space-y-3" aria-busy={working}>
     <FileDropField label="Photos" name="review-photos" multiple compact files={photos.items.flatMap((item) => item.file ? [item.file] : [])}
-      onFilesChange={photos.choose} accept="image/jpeg,image/png,image/webp" maxFileSize={REVIEW_PHOTO_PICKER_MAX_BYTES}
+      onFilesChange={photos.choose} accept={REVIEW_PHOTO_ACCEPT} maxFileSize={REVIEW_PHOTO_PICKER_MAX_BYTES}
       maxFiles={REVIEW_PHOTOS_MAX - retained} disabled={disabled || photos.phase !== "ready" || photos.items.length >= REVIEW_PHOTOS_MAX}
-      hint="Up to five still JPEG, PNG or WebP photos, 4 MiB each." rejectMessage="Choose a still JPEG, PNG or WebP photo." />
+      hint="Up to five still JPEG, PNG, WebP or HEIC photos, 25 MiB each." rejectMessage="Choose a still JPEG, PNG, WebP or HEIC photo." />
     <div role="status" aria-live="polite" className="text-sm text-black/70 empty:hidden dark:text-white/70">
       {working ? <span className="inline-flex items-center gap-2"><Spinner size={16} />Preparing your photos…</span>
         : photos.items.length ? `${photos.items.length} of ${REVIEW_PHOTOS_MAX} photos selected.` : null}

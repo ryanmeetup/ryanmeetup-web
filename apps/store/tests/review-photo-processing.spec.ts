@@ -1,4 +1,6 @@
 import { expect, test } from "@playwright/test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { crc32 } from "node:zlib";
 import sharp from "sharp";
 import {
@@ -37,6 +39,34 @@ test("JPEG, PNG and WebP are decoded and re-encoded as bounded, correctly labell
     expect(output).toMatchObject({ format: "webp", width: 48, height: 32 });
     expect(result.photo.bytes.length).toBeLessThanOrEqual(REVIEW_PHOTO_OUTPUT_MAX_BYTES);
   }
+});
+
+// 40×20, red on the left half and blue on the right, written by macOS `sips -s format heic`.
+const heic = readFileSync(join(__dirname, "fixtures", "review-photo.heic"));
+
+test("HEIC is decoded through libheif and re-encoded as opaque WebP with its colours intact", async () => {
+  for (const declared of ["image/heic", "image/heif", " IMAGE/HEIC ", ""]) {
+    const result = await prepareReviewPhoto(heic, declared);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("Expected the HEIC fixture to decode");
+    expect(result.photo).toMatchObject({ contentType: "image/webp", width: 40, height: 20 });
+    const output = await sharp(result.photo.bytes).metadata();
+    expect(output).toMatchObject({ format: "webp", width: 40, height: 20, hasAlpha: false });
+    for (const field of ["exif", "icc", "xmp"] as const) expect(output[field]).toBeUndefined();
+    const raw = await sharp(result.photo.bytes).raw().toBuffer({ resolveWithObject: true });
+    const sample = (x: number, channel: number) => raw.data[(10 * raw.info.width + x) * raw.info.channels + channel];
+    expect(sample(5, 0)).toBeGreaterThan(200); expect(sample(5, 2)).toBeLessThan(60);
+    expect(sample(35, 2)).toBeGreaterThan(200); expect(sample(35, 0)).toBeLessThan(60);
+  }
+});
+
+test("HEIC labels must match HEIC bytes, and a truncated HEIC fails with a fixed reason", async () => {
+  expect(await prepareReviewPhoto(heic, "image/jpeg")).toEqual({ ok: false, reason: "type_mismatch" });
+  expect(await prepareReviewPhoto(await image().jpeg().toBuffer(), "image/heic")).toEqual({ ok: false, reason: "type_mismatch" });
+  expect(await prepareReviewPhoto(heic.subarray(0, 200), "image/heic")).toEqual({ ok: false, reason: "invalid_image" });
+  // AVIF shares the container but is not a format this form takes.
+  const avif = await image().avif().toBuffer();
+  expect(await prepareReviewPhoto(avif)).toEqual({ ok: false, reason: "unsupported_type" });
 });
 
 test("empty and oversized inputs stop before decoding, while the exact byte limit remains usable", async () => {

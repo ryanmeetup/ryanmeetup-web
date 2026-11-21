@@ -23,7 +23,7 @@ These are source limits, not evidence that deployed collection is enabled:
 
 | Boundary | Current implementation |
 | --- | --- |
-| Input formats | JPEG, PNG and WebP identified from bytes and checked against the decoder's format. Other formats, including GIF, SVG, HEIC, AVIF and TIFF, are refused. |
+| Input formats | JPEG, PNG, WebP and still HEIC/HEIF (`heic`, `heix`, `heim`, `heis` brands) identified from bytes and checked against the decoder's format. Sharp's prebuilt libvips has no HEVC decoder, so HEIC is decoded by `heic-decode` (libheif WebAssembly) to raw pixels, with dimensions checked before decoding and libheif applying the container's rotation/mirroring; only the primary image is used. Other formats, including GIF, SVG, AVIF, HEIF sequences and TIFF, are refused. |
 | Declared MIME | May be absent; otherwise must match the actual supported format. Case, whitespace and MIME parameters are normalized. File extensions do not establish type. |
 | Input bytes | At most 10 MiB, checked before making the processor's owned copy or invoking the decoder. |
 | Input pixels/channels | At most 40 million pixels and four channels through the native decoder's limits. Corrupt, truncated or over-limit input returns `invalid_image`. |
@@ -39,6 +39,13 @@ changing processor behavior. See Sharp's [input limits](https://sharp.pixelplumb
 [output/timeout behavior](https://sharp.pixelplumbing.com/api-output/) for the
 library boundaries. Header checks and the output gate do not replace bounded
 request reading, concurrency control or a worker/runtime resource budget.
+
+The browser picker accepts up to 25 MiB per photo. A file over the 4 MiB
+request limit is redrawn in the browser at 2048 pixels on its longest edge and
+sent as WebP (or JPEG where the browser cannot write WebP) before upload; the
+server still applies every check above. Browsers that cannot decode a format
+locally (HEIC outside Safari) send it unchanged, so a HEIC over 4 MiB is refused
+there with a clear message.
 
 Failures expose only `empty`, `too_large`, `unsupported_type`, `type_mismatch`,
 `animated`, `invalid_image` or `output_too_large`. Decoder messages, original

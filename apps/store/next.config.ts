@@ -19,6 +19,8 @@ const nextConfig: NextConfig = {
   // Playwright builds into its own directory so it can run beside `next dev`.
   distDir: process.env.NEXT_DIST_DIR || ".next",
   allowedDevOrigins: tunnelHost(),
+  // libheif's WebAssembly bundle is several megabytes; load it from node_modules rather than bundling it.
+  serverExternalPackages: ["heic-decode", "libheif-js"],
   transpilePackages: ["@ryanmeetup/contact", "@ryanmeetup/hooks", "@ryanmeetup/metadata", "@ryanmeetup/reviews", "@ryanmeetup/ui", "@ryanmeetup/utils"],
   // Garment collections retired in Shopify now live as garment pages under their
   // department, and the departments moved from /collections to the top level.
