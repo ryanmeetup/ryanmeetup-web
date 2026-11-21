@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueryParamState, useSearchFilter } from "@ryanmeetup/hooks";
-import { Button, ErrorCallout, Heading, PendingResults, SearchInput, Text } from "@ryanmeetup/ui";
+import { Button, ErrorCallout, FilterBar, Heading, PendingResults, SearchInput, Text } from "@ryanmeetup/ui";
 import type { ReviewFeedPage } from "@/lib/review-feed";
 import { PublicReviewCard } from "./public-review-card";
 import { PublicReviewFilters } from "./public-review-filters";
@@ -46,21 +46,18 @@ export function ReviewFeed({ initial }: { initial: ReviewFeedPage }) {
 
   return <>
     <div className="space-y-4">
-      <div className="sm:max-w-md">
-        <SearchInput label="Search reviews" name="review-search" value={search.query}
+      <FilterBar
+        search={<SearchInput label="Search reviews" name="review-search" value={search.query}
           onChange={(event) => search.setQuery(event.target.value)}
           placeholder="Search by review, reviewer, or product..."
           pending={search.isPending || finding} pendingLabel="Loading review results"
-          aria-controls="review-feed-results" />
-      </div>
-      <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-        <PublicReviewFilters rating={feed.rating} sort={feed.sort} onChange={feed.changeView} />
-        <Text role="status" className="text-sm" aria-live="polite">
-          {feed.needsComplete ? (feed.pending ? "Loading reviews…" : "Finish loading to see matching reviews.") :
-            feed.cursor ? `Showing ${reviews.length} reviews` :
-              `Showing ${reviews.length} of ${feed.loadedCount} review${feed.loadedCount === 1 ? "" : "s"}`}
-        </Text>
-      </div>
+          aria-controls="review-feed-results" />}
+        actions={<PublicReviewFilters rating={feed.rating} sort={feed.sort} onChange={feed.changeView} />} />
+      <Text role="status" className="text-sm" aria-live="polite">
+        {feed.needsComplete ? (feed.pending ? "Loading reviews…" : "Finish loading to see matching reviews.") :
+          feed.cursor ? `Showing ${reviews.length} reviews` :
+            `Showing ${reviews.length} of ${feed.loadedCount} review${feed.loadedCount === 1 ? "" : "s"}`}
+      </Text>
     </div>
     <div id="review-feed-results" role="region" aria-label="Review results" aria-busy={feed.pending || search.isPending}>
       <PendingResults pending={search.isPending} label="Searching reviews" surface="page">
