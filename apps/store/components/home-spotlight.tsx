@@ -33,7 +33,7 @@ export function HomeSpotlight({ spotlight: { listing, label, description: collec
         ) : (
           <div aria-hidden className="grid aspect-square place-items-center font-cooper text-8xl text-black/10 dark:text-white/10">R</div>
         )}
-        {sale.onSale && listing.availableForSale && <SaleBadge className="absolute left-4 top-4" />}
+        {listing.availableForSale && <SaleBadge markedDown={sale.onSale} promotable={!listing.externalUrl} className="absolute left-4 top-4" />}
       </Card>
       <div className="flex min-w-0 flex-1 flex-col justify-center gap-6 p-6 sm:p-10 xl:p-14">
         <div>
@@ -48,7 +48,7 @@ export function HomeSpotlight({ spotlight: { listing, label, description: collec
           </p>
         )}
         <div className="flex flex-col items-start gap-6">
-          <PriceBadge price={listing.priceRange.minVariantPrice} compareAt={sale.compareAt} from={listing.priceVaries} size="lg" />
+          <PriceBadge price={listing.priceRange.minVariantPrice} compareAt={sale.compareAt} promotable={!listing.externalUrl} from={listing.priceVaries} size="lg" />
           <Button.Link data-analytics-product={listing.handle} href={href} {...external} size="lg" className="!w-full sm:!w-auto" rightIcon={<FiArrowRight aria-hidden />}>
             {curated ? "Shop the drop" : "Take a closer look"}
             {listing.externalUrl && <span className="sr-only"> (opens in a new tab)</span>}

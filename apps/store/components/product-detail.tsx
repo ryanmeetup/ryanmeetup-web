@@ -220,7 +220,7 @@ export function ProductDetail({ product, title = product.title, breadcrumbs, des
         <h1 className="font-cooper text-4xl leading-[1.05] tracking-wide text-black dark:text-white sm:text-5xl">{title}</h1>
         <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2" aria-live="polite">
           <PriceBadge price={variant ? variant.price : product.priceRange.minVariantPrice} compareAt={compareAtPrice} size="lg" />
-          {compareAtPrice && <SaleBadge />}
+          <SaleBadge markedDown={Boolean(compareAtPrice)} />
         </div>
         <PromotionNote className="mt-3" />
         <ProductDescription description={product.description} descriptionHtml={product.descriptionHtml} part="intro" />

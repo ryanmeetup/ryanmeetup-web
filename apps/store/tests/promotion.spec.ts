@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { getCartSavings } from "../lib/money";
-import { describeTierProgress, describeTiers, getTierProgress, isPromotionLive, type Promotion } from "../lib/promotion";
+import { applyPercentOff, describeTierProgress, describeTiers, getSitewidePercentOff, getTierProgress, isPromotionLive, type Promotion } from "../lib/promotion";
 
 const tiers = [{ minQuantity: 3, percentOff: 10 }, { minQuantity: 5, percentOff: 15 }];
 const promotion: Promotion = { name: "Sale", startsAt: "2026-11-27T00:00:00-05:00", endsAt: "2026-11-30T23:59:59-05:00", endsLabel: "Monday", tiers };
@@ -33,4 +33,14 @@ test("cart savings add up Shopify's order discounts", () => {
   expect(getCartSavings({})).toBeNull();
   expect(getCartSavings({ discountAllocations: [] })).toBeNull();
   expect(getCartSavings({ discountAllocations: [usd("4.50"), usd("1.25")] })).toEqual({ amount: "5.75", currencyCode: "USD" });
+});
+
+test("a sitewide tier discounts every item's shown price", () => {
+  expect(getSitewidePercentOff(promotion)).toBeNull();
+  expect(getSitewidePercentOff(null)).toBeNull();
+  expect(getSitewidePercentOff({ ...promotion, tiers: [{ minQuantity: 1, percentOff: 10 }, ...tiers] })).toBe(10);
+
+  expect(applyPercentOff({ amount: "35.00", currencyCode: "USD" }, 10)).toEqual({ amount: "31.50", currencyCode: "USD" });
+  expect(applyPercentOff({ amount: "30.0", currencyCode: "USD" }, 10)).toEqual({ amount: "27.00", currencyCode: "USD" });
+  expect(applyPercentOff({ amount: "32.99", currencyCode: "USD" }, 10)).toEqual({ amount: "29.69", currencyCode: "USD" });
 });

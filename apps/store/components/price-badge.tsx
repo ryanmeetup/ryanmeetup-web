@@ -5,12 +5,16 @@ import { DropdownMenu, DropdownMenuButton, DropdownMenuItem, DropdownMenuItems, 
 import { FiCheck, FiChevronDown, FiInfo, FiLoader } from "react-icons/fi";
 import { convertDisplayMoney, currencyNames, displayCurrencies, isDisplayCurrency } from "@/lib/currency";
 import { formatMoney } from "@/lib/money";
+import { applyPercentOff, getSitewidePercentOff } from "@/lib/promotion";
 import type { Money } from "@/lib/types";
 import { useDisplayCurrency } from "./currency-provider";
+import { usePromotion } from "./promotion";
 
 export type PriceBadgeProps = {
   price: Money;
   compareAt?: Money | null;
+  /** False for listings checkout won't discount, such as off-Shopify links. */
+  promotable?: boolean;
   from?: boolean;
   size?: "sm" | "lg";
   className?: string;
@@ -37,8 +41,13 @@ const sizeClasses = {
   },
 };
 
-export function PriceBadge({ price, compareAt, from = false, size = "sm", className = "", id }: PriceBadgeProps) {
+export function PriceBadge({ price: listPrice, compareAt: markedDownFrom, promotable = true, from = false, size = "sm", className = "", id }: PriceBadgeProps) {
   const classes = sizeClasses[size];
+  // A sitewide sale shows what checkout will charge, striking through the price it comes off.
+  const promotion = usePromotion();
+  const percentOff = promotable ? getSitewidePercentOff(promotion) : null;
+  const price = percentOff ? applyPercentOff(listPrice, percentOff) : listPrice;
+  const compareAt = percentOff ? markedDownFrom ?? listPrice : markedDownFrom;
   const noteId = useId();
   const { currency, rates, loading, selectCurrency } = useDisplayCurrency();
   const displayed = convertDisplayMoney(price, currency, rates);

@@ -4,6 +4,8 @@
 // and dates here identical to those discounts, and set `currentPromotion` to null once a
 // sale is over and its discounts are gone.
 
+import type { Money } from "./types";
+
 export type PromotionTier = { minQuantity: number; percentOff: number };
 
 export type Promotion = {
@@ -30,6 +32,17 @@ export const currentPromotion: Promotion | null = {
     { minQuantity: 5, percentOff: 20 },
   ],
 };
+
+/** The discount every item gets, from a tier with no real minimum, or null when the sale is tiered only. */
+export function getSitewidePercentOff(promotion: Promotion | null) {
+  return promotion?.tiers.find((tier) => tier.minQuantity <= 1)?.percentOff ?? null;
+}
+
+/** `money` with `percentOff` taken off, to the cent. */
+export function applyPercentOff(money: Money, percentOff: number): Money {
+  const cents = Math.round(Number(money.amount) * (100 - percentOff));
+  return { ...money, amount: (cents / 100).toFixed(2) };
+}
 
 export function isPromotionLive(promotion: Promotion | null, now: number): promotion is Promotion {
   return Boolean(promotion) && now >= Date.parse(promotion!.startsAt) && now <= Date.parse(promotion!.endsAt);
