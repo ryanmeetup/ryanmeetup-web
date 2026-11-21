@@ -4,18 +4,25 @@ import { useId, useState } from "react";
 import { Modal, ModalActions, Text, Textarea } from "@ryanmeetup/ui";
 import { moderationActionLabel, moderationReasonIsPublic, moderationReasonRequired } from "@/lib/store-reviews/moderation";
 import type { ModerationAction, ModerationReview, PublishAction } from "@/lib/store-reviews/moderation";
+import { bulkReviewActionLabels } from "@/lib/store-reviews/bulk-moderation";
 import { ModerationVersion } from "./ReviewModerationParts";
 
 export function ReviewModerationDialog({ selection, saving, onClose, onSubmit }: {
-  selection: { action: Exclude<ModerationAction, PublishAction>; review: ModerationReview }; saving: boolean; onClose: () => void; onSubmit: (note: string | null) => Promise<void>;
+  selection: { action: Exclude<ModerationAction, PublishAction>; reviews: ModerationReview[] }; saving: boolean; onClose: () => void; onSubmit: (note: string | null) => Promise<void>;
 }) {
   const [note, setNote] = useState("");
   const id = useId();
-  const { review, action } = selection;
+  const { reviews, action } = selection;
+  const review = reviews[0];
+  const bulk = reviews.length > 1;
   const required = moderationReasonRequired(action);
-  const label = moderationActionLabel(action, review);
+  const label = bulk ? `${bulkReviewActionLabels[action]} (${reviews.length})` : moderationActionLabel(action, review);
   const visibleToBuyer = moderationReasonIsPublic(action);
-  const descriptions = {
+  const descriptions = bulk ? {
+    reject: "Keep these submissions off the storefront and out of rating totals. Any previously approved version stays public unless the review is hidden.",
+    hide: "Remove these reviews from the storefront and rating totals. Their history is kept.",
+    restore: "Remove the staff hold. Approved versions return to the storefront and rating totals; waiting edits still need approval.",
+  } : {
     reject: review.published ? "Reject this waiting edit. The approved version stays public unless the review is hidden." : "Keep this submission off the storefront and out of rating totals.",
     hide: "Remove this review from the storefront and rating totals. Its history is kept.",
     restore: review.published ? "Return the approved version to the storefront and rating totals. Any waiting edit still needs approval." : "Remove the staff hold. This review still needs approval before it appears on the storefront.",
@@ -26,8 +33,11 @@ export function ReviewModerationDialog({ selection, saving, onClose, onSubmit }:
     actions={<ModalActions onCancel={onClose} confirmLabel={label} confirmForm={id} pending={saving}
       confirmDisabled={saving || (required && !note.trim())} destructive={required} />}>
     <div className="space-y-4">
-      <Text className="font-semibold wrap-anywhere">{review.item.productTitle}</Text>
-      <ModerationVersion revision={(action === "reject" ? review.pending : review.published) ?? review.latest} label="Revision being reviewed" />
+      {bulk && <Text className="text-sm">This action and reason apply to all {reviews.length} reviews below.</Text>}
+      {reviews.map((item) => <div key={item.id} className="space-y-3 border-b border-black/10 pb-4 dark:border-white/10">
+        <Text className="font-semibold wrap-anywhere">{item.item.productTitle}</Text>
+        <ModerationVersion revision={(action === "reject" ? item.pending : item.published) ?? item.latest} label="Revision being reviewed" />
+      </div>)}
       <Textarea id={`${id}-reason`} name="note" label={visibleToBuyer ? "Reason for the buyer" : "Private reason"} required={required} rows={3} autoFocus
         maxLength={1000} value={note} disabled={saving} onChange={(event) => setNote(event.target.value)}
         aria-describedby={`${id}-reason-hint`} />

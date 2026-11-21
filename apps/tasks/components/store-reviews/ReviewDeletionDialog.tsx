@@ -13,8 +13,8 @@ const reasonOptions = REVIEW_DELETION_REASONS.map((value) => ({ value, label: re
  * (16 CFR 465.7) allows. The rule text stays on screen so every deletion is
  * weighed against the same standard, whatever the rating.
  */
-export function ReviewDeletionDialog({ review, saving, onClose, onSubmit }: {
-  review: ModerationReview; saving: boolean; onClose: () => void;
+export function ReviewDeletionDialog({ reviews, saving, onClose, onSubmit }: {
+  reviews: ModerationReview[]; saving: boolean; onClose: () => void;
   onSubmit: (note: string | null, reason: ReviewDeletionReason) => Promise<void>;
 }) {
   const [reason, setReason] = useState<ReviewDeletionReason | "">("");
@@ -22,12 +22,13 @@ export function ReviewDeletionDialog({ review, saving, onClose, onSubmit }: {
   const [affirmed, setAffirmed] = useState(false);
   const id = useId();
   const ready = Boolean(reason) && affirmed && !saving;
-  const revision = review.pending ?? review.published ?? review.rejected ?? review.latest;
+  const bulk = reviews.length > 1;
+  const label = bulk ? `Delete ${reviews.length} reviews` : "Delete review";
   return <Modal open setIsOpen={(open) => { if (!open && !saving) onClose(); }} closable={!saving} size="lg"
-    title="Delete review" description="This permanently removes the review, its history, reply, and photos. It cannot be undone."
+    title={label} description={bulk ? "This permanently removes every listed review, its history, reply, and photos. It cannot be undone." : "This permanently removes the review, its history, reply, and photos. It cannot be undone."}
     formId={id}
     onSubmit={(event) => { event.preventDefault(); if (ready && reason) void onSubmit(note.trim() || null, reason); }}
-    actions={<ModalActions onCancel={onClose} confirmLabel="Delete review" confirmForm={id} pending={saving} pendingLabel="Deleting..."
+    actions={<ModalActions onCancel={onClose} confirmLabel={label} confirmForm={id} pending={saving} pendingLabel="Deleting..."
       confirmDisabled={!ready} destructive
       confirmTooltip={!reason ? "Choose a reason first." : !affirmed ? "Confirm the rating played no part." : undefined} />}>
     <div className="space-y-5">
@@ -46,8 +47,11 @@ export function ReviewDeletionDialog({ review, saving, onClose, onSubmit }: {
         </ul>
         <p>Not allowed: a low rating, criticism, or complaints about shipping or quality. Reply instead. Violations can bring civil penalties. This is guidance, not legal advice.</p>
       </section>
-      <Text className="font-semibold wrap-anywhere">{review.item.productTitle}</Text>
-      <ModerationVersion revision={revision} label="Review being deleted" />
+      {bulk && <Text className="text-sm">The reason must apply to every review below. Each deletion is logged separately.</Text>}
+      {reviews.map((review) => <div key={review.id} className="space-y-3 border-b border-black/10 pb-4 dark:border-white/10">
+        <Text className="font-semibold wrap-anywhere">{review.item.productTitle}</Text>
+        <ModerationVersion revision={review.pending ?? review.published ?? review.rejected ?? review.latest} label="Review being deleted" />
+      </div>)}
       <DropdownSelect label="Reason" variant="field" required value={reason} disabled={saving}
         options={[{ value: "", label: "Choose a reason" }, ...reasonOptions]}
         onChange={(value) => setReason(isReviewDeletionReason(value) ? value : "")} />
@@ -61,7 +65,8 @@ export function ReviewDeletionDialog({ review, saving, onClose, onSubmit }: {
         <input type="checkbox" required checked={affirmed} disabled={saving} onChange={(event) => setAffirmed(event.target.checked)}
           className="mt-0.5 h-4 w-4 shrink-0 rounded border-black/30 accent-black dark:border-white/30 dark:accent-white" />
         <span>
-          I&apos;m deleting this for the reason above. Its rating, and whether it is positive or negative, played no part.
+          {bulk ? "I'm deleting every listed review for the reason above. Their ratings, and whether they are positive or negative, played no part."
+            : "I'm deleting this for the reason above. Its rating, and whether it is positive or negative, played no part."}
           <span aria-hidden className="ml-0.5 text-red-600 dark:text-red-400">*</span>
         </span>
       </label>

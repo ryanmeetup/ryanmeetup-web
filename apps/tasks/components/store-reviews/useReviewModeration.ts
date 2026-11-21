@@ -8,6 +8,9 @@ import { ApiMutationError } from "@/lib/mutation-client";
 import { saveReviewPhotoDecision, deleteStoreReview, fetchModerationPage, saveModerationDecision, saveOfficialReply } from "@/lib/store-reviews/moderation-client";
 import { isPublishAction, moderationActionLabel, moderationRevisionId, reviewModerationActions, reviewReplyActions } from "@/lib/store-reviews/moderation";
 import type { ModerationFilter, ModerationInitialState, ModerationPage, ModerationReview, ReviewDeletionReason, StaffReviewAction } from "@/lib/store-reviews/moderation";
+import { bulkReviewActionLabels, bulkReviewTargets } from "@/lib/store-reviews/bulk-moderation";
+import type { BulkReviewAction } from "@/lib/store-reviews/bulk-moderation";
+import { saveBulkReviewActions } from "@/lib/store-reviews/bulk-moderation-client";
 
 type PhotoAction = "photo-approve" | "photo-reject";
 export type ModerationSelection = { action: Exclude<StaffReviewAction, PhotoAction>; review: ModerationReview } |
@@ -20,6 +23,9 @@ export function useReviewModeration(initial: ModerationInitialState) {
   const [productId, setProductId] = useState<string | null>(null);
   const [busy, setBusy] = useState<"loading" | "saving" | null>(null);
   const [selection, setSelection] = useState<ModerationSelection | null>(null);
+  const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(new Set());
+  const [bulkSelection, setBulkSelection] = useState<{ action: BulkReviewAction; reviews: ModerationReview[] } | null>(null);
+  const [bulkProgress, setBulkProgress] = useState<{ completed: number; total: number } | null>(null);
   const [error, setError] = useState(initial.status === "error" ? "Reviews could not load. Refresh the queue to try again." : "");
   // A synchronous gate also refuses a second click before React renders disabled controls.
   const active = useRef(false);
@@ -28,9 +34,10 @@ export function useReviewModeration(initial: ModerationInitialState) {
   async function load({ filter: nextFilter = filter, productId: nextProduct = productId, more = false }: {
     filter?: ModerationFilter; productId?: string | null; more?: boolean;
   } = {}) {
-    if (disabled || active.current || selection) return;
+    if (disabled || active.current || selection || bulkSelection) return;
     active.current = true;
     setBusy("loading"); setError(""); setFilter(nextFilter); setProductId(nextProduct);
+    if (!more) setSelectedIds(new Set());
     try {
       const result = await fetchModerationPage(nextFilter, nextProduct, more ? page?.next : null);
       setPage((current) => more && current ? {
@@ -41,22 +48,79 @@ export function useReviewModeration(initial: ModerationInitialState) {
     } catch {
       // An unavailable page is not an empty queue, and stale decisions stay closed.
       setPage(null); setError("Reviews could not load. Refresh the queue to try again.");
+      setSelectedIds(new Set());
     } finally { active.current = false; setBusy(null); }
   }
 
   function select(review: ModerationReview, action: StaffReviewAction) {
     // Any review can be deleted; the dialog limits it to policy reasons.
     const allowed: StaffReviewAction[] = [...reviewModerationActions(review), ...reviewReplyActions(review), "delete"];
-    if (disabled || active.current || !allowed.includes(action)) return;
+    if (disabled || active.current || selection || bulkSelection || !allowed.includes(action)) return;
     const next = { review, action: action as Exclude<StaffReviewAction, PhotoAction> };
     // Publishing saves on click: there is nothing to confirm or explain.
     if (isPublishAction(action)) void run(next, null);
     else setSelection(next);
   }
   function selectPhoto(review: ModerationReview, revisionId: string, photo: StaffReviewPhoto, action: PhotoAction) {
-    if (!disabled && !active.current && review.state !== "withdrawn") setSelection({ review, revisionId, photo, action });
+    if (!disabled && !active.current && !selection && !bulkSelection && review.state !== "withdrawn") setSelection({ review, revisionId, photo, action });
   }
-  function dismiss() { if (!active.current) setSelection(null); }
+  function dismiss() { if (!active.current) { setSelection(null); setBulkSelection(null); } }
+
+  function toggleReview(id: string) {
+    if (disabled || active.current || selection || bulkSelection || !page?.reviews.some((review) => review.id === id)) return;
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+  function toggleAll() {
+    if (disabled || active.current || selection || bulkSelection || !page) return;
+    setSelectedIds((current) => current.size === page.reviews.length ? new Set() : new Set(page.reviews.map((review) => review.id)));
+  }
+  function clearSelected() {
+    if (!active.current && !selection && !bulkSelection) setSelectedIds(new Set());
+  }
+  function selectBulk(action: BulkReviewAction) {
+    if (disabled || active.current || selection || bulkSelection || !page) return;
+    const reviews = bulkReviewTargets(page.reviews.filter((review) => selectedIds.has(review.id)), action);
+    if (!reviews.length) return;
+    const next = { action, reviews };
+    if (isPublishAction(action)) void runBulk(next, null);
+    else setBulkSelection(next);
+  }
+  function decideBulk(note: string | null, reason?: ReviewDeletionReason) {
+    return bulkSelection ? runBulk(bulkSelection, note, reason) : Promise.resolve();
+  }
+
+  async function runBulk(batch: { action: BulkReviewAction; reviews: ModerationReview[] }, note: string | null, reason?: ReviewDeletionReason) {
+    if (disabled || active.current || (batch.action === "delete" && !reason) ||
+      ((batch.action === "reject" || batch.action === "hide") && !note?.trim())) return;
+    active.current = true; setBusy("saving"); setError("");
+    setBulkProgress({ completed: 0, total: batch.reviews.length });
+    try {
+      const result = await saveBulkReviewActions({ ...batch, note, reason,
+        onProgress: (completed) => setBulkProgress({ completed, total: batch.reviews.length }) });
+      if (result.saved) toast.success(`${bulkReviewActionLabels[batch.action]}: saved ${result.saved} of ${batch.reviews.length}.${result.photosLeft ? " Some photo files could not be removed and stay private." : ""}`);
+      if (result.uncertain) {
+        setPage(null);
+        setError(`Bulk action stopped: one decision could not be confirmed. ${result.saved} saved, ${result.conflicts} changed, ${result.unattempted} not attempted. Refresh the queue before trying again.`);
+      } else {
+        try {
+          setPage(await fetchModerationPage(filter, productId));
+          if (result.conflicts) setError(`${result.conflicts} selected review${result.conflicts === 1 ? "" : "s"} changed and ${result.conflicts === 1 ? "was" : "were"} skipped. The queue has been refreshed; read the latest text before deciding.`);
+        } catch {
+          setPage(null);
+          setError(`Bulk action finished: ${result.saved} saved, ${result.conflicts} changed. Reviews could not reload. Refresh the queue before deciding again.`);
+        }
+      }
+    } catch {
+      setPage(null); setError("The bulk action could not be confirmed. Refresh the queue before trying again.");
+    } finally {
+      setSelectedIds(new Set()); setBulkSelection(null); setBulkProgress(null);
+      notifyStoreReviewsChanged(); active.current = false; setBusy(null);
+    }
+  }
 
   function decide(note: string | null, reason?: ReviewDeletionReason) {
     return selection ? run(selection, note, reason) : Promise.resolve();
@@ -88,6 +152,7 @@ export function useReviewModeration(initial: ModerationInitialState) {
       if (failure instanceof ApiMutationError && failure.code === "CONFLICT") outcome = "conflict";
     }
     setSelection(null);
+    setSelectedIds(new Set());
     // A conflict or a lost response may still have changed the queue, so the
     // sidebar re-counts after every attempt, not only a confirmed save.
     notifyStoreReviewsChanged();
@@ -114,5 +179,6 @@ export function useReviewModeration(initial: ModerationInitialState) {
     active.current = false; setBusy(null);
   }
 
-  return { page, filter, productId, busy, selection, error, disabled, load, select, selectPhoto, dismiss, decide };
+  return { page, filter, productId, busy, selection, error, disabled, load, select, selectPhoto, dismiss, decide,
+    selectedIds, bulkSelection, bulkProgress, toggleReview, toggleAll, clearSelected, selectBulk, decideBulk };
 }

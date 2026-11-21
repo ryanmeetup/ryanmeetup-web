@@ -10,11 +10,13 @@ import { moderationActionLabel } from "@/lib/store-reviews/moderation";
 import type { ModerationReview, ModerationRevision, StaffReviewAction } from "@/lib/store-reviews/moderation";
 
 import { ReviewModerationPhotos } from "./ReviewModerationPhotos";
+import { ReviewSelectionCheckbox } from "./ReviewSelectionCheckbox";
 import type { PhotoChoice } from "./ReviewModerationPhotos";
 import { ReviewHistoryDialog, ReviewStatusChip, reviewDecisions, reviewSecondaryActions, reviewStatus } from "./ReviewModerationParts";
 
 type TableProps = {
   reviews: ModerationReview[]; disabled: boolean; staffNames: Record<string, string>;
+  selectedIds: ReadonlySet<string>; onToggleReview: (id: string) => void;
   onSelect: (review: ModerationReview, action: StaffReviewAction) => void; onPhotoSelect: PhotoChoice;
 };
 type RowProps = Omit<TableProps, "reviews" | "staffNames"> & { review: ModerationReview; onHistory: (review: ModerationReview) => void };
@@ -71,7 +73,7 @@ function StatusCell({ review }: { review: ModerationReview }) {
   </div>;
 }
 
-function RowActions({ review, disabled, onSelect, onHistory }: Omit<RowProps, "onPhotoSelect">) {
+function RowActions({ review, disabled, onSelect, onHistory }: Pick<RowProps, "review" | "disabled" | "onSelect" | "onHistory">) {
   const { everyday, destructive } = reviewSecondaryActions(review);
   // A lone "Submitted" event repeats what the row already shows.
   const history = review.recentEvents.length > 1;
@@ -97,12 +99,20 @@ function RowActions({ review, disabled, onSelect, onHistory }: Omit<RowProps, "o
   </div>;
 }
 
-function ReviewRow({ review, disabled, onSelect, onPhotoSelect, onHistory }: RowProps) {
+function ReviewRow({ review, disabled, selectedIds, onToggleReview, onSelect, onPhotoSelect, onHistory }: RowProps) {
   const photoRevision = review.pending ?? review.rejected ?? review.published ?? review.latest;
   return <ResponsiveTableRow data-testid={`review-${review.id}`}>
     <ResponsiveTableCell className="@min-[54rem]:whitespace-nowrap">
-      <p className="font-semibold wrap-anywhere">{review.item.productTitle}</p>
-      {review.item.variantTitle && <p className="text-xs text-black/70 wrap-anywhere dark:text-white/70">{review.item.variantTitle}</p>}
+      <div className="flex items-start gap-3">
+        <span className="inline-flex h-5 items-center">
+          <ReviewSelectionCheckbox label={`Select review for ${review.item.productTitle}`} checked={selectedIds.has(review.id)}
+            disabled={disabled} onChange={() => onToggleReview(review.id)} />
+        </span>
+        <div className="min-w-0">
+          <p className="font-semibold wrap-anywhere">{review.item.productTitle}</p>
+          {review.item.variantTitle && <p className="text-xs text-black/70 wrap-anywhere dark:text-white/70">{review.item.variantTitle}</p>}
+        </div>
+      </div>
     </ResponsiveTableCell>
     <ResponsiveTableCell className="@min-[54rem]:max-w-xl"><ReviewCell review={review} /></ResponsiveTableCell>
     {/* A dash keeps the column readable on wide screens; a stacked row simply skips it. */}
@@ -128,7 +138,7 @@ const columns = [
 export function ReviewModerationTable({ reviews, staffNames, ...props }: TableProps) {
   const [history, setHistory] = useState<ModerationReview | null>(null);
   return <>
-    <ResponsiveTable caption="Store reviews" columns={columns} layout="auto" className="overflow-x-auto">
+    <ResponsiveTable caption="Store reviews" columns={columns} layout="auto" className="relative overflow-x-auto">
       {reviews.map((review) => <ReviewRow key={`${review.id}-${review.updatedAt}`} review={review} onHistory={setHistory} {...props} />)}
     </ResponsiveTable>
     <ReviewHistoryDialog review={history} staffNames={staffNames} onClose={() => setHistory(null)} />
