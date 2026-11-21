@@ -141,3 +141,15 @@ export type ReviewPhotoDecision = {
   reviewId: string; revisionId: string; photoId: string; expectedUpdatedAt: string;
   action: "approve" | "reject"; note: string | null;
 };
+
+/**
+ * What the queue search matches: the product and variant, who wrote it, and
+ * every version's title and body, so a waiting edit is as findable as the live
+ * text. Keep the search placeholder in step with this list.
+ */
+export function moderationReviewSearchText(review: ModerationReview): string {
+  const revisions = [review.pending, review.rejected, review.published, review.latest].filter((revision) => revision !== null);
+  return [review.item.productTitle, review.item.variantTitle,
+    ...revisions.flatMap((revision) => [revision.displayName, revision.title, revision.body])]
+    .filter(Boolean).join(" ").toLowerCase();
+}

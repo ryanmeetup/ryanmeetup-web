@@ -41,7 +41,8 @@ buyer sees it on My reviews and beside the photo when they edit.
 
 Rejected reviews are kept, never deleted. Find them in the Rejected queue and
 publish one anyway if you change your mind. Narrow any queue to a single
-product with the Product filter.
+product with the Product filter, or search the loaded reviews by product, reviewer, or review
+text.
 
 Select individual reviews or all loaded reviews, then publish, reject, hide,
 restore, or delete them in bulk. Each action shows how many selected reviews

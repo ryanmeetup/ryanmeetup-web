@@ -1,8 +1,9 @@
 "use client";
 
 import { FiMessageSquare, FiRefreshCw } from "react-icons/fi";
-import { Button, Card, DropdownSelect, EmptyState, ErrorCallout, ManagementSurface, Spinner, Text } from "@ryanmeetup/ui";
-import { isModerationFilter } from "@/lib/store-reviews/moderation";
+import { useSearchFilter } from "@ryanmeetup/hooks";
+import { Button, Card, DropdownSelect, EmptyState, ErrorCallout, FilterBar, ManagementSurface, PendingResults, SearchInput, Spinner, Text } from "@ryanmeetup/ui";
+import { isModerationFilter, moderationReviewSearchText } from "@/lib/store-reviews/moderation";
 import type { ModerationAction, ModerationInitialState, PublishAction } from "@/lib/store-reviews/moderation";
 import { useReviewModeration } from "./useReviewModeration";
 import { ReviewModerationTable } from "./ReviewModerationTable";
@@ -17,6 +18,10 @@ const ALL_PRODUCTS = "all";
 
 export function ReviewModerationQueue({ initial, staffNames }: { initial: ModerationInitialState; staffNames: Record<string, string> }) {
   const queue = useReviewModeration(initial);
+  const { query, setQuery, filtered: reviews, isPending: searchPending } = useSearchFilter({
+    data: queue.page?.reviews ?? [], buildHaystack: moderationReviewSearchText, queryParam: "search",
+  });
+  const searching = query.trim().length > 0;
   if (queue.disabled) return <Card><Text>Store review moderation is not enabled for this workspace.</Text></Card>;
   const products = queue.page?.products ?? [];
   const locked = Boolean(queue.busy || queue.selection || queue.bulkSelection);
@@ -26,7 +31,9 @@ export function ReviewModerationQueue({ initial, staffNames }: { initial: Modera
     actions={<Button size="sm" variant="secondary" className="w-full sm:w-auto" leftIcon={<FiRefreshCw aria-hidden />}
       disabled={locked} onClick={() => void queue.load()}>Refresh queue</Button>}>
     <div className="@container space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+      <FilterBar inlineFrom="xl" search={<SearchInput label="Search reviews" name="search" value={query} onChange={(event) => setQuery(event.target.value)}
+        placeholder="Search by product, reviewer, or review text..." pending={searchPending} pendingLabel="Loading review results" />}
+        actions={<div className="flex flex-col gap-3 sm:flex-row">
         <DropdownSelect label="Queue" variant="compact" value={queue.filter} disabled={locked}
           options={[{ value: "pending", label: "Waiting for review" }, { value: "published", label: "Published" },
             { value: "hidden", label: "Hidden" }, { value: "rejected", label: "Rejected" }, { value: "all", label: "All reviews" }]}
@@ -35,7 +42,7 @@ export function ReviewModerationQueue({ initial, staffNames }: { initial: Modera
           disabled={locked}
           options={[{ value: ALL_PRODUCTS, label: "All products" }, ...products.map((product) => ({ value: product.productId, label: product.productTitle }))]}
           onChange={(value) => void queue.load({ productId: value === ALL_PRODUCTS ? null : value })} />}
-      </div>
+      </div>} />
     <Text className="text-sm">{queue.filter === "rejected"
       ? "Rejected text is kept, never deleted. Publish anyway puts it live, as long as the buyer has not written a newer version."
       : "Oldest first, across every rating. Approve text and photos separately; published content stays live while edits wait."}</Text>
@@ -46,14 +53,20 @@ export function ReviewModerationQueue({ initial, staffNames }: { initial: Modera
         : queue.busy === "saving" ? "Saving decision and refreshing reviews…" : "Loading reviews…"}</span>}
     </div>
     {queue.error && <ErrorCallout>{queue.error}</ErrorCallout>}
-    {queue.page && queue.page.reviews.length > 0 && <ReviewBulkActions reviews={queue.page.reviews} selectedIds={queue.selectedIds}
-      disabled={locked} onToggleAll={queue.toggleAll} onClear={queue.clearSelected} onAction={queue.selectBulk} />}
-    <div aria-label="Review queue" aria-busy={Boolean(queue.busy)} className={queue.busy ? "opacity-60" : ""}>
-      {queue.page && queue.page.reviews.length > 0 && <ReviewModerationTable reviews={queue.page.reviews} staffNames={staffNames}
+    {reviews.length > 0 && <ReviewBulkActions reviews={reviews} selectedIds={queue.selectedIds}
+      disabled={locked || searchPending} searching={searching} onToggleAll={() => queue.toggleAll(reviews)} onClear={queue.clearSelected}
+      onAction={(action) => queue.selectBulk(action, reviews)} />}
+    <PendingResults pending={searchPending} label="Loading reviews">
+    <div aria-label="Review queue" aria-busy={Boolean(queue.busy) || searchPending} className={queue.busy ? "opacity-60" : ""}>
+      {reviews.length > 0 && <ReviewModerationTable reviews={reviews} staffNames={staffNames}
         disabled={locked} selectedIds={queue.selectedIds} onToggleReview={queue.toggleReview} onSelect={queue.select} onPhotoSelect={queue.selectPhoto} />}
-      {queue.page?.reviews.length === 0 && <EmptyState message={queue.filter === "pending" ? "No reviews waiting for a decision" :
+      {queue.page && reviews.length === 0 && <EmptyState message={queue.page.reviews.length > 0 ? `No loaded reviews match “${query.trim()}”` :
+        queue.filter === "pending" ? "No reviews waiting for a decision" :
         queue.filter === "rejected" ? "No rejected reviews" : "No reviews in this queue"} />}
     </div>
+    </PendingResults>
+    {/* Search runs over the reviews already loaded; say so while more pages exist so a miss is not read as "none". */}
+    {searching && queue.page?.next && <Text className="text-sm">Searching loaded reviews only. Load more to search further back.</Text>}
     {queue.page?.next && <Button className="w-full sm:w-auto" variant="secondary" disabled={locked} onClick={() => void queue.load({ more: true })}>Load more reviews</Button>}
     {queue.selection && "photo" in queue.selection ? <ReviewPhotoDecisionDialog selection={queue.selection} saving={Boolean(queue.busy)} onClose={queue.dismiss} onSubmit={queue.decide} /> :
     queue.selection?.action === "delete" ? <ReviewDeletionDialog key={`${queue.selection.review.id}-delete`} reviews={[queue.selection.review]}

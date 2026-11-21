@@ -74,16 +74,18 @@ export function useReviewModeration(initial: ModerationInitialState) {
       return next;
     });
   }
-  function toggleAll() {
+  /** Selects or clears the reviews on screen; a search narrows them below what is loaded. */
+  function toggleAll(visible: ModerationReview[]) {
     if (disabled || active.current || selection || bulkSelection || !page) return;
-    setSelectedIds((current) => current.size === page.reviews.length ? new Set() : new Set(page.reviews.map((review) => review.id)));
+    setSelectedIds((current) => visible.every((review) => current.has(review.id)) ? new Set() : new Set(visible.map((review) => review.id)));
   }
   function clearSelected() {
     if (!active.current && !selection && !bulkSelection) setSelectedIds(new Set());
   }
-  function selectBulk(action: BulkReviewAction) {
+  /** Acts only on selected reviews still on screen, so a search never hides one from the batch. */
+  function selectBulk(action: BulkReviewAction, visible: ModerationReview[]) {
     if (disabled || active.current || selection || bulkSelection || !page) return;
-    const reviews = bulkReviewTargets(page.reviews.filter((review) => selectedIds.has(review.id)), action);
+    const reviews = bulkReviewTargets(visible.filter((review) => selectedIds.has(review.id)), action);
     if (!reviews.length) return;
     const next = { action, reviews };
     if (isPublishAction(action)) void runBulk(next, null);

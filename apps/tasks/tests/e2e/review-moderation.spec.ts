@@ -75,6 +75,27 @@ test("bulk selection publishes only eligible selected reviews and keeps hidden r
   expect(reviews.find((review: { id: string }) => review.id === id(4)).state).toBe("withdrawn");
 });
 
+test("search narrows the queue and bulk actions to matching reviews", async ({ page, request }) => {
+  await signIn(page); await page.goto("/store-reviews"); await queue(page, "All reviews");
+  const search = page.getByRole("textbox", { name: "Search reviews" });
+  await expect(search).toHaveAttribute("placeholder", "Search by product, reviewer, or review text...");
+  await search.fill("fixture SHIRT 2");
+  await expect(rows(page)).toHaveCount(1);
+  await expect(card(page, 2)).toBeVisible();
+  await expect(page).toHaveURL(/[?&]search=fixture\+SHIRT\+2/);
+  // Review text matches too, including a waiting edit's previous published version.
+  await search.fill("Original approved text");
+  await expect(rows(page)).toHaveCount(1);
+  await search.fill("Fixture shirt 2");
+  await expect(rows(page)).toHaveCount(1);
+  await page.getByRole("checkbox", { name: "Select all 1 matching reviews" }).check();
+  await bulkAction(page, "Publish waiting reviews (1)");
+  await expect(successToast(page, "Publish waiting reviews: saved 1 of 1.")).toBeVisible();
+  expect((await state(request)).calls.map((call: { p_review_id: string }) => call.p_review_id)).toEqual([id(2)]);
+  await search.fill("no such review");
+  await expect(page.getByText("No loaded reviews match “no such review”")).toBeVisible();
+});
+
 test("bulk rejection requires one buyer-facing reason and rejected reviews can be published together", async ({ page, request }) => {
   await signIn(page); await page.goto("/store-reviews");
   await card(page, 1).getByRole("checkbox").check();
