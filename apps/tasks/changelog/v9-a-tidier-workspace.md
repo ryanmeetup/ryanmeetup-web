@@ -43,6 +43,12 @@ Rejected reviews are kept, never deleted. Find them in the Rejected queue and
 publish one anyway if you change your mind. Narrow any queue to a single
 product with the Product filter.
 
+Select individual reviews or all loaded reviews, then publish, reject, hide,
+restore, or delete them in bulk. Each action shows how many selected reviews
+are eligible. Rejection and hiding still require a reason; deletion keeps its
+policy confirmation and logs every review separately. A changed review is
+skipped, and an unconfirmed save stops the batch with a clear result count.
+
 The queue is a table with one row per review: product, review text, photos,
 reviewer, status, and actions each get a column. A waiting edit sits above the
 published version it would replace, and an official reply shows under the review.
