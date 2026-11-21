@@ -1,5 +1,6 @@
 "use client";
 
+import clsx from "clsx";
 import {
   FiChevronsLeft,
   FiChevronsRight,
@@ -17,7 +18,12 @@ export type PaginationProps = {
   onPageSizeChange: (pageSize: number) => void;
   pageSizeOptions?: readonly number[];
   itemLabel?: string;
+  /** Names the page size control; "Rows" suits tables, card lists may say "Per page". */
+  pageSizeLabel?: string;
+  /** Pads the bar for a card footer. Turn off when it sits in open page flow. */
+  inset?: boolean;
   disabled?: boolean;
+  className?: string;
 };
 
 export function Pagination({
@@ -28,7 +34,10 @@ export function Pagination({
   onPageSizeChange,
   pageSizeOptions = [10, 25, 50, 100],
   itemLabel = "items",
+  pageSizeLabel = "Rows",
+  inset = true,
   disabled = false,
+  className,
 }: PaginationProps) {
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
   const currentPage = Math.min(Math.max(1, page), totalPages);
@@ -40,14 +49,18 @@ export function Pagination({
   return (
     <nav
       aria-label={`${itemLabel} pagination`}
-      className="flex flex-wrap items-center justify-between gap-3 border-t border-black/10 px-4 py-3 text-sm dark:border-white/10"
+      className={clsx(
+        "flex flex-wrap items-center justify-between gap-3 border-t border-black/10 py-3 text-sm dark:border-white/10",
+        inset && "px-4",
+        className,
+      )}
     >
       <p className="text-black/60 dark:text-white/60">
         Showing {start}–{end} of {totalCount} {itemLabel}
       </p>
       <div className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-start">
         <DropdownSelect
-          label="Rows"
+          label={pageSizeLabel}
           disabled={disabled}
           value={String(pageSize)}
           onChange={(value) => onPageSizeChange(Number.parseInt(value, 10))}
