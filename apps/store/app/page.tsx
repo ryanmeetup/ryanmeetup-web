@@ -11,6 +11,7 @@ import { HomeCollectionTiles } from "@/components/home-collection-tiles";
 import { HomeSpotlight } from "@/components/home-spotlight";
 import { HomeReviews } from "@/components/home-reviews";
 import { ProductGrid } from "@/components/product-grid";
+import { PromotionNote } from "@/components/promotion";
 import { withListingRatings } from "@/lib/listing-ratings";
 import { getHomeCatalog } from "@/lib/shopify";
 
@@ -44,6 +45,7 @@ export default async function HomePage() {
                 Shirts, hats, and everyday goods for the world’s most organized
                 first name.
               </Text>
+              <PromotionNote className="mt-6" />
               <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                 <Button.Link
                   href="/collections/all"

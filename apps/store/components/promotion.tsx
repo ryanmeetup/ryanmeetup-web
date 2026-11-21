@@ -50,7 +50,7 @@ export function PromotionBanner() {
   );
 }
 
-/** A reminder beside a product's price. */
+/** The running sale's offer and deadline, beside a product's price or in the home hero. */
 export function PromotionNote({ className }: { className?: string }) {
   const promotion = usePromotion();
   if (!promotion) return null;
@@ -58,7 +58,7 @@ export function PromotionNote({ className }: { className?: string }) {
     // Tinted like the site-wide sale banner, so the offer reads as part of the price rather than fine print.
     <p className={`flex w-fit max-w-full items-center gap-3 rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-4 py-3 text-sm text-indigo-950 dark:border-indigo-400/30 dark:bg-indigo-400/15 dark:text-indigo-50 ${className ?? ""}`}>
       <FiTag aria-hidden className="h-5 w-5 shrink-0 text-indigo-600 dark:text-indigo-300" />
-      <span><strong className="font-semibold">{promotion.name}:</strong> {describeTiers(promotion.tiers)}.</span>
+      <span><strong className="font-semibold">{promotion.name}:</strong> {describeTiers(promotion.tiers)} through {promotion.endsLabel}.</span>
     </p>
   );
 }
