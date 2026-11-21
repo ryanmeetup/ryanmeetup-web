@@ -2,18 +2,24 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { Button, Modal, Spinner, Text } from "@ryanmeetup/ui";
+import { Button, Modal, SkeletonBar, Spinner, Text } from "@ryanmeetup/ui";
 
 export type ReviewPhotoProps = { url: string; alt: string; thumbnail?: boolean };
 
+/** Fills its positioned box; a pulsing placeholder holds the space until the photo arrives, then the photo fades in. */
 export function ReviewPhoto({ url, alt, thumbnail = false }: ReviewPhotoProps) {
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [loaded, setLoaded] = useState(false);
   return failed ? <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-2">
     <Text role="status" className="text-xs">Photo unavailable</Text>
-    {thumbnail ? <span className="text-xs underline">Open photo</span> : <Button size="sm" variant="secondary" onClick={() => { setFailed(false); setAttempt(attempt + 1); }}>Retry photo</Button>}
-  </div> : <Image key={attempt} src={url} alt={alt} unoptimized fill sizes={thumbnail ? "80px" : "(max-width: 639px) 90vw, 624px"}
-    className={thumbnail ? "object-cover" : "object-contain"} onError={() => setFailed(true)} />;
+    {thumbnail ? <span className="text-xs underline">Open photo</span> : <Button size="sm" variant="secondary" onClick={() => { setFailed(false); setLoaded(false); setAttempt(attempt + 1); }}>Retry photo</Button>}
+  </div> : <>
+    {!loaded && <SkeletonBar className="absolute inset-0 rounded-none" />}
+    <Image key={attempt} src={url} alt={alt} unoptimized fill sizes={thumbnail ? "80px" : "(max-width: 639px) 90vw, 624px"}
+      className={`${thumbnail ? "object-cover" : "object-contain"} transition-opacity duration-300 motion-reduce:transition-none ${loaded ? "opacity-100" : "opacity-0"}`}
+      onLoad={() => setLoaded(true)} onError={() => setFailed(true)} />
+  </>;
 }
 
 export type ReviewPhotoViewerProps = { url: string | null; title: string; alt: string; onClose: () => void };
