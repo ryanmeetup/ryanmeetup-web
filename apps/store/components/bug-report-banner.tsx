@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import { FiTool, FiX } from "react-icons/fi";
+import { LuBug } from "react-icons/lu";
 import { Banner, Button, IconButton } from "@ryanmeetup/ui";
 import { getBugReportHref } from "@/lib/support";
 
@@ -53,13 +54,15 @@ export function BugReportBanner() {
   return (
     <Banner
       variant="brand"
-      icon={<FiTool className="h-4 w-4" aria-hidden />}
-      iconAlign="start"
+      className="!px-0"
+      contentClassName="store-container"
+      icon={<FiTool className="h-10 w-10" aria-hidden />}
+      iconAlign="center"
       aria-label="Bug report notice"
       title="Ryan-tested, not yet Ryan-proofed."
       action={
         <div className="flex items-center gap-2">
-          <Button.Link href={getBugReportHref(pathname)} variant="secondary" size="sm" className="whitespace-nowrap">
+          <Button.Link href={getBugReportHref(pathname)} variant="secondary" size="sm" leftIcon={<LuBug aria-hidden />} className="whitespace-nowrap">
             Report a bug
           </Button.Link>
           <IconButton label="Dismiss" tooltip={false} onClick={dismiss}>
