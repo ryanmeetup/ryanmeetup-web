@@ -49,7 +49,9 @@
     ".next-e2e/product-reviews-d1/types/**/*.ts",
     ".next-e2e/product-reviews-d1/dev/types/**/*.ts",
     ".next-e2e/card-ratings/types/**/*.ts",
-    ".next-e2e/card-ratings/dev/types/**/*.ts"
+    ".next-e2e/card-ratings/dev/types/**/*.ts",
+    ".next-promo-check/types/**/*.ts",
+    ".next-promo-check/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"
