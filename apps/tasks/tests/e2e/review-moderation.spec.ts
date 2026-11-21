@@ -9,6 +9,10 @@ const state = async (request: APIRequestContext) => (await request.get(`${fixtur
 async function configure(request: APIRequestContext, settings: object) {
   expect((await request.post(`${fixture}/__reviews/configure`, { data: settings })).ok()).toBeTruthy();
 }
+const successToast = (page: Page, message: string) => page.getByRole("status").filter({
+  hasText: message,
+  has: page.getByRole("button", { name: "Dismiss notification", exact: true }),
+});
 async function queue(page: Page, label: string) {
   await page.getByRole("button", { name: /^Queue/ }).click();
   await page.getByRole("option", { name: label, exact: true }).click();
@@ -42,6 +46,15 @@ test("loads pending reviews on the server and compares a waiting edit with the a
   await expect(card(page, 1)).toContainText("No matching order");
   await expect(card(page, 2)).not.toContainText("No matching order");
   await expect(card(page, 2)).toContainText("Verified purchase");
+  const unmatchedInfo = card(page, 1).getByRole("button", { name: "What does no matching order mean?" });
+  await unmatchedInfo.focus();
+  await expect(page.getByRole("tooltip")).toContainText("This does not mean the review is fake.");
+  await unmatchedInfo.press("Escape");
+  await expect(page.getByRole("tooltip")).toHaveCount(0);
+  const verifiedInfo = card(page, 2).getByRole("button", { name: "What does verified purchase mean?" }).first();
+  await verifiedInfo.focus();
+  await expect(page.getByRole("tooltip")).toContainText("reviewer's own order");
+  await verifiedInfo.press("Escape");
   await expect(card(page, 2).getByRole("region", { name: "Waiting edit" })).toContainText("Updated after washing.");
   await expect(card(page, 2).getByRole("region", { name: "Published version" })).toContainText("Original approved text.");
   // Its own sidebar entry, not an admin tab, counting every waiting review.
@@ -54,7 +67,7 @@ test("publishes the exact one-star revision and preserves all version digits", a
   await signIn(page); await page.goto("/store-reviews");
   // Publishing saves on click, with no confirmation or note.
   await card(page, 1).getByRole("button", { name: "Publish review", exact: true }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Publish review: saved." })).toBeVisible();
+  await expect(successToast(page, "Publish review: saved.")).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(card(page, 1)).toHaveCount(0);
   await expect(page.locator("#desktop-workspace-navigation").getByRole("link", { name: "Store Reviews 2 waiting reviews" })).toBeVisible();
@@ -74,6 +87,7 @@ test("requires a buyer-facing rejection reason and keeps the approved version", 
   await expect(dialog.getByRole("button", { name: "Reject edit", exact: true })).toBeDisabled();
   await dialog.getByLabel("Reason for the buyer").fill("  Contains private information  ");
   await dialog.getByRole("button", { name: "Reject edit", exact: true }).click();
+  await expect(successToast(page, "Reject edit: saved.")).toBeVisible();
   await expect(dialog).toHaveCount(0);
   await queue(page, "Published");
   await expect(card(page, 2).getByRole("region", { name: "Published version" })).toContainText("Original approved text.");
@@ -99,7 +113,7 @@ test("keeps a rejected review in its own queue and can publish it anyway", async
   await expect(card(page, 1).getByText("Rejected", { exact: true }).first()).toBeVisible(); // The status chip.
   await expect(card(page, 1).getByRole("button", { name: /Recent history \(2\)/ })).toBeVisible();
   await card(page, 1).getByRole("button", { name: "Publish anyway" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Publish anyway: saved." })).toBeVisible();
+  await expect(successToast(page, "Publish anyway: saved.")).toBeVisible();
   await expect(page.getByText("No rejected reviews")).toBeVisible();
   const { calls } = await state(request);
   expect(calls.at(-1)).toMatchObject({ p_action: "republish", p_review_id: id(1), p_revision_id: id(101), p_note: null });
@@ -127,12 +141,14 @@ test("hides with a reason and restores the approved review with its audit histor
   const hide = page.getByRole("dialog", { name: "Hide review" });
   await hide.getByLabel("Private reason").fill("Remove personal information first.");
   await hide.getByRole("button", { name: "Hide review", exact: true }).click();
+  await expect(successToast(page, "Hide review: saved.")).toBeVisible();
   await expect(card(page, 2)).toHaveCount(0);
   await queue(page, "Hidden");
   await card(page, 2).getByRole("button", { name: "Restore review for Fixture shirt 2" }).click();
   const restore = page.getByRole("dialog", { name: "Restore review" });
   await expect(restore).toContainText("Any waiting edit still needs approval.");
   await restore.getByRole("button", { name: "Restore review", exact: true }).click();
+  await expect(successToast(page, "Restore review: saved.")).toBeVisible();
   await expect(card(page, 2)).toHaveCount(0);
   await queue(page, "Published");
   await card(page, 2).getByRole("button", { name: /Recent history/ }).click();
@@ -143,6 +159,7 @@ test("approving a hidden edit keeps it hidden and withdrawn reviews offer no dec
   await signIn(page); await page.goto("/store-reviews"); await queue(page, "Hidden");
   await expect(card(page, 3)).toContainText("Approving an edit keeps it hidden.");
   await card(page, 3).getByRole("button", { name: "Approve revision" }).click();
+  await expect(successToast(page, "Approve revision: saved.")).toBeVisible();
   await expect(card(page, 3)).toContainText("A hidden edit.");
   await expect(card(page, 3).getByText("Hidden", { exact: true })).toBeVisible();
   await queue(page, "All reviews");
@@ -158,6 +175,7 @@ test("refreshes conflicts without automatically repeating a decision", async ({ 
   await signIn(page); await page.goto("/store-reviews");
   await card(page, 1).getByRole("button", { name: "Publish review", exact: true }).click();
   await expect(page.getByRole("alert").filter({ hasText: "read the latest text before deciding" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Dismiss notification", exact: true })).toHaveCount(0);
   await expect(card(page, 1)).toContainText("The buyer replaced this text.");
   expect((await state(request)).calls).toHaveLength(1);
 });
@@ -167,6 +185,7 @@ test("a saved decision with a failed reload blocks stale actions until a fresh r
   await signIn(page); await page.goto("/store-reviews");
   await card(page, 1).getByRole("button", { name: "Publish review", exact: true }).click();
   await expect(page.getByRole("alert").filter({ hasText: "Your decision was saved" })).toBeVisible();
+  await expect(successToast(page, "Publish review: saved.")).toBeVisible();
   await expect(page.locator("article[data-testid^='review-']")).toHaveCount(0);
   await configure(request, { failRead: false, failReadAfterSave: false });
   await page.getByRole("button", { name: "Refresh queue" }).click();
@@ -187,10 +206,11 @@ test("blocks duplicate decisions and dismissal while a save is pending", async (
   try {
     await publish.click();
     await expect(publish).toBeDisabled();
+    await expect(successToast(page, "Publish review: saved.")).toHaveCount(0);
     await expect(card(page, 2).getByRole("button", { name: "Publish edit", includeHidden: true })).toBeDisabled();
     await publish.click({ force: true });
   } finally { release(); }
-  await expect(page.getByRole("status").filter({ hasText: "Publish review: saved." })).toBeVisible();
+  await expect(successToast(page, "Publish review: saved.")).toBeVisible();
   expect((await state(request)).calls).toHaveLength(1);
 });
 
@@ -202,6 +222,7 @@ test("a lost acknowledgement requires refresh without repeating the committed wr
   });
   await card(page, 1).getByRole("button", { name: "Publish review", exact: true }).click();
   await expect(page.getByRole("alert").filter({ hasText: "could not confirm this decision" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Dismiss notification", exact: true })).toHaveCount(0);
   await expect(page.locator("article[data-testid^='review-']")).toHaveCount(0);
   expect((await state(request)).calls).toHaveLength(1);
   await page.getByRole("button", { name: "Refresh queue" }).click();
@@ -260,8 +281,9 @@ test("previews, creates, updates, and removes the official reply without changin
   await dialog.getByRole("button", { name: "Back to edit" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Review reply", exact: true }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Publish reply", exact: true }).click();
+  await expect(successToast(page, "Write reply: saved.")).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expect(card(page, 2).getByRole("region", { name: "Official reply" })).toContainText("Thanks, Ryan!");
+  await expect(card(page, 2).getByRole("region", { name: "Reply from Ryan Meetup" })).toContainText("Thanks, Ryan!");
   await expect(card(page, 2)).toContainText("Updated after washing.");
   let saved = await state(request);
   expect(saved.calls[0]).toMatchObject({ p_body: "Thanks, Ryan!\n\n<b>We hear you.</b>", p_expected_updated_at: "2026-11-18T12:00:00.123456Z" });
@@ -272,8 +294,9 @@ test("previews, creates, updates, and removes the official reply without changin
   await dialog.getByLabel("Official reply").fill("Updated public reply.");
   await dialog.getByRole("button", { name: "Review reply", exact: true }).click();
   await page.getByRole("dialog", { name: "Update reply", exact: true }).getByRole("button", { name: "Update reply", exact: true }).click();
+  await expect(successToast(page, "Edit reply: saved.")).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expect(card(page, 2).getByRole("region", { name: "Official reply" })).toContainText("Updated public reply.");
+  await expect(card(page, 2).getByRole("region", { name: "Reply from Ryan Meetup" })).toContainText("Updated public reply.");
   saved = await state(request);
   expect(saved.reviews.find((r: { id: string }) => r.id === id(2)).reply.publishedAt).toBe(firstPublishedAt);
   await card(page, 2).getByRole("button", { name: "Remove reply for Fixture shirt 2" }).click();
@@ -282,6 +305,7 @@ test("previews, creates, updates, and removes the official reply without changin
   expect((await state(request)).calls).toHaveLength(2);
   await card(page, 2).getByRole("button", { name: "Remove reply for Fixture shirt 2" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Remove reply", exact: true }).click();
+  await expect(successToast(page, "Remove reply: saved.")).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(card(page, 2).getByRole("region", { name: "Official reply" })).not.toContainText("Updated public reply.");
   await expect(card(page, 2).getByRole("button", { name: "Write reply for Fixture shirt 2" })).toBeVisible();
@@ -297,6 +321,7 @@ test("a reply on a hidden review stays hidden and a stale editor cannot overwrit
   await page.getByRole("dialog").getByLabel("Official reply").fill("A hidden reply.");
   await page.getByRole("button", { name: "Review reply", exact: true }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Publish reply", exact: true }).click();
+  await expect(successToast(page, "Write reply: saved.")).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(card(page, 3)).toContainText("A hidden reply.");
   expect((await state(request)).reviews.find((r: { id: string }) => r.id === id(3)).state).toBe("hidden");
@@ -321,7 +346,9 @@ test("a lost reply acknowledgement blocks further writes until refresh", async (
   await page.getByRole("dialog").getByLabel("Official reply").fill("Saved once.");
   await page.getByRole("button", { name: "Review reply", exact: true }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Publish reply", exact: true }).click();
+  await expect(successToast(page, "Write reply: saved.")).toBeVisible();
   await expect(page.getByRole("alert").filter({ hasText: "could not confirm this decision" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Dismiss notification", exact: true })).toHaveCount(0);
   await expect(page.locator("article[data-testid^='review-']")).toHaveCount(0);
   expect((await state(request)).calls).toHaveLength(1);
   await page.getByRole("button", { name: "Refresh queue" }).click();
@@ -405,7 +432,7 @@ test("deletes spam only after a policy reason and a rating-neutral confirmation"
   await dialog.getByLabel("Private note").fill("Link to a follower shop");
   await dialog.getByRole("checkbox").check();
   await confirm.click();
-  await expect(page.getByRole("status").filter({ hasText: "Review deleted and logged." })).toBeVisible();
+  await expect(successToast(page, "Review deleted and logged.")).toBeVisible();
   await expect(card(page, 1)).toHaveCount(0);
   const { calls } = await state(request);
   expect(calls.at(-1)).toEqual({ p_actor: expect.any(String), p_shop_id: "123", p_review_id: id(1),
@@ -427,7 +454,7 @@ test("a withdrawn review can still be deleted, and a stale view is refused", asy
   await page.getByRole("option", { name: "Unrelated to the product", exact: true }).click();
   await dialog.getByRole("checkbox").check();
   await dialog.getByRole("button", { name: "Delete review", exact: true }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Review deleted and logged." })).toBeVisible();
+  await expect(successToast(page, "Review deleted and logged.")).toBeVisible();
   await expect(card(page, 4)).toHaveCount(0);
 });
 
@@ -445,13 +472,13 @@ test("publishing a review publishes its photos except ones rejected first", asyn
   await expect(confirm).toBeDisabled();
   await rejecting.getByLabel("Reason for the buyer").fill("Private information in the background");
   await expect(confirm).toBeEnabled(); await confirm.click();
-  await expect(page.getByRole("status").filter({ hasText: "Reject photo: saved." })).toBeVisible();
+  await expect(successToast(page, "Reject photo: saved.")).toBeVisible();
   await expect(card(page, 1)).toContainText("Photo rejected");
   await expect(card(page, 1)).toContainText("Reason shown to the buyer: Private information in the background");
   // A rejection can still be undone before or after publishing.
   await expect(card(page, 1).getByRole("button", { name: "Approve photo", exact: true })).toHaveCount(1);
   await card(page, 1).getByRole("button", { name: "Publish review", exact: true }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Publish review: saved." })).toBeVisible();
+  await expect(successToast(page, "Publish review: saved.")).toBeVisible();
   await expect(card(page, 1)).toHaveCount(0);
   await queue(page, "Published");
   await expect(card(page, 1)).toContainText("Photo approved"); await expect(card(page, 1)).toContainText("Photo rejected");
@@ -519,6 +546,7 @@ test("failed photo previews need retry and a lost decision acknowledgement needs
   });
   await dialog.getByRole("button", { name: "Reject photo", exact: true }).click();
   await expect(page.getByRole("alert").filter({ hasText: "could not confirm this decision" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Dismiss notification", exact: true })).toHaveCount(0);
   expect((await state(request)).calls).toHaveLength(1);
   await expect(review).toHaveCount(0);
   await page.getByRole("button", { name: "Refresh queue", exact: true }).click();

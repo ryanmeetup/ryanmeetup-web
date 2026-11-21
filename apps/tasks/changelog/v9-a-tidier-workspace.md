@@ -46,6 +46,10 @@ product with the Product filter.
 The queue uses compact cards with the store's author, rating, and purchase
 details, clearer status messages, and grouped actions. Wide screens show two
 reviews side by side; narrow screens keep each review in one readable column.
+Every saved review decision, reply, photo decision, and deletion shows a success
+notification, even if the queue cannot reload afterward.
+Purchase badges match the store, including a neutral “No matching order” badge
+with an explanation of what the order check means.
 
 Delete spam for good with the Delete button on any review. The confirmation
 lists the FTC's rules on removing reviews, asks for one of the allowed reasons,

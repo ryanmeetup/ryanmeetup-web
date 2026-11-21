@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { toast } from "@ryanmeetup/ui";
 import type { StaffReviewPhoto } from "@ryanmeetup/reviews";
 import { notifyStoreReviewsChanged } from "@/hooks/useStoreReviewPendingCount";
 import { ApiMutationError } from "@/lib/mutation-client";
@@ -95,9 +96,14 @@ export function useReviewModeration(initial: ModerationInitialState) {
       // A lost response may follow a committed decision. Require a fresh read, never a blind retry.
       setPage(null); setError("We could not confirm this decision. Refresh the queue before trying again.");
     } else {
-      if (outcome === "saved") setMessage(action === "delete"
-        ? `Review deleted and logged.${photosLeft ? " Its photo files could not be removed and stay private." : ""}`
-        : `${moderationActionLabel(action, review)}: saved.`);
+      if (outcome === "saved") {
+        const message = action === "delete"
+          ? `Review deleted and logged.${photosLeft ? " Its photo files could not be removed and stay private." : ""}`
+          : `${moderationActionLabel(action, review)}: saved.`;
+        setMessage(message);
+        // A confirmed save deserves feedback even if refreshing the queue fails.
+        toast.success(message);
+      }
       try {
         setPage(await fetchModerationPage(filter, productId));
         if (outcome === "conflict") setError(action === "delete" ? "This review changed or was already deleted. The queue has been refreshed; check it before deleting." : "This review changed. The queue has been refreshed; read the latest text before deciding.");
