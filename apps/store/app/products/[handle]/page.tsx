@@ -6,6 +6,7 @@ import { FiShoppingBag } from "react-icons/fi";
 import { NavSection } from "@/components/nav-section";
 import { ProductDetail } from "@/components/product-detail";
 import { ProductGroupDetail } from "@/components/product-group-detail";
+import { JsonLd } from "@/components/json-ld";
 import { ProductSchema } from "@/components/product-schema";
 import { RelatedListings } from "@/components/related-listings";
 import { Reviews } from "@/components/reviews";
@@ -21,6 +22,7 @@ import { getCustomReviews } from "@/lib/custom-reviews";
 import { getCustomReviewAccessByProduct } from "@/lib/custom-review-access";
 import { cartOrigin, withProductOrigin } from "@/lib/product-origin";
 import { getCanonicalProductHrefs, getCollections, getProduct, getProductHandles } from "@/lib/shopify";
+import { buildBreadcrumbSchema } from "@/lib/structured-data";
 
 type Props = { params: Promise<{ handle: string }>; searchParams: Promise<{ design?: string; color?: string; from?: string }> };
 
@@ -75,6 +77,11 @@ export default async function ProductPage({ params, searchParams }: Props) {
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
       <NavSection href={typeCollection ? getCollectionPath(typeCollection.handle) : null} />
+      <JsonLd data={buildBreadcrumbSchema([
+        { name: "Store", path: "/" },
+        ...(typeCollection ? [{ name: typeCollection.title, path: getCollectionPath(typeCollection.handle) }] : []),
+        { name: product.title, path: `/products/${product.handle}` },
+      ])} />
       {product.designs ? (
         <ProductGroupDetail title={product.title} handle={product.handle} url={productUrl} breadcrumbs={breadcrumbs} designs={product.designs} defaultColor={product.defaultColor} reviewsByProduct={reviewsByProduct} reviewAccessByProduct={reviewAccess} />
       ) : (

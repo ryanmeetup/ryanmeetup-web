@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { Breadcrumbs, SectionHeader } from "@ryanmeetup/ui";
 import { CollectionGrid } from "@/components/collection-grid";
+import { JsonLd } from "@/components/json-ld";
 import { isDepartment } from "@/lib/catalog-collections";
 import { decodeRouteHandle, normalizeHandle } from "@/lib/handles";
 import { withListingRatings } from "@/lib/listing-ratings";
 import { buildPageMetadata, DEFAULT_IMAGE, toMetadataImage, toMetaDescription } from "@/lib/metadata";
 import { getStoreCollectionIcon, StoreHomeIcon } from "@/lib/navigation";
 import { getCollection, getCollections } from "@/lib/shopify";
+import { buildBreadcrumbSchema } from "@/lib/structured-data";
 
 type Props = { params: Promise<{ handle: string }> };
 
@@ -40,6 +42,7 @@ export default async function CollectionPage({ params }: Props) {
   const result = await withListingRatings(found);
   return (
     <main className="store-container py-10 sm:py-14">
+      <JsonLd data={buildBreadcrumbSchema([{ name: "Store", path: "/" }, { name: result.collection.title, path: `/collections/${handle}` }])} />
       <Breadcrumbs variant="compact" crumbs={[{ href: "/", title: "Store", icon: <StoreHomeIcon aria-hidden className="shrink-0" /> }, { href: `/collections/${handle}`, title: result.collection.title, current: true, icon: getStoreCollectionIcon(handle) }]} />
       <SectionHeader align="left" layout="split" className="mt-3" headingLevel="h1" title={result.collection.title} description={result.collection.description} meta={`${result.products.length} item${result.products.length === 1 ? "" : "s"}`} headingClassName="text-4xl sm:text-6xl" />
       <div className="mt-10"><CollectionGrid handle={handle} products={result.products} sections={result.sections} more={result.more} /></div>

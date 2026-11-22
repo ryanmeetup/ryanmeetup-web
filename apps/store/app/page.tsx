@@ -8,6 +8,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { Suspense } from "react";
 import { FiArrowRight } from "react-icons/fi";
+import { JsonLd } from "@/components/json-ld";
 import { HomeCollectionTiles } from "@/components/home-collection-tiles";
 import { HomeSpotlight } from "@/components/home-spotlight";
 import { HomeReviews } from "@/components/home-reviews";
@@ -17,6 +18,7 @@ import { SupportNote } from "@/components/support-note";
 import { withListingRatings } from "@/lib/listing-ratings";
 import { buildPageMetadata, DEFAULT_IMAGE, SITE_DESCRIPTION, SITE_NAME } from "@/lib/metadata";
 import { getHomeCatalog } from "@/lib/shopify";
+import { buildStoreSchema } from "@/lib/structured-data";
 
 export const revalidate = 300;
 
@@ -31,6 +33,7 @@ export default async function HomePage() {
   const favorites = await withListingRatings(shelf);
   return (
     <main className="flex flex-col gap-8 py-6 sm:gap-12 sm:py-8 lg:py-10">
+      <JsonLd data={buildStoreSchema()} />
       <section data-analytics-placement="home_hero" data-analytics-section="home_hero" aria-label="Ryan Meetup merch" className="store-container">
         <div className="overflow-hidden rounded-3xl bg-white/65 shadow-drop dark:bg-white/5">
           <div className="grid items-start gap-6 p-5 sm:gap-8 sm:p-8 lg:grid-cols-2 lg:gap-10 xl:gap-12 xl:p-10">

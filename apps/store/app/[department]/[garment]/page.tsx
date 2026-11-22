@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Breadcrumbs, SectionHeader } from "@ryanmeetup/ui";
 import { CollectionGrid } from "@/components/collection-grid";
+import { JsonLd } from "@/components/json-ld";
 import { getCatalogCollection, getCollectionPath } from "@/lib/catalog-collections";
 import { getGarmentParams, getGarmentPath } from "@/lib/garments";
 import { withListingRatings } from "@/lib/listing-ratings";
 import { buildPageMetadata, DEFAULT_IMAGE, toMetadataImage, toMetaDescription } from "@/lib/metadata";
 import { getGarmentIcon, getStoreCollectionIcon, StoreHomeIcon } from "@/lib/navigation";
 import { getGarmentCollection } from "@/lib/shopify";
+import { buildBreadcrumbSchema } from "@/lib/structured-data";
 
 // One garment grouping of Apparel or Accessories, such as /apparel/hats.
 type Props = { params: Promise<{ department: string; garment: string }> };
@@ -47,6 +49,7 @@ export default async function GarmentPage({ params }: Props) {
   const result = await withListingRatings(found);
   return (
     <main className="store-container py-10 sm:py-14">
+      <JsonLd data={buildBreadcrumbSchema([{ name: "Store", path: "/" }, { name: department.title, path: getCollectionPath(handle) }, { name: result.collection.title, path: getGarmentPath(handle, garment) }])} />
       <Breadcrumbs
         variant="compact"
         crumbs={[
