@@ -33,9 +33,10 @@ export function toMetaDescription(value: string, maxLength = 160) {
   return `${cut.slice(0, cut.lastIndexOf(" ")).replace(/[\s,;:–—-]+$/, "")}…`;
 }
 
-// Breaks become spaces so "Ryan.<br>Now" doesn't read as "Ryan.Now".
+// Breaks and block ends become spaces so "Ryan.<br>Now" doesn't read as "Ryan.Now"
+// and list items don't run together.
 export function htmlToText(html: string) {
-  return html.replace(/<br\s*\/?>|<\/p>/gi, " ").replace(/<[^>]*>/g, "").replace(/&(#\d+|[a-z]+);/gi, (match, name: string) =>
+  return html.replace(/<br\s*\/?>|<\/(p|li|div|h[1-6]|tr|td|th)>/gi, " ").replace(/<[^>]*>/g, "").replace(/&(#\d+|[a-z]+);/gi, (match, name: string) =>
     name.startsWith("#") ? String.fromCodePoint(Number(name.slice(1))) : entities[name.toLowerCase()] ?? match);
 }
 
