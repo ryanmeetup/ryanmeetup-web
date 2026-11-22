@@ -70,7 +70,8 @@ The Storefront client (`storefrontRequest` in `lib/shopify.ts`) cleans two
 kinds of editor residue before any page sees them:
 
 - Printful's placeholder alt text "Product mockup" becomes `null`, so images
-  and social cards fall back to the product title. Write real alt text in
-  Shopify to do better than the title.
+  and social cards fall back to the product title. Every catalog image had
+  descriptive alt text written on 2026-11-21; new products need it too (see
+  [adding products](../how-to/adding-products.md#checklist-for-every-new-product)).
 - `<meta>` tags pasted from Google Docs, and the empty paragraphs they leave,
   are removed from product descriptions and policy bodies.

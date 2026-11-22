@@ -49,7 +49,7 @@ Create and sync the product through Printful as usual, then open it in Shopify
    - **Accessory** is everything else: pins, mugs, totes, flags, doormats.
 
    Any other spelling leaves the product off both pages; it only appears under
-   Collections.
+   Shop All.
 5. **Category.** Pick the closest Shopify category (T-Shirts, Hoodies, Baseball
    Caps, Mugs, Door Mats, …). It decides the product's grouping on the Apparel or
    Accessories page. See [Groupings](#groupings-apparel-and-accessories).
@@ -67,7 +67,13 @@ Create and sync the product through Printful as usual, then open it in Shopify
    carrier-calculated rates. See [shipping setup](shipping-setup.md#current-profiles),
    then run `npm run quote:shipping` from `apps/store` if it's the heaviest item
    in its category.
-10. **Check the store** after about 5 minutes: the product's page, its collection
+10. **Image alt text.** Printful labels every mockup "Product mockup", which
+   the store ignores, so each image falls back to the bare product title. Click
+   each image → **Add alt text** and describe what a shopper would see:
+   `<Title> in <color>: <design>` for the front, `<Title> in <color>, back:
+   <design>` for the back. For example, "Ryan Hat in stone: “RYAN” embroidered
+   across the front". Screen readers and link previews read this text.
+11. **Check the store** after about 5 minutes: the product's page, its collection
    page, and the Apparel or Accessories page.
 
 ## Designer credits
