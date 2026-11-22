@@ -19,7 +19,7 @@ export function SupportNote({ className }: { className?: string }) {
         <div className="min-w-0 flex-1 text-black/80 dark:text-white/80">
           <p className="text-base font-semibold text-black sm:text-lg dark:text-white">{SUPPORT_HEADLINE}</p>
           <p className="mt-1 text-sm sm:text-base">
-            Every order helps fund the events, activities, and organization behind the meetup. Wear the shirt, fund the next gathering.
+            Every order helps fund the events, activities, and organization behind the meetup. Thank you, Ryans, for your support.
           </p>
         </div>
         <Link href="/about#money" className={`${linkClassName} self-start text-sm md:self-center md:whitespace-nowrap`}>
