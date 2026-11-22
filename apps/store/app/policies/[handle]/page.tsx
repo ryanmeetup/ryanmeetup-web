@@ -4,8 +4,9 @@ import { notFound } from "next/navigation";
 import { Breadcrumbs, Heading, Kicker } from "@ryanmeetup/ui";
 import { FiBookOpen, FiFileText } from "react-icons/fi";
 import { decodeRouteHandle } from "@/lib/handles";
-import { buildPageMetadata, DEFAULT_IMAGE } from "@/lib/metadata";
+import { buildPageMetadata, DEFAULT_IMAGE, htmlToText, toMetaDescription } from "@/lib/metadata";
 import { StoreHomeIcon } from "@/lib/navigation";
+import { splitPolicyLastUpdated } from "@/lib/policies";
 import { getPolicies } from "@/lib/shopify";
 
 type Props = { params: Promise<{ handle: string }> };
@@ -20,7 +21,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!policy) return { title: "Policy not found" };
   return buildPageMetadata({
     title: policy.title,
-    description: `The Ryan Meetup Store ${policy.title.toLowerCase()}.`,
+    // The policy's own opening lines, as on the policies index card.
+    description: toMetaDescription(htmlToText(splitPolicyLastUpdated(policy.body).body)) || `The Ryan Meetup Store ${policy.title.toLowerCase()}.`,
     canonical: `/policies/${policy.handle}`,
     image: DEFAULT_IMAGE,
   });
