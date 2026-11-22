@@ -30,7 +30,7 @@ type Connection<T> = { edges: Edge<T>[] };
 type PaginatedConnection<T> = Connection<T> & {
   pageInfo: { endCursor: string | null; hasNextPage: boolean };
 };
-type ProductSummary = Pick<Product, "handle" | "title" | "tags">;
+type ProductSummary = Pick<Product, "handle" | "title" | "tags"> & { updatedAt?: string };
 type ProductSummariesPayload = { products: PaginatedConnection<ProductSummary> };
 type ProductNode = Omit<Product, "images" | "variants"> & {
   images: PaginatedConnection<StoreImage>;
@@ -279,7 +279,7 @@ async function getProductSummaries(): Promise<ProductSummary[]> {
   const products = await loadAllPages(async (after) => (await storefrontRequest<ProductSummariesPayload>(
     `query CatalogProductSummaries($after: String) {
       products(first: 250, after: $after, sortKey: TITLE) {
-        edges { node { handle title tags } }
+        edges { node { handle title tags updatedAt } }
         pageInfo { endCursor hasNextPage }
       }
     }`,
@@ -446,6 +446,23 @@ export async function getHomeCatalog(): Promise<HomeCatalog> {
     },
     collections: (sections.length ? sections : getTypeCollectionSections(listings)).map(getCollectionTile),
   };
+}
+
+/**
+ * Each listing's URL and when it last changed in Shopify, for the sitemap. A grouped
+ * listing changed when any of its member products did.
+ */
+export async function getProductSitemapEntries(): Promise<{ handle: string; lastModified?: string }[]> {
+  const products = isShopifyConfigured() ? await getProductSummaries() : demoProducts;
+  const latest = new Map<string, string | undefined>();
+  for (const product of products) {
+    const normalized = { ...product, handle: normalizeHandle(product.handle) };
+    const [handle] = getListingHandles([normalized]);
+    const updatedAt = "updatedAt" in product ? product.updatedAt : undefined;
+    const previous = latest.get(handle);
+    latest.set(handle, previous && (!updatedAt || previous > updatedAt) ? previous : updatedAt);
+  }
+  return [...latest].map(([handle, lastModified]) => (lastModified ? { handle, lastModified } : { handle }));
 }
 
 export async function getProductHandles(): Promise<string[]> {

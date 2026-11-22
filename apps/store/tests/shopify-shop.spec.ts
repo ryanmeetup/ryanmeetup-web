@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { splitPolicyLastUpdated } from "../lib/policies";
-import { cleanEditorHtml, dropPlaceholderAltText, getCustomerAccountUrl, getPolicies } from "../lib/shopify";
+import { cleanEditorHtml, dropPlaceholderAltText, getCustomerAccountUrl, getPolicies, getProductSitemapEntries } from "../lib/shopify";
 
 const originalFetch = globalThis.fetch;
 const originalDomain = process.env.SHOPIFY_STORE_DOMAIN;
@@ -80,4 +80,22 @@ test("policy bodies arrive cleaned, so the last-updated line is found", async ()
   }));
   const [policy] = await getPolicies();
   expect(splitPolicyLastUpdated(policy.body)).toEqual({ lastUpdated: "November 21, 2026", body: "<p>Ships fast.</p>" });
+});
+
+test("sitemap entries give a grouped listing its newest member's update time", async () => {
+  process.env.SHOPIFY_STORE_DOMAIN = "catalog.test";
+  process.env.SHOPIFY_STOREFRONT_API_TOKEN = "test-token";
+  const node = (handle: string, title: string, tags: string[], updatedAt: string) => ({ node: { handle, title, tags, updatedAt } });
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    data: { products: { pageInfo: { endCursor: null, hasNextPage: false }, edges: [
+      node("super-ryan-shirt", "Super Ryan Shirt - Black", ["listing:Super Ryan Shirt"], "2026-11-02T00:00:00Z"),
+      node("super-ryan-blue", "Super Ryan Shirt - Blue", ["listing:Super Ryan Shirt"], "2026-11-09T00:00:00Z"),
+      node("super-ryan-red", "Super Ryan Shirt - Red", ["listing:Super Ryan Shirt"], "2026-11-05T00:00:00Z"),
+      node("ryans-glossy-mug", "Ryan Name Tag Mug", [], "2026-11-14T00:00:00Z"),
+    ] } },
+  }));
+  const entries = await getProductSitemapEntries();
+  expect(entries).toHaveLength(2);
+  expect(entries).toContainEqual({ handle: "ryans-glossy-mug", lastModified: "2026-11-14T00:00:00Z" });
+  expect(entries.find((entry) => entry.handle !== "ryans-glossy-mug")?.lastModified).toBe("2026-11-09T00:00:00Z");
 });
