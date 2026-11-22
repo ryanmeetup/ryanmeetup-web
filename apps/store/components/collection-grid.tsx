@@ -64,6 +64,7 @@ export function CollectionGrid({ handle, products, sections, more = [] }: { hand
       {products.length > 1 && (
         <FilterPanel
           count={Number(type !== "all") + Number(size !== "all")}
+          summary={visible.length === products.length ? itemCount(products.length) : `${visible.length} of ${itemCount(products.length)}`}
           controlsClassName="grid grid-cols-1 items-stretch gap-3 overflow-visible lg:flex lg:items-center"
         >
           {types.length > 1 && (
@@ -117,6 +118,8 @@ export function CollectionGrid({ handle, products, sections, more = [] }: { hand
     </div>
   );
 }
+
+const itemCount = (count: number) => `${count} item${count === 1 ? "" : "s"}`;
 
 // Sections start open; the heading toggles one closed so a shopper can skip past it.
 // A garment grouping keeps its plain title and is anchored by its handle, as in `#hats`.
