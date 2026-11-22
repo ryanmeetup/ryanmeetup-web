@@ -17,7 +17,6 @@ export const metadata = buildPageMetadata({
 
 const sections = [
   { id: "money", label: "Where your money goes", icon: FiHeart },
-  { id: "made", label: "Behind the designs", icon: FiPenTool },
   { id: "for", label: "Who it’s for", icon: FiUsers },
   { id: "shipping", label: "Shipping and returns", icon: FiTruck },
   { id: "faq", label: "Common questions", icon: FiHelpCircle },
@@ -25,7 +24,7 @@ const sections = [
 
 const glance = [
   { icon: FiHeart, term: "Proceeds", detail: "Ryan Meetup events and activities" },
-  { icon: FiPenTool, term: "Designed", detail: "By Ryan. Naturally." },
+  { icon: FiPenTool, term: "Designed", detail: "In-house, by Ryan. Naturally." },
   { icon: FiGlobe, term: "Ships", detail: "28 countries and regions" },
   { icon: FiXCircle, term: "Returns", detail: "Not accepted" },
 ];
@@ -146,13 +145,6 @@ export default async function AboutPage() {
                 </Text>
                 <Text className="max-w-3xl">
                   Ryan Meetup is a not-for-profit, but it isn’t tax-exempt, so purchases aren’t tax-deductible. Thank you, Ryans, for your support.
-                </Text>
-              </section>
-
-              <section id="made" className={sectionClassName}>
-                <SectionTitle id="made">Designed by Ryan. Naturally.</SectionTitle>
-                <Text className="max-w-3xl">
-                  All designs are made in-house by Ryan.
                 </Text>
               </section>
             </div>
