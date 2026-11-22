@@ -17,6 +17,8 @@ export type FilterPanelProps = {
   headerActions?: ReactNode;
   onClear?: () => void;
   preferenceStorageKey?: string;
+  /** Short status at the end of the toggle row, such as a result count. */
+  summary?: ReactNode;
 };
 
 const FilterPanel = ({
@@ -29,9 +31,11 @@ const FilterPanel = ({
   headerActions,
   onClear,
   preferenceStorageKey,
+  summary,
 }: FilterPanelProps) => {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const panelId = useId();
+  const summaryId = useId();
 
   useEffect(() => {
     const mobileQuery = collapseOnMobile
@@ -62,6 +66,7 @@ const FilterPanel = ({
       type="button"
       aria-expanded={expanded}
       aria-controls={panelId}
+      aria-describedby={summary ? summaryId : undefined}
       onClick={() => setExpanded((current) => !current)}
       className={`flex cursor-pointer items-center gap-2 text-left text-xs font-semibold transition hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/30 dark:hover:text-white dark:focus-visible:ring-white/30 ${headerActions ? "shrink-0 rounded-xl p-1 text-black/70 dark:text-white/70" : "w-full rounded-2xl p-4 text-black/70 dark:text-white/70"}`}
     >
@@ -72,9 +77,15 @@ const FilterPanel = ({
           {count}
         </b>
       )}
+      {summary && (
+        // Hidden from the name so the toggle stays "Filters"; it is the description instead.
+        <span id={summaryId} aria-hidden className={`${headerActions ? "" : "ml-auto"} whitespace-nowrap font-medium`}>
+          {summary}
+        </span>
+      )}
       <FiChevronDown
         aria-hidden
-        className={`${headerActions ? "" : "ml-auto"} transition-transform duration-200 motion-reduce:transition-none ${expanded ? "rotate-180" : ""}`}
+        className={`${headerActions || summary ? "" : "ml-auto"} transition-transform duration-200 motion-reduce:transition-none ${expanded ? "rotate-180" : ""}`}
       />
     </button>
   );
