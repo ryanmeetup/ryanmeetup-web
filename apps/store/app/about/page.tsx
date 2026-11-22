@@ -5,7 +5,7 @@ import type { IconType } from "react-icons";
 import { FiArrowRight, FiGlobe, FiHeart, FiPenTool, FiTruck, FiUsers, FiXCircle } from "react-icons/fi";
 import { buildPageMetadata, DEFAULT_IMAGE } from "@/lib/metadata";
 import { getPolicies } from "@/lib/shopify";
-import { SUPPORT_HEADLINE, SUPPORT_REASON, SUPPORT_THANKS } from "@/components/support-note";
+import { SUPPORT_HEADLINE, SUPPORT_REASON } from "@/components/support-note";
 
 export const metadata = buildPageMetadata({
   title: "About the store",
@@ -89,9 +89,15 @@ export default async function AboutPage() {
             <section id="money" className={sectionClassName}>
               <SectionTitle id="money">Every shirt keeps the meetups meeting.</SectionTitle>
               <Text className="max-w-3xl">
-                {SUPPORT_HEADLINE} Purchases help fund Ryan Meetup events, activities, and the organization behind them. {SUPPORT_REASON}
+                {SUPPORT_HEADLINE} Every order goes to Ryan Meetup Inc., the New York not-for-profit corporation that runs Ryan Meetup. After what it costs to make and ship your order, every cent goes back into Ryans, not pockets.
               </Text>
-              <Text className="max-w-3xl">{SUPPORT_THANKS}</Text>
+              <Text className="max-w-3xl">
+                That money is how we fund meetups in cities all over. {SUPPORT_REASON} It covers venues, food, decorations, name tags, and prizes, plus the behind-the-scenes costs: web hosting, a storage unit for event gear, and the filings that keep the organization in good standing.{" "}
+                <a href="https://ryanmeetup.com/donate" className={linkClassName}>See the full breakdown</a>.
+              </Text>
+              <Text className="max-w-3xl">
+                Ryan Meetup is a not-for-profit, but it isn’t tax-exempt, so purchases aren’t tax-deductible. Thank you, Ryans, for your support.
+              </Text>
             </section>
 
             <section id="made" className={sectionClassName}>
