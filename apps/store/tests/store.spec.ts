@@ -143,12 +143,22 @@ test("collection pages sort by price and newest, and the sort survives a reload"
 
 for (const width of [393, 1280]) {
   test(`catalog filters start collapsed and retain sorting at ${width}px`, async ({ page }) => {
+    const renderingErrors: string[] = [];
+    page.on("pageerror", (error) => renderingErrors.push(error.message));
+    page.on("console", (message) => {
+      if (message.type() === "error" && /hydration|hydrated|server rendered/i.test(message.text())) {
+        renderingErrors.push(message.text());
+      }
+    });
     await page.setViewportSize({ width, height: 900 });
     for (const path of ["/apparel", "/accessories", "/collections/all", "/apparel/t-shirts"]) {
       await page.goto(path);
       const toggle = page.getByRole("button", { name: "Filters", exact: true });
       const sort = page.getByRole("button", { name: /^Sort / });
       await expect(toggle).toHaveAttribute("aria-expanded", "false");
+      await expect(toggle).toHaveAccessibleDescription(/^\d+ items$/);
+      const summary = await toggle.getAttribute("aria-describedby");
+      expect(summary).toBeTruthy();
       await expect(sort).toHaveCount(0);
 
       await toggle.click();
@@ -168,6 +178,8 @@ for (const width of [393, 1280]) {
       await expect(toggle).toHaveAttribute("aria-expanded", "false");
       await toggle.click();
       await expect(sort).toContainText("Newest");
+      await expect(toggle).toHaveAccessibleDescription(/^\d+ items$/);
+      expect(renderingErrors, `Rendering errors on ${path} at ${width}px`).toEqual([]);
     }
   });
 }
