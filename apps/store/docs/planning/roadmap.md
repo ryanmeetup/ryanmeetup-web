@@ -34,13 +34,17 @@ old "not started" or "done" label.
   filters and audited deletion.
 - Review write budgets (`store_review_write_budgets`): per-buyer hourly/daily
   and per-network hourly limits on submissions, per-buyer hourly limits on
-  edits. Sign-in itself is not yet throttled.
+  edits; sign-in starts limited to 30 an hour per network.
+- Daily review cleanup (November 21): a Store cron deletes expired sign-in,
+  budget and photo-draft rows and unreferenced photos, and removes orphaned
+  photo objects, retrying failed deletion removals. See
+  [operations](../how-to/review-operations.md#daily-cleanup).
 - Photo processing/staging/associations and buyer controls, separately gated;
   owner previews and per-photo approval/rejection with reasons shown to the
   buyer in Tasks; approving a review approves its undecided photos;
   approved-only public images with revocation on hide/withdraw/replacement/deletion. Attachments are
   enabled by default for signed-in reviews, with an explicit collection pause.
-  Cleanup, recovery and hosted proof remain open.
+  Recovery and hosted proof remain open.
 
 Operating evidence: paid international order #1004 (Canada) delivered with
 working emails and account links; 28-country market, checkout quotes, shipping
@@ -55,7 +59,7 @@ Item numbers remain stable for existing references.
 | --- | --- | --- |
 | 4 | [Shopify/Printful operating setup](#4-shopify-and-printful-operating-setup) | NY sales tax (registration pending), accountant questions and January rate cleanup. |
 | 8 | [Note to seller and personalization](#8-note-to-seller-and-personalization) | Neither storefront input is implemented; confirm which personalization is actually needed. |
-| 14 | [Store reviews](#14-store-reviews) | Text and photo publication built; cleanup/recovery and live proof remain. |
+| 14 | [Store reviews](#14-store-reviews) | Text and photo publication and cleanup built; live proof, monitoring, retention and recovery remain. |
 | 9 | [Optional processing and delivery summary](#9-optional-processing-and-delivery-summary) | Optional product-page guidance; no storefront rate estimator is required. |
 
 ### 4. Shopify and Printful operating setup
@@ -130,19 +134,14 @@ unverified product feedback. All submissions wait for approval.
 
 #### Implementation required for media and operations
 
-- [ ] Implement bounded auth authorization/session/tombstone, draft and upload-budget
-      expiry; abandoned/historical/orphan object cleanup; and retryable cleanup
-      after a committed review deletion whose Storage removal failed.
 - [ ] Define retention, customer export/removal and deletion-audit/private-note
       handling. Withdrawal is not erasure; SQL backups exclude Storage bytes.
 - [ ] Add hosted logs/retention, availability/latency signals, alert thresholds,
       an observation window and response ownership. Cover auth, Shopify reads,
       text writes, moderation and standalone media in addition to current
       sanitized backend failures.
-- [ ] Add sign-in abuse controls. Submission/edit write budgets and upload
-      budgets exist; Shopify sign-in and session renewal remain unthrottled.
-      Confirm hosted photo collection settings and record lifecycle, cleanup
-      and recovery evidence.
+- [ ] Confirm hosted photo collection settings, set `CRON_SECRET` in the Store's
+      Vercel project, and record lifecycle, cleanup and recovery evidence.
 
 #### Conditional and optional features
 
