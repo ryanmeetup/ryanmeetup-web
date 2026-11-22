@@ -9,6 +9,7 @@ import { CurrencyEstimateNote } from "./currency-estimate-note";
 import { EmptyCartButton } from "./empty-cart-button";
 import { EmptyCartPrompt } from "./empty-cart-prompt";
 import { FinalSaleNote } from "./final-sale-note";
+import { SupportLine } from "./support-note";
 import { CartSavings, PromotionProgress } from "./promotion";
 
 /** Slides in after an item is added, so shoppers see the cart without leaving the page. */
@@ -37,6 +38,7 @@ export function CartDrawer() {
           <CartSavings cart={cart} className="mt-2" />
           <CurrencyEstimateNote subtotal={cart.cost.subtotalAmount} className="mt-3" />
           <Text className="mt-3 text-sm">Shipping and taxes are calculated at checkout. <FinalSaleNote onNavigate={close} /></Text>
+          <Text className="mt-3 text-sm"><SupportLine /></Text>
           <Button className="mt-4" variant="secondary" size="md" fullWidth onClick={close}>Keep shopping</Button>
           <CheckoutButton placement="cart_drawer" className="mt-3" />
         </>

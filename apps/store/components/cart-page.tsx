@@ -10,6 +10,7 @@ import { CurrencyEstimateNote } from "./currency-estimate-note";
 import { EmptyCartButton } from "./empty-cart-button";
 import { EmptyCartPrompt } from "./empty-cart-prompt";
 import { FinalSaleNote } from "./final-sale-note";
+import { SupportLine } from "./support-note";
 import { CartSavings, PromotionProgress } from "./promotion";
 
 export function CartPage() {
@@ -41,6 +42,7 @@ export function CartPage() {
           </div>
           <CurrencyEstimateNote subtotal={cart.cost.subtotalAmount} className="mt-4" />
           <Text className="mt-4 text-sm">Shipping, discounts, and taxes are calculated securely at checkout. <FinalSaleNote /></Text>
+          <Text className="mt-4 text-sm"><SupportLine /></Text>
           <CheckoutButton placement="cart_page" className="mt-6" />
         </Card>
       </div>
