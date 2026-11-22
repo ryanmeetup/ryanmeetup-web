@@ -124,10 +124,9 @@ const DonatePage = async () => {
 
           <Text className="text-lg text-black/70 dark:text-white/70">
             Our not-for-profit organization is sustained by donations and
-            community support. Form 8283 is available on request for tax-free
-            charitable donation write-offs. As a not-for-profit, we can provide
-            that form for eligible donations, and many large companies budget
-            specifically for 8283 donations each year.
+            community support. Ryan Meetup isn&apos;t tax-exempt, so donations
+            aren&apos;t tax-deductible, but every one of them goes straight
+            into the next meetup.
           </Text>
 
           <Text className="text-lg text-black/70 dark:text-white/70">
