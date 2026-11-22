@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { trackStoreEvent } from "@/lib/analytics";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { FiChevronDown, FiMenu, FiShoppingBag, FiX } from "react-icons/fi";
 import { AnimatedCollapse, NavMenu, Tooltip, Wordmark } from "@ryanmeetup/ui";
@@ -36,7 +36,24 @@ export function Header({ collections, garments, accountUrl }: { collections: Sto
     setExpandedMenu(null);
   }
 
+  useEffect(() => {
+    if (!open) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      setOpen(false);
+      setExpandedMenu(null);
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [open]);
+
   return (
+    <>
+    {/* A sibling rather than a child: the header's backdrop-blur makes it the
+        containing block for fixed descendants, so a child could not cover the page. */}
+    {open && (
+      <div aria-hidden onClick={closeNavigation} className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm xl:hidden" />
+    )}
     <header className="sticky top-0 z-40 border-b border-black/10 bg-white/80 backdrop-blur dark:border-white/10 dark:bg-black/70">
       <div
         aria-hidden
@@ -120,11 +137,14 @@ export function Header({ collections, garments, accountUrl }: { collections: Sto
           </Tooltip>
         </div>
       </div>
+      {/* Floats over the page instead of pushing it down. The panel is opaque
+          because the header's backdrop-blur stops a nested blur from seeing the page. */}
       {open && (
+        <div className="store-container absolute inset-x-0 top-full pt-2 xl:hidden">
         <nav
           data-analytics-placement="mobile_navigation"
           aria-label="Mobile navigation"
-          className="store-container relative grid max-h-[calc(100dvh-4rem)] gap-1 overflow-y-auto overscroll-contain border-t border-black/10 py-3 xl:hidden dark:border-white/10"
+          className="grid max-h-[calc(100dvh-6rem)] gap-1 overflow-y-auto overscroll-contain rounded-2xl border border-black/10 bg-white p-2 shadow-overlay dark:border-white/10 dark:bg-black"
         >
           {storeNavigation.map(({ description, icon: Icon, label, ...item }) =>
             "menu" in item ? (
@@ -191,7 +211,9 @@ export function Header({ collections, garments, accountUrl }: { collections: Sto
             ),
           )}
         </nav>
+        </div>
       )}
     </header>
+    </>
   );
 }

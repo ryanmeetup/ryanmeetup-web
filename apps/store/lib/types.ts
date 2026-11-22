@@ -77,6 +77,8 @@ export type ProductListing = Product & {
   externalUrl?: string;
   /** Published review totals, present only once there are enough that one review can't swing the average. */
   rating?: ListingRating;
+  /** Reviews were read and none are published yet; absent when they couldn't be read. */
+  unreviewed?: true;
   /** Every published review pooled across the listing's designs, below the rating threshold too; absent when they couldn't be read. */
   reviewCount?: number;
 };

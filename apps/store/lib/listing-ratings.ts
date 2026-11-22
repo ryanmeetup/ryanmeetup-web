@@ -57,7 +57,7 @@ export async function withListingRatings<T extends Catalog>(catalog: T, backend 
     const counted = read ? { reviewCount: listingSummaries.reduce((sum, summary) => sum + (summary?.count ?? 0), 0) } : {};
     const rating = poolListingRating(listingSummaries);
     if (rating) return { ...listing, rating, ...counted };
-    return { ...listing, ...counted };
+    return counted.reviewCount === 0 ? { ...listing, unreviewed: true, ...counted } : { ...listing, ...counted };
   };
   return {
     ...catalog,
