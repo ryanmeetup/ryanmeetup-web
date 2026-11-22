@@ -2,6 +2,8 @@ import Link from "next/link";
 import { FiArrowRight, FiHeart } from "react-icons/fi";
 
 export const SUPPORT_HEADLINE = "Buying merch is the best way to support Ryan Meetup.";
+export const SUPPORT_REASON = "We keep our events free or as low cost as we can, charging only when we have to, like for ballgame or festival tickets.";
+export const SUPPORT_THANKS = "Your orders help cover the rest. Thank you, Ryans, for your support.";
 
 const linkClassName = "inline-flex items-center gap-1 rounded-sm font-semibold underline decoration-black/30 underline-offset-4 transition hover:decoration-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:decoration-white/30 dark:hover:decoration-white dark:focus-visible:ring-white/40";
 
@@ -18,9 +20,8 @@ export function SupportNote({ className }: { className?: string }) {
       <div className="flex min-w-0 flex-1 flex-col gap-3 md:flex-row md:items-center md:gap-6">
         <div className="min-w-0 flex-1 text-black/80 dark:text-white/80">
           <p className="text-base font-semibold text-black sm:text-lg dark:text-white">{SUPPORT_HEADLINE}</p>
-          <p className="mt-1 text-sm sm:text-base">
-            We keep our events free or as low cost as we can, charging only when we have to, like for ballgame or festival tickets. Your orders help cover the rest. Thank you, Ryans, for your support.
-          </p>
+          <p className="mt-1 text-sm sm:text-base">{SUPPORT_REASON}</p>
+          <p className="mt-1 text-sm sm:text-base">{SUPPORT_THANKS}</p>
         </div>
         <Link href="/about#money" className={`${linkClassName} self-start text-sm md:self-center md:whitespace-nowrap`}>
           Where your money goes
