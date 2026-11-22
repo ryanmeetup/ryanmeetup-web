@@ -24,7 +24,7 @@ const sections = [
 const glance = [
   { icon: FiHeart, term: "Proceeds", detail: "Ryan Meetup events and activities" },
   { icon: FiPenTool, term: "Designed", detail: "By Ryan. Naturally." },
-  { icon: FiGlobe, term: "Ships", detail: "Most of the world" },
+  { icon: FiGlobe, term: "Ships", detail: "28 countries and regions" },
   { icon: FiXCircle, term: "Returns", detail: "Not accepted" },
 ];
 
@@ -111,7 +111,7 @@ export default async function AboutPage() {
             <section id="shipping" className={sectionClassName}>
               <SectionTitle id="shipping">The fine print.</SectionTitle>
               <Text className="max-w-3xl">
-                We ship to most of the world. Shipping options and costs for your address appear at checkout, and tracking details arrive by email once your order is on its way.
+                We ship to 28 countries and regions across North America, Europe, Asia-Pacific, and the Middle East. Each item is made after you order it, so it takes a few business days before it ships. Shipping costs for your address appear at checkout, and tracking details arrive by email once your order is on its way.
                 {policyHandles.has("shipping-policy") && (
                   <>
                     {" "}Production times, customs, and the rest are in our <Link href="/policies/shipping-policy" className={linkClassName}>shipping policy</Link>.

@@ -115,8 +115,9 @@ Ensure old unrestricted flat or express options do not still apply to the same
 products and location, allowing an underpriced choice. Preserve unrelated
 products' rates. Every profile needs a rate for every enabled country: one
 missing zone makes a mixed cart fail with no shipping available. When countries
-are added to or removed from Markets, update the zones and the shipping policy's
-country list together.
+are added to or removed from Markets, update the zones, the shipping policy's
+country list, and the country count on the About page (`app/about/page.tsx`)
+together.
 
 Test one item, multiple identical items, mixed sizes, mixed products and
 profiles, tier boundaries, package weight, and the highest supported weight.
