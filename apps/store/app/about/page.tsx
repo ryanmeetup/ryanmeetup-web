@@ -1,8 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Button, Card, Heading, Kicker, Text } from "@ryanmeetup/ui";
+import { Button, Card, DisclosureCard, Heading, Kicker, Text } from "@ryanmeetup/ui";
+import type { ReactNode } from "react";
 import type { IconType } from "react-icons";
-import { FiArrowRight, FiGlobe, FiHeart, FiPenTool, FiTruck, FiUsers, FiXCircle } from "react-icons/fi";
+import { FiArrowRight, FiGlobe, FiHeart, FiHelpCircle, FiPenTool, FiTruck, FiUsers, FiXCircle } from "react-icons/fi";
 import { buildPageMetadata, DEFAULT_IMAGE } from "@/lib/metadata";
 import { getPolicies } from "@/lib/shopify";
 import { SUPPORT_HEADLINE, SUPPORT_REASON } from "@/components/support-note";
@@ -19,6 +20,7 @@ const sections = [
   { id: "made", label: "Behind the designs", icon: FiPenTool },
   { id: "for", label: "Who it’s for", icon: FiUsers },
   { id: "shipping", label: "Shipping and returns", icon: FiTruck },
+  { id: "faq", label: "Common questions", icon: FiHelpCircle },
 ] as const satisfies readonly { id: string; label: string; icon: IconType }[];
 
 const glance = [
@@ -36,6 +38,50 @@ const ryanMeetupLinks = [
 const sectionClassName = "scroll-mt-24 space-y-4 border-t border-black/10 pt-8 dark:border-white/10";
 
 const linkClassName = "font-semibold underline decoration-black/30 underline-offset-4 transition hover:decoration-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:decoration-white/30 dark:hover:decoration-white dark:focus-visible:ring-white/40";
+
+// Store questions only; everything about the meetups themselves lives on RyanMeetup.com.
+const faqs: { question: string; answer: ReactNode }[] = [
+  {
+    question: "Can I cancel or change my order?",
+    answer: (
+      <>
+        Yes, as long as fulfillment hasn’t started. Every item is made for your order, and once production begins we can’t stop it. <Link href="/contact" className={linkClassName}>Contact store support</Link> right away with your order number. The same goes for a mistyped address: once an order ships, it can’t be changed.
+      </>
+    ),
+  },
+  {
+    question: "How do I pick the right size?",
+    answer: "Every product page has a size chart. Since all sales are final, measure a shirt you already love and compare it to the chart before you order.",
+  },
+  {
+    question: "Where’s my order?",
+    answer: "Once it ships, we email you a tracking link. You can also check its status and tracking any time from Your orders.",
+  },
+  {
+    question: "What currency will I pay in?",
+    answer: "Prices may show an estimate in your local currency. Your final price, and the currency you’ll pay in, appear at checkout before you pay.",
+  },
+  {
+    question: "Will I owe customs or import fees?",
+    answer: "Orders shipped outside the United States may be charged customs duties, import taxes, or fees by the destination country. Unless they’re collected at checkout, they’re yours to pay, usually to the carrier on delivery. We can’t refund a package refused over these charges.",
+  },
+  {
+    question: "How do reviews work?",
+    answer: "Write one from the product’s page. You’ll sign in with your email, and if it’s the one you ordered with, your review gets a Verified badge. Every review is read by the team before it’s posted.",
+  },
+  {
+    question: "Why does the RY-D card take me to RyanMeetup.com?",
+    answer: "The RY-D Membership Card is custom-made by Ryan at P&M Apparel rather than by our fulfillment partner, so it’s sold on RyanMeetup.com instead of here.",
+  },
+  {
+    question: "What is Ryan Meetup?",
+    answer: (
+      <>
+        A community built by Ryans, for Ryans, with a mission to unite the most Ryans in one place and make history together. <a href="https://ryanmeetup.com/about" className={linkClassName}>Read the whole story</a>.
+      </>
+    ),
+  },
+];
 
 function SectionTitle({ id, children }: { id: (typeof sections)[number]["id"]; children: string }) {
   const { icon: Icon } = sections.find((section) => section.id === id)!;
@@ -85,56 +131,73 @@ export default async function AboutPage() {
             />
           </div>
 
-          <div className="grid gap-8 2xl:grid-cols-2 2xl:gap-x-10 2xl:gap-y-12">
-            <section id="money" className={sectionClassName}>
-              <SectionTitle id="money">Every shirt keeps the meetups meeting.</SectionTitle>
-              <Text className="max-w-3xl">
-                {SUPPORT_HEADLINE} Every order goes to Ryan Meetup Inc., the New York not-for-profit corporation that runs Ryan Meetup. After what it costs to make and ship your order, every cent goes back into Ryans, not pockets.
-              </Text>
-              <Text className="max-w-3xl">
-                That money is how we fund meetups in cities all over. {SUPPORT_REASON} It covers venues, food, decorations, name tags, and prizes, plus the behind-the-scenes costs: web hosting, a storage unit for event gear, and the filings that keep the organization in good standing.{" "}
-                <a href="https://ryanmeetup.com/donate" className={linkClassName}>See the full breakdown</a>.
-              </Text>
-              <Text className="max-w-3xl">
-                Ryan Meetup is a not-for-profit, but it isn’t tax-exempt, so purchases aren’t tax-deductible. Thank you, Ryans, for your support.
-              </Text>
-            </section>
+          {/* Two independent stacks, not a row grid: each row would otherwise stretch to its
+              tallest section and leave the short ones floating above a gap. */}
+          <div className="grid gap-8 2xl:grid-cols-2 2xl:items-start 2xl:gap-x-10">
+            <div className="grid gap-8 2xl:gap-12">
+              <section id="money" className={sectionClassName}>
+                <SectionTitle id="money">Every shirt keeps the meetups meeting.</SectionTitle>
+                <Text className="max-w-3xl">
+                  {SUPPORT_HEADLINE} Every order goes to Ryan Meetup Inc., the New York not-for-profit corporation that runs Ryan Meetup. After what it costs to make and ship your order, every cent goes back into Ryans, not pockets.
+                </Text>
+                <Text className="max-w-3xl">
+                  That money is how we fund meetups in cities all over. {SUPPORT_REASON} It covers venues, food, decorations, name tags, and prizes, plus the behind-the-scenes costs: web hosting, a storage unit for event gear, and the filings that keep the organization in good standing.{" "}
+                  <a href="https://ryanmeetup.com/donate" className={linkClassName}>See the full breakdown</a>.
+                </Text>
+                <Text className="max-w-3xl">
+                  Ryan Meetup is a not-for-profit, but it isn’t tax-exempt, so purchases aren’t tax-deductible. Thank you, Ryans, for your support.
+                </Text>
+              </section>
 
-            <section id="made" className={sectionClassName}>
-              <SectionTitle id="made">Designed by Ryan. Naturally.</SectionTitle>
-              <Text className="max-w-3xl">
-                All designs are made in-house by Ryan.
-              </Text>
-            </section>
+              <section id="made" className={sectionClassName}>
+                <SectionTitle id="made">Designed by Ryan. Naturally.</SectionTitle>
+                <Text className="max-w-3xl">
+                  All designs are made in-house by Ryan.
+                </Text>
+              </section>
+            </div>
 
-            <section id="for" className={sectionClassName}>
-              <SectionTitle id="for">You don’t have to be a Ryan.</SectionTitle>
-              <Text className="max-w-3xl">
-                Ryans, Ryan’s dads, friends of Ryans, and admirers from afar are all welcome here. Some designs are made specifically for the people who love a Ryan.
-              </Text>
-            </section>
+            <div className="grid gap-8 2xl:gap-12">
+              <section id="for" className={sectionClassName}>
+                <SectionTitle id="for">You don’t have to be a Ryan.</SectionTitle>
+                <Text className="max-w-3xl">
+                  Ryans, Ryan’s dads, friends of Ryans, and admirers from afar are all welcome here. Some designs are made specifically for the people who love a Ryan.
+                </Text>
+              </section>
 
-            <section id="shipping" className={sectionClassName}>
-              <SectionTitle id="shipping">The fine print.</SectionTitle>
-              <Text className="max-w-3xl">
-                We ship to 28 countries and regions across North America, Europe, Asia-Pacific, and the Middle East. Each item is made after you order it, so it takes a few business days before it ships. Shipping costs for your address appear at checkout, and tracking details arrive by email once your order is on its way.
-                {policyHandles.has("shipping-policy") && (
-                  <>
-                    {" "}Production times, customs, and the rest are in our <Link href="/policies/shipping-policy" className={linkClassName}>shipping policy</Link>.
-                  </>
-                )}
-              </Text>
-              <Text className="max-w-3xl">
-                <strong className="font-semibold text-black dark:text-white">All sales are final.</strong> We can’t accept returns or exchanges: orders ship from our fulfillment partner, and we have nowhere to receive a return or swap it from. If something arrives damaged, defective, or not what you ordered,{" "}
-                <Link href="/contact" className={linkClassName}>contact store support</Link> and we’ll make it right.
-                {policyHandles.has("refund-policy") && (
-                  <>
-                    {" "}The details are in our <Link href="/policies/refund-policy" className={linkClassName}>return and refund policy</Link>.
-                  </>
-                )}
-              </Text>
-            </section>
+              <section id="shipping" className={sectionClassName}>
+                <SectionTitle id="shipping">The fine print.</SectionTitle>
+                <Text className="max-w-3xl">
+                  We ship to 28 countries and regions across North America, Europe, Asia-Pacific, and the Middle East. Each item is made after you order it, so it takes a few business days before it ships. Shipping costs for your address appear at checkout, and tracking details arrive by email once your order is on its way.
+                  {policyHandles.has("shipping-policy") && (
+                    <>
+                      {" "}Production times, customs, and the rest are in our <Link href="/policies/shipping-policy" className={linkClassName}>shipping policy</Link>.
+                    </>
+                  )}
+                </Text>
+                <Text className="max-w-3xl">
+                  <strong className="font-semibold text-black dark:text-white">All sales are final.</strong> We can’t accept returns or exchanges: orders ship from our fulfillment partner, and we have nowhere to receive a return or swap it from. If something arrives damaged, defective, or not what you ordered,{" "}
+                  <Link href="/contact" className={linkClassName}>contact store support</Link> and we’ll make it right.
+                  {policyHandles.has("refund-policy") && (
+                    <>
+                      {" "}The details are in our <Link href="/policies/refund-policy" className={linkClassName}>return and refund policy</Link>.
+                    </>
+                  )}
+                </Text>
+              </section>
+            </div>
           </div>
+
+          <section id="faq" className={sectionClassName}>
+            <SectionTitle id="faq">Questions, answered.</SectionTitle>
+            <div className="grid gap-4">
+              {faqs.map(({ question, answer }) => (
+                <DisclosureCard key={question} heading="h3" summary={<span className="font-semibold">{question}</span>}>
+                  <Text className="max-w-3xl">{answer}</Text>
+                </DisclosureCard>
+              ))}
+            </div>
+          </section>
         </article>
 
         <aside className="xl:order-first">
