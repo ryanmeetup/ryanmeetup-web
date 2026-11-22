@@ -40,7 +40,7 @@ export type StoreEvents = {
 };
 
 export const analyticsPlacements = [
-  "home_hero", "home_favorites", "home_spotlight", "home_collections", "home_reviews",
+  "home_support", "home_hero", "home_favorites", "home_spotlight", "home_collections", "home_reviews",
   "catalog", "popular_picks", "product", "product_gallery", "product_details", "related_products",
   "reviews", "cart_drawer", "cart_page", "header", "mobile_navigation", "footer", "content",
 ] as const;

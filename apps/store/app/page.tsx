@@ -12,6 +12,7 @@ import { HomeSpotlight } from "@/components/home-spotlight";
 import { HomeReviews } from "@/components/home-reviews";
 import { ProductGrid } from "@/components/product-grid";
 import { PromotionNote } from "@/components/promotion";
+import { SupportNote } from "@/components/support-note";
 import { withListingRatings } from "@/lib/listing-ratings";
 import { getHomeCatalog } from "@/lib/shopify";
 
@@ -22,6 +23,9 @@ export default async function HomePage() {
   const favorites = await withListingRatings(shelf);
   return (
     <main className="flex flex-col gap-8 py-6 sm:gap-12 sm:py-8 lg:py-10">
+      <section data-analytics-placement="home_support" data-analytics-section="home_support" aria-label="Support Ryan Meetup" className="store-container">
+        <SupportNote />
+      </section>
       <section data-analytics-placement="home_hero" data-analytics-section="home_hero" aria-label="Ryan Meetup merch" className="store-container">
         <div className="overflow-hidden rounded-3xl bg-white/65 shadow-drop dark:bg-white/5">
           <div className="grid items-start gap-6 p-5 sm:gap-8 sm:p-8 lg:grid-cols-2 lg:gap-10 xl:gap-12 xl:p-10">
