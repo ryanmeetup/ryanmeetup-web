@@ -40,8 +40,14 @@ export function customerAuthBackendFixture() {
   const flows = new Map<string, StoredCustomerAuthorization | null>();
   const sessions = new Map<string, StoredCustomerSession | null>();
   const rows = (data: unknown) => Response.json(data);
+  /** Sign-in budget checks, kept apart from storage operations. Set `budget.decision` to refuse or fail them. */
+  const budget: { calls: SupabaseCall[]; decision: { allowed: boolean; retryAfter: number } | "error" } = { calls: [], decision: { allowed: true, retryAfter: 0 } };
   const fetcher: typeof fetch = async (input, init) => {
     const call = supabaseCall(input, init);
+    if (call?.name === "store_consume_review_write_budget") {
+      budget.calls.push(call);
+      return budget.decision === "error" ? Response.json({ code: "57014", message: "canceled" }, { status: 500 }) : rows(budget.decision);
+    }
     const operation = call && operations[call.name];
     if (!call || !operation) throw new Error(`Unexpected test request: ${String(input)}`);
     const args = call.args;
@@ -92,7 +98,7 @@ export function customerAuthBackendFixture() {
       }
     }
   };
-  return { fetcher, requests, flows, sessions };
+  return { fetcher, requests, flows, sessions, budget };
 }
 
 /** A real supabase-js client whose requests all go to `fetcher`. */

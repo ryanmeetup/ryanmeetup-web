@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { privateHeaders, readCookie, requestOrigin } from "../request-guard";
+import { getSignInLimiter } from "../review-write-limits";
 import { customerSignedInNoticeCookie } from "./notice";
 import { customerAuthorizationCookie } from "./authorization";
 import { getCustomerAccountStorageService, getCustomerSignInService } from "./runtime";
@@ -16,7 +17,7 @@ function isLoopbackHost(host: string | null) {
   return host !== null && loopbackHost.test(host);
 }
 
-export type CustomerSignInProblem = "expired" | "blocked" | "unavailable";
+export type CustomerSignInProblem = "expired" | "blocked" | "unavailable" | "busy";
 export const customerSignInProblemPath = "/reviews/sign-in";
 
 /**
@@ -24,12 +25,14 @@ export const customerSignInProblemPath = "/reviews/sign-in";
  * that explains what happened instead of raw JSON. Programmatic callers keep
  * the status code and JSON error.
  */
-function failure(request: Request, status: number, error: string) {
+function failure(request: Request, status: number, error: string, retryAfter?: number) {
   if (request.headers.get("accept")?.includes("text/html")) {
-    const problem: CustomerSignInProblem = status === 403 ? "blocked" : status === 503 ? "unavailable" : "expired";
+    const problem: CustomerSignInProblem = status === 403 ? "blocked" : status === 503 ? "unavailable" : status === 429 ? "busy" : "expired";
     return new NextResponse(null, { status: 303, headers: { ...privateHeaders, Location: `${customerSignInProblemPath}?problem=${problem}` } });
   }
-  return NextResponse.json({ error }, { status, headers: privateHeaders });
+  const headers: Record<string, string> = { ...privateHeaders };
+  if (retryAfter) headers["Retry-After"] = String(retryAfter);
+  return NextResponse.json({ error }, { status, headers });
 }
 
 export async function startCustomerSignIn(request: Request) {
@@ -48,6 +51,13 @@ export async function startCustomerSignIn(request: Request) {
     crossSite) return failure(request, 403, "Start customer sign-in from this storefront.");
   const url = new URL(request.url);
   if (url.searchParams.getAll("returnTo").length > 1) return failure(request, 400, "Choose a single return destination.");
+  const limitSignIn = getSignInLimiter();
+  if (limitSignIn) {
+    try {
+      const limit = await limitSignIn(request);
+      if (!limit.allowed) return failure(request, 429, "Too many sign-in attempts from this network. Please try again later.", limit.retryAfter);
+    } catch { return failure(request, 503, "Customer sign-in is temporarily unavailable. Please try again."); }
+  }
   try {
     const prepared = await beginCustomerSignIn(service, url.searchParams.get("returnTo"));
     const response = NextResponse.redirect(prepared.authorizationUrl, { status: 303, headers: privateHeaders });

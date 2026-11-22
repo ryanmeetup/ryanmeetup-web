@@ -266,3 +266,29 @@ test("failed sign-in navigations land on an explanation page instead of raw JSON
   const unavailable = await start(new Request("https://store.test/api/reviews/auth/start", { headers: html }));
   expect(unavailable.headers.get("location")).toBe("/reviews/sign-in?problem=unavailable");
 });
+
+test("sign-in starts spend the network's budget before any flow is stored", async () => {
+  const html = { accept: "text/html,application/xhtml+xml" };
+  const from = (headers: HeadersInit = {}) => new Request("https://store.test/api/reviews/auth/start", { headers: { "x-real-ip": "203.0.113.9", ...headers } });
+  await begin({ "x-real-ip": "203.0.113.9" });
+  expect(transport.budget.calls).toHaveLength(1);
+  const [rule] = transport.budget.calls[0].args.p_rules as { bucket: string; actor: string; limit: number }[];
+  expect(rule).toMatchObject({ bucket: "signin-start:network", limit: 30 });
+  expect(rule.actor).not.toContain("203.0.113.9");
+
+  transport.budget.decision = { allowed: false, retryAfter: 600 };
+  const refused = await start(from());
+  expect(refused.status).toBe(429);
+  expect(refused.headers.get("retry-after")).toBe("600");
+  const page = await start(from(html));
+  expect(page.headers.get("location")).toBe("/reviews/sign-in?problem=busy");
+
+  transport.budget.decision = "error";
+  expect((await start(from())).status).toBe(503);
+  expect(transport.requests.filter(({ operation }) => operation === "authorization.create")).toHaveLength(1);
+});
+
+test("a start without a known client address is not budgeted", async () => {
+  await begin();
+  expect(transport.budget.calls).toEqual([]);
+});

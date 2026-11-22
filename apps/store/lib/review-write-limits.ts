@@ -72,29 +72,65 @@ const missingFunction = new Set(["PGRST202", "42883"]);
 let reportedMissing = false;
 
 /**
- * Store server only. A database without the budget function (the migration
- * has not landed yet) lets writes through so deploy and migration can ship in
- * either order; every other failure rejects, and the caller refuses the write.
+ * Spends one attempt from every rule, or none. A database without the budget
+ * function (the migration has not landed yet) lets the attempt through so
+ * deploy and migration can ship in either order; every other failure rejects.
  */
+async function consumeBudget(database: SupabaseClient, shopId: string, rules: Rule[]): Promise<ReviewWriteLimit> {
+  if (rules.length === 0) return { allowed: true };
+  const result = await database.rpc("store_consume_review_write_budget", { p_shop_id: shopId, p_rules: rules }).abortSignal(AbortSignal.timeout(5_000));
+  if (result.error) {
+    if (result.error.code && missingFunction.has(result.error.code)) {
+      if (!reportedMissing) { reportedMissing = true; console.error(JSON.stringify({ event: "store_review_write_budget_missing" })); }
+      return { allowed: true };
+    }
+    throw new Error("Review write budget unavailable.");
+  }
+  const value = result.data as { allowed?: unknown; retryAfter?: unknown } | null;
+  if (value?.allowed === true) return { allowed: true };
+  if (value?.allowed === false && Number.isInteger(value.retryAfter) && (value.retryAfter as number) >= 1 && (value.retryAfter as number) <= DAY) {
+    return { allowed: false, retryAfter: value.retryAfter as number };
+  }
+  throw new Error("Review write budget returned an unexpected result.");
+}
+
+/** Store server only. Rejects when the budget cannot be checked, and the caller refuses the write. */
 export function createReviewWriteLimiter({ database, shopId, secret }: { database: SupabaseClient; shopId: string; secret: string }): ReviewWriteLimiter {
   return async (action, { subject, request }) => {
     const address = clientAddress(request);
-    const rules = reviewWriteRules(action, subject, address ? clientNetwork(address) : null, secret);
-    const result = await database.rpc("store_consume_review_write_budget", { p_shop_id: shopId, p_rules: rules }).abortSignal(AbortSignal.timeout(5_000));
-    if (result.error) {
-      if (result.error.code && missingFunction.has(result.error.code)) {
-        if (!reportedMissing) { reportedMissing = true; console.error(JSON.stringify({ event: "store_review_write_budget_missing" })); }
-        return { allowed: true };
-      }
-      throw new Error("Review write budget unavailable.");
-    }
-    const value = result.data as { allowed?: unknown; retryAfter?: unknown } | null;
-    if (value?.allowed === true) return { allowed: true };
-    if (value?.allowed === false && Number.isInteger(value.retryAfter) && (value.retryAfter as number) >= 1 && (value.retryAfter as number) <= DAY) {
-      return { allowed: false, retryAfter: value.retryAfter as number };
-    }
-    throw new Error("Review write budget returned an unexpected result.");
+    return consumeBudget(database, shopId, reviewWriteRules(action, subject, address ? clientNetwork(address) : null, secret));
   };
+}
+
+/**
+ * Every sign-in start stores an encrypted flow row and sends the browser to
+ * Shopify, so starts are budgeted per network. A household or office shares
+ * one address, hence the headroom. Callbacks need a stored flow to do any work
+ * and renewal needs a live session, so neither is budgeted separately.
+ */
+export const SIGN_IN_BUDGET = { startsPerNetworkPerHour: 30 } as const;
+
+/** Resolves to the budget decision; rejects when the budget cannot be checked. */
+export type SignInLimiter = (request: Request) => Promise<ReviewWriteLimit>;
+
+export function signInRules(network: string | null, secret: string): Rule[] {
+  if (!network) return [];
+  const actor = createHmac("sha256", secret).update(`store-sign-in-network:${network}`).digest("hex");
+  return [{ bucket: "signin-start:network", actor, limit: SIGN_IN_BUDGET.startsPerNetworkPerHour, windowSeconds: HOUR }];
+}
+
+export function createSignInLimiter({ database, shopId, secret }: { database: SupabaseClient; shopId: string; secret: string }): SignInLimiter {
+  return async (request) => {
+    const address = clientAddress(request);
+    return consumeBudget(database, shopId, signInRules(address ? clientNetwork(address) : null, secret));
+  };
+}
+
+export function getSignInLimiter(env: NodeJS.ProcessEnv = process.env): SignInLimiter | null {
+  const database = getStoreDatabase(env);
+  const shopId = getStoreShopId(env);
+  const secret = env.SUPABASE_SECRET_KEY?.trim();
+  return database && shopId && secret ? createSignInLimiter({ database, shopId, secret }) : null;
 }
 
 export function getReviewWriteLimiter(env: NodeJS.ProcessEnv = process.env): ReviewWriteLimiter | null {

@@ -19,6 +19,10 @@ const copy: Record<CustomerSignInProblem, { title: string; body: string }> = {
     title: "Start sign-in from the store",
     body: "For your account's safety, sign-in has to begin on this storefront. Go back to the product's reviews and try from there.",
   },
+  busy: {
+    title: "That's a lot of sign-ins",
+    body: "We've seen a lot of sign-in attempts from your network in the last hour. Even Ryan needs a breather, so please try again a little later.",
+  },
   unavailable: {
     title: "Sign-in is taking a short break",
     body: "We couldn't reach the sign-in service just now. Please try again in a few minutes.",
@@ -30,7 +34,7 @@ type Props = { searchParams: Promise<{ problem?: string }> };
 /** Where a failed review sign-in lands, instead of a raw error response. */
 export default async function SignInProblemPage({ searchParams }: Props) {
   const { problem } = await searchParams;
-  const { title, body } = copy[problem === "blocked" || problem === "unavailable" ? problem : "expired"];
+  const { title, body } = copy[problem === "blocked" || problem === "unavailable" || problem === "busy" ? problem : "expired"];
   return (
     <main className="store-container py-12 sm:py-16">
       <div className="mx-auto max-w-3xl space-y-4">

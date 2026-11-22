@@ -119,7 +119,13 @@ hash as a sign-in credential.
 ## Verification
 
 The revoke-all-buyer-sessions RPC exists in RMT; no support UI or public route
-exposes it. Expiry cleanup and distributed refresh claims are not implemented.
+exposes it. The [daily cleanup](../how-to/review-operations.md#daily-cleanup)
+deletes flows and sessions a day past their expiry. Sign-in starts are budgeted
+at 30 an hour per network (keyed hash, IPv6 per /64) through the shared write
+budget; an exhausted budget answers 429 with `Retry-After`, or sends a browser
+to `/reviews/sign-in?problem=busy`. Callbacks need a stored flow and renewal a
+live session, so neither has its own budget. Distributed refresh claims are not
+implemented.
 The [roadmap](../planning/roadmap.md#14-store-reviews) owns those feature decisions
 and live-evidence gaps. Follow the [operations rehearsal](../how-to/review-operations.md#live-lifecycle-rehearsal)
 when verifying a configured client.
