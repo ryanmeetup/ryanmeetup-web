@@ -391,7 +391,7 @@ test("customer can shop from the hero", async ({ page }) => {
 test("the home page opens doors to collections, spotlights one listing, and keeps favorites short", async ({ page }) => {
   await page.goto("/");
   const main = page.getByRole("main");
-  const lanes = main.getByRole("region", { name: "Pick your Ryan lane" });
+  const lanes = main.getByRole("region", { name: "Shop by collection" });
   await expect(lanes.getByRole("listitem")).toHaveCount(3);
   await expect(lanes.getByRole("link", { name: /Apparel/ })).toHaveAttribute("href", "/apparel");
 

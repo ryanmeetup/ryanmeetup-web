@@ -127,8 +127,7 @@ export default async function HomePage() {
         <section data-analytics-placement="home_collections" data-analytics-section="home_collections" id="collections" aria-labelledby="home-collections" className="store-container scroll-mt-24">
           <SectionHeader
             align="left"
-            title={<span id="home-collections">Pick your Ryan lane</span>}
-            description="Every collection, one tap away. The full shelf lives on Shop All."
+            title={<span id="home-collections">Shop by collection</span>}
             actions={
               <Button.Link href="/collections/all" size="md" variant="secondary" className="!w-full sm:!w-auto" rightIcon={<FiArrowRight />}>
                 Shop All
