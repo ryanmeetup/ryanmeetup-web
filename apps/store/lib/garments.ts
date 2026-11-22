@@ -26,7 +26,7 @@ export const garmentsByDepartment: Record<string, Garment[]> = {
   ],
   accessories: [
     { handle: "ryd", title: "RY-Ds", description: "Your official Ryan identification, made just for you.", categories: [], listings: ["ryd"], collection: "ryd" },
-    { handle: "pins", title: "Pins", description: "Small, mighty, and very Ryan.", categories: ["Brooches & Lapel Pins", "Pinback Buttons"] },
+    { handle: "pins", title: "Pins", description: "Lapel pins and buttons.", categories: ["Brooches & Lapel Pins", "Pinback Buttons"] },
     { handle: "bags", title: "Bags", description: "Carry your stuff and your name.", categories: ["Luggage & Bags"] },
     { handle: "mugs", title: "Mugs", description: "Morning coffee with name recognition.", categories: ["Drinkware"] },
     { handle: "home-goods", title: "Home Goods", description: "Ryan-proof your front door.", categories: ["Door Mats"] },
