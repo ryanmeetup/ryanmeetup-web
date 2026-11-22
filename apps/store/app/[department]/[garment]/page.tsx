@@ -59,7 +59,7 @@ export default async function GarmentPage({ params }: Props) {
         ]}
       />
       <SectionHeader align="left" layout="split" className="mt-3" headingLevel="h1" title={result.collection.title} description={result.collection.description} meta={`${result.products.length} item${result.products.length === 1 ? "" : "s"}`} headingClassName="text-4xl sm:text-6xl" />
-      <div className="mt-10"><CollectionGrid handle={`${handle}/${garment}`} products={result.products} /></div>
+      <div className="mt-6"><CollectionGrid handle={`${handle}/${garment}`} products={result.products} /></div>
     </main>
   );
 }
