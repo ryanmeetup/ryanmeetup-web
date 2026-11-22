@@ -32,6 +32,7 @@ describes the current owner screen and decisions.
 | [Review media](reference/review-media.md) | Processing, staging, buyer controls, staff decisions, public delivery and current limits. |
 | [Review moderation](reference/review-moderation.md) | Owner authorization, queue/API contracts, decisions, replies and policy deletion. |
 | [Analytics](reference/analytics.md) | Vercel events, privacy rules, placements and how to read them for design decisions. |
+| [Metadata](reference/metadata.md) | Page titles, canonicals, social cards, JSON-LD, sitemap and Shopify content cleanup. |
 
 ## Roadmap and feature planning
 
