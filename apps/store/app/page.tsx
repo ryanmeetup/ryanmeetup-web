@@ -100,7 +100,6 @@ export default async function HomePage() {
             align="left"
             title={<span id="home-favorites">{favorites.collection.title}</span>}
             description={favorites.collection.description}
-            meta="Ryan favorites"
             actions={favorites.total > favorites.products.length && (
               <Button.Link href="/collections/all" size="md" variant="secondary" className="!w-full sm:!w-auto" rightIcon={<FiArrowRight />}>
                 See everything
@@ -123,7 +122,6 @@ export default async function HomePage() {
             align="left"
             title={<span id="home-collections">Pick your Ryan lane</span>}
             description="Every collection, one tap away. The full shelf lives on Shop All."
-            meta="Collections"
             actions={
               <Button.Link href="/collections/all" size="md" variant="secondary" className="!w-full sm:!w-auto" rightIcon={<FiArrowRight />}>
                 Shop All
