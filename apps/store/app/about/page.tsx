@@ -5,6 +5,7 @@ import type { IconType } from "react-icons";
 import { FiArrowRight, FiGlobe, FiHeart, FiPenTool, FiTruck, FiUsers, FiXCircle } from "react-icons/fi";
 import { buildPageMetadata, DEFAULT_IMAGE } from "@/lib/metadata";
 import { getPolicies } from "@/lib/shopify";
+import { SUPPORT_HEADLINE } from "@/components/support-note";
 
 export const metadata = buildPageMetadata({
   title: "About the store",
@@ -88,7 +89,7 @@ export default async function AboutPage() {
             <section id="money" className={sectionClassName}>
               <SectionTitle id="money">Every shirt keeps the meetups meeting.</SectionTitle>
               <Text className="max-w-3xl">
-                Purchases help fund Ryan Meetup events, activities, and the organization behind them. Wear the shirt, fund the next gathering.
+                {SUPPORT_HEADLINE} Purchases help fund Ryan Meetup events, activities, and the organization behind them. Wear the shirt, fund the next gathering.
               </Text>
             </section>
 
