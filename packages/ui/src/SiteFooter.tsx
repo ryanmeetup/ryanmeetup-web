@@ -211,15 +211,18 @@ export function SiteFooter({
           </Link>
         </div>
 
-        {/* Balanced columns rather than a grid, so a short section stacks under
-            a neighbour instead of sharing a row with a tall one and leaving a
+        {/* On phones, single-column sections pair up two to a row and a
+            two-column section spans the full width. From `sm`, balanced
+            columns rather than a grid, so a short section stacks under a
+            neighbour instead of sharing a row with a tall one and leaving a
             hole beneath it. */}
+        {sections.length > 0 && (
         <div
-          className={`space-y-8 ${sections.length > 1 ? "sm:columns-2 sm:gap-8" : ""} ${sections.length === 0 ? "hidden" : ""}`}
+          className={`grid grid-cols-2 gap-x-4 gap-y-8 sm:block sm:space-y-8 ${sections.length > 1 ? "sm:columns-2 sm:gap-8" : ""}`}
         >
           {sections.map((section) => (
             <section
-              className="break-inside-avoid"
+              className={`break-inside-avoid ${section.columns === 2 ? "col-span-2" : ""}`}
               key={section.title}
               aria-labelledby={`footer-${section.title.toLowerCase().replaceAll(" ", "-")}`}
             >
@@ -252,6 +255,7 @@ export function SiteFooter({
             </section>
           ))}
         </div>
+        )}
       </div>
 
       <Divider margins="lg" />
