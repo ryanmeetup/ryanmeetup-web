@@ -40,11 +40,14 @@ function CardRating({ rating }: { rating: ListingRating }) {
   );
 }
 
-/** Empty stars keep unreviewed cards the same height as rated ones. */
+/**
+ * Keeps unreviewed cards the same height as rated ones. Narrow cards drop the empty
+ * stars, which would push the text onto a second line.
+ */
 function CardNoReviews() {
   return (
     <p className="flex items-center gap-1.5 text-xs text-black/70 sm:text-sm dark:text-white/70">
-      <span aria-hidden className="flex">
+      <span aria-hidden className="hidden sm:flex">
         <RatingStars rating={0} className="text-sm sm:text-base" />
       </span>
       No reviews yet
