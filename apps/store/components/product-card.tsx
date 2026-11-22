@@ -40,18 +40,6 @@ function CardRating({ rating }: { rating: ListingRating }) {
   );
 }
 
-/** Empty stars keep unreviewed cards the same height as rated ones. */
-function CardNoReviews() {
-  return (
-    <p className="flex items-center gap-1.5 text-xs text-black/70 sm:text-sm dark:text-white/70">
-      <span aria-hidden className="flex">
-        <RatingStars rating={0} className="text-sm sm:text-base" />
-      </span>
-      No reviews yet
-    </p>
-  );
-}
-
 /**
  * Too few reviews for a trustworthy average: say how many without stars, which would
  * read as a zero rating. Its line height already matches a star row, so card heights agree.
@@ -159,8 +147,8 @@ export function ProductCard({ product, eager = false, from }: { product: Product
       )}
       </>}
     >
+      {/* Unreviewed cards show no rating line; colors sit at the card's foot, so rows stay aligned. */}
       {product.rating ? <CardRating rating={product.rating} />
-        : product.unreviewed ? <CardNoReviews />
         : product.reviewCount ? <CardFewReviews count={product.reviewCount} /> : null}
     </MediaCard>
   );
