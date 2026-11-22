@@ -14,7 +14,8 @@ export const catalogCollections: CatalogCollection[] = [
   {
     id: "catalog:all",
     handle: "all",
-    title: "Collections",
+    // The page's own name, as the menus and buttons that link here call it.
+    title: "Shop All",
     description: "Official issue for Ryans, friends of Ryans, and the Ryan-curious.",
     image: null,
     productType: null,

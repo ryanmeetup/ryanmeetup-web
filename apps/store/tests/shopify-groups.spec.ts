@@ -152,7 +152,7 @@ test("type pages split into garment groupings from each product's Shopify catego
 
 test("the type pages lead the collection list, shadow same-handle Shopify collections, and omit the home page collection", async () => {
   const requests = mockCatalog();
-  expect((await getCollections()).map((collection) => collection.title)).toEqual(["Collections", "Apparel", "Accessories", "Shirts", "Empty"]);
+  expect((await getCollections()).map((collection) => collection.title)).toEqual(["Shop All", "Apparel", "Accessories", "Shirts", "Empty"]);
   expect(requests.filter((request) => request.query.includes("CollectionMemberships")).map((request) => request.variables.after)).toEqual([null, "collections-page-1"]);
 });
 
