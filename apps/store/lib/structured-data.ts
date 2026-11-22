@@ -22,8 +22,12 @@ const sameAs = [
   "https://www.threads.net/@ryanmeetup",
 ];
 
-/** Who runs the store and what the site is called, for search results and knowledge panels. */
-export function buildStoreSchema() {
+/**
+ * Who runs the store and what the site is called, for search results and knowledge panels.
+ * All sales are final, so the return policy is "not permitted" wherever the store ships;
+ * without the country list (demo mode, or Shopify down) the policy is left out.
+ */
+export function buildStoreSchema(shippingCountries: string[] = []) {
   return {
     "@context": "https://schema.org",
     "@graph": [
@@ -36,6 +40,14 @@ export function buildStoreSchema() {
         parentOrganization: ryanMeetup,
         brand: BRAND,
         sameAs,
+        ...(shippingCountries.length ? {
+          hasMerchantReturnPolicy: {
+            "@type": "MerchantReturnPolicy",
+            applicableCountry: shippingCountries,
+            returnPolicyCategory: "https://schema.org/MerchantReturnNotPermitted",
+            merchantReturnLink: `${SITE_URL}/policies/refund-policy`,
+          },
+        } : {}),
       },
       {
         "@type": "WebSite",

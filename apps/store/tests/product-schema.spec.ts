@@ -90,3 +90,9 @@ test("the store schema names the store and its parent organization", () => {
   expect(store).toMatchObject({ "@type": "OnlineStore", name: "Ryan Meetup Store", url: "https://store.ryanmeetup.com", parentOrganization: { name: "Ryan Meetup", url: "https://ryanmeetup.com" } });
   expect(site).toMatchObject({ "@type": "WebSite", publisher: { "@id": store["@id"] } });
 });
+
+test("the store's no-returns policy covers exactly the countries it ships to", () => {
+  const [store] = buildStoreSchema(["US", "CA"])["@graph"];
+  expect(store).toMatchObject({ hasMerchantReturnPolicy: { "@type": "MerchantReturnPolicy", applicableCountry: ["US", "CA"], returnPolicyCategory: "https://schema.org/MerchantReturnNotPermitted", merchantReturnLink: "https://store.ryanmeetup.com/policies/refund-policy" } });
+  expect(buildStoreSchema()["@graph"][0]).not.toHaveProperty("hasMerchantReturnPolicy");
+});

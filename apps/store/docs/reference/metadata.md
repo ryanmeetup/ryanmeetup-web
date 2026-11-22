@@ -34,9 +34,14 @@ payload cannot close its script early.
 
 | Page | Schema | Builder |
 | --- | --- | --- |
-| Home | `OnlineStore` (parent organization Ryan Meetup, social profiles) and `WebSite` | `buildStoreSchema` |
+| Home | `OnlineStore` (parent organization Ryan Meetup, social profiles, no-returns policy) and `WebSite` | `buildStoreSchema` |
 | Product, collection, department, garment | `BreadcrumbList` by canonical path, ignoring the visible `from` trail | `buildBreadcrumbSchema` |
 | Product | `ProductGroup` with one `Product` + `Offer` per Shopify variant; a single-variant product is a plain `Product` | `buildProductSchema` |
+
+The store's `MerchantReturnPolicy` is `MerchantReturnNotPermitted`, since all
+sales are final, and its countries come live from Shopify Markets
+(`getShippingCountries`), so adding or removing a market needs no code change.
+If Shopify can't be reached, the policy is left out rather than guessed.
 
 Product schema rules:
 

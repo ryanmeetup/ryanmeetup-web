@@ -17,7 +17,7 @@ import { PromotionNote } from "@/components/promotion";
 import { SupportNote } from "@/components/support-note";
 import { withListingRatings } from "@/lib/listing-ratings";
 import { buildPageMetadata, DEFAULT_IMAGE, SITE_DESCRIPTION, SITE_NAME } from "@/lib/metadata";
-import { getHomeCatalog } from "@/lib/shopify";
+import { getHomeCatalog, getShippingCountries } from "@/lib/shopify";
 import { buildStoreSchema } from "@/lib/structured-data";
 
 export const revalidate = 300;
@@ -29,11 +29,18 @@ export const metadata = {
 } satisfies Metadata;
 
 export default async function HomePage() {
-  const { spotlight, favorites: shelf, collections } = await getHomeCatalog();
+  const [{ spotlight, favorites: shelf, collections }, shippingCountries] = await Promise.all([
+    getHomeCatalog(),
+    // The return policy is extra detail for search engines, never a reason to fail the home page.
+    getShippingCountries().catch((error: unknown) => {
+      console.error("Could not load shipping countries for structured data.", error);
+      return [];
+    }),
+  ]);
   const favorites = await withListingRatings(shelf);
   return (
     <main className="flex flex-col gap-8 py-6 sm:gap-12 sm:py-8 lg:py-10">
-      <JsonLd data={buildStoreSchema()} />
+      <JsonLd data={buildStoreSchema(shippingCountries)} />
       <section data-analytics-placement="home_hero" data-analytics-section="home_hero" aria-label="Ryan Meetup merch" className="store-container">
         <div className="overflow-hidden rounded-3xl bg-white/65 shadow-drop dark:bg-white/5">
           <div className="grid items-start gap-6 p-5 sm:gap-8 sm:p-8 lg:grid-cols-2 lg:gap-10 xl:gap-12 xl:p-10">

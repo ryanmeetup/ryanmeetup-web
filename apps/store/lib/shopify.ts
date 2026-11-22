@@ -728,6 +728,17 @@ export async function getPolicies(): Promise<ShopPolicy[]> {
   return policyFields.flatMap((field) => data.shop[field] ?? []).filter((policy) => policy.body.trim());
 }
 
+/** The countries the store sells and ships to: Shopify Markets, the same list checkout offers. */
+export async function getShippingCountries(): Promise<string[]> {
+  if (!isShopifyConfigured()) return [];
+  const data = await storefrontRequest<{ localization: { availableCountries: { isoCode: string }[] } }>(
+    `query ShippingCountries { localization { availableCountries { isoCode } } }`,
+    {},
+    { revalidate: 300 },
+  );
+  return data.localization.availableCountries.map((country) => country.isoCode);
+}
+
 /** Shopify's customer account, where a shopper signs in for order status and tracking. */
 export async function getCustomerAccountUrl(): Promise<string | null> {
   if (!isShopifyConfigured()) return null;
