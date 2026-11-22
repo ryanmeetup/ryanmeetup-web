@@ -21,7 +21,7 @@ overview:
 
 Empty views now have more breathing room, a context icon, and readable guidance.
 Create a first item or clear a search right from the empty view where available.
-Review queues make it clear when you’re caught up, and boards, notes, contacts,
+Review queues make it clear when you’re caught up, and notes, contacts,
 projects, categories, and dashboard cards share the same treatment.
 
 ### Moderate store reviews

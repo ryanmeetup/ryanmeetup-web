@@ -1,8 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Button, EmptyState } from "@ryanmeetup/ui";
-import { FiCheckSquare, FiPlus, FiSearch } from "react-icons/fi";
+import { EmptyState } from "@ryanmeetup/ui";
 import type { Task } from "@/lib/tasks/task-types";
 
 export function BoardColumnTasks({
@@ -37,35 +36,20 @@ export function BoardColumnTasks({
         className={`space-y-2 px-1 py-3 transition-opacity sm:space-y-3 sm:py-4 ${isPending ? "pointer-events-none opacity-55" : ""}`}
       >
         {tasks.map(renderTask)}
-        {tasks.length === 0 && (
-          <EmptyState
-            size="compact"
-            icon={query.trim() ? <FiSearch /> : <FiCheckSquare />}
-            message={
-              query.trim()
-                ? `No ${statusName} tasks match this search.`
-                : "Room for the next thing"
-            }
-            description={
-              query.trim()
-                ? "Try another task title, key, or description."
-                : "Drop a task here or add one to get started."
-            }
-            action={
-              !query.trim() && (
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  leftIcon={<FiPlus aria-hidden />}
-                  disabled={isPending}
-                  onClick={onCreate}
-                >
-                  Add task
-                </Button>
-              )
-            }
-          />
-        )}
+        {tasks.length === 0 &&
+          (query.trim() ? (
+            <EmptyState
+              size="minimal"
+              message={`No ${statusName} tasks match this search.`}
+            />
+          ) : (
+            <EmptyState
+              size="minimal"
+              message="Drop a task here or add one"
+              onClick={onCreate}
+              disabled={isPending}
+            />
+          ))}
       </div>
     </div>
   );
