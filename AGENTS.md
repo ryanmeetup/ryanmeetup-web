@@ -96,6 +96,8 @@ filenames and require an explicit `rmtOnly` entry. Keep applied SQL immutable.
 PRD receives only shared Tasks migrations; existing RMT-only objects/history on
 PRD, if any, stay untouched. Store credentials, integration configuration, and
 customer data target RMT only. See `apps/store/docs/reference/review-database.md`.
+The future cross-property Ryan Meetup account is scoped in
+`docs/planning/ryan-meetup-accounts.md`.
 
 ## Before Making Changes
 
