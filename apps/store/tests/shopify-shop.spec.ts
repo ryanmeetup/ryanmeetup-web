@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { dropPlaceholderAltText, getCustomerAccountUrl, getPolicies } from "../lib/shopify";
+import { splitPolicyLastUpdated } from "../lib/policies";
+import { cleanEditorHtml, dropPlaceholderAltText, getCustomerAccountUrl, getPolicies } from "../lib/shopify";
 
 const originalFetch = globalThis.fetch;
 const originalDomain = process.env.SHOPIFY_STORE_DOMAIN;
@@ -64,4 +65,19 @@ test("Printful's placeholder alt text is dropped so images fall back to the prod
   expect(payload.product.title).toBe("Product mockup");
   expect(payload.product.featuredImage.altText).toBeNull();
   expect(payload.product.images.map((image: { altText: string | null }) => image.altText)).toEqual([null, "Back of the Name Tag Shirt", null]);
+});
+
+test("editor HTML loses pasted meta tags and the empty paragraphs they leave", () => {
+  expect(cleanEditorHtml('<p><meta charset="utf-8"></p>\n<p>Last updated: November 21, 2026</p>\n<p><meta charset="utf-8"><meta charset="utf-8">Every order ships.</p><p>&nbsp;</p>'))
+    .toBe("<p>Last updated: November 21, 2026</p>\n<p>Every order ships.</p>");
+});
+
+test("policy bodies arrive cleaned, so the last-updated line is found", async () => {
+  process.env.SHOPIFY_STORE_DOMAIN = "catalog.test";
+  process.env.SHOPIFY_STOREFRONT_API_TOKEN = "test-token";
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    data: { shop: { privacyPolicy: null, refundPolicy: null, termsOfService: null, shippingPolicy: { handle: "shipping-policy", title: "Shipping Policy", body: '<p><meta charset="utf-8"></p><p>Last updated: November 21, 2026</p><p>Ships fast.</p>' } } },
+  }));
+  const [policy] = await getPolicies();
+  expect(splitPolicyLastUpdated(policy.body)).toEqual({ lastUpdated: "November 21, 2026", body: "<p>Ships fast.</p>" });
 });

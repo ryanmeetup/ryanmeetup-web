@@ -146,6 +146,20 @@ export function dropPlaceholderAltText(key: string, value: unknown) {
   return key === "altText" && typeof value === "string" && placeholderAltTexts.has(value.trim().toLowerCase()) ? null : value;
 }
 
+// Copy pasted into Shopify's editor from Google Docs brings `<meta charset>` tags along,
+// which are invalid in the page body and leave an empty paragraph that hides a policy's
+// opening "Last updated" line. Only descriptions and policy bodies hold editor HTML.
+const editorHtmlFields = new Set(["descriptionHtml", "body"]);
+
+export function cleanEditorHtml(html: string) {
+  return html.replace(/<meta\b[^>]*>/gi, "").replace(/<p\b[^>]*>(?:\s|&nbsp;|<br\s*\/?>)*<\/p>/gi, "").trim();
+}
+
+function cleanStorefrontValue(key: string, value: unknown) {
+  if (typeof value === "string" && editorHtmlFields.has(key)) return cleanEditorHtml(value);
+  return dropPlaceholderAltText(key, value);
+}
+
 async function storefrontRequest<T>(
   query: string,
   variables: Record<string, unknown> = {},
@@ -177,7 +191,7 @@ async function storefrontRequest<T>(
   );
 
   // Gateways can answer with HTML; report the status rather than a JSON parse error.
-  const payload = (await response.text().then((text) => JSON.parse(text, dropPlaceholderAltText)).catch(() => ({}))) as {
+  const payload = (await response.text().then((text) => JSON.parse(text, cleanStorefrontValue)).catch(() => ({}))) as {
     data?: T;
     errors?: { message: string }[];
   };
