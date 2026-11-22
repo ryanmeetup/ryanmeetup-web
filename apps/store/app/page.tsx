@@ -4,6 +4,7 @@ import {
   SectionHeader,
   Text,
 } from "@ryanmeetup/ui";
+import type { Metadata } from "next";
 import Image from "next/image";
 import { Suspense } from "react";
 import { FiArrowRight } from "react-icons/fi";
@@ -14,9 +15,16 @@ import { ProductGrid } from "@/components/product-grid";
 import { PromotionNote } from "@/components/promotion";
 import { SupportNote } from "@/components/support-note";
 import { withListingRatings } from "@/lib/listing-ratings";
+import { buildPageMetadata, DEFAULT_IMAGE, SITE_DESCRIPTION, SITE_NAME } from "@/lib/metadata";
 import { getHomeCatalog } from "@/lib/shopify";
 
 export const revalidate = 300;
+
+export const metadata = {
+  ...buildPageMetadata({ title: SITE_NAME, description: SITE_DESCRIPTION, canonical: "/", image: DEFAULT_IMAGE }),
+  // The store name alone, not "Ryan Meetup Store | Ryan Meetup Store".
+  title: { absolute: SITE_NAME },
+} satisfies Metadata;
 
 export default async function HomePage() {
   const { spotlight, favorites: shelf, collections } = await getHomeCatalog();

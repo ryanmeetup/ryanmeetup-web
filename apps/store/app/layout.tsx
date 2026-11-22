@@ -9,7 +9,7 @@ import { CurrencyProvider } from "@/components/currency-provider";
 import { Header } from "@/components/header";
 import { NavSectionProvider } from "@/components/nav-section";
 import { PromotionBanner, PromotionProvider } from "@/components/promotion";
-import { buildPageMetadata, DEFAULT_IMAGE, SITE_NAME, SITE_URL } from "@/lib/metadata";
+import { DEFAULT_IMAGE, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/metadata";
 import { getCollections, getCustomerAccountUrl, getPolicies, getStockedGarments, isShopifyConfigured } from "@/lib/shopify";
 import { currentPromotion, isPromotionLive } from "@/lib/promotion";
 import { getBugReportHref } from "@/lib/support";
@@ -27,15 +27,17 @@ const builtWith = [
   { href: "https://playwright.dev/", label: "Playwright" },
 ];
 
+// Site-wide defaults only. Nested fields are replaced, not merged, so a canonical
+// or og:url here would be inherited by every page that sets none, including the
+// 404 page; the home page sets its own in app/page.tsx.
 export const metadata: Metadata = {
-  ...buildPageMetadata({
-    title: SITE_NAME,
-    description: "Official Ryan Meetup shirts, sweatshirts, hats, and assorted Ryan provisions.",
-    canonical: SITE_URL,
-    image: DEFAULT_IMAGE,
-  }),
+  metadataBase: new URL(SITE_URL),
   // Page titles stay short in social cards; the browser tab adds the store name.
   title: { default: SITE_NAME, template: `%s | ${SITE_NAME}` },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  openGraph: { siteName: SITE_NAME, locale: "en_US", type: "website", images: [DEFAULT_IMAGE] },
+  twitter: { card: "summary_large_image", images: [DEFAULT_IMAGE.url] },
 };
 
 // The header menu is on every page, including the error pages, so a Shopify outage

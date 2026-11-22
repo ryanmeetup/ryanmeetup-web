@@ -5,6 +5,7 @@ import type { Product, StoreImage } from "@/lib/types";
 export const SITE_NAME = "Ryan Meetup Store";
 // Fixed, like RyanMeetup.com: previews and local runs still link to the real store.
 export const SITE_URL = "https://store.ryanmeetup.com";
+export const SITE_DESCRIPTION = "Official Ryan Meetup shirts, sweatshirts, hats, and assorted Ryan provisions.";
 
 // The social card for pages without their own image.
 export const DEFAULT_IMAGE: PageMetadataImage = {

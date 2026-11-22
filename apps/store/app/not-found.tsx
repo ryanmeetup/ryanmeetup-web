@@ -1,12 +1,12 @@
 import { NotFoundCard } from "@ryanmeetup/ui";
-import { buildPageMetadata, DEFAULT_IMAGE } from "@/lib/metadata";
+import type { Metadata } from "next";
 
-export const metadata = buildPageMetadata({
+// No canonical or og:url: a missing page has no address of its own, and pointing
+// either at the home page reads as a soft 404. Next.js adds noindex itself.
+export const metadata: Metadata = {
   title: "Page not found",
   description: "We couldn’t find this page. Head back to the Ryan goods.",
-  canonical: "/",
-  image: DEFAULT_IMAGE,
-});
+};
 
 export default function NotFound() {
   return (
