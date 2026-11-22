@@ -53,7 +53,7 @@ ancestor; links inside `<header>` or `<footer>` fall back to `header` or
 
 | Placement | Area |
 | --- | --- |
-| `home_hero`, `home_favorites`, `home_spotlight`, `home_collections`, `home_reviews` | Home page sections, top to bottom |
+| `home_support`, `home_hero`, `home_favorites`, `home_spotlight`, `home_collections`, `home_reviews` | Home page sections, top to bottom |
 | `catalog`, `popular_picks` | Collection grid and its popular picks |
 | `product`, `product_gallery`, `product_details` | Product page, its gallery and description disclosure |
 | `related_products` | "Related" listings under a product |
