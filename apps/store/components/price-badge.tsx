@@ -24,15 +24,18 @@ export type PriceBadgeProps = {
 const sizeClasses = {
   // Cards sit two-up on phones, so the badge stays compact until there is room.
   sm: {
-    currency: "min-w-10 px-1.5 py-1 text-[10px] sm:min-w-12 sm:px-2",
-    price: "px-2.5 pt-1.5 text-xs/none sm:px-3 sm:pt-2 sm:text-base/none",
+    // Phones drop the chevron; the code alone is still the menu button and keeps its name.
+    currency: "px-1.5 py-1 text-[10px] sm:min-w-12 sm:px-2",
+    chevron: "hidden sm:block",
+    price: "px-2 pt-1.5 text-xs/none sm:px-3 sm:pt-2 sm:text-base/none",
     bottom: "pb-1.5 sm:pb-2",
     saleGap: "pb-1 sm:pb-1.5",
-    original: "px-2.5 pb-1.5 text-[10px]/none sm:px-3 sm:pb-2 sm:text-xs/none",
+    original: "px-2 pb-1.5 text-[10px]/none sm:px-3 sm:pb-2 sm:text-xs/none",
     info: "ml-1 size-5 [&>svg]:size-3.5",
   },
   lg: {
     currency: "min-w-12 px-3 py-1 text-xs",
+    chevron: "",
     price: "px-4 pt-3 text-3xl/none",
     bottom: "pb-3",
     saleGap: "pb-2",
@@ -89,7 +92,7 @@ export function PriceBadge({ price: listPrice, compareAt: markedDownFrom, promot
           {displayed.currencyCode}
           {loading
             ? <FiLoader aria-hidden className="h-3 w-3 animate-spin motion-reduce:animate-none" />
-            : <FiChevronDown aria-hidden className="h-3 w-3" />}
+            : <FiChevronDown aria-hidden className={`h-3 w-3 ${classes.chevron}`} />}
         </DropdownMenuButton>
         <DropdownMenuItems align="end" aria-label="Display currency">
           {displayCurrencies.map((option) => (

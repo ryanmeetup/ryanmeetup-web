@@ -13,7 +13,7 @@ const starburst = Array.from({ length: spikes * 2 }, (_, index) => {
 
 const sizeClasses = {
   sm: "size-11 text-xs",
-  md: "size-12 text-sm sm:size-16 sm:text-base",
+  md: "size-10 text-xs sm:size-16 sm:text-base",
   lg: "size-20 text-lg",
 };
 

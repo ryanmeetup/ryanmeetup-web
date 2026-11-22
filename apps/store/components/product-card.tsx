@@ -108,7 +108,7 @@ export function ProductCard({ product, eager = false, from }: { product: Product
       ) : (
         <div className="grid h-full place-items-center font-cooper text-5xl text-black/10 dark:text-white/10">R</div>
       )}
-      badges={product.availableForSale ? <SaleBadge markedDown={sale.onSale} promotable={!product.externalUrl} className="absolute left-2 top-2" /> : <span className="absolute left-3 top-3 rounded-full bg-black px-3 py-1 text-[10px] font-bold uppercase tracking-caps-tight text-white">Sold out</span>}
+      badges={product.availableForSale ? <SaleBadge markedDown={sale.onSale} promotable={!product.externalUrl} className="absolute left-1 top-1 sm:left-2 sm:top-2" /> : <span className="absolute left-3 top-3 rounded-full bg-black px-3 py-1 text-[10px] font-bold uppercase tracking-caps-tight text-white">Sold out</span>}
       // The currency action is a sibling of the link, so switching never opens the product.
       mediaOverlay={
         <PriceBadge
@@ -117,7 +117,8 @@ export function ProductCard({ product, eager = false, from }: { product: Product
           compareAt={sale.compareAt}
           promotable={!product.externalUrl}
           from={product.priceVaries}
-          className="absolute bottom-3 left-3 max-w-[calc(100%-1.5rem)]"
+          // Phones hug the corner so the badge covers less of the design.
+          className="absolute bottom-2 left-2 max-w-[calc(100%-1rem)] sm:bottom-3 sm:left-3 sm:max-w-[calc(100%-1.5rem)]"
         />
       }
       title={<>{product.title}{product.externalUrl && <span className="sr-only"> (opens in a new tab)</span>}</>}
@@ -155,7 +156,7 @@ export function ProductCard({ product, eager = false, from }: { product: Product
       )}
       {product.availableForSale && !product.externalUrl && (
         // A sibling of the card link, not inside it, so it stays its own control.
-        <div className="absolute right-3 top-3">
+        <div className="absolute right-2 top-2 sm:right-3 sm:top-3">
           {/* Keyed by the preview, so choosing a swatch resets its picks. */}
           <QuickAdd key={href} product={product} href={href} />
         </div>
