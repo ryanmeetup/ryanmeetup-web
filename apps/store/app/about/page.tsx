@@ -6,7 +6,6 @@ import type { IconType } from "react-icons";
 import { FiArrowRight, FiGlobe, FiHeart, FiHelpCircle, FiPenTool, FiTruck, FiUsers, FiXCircle } from "react-icons/fi";
 import { buildPageMetadata, DEFAULT_IMAGE } from "@/lib/metadata";
 import { getPolicies } from "@/lib/shopify";
-import { SUPPORT_HEADLINE, SUPPORT_REASON } from "@/components/support-note";
 
 export const metadata = buildPageMetadata({
   title: "About the store",
@@ -137,10 +136,10 @@ export default async function AboutPage() {
               <section id="money" className={sectionClassName}>
                 <SectionTitle id="money">Every shirt keeps the meetups meeting.</SectionTitle>
                 <Text className="max-w-3xl">
-                  {SUPPORT_HEADLINE} Every order goes to Ryan Meetup Inc., the New York not-for-profit corporation that runs Ryan Meetup. After what it costs to make and ship your order, every cent goes back into Ryans, not pockets.
+                  Every order goes to Ryan Meetup Inc., the New York not-for-profit corporation that runs Ryan Meetup. After what it costs to make and ship your order, every cent goes back into Ryans, not pockets.
                 </Text>
                 <Text className="max-w-3xl">
-                  That money is how we fund meetups in cities all over. {SUPPORT_REASON} It covers venues, food, decorations, name tags, and prizes, plus the behind-the-scenes costs: web hosting, a storage unit for event gear, and the filings that keep the organization in good standing.{" "}
+                  That money is how we fund meetups in cities all over and keep them free or cheap to attend. It covers venues, food, decorations, name tags, and prizes, plus the behind-the-scenes costs: web hosting, a storage unit for event gear, and the filings that keep the organization in good standing.{" "}
                   <a href="https://ryanmeetup.com/donate" className={linkClassName}>See the full breakdown</a>.
                 </Text>
                 <Text className="max-w-3xl">
