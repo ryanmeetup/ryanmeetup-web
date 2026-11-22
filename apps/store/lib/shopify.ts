@@ -137,6 +137,15 @@ function normalizeDomain(domain: string) {
   return domain.replace(/^https?:\/\//, "").replace(/\/$/, "");
 }
 
+// Printful labels every mockup it syncs "Product mockup", which describes nothing to a
+// screen reader or a link preview. Dropping it here lets every image fall back to
+// the product title, the same as an image with no alt text written.
+const placeholderAltTexts = new Set(["product mockup"]);
+
+export function dropPlaceholderAltText(key: string, value: unknown) {
+  return key === "altText" && typeof value === "string" && placeholderAltTexts.has(value.trim().toLowerCase()) ? null : value;
+}
+
 async function storefrontRequest<T>(
   query: string,
   variables: Record<string, unknown> = {},
@@ -168,7 +177,7 @@ async function storefrontRequest<T>(
   );
 
   // Gateways can answer with HTML; report the status rather than a JSON parse error.
-  const payload = (await response.json().catch(() => ({}))) as {
+  const payload = (await response.text().then((text) => JSON.parse(text, dropPlaceholderAltText)).catch(() => ({}))) as {
     data?: T;
     errors?: { message: string }[];
   };

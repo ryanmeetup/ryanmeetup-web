@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { getCustomerAccountUrl, getPolicies } from "../lib/shopify";
+import { dropPlaceholderAltText, getCustomerAccountUrl, getPolicies } from "../lib/shopify";
 
 const originalFetch = globalThis.fetch;
 const originalDomain = process.env.SHOPIFY_STORE_DOMAIN;
@@ -55,4 +55,13 @@ test("demo mode has no customer account", async () => {
   globalThis.fetch = async () => { throw new Error("Demo mode should not call Shopify."); };
 
   expect(await getCustomerAccountUrl()).toBeNull();
+});
+
+test("Printful's placeholder alt text is dropped so images fall back to the product title", () => {
+  const payload = JSON.parse(JSON.stringify({
+    product: { title: "Product mockup", featuredImage: { altText: "Product mockup" }, images: [{ altText: " product MOCKUP " }, { altText: "Back of the Name Tag Shirt" }, { altText: null }] },
+  }), dropPlaceholderAltText);
+  expect(payload.product.title).toBe("Product mockup");
+  expect(payload.product.featuredImage.altText).toBeNull();
+  expect(payload.product.images.map((image: { altText: string | null }) => image.altText)).toEqual([null, "Back of the Name Tag Shirt", null]);
 });
