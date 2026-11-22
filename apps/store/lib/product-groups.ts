@@ -33,7 +33,11 @@ const listingRedirects: Record<string, Omit<ProductGroup, "handle" | "title">> =
       "ryan-name-tag-shirt": "ryan",
       "ryans-mom-name-tag-shirt": "ryans-mom",
     },
-    legacyProductHandles: {},
+    // The Husband shirt was duplicated from the Wife shirt and kept its handle,
+    // pushing the real Wife shirt to `-1` until both were renamed (Nov 2026).
+    legacyProductHandles: {
+      "ryans-wife-name-tag-shirt-1": "ryans-wife-name-tag-shirt",
+    },
   },
 };
 
