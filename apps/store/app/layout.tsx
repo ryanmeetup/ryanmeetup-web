@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { RyanMeetupFooter, ToastHost } from "@ryanmeetup/ui";
 import { ThemeProvider } from "next-themes";
 import { BugReportBanner } from "@/components/bug-report-banner";
@@ -39,6 +39,9 @@ export const metadata: Metadata = {
   openGraph: { siteName: SITE_NAME, locale: "en_US", type: "website", images: [DEFAULT_IMAGE] },
   twitter: { card: "summary_large_image", images: [DEFAULT_IMAGE.url] },
 };
+
+// The theme is forced dark, so the browser chrome and native controls match it.
+export const viewport: Viewport = { themeColor: "#171717", colorScheme: "dark" };
 
 // The header menu is on every page, including the error pages, so a Shopify outage
 // leaves the Collections menu with only Shop All instead of failing the layout.
