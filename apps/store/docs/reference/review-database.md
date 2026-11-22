@@ -59,6 +59,7 @@ history under the Store or rewrite applied SQL.
 | `20261121140000` | Half-star ratings | Applied |
 | `20261121150000` | Etsy review import: `source`, untitled imports, import RPC and `source` in projections | Applied; 148 Etsy reviews imported November 21 |
 | `20261121160000` | Numbered public review pages: `store_public_review_search` (filters, sort, search, total, focus) and the shared `store_public_review_json` projection | Applied November 21 |
+| `20261121180000` | Daily cleanup: `store_review_cleanup` deletes expired sign-in, budget and photo rows and lists photo objects to remove | Pending |
 
 The timestamp-shaped versions are identifiers, not evidence of deployment time.
 Photo publication was applied to RMT and verified for private-bucket and

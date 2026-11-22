@@ -226,8 +226,9 @@ responses cannot restore an old preview. Reopening the same mounted form under
 the same viewer reuses confirmed references; navigation/unmount drops local
 state. A known account change blocks the old editor and requires refresh.
 My reviews remounts on viewer/capability changes, and stale account suggestions
-are withheld. Private orphan/expiry cleanup remains a separate backend task;
-closing an uncertain operation never automatically deletes stored objects.
+are withheld. Closing an uncertain operation never deletes stored objects; the
+[daily cleanup](../how-to/review-operations.md#daily-cleanup) removes expired
+and orphaned ones later.
 
 ## Implemented staff decisions and public delivery
 
@@ -274,8 +275,9 @@ A failed Storage removal is reported; no automatic retry worker exists. This
 is separate from buyer draft discard and withdrawal. See
 [moderation](review-moderation.md#permanent-deletion).
 
-Draft expiry prevents use but does not delete objects; failed Storage removal
-has no retry worker. Cleanup, recovery and a hosted lifecycle rehearsal remain
+Draft expiry prevents use; the [daily cleanup](../how-to/review-operations.md#daily-cleanup)
+deletes expired drafts, unreferenced photos and orphaned objects, including
+failed Storage removals. Recovery and a hosted lifecycle rehearsal remain
 operational work; they are not established by enabling attachments. See the
 [roadmap](../planning/roadmap.md#14-store-reviews) for cleanup, retention and release evidence, and
 [operations](../how-to/review-operations.md) for recovery procedures.

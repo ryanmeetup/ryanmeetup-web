@@ -59,7 +59,7 @@ in-flight writes before choosing a recovery cutoff.
    resume and check both paths with fresh deployments.
 6. Photo attachments, staff media review and controlled publication are built.
    Collection is enabled by default; use the explicit false setting to pause it.
-   Cleanup and recovery remain open work. On the isolated target, rehearse
+   Recovery remains open work. On the isolated target, rehearse
    upload/preview/edit, separate text/photo approval and rejection, queue/badge
    retention, old public-path revocation on hide/withdraw/replacement/delete,
    failed preview recovery and account changes as part of hosted release verification.
@@ -116,8 +116,41 @@ reviews. Use deployment version/time alongside them. References:
 
 Tasks deletion has a separate `store_review_photo_removal` server-failure path
 when SQL committed but object removal failed. Its orphan files stay private and
-unreferenced. There is no automatic cleanup worker yet; do not repeat a review
-write blindly or claim that a failed HTTP acknowledgement means SQL rolled back.
+unreferenced until the [daily cleanup](#daily-cleanup) removes them. Do not
+repeat a review write blindly or claim that a failed HTTP acknowledgement means
+SQL rolled back.
+
+## Daily cleanup
+
+Vercel Cron calls the Store's `/api/cron/review-cleanup` daily at 08:41 UTC
+(`apps/store/vercel.json`). It needs `CRON_SECRET` in the Store project's
+Vercel environment; without it every call is refused with 401. The route runs
+`store_review_cleanup` against RMT, which deletes, per category and at most 500
+rows a run:
+
+- sign-in flows and sessions a day past their absolute expiry (revoked sessions
+  stay until then);
+- upload budgets and write budgets whose windows closed a day or two ago;
+- photo drafts that expired a day ago without being attached;
+- attached photos no revision references, once their review has been unchanged
+  for a day.
+
+It also lists objects in the shop's folder of `store-review-photos` that have
+no draft row and are a day old, which covers Tasks deletions whose object
+removal failed. The Store then removes the listed objects. Rows go before
+objects, so a run that fails partway leaves only orphans the next run finds.
+
+Each run logs `{"event":"store_review_cleanup", ...counts, "objectsRemoved"}`.
+A failure logs `{"event":"store_review_cleanup_failed","step":"database"|"storage"|"unexpected"}`
+and returns 500. To run it by hand:
+
+```sh
+curl -H "Authorization: Bearer $CRON_SECRET" https://<store-origin>/api/cron/review-cleanup
+```
+
+Cleanup never touches approved, pending or rejected revisions, their photos,
+replies, events or the deletion audit; how long those are kept is a retention
+decision still open in the [roadmap](../planning/roadmap.md#14-store-reviews).
 
 ## Recovery within the custom system
 
@@ -142,8 +175,7 @@ fallback. Recover with compatible custom code/schema or a reviewed scoped repair
 ## Operational readiness
 
 Use the deployment record above to track which procedures have been rehearsed
-and who operates the service. Unbuilt monitoring, abuse protection, cleanup and
-retention capabilities are tracked in the
+and who operates the service. Unbuilt monitoring and retention capabilities are tracked in the
 [roadmap](../planning/roadmap.md#14-store-reviews).
 
 ## Repeatable local checks

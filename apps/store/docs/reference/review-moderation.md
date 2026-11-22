@@ -119,8 +119,9 @@ buyer identity. Keep the private note free of those details too.
 The function returns deleted photo IDs. Tasks then removes their derived
 private Storage objects. Failure here cannot restore the committed review:
 the API reports `photosRemoved:false`, logs the cleanup failure and the UI
-warns staff. Files remain private and unreferenced. No background retry job or
-deletion-log browser is implemented; include orphan cleanup in operations.
+warns staff. Files remain private and unreferenced until the Store's
+[daily cleanup](../how-to/review-operations.md#daily-cleanup) removes them a
+day later. No deletion-log browser is implemented.
 
 ## Verification
 
@@ -137,7 +138,7 @@ policy-confirmed deletion, stale/uncertain writes, permissions and responsive
 light/dark layouts. Database checks use both profiles sequentially as described
 in the database guide. These tests do not prove a real Shopify buyer lifecycle.
 
-Failed-removal cleanup and full-history/deletion-log browsing are outside the
+Full-history/deletion-log browsing is outside the
 current owner queue. Their status and optional scope
 are tracked in the [roadmap](../planning/roadmap.md#14-store-reviews). Use the
 [operations rehearsal](../how-to/review-operations.md#live-lifecycle-rehearsal) to verify
