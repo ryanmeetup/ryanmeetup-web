@@ -78,17 +78,6 @@ export function PromotionNote({ className }: { className?: string }) {
   );
 }
 
-/**
- * The home hero's copy of the offer, shown only once the banner is dismissed: closing the
- * banner quiets the sale rather than hiding it, and phones never get the offer twice.
- */
-export function HeroPromotionNote({ className }: { className?: string }) {
-  const promotion = usePromotion();
-  const [dismissed] = useBannerDismissed(promotion);
-  if (!dismissed) return null;
-  return <PromotionNote className={className} />;
-}
-
 /** Where the cart stands against the sale's tiers. */
 export function PromotionProgress({ quantity, className }: { quantity: number; className?: string }) {
   const promotion = usePromotion();

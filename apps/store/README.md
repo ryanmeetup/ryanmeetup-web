@@ -112,12 +112,13 @@ products to one.
 
 ### Home page
 
-The hero reads “Merch with your name on it.” beside a rotating community-photo gallery,
-with a small red-and-white Ryan name tag using the supplied brand artwork.
-“Shop all merch” opens Shop All, and “Browse collections” jumps to the collection
-tiles. The site-wide banner carries any running sale without a second hero callout.
-On mobile, tighter spacing and a landscape photo frame keep the copy and shopping
-links before the photo. The support card shows its headline and **Where your money
+The hero is a full-bleed wall of community photos with “Merch with your name on it.”
+set large over a dark fade (below the wall on phones, which show four of the five
+photos). “Shop all merch” opens Shop All, and “Browse collections” jumps to the
+collection tiles. Two straight marquee bands run under it: the name on a loop in
+name-tag red, then the running sale's tiers and end date followed by the shipping
+strip's facts (made to order, where it ships, tracking). Both pause on hover and stay
+still under reduced motion. The support card shows its headline and **Where your money
 goes** link; its fuller explanation remains on larger screens and the About page.
 Below it:
 
