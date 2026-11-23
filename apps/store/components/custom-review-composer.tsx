@@ -189,6 +189,8 @@ export function CustomReviewComposer({
       formId={formId}
       onSubmit={submit}
       bodyClassName="space-y-5"
+      // On a phone the actions follow the form, so writing the review keeps the whole screen.
+      scrollFooterOnMobile
       panelClassName="max-sm:fixed max-sm:inset-0 max-sm:m-0 max-sm:h-dvh max-sm:!max-h-dvh max-sm:rounded-none max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)]"
       supportingActions={<Text className="text-sm">We check every review before it goes up.<br />Your order details and email stay private.</Text>}
       actions={<ModalActions onCancel={close} confirmForm={formId} confirmLabel={edit ? "Save changes" : "Submit review"}
