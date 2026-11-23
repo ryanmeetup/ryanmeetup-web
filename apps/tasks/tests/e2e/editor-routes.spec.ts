@@ -97,8 +97,19 @@ test("reorders category tags and accepts more than 20", async ({
   const chicagoHandle = page.getByRole("button", {
     name: "Drag to reorder “Chicago”",
   });
+  // dnd-kit's keyboard sensor listens for arrows only a tick after Space picks
+  // a tag up, so an arrow pressed straight away is dropped. Press until its
+  // live region confirms Chicago is over New York, never moving it twice.
+  const overNewYork = page
+    .locator('[id^="DndLiveRegion"]')
+    .filter({ hasText: "Chicago was moved over droppable area New York" });
   await chicagoHandle.press("Space");
-  await chicagoHandle.press("ArrowRight");
+  await expect(async () => {
+    if ((await overNewYork.count()) === 0) {
+      await chicagoHandle.press("ArrowRight");
+    }
+    await expect(overNewYork).toHaveCount(1, { timeout: 1000 });
+  }).toPass();
   await chicagoHandle.press("Space");
   await expect(tags).toHaveText(["New York", "Chicago", "Los Angeles"]);
 

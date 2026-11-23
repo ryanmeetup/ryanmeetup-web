@@ -683,7 +683,18 @@ test("holds a column's chrome still while its own tasks scroll", async ({
       };
     });
 
-  const atRest = await measure();
+  // Let the board finish settling first: on a slow runner the chrome above
+  // it can still shift a few pixels after the column first renders, which
+  // would read as the rule moving once the tasks scroll.
+  let atRest = await measure();
+  await expect
+    .poll(async () => {
+      const next = await measure();
+      const settled = next.rule === atRest.rule;
+      atRest = next;
+      return settled;
+    })
+    .toBe(true);
   expect(atRest.scrollable).toBe(true);
   expect(atRest.scrollTop).toBe(0);
   expect(atRest.gutter).toBe(0);
