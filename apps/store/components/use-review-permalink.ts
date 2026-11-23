@@ -50,6 +50,7 @@ export function useReviewPermalink(data: ReviewsData, list: ReturnType<typeof us
 
   const current = lookup?.target === target ? lookup.status : null;
   return {
+    target,
     finding: current === "finding",
     message: current === "missing" ? "This review is no longer available on this product page." : "",
   };

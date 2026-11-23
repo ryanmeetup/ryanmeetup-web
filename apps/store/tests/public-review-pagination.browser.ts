@@ -106,7 +106,7 @@ test("a failed review link lookup waits for a deliberate retry", async ({ page }
 
 test("numbered pages reach every review while totals, JSON-LD and replies keep their scope", async ({ page }, testInfo) => {
   const urls = reads(page);
-  await page.goto("/products/name-tag-shirt");
+  await page.goto("/products/name-tag-shirt?reviewPage=1");
   await expect(cards(page)).toHaveCount(25);
   await expect(pager(page)).toContainText("Showing 1–25 of 45 reviews");
   await expect(pager(page).getByRole("button", { name: "Previous page" })).toBeDisabled();
@@ -154,7 +154,7 @@ test("a failed page keeps the current reviews for a deliberate retry", async ({ 
     if (pages.length === 1) await route.fulfill({ status: 503, json: { error: "Synthetic outage" } });
     else await route.continue();
   });
-  await page.goto("/products/name-tag-shirt");
+  await page.goto("/products/name-tag-shirt?reviewPage=1");
   await pager(page).getByRole("button", { name: "Next page" }).click();
   await expect(page.locator("#reviews").getByRole("alert")).toContainText("Reviews couldn't load.");
   await expect(cards(page)).toHaveCount(25);
@@ -174,7 +174,7 @@ test("a pending page shows skeleton cards, makes one request and disables paging
     await route.continue();
   });
   try {
-    await page.goto("/products/name-tag-shirt");
+    await page.goto("/products/name-tag-shirt?reviewPage=1");
     await pager(page).getByRole("button", { name: "Next page" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Finding matching reviews" })).toBeVisible();
     await expect(page.getByRole("region", { name: "Review results", exact: true })).toHaveAttribute("aria-busy", "true");
@@ -195,7 +195,7 @@ test("a product change discards a response from the previous review list", async
     await route.fulfill({ response }).catch(() => {});
   });
   try {
-    await page.goto("/products/name-tag-shirt");
+    await page.goto("/products/name-tag-shirt?reviewPage=1");
     await pager(page).getByRole("button", { name: "Next page" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Finding matching reviews" })).toBeVisible();
     await page.getByRole("button", { name: /^Style/ }).click();
@@ -250,7 +250,7 @@ test("filter loading never presents stale matches as final and retries a failed 
     else await route.continue();
   });
   try {
-    await page.goto("/products/name-tag-shirt");
+    await page.goto("/products/name-tag-shirt?reviewPage=1");
     await choose(page, "Rating", "0.5–1 stars");
     await expect(page.getByRole("status").filter({ hasText: "Finding matching reviews" })).toBeVisible();
     await expect(page.getByRole("region", { name: "Review results", exact: true })).toHaveAttribute("aria-busy", "true");
@@ -277,7 +277,7 @@ test("switching products clears the review view and ignores a pending response",
     await route.fulfill({ response }).catch(() => {});
   });
   try {
-    await page.goto("/products/name-tag-shirt");
+    await page.goto("/products/name-tag-shirt?reviewPage=1");
     await choose(page, "Sort", "Oldest first");
     await expect(page.getByRole("status").filter({ hasText: "Finding matching reviews" })).toBeVisible();
     await page.getByRole("button", { name: /^Style/ }).click();
@@ -292,7 +292,7 @@ test("switching products clears the review view and ignores a pending response",
 
 test("review controls fit mobile and desktop boundaries", async ({ page, request }, testInfo) => {
   expect((await request.post(`${fixture}/__configure`, { data: { [id(ryan)]: dataset(ryan, 2) } })).ok()).toBe(true);
-  await page.goto("/products/name-tag-shirt");
+  await page.goto("/products/name-tag-shirt?reviewPage=1");
   await choose(page, "Sort", "Highest rated");
   const controls = page.getByRole("group", { name: "Filter and sort reviews" });
   for (const theme of ["dark"]) {
@@ -308,4 +308,27 @@ test("review controls fit mobile and desktop boundaries", async ({ page, request
       await page.locator("#reviews").screenshot({ path: testInfo.outputPath(`review-controls-${theme}-${width}.png`) });
     }
   }
+});
+
+
+test("product reviews start with four cards and expand without another read", async ({ page }) => {
+  const urls = reads(page);
+  await page.goto("/products/name-tag-shirt");
+  await expect(cards(page)).toHaveCount(4);
+  await expect(pager(page)).toHaveCount(0);
+  await expect(page.locator("#reviews")).toContainText("Average rating from 45 reviews");
+  await page.getByRole("button", { name: "See all 45 reviews", exact: true }).click();
+  await expect(cards(page)).toHaveCount(25);
+  await expect(pager(page)).toContainText("Showing 1–25 of 45 reviews");
+  expect(urls).toHaveLength(0);
+  await page.reload();
+  await expect(cards(page)).toHaveCount(25);
+});
+
+test("a linked review outside the preview expands the first page without refetching", async ({ page }) => {
+  const urls = reads(page);
+  await page.goto(`/products/name-tag-shirt${reviewAnchor(35)}`);
+  await expect(page.locator(reviewAnchor(35))).toBeFocused();
+  await expect(cards(page)).toHaveCount(25);
+  expect(urls).toHaveLength(0);
 });

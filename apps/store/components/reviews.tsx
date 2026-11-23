@@ -1,10 +1,12 @@
 "use client";
 
 import { useId, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { trackStoreEvent } from "@/lib/analytics";
 import { Button, ErrorCallout, Heading, RatingStars, SuccessCallout, Text } from "@ryanmeetup/ui";
 import type { Product, ReviewsData } from "@/lib/types";
 import type { CustomReviewAccess } from "@/lib/custom-review-access";
+import { PRODUCT_REVIEW_PARAMS } from "@/lib/public-review-view";
 import { CustomReviewComposer, type CustomReviewResult, type CustomReviewSubmission } from "./custom-review-composer";
 import { PublicReviewCard } from "./public-review-card";
 import { PublicReviewFilters } from "./public-review-filters";
@@ -40,6 +42,11 @@ export function Reviews({ data, product, access }: { data: ReviewsData; product:
   const formId = useId();
   const publicReviews = usePublicReviews(data);
   const permalink = useReviewPermalink(data, publicReviews);
+  const searchParams = useSearchParams();
+  const [showAll, setShowAll] = useState(() => Object.values(PRODUCT_REVIEW_PARAMS).some((name) => searchParams.has(name)));
+  // Explicit review links and filters keep their existing full, paginated view.
+  const expanded = showAll || Boolean(permalink.target) || Object.values(PRODUCT_REVIEW_PARAMS).some((name) => searchParams.has(name)) || publicReviews.refined;
+  const visibleReviews = expanded ? publicReviews.reviews : publicReviews.reviews.slice(0, 4);
   const resultsId = `${formId}-results`;
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
@@ -76,7 +83,7 @@ export function Reviews({ data, product, access }: { data: ReviewsData; product:
 
       {data.status === "available" && data.count > 0 && (
         <div className="mt-8">
-          <PublicReviewFilters rating={publicReviews.view.rating} sort={publicReviews.view.sort} origin={publicReviews.view.origin} onChange={publicReviews.changeView} />
+          <PublicReviewFilters rating={publicReviews.view.rating} sort={publicReviews.view.sort} origin={publicReviews.view.origin} onChange={(patch) => { setShowAll(true); publicReviews.changeView(patch); }} />
         </div>
       )}
 
@@ -91,7 +98,7 @@ export function Reviews({ data, product, access }: { data: ReviewsData; product:
         ) : publicReviews.reviews.length ? (
           <ul id={`${formId}-reviews`} aria-label="Customer reviews" className="mt-8 gap-4 md:columns-2">
             {/* Masonry: cards keep their own height, filling each column top to bottom. */}
-            {publicReviews.reviews.map((review) => (
+            {visibleReviews.map((review) => (
               <li key={review.id} className="mb-4 min-w-0 break-inside-avoid last:mb-0">
                 <PublicReviewCard review={review} />
               </li>
@@ -109,8 +116,17 @@ export function Reviews({ data, product, access }: { data: ReviewsData; product:
         <ErrorCallout>{publicReviews.error}</ErrorCallout>
         <Button variant="secondary" className="w-full sm:w-auto" aria-controls={resultsId} onClick={publicReviews.retry}>Retry loading reviews</Button>
       </div>}
-      {data.status === "available" && <ReviewPagination resultsId={resultsId} page={publicReviews.page} pageSize={publicReviews.pageSize}
-        total={publicReviews.total} pending={publicReviews.pending || !publicReviews.ready} onPageChange={publicReviews.setPage} onPageSizeChange={publicReviews.setPageSize} />}
+      {data.status === "available" && !expanded && publicReviews.total > 4 && <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Text className="text-sm">Showing {visibleReviews.length} of {publicReviews.total} reviews</Text>
+        <Button variant="secondary" className="w-full sm:w-auto" aria-controls={resultsId} disabled={publicReviews.pending || !publicReviews.ready} onClick={() => {
+          setShowAll(true);
+          const url = new URL(window.location.href);
+          url.searchParams.set(PRODUCT_REVIEW_PARAMS.page, "1");
+          window.history.replaceState(null, "", url);
+        }}>See all {publicReviews.total} reviews</Button>
+      </div>}
+      {data.status === "available" && expanded && <ReviewPagination resultsId={resultsId} page={publicReviews.page} pageSize={publicReviews.pageSize}
+        total={publicReviews.total} pending={publicReviews.pending || !publicReviews.ready} onPageChange={(page) => { setShowAll(true); publicReviews.setPage(page); }} onPageSizeChange={(size) => { setShowAll(true); publicReviews.setPageSize(size); }} />}
     </section>
   );
 }
