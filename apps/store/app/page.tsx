@@ -66,15 +66,15 @@ export default async function HomePage() {
         <SupportNote />
       </section>
 
-      <section data-analytics-placement="home_shipping" data-analytics-section="home_shipping" aria-label="Shipping and production" className="store-container">
-        <ShippingExpectations items={shipping} />
-      </section>
-
       {spotlight && (
         <section data-analytics-placement="home_spotlight" data-analytics-section="home_spotlight" aria-label={spotlight.label} className="store-container">
           <HomeSpotlight spotlight={spotlight} />
         </section>
       )}
+
+      <section data-analytics-placement="home_shipping" data-analytics-section="home_shipping" aria-label="Shipping and production" className="store-container">
+        <ShippingExpectations items={shipping} />
+      </section>
 
       {collections.length > 0 && (
         <section data-analytics-placement="home_collections" data-analytics-section="home_collections" id="collections" aria-labelledby="home-collections" className="store-container scroll-mt-24">

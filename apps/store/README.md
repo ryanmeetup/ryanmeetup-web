@@ -138,16 +138,20 @@ and keep the regular hero. Below the hero:
 2. The support card follows the first shelf: merch is how the meetup is funded.
    Phones show its headline and **Where your money goes** link; its fuller
    explanation remains on larger screens and the About page.
-3. A shipping strip below it says what happens after checkout: made to order,
+3. The spotlight shows the first listing in the `spotlight` collection, or the
+   newest in-stock listing when no spotlight has been curated.
+4. A shipping strip between the spotlight and the collection tiles says what happens after checkout: made to order,
    with the business-day range from the shipping policy's **Production time**
    section (and a holiday note while that section mentions holidays), the
    number of countries and regions checkout offers, and tracking by email when
    the policy has a **Tracking** section. Missing facts are left out, never
    guessed; it always links to the full shipping policy.
-4. The spotlight shows the first listing in the `spotlight` collection, or the
-   newest in-stock listing when no spotlight has been curated.
 5. Collection tiles lead to every published theme collection. Each uses the
    collection image or its leading listing's photo.
+
+The support card and the shipping strip are the page's two info blocks; each sits
+between product sections, never stacked together, so the page alternates shopping
+with reading.
 
 `frontpage` and `spotlight` have no browsing tile or menu entry.
 
