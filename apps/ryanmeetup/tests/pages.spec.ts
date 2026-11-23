@@ -53,7 +53,7 @@ const redirectRoutes = [
   {
     path: "/guidelines",
     location:
-      "https://docs.google.com/document/d/1DfDD3iyrQMUHTt4EzbfPytfOOh-de1vk9pHRqqM8obs/edit?tab=t.0",
+      "https://docs.google.com/document/d/1P6fcP5mrHKMhzQ5lckbxo94JMEoHIogvLKhZ3wks8Z8/edit?tab=t.0#heading=h.l91gr6ixwskv",
   },
   { path: "/chapter-lead", location: "https://form.typeform.com/to/TZkv7rua" },
   {
@@ -62,17 +62,7 @@ const redirectRoutes = [
   },
   { path: "/join", location: "https://partiful.com/u/sJG4HpH0wS3ZA3YkzaL5" },
   { path: "/merch", location: "https://store.ryanmeetup.com/" },
-  {
-    path: "/newsletter",
-    location:
-      "https://docs.google.com/forms/d/e/1FAIpQLSdS8O47kdOcmjXglOt_aGTs2q9qK6CrN4zGFdx62H10a-8kDg/viewform",
-  },
-  {
-    path: "/qa",
-    location:
-      "https://docs.google.com/forms/d/e/1FAIpQLScP5a5ynWxQU6f1G9hvprObZQSp9QtLs_97Uf82JQJYHj4L4Q/viewform?usp=dialog",
-  },
-  { path: "/rcf", location: "https://us.givergy.com/rytoberfest" },
+  { path: "/newsletter", location: "https://ryanmeetup.kit.com/49a74eff6b" },
   {
     path: "/ryanday",
     location: "https://partiful.com/e/52AEebHoL4MkLoQbPKaE?c=oV8JR0Ko",
