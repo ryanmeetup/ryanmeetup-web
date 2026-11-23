@@ -162,6 +162,13 @@ stay available in the compact layout. Bulk selection tools start collapsed behin
 Bulk actions; expand them when needed, and collapse them without losing your
 selection.
 
+### More pages for phones
+
+Notes, new tiers and teams, digest cadence and structure, sent emails, and
+Google Calendar invites now open as full pages on a phone instead of cramped
+dialogs, following your preferred form layout. Notes have their own address, so
+a shared link opens the note itself. Desktop keeps the familiar dialogs.
+
 ### A consistent, more compact text scale
 
 Fields, placeholders, page descriptions, card summaries, search, menus, and

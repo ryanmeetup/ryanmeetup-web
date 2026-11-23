@@ -4,7 +4,9 @@ Audit date: 2026-09-03
 Revised: 2026-09-04 — the Tier 1 routes are real pages, not dialogs on a route,
 and which surface you get is now a profile preference rather than the viewport
 alone.
-Status: Tier 1 shipped. Tier 2 and the open questions below are not started.
+Revised: 2026-11-23 — Tier 2 shipped: access group creation, both digest
+editors, the note dialog, and the two read-only detail dialogs now have routes.
+Status: Tier 1 and Tier 2 shipped. The open questions below are not started.
 
 Every create/edit flow in the Tasks app was a `Modal`. On a phone the shared
 dialog caps itself at `max-h-[min(42rem, 100dvh − safe-area insets)]`, pads the
@@ -129,44 +131,45 @@ button, so the mobile link/desktop button pair is written once in each rather
 than at every call site. Per-row edit affordances are the exception and are
 paired individually on the management cards.
 
-## Tier 2: worth doing, not yet done
+## Tier 2: shipped
 
-Ranked by how much a phone user suffers today.
+The same route/dialog pair, through the same `editorTriggers`, for the next
+tier of dialogs that were too big for a phone.
 
-### 1. Note editor — `components/notes/NoteModal.tsx` (215 lines, size `lg`)
+| Surface | Route | Dialog |
+| --- | --- | --- |
+| New tier or team | `/admin/access/new?kind=tier\|team` | `CreateAccessGroupModal` |
+| Digest cadence | `/admin/usage/digest/cadence` | `DigestCadenceModal` |
+| Digest structure | `/admin/usage/digest/structure` | `DigestStructureModal` |
+| Note | `/notes/[id]`, `/notes/[id]/edit` | `NoteModal` |
+| Email detail | `/admin/usage/emails/[id]` | `EmailDetailModal` |
+| Google Calendar event | `/calendar/google/[id]` | `GoogleEventModal` |
 
-The worst remaining ratio. A `RichTextarea`, `NoteLinks`, and
-`components/notes/NoteComments.tsx` (276 lines) all share one capped dialog,
-and `NoteComments` runs its own `matchMedia` at 768px inside it. A comment
-thread nested in a scrolling dialog on a phone is the case a user will report
-first. There is no `/notes/[id]` route yet, so this needs a route as well as a
-surface — which makes it the largest of the remaining items, and the one whose
-payoff is clearest.
+Notes on the less obvious ones:
 
-### 2. Access group create/edit — `components/access/`
+- **Access groups.** Editing a group was already its own page,
+  `/admin/access/[slug]`; only creation was a dialog. The create route shares
+  that segment, so `isReservedAccessGroupName` refuses any group whose slug
+  would be `new`, in the form and in the API schema.
+- **Digest settings** stay two editors with two saves on their routes as well.
+  The routes don't merge them into one settings page.
+- **Notes** had no route at all. Notes have no readable identifier (titles are
+  optional and repeat), so the route names one by ID, like
+  `/categories/[id]/edit`. Reading and editing are one page; switching modes
+  replaces the address so a reload keeps the mode. Archive, convert, and
+  delete stay in the list's row menu.
+- **The read-only pages** (email detail, Google event) render through
+  `EditorPageSurface` without a form: the trail, the header, the content in a
+  card, and the actions after it. They drop the dialog's Close button, since
+  the trail leads back. The email page is loaded on the server instead of
+  fetched after opening; the Google event comes from
+  `getGoogleCalendarEvent`, which shares its shaping with the month listing.
+  Anyone who can't see the shared calendar gets the same 404 as a missing
+  event.
 
-`CreateAccessGroupModal.tsx` (164 lines, 7 controls) and
-`EditAccessGroupModal.tsx` (191 lines, size `lg`). This is the cheapest fix in
-the audit: `/admin/access/[slug]` **already exists** as a real page, so the edit
-dialog needs a mobile link to a route that is already built rather than a new
-route. Do this one first if the goal is visible progress for little work.
-
-### 3. Digest settings — `components/usage/`
-
-`DigestCadenceModal.tsx` (258 lines, 6 controls) and
-`DigestStructureModal.tsx` (241 lines). The structure editor reorders a list
-with paired `IconButton` arrows, which are small targets for a thumb no matter
-what contains them. That is worth fixing on its own terms — a drag handle or
-larger touch targets — independent of the surface question.
-
-### 4. Read-only detail dialogs
-
-`components/usage/EmailDetailModal.tsx` (244 lines, size `xl`) and
-`components/calendar/GoogleEventModal.tsx` (479 lines, size `lg`). Both render
-long content in a capped box, but both are read-only, so there is no draft to
-lose and no keyboard competing for height. They want a read view rather than
-`EditorPageSurface`, which is built around a form; they are last because the
-cost of the status quo is only scrolling.
+Still worth doing on its own terms: `DigestStructureModal` reorders sections
+with small `IconButton` arrows, which are small targets for a thumb whatever
+surface they sit in.
 
 ## Deliberately left as modals
 
