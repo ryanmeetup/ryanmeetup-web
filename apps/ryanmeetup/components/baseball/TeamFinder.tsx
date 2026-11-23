@@ -262,7 +262,7 @@ const TeamFinder = ({ teams }: TeamFinderProps) => {
             event.preventDefault();
             if (pendingQuery !== null) applySearch(pendingQuery);
           }}
-          className="w-full max-w-md xl:w-96 xl:flex-none"
+          className="w-full max-w-md xl:w-md xl:flex-none"
         >
           <SearchInput
             label="Search teams"
