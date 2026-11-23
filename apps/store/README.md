@@ -113,11 +113,11 @@ products to one.
 ### Home page
 
 The hero is a full-bleed wall of community photos with the brand name tag and
-“Merch with your name on it.” set large over a dark fade (below the wall on phones,
-which show four of the five tiles). Each tile crossfades through its own photos, one
+“Merch with your name on it.” set large over a dark fade, on phones too (where the
+fifth tile runs across the bottom so photos still show above the copy). Each tile crossfades through its own photos, one
 tile at a time; add a photo to `WALL` in `components/home-hero.tsx`, in the tile whose
-shape suits it (the tall second tile takes portraits). The wall pauses while pointed
-at or focused, and stays on each tile's first photo under reduced motion.
+shape suits it (the tall second tile takes portraits). The wall pauses while a mouse points
+at it or focus is inside it (a tap never pauses it), and stays on each tile's first photo under reduced motion.
 “Shop all merch” opens Shop All, and “Browse collections” jumps to the collection
 tiles. One red marquee band runs under it: during a sale, just the sale's name, its
 best discount, and its last day; otherwise the name on a loop. The support statement, set large in Cooper beside a red heart, shows its headline and **Where your money

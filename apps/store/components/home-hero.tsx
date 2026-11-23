@@ -6,9 +6,10 @@ import { PhotoWall } from "@/components/photo-wall";
 import type { WallTile } from "@/components/photo-wall";
 
 // Desktop is a six-column, two-row wall: a big landscape takes half, the portrait tile stands
-// full height beside it, and three smaller landscapes fill the rest. Phones keep the first four
-// tiles in two columns with the big one across the top. Each tile cycles through its own
-// photos, so a new photo only needs adding to the tile whose shape it suits.
+// full height beside it, and three smaller landscapes fill the rest. Phones use two columns:
+// the big one across the top, the portrait and two landscapes beneath, and the last tile across
+// the bottom, so the copy laid over the lower wall still has photos above it. Each tile cycles
+// through its own photos, so a new photo only needs adding to the tile whose shape it suits.
 const WALL: WallTile[] = [
   {
     className: "col-span-2 md:col-span-3 md:row-span-2",
@@ -44,8 +45,9 @@ const WALL: WallTile[] = [
     ],
   },
   {
-    className: "hidden md:block",
-    sizes: "17vw",
+    // A full-width bottom row on phones, so the copy laid over the wall has photo above it.
+    className: "col-span-2 md:col-span-1",
+    sizes: "(min-width: 768px) 17vw, 100vw",
     photos: [
       { src: "/hero/ryan-family-merch-table.jpg", alt: "Three volunteers in Ryan’s Mother, Ryan’s Sister, and Ryan’s Father tees behind a table of Ryan Meetup shirts and hats" },
     ],
@@ -54,22 +56,22 @@ const WALL: WallTile[] = [
 
 /**
  * The home page opener: community photos edge to edge, the name tag and headline set large
- * over a dark fade on wider screens (below the wall on phones), and the marquee underneath.
+ * over a dark fade, and the marquee underneath.
  */
 export function HomeHero() {
   return (
     <section data-analytics-placement="home_hero" data-analytics-section="home_hero" aria-label="Ryan Meetup merch" className="relative">
       <PhotoWall
         tiles={WALL}
-        className="grid grid-cols-2 grid-rows-[48vw_36vw_36vw] gap-1 bg-black md:grid-cols-6 md:grid-rows-[repeat(2,clamp(11rem,21vw,20rem))]"
+        className="grid grid-cols-2 grid-rows-[min(44vw,15rem)_min(36vw,12rem)_min(36vw,12rem)_min(48vw,14rem)] gap-1 bg-black md:grid-cols-6 md:grid-rows-[repeat(2,clamp(11rem,21vw,20rem))]"
       >
-        {/* The fade sits under the copy: from the bottom while the buttons sit bottom right, then
-            from the bottom-left corner once they stack under the copy, so the right tiles stay bright. */}
+        {/* The fade sits under the copy: from the bottom on phones and tablets, then from the
+            bottom-left corner once the buttons stack under the copy, so the right tiles stay bright. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 hidden md:block md:bg-gradient-to-t md:from-black/90 md:via-black/50 md:via-35% md:to-transparent md:to-70% xl:bg-[radial-gradient(ellipse_75%_130%_at_0%_100%,rgb(0_0_0/0.92),rgb(0_0_0/0.72)_45%,rgb(0_0_0/0.3)_70%,transparent_90%)]"
+          className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/95 via-black/75 via-45% to-transparent to-80% md:from-black/90 md:via-black/50 md:via-35% md:to-transparent md:to-70% xl:bg-[radial-gradient(ellipse_75%_130%_at_0%_100%,rgb(0_0_0/0.92),rgb(0_0_0/0.72)_45%,rgb(0_0_0/0.3)_70%,transparent_90%)]"
         />
-        <div className="bg-black md:absolute md:inset-x-0 md:bottom-0 md:bg-transparent">
+        <div className="absolute inset-x-0 bottom-0">
           <div className="store-container flex flex-col gap-5 py-6 sm:py-8 md:flex-row md:items-end md:justify-between md:gap-8 lg:py-10 xl:flex-col xl:items-start xl:gap-6">
             <div className="min-w-0">
               <Image
