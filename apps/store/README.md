@@ -280,6 +280,16 @@ individually, use a collection and keep their standalone pages.
   remain available in **Product details** below the cart buttons. Shopify rich
   text and size tables are preserved; unfamiliar long HTML stays together in
   the disclosure rather than being split through its formatting.
+- Products with multiple sizes start at **Choose a size**; adding stays disabled
+  until the shopper chooses one. Photos never supply or replace that choice.
+  A **Size guide** button beside the size control opens the selected product's
+  Shopify-authored size tables, when supplied. One-size products need no choice.
+- The final-sale notice appears before Add to cart. Production guidance comes
+  from the **Production time** section of Shopify's shipping policy, with a link
+  to the full policy; missing guidance never creates a numeric delivery promise.
+- Product reviews initially show four cards and the full rating total. **See all
+  reviews** opens the existing paginated list; filters and direct review links
+  also open that full view.
 - The selected member supplies its description, options, variant price,
   availability, and displayed reviews. Family cards show the minimum variant
   price and use **From** when prices differ. The family is available when any

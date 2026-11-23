@@ -1,6 +1,6 @@
 # Store readiness and remaining work
 
-Reviewed November 21, 2026 against the repository and the prior dated operating
+Reviewed November 23, 2026 against the repository and the prior dated operating
 records. The store already accepts orders; this is a remaining-work list, not
 an assertion that checkout is still waiting to launch. Etsy stays alongside it
 until Ryan chooses otherwise.
@@ -20,6 +20,11 @@ old "not started" or "done" label.
   status and customer accounts.
 - Signed catalog webhooks with five-minute cache freshness as a fallback;
   About, support, policy pages, sitemap and branded error pages.
+- Product purchase guidance (November 23): deliberate size selection,
+  Shopify-authored size-guide dialogs, final-sale notice before Add to cart,
+  and production guidance sourced from the maintained shipping policy.
+- Product review previews (November 23): four initial cards, with the full
+  paginated list available through See all reviews, filters and permalinks.
 - "More from this shop" on product pages (November 21): purchasable listings
   from Shopify's `productRecommendations` (intent `RELATED`), then shared
   collections, then the same product type; grouped designs collapse into one
@@ -60,10 +65,16 @@ Item numbers remain stable for existing references.
 | 4 | [Shopify/Printful operating setup](#4-shopify-and-printful-operating-setup) | NY sales tax (registration pending), accountant questions and January rate cleanup. |
 | 8 | [Note to seller and personalization](#8-note-to-seller-and-personalization) | Neither storefront input is implemented; confirm which personalization is actually needed. |
 | 14 | [Store reviews](#14-store-reviews) | Text and photo publication and cleanup built; live proof, monitoring, retention and recovery remain. |
-| 9 | [Optional processing and delivery summary](#9-optional-processing-and-delivery-summary) | Optional product-page guidance; no storefront rate estimator is required. |
 
 ### 4. Shopify and Printful operating setup
 
+- [ ] Complete the product business-contact information using a public business
+      mailing address. On November 23 the 89-product audit found 24 descriptions
+      with fictitious company/address placeholders; those were removed in Shopify
+      while retaining SINDEN VENTURES LIMITED's EU responsible-person contact,
+      product warnings and size tables. Ryan does not authorize publishing his
+      apartment address. This copy cleanup does not complete Printful's requested
+      seller contact information; see [Printful's GPSR guidance](https://help.printful.com/hc/en-us/articles/50262212333329-What-is-the-General-Product-Safety-Regulation-for-the-EU).
 - [ ] Turn on New York sales tax once the Certificate of Authority arrives.
       The store belongs to Ryan Meetup Incorporated (a New York not-for-profit
       corporation without IRS exemption); its application, tied to the
@@ -161,12 +172,13 @@ unverified product feedback. All submissions wait for approval.
 proof. A photo requirement is not met merely by private uploads or text approval.
 Judge.me cannot be used as a recovery provider; see [operations](../how-to/review-operations.md).
 
-### 9. Optional processing and delivery summary
+### 9. Processing and delivery summary — implemented November 23
 
-Shipping quotes may remain entirely in hosted checkout, as Ryan chose on
-November 14. No product/cart shipping-rate estimator is required. If useful,
-add a concise processing/delivery summary sourced from maintained policy or
-product data; do not hard-code unverified delivery promises.
+Product pages display the maintained shipping policy's **Production time**
+section before Add to cart and link to the full policy. A missing or unreadable
+section falls back to general made-to-order guidance without invented dates.
+Shipping quotes remain entirely in hosted checkout, as Ryan chose on November
+14; no product/cart shipping-rate estimator is required.
 
 ## Decisions retained
 

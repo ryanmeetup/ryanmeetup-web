@@ -108,7 +108,13 @@ newest first, then the review ID for a stable order. The average and total alway
 describe the whole product. A filtered empty state is separate from a product
 without reviews, and reset restores all ratings, all sources and newest first.
 
-Review lists use numbered pages: the shared `Pagination` control from
+Product pages initially display up to four review cards with the full rating
+summary. **See all reviews** opens the complete list and records `reviewPage=1`
+in the URL; explicit review views, filters and review permalinks bypass the
+preview. This leaves related products closer to the purchase area without
+changing totals or product JSON-LD.
+
+Full review lists use numbered pages: the shared `Pagination` control from
 `@ryanmeetup/ui` and the shared `usePagination` hook, the same pair as the
 Tasks list views. Readers choose 10, 25 (the default) or 50 reviews per page,
 and the browser remembers that choice. Storage does the filtering, sorting,
