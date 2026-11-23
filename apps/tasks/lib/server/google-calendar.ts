@@ -235,6 +235,63 @@ export function googleCalendarEventDetails(event: GoogleEvent) {
   };
 }
 
+/** One event as the calendar shows it, or null when it isn't one the workspace imports. */
+function toGoogleCalendarEvent(event: GoogleEvent): GoogleCalendarEvent | null {
+  if (
+    event.status === "cancelled" ||
+    !isVisibleGoogleCalendarEvent(event) ||
+    !event.id ||
+    !event.start ||
+    !event.end
+  )
+    return null;
+  const allDay = Boolean(event.start.date);
+  const start = event.start.date ?? event.start.dateTime?.slice(0, 10);
+  const rawEnd = event.end.date ?? event.end.dateTime?.slice(0, 10);
+  if (!start || !rawEnd) return null;
+  return {
+    id: event.id,
+    title: event.summary?.trim() || "Busy",
+    start,
+    end: allDay ? addUtcDays(rawEnd, -1) : rawEnd,
+    allDay,
+    // Google returns a timed event in the calendar's own zone, so the
+    // wall-clock part is already the time a reader expects to see.
+    startTime: allDay ? undefined : event.start.dateTime?.slice(11, 16),
+    endTime: allDay ? undefined : event.end.dateTime?.slice(11, 16),
+    htmlLink: event.htmlLink,
+    recurringEventId: event.recurringEventId,
+    ...googleCalendarEventDetails(event),
+  };
+}
+
+/**
+ * One imported event by its Google ID, for the event's own page. Null when
+ * Google has no such event, or it is one the calendar would not show; any
+ * other failure throws, as the month listing does.
+ */
+export async function getGoogleCalendarEvent(
+  connection: GoogleCalendarIntegrationRow,
+  eventId: string,
+) {
+  const token = await accessToken(connection);
+  const url = new URL(eventUrl(connection, eventId));
+  url.search = new URLSearchParams({ timeZone: WORKSPACE_TIME_ZONE }).toString();
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  if (response.status === 404 || response.status === 410) return null;
+  if (!response.ok) {
+    console.error("Google Calendar event request failed", {
+      status: response.status,
+      body: (await response.text()).slice(0, 500),
+    });
+    throw new Error("Google could not be reached.");
+  }
+  return toGoogleCalendarEvent((await response.json()) as GoogleEvent);
+}
+
 export async function listGoogleCalendarEvents(
   connection: GoogleCalendarIntegrationRow,
   month: string,
@@ -265,32 +322,8 @@ export async function listGoogleCalendarEvents(
       headers: { Authorization: `Bearer ${token}` },
     });
     for (const event of page.items ?? []) {
-      if (
-        event.status === "cancelled" ||
-        !isVisibleGoogleCalendarEvent(event) ||
-        !event.id ||
-        !event.start ||
-        !event.end
-      )
-        continue;
-      const allDay = Boolean(event.start.date);
-      const start = event.start.date ?? event.start.dateTime?.slice(0, 10);
-      const rawEnd = event.end.date ?? event.end.dateTime?.slice(0, 10);
-      if (!start || !rawEnd) continue;
-      events.push({
-        id: event.id,
-        title: event.summary?.trim() || "Busy",
-        start,
-        end: allDay ? addUtcDays(rawEnd, -1) : rawEnd,
-        allDay,
-        // Google returns a timed event in the calendar's own zone, so the
-        // wall-clock part is already the time a reader expects to see.
-        startTime: allDay ? undefined : event.start.dateTime?.slice(11, 16),
-        endTime: allDay ? undefined : event.end.dateTime?.slice(11, 16),
-        htmlLink: event.htmlLink,
-        recurringEventId: event.recurringEventId,
-        ...googleCalendarEventDetails(event),
-      });
+      const imported = toGoogleCalendarEvent(event);
+      if (imported) events.push(imported);
     }
     pageToken = page.nextPageToken;
   } while (pageToken);

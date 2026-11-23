@@ -17,6 +17,7 @@ import {
   FiUsers,
   FiVideo,
 } from "react-icons/fi";
+import { EditorPageSurface } from "@/components/global";
 import {
   googleAttendeeName,
   googleEventPlace,
@@ -217,9 +218,12 @@ function CopyJoinLink({ uri }: { uri: string }) {
 export function GoogleEventModal({
   event,
   onClose,
+  presentation = "modal",
 }: {
   event: GoogleCalendarEvent | null;
   onClose: () => void;
+  /** `page` is `/calendar/google/[id]`, the invite as its own page on a phone. */
+  presentation?: "modal" | "page";
 }) {
   // A dialog reused for the next event opens on that event's own defaults
   // rather than on how far the last reader had unfolded the one before it, so
@@ -272,54 +276,50 @@ export function GoogleEventModal({
     !event.attachments?.length &&
     !attendees.length;
 
-  return (
-    <Modal
-      open={Boolean(event)}
-      setIsOpen={(open) => {
-        if (!open) onClose();
-      }}
-      size="lg"
-      title={event?.title ?? "Google Calendar event"}
-      description={
-        event && (
-          <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span>{googleEventWhen(event)}</span>
-            {relative && (
-              <span
-                className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
-                  relative.past
-                    ? "border-black/15 bg-black/[0.04] text-black/60 dark:border-white/15 dark:bg-white/[0.07] dark:text-white/60"
-                    : "border-blue-500/30 bg-blue-500/10 text-blue-800 dark:border-blue-400/30 dark:text-blue-200"
-                }`}
-              >
-                {relative.label}
-              </span>
-            )}
+  const title = event?.title ?? "Google Calendar event";
+  const description =
+    event && (
+      <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span>{googleEventWhen(event)}</span>
+        {relative && (
+          <span
+            className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
+              relative.past
+                ? "border-black/15 bg-black/[0.04] text-black/60 dark:border-white/15 dark:bg-white/[0.07] dark:text-white/60"
+                : "border-blue-500/30 bg-blue-500/10 text-blue-800 dark:border-blue-400/30 dark:text-blue-200"
+            }`}
+          >
+            {relative.label}
           </span>
+        )}
+      </span>
+    );
+  const actions = (
+    <>
+      {joinLink ? (
+        <CopyJoinLink uri={joinLink} />
+      ) : (
+        // A page has nothing to close; its trail leads back to Calendar.
+        presentation === "modal" && (
+          <Button variant="secondary" size="sm" onClick={onClose}>
+            Close
+          </Button>
         )
-      }
-      actions={
-        <>
-          {joinLink ? (
-            <CopyJoinLink uri={joinLink} />
-          ) : (
-            <Button variant="secondary" size="sm" onClick={onClose}>
-              Close
-            </Button>
-          )}
-          {event?.htmlLink && (
-            <Button.Link
-              href={event.htmlLink}
-              newTab
-              size="sm"
-              leftIcon={<FiExternalLink />}
-            >
-              {awaitingYou ? "Reply in Google Calendar" : "Open in Google Calendar"}
-            </Button.Link>
-          )}
-        </>
-      }
-    >
+      )}
+      {event?.htmlLink && (
+        <Button.Link
+          href={event.htmlLink}
+          newTab
+          size="sm"
+          leftIcon={<FiExternalLink />}
+        >
+          {awaitingYou ? "Reply in Google Calendar" : "Open in Google Calendar"}
+        </Button.Link>
+      )}
+    </>
+  );
+  const content = (
+    <>
       {event && (
         <div className="space-y-6">
           <div className={`flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs ${quietText}`}>
@@ -474,6 +474,37 @@ export function GoogleEventModal({
           )}
         </div>
       )}
+    </>
+  );
+
+  return presentation === "page" ? (
+    <EditorPageSurface
+      parents={[
+        {
+          href: "/calendar",
+          title: "Calendar",
+          icon: <FiCalendar aria-hidden className="shrink-0" />,
+        },
+      ]}
+      crumb={{ title }}
+      title={title}
+      description={description}
+      actions={actions}
+    >
+      {content}
+    </EditorPageSurface>
+  ) : (
+    <Modal
+      open={Boolean(event)}
+      setIsOpen={(open) => {
+        if (!open) onClose();
+      }}
+      size="lg"
+      title={title}
+      description={description}
+      actions={actions}
+    >
+      {content}
     </Modal>
   );
 }

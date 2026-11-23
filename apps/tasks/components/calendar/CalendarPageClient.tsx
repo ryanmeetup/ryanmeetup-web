@@ -70,7 +70,9 @@ const calendarSidebarStorageKey = "ryanmeetup.tasks.calendar-sidebar-open";
  * to the task, so both are left to the button's own behavior.
  */
 function calendarEventEditHref(item: CalendarItem, returnPath: string) {
-  if (item.google || item.href || !item.event) return undefined;
+  // An imported Google event is read-only, so its route is the invite's own page.
+  if (item.google) return `/calendar/google/${encodeURIComponent(item.google.id)}`;
+  if (item.href || !item.event) return undefined;
   return `/calendar/event/${item.event.id}/edit?from=${encodeURIComponent(returnPath)}`;
 }
 
@@ -83,9 +85,9 @@ function Item({
   item: CalendarItem;
   onOpen: () => void;
   /**
-   * The dedicated edit route for this item, when there is one. Google tiles
-   * have none: they are read-only in Tasks on every screen size, so their tile
-   * keeps the button whatever the reader's editor surface is.
+   * The item's dedicated route, when there is one: the edit page for a
+   * workspace event, or the read-only invite page for a Google event. It pairs
+   * with the dialog the same way for both.
    */
   editHref?: string;
   triggers: EditorTriggers;

@@ -12,6 +12,7 @@ import {
   isVisibleGoogleCalendarEvent,
   isGoogleCalendarConfigured,
   googleCalendarEventDetails,
+  getGoogleCalendarEvent,
 } from "@/lib/server/google-calendar";
 import {
   workspaceGoogleEventBody,
@@ -316,5 +317,76 @@ describe("Google event details", () => {
       conference: undefined,
       attachments: undefined,
     });
+  });
+});
+
+describe("one Google event for its own page", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  /** Answer the token exchange, then the event request with `event`. */
+  function google(event: Response) {
+    const requests: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        requests.push(url);
+        if (url.includes("oauth2")) return Response.json({ access_token: "token" });
+        return event;
+      }),
+    );
+    return requests;
+  }
+
+  function connection() {
+    configure();
+    return {
+      ...googleCalendarIntegrationValues("refresh-token", "ryan@example.com", "user-1"),
+      calendar_id: "team@example.com",
+    } as Parameters<typeof getGoogleCalendarEvent>[0];
+  }
+
+  it("reads the event in the workspace zone and shapes it like the month list", async () => {
+    const requests = google(
+      Response.json({
+        id: "abc_20261123T150000Z",
+        summary: " Standup ",
+        status: "confirmed",
+        start: { dateTime: "2026-11-23T10:00:00-05:00" },
+        end: { dateTime: "2026-11-23T10:15:00-05:00" },
+        htmlLink: "https://calendar.google.com/event?eid=abc",
+      }),
+    );
+    await expect(getGoogleCalendarEvent(connection(), "abc_20261123T150000Z")).resolves.toMatchObject({
+      id: "abc_20261123T150000Z",
+      title: "Standup",
+      start: "2026-11-23",
+      startTime: "10:00",
+      endTime: "10:15",
+      allDay: false,
+    });
+    const eventRequest = new URL(requests.at(-1)!);
+    expect(eventRequest.pathname).toBe("/calendar/v3/calendars/team%40example.com/events/abc_20261123T150000Z");
+    expect(eventRequest.searchParams.get("timeZone")).toBeTruthy();
+  });
+
+  it("has no event when Google has none or the calendar would hide it", async () => {
+    google(new Response("", { status: 404 }));
+    await expect(getGoogleCalendarEvent(connection(), "gone")).resolves.toBeNull();
+    google(
+      Response.json({
+        id: "cancelled",
+        status: "cancelled",
+        start: { date: "2026-11-23" },
+        end: { date: "2026-11-24" },
+      }),
+    );
+    await expect(getGoogleCalendarEvent(connection(), "cancelled")).resolves.toBeNull();
+  });
+
+  it("throws when Google fails, rather than claiming the event is gone", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    google(new Response("boom", { status: 500 }));
+    await expect(getGoogleCalendarEvent(connection(), "abc")).rejects.toThrow();
   });
 });
