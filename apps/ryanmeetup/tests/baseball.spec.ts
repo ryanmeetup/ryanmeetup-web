@@ -46,7 +46,7 @@ test("a state without a team shows the team that covers it", async ({ page }) =>
 
   await expect(teamCards(page)).toHaveCount(1);
   await expect(teamCards(page).first()).toContainText("Manchester Ryanlanders");
-  await expect(teamCards(page).first()).toContainText("Serving Vermont");
+  await expect(teamCards(page).first()).toContainText("Near Vermont");
   await expect(page.getByTestId("baseball-marker")).toHaveCount(1);
 });
 

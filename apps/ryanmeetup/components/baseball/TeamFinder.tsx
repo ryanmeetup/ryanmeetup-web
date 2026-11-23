@@ -220,11 +220,11 @@ const TeamFinder = ({ teams }: TeamFinderProps) => {
 
   const servesNoteFor = (entry: BaseballTeam) => {
     if (state !== ALL && entry.state.toUpperCase() !== state.toUpperCase()) {
-      return `Serving ${getStateName(state)}`;
+      return `Near ${getStateName(state)}`;
     }
     if (city !== ALL && toCitySlug(entry.city) !== city) {
       const label = cityOptions.find((option) => option.value === city)?.label ?? city;
-      return `Serving ${label}`;
+      return `Near ${label}`;
     }
     return undefined;
   };
