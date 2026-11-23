@@ -14,6 +14,8 @@ import {
 import { runDigestNow } from "@/lib/usage/digest-client";
 import { DigestCadenceModal } from "./DigestCadenceModal";
 import { DigestStructureModal } from "./DigestStructureModal";
+import { digestCadencePath, digestStructurePath } from "./DigestSurface";
+import type { EditorTriggers } from "@/components/global";
 import { errorMessage } from "@/lib/presentation";
 import { formatTimestamp } from "@/lib/date-format";
 
@@ -51,10 +53,13 @@ export function DigestSettingsCard({
   settings,
   setSettings,
   demoMode,
+  triggers,
 }: {
   settings: DigestSettings;
   setSettings: (settings: DigestSettings) => void;
   demoMode: boolean;
+  /** Which halves of each Edit trigger to render: the route link, the dialog button, or both. */
+  triggers: EditorTriggers;
 }) {
   const [cadenceOpen, setCadenceOpen] = useState(false);
   const [structureOpen, setStructureOpen] = useState(false);
@@ -148,24 +153,50 @@ export function DigestSettingsCard({
 
         <div className="border-t border-black/10 bg-black/[0.02] p-5 dark:border-white/10 dark:bg-white/[0.025] sm:p-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-            <Button
-              variant="secondary"
-              size="sm"
-              className="w-full sm:w-auto"
-              leftIcon={<FiClock />}
-              onClick={() => setCadenceOpen(true)}
-            >
-              Edit cadence
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              className="w-full sm:w-auto"
-              leftIcon={<FiLayers />}
-              onClick={() => setStructureOpen(true)}
-            >
-              Edit structure
-            </Button>
+            {triggers.route && (
+              <Button.Link
+                href={digestCadencePath}
+                variant="secondary"
+                size="sm"
+                className={`w-full ${triggers.routeClassName}`}
+                leftIcon={<FiClock aria-hidden />}
+              >
+                Edit cadence
+              </Button.Link>
+            )}
+            {triggers.dialog && (
+              <Button
+                variant="secondary"
+                size="sm"
+                className={`w-full sm:w-auto ${triggers.dialogClassName}`}
+                leftIcon={<FiClock aria-hidden />}
+                onClick={() => setCadenceOpen(true)}
+              >
+                Edit cadence
+              </Button>
+            )}
+            {triggers.route && (
+              <Button.Link
+                href={digestStructurePath}
+                variant="secondary"
+                size="sm"
+                className={`w-full ${triggers.routeClassName}`}
+                leftIcon={<FiLayers aria-hidden />}
+              >
+                Edit structure
+              </Button.Link>
+            )}
+            {triggers.dialog && (
+              <Button
+                variant="secondary"
+                size="sm"
+                className={`w-full sm:w-auto ${triggers.dialogClassName}`}
+                leftIcon={<FiLayers aria-hidden />}
+                onClick={() => setStructureOpen(true)}
+              >
+                Edit structure
+              </Button>
+            )}
             <Button
               variant="secondary"
               size="sm"

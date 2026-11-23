@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { IconButton, Input, Modal, ModalActions, toast } from "@ryanmeetup/ui";
+import { IconButton, Input, ModalActions, toast } from "@ryanmeetup/ui";
 import { FiArrowDown, FiArrowUp } from "react-icons/fi";
 import {
   DIGEST_LIMITS,
@@ -12,6 +12,7 @@ import {
 } from "@/lib/digest/digest-settings";
 import { saveDigestSettings } from "@/lib/usage/digest-client";
 import { errorMessage } from "@/lib/presentation";
+import { DigestSurface, type DigestPresentation } from "./DigestSurface";
 
 const FORM_ID = "digest-structure-form";
 
@@ -21,7 +22,10 @@ export function DigestStructureModal({
   settings,
   demoMode,
   onSaved,
+  presentation = "modal",
 }: {
+  /** On `page`, the editor is the `/admin/usage/digest/*` route. */
+  presentation?: DigestPresentation;
   open: boolean;
   setOpen: (open: boolean) => void;
   settings: DigestSettings;
@@ -113,10 +117,11 @@ export function DigestStructureModal({
   };
 
   return (
-    <Modal
+    <DigestSurface
+      presentation={presentation}
+      crumb="Digest structure"
       open={open}
-      setIsOpen={setOpen}
-      size="md"
+      setOpen={setOpen}
       title="Edit digest structure"
       description="Which sections a digest contains, and the order they appear in. A recipient with nothing in any enabled section is skipped rather than emailed an empty rundown."
       closable={!saving}
@@ -236,6 +241,6 @@ export function DigestStructureModal({
           </p>
         </div>
       </div>
-    </Modal>
+    </DigestSurface>
   );
 }

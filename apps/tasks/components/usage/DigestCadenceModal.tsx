@@ -4,7 +4,6 @@ import { useState } from "react";
 import {
   DropdownSelect,
   Input,
-  Modal,
   ModalActions,
   MultiSelect,
   toast,
@@ -16,6 +15,7 @@ import {
 } from "@/lib/digest/digest-settings";
 import { saveDigestSettings } from "@/lib/usage/digest-client";
 import { errorMessage } from "@/lib/presentation";
+import { DigestSurface, type DigestPresentation } from "./DigestSurface";
 
 const FORM_ID = "digest-cadence-form";
 
@@ -59,7 +59,10 @@ export function DigestCadenceModal({
   settings,
   demoMode,
   onSaved,
+  presentation = "modal",
 }: {
+  /** On `page`, the editor is the `/admin/usage/digest/*` route. */
+  presentation?: DigestPresentation;
   open: boolean;
   setOpen: (open: boolean) => void;
   settings: DigestSettings;
@@ -132,10 +135,11 @@ export function DigestCadenceModal({
   };
 
   return (
-    <Modal
+    <DigestSurface
+      presentation={presentation}
+      crumb="Digest cadence"
       open={open}
-      setIsOpen={setOpen}
-      size="md"
+      setOpen={setOpen}
       title="Edit digest cadence"
       description="The worker wakes every hour and checks these values, so a change here takes effect on the next run without a deploy."
       closable={!saving}
@@ -253,6 +257,6 @@ export function DigestCadenceModal({
           </p>
         </div>
       </div>
-    </Modal>
+    </DigestSurface>
   );
 }

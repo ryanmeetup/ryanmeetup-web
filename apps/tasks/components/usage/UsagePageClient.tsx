@@ -19,7 +19,7 @@ import {
   FiRefreshCw,
 } from "react-icons/fi";
 import { AdminPageShell } from "@/components/admin";
-import { PageHeader } from "@/components/global";
+import { editorTriggers, PageHeader } from "@/components/global";
 import type { ResendQuota, ResendUsage } from "@/lib/usage/resend-usage-types";
 import type { DigestRun } from "@/lib/usage/digest-run-types";
 import type { DigestSettings } from "@/lib/digest/digest-settings";
@@ -222,6 +222,7 @@ export function UsagePageClient({
           settings={settings}
           setSettings={setSettings}
           demoMode={demoMode}
+          triggers={editorTriggers(data.currentProfile.editor_surface)}
         />
 
         <DigestRunLedger runs={digestRuns} />
