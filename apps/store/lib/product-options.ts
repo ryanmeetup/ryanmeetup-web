@@ -21,7 +21,7 @@ export function getSelections(variant: ProductVariant | undefined): Record<strin
 // the shopper's other selections.
 export function getOptionChoices(product: Pick<Product, "variants">, option: ProductOption, selections: Record<string, string>) {
   return option.values.map((value) => {
-    const available = product.variants.some((variant) => variant.availableForSale && variant.selectedOptions.every((selected) => selected.value === (selected.name === option.name ? value : selections[selected.name])));
+    const available = product.variants.some((variant) => variant.availableForSale && variant.selectedOptions.every((selected) => selected.name === option.name ? selected.value === value : !selections[selected.name] || selected.value === selections[selected.name]));
     return { label: available ? value : `${value} — sold out`, value };
   });
 }

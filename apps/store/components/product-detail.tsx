@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { trackStoreEvent } from "@/lib/analytics";
 import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
 import type { ReactNode } from "react";
@@ -12,14 +13,17 @@ import { getColorOption, getColorSlug, getVariantForColor } from "@/lib/product-
 import { getProductGallery, getVariantForImage, groupProductGallery } from "@/lib/product-gallery";
 import type { ProductGalleryImage } from "@/lib/product-gallery";
 import { getProductDesignerCredit } from "@/lib/product-designers";
+import { getSizeGuideHtml } from "@/lib/product-guidance";
 import type { Product, StoreImage } from "@/lib/types";
 import { useCart } from "./cart-provider";
 import { PriceBadge } from "./price-badge";
 import { ProductDescription } from "./product-description";
 import { SaleBadge } from "./sale-badge";
 import { PromotionNote } from "./promotion";
+import { FinalSaleNote } from "./final-sale-note";
+import { ProductSizeGuide } from "./product-size-guide";
 
-export function ProductDetail({ product, title = product.title, breadcrumbs, designField, hideColorOption = false, gallery, initialImage, initialColor, onSelectGalleryImage }: {
+export function ProductDetail({ product, title = product.title, breadcrumbs, designField, hideColorOption = false, gallery, initialImage, initialColor, onSelectGalleryImage, productionSummary }: {
   product: Product;
   title?: string;
   // Rides along above the gallery so the trail stays in view while it sticks.
@@ -32,12 +36,21 @@ export function ProductDetail({ product, title = product.title, breadcrumbs, des
   initialImage?: StoreImage;
   initialColor?: string | null;
   onSelectGalleryImage?: (image: ProductGalleryImage) => void;
+  productionSummary?: string | null;
 }) {
   const { addItem, error, loading, setDrawerOpen } = useCart();
   const initialVariant = getVariantForColor(product, initialColor)
     ?? getVariantForImage(product, initialImage ?? product.featuredImage)
     ?? product.variants.find((variant) => variant.availableForSale) ?? product.variants[0];
-  const [selections, setSelections] = useState(() => getSelections(initialVariant));
+  const sizeOption = product.options.find(isSizeOption);
+  const requiresSizeChoice = Boolean(sizeOption && sizeOption.values.length > 1);
+  const sizeGuide = getSizeGuideHtml(product.descriptionHtml);
+  const [selections, setSelections] = useState(() => {
+    const initial = getSelections(initialVariant);
+    if (requiresSizeChoice && sizeOption) delete initial[sizeOption.name];
+    return initial;
+  });
+  const needsSize = Boolean(requiresSizeChoice && sizeOption && !selections[sizeOption.name]);
   const [quantity, setQuantity] = useState("1");
   const [added, setAdded] = useState(false);
   const [activeImage, setActiveImage] = useState(initialImage ?? initialVariant?.image ?? product.featuredImage ?? product.images[0] ?? null);
@@ -65,7 +78,7 @@ export function ProductDetail({ product, title = product.title, breadcrumbs, des
     if (selections[name] !== value) trackStoreEvent("product_option_changed", { product: product.handle, choice: `${name}: ${value}` });
     const nextSelections = { ...selections, [name]: value };
     setSelections(nextSelections);
-    const nextVariant = findVariant(product, nextSelections);
+    const nextVariant = findVariant(product, nextSelections) ?? product.variants.find((variant) => variant.availableForSale && variant.selectedOptions.every((option) => !nextSelections[option.name] || nextSelections[option.name] === option.value));
     if (nextVariant?.image) setActiveImage(nextVariant.image);
     if (name === getColorOption(product)?.name) rememberColor(value);
     setAdded(false);
@@ -82,7 +95,13 @@ export function ProductDetail({ product, title = product.title, breadcrumbs, des
     setActiveImage(entry.image);
     const imageVariant = getVariantForImage(product, entry.image, selections);
     if (imageVariant) {
-      setSelections(getSelections(imageVariant));
+      const next = getSelections(imageVariant);
+      // A photo chooses a color, never a size on the shopper's behalf.
+      if (requiresSizeChoice && sizeOption) {
+        if (selections[sizeOption.name]) next[sizeOption.name] = selections[sizeOption.name];
+        else delete next[sizeOption.name];
+      }
+      setSelections(next);
       const color = imageVariant.selectedOptions.find((option) => option.name === getColorOption(product)?.name)?.value;
       if (color) rememberColor(color);
     }
@@ -227,19 +246,21 @@ export function ProductDetail({ product, title = product.title, breadcrumbs, des
         {designField && <div className="mt-8">{designField({ selections, selectOption })}</div>}
 
         <div className="mt-8 space-y-5">
-          {!product.options.some(isSizeOption) && <SizeDisplay value={oneSize} />}
+          {!sizeOption && <SizeDisplay value={oneSize} guide={sizeGuide && <ProductSizeGuide html={sizeGuide} title={product.title} />} />}
           {product.options.filter((option) => !isDefaultTitleOption(option) && !(hideColorOption && option === getColorOption(product))).map((option) => isSizeOption(option) && option.values.length === 1 ? (
-            <SizeDisplay key={option.id} value={option.values[0]} />
+            <SizeDisplay key={option.id} value={option.values[0]} guide={sizeGuide && <ProductSizeGuide html={sizeGuide} title={product.title} />} />
           ) : (
-            <DropdownSelect
-              key={option.id}
-              label={option.name}
-              variant="field"
-              required
-              value={selections[option.name] ?? option.values[0]}
-              onChange={(value) => selectOption(option.name, value)}
-              options={getOptionChoices(product, option, selections)}
-            />
+            <div key={option.id} className="space-y-2">
+              <DropdownSelect
+                label={option.name}
+                variant="field"
+                required
+                value={selections[option.name] ?? ""}
+                onChange={(value) => selectOption(option.name, value)}
+                options={[...(isSizeOption(option) ? [{ label: "Choose a size", value: "" }] : []), ...getOptionChoices(product, option, selections)]}
+              />
+              {isSizeOption(option) && sizeGuide && <ProductSizeGuide html={sizeGuide} title={product.title} />}
+            </div>
           ))}
           <DropdownSelect
             label="Quantity"
@@ -251,9 +272,14 @@ export function ProductDetail({ product, title = product.title, breadcrumbs, des
           />
         </div>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+        <div className="mt-6 space-y-2 text-sm text-black/70 dark:text-white/70">
+          {needsSize && <p>Choose a size to add this item to your cart.</p>}
+          <p><FinalSaleNote /></p>
+          <p>{productionSummary ?? "Made to order. Production happens before shipping."}{" "}<Link href="/policies/shipping-policy" className="rounded-sm underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/40">Shipping details</Link></p>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
           <Button fullWidth size="lg" loading={loading} loadingText="Adding" disabled={!variant?.availableForSale} leftIcon={added ? <FiCheck /> : <FiShoppingBag />} onClick={handleAdd}>
-            {!variant ? "Unavailable" : !variant.availableForSale ? "Sold out" : added ? "Added" : "Add to cart"}
+            {needsSize ? "Choose a size" : !variant ? "Unavailable" : !variant.availableForSale ? "Sold out" : added ? "Added" : "Add to cart"}
           </Button>
           <Button fullWidth size="lg" variant="secondary" onClick={() => setDrawerOpen(true, "product_page")}>View cart</Button>
         </div>
@@ -279,11 +305,12 @@ export function ProductDetail({ product, title = product.title, breadcrumbs, des
 }
 
 /** A size with nothing to choose, shown where the Size field would be. */
-function SizeDisplay({ value }: { value: string }) {
+function SizeDisplay({ value, guide }: { value: string; guide?: ReactNode }) {
   return (
     <div>
       <p className={getFieldLabelClasses()}>Size</p>
       <p className="mt-2 text-sm text-black/70 dark:text-white/70">{value}</p>
+      {guide}
     </div>
   );
 }

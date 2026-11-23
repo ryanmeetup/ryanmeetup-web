@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import type { Cart } from "../lib/types";
-import { sortOptionValues } from "../lib/product-options";
+import { getOptionChoices, sortOptionValues } from "../lib/product-options";
 import { tee } from "./fixtures/products";
 
 const defaultProduct = {
@@ -53,4 +53,24 @@ test("sizes sort smallest first and unrecognized sizes keep Shopify's order", ()
   expect(size(["XXL", "XS", "M"])).toEqual(["XS", "M", "XXL"]);
   expect(size(["M", "Toddler", "S"])).toEqual(["M", "Toddler", "S"]);
   expect(sortOptionValues({ name: "Color", values: ["M", "S"] }).values).toEqual(["M", "S"]);
+});
+
+test("available colors stay selectable before a size is chosen", () => {
+  const color = tee.options.find((option) => option.name === "Color")!;
+  expect(getOptionChoices(tee, color, {})).toEqual([{ label: "Black", value: "Black" }]);
+  expect(getOptionChoices(tee, color, { Size: "2XL" })).toEqual([{ label: "Black — sold out", value: "Black" }]);
+});
+
+test("a size is chosen deliberately and photos cannot supply it", async ({ page }) => {
+  await page.goto("/products/name-tag-shirt");
+  await expect(page.getByLabel("Size")).toContainText("Choose a size");
+  await expect(page.getByRole("button", { name: "Choose a size", exact: true })).toBeDisabled();
+  await page.getByRole("group", { name: "Product photos" }).getByRole("button", { name: "View Ryan’s Dad image 1", exact: true }).click();
+  await expect(page.getByLabel("Size")).toContainText("Choose a size");
+  await page.getByLabel("Size").click();
+  await page.getByRole("option", { name: "M", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Add to cart", exact: true })).toBeEnabled();
+  await page.getByRole("button", { name: "Add to cart", exact: true }).click();
+  const drawer = page.getByRole("dialog", { name: /^Added to cart/ });
+  await expect(drawer).toContainText("Size: M");
 });

@@ -110,6 +110,8 @@ test("the cart drawer can be emptied without closing it", async ({ page }) => {
 });
 
 test("a markdown shows on the card, the product page, and the cart line", async ({ page }) => {
+  // This checks the product markdown outside the separately tested seasonal sale.
+  await page.clock.setFixedTime(new Date("2026-11-01T12:00:00Z"));
   await page.goto("/accessories");
   const card = page.getByRole("link", { name: /Ryan Society Cap/ });
   await expect(card).toContainText("Sale");
@@ -245,6 +247,8 @@ test("name tag gallery shows every design and thumbnails choose the matching car
   await expect(momPhoto).toHaveAttribute("aria-pressed", "true");
   await expect(ryanPhoto).toHaveAttribute("aria-pressed", "false");
   await expect(gallery.getByRole("button")).toHaveCount(2);
+  await page.getByLabel("Size").click();
+  await page.getByRole("option", { name: "S", exact: true }).click();
   await page.getByRole("button", { name: "Add to cart", exact: true }).click();
   await expect(page.getByRole("heading", { name: /^Added to cart/ })).toBeVisible();
   await keepShopping(page);
@@ -265,6 +269,7 @@ test("a product page offers other listings without repeating its own designs", a
 });
 
 test("name tag designs share one listing and add their own merchandise to the cart", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-11-01T12:00:00Z"));
   const renderingErrors: string[] = [];
   page.on("pageerror", (error) => renderingErrors.push(error.message));
   page.on("console", (message) => {
@@ -283,6 +288,8 @@ test("name tag designs share one listing and add their own merchandise to the ca
   await expect(page.getByText("$12.00", { exact: true })).toBeVisible();
   const firstImage = await page.locator('main img').first().getAttribute("src");
 
+  await page.getByLabel("Size").click();
+  await page.getByRole("option", { name: "S", exact: true }).click();
   await page.getByRole("button", { name: "Add to cart" }).click();
   await expect(page.getByRole("heading", { name: /^Added to cart/ })).toBeVisible();
   await keepShopping(page);
@@ -294,7 +301,9 @@ test("name tag designs share one listing and add their own merchandise to the ca
   await expect(page.getByLabel("Color")).toContainText("Natural");
   await expect(page.getByText("$30.00", { exact: true })).toBeVisible();
   await expect(page.locator('main img').first()).not.toHaveAttribute("src", firstImage!);
-  await expect(page.getByRole("button", { name: "Add to cart" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Choose a size", exact: true })).toBeDisabled();
+  await page.getByLabel("Size").click();
+  await page.getByRole("option", { name: "S", exact: true }).click();
   await page.getByRole("button", { name: "Add to cart" }).click();
   await expect(page.getByRole("heading", { name: /^Added to cart/ })).toBeVisible();
   await keepShopping(page);
@@ -374,6 +383,8 @@ test("customer can browse a product and manage the preview cart", async ({
   await expect(
     page.getByRole("heading", { name: "Official Ryan Meetup Tee" }),
   ).toBeVisible();
+  await page.getByLabel("Size").click();
+  await page.getByRole("option", { name: "S", exact: true }).click();
   await page.getByRole("button", { name: "Add to cart" }).click();
   await expect(page.getByRole("heading", { name: /^Added to cart/ })).toBeVisible();
 

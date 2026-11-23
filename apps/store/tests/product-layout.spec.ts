@@ -61,7 +61,7 @@ for (const viewport of [
         return photoBounds.left >= bounds.left && photoBounds.right <= bounds.right + 1;
       });
     })).toBe(true);
-    await expect(page.getByRole("button", { name: "Add to cart", exact: true })).toBeEnabled();
+    await expect(page.getByRole("button", { name: "Choose a size", exact: true })).toBeDisabled();
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
     await page.screenshot({ path: screenshotPath(`store-product-${viewport.width}-${viewport.height}.png`), fullPage: true });
   });

@@ -19,9 +19,10 @@ import { decodeRouteHandle } from "@/lib/handles";
 import { getColorListingHref, getColorPreview } from "@/lib/product-colors";
 import { getProductGroupForMember, getProductHref, resolveProductDesignValue } from "@/lib/product-groups";
 import { getCustomReviews } from "@/lib/custom-reviews";
+import { getProductionSummary } from "@/lib/product-guidance";
 import { getCustomReviewAccessByProduct } from "@/lib/custom-review-access";
 import { cartOrigin, withProductOrigin } from "@/lib/product-origin";
-import { getCanonicalProductHrefs, getCollections, getProduct, getProductHandles } from "@/lib/shopify";
+import { getCanonicalProductHrefs, getCollections, getPolicies, getProduct, getProductHandles } from "@/lib/shopify";
 import { buildBreadcrumbSchema } from "@/lib/structured-data";
 
 type Props = { params: Promise<{ handle: string }>; searchParams: Promise<{ design?: string; color?: string; from?: string }> };
@@ -65,10 +66,15 @@ export default async function ProductPage({ params, searchParams }: Props) {
   const colorHref = requestedDesign ? getColorListingHref(product, requestedDesign, query.color) : undefined;
   if (colorHref) permanentRedirect(withProductOrigin(colorHref, query.from));
   const reviewProducts = product.designs?.map((design) => design.product) ?? [product];
-  const [reviewEntries, reviewAccess] = await Promise.all([
+  const [reviewEntries, reviewAccess, policies] = await Promise.all([
     Promise.all(reviewProducts.map(async (item) => [item.id, await getCustomReviews(item.id)] as const)),
     getCustomReviewAccessByProduct(reviewProducts, `/products/${product.handle}`),
+    getPolicies().catch((error: unknown) => {
+      console.error("Could not load product shipping guidance.", error);
+      return [];
+    }),
   ]);
+  const productionSummary = getProductionSummary(policies);
   const reviewsByProduct = Object.fromEntries(reviewEntries);
   const originCrumbs = await getOriginCrumbs(query.from);
   const typeCollection = getProductTypeCollection(product);
@@ -83,11 +89,11 @@ export default async function ProductPage({ params, searchParams }: Props) {
         { name: product.title, path: `/products/${product.handle}` },
       ])} />
       {product.designs ? (
-        <ProductGroupDetail title={product.title} handle={product.handle} url={productUrl} breadcrumbs={breadcrumbs} designs={product.designs} defaultColor={product.defaultColor} reviewsByProduct={reviewsByProduct} reviewAccessByProduct={reviewAccess} />
+        <ProductGroupDetail title={product.title} handle={product.handle} url={productUrl} breadcrumbs={breadcrumbs} designs={product.designs} defaultColor={product.defaultColor} reviewsByProduct={reviewsByProduct} reviewAccessByProduct={reviewAccess} productionSummary={productionSummary} />
       ) : (
         <>
           <ProductSchema product={product} reviews={reviewsByProduct[product.id]} url={productUrl} />
-          <ProductDetail product={product} breadcrumbs={breadcrumbs} initialColor={query.color} initialImage={getColorPreview(product, query.color)?.image} />
+          <ProductDetail product={product} breadcrumbs={breadcrumbs} initialColor={query.color} initialImage={getColorPreview(product, query.color)?.image} productionSummary={productionSummary} />
           <Reviews data={reviewsByProduct[product.id]} product={product} access={reviewAccess[product.id]} />
         </>
       )}
