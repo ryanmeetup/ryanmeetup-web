@@ -249,7 +249,7 @@ const TeamFinder = ({ teams }: TeamFinderProps) => {
   return (
     <section id="find" className="scroll-mt-28 space-y-6">
       <SectionHeader
-        title="Find your Ryan night"
+        title="Find your Ryan Meetup"
         description="Search by team, city, state, or zip/postal code, or narrow the list with the filters."
       />
 

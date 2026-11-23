@@ -93,7 +93,7 @@ const BaseballPage = async () => {
           <TeamFinder teams={teams} />
         ) : (
           <section id="find" className="space-y-6">
-            <SectionHeader title="Find your Ryan night" />
+            <SectionHeader title="Find your Ryan Meetup" />
             <EmptyState message="Teams are still warming up. Check back soon." />
           </section>
         )}

@@ -30,7 +30,7 @@ test("lists every team with tickets and merch", async ({ page }) => {
   ).toHaveAttribute("href", "https://example.com/tickets/manchester");
   await expect(page.getByRole("link", { name: /Classic Jersey/ })).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Every official night includes" }),
+    page.getByRole("heading", { name: "Every Ryan Baseball Classic night includes" }),
   ).toBeVisible();
   await expect(page.getByRole("link", { name: "See the map" })).toHaveAttribute(
     "href",
