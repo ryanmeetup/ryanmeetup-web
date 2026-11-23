@@ -121,7 +121,7 @@ links before the photo. The support card shows its headline and **Where your mon
 goes** link; its fuller explanation remains on larger screens and the About page.
 Below it:
 
-1. **Best Sellers** shows up to four listings from Shopify's built-in home page
+1. **Best Sellers** shows up to six listings (four on phones) from Shopify's built-in home page
    collection (`frontpage`), in its curated order. An empty or unpublished
    collection falls back to Shopify's actual best-selling order. A pick stays
    in this row even when it is also featured in the spotlight.

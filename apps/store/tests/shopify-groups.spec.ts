@@ -105,7 +105,8 @@ test("without Shopify collections the home page tiles the type pages", async () 
   const home = await getHomeCatalog();
   expect(home.collections.map(({ collection }) => collection.handle)).toEqual(["apparel", "accessories"]);
   expect(home.collections.every(({ image }) => image)).toBe(true);
-  expect(home.favorites.products).toHaveLength(4);
+  // The demo catalog's five listings all fit under the six-card limit.
+  expect(home.favorites.products).toHaveLength(5);
 });
 
 test("shop all lists every product once and breaks it up into the home page's collection sections", async () => {

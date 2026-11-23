@@ -54,7 +54,9 @@ const featuredCollectionHandle = "frontpage";
 // A Shopify collection whose first listing leads the home page as the featured drop.
 // Without one, the newest listing takes the spot.
 const spotlightCollectionHandle = "spotlight";
-const favoritesLimit = 4;
+// Six fills two even rows of three on desktop; phones show the first four (see `favoritesPhoneLimit`).
+const favoritesLimit = 6;
+export const favoritesPhoneLimit = 4;
 // Shopify seeds new collections with this copy; treat it as no description.
 const shopifyPlaceholderDescription = "This is a test description.";
 

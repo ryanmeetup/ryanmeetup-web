@@ -31,16 +31,18 @@ function evenColumns(count: number) {
  * columns and gaps stay identical everywhere. The product page keeps its own single column.
  * `evenRows` picks columns from the item count so no row is left noticeably short.
  */
-export function MerchGrid({ items, evenRows = false, className = "", label }: {
+export function MerchGrid({ items, evenRows = false, phoneLimit, className = "", label }: {
   items: { key: string; card: ReactNode }[];
   evenRows?: boolean;
+  /** Cards past this many are hidden below `lg`, so a short shelf stays short on phones. */
+  phoneLimit?: number;
   /** Spacing only; the columns belong to the grid. */
   className?: string;
   label?: string;
 }) {
   return (
     <ul aria-label={label} className={`grid gap-3 sm:gap-5 ${evenRows ? evenColumns(items.length) : shelf} ${className}`}>
-      {items.map(({ key, card }) => <li key={key} className="min-w-0">{card}</li>)}
+      {items.map(({ key, card }, index) => <li key={key} className={`min-w-0 ${phoneLimit !== undefined && index >= phoneLimit ? "max-lg:hidden" : ""}`}>{card}</li>)}
     </ul>
   );
 }

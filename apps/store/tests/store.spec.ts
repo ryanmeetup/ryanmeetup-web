@@ -417,7 +417,7 @@ test("customer can shop from the hero", async ({ page }) => {
   await expect(page).toHaveURL(/\/collections\/all$/);
 });
 
-test("the home page opens doors to collections, spotlights one listing, and keeps favorites short", async ({ page }) => {
+test("the home page opens doors to collections, spotlights one listing, and keeps favorites short on phones", async ({ page }) => {
   await page.goto("/");
   const main = page.getByRole("main");
   const lanes = main.getByRole("region", { name: "Shop by collection" });
@@ -433,9 +433,17 @@ test("the home page opens doors to collections, spotlights one listing, and keep
   await page.goBack();
   const favorites = main.getByRole("region", { name: "Best Sellers" });
   await expect(favorites.getByRole("heading", { level: 3 })).toHaveText([
-    "Official Ryan Meetup Tee", "Hello, My Name Is Ryan Sweatshirt", "Ryan Society Cap", "Certified Ryan Pack",
+    "Official Ryan Meetup Tee", "Hello, My Name Is Ryan Sweatshirt", "Ryan Society Cap", "Certified Ryan Pack", "Name Tag Shirt",
   ]);
   await expect(main.locator("section[aria-labelledby]").first()).toHaveAttribute("aria-labelledby", "home-favorites");
+  await expect(main.getByRole("link", { name: "Shop All", exact: true })).toHaveCount(0);
+
+  // Phones keep the first four and offer the rest of the catalog.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(favorites.getByRole("heading", { level: 3 })).toHaveText([
+    "Official Ryan Meetup Tee", "Hello, My Name Is Ryan Sweatshirt", "Ryan Society Cap", "Certified Ryan Pack",
+  ]);
+  await expect(favorites.getByRole("link", { name: "See everything" })).toHaveAttribute("href", "/collections/all");
 });
 
 test("customer can open store support and enter order details", async ({

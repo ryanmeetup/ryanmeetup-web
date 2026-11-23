@@ -18,7 +18,7 @@ import { ProductGrid } from "@/components/product-grid";
 import { SupportNote } from "@/components/support-note";
 import { withListingRatings } from "@/lib/listing-ratings";
 import { buildPageMetadata, DEFAULT_IMAGE, SITE_DESCRIPTION, SITE_NAME } from "@/lib/metadata";
-import { getHomeCatalog, getShippingCountries } from "@/lib/shopify";
+import { favoritesPhoneLimit, getHomeCatalog, getShippingCountries } from "@/lib/shopify";
 import { buildStoreSchema } from "@/lib/structured-data";
 
 export const revalidate = 300;
@@ -136,13 +136,14 @@ export default async function HomePage() {
             align="left"
             title={<span id="home-favorites">{favorites.collection.title}</span>}
             description={favorites.collection.description}
-            actions={favorites.total > favorites.products.length && (
+            // Phones show fewer cards than desktop, so they offer the full catalog sooner.
+            actions={favorites.total > Math.min(favorites.products.length, favoritesPhoneLimit) && (
               <Button.Link href="/collections/all" size="md" variant="secondary" className="!w-full sm:!w-auto" rightIcon={<FiArrowRight />}>
                 See everything
               </Button.Link>
             )}
           />
-          <ProductGrid products={favorites.products} eagerCount={0} evenRows className="mt-8" />
+          <ProductGrid products={favorites.products} eagerCount={0} evenRows phoneLimit={favoritesPhoneLimit} className="mt-8" />
         </section>
       )}
 

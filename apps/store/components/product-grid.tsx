@@ -2,8 +2,9 @@ import type { ProductListing } from "@/lib/types";
 import { MerchGrid } from "./merch-grid";
 import { ProductCard } from "./product-card";
 
-export function ProductGrid({ products, eagerCount = 4, evenRows, className, from }: {
+export function ProductGrid({ products, eagerCount = 4, evenRows, phoneLimit, className, from }: {
   products: ProductListing[];
+  phoneLimit?: number;
   from?: string;
   eagerCount?: number;
   evenRows?: boolean;
@@ -12,6 +13,7 @@ export function ProductGrid({ products, eagerCount = 4, evenRows, className, fro
   return (
     <MerchGrid
       evenRows={evenRows}
+      phoneLimit={phoneLimit}
       className={className}
       items={products.map((product, index) => ({
         key: product.id,
