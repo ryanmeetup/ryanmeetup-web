@@ -15,7 +15,8 @@ const fakeSupabasePort = Number(process.env.FAKE_SUPABASE_PORT ?? 54360);
 
 export default defineConfig({
   testDir: "./tests",
-  testIgnore: ["my-reviews-browser.spec.ts", "review-composer-browser.spec.ts"],
+  // These need their own fixture servers; each has a config of its own.
+  testIgnore: ["my-reviews-browser.spec.ts", "review-composer-browser.spec.ts", "review-photos-browser.spec.ts"],
   fullyParallel: false,
   retries: 0,
   reporter: "line",
