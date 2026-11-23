@@ -4,27 +4,9 @@ import type {
   RyanChapter,
   RyanEvent,
 } from "@/lib/types";
+import { createImage } from "@/lib/test-fixtures/images";
 import { addDays, createEvent, formatDateTime } from "@/lib/test-fixtures/events";
 
-const createImage = (url: string): ContentfulImage =>
-  ({
-    fields: {
-      title: "Test Image",
-      description: "",
-      file: {
-        url,
-        fileName: "test.png",
-        contentType: "image/png",
-        details: {
-          image: {
-            height: 1,
-            width: 1,
-          },
-          size: 1,
-        },
-      },
-    },
-  } as ContentfulImage);
 
 const createChapter = (overrides: Partial<RyanChapter> & { active?: boolean } = {}) =>
   ({
@@ -33,9 +15,9 @@ const createChapter = (overrides: Partial<RyanChapter> & { active?: boolean } = 
     state: "NY",
     chapterLeads: ["Ryan A"],
     whatsAppLink: "https://chat.whatsapp.com/example",
-    coverImage: createImage("/group-photos/ryanroundup.png"),
+    coverImage: createImage("ryanroundup.png"),
     instagram: "https://www.instagram.com/ryanmeetup/",
-    avatar: createImage("/group-photos/ryanroundup.png"),
+    avatar: createImage("ryanroundup.png"),
     active: true,
     ...overrides,
   } as RyanChapter & { active?: boolean; avatar?: ContentfulImage });

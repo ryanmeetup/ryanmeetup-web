@@ -1,24 +1,5 @@
-import type { ContentfulImage, Location } from "@/lib/types";
-
-const createImage = (url: string): ContentfulImage =>
-  ({
-    fields: {
-      title: "Test Image",
-      description: "",
-      file: {
-        url,
-        fileName: "test.png",
-        contentType: "image/png",
-        details: {
-          image: {
-            height: 1,
-            width: 1,
-          },
-          size: 1,
-        },
-      },
-    },
-  } as ContentfulImage);
+import type { Location } from "@/lib/types";
+import { createImage } from "@/lib/test-fixtures/images";
 
 const getMapFixtures = (): Location[] => [
   {
@@ -26,7 +7,7 @@ const getMapFixtures = (): Location[] => [
     coordinates: { lat: 40.7128, lon: -74.006 },
     eventName: "Ryan Roundup",
     eventDate: new Date(),
-    image: createImage("/group-photos/ryanroundup.png"),
+    image: createImage("ryanroundup.png"),
     city: "New York, NY",
     locationType: "Event Location",
   },
@@ -35,7 +16,7 @@ const getMapFixtures = (): Location[] => [
     coordinates: { lat: 41.8781, lon: -87.6298 },
     eventName: "Ryan Hub",
     eventDate: new Date(),
-    image: createImage("/group-photos/ryanroundup.png"),
+    image: createImage("ryanroundup.png"),
     city: "Chicago, IL",
     locationType: "Ryan Hub",
   },
@@ -44,7 +25,7 @@ const getMapFixtures = (): Location[] => [
     coordinates: { lat: 30.2672, lon: -97.7431 },
     eventName: "Ryan's Coffee",
     eventDate: new Date(),
-    image: createImage("/group-photos/ryanroundup.png"),
+    image: createImage("ryanroundup.png"),
     city: "Austin, TX",
     locationType: "Ryan-Named Business",
   },
@@ -53,7 +34,7 @@ const getMapFixtures = (): Location[] => [
     coordinates: { lat: 39.7392, lon: -104.9903 },
     eventName: "Ryan's Garage",
     eventDate: new Date(),
-    image: createImage("/group-photos/ryanroundup.png"),
+    image: createImage("ryanroundup.png"),
     city: "Denver, CO",
     locationType: "Ryan-Owned Business",
   },
@@ -62,7 +43,7 @@ const getMapFixtures = (): Location[] => [
     coordinates: { lat: 47.6062, lon: -122.3321 },
     eventName: "Ryan Meetup Chapter",
     eventDate: new Date(),
-    image: createImage("/group-photos/ryanroundup.png"),
+    image: createImage("ryanroundup.png"),
     city: "Seattle, WA",
     locationType: "Chapter",
   },
