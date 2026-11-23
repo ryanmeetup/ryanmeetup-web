@@ -120,23 +120,25 @@ shape suits it (the tall second tile takes portraits). The wall pauses while a m
 at it or focus is inside it (a tap never pauses it), and stays on each tile's first photo under reduced motion.
 “Shop all merch” opens Shop All, and “Browse collections” jumps to the collection
 tiles. One red marquee band runs under it: during a sale, just the sale's name, its
-best discount, and its last day; otherwise the name on a loop. The support card shows its headline and **Where your money
-goes** link; its fuller explanation remains on larger screens and the About page.
-Below it:
+best discount, and its last day; otherwise the name on a loop. Below it:
 
 1. **Best Sellers** shows up to six listings (four on phones) from Shopify's built-in home page
    collection (`frontpage`), in its curated order. An empty or unpublished
    collection falls back to Shopify's actual best-selling order. A pick stays
-   in this row even when it is also featured in the spotlight.
-2. A shipping strip below it says what happens after checkout: made to order,
+   in this row even when it is also featured in the spotlight. Products come
+   straight after the hero, before anything else asks for attention.
+2. The support card follows the first shelf: merch is how the meetup is funded.
+   Phones show its headline and **Where your money goes** link; its fuller
+   explanation remains on larger screens and the About page.
+3. A shipping strip below it says what happens after checkout: made to order,
    with the business-day range from the shipping policy's **Production time**
    section (and a holiday note while that section mentions holidays), the
    number of countries and regions checkout offers, and tracking by email when
    the policy has a **Tracking** section. Missing facts are left out, never
    guessed; it always links to the full shipping policy.
-3. The spotlight shows the first listing in the `spotlight` collection, or the
+4. The spotlight shows the first listing in the `spotlight` collection, or the
    newest in-stock listing when no spotlight has been curated.
-4. Collection tiles lead to every published theme collection. Each uses the
+5. Collection tiles lead to every published theme collection. Each uses the
    collection image or its leading listing's photo.
 
 `frontpage` and `spotlight` have no browsing tile or menu entry.

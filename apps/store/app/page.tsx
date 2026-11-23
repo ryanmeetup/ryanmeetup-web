@@ -45,10 +45,6 @@ export default async function HomePage() {
       <JsonLd data={buildStoreSchema(shippingCountries)} />
       <HomeHero />
 
-      <section data-analytics-placement="home_support" data-analytics-section="home_support" aria-label="Support Ryan Meetup" className="store-container">
-        <SupportNote />
-      </section>
-
       {favorites.products.length > 0 && (
         <section data-analytics-placement="home_favorites" data-analytics-section="home_favorites" aria-labelledby="home-favorites" className="store-container">
           <SectionHeader
@@ -65,6 +61,10 @@ export default async function HomePage() {
           <ProductGrid products={favorites.products} eagerCount={0} evenRows phoneLimit={favoritesPhoneLimit} className="mt-8" />
         </section>
       )}
+
+      <section data-analytics-placement="home_support" data-analytics-section="home_support" aria-label="Support Ryan Meetup" className="store-container">
+        <SupportNote />
+      </section>
 
       <section data-analytics-placement="home_shipping" data-analytics-section="home_shipping" aria-label="Shipping and production" className="store-container">
         <ShippingExpectations items={shipping} />

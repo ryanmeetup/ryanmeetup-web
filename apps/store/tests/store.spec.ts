@@ -441,7 +441,9 @@ test("the home page opens doors to collections, spotlights one listing, and keep
   const shipping = main.getByRole("region", { name: "Shipping and production" });
   await expect(shipping.getByRole("listitem")).toHaveText([/^Made to order:? ?Made for you, then it ships ?Shipping details$/]);
   await expect(shipping.getByRole("link", { name: "Shipping details" })).toHaveAttribute("href", "/policies/shipping-policy");
-  await expect(main.locator("section[data-analytics-section]").nth(2)).toHaveAttribute("data-analytics-section", "home_favorites");
+  // Products come straight after the hero; the support note follows the first shelf.
+  await expect(main.locator("section[data-analytics-section]").nth(1)).toHaveAttribute("data-analytics-section", "home_favorites");
+  await expect(main.locator("section[data-analytics-section]").nth(2)).toHaveAttribute("data-analytics-section", "home_support");
   await expect(main.locator("section[data-analytics-section]").nth(3)).toHaveAttribute("data-analytics-section", "home_shipping");
 
   // Phones keep the first four and offer the rest of the catalog.

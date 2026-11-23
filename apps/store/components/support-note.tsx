@@ -8,7 +8,7 @@ export const SUPPORT_THANKS = "Your orders help cover the rest. Thank you, Ryans
 const linkClassName = "inline-flex items-center gap-1 rounded-sm font-semibold underline decoration-black/30 underline-offset-4 transition hover:decoration-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:decoration-white/30 dark:hover:decoration-white dark:focus-visible:ring-white/40";
 
 /**
- * The store's reason to exist, said right after the home hero: merch is how the meetup is funded.
+ * The store’s reason to exist, said right after the first shelf: merch is how the meetup is funded.
  * Phones keep the headline and About link; the fuller explanation stays on larger screens.
  * Tinted with the name-tag red so it reads as the brand speaking rather than a sale.
  */
