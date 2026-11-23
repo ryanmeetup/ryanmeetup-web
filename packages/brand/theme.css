@@ -68,6 +68,22 @@
 @utility brightness-30 { filter: brightness(0.3); }
 @utility scale-102 { scale: 1.02; }
 
+/* iOS zooms into editable controls below 16px on focus. Keep touch-screen
+   fields readable without changing the viewport or disabling pinch-to-zoom.
+   Stay outside the layers so compact text utilities cannot undo this floor. */
+@media (any-pointer: coarse) {
+  input:not(:where(
+    [type="checkbox"], [type="radio"], [type="range"], [type="color"],
+    [type="file"], [type="hidden"], [type="button"], [type="submit"],
+    [type="reset"], [type="image"]
+  )),
+  textarea,
+  [contenteditable="true"],
+  [contenteditable="plaintext-only"] {
+    font-size: max(16px, 1em);
+  }
+}
+
 /* The native <details> counterpart to the UI package's AnimatedCollapse: the
    same 200ms height-and-fade reveal instead of a snap. interpolate-size lets
    the height travel to the auto keyword, and content-visibility is carried
