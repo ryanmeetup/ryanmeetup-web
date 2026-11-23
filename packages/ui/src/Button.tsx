@@ -65,10 +65,15 @@ const linkSizeStyles: Record<ButtonSize, string> = {
   lg: "py-3 text-sm",
 };
 
-const getBaseClasses = (
-  variant: ButtonVariant,
-  size: ButtonSize,
-  fullWidth: boolean,
+/**
+ * The class names `Button` renders for a variant and size. Use it to style a
+ * control that must be another element, such as a menu trigger, so it still
+ * looks exactly like a `Button`.
+ */
+const getButtonClasses = (
+  variant: ButtonVariant = "primary",
+  size: ButtonSize = "sm",
+  fullWidth = false,
 ) => {
   const width = fullWidth ? "w-full" : "w-auto";
   if (variant === "filter")
@@ -135,7 +140,7 @@ const ButtonLink = (props: ButtonLinkProps) => {
 
   return (
     <NextLink
-      className={`${getBaseClasses(variant, size, fullWidth)} ${
+      className={`${getButtonClasses(variant, size, fullWidth)} ${
         disabled ? "pointer-events-none opacity-60" : ""
       } ${className ?? ""}`}
       href={href}
@@ -191,7 +196,7 @@ const Button = (props: ButtonProps) => {
 
   return (
     <button
-      className={`${getBaseClasses(variant, size, fullWidth)} ${
+      className={`${getButtonClasses(variant, size, fullWidth)} ${
         isDisabled ? "opacity-60 cursor-not-allowed" : ""
       } ${className ?? ""}`}
       onClick={onClick}
@@ -228,4 +233,4 @@ const Button = (props: ButtonProps) => {
 
 Button.Link = ButtonLink;
 
-export { Button };
+export { Button, getButtonClasses };
