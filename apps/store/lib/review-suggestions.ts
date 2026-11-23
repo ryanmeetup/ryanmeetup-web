@@ -1,6 +1,7 @@
 import type { CustomerAccountSession } from "./customer-account/storage";
 import type { RecentReviewablePurchase } from "./customer-account/review-lookups";
 import type { ProductCard } from "./shopify";
+import { reviewRouteHref } from "./review-links";
 
 /** One shipped purchase the buyer hasn't reviewed yet. Safe to show them; the line ID is opaque. */
 export type ReviewSuggestion = {
@@ -18,6 +19,11 @@ export type ReviewSuggestion = {
   quantity: number;
   shippedAt: string | null;
   href: string;
+  /**
+   * The product's review route, preselecting this order by its readable name.
+   * Phones open it in place of the review dialog; absent, the dialog serves every width.
+   */
+  reviewHref?: string;
   image: ProductCard["image"];
 };
 
@@ -80,6 +86,7 @@ export async function getReviewSuggestions({ session, findRecent, reviewedLines,
         orderLabel: purchase.orderLabel, quantity: purchase.quantity, shippedAt: purchase.shippedAt,
         orderUrl: accountUrl ? `${accountUrl.replace(/\/$/, "")}/orders/${purchase.orderId}` : null,
         href: `/products/${card.handle}#reviews`, image: card.image,
+        reviewHref: reviewRouteHref(card.handle, { order: purchase.orderLabel, from: "mine" }),
       }] : [];
     }),
   };

@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Card, DisclosureCard, ErrorCallout, Heading, Text } from "@ryanmeetup/ui";
+import { Button, Card, DisclosureCard, ErrorCallout, Heading, surfaceTriggerClassNames, Text } from "@ryanmeetup/ui";
 import type { ReviewSuggestion, ReviewSuggestions as Suggestions } from "@/lib/review-suggestions";
 import { ReviewItemDetails, ReviewItemThumbnail, ReviewItemTitle, reviewItemDate, variantRows, type ReviewItemRow } from "./review-item";
+import { submitCustomReview } from "@/lib/custom-review-client";
 import { CustomReviewComposer, type CustomReviewResult, type CustomReviewSubmission } from "./custom-review-composer";
 import { useReviewSuggestions, type ChangeReviewSuggestion } from "./use-review-suggestions";
 
@@ -34,25 +35,18 @@ function suggestionRows(item: ReviewSuggestion): ReviewItemRow[] {
   ];
 }
 
-/** The same review request a product page sends; the server rechecks the purchase. */
-async function submit(item: ReviewSuggestion, {viewerKey,...review}: CustomReviewSubmission): Promise<CustomReviewResult> {
-  const response = await fetch("/api/reviews", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...(viewerKey ? {"X-Review-Viewer":viewerKey} : {}) },
-    body: JSON.stringify({ ...review, productId: item.productId, lineId: item.lineId }),
-  }).catch(() => null);
-  const payload = (await response?.json().catch(() => null)) as { error?: unknown; code?: unknown } | null;
-  if (!response?.ok) return { ok: false, error: typeof payload?.error === "string" ? payload.error : "Your review could not be submitted. Please try again.", refreshRequired:payload?.code === "viewer_changed" };
-  return { ok: true, message: "Thanks! Your review is waiting for approval." };
-}
+/** The same review request a product page sends, for this card's order line. */
+const submit = (item: ReviewSuggestion, review: CustomReviewSubmission) => submitCustomReview({ ...review, productId: item.productId, lineId: item.lineId });
 
 /**
  * "Ready to Review": the signed-in buyer's shipped purchases from recent
  * orders that they haven't reviewed. Each opens the review form already set
  * to that order, so reviewing doesn't mean finding the product first.
  */
-export function ReviewSuggestions({ suggestions, onReviewed, viewerKey, photoViewerKey, submitReview = submit, changeSuggestion }: {
+export function ReviewSuggestions({ suggestions, onReviewed, viewerKey, photoViewerKey, submitReview = submit, changeSuggestion, routes = false }: {
   suggestions: Suggestions; onReviewed: (message: string) => void; photoViewerKey?: string;
+  /** Link phones to each purchase's review route instead of opening the dialog. */
+  routes?: boolean;
   viewerKey: string; changeSuggestion?: ChangeReviewSuggestion;
   submitReview?: (item: ReviewSuggestion, review: CustomReviewSubmission) => Promise<CustomReviewResult>;
 }) {
@@ -76,7 +70,9 @@ export function ReviewSuggestions({ suggestions, onReviewed, viewerKey, photoVie
               ? <Button size="sm" variant="secondary" fullWidth disabled={Boolean(reminders.pending)} loading={reminders.pending === item.lineId}
                   aria-label={`Restore review reminder for ${item.productTitle}`} onClick={() => void reminders.update(item.lineId, "restore")}>Restore reminder</Button>
               : <>
-                <Button size="sm" variant="secondary" fullWidth disabled={Boolean(reminders.pending)} aria-label={`Write a review of ${item.productTitle}`} onClick={() => setReviewing(item)}>Write a review</Button>
+                {routes && item.reviewHref && <Button.Link href={item.reviewHref} prefetch={false} size="sm" variant="secondary" fullWidth className={surfaceTriggerClassNames.route}
+                  aria-label={`Write a review of ${item.productTitle}`}>Write a review</Button.Link>}
+                <Button size="sm" variant="secondary" fullWidth className={routes && item.reviewHref ? surfaceTriggerClassNames.dialog : undefined} disabled={Boolean(reminders.pending)} aria-label={`Write a review of ${item.productTitle}`} onClick={() => setReviewing(item)}>Write a review</Button>
                 <Button size="sm" variant="ghost" disabled={Boolean(reminders.pending)} loading={reminders.pending === item.lineId}
                   aria-label={`Dismiss review reminder for ${item.productTitle}`} onClick={() => void reminders.update(item.lineId, "dismiss")}>Dismiss</Button>
               </>}

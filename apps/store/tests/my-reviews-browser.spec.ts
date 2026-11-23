@@ -162,6 +162,24 @@ test("editing retains approved content, uses the selected public name, and waits
   const saved=await state(request);expect(saved.calls).toHaveLength(1);expect(saved.calls[0]).toMatchObject({operation:"review.edit",subject:"buyer-a",displayName:"Anonymous"});
   expect(saved.records.find((r:{value:{id:string}})=>r.value.id===id(2)).published.body).toBe("Approved original text.");
 });
+test("on a phone, editing opens its own page and saving confirms there",async({page,request})=>{
+  await page.setViewportSize({width:390,height:844});
+  await page.goto("/reviews/mine");await card(page,2).getByRole("link",{name:/Edit your review/}).click();
+  await expect(page).toHaveURL(new RegExp(`/reviews/mine/${id(2)}/edit$`));
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  const form=page.locator("main form");
+  await expect(page.getByRole("heading",{level:1,name:"Edit your review",exact:true})).toBeVisible();
+  await form.getByLabel("Review",{exact:false}).fill("Edited from my phone.");
+  await form.getByRole("button",{name:"Save changes",exact:true}).click();
+  await expect(page.getByRole("heading",{level:1,name:"Changes saved",exact:true})).toBeVisible();
+  await page.getByRole("link",{name:"Back to My reviews",exact:true}).click();
+  await expect(card(page,2)).toContainText("Edited from my phone.");
+  const saved=await state(request);expect(saved.calls).toEqual([expect.objectContaining({operation:"review.edit",subject:"buyer-a"})]);
+});
+test("another buyer's review, or none at all, has no edit page",async({page})=>{
+  expect((await page.goto(`/reviews/mine/${id(999)}/edit`))?.status()).toBe(404);
+  expect((await page.goto("/reviews/mine/not-a-review/edit"))?.status()).toBe(404);
+});
 test("a rejected review can be edited and withdrawal removes approved content",async({page,request})=>{
   await page.goto("/reviews/mine");
   // The buyer reads staff's reason, which a resubmission clears.
@@ -242,11 +260,17 @@ test("fits the private list and editor across mobile/desktop boundaries in both 
       expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
       await page.screenshot({path:testInfo.outputPath(`my-reviews-${theme}-${width}.png`),fullPage:true});
       if(width===390||width===1280){
-        await card(page,2).getByRole("button",{name:/Edit your review/}).click();
-        await expect(page.getByRole("dialog").getByLabel("Review")).toHaveValue("Review".repeat(150));
-        expect(await page.getByRole("dialog").getByText("Ryan".repeat(50),{exact:true}).evaluate((element)=>element.scrollWidth<=element.clientWidth)).toBe(true);
-        await page.screenshot({path:testInfo.outputPath(`my-editor-${theme}-${width}.png`)});
-        await page.getByRole("dialog").getByRole("button",{name:"Cancel",exact:true}).click();
+        // A phone edits on its own page; a wider screen in the dialog.
+        const phone=width<640;
+        await card(page,2).getByRole(phone ? "link" : "button",{name:/Edit your review/}).click();
+        if(phone) await expect(page).toHaveURL(/\/reviews\/mine\/[0-9a-f-]+\/edit$/);
+        const editor=phone ? page.locator("main form") : page.getByRole("dialog");
+        await expect(editor.getByLabel("Review")).toHaveValue("Review".repeat(150));
+        expect(await editor.getByText("Ryan".repeat(50),{exact:true}).evaluate((element)=>element.scrollWidth<=element.clientWidth)).toBe(true);
+        expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+        await page.screenshot({path:testInfo.outputPath(`my-editor-${theme}-${width}.png`),fullPage:phone});
+        await editor.getByRole("button",{name:"Cancel",exact:true}).click();
+        if(phone) await expect(page).toHaveURL(/\/reviews\/mine$/);
       }
     }
   }
@@ -298,6 +322,26 @@ test("signed in, My reviews offers recent purchases to review and reviews them i
   await expect(page.locator("article[data-testid^='my-review-']")).toContainText("Waiting for approval");
   const {calls}=await state(request);
   expect(calls).toEqual([expect.objectContaining({operation:"review.submit",subject:"buyer-a",purchase:expect.objectContaining({orderId:"100",lineId:"101"})})]);
+});
+test("on a phone, Ready to Review writes on the product's review page and returns to My reviews",async({page,request,baseURL})=>{
+  await reset(request,{empty:true});await configure(request,{purchase:reminderPurchase()});await signIn(page,baseURL!);
+  await page.setViewportSize({width:390,height:844});
+  await page.goto("/reviews/mine");
+  const ready=page.getByRole("region",{name:"Ready to Review"});
+  await ready.getByRole("link",{name:"Write a review of Official Ryan Meetup Tee",exact:true}).click();
+  await expect(page).toHaveURL(/\/products\/ryan-meetup-tee\/review\?order=100&from=mine$/);
+  const form=page.locator("main form");
+  await expect(form.getByText("#100",{exact:true})).toBeVisible();
+  await form.getByRole("radio",{name:"4 stars",exact:true}).check();
+  await form.getByLabel(/^Title/).fill("Phone-written");
+  await form.getByLabel(/^Review/).fill("Wrote this on the train.");
+  await form.getByRole("button",{name:"Submit review",exact:true}).click();
+  await expect(page.getByRole("heading",{level:1,name:"Review received",exact:true})).toBeVisible();
+  await page.getByRole("link",{name:"Back to My reviews",exact:true}).click();
+  await expect(page.getByRole("region",{name:"Ready to Review"})).toHaveCount(0);
+  await expect(page.locator("article[data-testid^='my-review-']")).toContainText("Waiting for approval");
+  const {calls}=await state(request);
+  expect(calls).toEqual([expect.objectContaining({operation:"review.submit",purchase:expect.objectContaining({orderId:"100",lineId:"101"})})]);
 });
 test("Ready to review and Your reviews each fold away under a real heading",async({page,request,baseURL})=>{
   await reset(request);

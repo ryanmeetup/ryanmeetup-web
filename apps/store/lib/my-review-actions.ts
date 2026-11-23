@@ -1,10 +1,11 @@
+import type { BuyerReview } from "@ryanmeetup/reviews";
 import { ANONYMOUS_REVIEWER_NAME, buyerReviewTimestamp, decodeBuyerReviewCursor, reviewDisplayName, reviewPhotoIdsSchema, reviewSubmissionSchema } from "@ryanmeetup/reviews";
 import { matchesReviewViewer, reviewViewerChanged, reviewViewerKey } from "./review-viewer";
 import type { CustomerSessionResult } from "./customer-account/session";
 import { sameCustomerAccountSession } from "./customer-account/storage";
 import { hasJsonBody, isSameOriginRead, isSameOriginRequest, privateJson as reply, readBoundedJsonObject } from "./request-guard";
 import type { ReviewBackend } from "./review-backend";
-import type { ReviewBuyerNameLookup } from "./review-purchases";
+import type { ReviewBuyerName, ReviewBuyerNameLookup } from "./review-purchases";
 import type { MyReviewProduct, MyReviewView } from "./my-review-view";
 import type { ProductCard } from "./shopify";
 import { reviewWriteLimited } from "./review-write-limits";
@@ -20,8 +21,8 @@ export type MyReviewServices = {
   limitWrites?: ReviewWriteLimiter | null;
 };
 
-async function reviewedProducts(page: MyReviewView["page"], productCards: MyReviewServices["productCards"]): Promise<Record<string, MyReviewProduct>> {
-  const ids = [...new Set(page.reviews.map((review) => review.item.productId))];
+async function reviewedProducts(reviews: BuyerReview[], productCards: MyReviewServices["productCards"]): Promise<Record<string, MyReviewProduct>> {
+  const ids = [...new Set(reviews.map((review) => review.item.productId))];
   if (!productCards || !ids.length) return {};
   const cards = await productCards(ids).catch(() => ({} as Record<string, ProductCard>));
   return Object.fromEntries(ids.flatMap((id) => {
@@ -53,10 +54,31 @@ export async function loadMyReviewPage(cursor: string | null, { loadSession, bac
       backend({ operation: "reviews.mine", subject: session.session.subject, cursor }),
       findBuyerName(session.session).catch(() => null),
     ]);
-    const [products,current] = await Promise.all([reviewedProducts(page,productCards),recheckSession(session,loadSession)]);
+    const [products,current] = await Promise.all([reviewedProducts(page.reviews,productCards),recheckSession(session,loadSession)]);
     return current.status === "authenticated" ? { status:"ready",view:{page,products,buyerName,
       // Equality marker only; neither a session lookup hash nor an authentication credential.
       viewerKey:reviewViewerKey(session.session), ...(photosEnabled ? { photosEnabled: true as const } : {})}} : current;
+  } catch { return { status: "unavailable" }; }
+}
+
+/** One of the buyer's own reviews, for the dedicated edit route. Only the buyer's subject can find it. */
+export async function loadMyReview(reviewId: string, { loadSession, backend, findBuyerName, photosEnabled = false, productCards }: MyReviewServices): Promise<
+  | { status: "ready"; review: BuyerReview; product: MyReviewProduct | null; buyerName: ReviewBuyerName | null; viewerKey: string; photosEnabled: boolean }
+  | { status: "sign_in_required" | "unavailable" | "not_found" }
+> {
+  if (!uuid.test(reviewId)) return { status: "not_found" };
+  if (!backend) return { status: "unavailable" };
+  const session = await sessionResult(loadSession);
+  if (session.status !== "authenticated") return session;
+  try {
+    const [review,buyerName] = await Promise.all([
+      backend({ operation: "review.mine", subject: session.session.subject, reviewId }),
+      findBuyerName(session.session).catch(() => null),
+    ]);
+    if (!review) return { status: "not_found" };
+    const [products,current] = await Promise.all([reviewedProducts([review],productCards),recheckSession(session,loadSession)]);
+    return current.status === "authenticated" ? { status:"ready",review,product:products[review.item.productId] ?? null,buyerName,
+      viewerKey:reviewViewerKey(session.session),photosEnabled } : current;
   } catch { return { status: "unavailable" }; }
 }
 

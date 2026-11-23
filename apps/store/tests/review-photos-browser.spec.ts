@@ -27,7 +27,10 @@ async function photos(page:Page,options:{failUploadOnce?:boolean;failPreviewOnce
   });
   return {uploads,deletes};
 }
-async function composer(page:Page){await page.goto(path);await page.locator("#reviews").getByRole("button",{name:"Write a review",exact:true}).click();return page.getByRole("dialog",{name:"Write a review",exact:true});}
+/** A phone opens the review route, so its form stands in for the dialog. */
+async function composer(page:Page){await page.goto(path);
+  if((page.viewportSize()?.width??1280)<640){await page.locator("#reviews").getByRole("link",{name:"Write a review",exact:true}).click();return page.locator("main form");}
+  await page.locator("#reviews").getByRole("button",{name:"Write a review",exact:true}).click();return page.getByRole("dialog",{name:"Write a review",exact:true});}
 async function fill(page:Page){const dialog=page.getByRole("dialog");await dialog.getByRole("radio",{name:"5 stars",exact:true}).check();await dialog.getByRole("textbox",{name:"Title *",exact:true}).fill("Ryan with photos");await dialog.getByRole("textbox",{name:"Review *",exact:true}).fill("The photos show how it fits.");}
 async function pick(dialog:Locator,files:Parameters<Locator["setInputFiles"]>[0]){const picker=dialog.getByLabel("Photos",{exact:true});await expect(picker).toBeEnabled();await picker.setInputFiles(files);}
 const file=(name="shirt.png")=>({name,mimeType:"image/png",buffer:png});

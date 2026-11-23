@@ -1,16 +1,15 @@
 "use client";
 
 import type { BuyerRejectedPhoto, BuyerReviewStatus } from "@ryanmeetup/reviews";
-import { Button, Card, ConfirmationDialog, DisclosureCard, ErrorCallout, Heading, RatingStars, Spinner, Text, Tooltip } from "@ryanmeetup/ui";
+import { Button, Card, ConfirmationDialog, DisclosureCard, ErrorCallout, Heading, RatingStars, Spinner, surfaceTriggerClassNames, Text, Tooltip } from "@ryanmeetup/ui";
 import { ReviewAuthor, ReviewContent, ReviewVerificationBadge } from "@ryanmeetup/reviews/ui";
 import { FiAlertCircle, FiCheckCircle, FiClock, FiEdit2, FiEye, FiEyeOff, FiMessageSquare, FiRefreshCw, FiSlash, FiXCircle } from "react-icons/fi";
 import type { IconType } from "react-icons";
-import { buyerReviewNameChoices } from "@/lib/my-review-view";
 import { reviewSignInRel, reviewSignInUrl } from "@/lib/review-sign-in";
 import { reviewPermalink } from "@/lib/review-links";
 import type { MyReviewView } from "@/lib/my-review-view";
 import { variantOptions, type ReviewSuggestions as Suggestions } from "@/lib/review-suggestions";
-import { CustomReviewComposer } from "./custom-review-composer";
+import { MyReviewEditor } from "./my-review-editor";
 import { ReviewItemDetails, ReviewItemThumbnail, ReviewItemTitle, reviewItemDate, variantRows } from "./review-item";
 import { ReviewSuggestions, SectionTitle, reviewSectionToggle } from "./review-suggestions";
 import { useMyReviews, type MyReviewsClient } from "./use-my-reviews";
@@ -103,8 +102,10 @@ function RejectionReason({ reason, editRejected }: { reason: string; editRejecte
 
 
 /** Only canonical reloaded data enables another buyer action. */
-export function MyReviews({ initial, suggestions, client, submitReview, changeSuggestion }: {
+export function MyReviews({ initial, suggestions, client, submitReview, changeSuggestion, editRoutes = false }: {
   initial: MyReviewView | null; suggestions?: Suggestions | null;
+  /** Link phones to the edit and write routes. The dev preview leaves them off: its sample reviews exist only in memory. */
+  editRoutes?: boolean;
   /** Dev-only mock transports; the live API is used when omitted. */
   client?: MyReviewsClient; submitReview?: (item: ReviewSuggestion, review: CustomReviewSubmission) => Promise<CustomReviewResult>;
   changeSuggestion?: ChangeReviewSuggestion;
@@ -115,7 +116,7 @@ export function MyReviews({ initial, suggestions, client, submitReview, changeSu
   const hasSuggestions=Boolean(currentSuggestions?.items.length);
   const reviewCount=mine.view?.page.reviews.length ?? 0;
   return <div className="space-y-6">
-    {currentSuggestions && mine.view && <ReviewSuggestions key={mine.view.viewerKey} suggestions={currentSuggestions} viewerKey={mine.view.viewerKey} photoViewerKey={mine.view.photosEnabled ? mine.view.viewerKey : undefined} onReviewed={(notice)=>void mine.reloadWith(notice)} submitReview={submitReview} changeSuggestion={changeSuggestion} />}
+    {currentSuggestions && mine.view && <ReviewSuggestions key={mine.view.viewerKey} suggestions={currentSuggestions} viewerKey={mine.view.viewerKey} photoViewerKey={mine.view.photosEnabled ? mine.view.viewerKey : undefined} onReviewed={(notice)=>void mine.reloadWith(notice)} submitReview={submitReview} changeSuggestion={changeSuggestion} routes={editRoutes} />}
     <section aria-labelledby="your-reviews">
     <DisclosureCard
       id="your-reviews"
@@ -191,7 +192,10 @@ export function MyReviews({ initial, suggestions, client, submitReview, changeSu
                       unavailable={review.status!=="published" ? VIEW_UNAVAILABLE[review.status] : "This product isn't in the shop anymore, so there's no page to show it on."} />
                     {review.status!=="withdrawn" && <Button size="sm" variant="secondary" fullWidth className="sm:w-auto" aria-label={`Withdraw your review of ${review.item.productTitle}`} disabled={mine.pending}
                       leftIcon={<FiXCircle aria-hidden />} onClick={()=>mine.select(review,"withdraw")}>Withdraw</Button>}
-                    {review.status!=="hidden" && review.status!=="withdrawn" && <Button size="sm" variant="secondary" fullWidth className="sm:w-auto" aria-label={`Edit your review of ${review.item.productTitle}`} disabled={mine.pending}
+                    {/* With edit routes, a phone opens the editor as its own page and a wider screen keeps the dialog. */}
+                    {editRoutes && review.status!=="hidden" && review.status!=="withdrawn" && <Button.Link href={`/reviews/mine/${review.id}/edit`} prefetch={false} size="sm" variant="secondary" fullWidth
+                      className={surfaceTriggerClassNames.route} aria-label={`Edit your review of ${review.item.productTitle}`} leftIcon={<FiEdit2 aria-hidden />}>Edit</Button.Link>}
+                    {review.status!=="hidden" && review.status!=="withdrawn" && <Button size="sm" variant="secondary" fullWidth className={`sm:w-auto ${editRoutes ? surfaceTriggerClassNames.dialog : ""}`} aria-label={`Edit your review of ${review.item.productTitle}`} disabled={mine.pending}
                       leftIcon={<FiEdit2 aria-hidden />} onClick={()=>mine.select(review,"edit")}>Edit</Button>}
                   </div>
                 </div>
@@ -204,13 +208,9 @@ export function MyReviews({ initial, suggestions, client, submitReview, changeSu
     {mine.view?.page.nextCursor && <Button className="w-full sm:w-auto" variant="secondary" disabled={mine.pending} onClick={()=>void mine.load(true)}>Load more reviews</Button>}
     </DisclosureCard>
     </section>
-    {editing && <CustomReviewComposer key={`${editing.id}-${editing.updatedAt}`} open
-      access={{status:"ready",buyer:{firstName:null,lastName:null},purchases:editing.lineId?[{lineId:editing.lineId,label:editing.item.variantTitle ? `${editing.item.productTitle} · ${editing.item.variantTitle}`:editing.item.productTitle}]:[],defaultNameStyle:editing.current.nameStyle}}
-      product={{title:editing.item.productTitle,featuredImage:mine.view?.products[editing.item.productId]?.image ? {...mine.view.products[editing.item.productId].image!,width:null,height:null} : null}}
-      edit={{initial:editing.current,nameChoices:buyerReviewNameChoices(editing,mine.view?.buyerName??null)}}
-      photos={mine.view?.photosEnabled ? {productId:editing.item.productId,viewerKey:mine.view.viewerKey,review:{id:editing.id,updatedAt:editing.updatedAt,rejectedPhotos:editing.rejectedPhotos}} : undefined}
-      onClose={mine.dismiss} onSubmit={(review)=>mine.save(editing,{rating:review.rating,title:review.title,body:review.body,nameStyle:review.nameStyle,
-        ...(review.photoIds ? {photoIds:review.photoIds,viewerKey:review.viewerKey} : {})})} />}
+    {editing && mine.view && <MyReviewEditor key={`${editing.id}-${editing.updatedAt}`} presentation="modal" review={editing}
+      product={mine.view.products[editing.item.productId]} buyerName={mine.view.buyerName} viewerKey={mine.view.viewerKey}
+      photosEnabled={Boolean(mine.view.photosEnabled)} onClose={mine.dismiss} onSubmit={(edit)=>mine.save(editing,edit)} />}
     <ConfirmationDialog open={Boolean(mine.withdrawing)} setOpen={(open)=>{if(!open)mine.dismiss();}}
       title="Withdraw this review?" description="It comes off the product page and out of rating totals. To write again, return to the product page."
       confirmLabel="Withdraw" pendingLabel="Withdrawing…" pending={mine.pending} onConfirm={()=>mine.withdrawing&&mine.save(mine.withdrawing)} />

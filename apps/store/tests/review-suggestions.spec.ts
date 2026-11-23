@@ -26,7 +26,7 @@ test("suggests unreviewed purchases that are still on the storefront, newest ord
     items: [{ lineId: "1", productId: "gid://shopify/Product/100", productTitle: "tee (current title)", label: "Order #1001 · Black / M",
       options: [{ name: "Color", value: "Black" }, { name: "Size", value: "M" }],
       orderLabel: "#1001", orderUrl: "https://shopify.com/123/account/orders/9000", quantity: 2, shippedAt: "2026-11-16T12:00:00.000Z",
-      href: "/products/tee#reviews", image: { url: "https://cdn.shopify.com/tee.jpg", altText: null } }],
+      href: "/products/tee#reviews", reviewHref: "/products/tee/review?order=1001&from=mine", image: { url: "https://cdn.shopify.com/tee.jpg", altText: null } }],
   });
 });
 

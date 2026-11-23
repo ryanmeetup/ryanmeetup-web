@@ -3,11 +3,13 @@
 import { useId, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { trackStoreEvent } from "@/lib/analytics";
-import { Button, ErrorCallout, Heading, RatingStars, SuccessCallout, Text } from "@ryanmeetup/ui";
+import { Button, ErrorCallout, Heading, RatingStars, SuccessCallout, surfaceTriggerClassNames, Text } from "@ryanmeetup/ui";
 import type { Product, ReviewsData } from "@/lib/types";
 import type { CustomReviewAccess } from "@/lib/custom-review-access";
 import { PRODUCT_REVIEW_PARAMS } from "@/lib/public-review-view";
-import { CustomReviewComposer, type CustomReviewResult, type CustomReviewSubmission } from "./custom-review-composer";
+import { reviewRouteHref } from "@/lib/review-links";
+import { submitCustomReview } from "@/lib/custom-review-client";
+import { CustomReviewComposer } from "./custom-review-composer";
 import { PublicReviewCard } from "./public-review-card";
 import { PublicReviewFilters } from "./public-review-filters";
 import { ReviewCardSkeletons } from "./review-card-skeletons";
@@ -27,18 +29,7 @@ function RatingSummary({ data, className = "" }: { data: ReviewsData; className?
   );
 }
 
-async function submitCustomReview({viewerKey,...review}: CustomReviewSubmission & { productId: string }): Promise<CustomReviewResult> {
-  const response = await fetch("/api/reviews", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...(viewerKey ? {"X-Review-Viewer":viewerKey} : {}) },
-    body: JSON.stringify(review),
-  });
-  const payload = (await response.json().catch(() => null)) as { error?: unknown; code?: unknown } | null;
-  if (!response.ok) return { ok: false, error: typeof payload?.error === "string" ? payload.error : "Your review could not be submitted. Please try again.", refreshRequired:payload?.code === "viewer_changed" };
-  return { ok: true, message: "Thanks! Your review is waiting for approval." };
-}
-
-export function Reviews({ data, product, access }: { data: ReviewsData; product: Pick<Product, "id" | "title" | "featuredImage">; access: CustomReviewAccess }) {
+export function Reviews({ data, product, access }: { data: ReviewsData; product: Pick<Product, "id" | "handle" | "title" | "featuredImage">; access: CustomReviewAccess }) {
   const formId = useId();
   const publicReviews = usePublicReviews(data);
   const permalink = useReviewPermalink(data, publicReviews);
@@ -61,7 +52,10 @@ export function Reviews({ data, product, access }: { data: ReviewsData; product:
           <RatingSummary data={data} className="mt-3" />
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-start lg:max-w-xs lg:items-end lg:text-right">
-          <Button size="sm" variant="secondary" className="w-full sm:w-auto" disabled={access.status === "unavailable"} onClick={() => { setMessage(""); setOpen(true); trackStoreEvent("review_composer_opened", { access: access.status }); }}>Write a review</Button>
+          {/* A phone opens the review form as its own page; a wider screen keeps the dialog. Closed collection has nowhere to go. */}
+          {access.status !== "unavailable" && <Button.Link href={reviewRouteHref(product.handle)} prefetch={false} size="sm" variant="secondary" className={`w-full ${surfaceTriggerClassNames.route}`}
+            onClick={() => trackStoreEvent("review_composer_opened", { access: access.status })}>Write a review</Button.Link>}
+          <Button size="sm" variant="secondary" className={`w-full sm:w-auto ${access.status !== "unavailable" ? surfaceTriggerClassNames.dialog : ""}`} disabled={access.status === "unavailable"} onClick={() => { setMessage(""); setOpen(true); trackStoreEvent("review_composer_opened", { access: access.status }); }}>Write a review</Button>
           {access.status === "unavailable" && <Text className="text-sm">Review collection is temporarily unavailable. Please try again later.</Text>}
         </div>
       </div>

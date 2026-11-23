@@ -19,11 +19,20 @@ async function refreshInPlace(page: Page) {
   await page.evaluate(() => (window as unknown as { next: { router: { refresh(): void } } }).next.router.refresh());
 }
 
+/** A phone follows the link to the review route; a wider screen opens the dialog. `dialog` is whichever holds the form. */
 async function openComposer(page: Page) {
   await page.goto(productPath);
   const reviews = page.locator("#reviews");
+  if ((page.viewportSize()?.width ?? 1280) < 640) {
+    await expect(reviews.getByRole("button", { name: "Write a review", exact: true })).toBeHidden();
+    await reviews.getByRole("link", { name: "Write a review", exact: true }).click();
+    await expect(page).toHaveURL(/\/products\/ryan-meetup-tee\/review$/);
+    await expect(page.getByRole("heading", { level: 1, name: "Write a review", exact: true })).toBeVisible();
+    return { reviews, dialog: page.locator("main form"), phone: true };
+  }
+  await expect(reviews.getByRole("link", { name: "Write a review", exact: true })).toBeHidden();
   await reviews.getByRole("button", { name: "Write a review", exact: true }).click();
-  return { reviews, dialog: page.getByRole("dialog", { name: "Write a review", exact: true }) };
+  return { reviews, dialog: page.getByRole("dialog", { name: "Write a review", exact: true }), phone: false };
 }
 
 test.beforeEach(async ({ request }) => { await reset(request, { empty: true }); await buyTee(request); });
@@ -34,7 +43,7 @@ for (const theme of ["light", "dark"]) {
       await signIn(page, baseURL!);
       await page.addInitScript((value) => localStorage.setItem("theme", value), theme);
       await page.setViewportSize({ width, height: 844 });
-      const { reviews, dialog } = await openComposer(page);
+      const { reviews, dialog, phone } = await openComposer(page);
       // Order and variant read as labelled rows, matching the Ready to Review cards.
       await expect(dialog.getByText("#100", { exact: true })).toBeVisible();
       await expect(dialog).toContainText("Blue");
@@ -53,13 +62,26 @@ for (const theme of ["light", "dark"]) {
       // The dialog element itself has no box; measure and capture its visible form.
       await expect(dialog.getByRole("button", { name: "Submit review", exact: true })).toBeVisible();
       await page.screenshot({ path: screenshotPath(`store-custom-composer-${theme}-${width}.png`) });
-      const bounds = await dialog.locator("form").boundingBox();
+      const bounds = await (phone ? dialog : dialog.locator("form")).boundingBox();
       expect(bounds!.x).toBeGreaterThanOrEqual(0);
       expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
 
+      if (phone) {
+        // A page, not a dialog: the actions follow the form instead of pinning over it.
+        await expect(page.getByRole("dialog")).toHaveCount(0);
+        const field = await dialog.getByLabel(/^Review/).boundingBox();
+        const submit = await dialog.getByRole("button", { name: "Submit review", exact: true }).boundingBox();
+        expect(submit!.y).toBeGreaterThan(field!.y + field!.height);
+      }
       await dialog.getByRole("button", { name: "Submit review", exact: true }).click();
-      await expect(dialog).toHaveCount(0);
-      await expect(reviews.getByRole("status").filter({ hasText: "Review received" })).toContainText("Thanks! Your review is waiting for approval.");
+      if (phone) {
+        await expect(page.getByRole("heading", { level: 1, name: "Review received", exact: true })).toBeVisible();
+        await expect(page.getByText("Thanks! Your review is waiting for approval.", { exact: true })).toBeVisible();
+        await expect(page.getByRole("link", { name: "Back to the product", exact: true })).toHaveAttribute("href", "/products/ryan-meetup-tee#reviews");
+      } else {
+        await expect(dialog).toHaveCount(0);
+        await expect(reviews.getByRole("status").filter({ hasText: "Review received" })).toContainText("Thanks! Your review is waiting for approval.");
+      }
       const { calls } = await state(request);
       expect(calls).toEqual([expect.objectContaining({
         operation: "review.submit", subject: "buyer-a", displayName: "Ryan Fixture",
@@ -69,6 +91,21 @@ for (const theme of ["light", "dark"]) {
     });
   }
 }
+
+test("on a phone, cancelling the review route goes back to the product", async ({ page, baseURL }) => {
+  await signIn(page, baseURL!);
+  await page.setViewportSize({ width: 390, height: 844 });
+  const { dialog } = await openComposer(page);
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(page).toHaveURL(/\/products\/ryan-meetup-tee(#reviews)?$/);
+});
+
+test("opened directly, the review route cancels to the product page", async ({ page, baseURL }) => {
+  await signIn(page, baseURL!);
+  await page.goto("/products/ryan-meetup-tee/review");
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(page).toHaveURL(/\/products\/ryan-meetup-tee#reviews$/);
+});
 
 test("a reviewed purchase can't be reviewed again", async ({ page, baseURL }) => {
   await signIn(page, baseURL!);
