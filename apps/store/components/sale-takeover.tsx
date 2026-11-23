@@ -43,14 +43,14 @@ function SaleTakeover({ promotion, backdrop, tiles }: { promotion: Promotion; ba
           className="object-cover opacity-20 grayscale contrast-125"
           style={backdrop.objectPosition ? { objectPosition: backdrop.objectPosition } : undefined}
         />
-        <div className="store-container relative flex flex-col items-start gap-5 py-8 sm:gap-6 sm:py-10 md:!pr-8 lg:py-12 lg:!pr-12">
+        <div className="store-container relative flex flex-col items-start gap-4 py-6 sm:gap-6 sm:py-10 md:!pr-8 lg:py-12 lg:!pr-12">
           <Image
             src="/hero/ryan-name-tag.png"
             alt=""
             width={2264}
             height={1442}
-            sizes="(min-width: 1280px) 112px, (min-width: 768px) 96px, 80px"
-            className="pointer-events-none ml-1 h-auto w-20 -rotate-6 select-none drop-shadow-lg md:w-24 xl:w-28"
+            sizes="(min-width: 1280px) 128px, 112px"
+            className="pointer-events-none ml-1 h-auto w-28 -rotate-6 select-none drop-shadow-lg xl:w-32"
           />
           <div>
             <Kicker className="!text-nametag">Sale ends {promotion.endsLabel}</Kicker>
@@ -62,17 +62,20 @@ function SaleTakeover({ promotion, backdrop, tiles }: { promotion: Promotion; ba
               <SaleName promotion={promotion} />
             </Heading>
           </div>
-          <ul className="flex flex-wrap gap-3" aria-label={`${promotion.name} discounts`}>
+          <ul
+            // Three tags share one row on phones (percent stacked over its scope); they sit inline from sm up.
+            className="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:gap-3"
+            aria-label={`${promotion.name} discounts`}>
             {promotion.tiers.map((tier, index) => {
               const top = index === promotion.tiers.length - 1;
               return (
                 <li
                   key={tier.minQuantity}
                   // A price tag, with a hole punched near the rounded end.
-                  className={`relative flex items-baseline gap-2 rounded-l-lg rounded-r-[1.75rem] py-2.5 pl-3.5 pr-8 shadow-drop after:absolute after:right-3 after:top-1/2 after:h-2 after:w-2 after:-translate-y-1/2 after:rounded-full after:bg-black ${top ? "bg-nametag text-white" : "bg-white text-black"}`}
+                  className={`relative flex flex-col gap-1 rounded-l-lg rounded-r-[1.75rem] py-2 pl-2.5 pr-6 shadow-drop after:absolute after:right-2.5 after:top-1/2 sm:flex-row sm:items-baseline sm:gap-2 sm:py-2.5 sm:pl-3.5 sm:pr-8 sm:after:right-3 after:h-2 after:w-2 after:-translate-y-1/2 after:rounded-full after:bg-black ${top ? "bg-nametag text-white" : "bg-white text-black"}`}
                 >
-                  <span className={`font-cooper text-3xl leading-none ${top ? "text-white" : "text-nametag"}`}>{tier.percentOff}%</span>
-                  <span className="text-sm font-semibold">{describeTierScope(tier)}</span>
+                  <span className={`font-cooper text-2xl leading-none sm:text-3xl ${top ? "text-white" : "text-nametag"}`}>{tier.percentOff}%</span>
+                  <span className="text-xs font-semibold leading-tight sm:text-sm">{describeTierScope(tier)}</span>
                 </li>
               );
             })}
