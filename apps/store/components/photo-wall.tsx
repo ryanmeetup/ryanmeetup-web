@@ -19,7 +19,7 @@ export type WallTile = {
   sizes: string;
 };
 
-// One tile changes at a time, round-robin, so the wall shifts gently instead of all at once.
+// One tile changes at a time, so the wall shifts gently instead of all at once.
 const STEP_MS = 2500;
 
 const prefersReducedMotion = () =>
@@ -37,7 +37,14 @@ export function PhotoWall({ tiles, className, wrapperClassName, children }: { ti
   const [paused, setPaused] = useState(false);
 
   useEffect(() => {
-    const cycling = tiles.flatMap((tile, index) => (tile.photos.length > 1 ? [index] : []));
+    // Each tile gets turns in proportion to its photos, spread evenly through one lap, so a tile
+    // with six photos shows them all in the same lap as a tile with two.
+    const cycling = tiles
+      .flatMap((tile, index) =>
+        tile.photos.length > 1 ? tile.photos.map((_, turn) => ({ index, at: (turn + 0.5) / tile.photos.length })) : [],
+      )
+      .sort((a, b) => a.at - b.at || a.index - b.index)
+      .map(({ index }) => index);
     if (!cycling.length || paused || prefersReducedMotion()) return undefined;
     let turn = 0;
     const timer = window.setInterval(() => {
