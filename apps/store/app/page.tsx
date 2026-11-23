@@ -1,9 +1,11 @@
 import {
   Button,
   Heading,
+  RotatingGallery,
   SectionHeader,
   Text,
 } from "@ryanmeetup/ui";
+import type { RotatingGalleryItem } from "@ryanmeetup/ui";
 import type { Metadata } from "next";
 import Image from "next/image";
 import { Suspense } from "react";
@@ -21,6 +23,39 @@ import { getHomeCatalog, getShippingCountries } from "@/lib/shopify";
 import { buildStoreSchema } from "@/lib/structured-data";
 
 export const revalidate = 300;
+
+// Portrait shots sit a little above center so faces and chest prints share
+// the landscape crop. The 3:2 tablet frame (not 2:1) leaves room for both.
+const HERO_PHOTOS: RotatingGalleryItem[] = [
+  {
+    src: "/hero/ryan-merch-booth.jpg",
+    alt: "Ryan Meetup shirts hanging above a merch table, with a volunteer in a Ryan’s Father tee",
+    objectPosition: "35% 50%",
+  },
+  {
+    src: "/hero/ryan-hammock-crewneck.jpg",
+    alt: "A Ryan in red heart sunglasses lounging in a hammock in a Ryan Meetup crewneck, phone in one hand and cash in the other",
+    objectPosition: "65% 50%",
+  },
+  {
+    src: "/hero/ryan-family-merch-table.jpg",
+    alt: "Three volunteers in Ryan’s Mother, Ryan’s Sister, and Ryan’s Father tees behind a table of Ryan Meetup shirts and hats",
+  },
+  {
+    src: "/hero/ryan-philadelphia-tee.jpg",
+    alt: "A Ryan in mirrored sunglasses showing off an It’s Always Ryan in Philadelphia tee",
+  },
+  {
+    src: "/hero/ryan-super-tee.jpg",
+    alt: "A Ryan tearing open a dress shirt to reveal a superhero-style R logo tee",
+    objectPosition: "50% 40%",
+  },
+  {
+    src: "/hero/ryan-name-tag-tee.jpg",
+    alt: "A Ryan in a Ryans beanie and a white tee with a Hello my name is Ryan name tag",
+    objectPosition: "50% 40%",
+  },
+];
 
 export const metadata = {
   ...buildPageMetadata({ title: SITE_NAME, description: SITE_DESCRIPTION, canonical: "/", image: DEFAULT_IMAGE }),
@@ -83,16 +118,12 @@ export default async function HomePage() {
                 </Button.Link>
               </div>
             </div>
-            <div className="relative aspect-[4/3] overflow-hidden rounded-2xl sm:aspect-[2/1] lg:aspect-auto lg:h-full lg:min-h-80">
-              <Image
-                src="/hero/ryan-merch-table.jpg"
-                alt="Ryan Meetup shirts hanging above a merch table stocked with hats and tees"
-                fill
-                preload
-                sizes="(min-width: 1536px) calc((100vw - 576px) / 2), (min-width: 1280px) calc((100vw - 384px) / 2), (min-width: 1024px) calc((100vw - 360px) / 2), (min-width: 640px) calc(100vw - 96px), calc(100vw - 72px)"
-                className="object-cover object-left"
-              />
-            </div>
+            <RotatingGallery
+              items={HERO_PHOTOS}
+              preload
+              sizes="(min-width: 1536px) calc((100vw - 576px) / 2), (min-width: 1280px) calc((100vw - 384px) / 2), (min-width: 1024px) calc((100vw - 360px) / 2), (min-width: 640px) calc(100vw - 96px), calc(100vw - 72px)"
+              className="aspect-[4/3] sm:aspect-[3/2] lg:aspect-auto lg:h-full lg:min-h-80"
+            />
           </div>
         </div>
       </section>
