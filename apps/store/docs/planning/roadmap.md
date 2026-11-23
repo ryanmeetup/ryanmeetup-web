@@ -25,6 +25,9 @@ old "not started" or "done" label.
   and production guidance sourced from the maintained shipping policy.
 - Product review previews (November 23): four initial cards, with the full
   paginated list available through See all reviews, filters and permalinks.
+- Shorter mobile home (November 23): the running sale appears once, the hero
+  uses tighter spacing and a landscape photo frame, and the support card keeps
+  its headline and About link before Best Sellers.
 - "More from this shop" on product pages (November 21): purchasable listings
   from Shopify's `productRecommendations` (intent `RELATED`), then shared
   collections, then the same product type; grouped designs collapse into one

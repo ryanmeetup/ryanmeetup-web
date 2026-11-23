@@ -15,7 +15,6 @@ import { HomeCollectionTiles } from "@/components/home-collection-tiles";
 import { HomeSpotlight } from "@/components/home-spotlight";
 import { HomeReviews } from "@/components/home-reviews";
 import { ProductGrid } from "@/components/product-grid";
-import { PromotionNote } from "@/components/promotion";
 import { SupportNote } from "@/components/support-note";
 import { withListingRatings } from "@/lib/listing-ratings";
 import { buildPageMetadata, DEFAULT_IMAGE, SITE_DESCRIPTION, SITE_NAME } from "@/lib/metadata";
@@ -83,15 +82,15 @@ export default async function HomePage() {
       <JsonLd data={buildStoreSchema(shippingCountries)} />
       <section data-analytics-placement="home_hero" data-analytics-section="home_hero" aria-label="Ryan Meetup merch" className="store-container">
         <div className="overflow-hidden rounded-3xl bg-white/65 shadow-drop dark:bg-white/5">
-          <div className="grid items-start gap-6 p-5 sm:gap-8 sm:p-8 lg:grid-cols-2 lg:gap-10 xl:gap-12 xl:p-10">
+          <div className="grid items-start gap-4 p-4 sm:gap-8 sm:p-8 lg:grid-cols-2 lg:gap-10 xl:gap-12 xl:p-10">
             <div className="relative min-w-0 text-left">
               <Image
                 src="/hero/ryan-name-tag.png"
                 alt=""
                 width={2264}
                 height={1442}
-                sizes="(min-width: 640px) 80px, 64px"
-                className="pointer-events-none mb-5 ml-1 h-auto w-16 -rotate-6 select-none sm:w-20"
+                sizes="(min-width: 640px) 80px, 48px"
+                className="pointer-events-none mb-4 ml-1 h-auto w-12 -rotate-6 select-none sm:mb-5 sm:w-20"
               />
               <Heading
                 size="h1"
@@ -100,12 +99,11 @@ export default async function HomePage() {
                 <span className="block">Merch with your{" "}</span>
                 <span className="block">name on it.</span>
               </Heading>
-              <Text className="mt-4 max-w-md text-base sm:text-lg">
+              <Text className="mt-3 max-w-md text-base sm:mt-4 sm:text-lg">
                 Shirts, hats, and everyday goods for the world’s most organized
                 first name.
               </Text>
-              <PromotionNote className="mt-6" />
-              <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+              <div className="mt-4 flex flex-col items-start gap-3 sm:mt-6 sm:flex-row sm:flex-wrap sm:items-center">
                 <Button.Link
                   href="/collections/all"
                   size="lg"
@@ -126,8 +124,8 @@ export default async function HomePage() {
             <RotatingGallery
               items={HERO_PHOTOS}
               preload
-              sizes="(min-width: 1536px) calc((100vw - 576px) / 2), (min-width: 1280px) calc((100vw - 384px) / 2), (min-width: 1024px) calc((100vw - 360px) / 2), (min-width: 640px) calc(100vw - 96px), calc(100vw - 72px)"
-              className="aspect-[4/3] sm:aspect-[3/2] lg:aspect-auto lg:h-full lg:min-h-80"
+              sizes="(min-width: 1536px) calc((100vw - 576px) / 2), (min-width: 1280px) calc((100vw - 384px) / 2), (min-width: 1024px) calc((100vw - 360px) / 2), (min-width: 640px) calc(100vw - 96px), calc(100vw - 64px)"
+              className="aspect-video sm:aspect-[3/2] lg:aspect-auto lg:h-full lg:min-h-80"
             />
           </div>
         </div>

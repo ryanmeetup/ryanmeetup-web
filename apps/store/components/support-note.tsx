@@ -9,19 +9,20 @@ const linkClassName = "inline-flex items-center gap-1 rounded-sm font-semibold u
 
 /**
  * The store's reason to exist, said right after the home hero: merch is how the meetup is funded.
+ * Phones keep the headline and About link; the fuller explanation stays on larger screens.
  * Tinted with the name-tag red so it reads as the brand speaking rather than a sale.
  */
 export function SupportNote({ className }: { className?: string }) {
   return (
     <div className={`flex items-start gap-3 rounded-2xl border border-nametag/25 bg-nametag/5 p-4 sm:items-center sm:gap-4 sm:p-5 dark:border-nametag/40 dark:bg-nametag/10 ${className ?? ""}`}>
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-nametag/10 text-lg text-nametag dark:bg-nametag/20">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-nametag/10 text-lg text-nametag sm:h-10 sm:w-10 dark:bg-nametag/20">
         <FiHeart aria-hidden />
       </span>
-      <div className="flex min-w-0 flex-1 flex-col gap-3 md:flex-row md:items-center md:gap-6">
+      <div className="flex min-w-0 flex-1 flex-col gap-2 sm:gap-3 md:flex-row md:items-center md:gap-6">
         <div className="min-w-0 flex-1 text-black/80 dark:text-white/80">
-          <p className="text-base font-semibold text-black sm:text-lg dark:text-white">{SUPPORT_HEADLINE}</p>
-          <p className="mt-1 text-sm sm:text-base">{SUPPORT_REASON}</p>
-          <p className="mt-1 text-sm sm:text-base">{SUPPORT_THANKS}</p>
+          <p className="text-sm font-semibold text-black sm:text-lg dark:text-white">{SUPPORT_HEADLINE}</p>
+          <p className="mt-1 hidden sm:block sm:text-base">{SUPPORT_REASON}</p>
+          <p className="mt-1 hidden sm:block sm:text-base">{SUPPORT_THANKS}</p>
         </div>
         <Link href="/about#money" className={`${linkClassName} self-start text-sm md:self-center md:whitespace-nowrap`}>
           Where your money goes

@@ -112,10 +112,14 @@ products to one.
 
 ### Home page
 
-The hero reads “Merch with your name on it.” beside a static merch-table photo,
+The hero reads “Merch with your name on it.” beside a rotating community-photo gallery,
 with a small red-and-white Ryan name tag using the supplied brand artwork.
 “Shop all merch” opens Shop All, and “Browse collections” jumps to the collection
-tiles. On mobile, the copy and shopping links come before the photo. Below it:
+tiles. The site-wide banner carries any running sale without a second hero callout.
+On mobile, tighter spacing and a landscape photo frame keep the copy and shopping
+links before the photo. The support card shows its headline and **Where your money
+goes** link; its fuller explanation remains on larger screens and the About page.
+Below it:
 
 1. **Best Sellers** shows up to four listings from Shopify's built-in home page
    collection (`frontpage`), in its curated order. An empty or unpublished
