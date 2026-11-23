@@ -120,12 +120,12 @@ export default async function AboutPage() {
 
           <div className="relative aspect-[3/2] overflow-hidden rounded-3xl border border-black/10 shadow-drop-lg lg:aspect-[2/1] dark:border-white/10">
             <Image
-              src="/hero/ryan-merch-table.jpg"
-              alt="Ryans browsing official Ryan Meetup shirts and hats at a merch table"
+              src="/hero/ryan-family-merch-table.jpg"
+              alt="Three volunteers in Ryan’s Mother, Ryan’s Sister, and Ryan’s Father tees behind a table of Ryan Meetup shirts and hats"
               fill
               priority
               sizes="(min-width: 1280px) 60rem, 100vw"
-              className="object-cover"
+              className="object-cover object-[50%_45%]"
             />
           </div>
 
