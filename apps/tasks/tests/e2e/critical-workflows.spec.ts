@@ -63,7 +63,12 @@ test("filters notes by category and keeps note actions in the row menu", async (
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/notes");
   await page.waitForLoadState("networkidle");
-  const titles = page.getByRole("table").getByRole("heading", { level: 3 });
+  // Each title holds a phone link and a desktop button; role queries skip
+  // whichever one the breakpoint hides, so read the control that shows.
+  const titles = page
+    .getByRole("table")
+    .getByRole("heading", { level: 3 })
+    .getByRole("button");
   await expect(titles).toHaveCount(4);
 
   // Search narrows as you type, debounced into the address.

@@ -8,6 +8,15 @@ export const noteColumns =
 export const noteCommentColumns =
   "id,note_id,body,created_by,created_at,edited_at";
 
+/**
+ * A note's own page, which a phone opens instead of the note dialog. Notes
+ * have no readable identifier (titles are optional and repeat), so the route
+ * names one by ID.
+ */
+export const notePath = (id: string) => `/notes/${encodeURIComponent(id)}`;
+/** The same page, opened straight into the edit form. */
+export const noteEditPath = (id: string) => `${notePath(id)}/edit`;
+
 export function applyNoteDraft(
   note: Note,
   title: string,

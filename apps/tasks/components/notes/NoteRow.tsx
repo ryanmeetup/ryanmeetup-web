@@ -18,14 +18,16 @@ import {
   FiRotateCcw,
   FiTrash2,
 } from "react-icons/fi";
+import Link from "next/link";
 import {
   ResponsiveTableCell,
   ResponsiveTableMenuButton,
   ResponsiveTableRow,
+  type EditorTriggers,
   type ResponsiveTableColumn,
 } from "@/components/global";
 import { formatShortTimestamp } from "@/lib/date-format";
-import { noteTitle } from "@/lib/resources/notes";
+import { noteEditPath, notePath, noteTitle } from "@/lib/resources/notes";
 import type { Category, Note, Project } from "@/lib/resources/resource-types";
 import type { Task } from "@/lib/tasks/task-types";
 import type { WorkspaceData } from "@/lib/workspace/workspace-types";
@@ -55,7 +57,10 @@ export function NoteRow({
   onConvert,
   onConvertToProject,
   onDelete,
+  triggers,
 }: {
+  /** Whether the title and Edit open the note's page, its dialog, or each at its breakpoint. */
+  triggers: EditorTriggers;
   note: Note;
   category: Category | null;
   profiles: WorkspaceData["profiles"];
@@ -80,13 +85,25 @@ export function NoteRow({
       <ResponsiveTableCell>
         <div className="max-w-xl">
           <h3 className="text-card-title font-semibold wrap-anywhere">
-            <button
-              type="button"
-              className="cursor-pointer rounded text-left underline decoration-black/25 decoration-1 underline-offset-4 transition-colors hover:decoration-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:decoration-white/30 dark:focus-visible:ring-white/30"
-              onClick={() => onOpen(note)}
-            >
-              {title}
-            </button>
+            {triggers.route && (
+              <Link
+                href={notePath(note.id)}
+                className={`rounded underline decoration-black/25 decoration-1 underline-offset-4 transition-colors hover:decoration-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:decoration-white/30 dark:focus-visible:ring-white/30 ${triggers.routeClassName}`}
+              >
+                {title}
+              </Link>
+            )}
+            {triggers.dialog && (
+              <button
+                type="button"
+                // The title is inline text, so its dialog half only hides on a
+                // phone; the shared class would turn it into an inline-flex box.
+                className={`cursor-pointer rounded text-left underline decoration-black/25 decoration-1 underline-offset-4 transition-colors hover:decoration-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:decoration-white/30 dark:focus-visible:ring-white/30 ${triggers.dialogClassName ? "max-sm:hidden" : ""}`}
+                onClick={() => onOpen(note)}
+              >
+                {title}
+              </button>
+            )}
           </h3>
           <FormattedTextPreview
             text={note.body}
@@ -160,8 +177,19 @@ export function NoteRow({
                 <DropdownMenuSeparator />
               </>
             )}
-            {!archived && (
-              <DropdownMenuItem onClick={() => onEdit(note)}>
+            {!archived && triggers.route && (
+              <DropdownMenuItem.Link
+                href={noteEditPath(note.id)}
+                className={triggers.routeClassName}
+              >
+                <FiEdit2 aria-hidden /> Edit note
+              </DropdownMenuItem.Link>
+            )}
+            {!archived && triggers.dialog && (
+              <DropdownMenuItem
+                className={triggers.dialogClassName}
+                onClick={() => onEdit(note)}
+              >
                 <FiEdit2 aria-hidden /> Edit note
               </DropdownMenuItem>
             )}

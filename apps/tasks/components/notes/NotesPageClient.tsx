@@ -16,13 +16,13 @@ import {
 import { FiArchive, FiFileText, FiPlus, FiSearch, FiX } from "react-icons/fi";
 import {
   CountBadge,
+  editorTriggers,
   ResponsiveTable,
   WorkspacePageShell,
 } from "@/components/global";
 import { NewTaskModal } from "@/components/tasks";
 import { ProjectsModal } from "@/components/projects";
 import {
-  applyNoteDraft,
   filterNotes,
   groupNotesByCategory,
   linkNoteToProject,
@@ -42,6 +42,7 @@ import { mutate } from "@/lib/mutation-client";
 import { archiveFilter } from "@/lib/resources/resource-management";
 import { NoteRow, noteColumns } from "./NoteRow";
 import { NoteModal } from "./NoteModal";
+import { saveNoteDraft } from "./note-requests";
 import { NewNoteModal, type NewNoteDraft } from "./NewNoteModal";
 import { errorMessage } from "@/lib/presentation";
 export function NotesPageClient({
@@ -77,6 +78,7 @@ export function NotesPageClient({
   const [convertProjectTarget, setConvertProjectTarget] = useState<Note | null>(
     null,
   );
+  const triggers = editorTriggers(data.currentProfile.editor_surface);
   const canConvertToProject =
     demoMode || data.currentProfile.app_role === "owner";
 
@@ -113,18 +115,7 @@ export function NotesPageClient({
 
   async function saveNote(note: Note, title: string, body: string) {
     try {
-      const updated = demoMode
-        ? applyNoteDraft(note, title, body)
-        : (
-            await mutate<{ note: Note }>("/api/notes", {
-              method: "PATCH",
-              body: JSON.stringify({
-                id: note.id,
-                title: title.trim() || null,
-                body,
-              }),
-            })
-          ).note;
+      const updated = await saveNoteDraft(note, title, body, demoMode);
       setNotes((current) =>
         current.map((item) => (item.id === updated.id ? updated : item)),
       );
@@ -415,6 +406,7 @@ export function NotesPageClient({
                           onConvert={setConvertTarget}
                           onConvertToProject={setConvertProjectTarget}
                           onDelete={setDeleteTarget}
+                          triggers={triggers}
                         />
                       ))}
                     </ResponsiveTable>

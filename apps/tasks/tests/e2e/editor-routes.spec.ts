@@ -47,6 +47,11 @@ const editorRoutes: { name: string; href: string; parent: string }[] = [
     href: "/calendar/event/demo-away/edit",
     parent: "Calendar",
   },
+  {
+    name: "edit note",
+    href: "/notes/note-launch-retro/edit",
+    parent: "Notes",
+  },
 ];
 
 async function enterDemoWorkspace(page: Page, baseURL: string | undefined) {
@@ -81,6 +86,66 @@ for (const route of editorRoutes) {
     await expect(page.getByRole("button", { name: "Cancel" })).toBeVisible();
   });
 }
+
+test("a note opens as its own page on a phone and edits in place", async ({
+  page,
+  baseURL,
+}) => {
+  await enterDemoWorkspace(page, baseURL);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/notes");
+  await page.waitForLoadState("networkidle");
+
+  await page
+    .getByRole("link", { name: "Launch retro takeaways", exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/notes\/note-launch-retro$/);
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Launch retro takeaways" }),
+  ).toBeVisible();
+  const trail = page.getByRole("navigation", { name: "Breadcrumb" });
+  await expect(trail.getByRole("link", { name: "Notes" })).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Close" })).toHaveCount(0);
+
+  // Editing stays on the page, and the address follows so a reload keeps the mode.
+  await page.getByRole("button", { name: "Edit note" }).click();
+  await expect(page).toHaveURL(/\/notes\/note-launch-retro\/edit$/);
+  await expect(page.getByLabel("Note title")).toHaveValue(
+    "Launch retro takeaways",
+  );
+  await page.getByRole("button", { name: "Cancel" }).click();
+  await expect(page).toHaveURL(/\/notes\/note-launch-retro$/);
+});
+
+test("a note opens in its dialog from sm up", async ({ page, baseURL }) => {
+  await enterDemoWorkspace(page, baseURL);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/notes");
+  await page.waitForLoadState("networkidle");
+
+  await expect(
+    page.getByRole("link", { name: "Launch retro takeaways", exact: true }),
+  ).toBeHidden();
+  await page
+    .getByRole("button", { name: "Launch retro takeaways", exact: true })
+    .click();
+  // The dialog element itself has no box; its heading shows it opened.
+  await expect(
+    page
+      .getByRole("dialog", { name: "Launch retro takeaways" })
+      .getByRole("heading", { name: "Launch retro takeaways" }),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/\/notes$/);
+});
+
+test("an unknown note has no page", async ({ page, baseURL }) => {
+  await enterDemoWorkspace(page, baseURL);
+  // The workspace's loading boundary streams first, so the not-found page
+  // arrives as content rather than a 404 status.
+  await page.goto("/notes/not-a-note");
+  await expect(page.getByText("Wrong turn.", { exact: false })).toBeVisible();
+});
 
 test("reorders category tags and accepts more than 20", async ({
   page,
