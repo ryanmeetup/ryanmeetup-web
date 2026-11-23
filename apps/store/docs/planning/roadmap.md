@@ -25,6 +25,11 @@ old "not started" or "done" label.
   and production guidance sourced from the maintained shipping policy.
 - Product review previews (November 23): four initial cards, with the full
   paginated list available through See all reviews, filters and permalinks.
+- Processing and delivery summary (November 23, formerly item 9): product
+  pages show the shipping policy's Production time before Add to cart, and the
+  home page's shipping strip states the production range, checkout's country
+  count and email tracking, all sourced from the policy and Markets with no
+  invented delivery dates. Shipping quotes stay in hosted checkout.
 - Shorter mobile home (November 23): the running sale appears once, the hero
   uses tighter spacing and a landscape photo frame, and the support card keeps
   its headline and About link before Best Sellers.
@@ -177,14 +182,6 @@ unverified product feedback. All submissions wait for approval.
 **Complete when:** the selected text/media scope has live lifecycle and recovery
 proof. A photo requirement is not met merely by private uploads or text approval.
 Judge.me cannot be used as a recovery provider; see [operations](../how-to/review-operations.md).
-
-### 9. Processing and delivery summary — implemented November 23
-
-Product pages display the maintained shipping policy's **Production time**
-section before Add to cart and link to the full policy. A missing or unreadable
-section falls back to general made-to-order guidance without invented dates.
-Shipping quotes remain entirely in hosted checkout, as Ryan chose on November
-14; no product/cart shipping-rate estimator is required.
 
 ## Decisions retained
 

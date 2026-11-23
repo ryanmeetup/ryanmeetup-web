@@ -15,10 +15,12 @@ import { HomeCollectionTiles } from "@/components/home-collection-tiles";
 import { HomeSpotlight } from "@/components/home-spotlight";
 import { HomeReviews } from "@/components/home-reviews";
 import { ProductGrid } from "@/components/product-grid";
+import { ShippingExpectations } from "@/components/shipping-expectations";
 import { SupportNote } from "@/components/support-note";
 import { withListingRatings } from "@/lib/listing-ratings";
 import { buildPageMetadata, DEFAULT_IMAGE, SITE_DESCRIPTION, SITE_NAME } from "@/lib/metadata";
-import { favoritesPhoneLimit, getHomeCatalog, getShippingCountries } from "@/lib/shopify";
+import { getShippingExpectations } from "@/lib/product-guidance";
+import { favoritesPhoneLimit, getHomeCatalog, getPolicies, getShippingCountries } from "@/lib/shopify";
 import { buildStoreSchema } from "@/lib/structured-data";
 
 export const revalidate = 300;
@@ -63,14 +65,20 @@ export const metadata = {
 } satisfies Metadata;
 
 export default async function HomePage() {
-  const [{ spotlight, favorites: shelf, collections }, shippingCountries] = await Promise.all([
+  const [{ spotlight, favorites: shelf, collections }, shippingCountries, policies] = await Promise.all([
     getHomeCatalog(),
-    // The return policy is extra detail for search engines, never a reason to fail the home page.
+    // The return policy and the shipping strip's country count are never a reason to fail the home page.
     getShippingCountries().catch((error: unknown) => {
-      console.error("Could not load shipping countries for structured data.", error);
+      console.error("Could not load shipping countries for the home page.", error);
+      return [];
+    }),
+    // Without the policy, the shipping strip says only what is always true: everything is made to order.
+    getPolicies().catch((error: unknown) => {
+      console.error("Could not load policies for the home shipping strip.", error);
       return [];
     }),
   ]);
+  const shipping = getShippingExpectations(policies, shippingCountries);
   const favorites = await withListingRatings(shelf);
   return (
     <main className="flex flex-col gap-8 py-6 sm:gap-12 sm:py-8 lg:py-10">
@@ -146,6 +154,10 @@ export default async function HomePage() {
           <ProductGrid products={favorites.products} eagerCount={0} evenRows phoneLimit={favoritesPhoneLimit} className="mt-8" />
         </section>
       )}
+
+      <section data-analytics-placement="home_shipping" data-analytics-section="home_shipping" aria-label="Shipping and production" className="store-container">
+        <ShippingExpectations items={shipping} />
+      </section>
 
       {spotlight && (
         <section data-analytics-placement="home_spotlight" data-analytics-section="home_spotlight" aria-label={spotlight.label} className="store-container">

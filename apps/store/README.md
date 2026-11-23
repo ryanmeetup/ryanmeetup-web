@@ -125,9 +125,15 @@ Below it:
    collection (`frontpage`), in its curated order. An empty or unpublished
    collection falls back to Shopify's actual best-selling order. A pick stays
    in this row even when it is also featured in the spotlight.
-2. The spotlight shows the first listing in the `spotlight` collection, or the
+2. A shipping strip below it says what happens after checkout: made to order,
+   with the business-day range from the shipping policy's **Production time**
+   section (and a holiday note while that section mentions holidays), the
+   number of countries and regions checkout offers, and tracking by email when
+   the policy has a **Tracking** section. Missing facts are left out, never
+   guessed; it always links to the full shipping policy.
+3. The spotlight shows the first listing in the `spotlight` collection, or the
    newest in-stock listing when no spotlight has been curated.
-3. Collection tiles lead to every published theme collection. Each uses the
+4. Collection tiles lead to every published theme collection. Each uses the
    collection image or its leading listing's photo.
 
 `frontpage` and `spotlight` have no browsing tile or menu entry.
