@@ -159,7 +159,7 @@ export default async function HomePage() {
             title={<span id="home-collections">Shop by collection</span>}
             actions={
               <Button.Link href="/collections/all" size="md" variant="secondary" className="!w-full sm:!w-auto" rightIcon={<FiArrowRight />}>
-                Shop All
+                See everything
               </Button.Link>
             }
           />
