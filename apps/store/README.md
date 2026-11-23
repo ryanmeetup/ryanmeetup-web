@@ -120,7 +120,7 @@ shape suits it (the tall second tile takes portraits). The wall pauses while poi
 at or focused, and stays on each tile's first photo under reduced motion.
 “Shop all merch” opens Shop All, and “Browse collections” jumps to the collection
 tiles. One red marquee band runs under it: during a sale, just the sale's name, its
-best discount, and its last day; otherwise the name on a loop. The support card shows its headline and **Where your money
+best discount, and its last day; otherwise the name on a loop. The support statement, set large in Cooper beside a red heart, shows its headline and **Where your money
 goes** link; its fuller explanation remains on larger screens and the About page.
 Below it:
 
