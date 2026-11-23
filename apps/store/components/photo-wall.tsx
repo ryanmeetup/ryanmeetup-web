@@ -52,8 +52,10 @@ export function PhotoWall({ tiles, className, children }: { tiles: WallTile[]; c
   return (
     <div
       className="relative"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
+      // Only a real mouse pauses on hover: a tap fires an enter with no leave, which would stop
+      // the wall for good on a phone.
+      onPointerEnter={(event) => { if (event.pointerType === "mouse") setPaused(true); }}
+      onPointerLeave={(event) => { if (event.pointerType === "mouse") setPaused(false); }}
       onFocus={() => setPaused(true)}
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) setPaused(false);
