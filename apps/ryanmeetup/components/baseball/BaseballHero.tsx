@@ -1,3 +1,4 @@
+import NextImage from "next/image";
 import {
   Button,
   DropdownMenu,
@@ -37,6 +38,25 @@ const PAST_ALBUMS = [
     href: "https://photos.app.goo.gl/e91wbBpxYyCcaudV9",
   },
 ];
+
+// The official Ryan Baseball Classic logo. Until the artwork lands this stays
+// null and the hero shows a dashed placeholder where it will sit. To swap it
+// in, drop the file in public/baseball/ and fill in its real pixel size; the
+// logo then stands in for the visible title (which stays as its alt text).
+type ClassicLogo = { src: string; width: number; height: number };
+// Cast so TypeScript doesn't narrow to `null` and flag the logo branch.
+const CLASSIC_LOGO = null as ClassicLogo | null;
+
+const CLASSIC_TITLE = "The Ryan Baseball Classic";
+
+const ClassicLogoPlaceholder = () => (
+  <div
+    aria-hidden
+    className="flex aspect-[2/1] w-48 items-center justify-center rounded-2xl border-2 border-dashed border-black/20 bg-black/[0.03] text-xs font-semibold uppercase tracking-caps text-black/70 sm:w-64 dark:border-white/20 dark:bg-white/5 dark:text-white/70"
+  >
+    Official logo
+  </div>
+);
 
 type Point = [number, number];
 type Seam = [Point, Point, Point, Point];
@@ -126,13 +146,28 @@ const BaseballHero = ({
       <SeamEdge side="right" />
       <div className="relative flex flex-col items-center gap-6">
         <div className="flex flex-col items-center gap-4">
+          {!CLASSIC_LOGO && <ClassicLogoPlaceholder />}
           {seasonRange && <Kicker>{seasonRange}</Kicker>}
-          <Heading
-            className="title text-balance text-4xl sm:text-5xl lg:text-6xl"
-            size="h1"
-          >
-            The Ryan Baseball Classic
-          </Heading>
+          {CLASSIC_LOGO ? (
+            <h1>
+              <NextImage
+                src={CLASSIC_LOGO.src}
+                width={CLASSIC_LOGO.width}
+                height={CLASSIC_LOGO.height}
+                alt={CLASSIC_TITLE}
+                priority
+                sizes="(min-width: 1024px) 28rem, (min-width: 640px) 24rem, 18rem"
+                className="h-auto w-72 sm:w-96 lg:w-[28rem]"
+              />
+            </h1>
+          ) : (
+            <Heading
+              className="title text-balance text-4xl sm:text-5xl lg:text-6xl"
+              size="h1"
+            >
+              {CLASSIC_TITLE}
+            </Heading>
+          )}
           <Text className="max-w-3xl text-balance text-lg text-black/70 dark:text-white/70">
             Ryans are taking over dozens of ballparks all over North America.
             Find the official Ryan Baseball Classic night nearest you and get
