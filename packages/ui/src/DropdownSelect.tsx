@@ -9,6 +9,7 @@ import {
 } from "@headlessui/react";
 import { Fragment, useId, useState, type ReactNode } from "react";
 import { FiCheck, FiChevronDown, FiSearch } from "react-icons/fi";
+import { AnimatedCollapse } from "./AnimatedCollapse";
 import { Avatar, type AvatarProps } from "./Avatar";
 import { fieldSelectButtonClasses, getFieldLabelClasses } from "./fieldStyles";
 import { getFilterControlClasses } from "./filterStyles";
@@ -133,10 +134,13 @@ const DropdownSelect = ({
     : opensUpward
       ? [...remainingOptions, ...proximityOptions]
       : [...proximityOptions, ...remainingOptions];
-  const renderOption = (option: DropdownSelectOption) => (
+  const renderOption = (option: DropdownSelectOption, hidden = false) => (
     <ListboxOption
       key={option.value}
       value={option.value}
+      // A collapsed group's options stay mounted so they can animate, but
+      // disabled so arrow keys skip them.
+      disabled={hidden}
       className={`group flex cursor-pointer gap-2 rounded-lg px-3 py-2 text-sm ${option.details?.length ? "items-start" : "items-center"} transition focus:outline-none data-focus:bg-black/5 data-selected:bg-black/5 data-selected:font-semibold dark:data-focus:bg-white/10 dark:data-selected:bg-white/10`}
     >
       {option.avatar && (
@@ -177,46 +181,57 @@ const DropdownSelect = ({
       />
     </ListboxOption>
   );
-  const renderOptions = (items: DropdownSelectOption[]) =>
-    items.map((option, index) => {
-      const group = option.group?.label;
-      const showGroup = group && group !== items[index - 1]?.group?.label;
-      const collapsed = isCollapsed(group);
+  // Consecutive options sharing a group label render as one collapsible run.
+  const optionRuns = displayedOptions.reduce<
+    { group?: DropdownSelectOption["group"]; options: DropdownSelectOption[] }[]
+  >((runs, option) => {
+    const last = runs[runs.length - 1];
+    if (last && last.group?.label === option.group?.label)
+      last.options.push(option);
+    else runs.push({ group: option.group, options: [option] });
+    return runs;
+  }, []);
+  const renderOptions = () =>
+    optionRuns.map(({ group, options: runOptions }) => {
+      if (!group) return runOptions.map((option) => renderOption(option));
+      const collapsed = isCollapsed(group.label);
       const selectedInGroup =
-        collapsed && selected?.group?.label === group ? selected : undefined;
+        collapsed && selected?.group?.label === group.label
+          ? selected
+          : undefined;
 
       return (
-        <Fragment key={option.value}>
-          {showGroup && (
-            <button
-              type="button"
-              aria-expanded={!collapsed}
-              disabled={!!normalizedQuery}
-              onClick={() => toggleGroup(group)}
-              onKeyDown={(event) => {
-                // Keep Enter and Space on the header instead of letting the
-                // listbox select its active option.
-                if (event.key === "Enter" || event.key === " ")
-                  event.stopPropagation();
-              }}
-              className={`flex w-full cursor-pointer items-center gap-2 rounded-t-lg border-b border-black/10 px-3 pb-2 pt-2 text-left text-[0.65rem] font-semibold uppercase tracking-caps transition hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 disabled:cursor-default disabled:hover:opacity-100 dark:border-white/10 dark:focus-visible:ring-white/20 ${option.group?.textClassName ?? "text-black/55 dark:text-white/55"}`}
-            >
-              {option.group?.icon}
-              <span className="min-w-0 flex-1 truncate">{group}</span>
-              {selectedInGroup && (
-                <span className="min-w-0 max-w-[50%] shrink truncate tracking-normal normal-case">
-                  {selectedInGroup.label}
-                </span>
-              )}
-              {!normalizedQuery && (
-                <FiChevronDown
-                  aria-hidden
-                  className={`shrink-0 transition-transform motion-reduce:transition-none ${collapsed ? "-rotate-90" : ""}`}
-                />
-              )}
-            </button>
-          )}
-          {!collapsed && renderOption(option)}
+        <Fragment key={`${group.label}:${runOptions[0].value}`}>
+          <button
+            type="button"
+            aria-expanded={!collapsed}
+            disabled={!!normalizedQuery}
+            onClick={() => toggleGroup(group.label)}
+            onKeyDown={(event) => {
+              // Keep Enter and Space on the header instead of letting the
+              // listbox select its active option.
+              if (event.key === "Enter" || event.key === " ")
+                event.stopPropagation();
+            }}
+            className={`flex w-full cursor-pointer items-center gap-2 rounded-t-lg border-b border-black/10 px-3 pb-2 pt-2 text-left text-[0.65rem] font-semibold uppercase tracking-caps transition hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 disabled:cursor-default disabled:hover:opacity-100 dark:border-white/10 dark:focus-visible:ring-white/20 ${group.textClassName ?? "text-black/55 dark:text-white/55"}`}
+          >
+            {group.icon}
+            <span className="min-w-0 flex-1 truncate">{group.label}</span>
+            {selectedInGroup && (
+              <span className="min-w-0 max-w-[50%] shrink truncate tracking-normal normal-case">
+                {selectedInGroup.label}
+              </span>
+            )}
+            {!normalizedQuery && (
+              <FiChevronDown
+                aria-hidden
+                className={`shrink-0 transition-transform duration-200 motion-reduce:transition-none ${collapsed ? "-rotate-90" : ""}`}
+              />
+            )}
+          </button>
+          <AnimatedCollapse open={!collapsed} contentClassName="space-y-1">
+            {runOptions.map((option) => renderOption(option, collapsed))}
+          </AnimatedCollapse>
         </Fragment>
       );
     });
@@ -311,7 +326,7 @@ const DropdownSelect = ({
             ref={setScrollElement}
             className="min-h-0 space-y-1 overflow-y-auto"
           >
-            {renderOptions(displayedOptions)}
+            {renderOptions()}
           </div>
           {visibleOptions.length === 0 && (
             <p className="px-3 py-4 text-center text-sm text-black/60 dark:text-white/60">
