@@ -36,9 +36,9 @@ const HERO_PHOTOS: RotatingGalleryItem[] = [
     alt: "A Ryan tearing open a dress shirt to reveal a superhero-style R logo tee",
     objectPosition: "50% 40%",
     pairedWith: {
-      src: "/hero/ryan-heart-ry-tee.jpg",
-      alt: "Two Ryans at a crowded meetup, one in an I ♥ RY tee and one pointing to a superhero-style R logo tee",
-      objectPosition: "50% 35%",
+      src: "/hero/ryan-name-tag-tee.jpg",
+      alt: "A Ryan in a Ryans beanie and a white tee with a Hello my name is Ryan name tag",
+      objectPosition: "50% 40%",
     },
   },
   {
@@ -49,11 +49,6 @@ const HERO_PHOTOS: RotatingGalleryItem[] = [
   {
     src: "/hero/ryan-family-merch-table.jpg",
     alt: "Three volunteers in Ryan’s Mother, Ryan’s Sister, and Ryan’s Father tees behind a table of Ryan Meetup shirts and hats",
-  },
-  {
-    src: "/hero/ryan-name-tag-tee.jpg",
-    alt: "A Ryan in a Ryans beanie and a white tee with a Hello my name is Ryan name tag",
-    fit: "contain",
   },
   {
     src: "/hero/ryan-philadelphia-tee.jpg",
