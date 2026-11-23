@@ -16,7 +16,7 @@ export function HomeMarquee({ facts }: { facts: string[] }) {
       separator="✦"
       speed={45}
       className="bg-nametag py-2 text-white"
-      itemClassName="font-cooper text-lg tracking-wide"
+      itemClassName="font-cooper text-base tracking-wide"
     />
   );
 }
