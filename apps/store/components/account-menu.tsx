@@ -79,8 +79,8 @@ export function AccountMenu({ accountUrl }: { accountUrl: string | null }) {
         if (takeSwitching() && status.status === "signed-out") window.location.assign(reviewSignInUrl(window.location.pathname));
         // Just back from signing in: say who, with an easy way out if Shopify remembered someone else.
         if (takeSignedInNotice() && status.status === "signed-in") {
-          toast.custom((t) => (
-            <span className="text-sm">
+          toast((t) => (
+            <span className="font-normal">
               Signed in as <span className="font-semibold">{status.email ?? "your store account"}</span>.{" "}
               <button type="button" className="rounded-sm underline decoration-current/50 underline-offset-2 hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
                 onClick={() => { toast.dismiss(t.id); void switchAccount(); }}>Not you? Use a different account</button>
