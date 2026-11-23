@@ -75,6 +75,7 @@ const BaseballPage = async () => {
         <div className={layoutPaddingX}>
           <BaseballHero
             teams={teams}
+            hasMap={teams.length > 0}
             seasonRange={getSeasonRange(teams)}
             hasMerch={hasMerch}
           />

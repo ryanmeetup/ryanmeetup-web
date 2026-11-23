@@ -359,7 +359,9 @@ const TeamFinder = ({ teams }: TeamFinderProps) => {
             </div>
           )}
         </PendingResults>
-        <div className="xl:sticky xl:top-28">
+        {/* Above the list on narrower screens, so "See the map" lands on it
+            rather than past every team card. */}
+        <div id="map" className="order-first scroll-mt-28 xl:sticky xl:top-28 xl:order-none">
           <TeamMap teams={results.map((entry) => entry.team)} />
         </div>
       </div>

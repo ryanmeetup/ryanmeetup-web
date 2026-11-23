@@ -1,6 +1,6 @@
 import { Button, Heading, Kicker, Text } from "@ryanmeetup/ui";
 import { FaCamera as Camera } from "react-icons/fa";
-import { FiArrowUpRight } from "react-icons/fi";
+import { FiArrowUpRight, FiMap } from "react-icons/fi";
 
 import type { BaseballTeam } from "@/lib/types";
 import { getSeasonStats } from "@/utils/baseball";
@@ -10,6 +10,8 @@ type BaseballHeroProps = {
   /** Computed from announced game dates; null until a team is announced. */
   seasonRange: string | null;
   hasMerch: boolean;
+  /** The map only renders once a team is announced. */
+  hasMap: boolean;
 };
 
 // Albums from earlier installments, copied from their Contentful `gallery`
@@ -98,7 +100,12 @@ const SeamEdge = ({ side }: { side: "left" | "right" }) => (
   </svg>
 );
 
-const BaseballHero = ({ teams, seasonRange, hasMerch }: BaseballHeroProps) => {
+const BaseballHero = ({
+  teams,
+  seasonRange,
+  hasMerch,
+  hasMap,
+}: BaseballHeroProps) => {
   const stats = getSeasonStats(teams);
 
   return (
@@ -164,6 +171,18 @@ const BaseballHero = ({ teams, seasonRange, hasMerch }: BaseballHeroProps) => {
           <Button.Link href="#find" size="md" fullWidth className="sm:w-auto">
             Find your game
           </Button.Link>
+          {hasMap && (
+            <Button.Link
+              href="#map"
+              size="md"
+              variant="outline"
+              leftIcon={<FiMap aria-hidden />}
+              fullWidth
+              className="sm:w-auto"
+            >
+              See the map
+            </Button.Link>
+          )}
           {hasMerch && (
             <Button.Link
               href="#merch"
