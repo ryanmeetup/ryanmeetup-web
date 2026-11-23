@@ -63,25 +63,31 @@ export function HomeHero() {
         tiles={WALL}
         className="grid grid-cols-2 grid-rows-[48vw_36vw_36vw] gap-1 bg-black md:grid-cols-6 md:grid-rows-[repeat(2,clamp(11rem,21vw,20rem))]"
       >
-        <div className="bg-black md:absolute md:inset-x-0 md:bottom-0 md:bg-transparent md:bg-gradient-to-t md:from-black/90 md:via-black/60 md:to-transparent md:pt-32">
-          <div className="store-container flex flex-col gap-5 py-6 sm:py-8 md:flex-row md:items-end md:justify-between md:gap-8 lg:py-10">
+        {/* The fade sits under the copy: from the bottom while the buttons sit bottom right, then
+            from the bottom-left corner once they stack under the copy, so the right tiles stay bright. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 hidden md:block md:bg-gradient-to-t md:from-black/90 md:via-black/50 md:via-35% md:to-transparent md:to-70% xl:bg-[radial-gradient(ellipse_75%_130%_at_0%_100%,rgb(0_0_0/0.92),rgb(0_0_0/0.72)_45%,rgb(0_0_0/0.3)_70%,transparent_90%)]"
+        />
+        <div className="bg-black md:absolute md:inset-x-0 md:bottom-0 md:bg-transparent">
+          <div className="store-container flex flex-col gap-5 py-6 sm:py-8 md:flex-row md:items-end md:justify-between md:gap-8 lg:py-10 xl:flex-col xl:items-start xl:gap-6">
             <div className="min-w-0">
               <Image
                 src="/hero/ryan-name-tag.png"
                 alt=""
                 width={2264}
                 height={1442}
-                sizes="(min-width: 768px) 96px, 64px"
-                className="pointer-events-none mb-4 ml-1 h-auto w-16 -rotate-6 select-none drop-shadow-lg sm:mb-5 md:w-24"
+                sizes="(min-width: 1536px) 144px, (min-width: 1280px) 112px, (min-width: 768px) 96px, 80px"
+                className="pointer-events-none mb-4 ml-1 h-auto w-20 -rotate-6 select-none drop-shadow-lg sm:mb-5 md:w-24 xl:w-28 2xl:w-36"
               />
               <Heading
                 size="h1"
                 ignoreColorMode
-                className="max-w-[11ch] text-[clamp(2.5rem,11vw,3.75rem)] leading-[0.95] text-white [text-shadow:0_2px_30px_rgb(0_0_0/0.4)] md:text-6xl xl:text-7xl 2xl:text-8xl"
+                className="max-w-[11ch] text-[clamp(2.5rem,11vw,3.75rem)] leading-[0.95] text-white [text-shadow:0_2px_30px_rgb(0_0_0/0.4)] md:text-6xl 2xl:text-7xl"
               >
                 Merch with your name on it.
               </Heading>
-              <Text className="mt-3 max-w-md text-base !text-white/85 sm:mt-4 sm:text-lg">
+              <Text className="mt-3 max-w-md text-balance text-base !text-white/85 sm:mt-4 sm:text-lg">
                 Shirts, hats, and everyday goods for the world’s most organized first name.
               </Text>
             </div>
