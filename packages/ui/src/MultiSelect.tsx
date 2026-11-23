@@ -9,6 +9,7 @@ import {
 } from "@headlessui/react";
 import { Fragment, useCallback, useId, useState } from "react";
 import { FiCheck, FiChevronDown, FiSearch } from "react-icons/fi";
+import { AnimatedCollapse } from "./AnimatedCollapse";
 import { Avatar, type AvatarProps } from "./Avatar";
 import { fieldSelectButtonClasses, getFieldLabelClasses } from "./fieldStyles";
 import { useDropdownSearch } from "./useDropdownSearch";
@@ -94,6 +95,39 @@ const MultiSelect = ({
         ),
       )
     : orderedOptions;
+  // Consecutive options sharing a group label render as one collapsible run.
+  const optionRuns = visibleOptions.reduce<
+    { group?: MultiSelectOption["group"]; options: MultiSelectOption[] }[]
+  >((runs, option) => {
+    const last = runs[runs.length - 1];
+    if (last && last.group?.label === option.group?.label)
+      last.options.push(option);
+    else runs.push({ group: option.group, options: [option] });
+    return runs;
+  }, []);
+  const renderOption = (option: MultiSelectOption, hidden = false) => (
+    <ListboxOption
+      key={option.value}
+      value={option.value}
+      // A collapsed group's options stay mounted so they can animate, but
+      // disabled so arrow keys skip them.
+      disabled={hidden}
+      className="group flex shrink-0 cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm transition focus:outline-none data-focus:bg-black/5 data-selected:bg-black/5 data-selected:font-semibold dark:data-focus:bg-white/10 dark:data-selected:bg-white/10"
+    >
+      {option.avatar && (
+        <Avatar
+          {...option.avatar}
+          size="md"
+          className={`-my-1 ${option.avatar.className ?? ""}`}
+        />
+      )}
+      <span className="min-w-0 flex-1 truncate">{option.label}</span>
+      <FiCheck
+        aria-hidden
+        className="shrink-0 opacity-0 group-data-selected:opacity-100"
+      />
+    </ListboxOption>
+  );
   const selectedLabels = selectedOptions.map((option) => option.label);
   const summary =
     selectedLabels.length === 0
@@ -185,75 +219,60 @@ const MultiSelect = ({
               </div>
             </div>
           )}
-          {visibleOptions.map((option, index) => {
-            const group = option.group?.label;
-            const showGroup =
-              group && group !== visibleOptions[index - 1]?.group?.label;
-            const collapsed = isCollapsed(group);
+          {optionRuns.map(({ group, options: runOptions }) => {
+            if (!group) return runOptions.map((option) => renderOption(option));
+            const collapsed = isCollapsed(group.label);
             const selectedInGroup = collapsed
               ? selectedOptions.filter(
-                  (selectedOption) => selectedOption.group?.label === group,
+                  (selectedOption) =>
+                    selectedOption.group?.label === group.label,
                 ).length
               : 0;
 
             return (
-              <Fragment key={option.value}>
-                {showGroup && (
-                  <button
-                    type="button"
-                    aria-expanded={!collapsed}
-                    disabled={!!normalizedQuery}
-                    onClick={() => toggleGroup(group)}
-                    onKeyDown={(event) => {
-                      // Keep Enter and Space on the header instead of letting
-                      // the listbox select its active option.
-                      if (event.key === "Enter" || event.key === " ")
-                        event.stopPropagation();
-                    }}
-                    className="mb-1 flex w-full shrink-0 cursor-pointer items-center gap-2 rounded-t-lg border-b border-black/10 px-3 pb-2 pt-2 text-left text-[0.65rem] font-semibold uppercase tracking-caps text-black/55 transition first:pt-1 hover:text-black/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 disabled:cursor-default disabled:hover:text-black/55 dark:border-white/10 dark:text-white/55 dark:hover:text-white/80 dark:focus-visible:ring-white/20 dark:disabled:hover:text-white/55"
-                  >
-                    {option.group?.color && (
-                      <i
-                        aria-hidden
-                        className="h-2 w-2 shrink-0 rounded-full"
-                        style={{ backgroundColor: option.group.color }}
-                      />
-                    )}
-                    <span className="min-w-0 flex-1 truncate">{group}</span>
-                    {selectedInGroup > 0 && (
-                      <span className="shrink-0 tracking-normal normal-case">
-                        {selectedInGroup} selected
-                      </span>
-                    )}
-                    {!normalizedQuery && (
-                      <FiChevronDown
-                        aria-hidden
-                        className={`shrink-0 transition-transform motion-reduce:transition-none ${collapsed ? "-rotate-90" : ""}`}
-                      />
-                    )}
-                  </button>
-                )}
-                {!collapsed && (
-                  <ListboxOption
-                    value={option.value}
-                    className="group flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm transition focus:outline-none data-focus:bg-black/5 data-selected:bg-black/5 data-selected:font-semibold dark:data-focus:bg-white/10 dark:data-selected:bg-white/10"
-                  >
-                    {option.avatar && (
-                      <Avatar
-                        {...option.avatar}
-                        size="md"
-                        className={`-my-1 ${option.avatar.className ?? ""}`}
-                      />
-                    )}
-                    <span className="min-w-0 flex-1 truncate">
-                      {option.label}
-                    </span>
-                    <FiCheck
+              <Fragment key={`${group.label}:${runOptions[0].value}`}>
+                <button
+                  type="button"
+                  aria-expanded={!collapsed}
+                  disabled={!!normalizedQuery}
+                  onClick={() => toggleGroup(group.label)}
+                  onKeyDown={(event) => {
+                    // Keep Enter and Space on the header instead of letting
+                    // the listbox select its active option.
+                    if (event.key === "Enter" || event.key === " ")
+                      event.stopPropagation();
+                  }}
+                  className="flex w-full shrink-0 cursor-pointer items-center gap-2 rounded-t-lg border-b border-black/10 px-3 pb-2 pt-2 text-left text-[0.65rem] font-semibold uppercase tracking-caps text-black/55 transition first:pt-1 hover:text-black/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 disabled:cursor-default disabled:hover:text-black/55 dark:border-white/10 dark:text-white/55 dark:hover:text-white/80 dark:focus-visible:ring-white/20 dark:disabled:hover:text-white/55"
+                >
+                  {group.color && (
+                    <i
                       aria-hidden
-                      className="shrink-0 opacity-0 group-data-selected:opacity-100"
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: group.color }}
                     />
-                  </ListboxOption>
-                )}
+                  )}
+                  <span className="min-w-0 flex-1 truncate">{group.label}</span>
+                  {selectedInGroup > 0 && (
+                    <span className="shrink-0 tracking-normal normal-case">
+                      {selectedInGroup} selected
+                    </span>
+                  )}
+                  {!normalizedQuery && (
+                    <FiChevronDown
+                      aria-hidden
+                      className={`shrink-0 transition-transform duration-200 motion-reduce:transition-none ${collapsed ? "-rotate-90" : ""}`}
+                    />
+                  )}
+                </button>
+                <AnimatedCollapse open={!collapsed} className="shrink-0">
+                  {/* Padding lives on an inner wrapper so the collapsed
+                      height still reaches zero. */}
+                  <div className="flex flex-col gap-1 pt-1">
+                    {runOptions.map((option) =>
+                      renderOption(option, collapsed),
+                    )}
+                  </div>
+                </AnimatedCollapse>
               </Fragment>
             );
           })}
