@@ -4,6 +4,7 @@ import { Button, Divider, EmptyState, SectionHeader } from "@ryanmeetup/ui";
 import {
   BaseballHero,
   MerchStrip,
+  NightIncludes,
   TeamFinder,
   TeamLogoMarquee,
 } from "@/components/baseball";
@@ -84,6 +85,8 @@ const BaseballPage = async () => {
       </div>
 
       <div className={`space-y-12 pb-8 pt-12 ${layoutPaddingX}`}>
+        <NightIncludes />
+
         {merch && hasMerch && <MerchStrip collection={merch} />}
 
         {teams.length > 0 ? (
