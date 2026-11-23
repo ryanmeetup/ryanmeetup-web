@@ -7,7 +7,7 @@ import {
   ListboxOptions,
   Transition,
 } from "@headlessui/react";
-import { Fragment, useId, type ReactNode } from "react";
+import { Fragment, useId, useState, type ReactNode } from "react";
 import { FiCheck, FiChevronDown, FiSearch } from "react-icons/fi";
 import { Avatar, type AvatarProps } from "./Avatar";
 import { fieldSelectButtonClasses, getFieldLabelClasses } from "./fieldStyles";
@@ -89,6 +89,18 @@ const DropdownSelect = ({
   const { opensUpward, orderedOptions, setAnchorElement, setScrollElement } =
     useProximityOptions(options, proximityValue, proximityGroup);
   const normalizedQuery = query.trim().toLocaleLowerCase();
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const toggleGroup = (group: string) =>
+    setCollapsedGroups((current) => {
+      const next = new Set(current);
+      if (!next.delete(group)) next.add(group);
+      return next;
+    });
+  // A search looks through every group, collapsed or not.
+  const isCollapsed = (group?: string) =>
+    !normalizedQuery && !!group && collapsedGroups.has(group);
   const visibleOptions = normalizedQuery
     ? orderedOptions.filter((option) =>
         [
@@ -167,20 +179,44 @@ const DropdownSelect = ({
   );
   const renderOptions = (items: DropdownSelectOption[]) =>
     items.map((option, index) => {
-      const showGroup =
-        option.group && option.group.label !== items[index - 1]?.group?.label;
+      const group = option.group?.label;
+      const showGroup = group && group !== items[index - 1]?.group?.label;
+      const collapsed = isCollapsed(group);
+      const selectedInGroup =
+        collapsed && selected?.group?.label === group ? selected : undefined;
 
       return (
         <Fragment key={option.value}>
           {showGroup && (
-            <div
-              className={`flex items-center gap-2 border-b border-black/10 px-3 pb-2 pt-2 text-[0.65rem] font-semibold uppercase tracking-caps dark:border-white/10 ${option.group?.textClassName ?? "text-black/55 dark:text-white/55"}`}
+            <button
+              type="button"
+              aria-expanded={!collapsed}
+              disabled={!!normalizedQuery}
+              onClick={() => toggleGroup(group)}
+              onKeyDown={(event) => {
+                // Keep Enter and Space on the header instead of letting the
+                // listbox select its active option.
+                if (event.key === "Enter" || event.key === " ")
+                  event.stopPropagation();
+              }}
+              className={`flex w-full cursor-pointer items-center gap-2 rounded-t-lg border-b border-black/10 px-3 pb-2 pt-2 text-left text-[0.65rem] font-semibold uppercase tracking-caps transition hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 disabled:cursor-default disabled:hover:opacity-100 dark:border-white/10 dark:focus-visible:ring-white/20 ${option.group?.textClassName ?? "text-black/55 dark:text-white/55"}`}
             >
               {option.group?.icon}
-              <span className="truncate">{option.group?.label}</span>
-            </div>
+              <span className="min-w-0 flex-1 truncate">{group}</span>
+              {selectedInGroup && (
+                <span className="min-w-0 max-w-[50%] shrink truncate tracking-normal normal-case">
+                  {selectedInGroup.label}
+                </span>
+              )}
+              {!normalizedQuery && (
+                <FiChevronDown
+                  aria-hidden
+                  className={`shrink-0 transition-transform motion-reduce:transition-none ${collapsed ? "-rotate-90" : ""}`}
+                />
+              )}
+            </button>
           )}
-          {renderOption(option)}
+          {!collapsed && renderOption(option)}
         </Fragment>
       );
     });
