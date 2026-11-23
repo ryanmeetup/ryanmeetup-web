@@ -5,7 +5,7 @@ import Link from "next/link";
 import { trackStoreEvent } from "@/lib/analytics";
 import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { Button, DropdownSelect, ErrorCallout, IconButton, Kicker, getFieldLabelClasses } from "@ryanmeetup/ui";
+import { Button, DisclosureCard, DropdownSelect, ErrorCallout, IconButton, Kicker, getFieldLabelClasses } from "@ryanmeetup/ui";
 import { FiCheck, FiChevronLeft, FiChevronRight, FiHeart, FiPenTool, FiShield, FiShoppingBag } from "react-icons/fi";
 import { getCompareAtPrice, getListingSale } from "@/lib/money";
 import { findVariant, getOptionChoices, getSelections, isDefaultTitleOption, isSizeOption, oneSize } from "@/lib/product-options";
@@ -274,13 +274,8 @@ export function ProductDetail({ product, title = product.title, breadcrumbs, des
           />
         </div>
 
-        <div className="mt-6 space-y-2 text-sm text-black/70 dark:text-white/70">
-          {needsSize && <p>Choose a size to add this item to your cart.</p>}
-          <p><FinalSaleNote /></p>
-          {shipsTo && <p>{shipsTo}; shipping costs are shown at checkout.</p>}
-          <p>{productionSummary ?? "Made to order. Production happens before shipping."}{" "}<Link href="/policies/shipping-policy" className="rounded-sm underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/40">Shipping details</Link></p>
-        </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+        {needsSize && <p className="mt-6 text-sm text-black/70 dark:text-white/70">Choose a size to add this item to your cart.</p>}
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
           <Button fullWidth size="lg" loading={loading} loadingText="Adding" disabled={!variant?.availableForSale} leftIcon={added ? <FiCheck /> : <FiShoppingBag />} onClick={handleAdd}>
             {needsSize ? "Choose a size" : !variant ? "Unavailable" : !variant.availableForSale ? "Sold out" : added ? "Added" : "Add to cart"}
           </Button>
@@ -289,6 +284,17 @@ export function ProductDetail({ product, title = product.title, breadcrumbs, des
         {error && <ErrorCallout className="mt-4">{error}</ErrorCallout>}
         <div className="mt-8 border-t border-black/10 dark:border-white/10">
           <ProductDescription description={product.description} descriptionHtml={product.descriptionHtml} part="details" />
+          <DisclosureCard
+            summary="Shipping and returns"
+            data-analytics-disclosure="shipping_and_returns"
+            className="border-b border-black/10 dark:border-white/10"
+            buttonClassName="flex w-full items-center justify-between gap-4 rounded-sm py-5 text-left font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/40"
+            panelClassName="space-y-2 pb-5 text-sm text-black/70 dark:text-white/70"
+          >
+            <p><FinalSaleNote /></p>
+            {shipsTo && <p>{shipsTo}; shipping costs are shown at checkout.</p>}
+            <p>{productionSummary ?? "Made to order. Production happens before shipping."}{" "}<Link href="/policies/shipping-policy" className="rounded-sm underline decoration-black/30 underline-offset-4 transition hover:decoration-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:decoration-white/30 dark:hover:decoration-white dark:focus-visible:ring-white/40">Shipping details</Link></p>
+          </DisclosureCard>
           <div className="grid gap-6 pt-6 text-sm text-black/70 sm:grid-cols-2 dark:text-white/70">
             {[
               { icon: FiPenTool, title: "Designed by Ryan", text: getProductDesignerCredit(product) || "Designed in-house by one of our Ryans." },
