@@ -39,24 +39,22 @@ const TextMarquee = ({
         {items.map((item, index) => <li key={`${index}-${item}`}>{item}</li>)}
       </ul>
     )}
-    <Marquee
-      speed={speed}
-      direction={direction}
-      gradient={false}
-      autoFill
-      pauseOnHover
-      // The library has no reduced-motion option, so pause its scroll track.
-      className="motion-reduce:[&_.rfm-marquee]:[animation-play-state:paused]"
-    >
-      <span aria-hidden className={clsx("flex items-center whitespace-nowrap", itemClassName)}>
-        {items.map((item, index) => (
-          <Fragment key={`${index}-${item}`}>
-            <span>{item}</span>
-            <span className="px-[0.75em] opacity-70">{separator}</span>
-          </Fragment>
-        ))}
-      </span>
-    </Marquee>
+    {/* Reduced motion swaps the scroll for the phrases stacked once, so none sit off screen. */}
+    <ul aria-hidden className={clsx("hidden flex-col items-center gap-1.5 px-4 text-center leading-tight text-balance motion-reduce:flex", itemClassName)}>
+      {items.map((item, index) => <li key={`${index}-${item}`}>{item}</li>)}
+    </ul>
+    <div className="motion-reduce:hidden">
+      <Marquee speed={speed} direction={direction} gradient={false} autoFill pauseOnHover>
+        <span aria-hidden className={clsx("flex items-center whitespace-nowrap", itemClassName)}>
+          {items.map((item, index) => (
+            <Fragment key={`${index}-${item}`}>
+              <span>{item}</span>
+              <span className="px-[0.75em] opacity-70">{separator}</span>
+            </Fragment>
+          ))}
+        </span>
+      </Marquee>
+    </div>
   </div>
 );
 
