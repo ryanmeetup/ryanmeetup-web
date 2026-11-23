@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { getProductionSummary, getShippingExpectations, getSizeGuideHtml } from "../lib/product-guidance";
+import { describeShippingRegions, getProductionSummary, getShippingExpectations, getSizeGuideHtml } from "../lib/product-guidance";
 
 test("production guidance follows the maintained policy and preserves seasonal caveats", () => {
   const policy = { handle: "shipping-policy", title: "Shipping Policy", body: '<h2>Where we ship</h2><p>28 regions.</p><h2>Production time</h2><p>Allow <strong>2–7 business days</strong> before shipping.</p><p>Busy periods &amp; holidays may take longer.</p><h2>Tracking</h2><p>Tracking is emailed.</p>' };
@@ -27,6 +27,13 @@ test("shipping expectations come from the policy and checkout countries, never f
   const vague = { ...policy, body: "<h2>Production time</h2><p>Made when you order.</p>" };
   expect(getShippingExpectations([vague], [])).toEqual([{ id: "production", title: "Made to order", detail: "Made for you, then it ships" }]);
   expect(getShippingExpectations([], [])).toEqual([{ id: "production", title: "Made to order", detail: "Made for you, then it ships" }]);
+});
+
+test("the product page's country line counts checkout's countries once and names a single one", () => {
+  expect(describeShippingRegions(["US", "CA", "CA", "JP"])).toBe("Ships to 3 countries and regions");
+  expect(describeShippingRegions(["US"])).toBe("Ships within the United States");
+  expect(describeShippingRegions(["CA"])).toBe("Ships within Canada");
+  expect(describeShippingRegions([])).toBeNull();
 });
 
 test("the size guide keeps both unit tables without pulling in product warnings or unrelated tables", () => {

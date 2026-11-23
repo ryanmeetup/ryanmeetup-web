@@ -23,7 +23,7 @@ import { PromotionNote } from "./promotion";
 import { FinalSaleNote } from "./final-sale-note";
 import { ProductSizeGuide } from "./product-size-guide";
 
-export function ProductDetail({ product, title = product.title, breadcrumbs, designField, hideColorOption = false, gallery, initialImage, initialColor, onSelectGalleryImage, productionSummary }: {
+export function ProductDetail({ product, title = product.title, breadcrumbs, designField, hideColorOption = false, gallery, initialImage, initialColor, onSelectGalleryImage, productionSummary, shipsTo }: {
   product: Product;
   title?: string;
   // Rides along above the gallery so the trail stays in view while it sticks.
@@ -37,6 +37,8 @@ export function ProductDetail({ product, title = product.title, breadcrumbs, des
   initialColor?: string | null;
   onSelectGalleryImage?: (image: ProductGalleryImage) => void;
   productionSummary?: string | null;
+  /** Where checkout ships, such as "Ships to 28 countries and regions"; left out when unknown. */
+  shipsTo?: string | null;
 }) {
   const { addItem, error, loading, setDrawerOpen } = useCart();
   const initialVariant = getVariantForColor(product, initialColor)
@@ -275,6 +277,7 @@ export function ProductDetail({ product, title = product.title, breadcrumbs, des
         <div className="mt-6 space-y-2 text-sm text-black/70 dark:text-white/70">
           {needsSize && <p>Choose a size to add this item to your cart.</p>}
           <p><FinalSaleNote /></p>
+          {shipsTo && <p>{shipsTo}; shipping costs are shown at checkout.</p>}
           <p>{productionSummary ?? "Made to order. Production happens before shipping."}{" "}<Link href="/policies/shipping-policy" className="rounded-sm underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/40">Shipping details</Link></p>
         </div>
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">

@@ -13,7 +13,7 @@ import { ProductDetail } from "./product-detail";
 import { ProductSchema } from "./product-schema";
 import { Reviews } from "./reviews";
 
-export function ProductGroupDetail({ title, handle, url, breadcrumbs, designs, defaultColor, reviewsByProduct, reviewAccessByProduct, productionSummary }: {
+export function ProductGroupDetail({ title, handle, url, breadcrumbs, designs, defaultColor, reviewsByProduct, reviewAccessByProduct, productionSummary, shipsTo }: {
   title: string;
   url: string;
   breadcrumbs?: ReactNode;
@@ -23,6 +23,7 @@ export function ProductGroupDetail({ title, handle, url, breadcrumbs, designs, d
   reviewsByProduct: Record<string, ReviewsData>;
   reviewAccessByProduct: Record<string, CustomReviewAccess>;
   productionSummary?: string | null;
+  shipsTo?: string | null;
 }) {
   const searchParams = useSearchParams();
   const navigationFocus = useRef<string | null>(null);
@@ -74,6 +75,7 @@ export function ProductGroupDetail({ title, handle, url, breadcrumbs, designs, d
         key={`product-${selected.product.id}`}
         product={selected.product}
         productionSummary={productionSummary}
+        shipsTo={shipsTo}
         title={title}
         breadcrumbs={breadcrumbs}
         gallery={gallery}

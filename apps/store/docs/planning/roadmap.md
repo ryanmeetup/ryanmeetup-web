@@ -26,10 +26,11 @@ old "not started" or "done" label.
 - Product review previews (November 23): four initial cards, with the full
   paginated list available through See all reviews, filters and permalinks.
 - Processing and delivery summary (November 23, formerly item 9): product
-  pages show the shipping policy's Production time before Add to cart, and the
-  home page's shipping strip states the production range, checkout's country
-  count and email tracking, all sourced from the policy and Markets with no
-  invented delivery dates. Shipping quotes stay in hosted checkout.
+  pages show the shipping policy's Production time and checkout's country count
+  before Add to cart, and the home page's shipping strip states the production
+  range, checkout's country count and email tracking, all sourced from the
+  policy and Markets with no invented delivery dates. Shipping quotes stay in
+  hosted checkout.
 - Shorter mobile home (November 23): the running sale appears once, the hero
   uses tighter spacing and a landscape photo frame, and the support card keeps
   its headline and About link before Best Sellers.

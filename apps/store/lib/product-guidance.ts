@@ -16,6 +16,15 @@ export function getProductionSummary(policies: ShopPolicy[]) {
   return getShippingPolicySection(policies, "Production time");
 }
 
+/** Where checkout can ship, from the countries Shopify Markets offers; null when that list is unknown. */
+export function describeShippingRegions(countries: string[]) {
+  const regions = [...new Set(countries)];
+  if (regions.length > 1) return `Ships to ${regions.length} countries and regions`;
+  if (!regions.length) return null;
+  const name = new Intl.DisplayNames(["en"], { type: "region" }).of(regions[0]) ?? regions[0];
+  return `Ships within ${name === "United States" ? "the United States" : name}`;
+}
+
 export type ShippingExpectation = { id: "production" | "countries" | "tracking"; title: string; detail: string };
 
 /**
@@ -32,13 +41,8 @@ export function getShippingExpectations(policies: ShopPolicy[], countries: strin
     title: "Made to order",
     detail: days ? `${days} to make, ${holidays ? "longer around the holidays" : "then it ships"}` : "Made for you, then it ships",
   }];
-  const regions = [...new Set(countries)];
-  if (regions.length > 1) {
-    items.push({ id: "countries", title: `Ships to ${regions.length} countries and regions`, detail: "Shipping costs shown at checkout" });
-  } else if (regions.length === 1) {
-    const name = new Intl.DisplayNames(["en"], { type: "region" }).of(regions[0]) ?? regions[0];
-    items.push({ id: "countries", title: `Ships within ${name === "United States" ? "the United States" : name}`, detail: "Shipping costs shown at checkout" });
-  }
+  const regions = describeShippingRegions(countries);
+  if (regions) items.push({ id: "countries", title: regions, detail: "Shipping costs shown at checkout" });
   if (getShippingPolicySection(policies, "Tracking")) {
     items.push({ id: "tracking", title: "Tracking by email", detail: "Sent as soon as it ships" });
   }

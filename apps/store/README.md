@@ -302,6 +302,9 @@ individually, use a collection and keep their standalone pages.
 - The final-sale notice appears before Add to cart. Production guidance comes
   from the **Production time** section of Shopify's shipping policy, with a link
   to the full policy; missing guidance never creates a numeric delivery promise.
+  A line above it counts the countries and regions checkout ships to (from
+  Shopify Markets) and notes that shipping costs appear at checkout; it is left
+  out when Markets can't be read.
 - Product reviews initially show four cards and the full rating total. **See all
   reviews** opens the existing paginated list; filters and direct review links
   also open that full view.
