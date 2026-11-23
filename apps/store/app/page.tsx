@@ -10,9 +10,12 @@ import { HomeReviews } from "@/components/home-reviews";
 import { ProductGrid } from "@/components/product-grid";
 import { ShippingExpectations } from "@/components/shipping-expectations";
 import { SupportNote } from "@/components/support-note";
+import { getHomeBandFacts } from "@/lib/home-band";
 import { withListingRatings } from "@/lib/listing-ratings";
 import { buildPageMetadata, DEFAULT_IMAGE, SITE_DESCRIPTION, SITE_NAME } from "@/lib/metadata";
 import { getShippingExpectations } from "@/lib/product-guidance";
+import { getReviewBackend } from "@/lib/review-backend";
+import { getShopReviewSummary } from "@/lib/review-feed";
 import { favoritesPhoneLimit, getHomeCatalog, getPolicies, getShippingCountries } from "@/lib/shopify";
 import { buildStoreSchema } from "@/lib/structured-data";
 
@@ -25,7 +28,7 @@ export const metadata = {
 } satisfies Metadata;
 
 export default async function HomePage() {
-  const [{ spotlight, favorites: shelf, collections }, shippingCountries, policies] = await Promise.all([
+  const [{ spotlight, favorites: shelf, collections }, shippingCountries, policies, shopRating] = await Promise.all([
     getHomeCatalog(),
     // The return policy and the shipping strip's country count are never a reason to fail the home page.
     getShippingCountries().catch((error: unknown) => {
@@ -37,13 +40,15 @@ export default async function HomePage() {
       console.error("Could not load policies for the home shipping strip.", error);
       return [];
     }),
+    // The phone band's rating; null (and left out) when it can't be read. Five minutes stale is fine for an average.
+    getShopReviewSummary(getReviewBackend()),
   ]);
   const shipping = getShippingExpectations(policies, shippingCountries);
   const favorites = await withListingRatings(shelf);
   return (
     <main className="flex flex-col gap-8 pb-6 sm:gap-12 sm:pb-8 lg:pb-10">
       <JsonLd data={buildStoreSchema(shippingCountries)} />
-      <HomeHero />
+      <HomeHero bandFacts={getHomeBandFacts(shopRating, policies, shippingCountries)} />
 
       {favorites.products.length > 0 && (
         <section data-analytics-placement="home_favorites" data-analytics-section="home_favorites" aria-labelledby="home-favorites" className="store-container">
@@ -62,7 +67,7 @@ export default async function HomePage() {
         </section>
       )}
 
-      <section data-analytics-placement="home_support" data-analytics-section="home_support" aria-label="Support Ryan Meetup" className="store-container">
+      <section data-analytics-placement="home_support" data-analytics-section="home_support" aria-label="Support Ryan Meetup" className="store-container max-sm:hidden">
         <SupportNote />
       </section>
 
@@ -72,7 +77,7 @@ export default async function HomePage() {
         </section>
       )}
 
-      <section data-analytics-placement="home_shipping" data-analytics-section="home_shipping" aria-label="Shipping and production" className="store-container">
+      <section data-analytics-placement="home_shipping" data-analytics-section="home_shipping" aria-label="Shipping and production" className="store-container max-sm:hidden">
         <ShippingExpectations items={shipping} />
       </section>
 

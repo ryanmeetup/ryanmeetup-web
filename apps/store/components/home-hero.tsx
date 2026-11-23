@@ -1,6 +1,7 @@
 import { Button, Heading, Text } from "@ryanmeetup/ui";
 import Image from "next/image";
 import { FiArrowRight } from "react-icons/fi";
+import { HomeMarquee } from "@/components/home-marquee";
 import { PhotoWall } from "@/components/photo-wall";
 import type { WallTile } from "@/components/photo-wall";
 import { SaleTakeoverSwitch } from "@/components/sale-takeover";
@@ -65,9 +66,10 @@ const TAKEOVER_WALL: WallTile[] = [
 
 /**
  * The home page opener (or the running sale's takeover, when it asks for one): community photos edge to edge, the name tag and headline set large
- * over a dark fade. The band under it (HomeMarquee) is parked for now; see components/home-marquee.tsx.
+ * over a dark fade. Phones get the band underneath, standing in for the support and shipping
+ * cards that wider screens show further down.
  */
-export function HomeHero() {
+export function HomeHero({ bandFacts }: { bandFacts: string[] }) {
   return (
     <section data-analytics-placement="home_hero" data-analytics-section="home_hero" aria-label="Ryan Meetup merch" className="relative border-b border-black/10 dark:border-white/10">
       <SaleTakeoverSwitch backdrop={TAKEOVER_BACKDROP} tiles={TAKEOVER_WALL}>
@@ -121,6 +123,10 @@ export function HomeHero() {
           </div>
         </PhotoWall>
       </SaleTakeoverSwitch>
+      {/* The breakpoint sits on a wrapper so it can't lose to the band's own display classes. */}
+      <div className="sm:hidden">
+        <HomeMarquee facts={bandFacts} />
+      </div>
     </section>
   );
 }

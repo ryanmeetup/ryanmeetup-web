@@ -1,13 +1,8 @@
 import { expect, test } from "@playwright/test";
-import { buildHomeBand, describeShopRating, getHomeBandFacts } from "../lib/home-band";
-import type { ShippingExpectation } from "../lib/product-guidance";
+import { buildHomeBand, describeShopRating, getHomeBandFacts, SUPPORT_PHRASE } from "../lib/home-band";
 import type { Promotion } from "../lib/promotion";
 
-const shipping: ShippingExpectation[] = [
-  { id: "production", title: "Made to order", detail: "2–7 business days to make, then it ships" },
-  { id: "countries", title: "Ships to 28 countries and regions", detail: "Shipping costs shown at checkout" },
-  { id: "tracking", title: "Tracking by email", detail: "Sent as soon as it ships" },
-];
+const policy = { handle: "shipping-policy", title: "Shipping Policy", body: "<h2>Production time</h2><p>Please allow 2 - 7 business days for it to be produced.</p>" };
 
 const sale: Promotion = {
   name: "Black RYDay",
@@ -23,10 +18,12 @@ test("the shop rating is claimed only once there are enough reviews to trust it"
   expect(describeShopRating(null)).toBeNull();
 });
 
-test("band facts lead with the rating, then the production and shipping headlines", () => {
-  expect(getHomeBandFacts({ average: 4.8, count: 52 }, shipping)).toEqual(["4.8 stars from 52 reviews", "Made to order", "Ships to 28 countries and regions"]);
-  // An unreadable rating or policy leaves out what it would have said.
-  expect(getHomeBandFacts(null, [shipping[0]])).toEqual(["Made to order"]);
+test("band facts say why to buy, the rating, then the policy's timing and checkout's countries", () => {
+  expect(getHomeBandFacts({ average: 4.8, count: 52 }, [policy], ["US", "CA", "CA"])).toEqual([
+    SUPPORT_PHRASE, "4.8 stars from 52 reviews", "Made to order in 2–7 business days", "Ships to 2 countries and regions",
+  ]);
+  // An unreadable rating, policy, or country list leaves out what it would have said.
+  expect(getHomeBandFacts(null, [], [])).toEqual([SUPPORT_PHRASE, "Made to order"]);
 });
 
 test("the band is only facts, with a regular sale up front and a takeover sale left out", () => {

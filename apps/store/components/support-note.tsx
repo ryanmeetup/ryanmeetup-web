@@ -9,7 +9,7 @@ const linkClassName = "inline-flex items-center gap-1 rounded-sm font-semibold u
 
 /**
  * The store’s reason to exist, said right after the first shelf: merch is how the meetup is funded.
- * Phones keep the headline and About link; the fuller explanation stays on larger screens.
+ * The home page shows it from `sm` up; on phones the hero band says it in one phrase instead.
  * Tinted with the name-tag red so it reads as the brand speaking rather than a sale.
  */
 export function SupportNote({ className }: { className?: string }) {

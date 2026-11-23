@@ -7,7 +7,8 @@ const icons: Record<ShippingExpectation["id"], IconType> = { production: FiPacka
 
 /**
  * What happens after checkout, said once below the first shelf: made to order, where it ships,
- * and how tracking arrives. Phones keep each item to one short paragraph. The shipping details
+ * and how tracking arrives. The home page shows it from `sm` up; on phones the hero band carries
+ * the headlines instead. Narrow layouts keep each item to one short paragraph. The shipping details
  * link sits under the item about where it ships (or the last item if that one is absent).
  */
 export function ShippingExpectations({ items, className }: { items: ShippingExpectation[]; className?: string }) {
