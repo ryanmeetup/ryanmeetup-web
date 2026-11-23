@@ -17,6 +17,8 @@ type GalleryItem = {
   /** Shorter badge copy for screens below the sm breakpoint. */
   mobileTitle?: string;
   city?: string;
+  /** CSS object-position for the photo's focal point, e.g. "50% 40%". */
+  objectPosition?: string;
 };
 
 type RotatingGalleryProps = {
@@ -24,11 +26,32 @@ type RotatingGalleryProps = {
   intervalMs?: number;
   /** Rendered width of the gallery, for picking a source from the srcset. */
   sizes?: string;
+  /**
+   * Frame sizing classes. Replaces the default event-gallery heights, so pass
+   * a height or aspect ratio for every breakpoint you need.
+   */
+  className?: string;
+  /** Preload the first photo when the gallery is the page's largest image. */
+  preload?: boolean;
 };
 
+const DEFAULT_FRAME_SIZE = "h-60 sm:h-80 lg:h-[360px] 2xl:h-[400px]";
+
+const prefersReducedMotion = () =>
+  typeof window !== "undefined" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 const RotatingGallery = (props: RotatingGalleryProps) => {
-  const { items, intervalMs = 6000, sizes = "100vw" } = props;
+  const {
+    items,
+    intervalMs = 6000,
+    sizes = "100vw",
+    className = DEFAULT_FRAME_SIZE,
+    preload = false,
+  } = props;
   const [activeSlide, setActiveSlide] = useState(0);
+  // Autoplay stops while the visitor is looking at or operating the gallery.
+  const [paused, setPaused] = useState(false);
 
   const animationVariants = {
     flip: {
@@ -64,7 +87,7 @@ const RotatingGallery = (props: RotatingGalleryProps) => {
   }, [items.length]);
 
   useEffect(() => {
-    if (items.length <= 1) {
+    if (items.length <= 1 || paused || prefersReducedMotion()) {
       return undefined;
     }
 
@@ -73,7 +96,7 @@ const RotatingGallery = (props: RotatingGalleryProps) => {
     }, intervalMs);
 
     return () => clearInterval(interval);
-  }, [intervalMs, items.length]);
+  }, [intervalMs, items.length, paused]);
 
   if (items.length === 0) {
     return null;
@@ -83,7 +106,15 @@ const RotatingGallery = (props: RotatingGalleryProps) => {
   const nextIndex = (activeSlide + 1) % items.length;
 
   return (
-    <div className="relative h-60 overflow-hidden rounded-3xl border border-black/10 shadow-2xl sm:h-80 lg:h-[360px] 2xl:h-[400px] dark:border-white/10 [perspective:1200px]">
+    <div
+      className={`relative overflow-hidden rounded-3xl border border-black/10 shadow-2xl dark:border-white/10 [perspective:1200px] ${className}`}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setPaused(false);
+      }}
+    >
       <div className="pointer-events-none absolute inset-y-6 left-2 z-0 w-16 -translate-x-1 overflow-hidden rounded-2xl border border-white/20 bg-black/10 opacity-60 shadow-lg sm:inset-y-8 sm:left-3 sm:w-20 sm:-translate-x-2">
         <NextImage
           className="h-full w-full object-cover"
@@ -109,10 +140,10 @@ const RotatingGallery = (props: RotatingGalleryProps) => {
           key={slide.src}
           appear={true}
           show={activeSlide === index}
-          enter={animationStyle.enter}
+          enter={`${animationStyle.enter} motion-reduce:transition-none`}
           enterFrom={animationStyle.enterFrom}
           enterTo={animationStyle.enterTo}
-          leave={animationStyle.leave}
+          leave={`${animationStyle.leave} motion-reduce:transition-none`}
           leaveFrom={animationStyle.leaveFrom}
           leaveTo={animationStyle.leaveTo}
         >
@@ -122,11 +153,18 @@ const RotatingGallery = (props: RotatingGalleryProps) => {
               src={slide.src}
               fill
               sizes={sizes}
-              loading={index === 0 ? "eager" : undefined}
+              loading={index === 0 && !preload ? "eager" : undefined}
+              preload={index === 0 && preload}
               alt={slide.alt}
-              style={{ objectFit: "cover" }}
+              style={{
+                objectFit: "cover",
+                objectPosition: slide.objectPosition,
+              }}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+            {/* The scrim keeps caption pills legible; uncaptioned photos stay untinted. */}
+            {(slide.title || slide.city) && (
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+            )}
           </div>
         </Transition>
       ))}
@@ -206,3 +244,4 @@ const RotatingGallery = (props: RotatingGalleryProps) => {
 };
 
 export { RotatingGallery };
+export type { GalleryItem as RotatingGalleryItem, RotatingGalleryProps };
