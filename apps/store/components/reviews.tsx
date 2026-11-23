@@ -42,10 +42,12 @@ export function Reviews({ data, product, access }: { data: ReviewsData; product:
   const formId = useId();
   const publicReviews = usePublicReviews(data);
   const permalink = useReviewPermalink(data, publicReviews);
+  // Null outside the App Router, such as when rendered directly in unit tests.
   const searchParams = useSearchParams();
-  const [showAll, setShowAll] = useState(() => Object.values(PRODUCT_REVIEW_PARAMS).some((name) => searchParams.has(name)));
+  const linkedToReviews = Object.values(PRODUCT_REVIEW_PARAMS).some((name) => searchParams?.has(name) ?? false);
+  const [showAll, setShowAll] = useState(linkedToReviews);
   // Explicit review links and filters keep their existing full, paginated view.
-  const expanded = showAll || Boolean(permalink.target) || Object.values(PRODUCT_REVIEW_PARAMS).some((name) => searchParams.has(name)) || publicReviews.refined;
+  const expanded = showAll || Boolean(permalink.target) || linkedToReviews || publicReviews.refined;
   const visibleReviews = expanded ? publicReviews.reviews : publicReviews.reviews.slice(0, 4);
   const resultsId = `${formId}-results`;
   const [open, setOpen] = useState(false);
