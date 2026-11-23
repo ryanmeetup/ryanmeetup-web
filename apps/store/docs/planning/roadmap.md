@@ -28,6 +28,9 @@ old "not started" or "done" label.
 - Shorter mobile home (November 23): the running sale appears once, the hero
   uses tighter spacing and a landscape photo frame, and the support card keeps
   its headline and About link before Best Sellers.
+- Simpler Name Tag gallery (November 23): style-chosen listings show only the
+  selected style's photos, and cards show each fabric color once with the style
+  count stated separately.
 - "More from this shop" on product pages (November 21): purchasable listings
   from Shopify's `productRecommendations` (intent `RELATED`), then shared
   collections, then the same product type; grouped designs collapse into one
