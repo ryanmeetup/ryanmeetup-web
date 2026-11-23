@@ -19,13 +19,10 @@ function RatingSummary({ data, className = "" }: { data: ReviewsData; className?
   if (data.status === "unavailable") {
     return <Text className={`text-sm ${className}`}>Reviews are temporarily unavailable.</Text>;
   }
-  if (!data.count) {
-    return <Text className={`text-sm ${className}`}>No reviews yet. Own this one? Be the first Ryan to weigh in.</Text>;
-  }
   return (
     <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-black/70 dark:text-white/70 ${className}`}>
       <RatingStars rating={data.averageRating} />
-      <span>{`Average rating from ${data.count} review${data.count === 1 ? "" : "s"}`}</span>
+      <span>{data.count ? `Average rating from ${data.count} review${data.count === 1 ? "" : "s"}` : "No reviews yet"}</span>
     </div>
   );
 }
@@ -109,12 +106,12 @@ export function Reviews({ data, product, access }: { data: ReviewsData; product:
               </li>
             ))}
           </ul>
-        ) : publicReviews.refined ? (
+        ) : (
           <div className="mt-8 rounded-2xl border border-dashed border-black/20 p-8 text-center dark:border-white/20">
-            <Heading size="h3" className="text-xl">No reviews match these filters</Heading>
-            <Text className="mt-2">Try another star rating or source, or reset the filters to see every review.</Text>
+            <Heading size="h3" className="text-xl">{publicReviews.refined ? "No reviews match these filters" : "Be the first to report back"}</Heading>
+            <Text className="mt-2">{publicReviews.refined ? "Try another star rating or source, or reset the filters to see every review." : "Own this one? Write the first review and tell the other Ryans how it holds up."}</Text>
           </div>
-        ) : null}
+        )}
       </div>
       <div role="status" aria-live="polite" className="mt-6 text-sm text-black/70 empty:hidden dark:text-white/70">{permalink.message}</div>
       {publicReviews.error && <div className="mt-6 space-y-3">
