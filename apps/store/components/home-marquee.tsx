@@ -15,8 +15,8 @@ export function HomeMarquee({ facts }: { facts: string[] }) {
       items={buildHomeBand(usePromotion(), facts)}
       separator="✦"
       speed={45}
-      className="bg-nametag py-2 text-white sm:py-3"
-      itemClassName="font-cooper text-2xl tracking-wider sm:text-3xl motion-reduce:text-lg"
+      className="bg-nametag py-2 text-white"
+      itemClassName="font-cooper text-lg tracking-wide"
     />
   );
 }
