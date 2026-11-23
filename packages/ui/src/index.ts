@@ -68,6 +68,7 @@ export * from "./StarRating";
 export * from "./Text";
 export * from "./TestimonialCard";
 export * from "./Textarea";
+export * from "./TextMarquee";
 export * from "./Tooltip";
 export * from "./Wordmark";
 export * from "./Avatar";
