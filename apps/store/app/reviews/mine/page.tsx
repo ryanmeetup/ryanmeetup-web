@@ -10,6 +10,7 @@ import { loadMyReviewPage } from "@/lib/my-review-actions";
 import { reviewSignInRel, reviewSignInUrl } from "@/lib/review-sign-in";
 import { findBuyerName, findRecentReviewablePurchases } from "@/lib/review-purchases";
 import { getReviewSuggestions } from "@/lib/review-suggestions";
+import { getReviewSuggestionStorage } from "@/lib/review-suggestion-storage";
 import { getCustomerAccountUrl, getProductCardsByIds } from "@/lib/shopify";
 import { reviewPhotosEnabled } from "@/lib/review-photo-policy";
 
@@ -51,6 +52,7 @@ function SignInPrompt() {
 export default async function Page({ searchParams }: { searchParams: Promise<{ preview?: string | string[] }> }) {
   const request = await currentRequest("/reviews/mine");
   const backend = getReviewBackend();
+  const suggestionStorage = getReviewSuggestionStorage();
   const session = getCustomerAccountSession(request);
   // Local dev only: sign-in can't complete on localhost, so a signed-out
   // visitor (or ?preview=) sees sample data with a scenario switcher. The
@@ -68,10 +70,11 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ p
   const [result, suggestions] = await Promise.all([
     loadMyReviewPage(null, { loadSession: () => session, findBuyerName, backend, photosEnabled: reviewPhotosEnabled(), productCards: getProductCardsByIds }),
     // Suggestions are a nicety: any failure leaves them out rather than failing the page.
-    session.then(async (current) => current.status === "authenticated" && backend ? getReviewSuggestions({
+    session.then(async (current) => current.status === "authenticated" && backend && suggestionStorage ? getReviewSuggestions({
       session: current.session, findRecent: findRecentReviewablePurchases, productCards: getProductCardsByIds,
       accountUrl: await getCustomerAccountUrl().catch(() => null),
       reviewedLines: (subject, lineIds) => backend({ operation: "reviews.reviewedLines", subject, lineIds }),
+      dismissedLines: suggestionStorage.dismissedLines,
     }) : null).catch(() => null),
   ]);
   if (result.status === "sign_in_required") return <Shell><SignInPrompt /></Shell>;

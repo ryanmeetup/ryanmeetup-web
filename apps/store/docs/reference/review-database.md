@@ -108,6 +108,10 @@ it decides which Etsy listings attach to Shopify products.
 - `store_review_deletions` is a restricted append-only audit: reason, product,
   latest rating, publication/verification flags, actor/time and photo count;
   no retained review body or buyer identity. Staff may write a private note.
+- `store_review_suggestion_dismissals` stores reminder preferences per
+  shop/customer/order line. Only the Store server may select, insert or delete;
+  dismissal does not change review eligibility or email preferences. Migration
+  `20261123000000` is RMT-only, with no PRD rollout.
 - New public-schema tables require explicit grants. Private Store tables/RPCs
   exclude anon and ordinary Tasks members; service-only functions run as
   invoker. Staff RPCs additionally recheck an onboarded Tasks owner.

@@ -35,6 +35,8 @@ export function variantOptions(variantTitle: string | null, optionNames: string[
 export type ReviewSuggestions = {
   buyer: { firstName: string | null; lastName: string | null };
   items: ReviewSuggestion[];
+  /** Reminder preferences only; these purchases can still be reviewed. */
+  dismissedLineIds?: string[];
 };
 
 type RecentPurchases = { status: "found"; buyer: ReviewSuggestions["buyer"]; purchases: RecentReviewablePurchase[] } | { status: "unavailable" };
@@ -46,12 +48,13 @@ type RecentPurchases = { status: "found"; buyer: ReviewSuggestions["buyer"]; pur
  * any failed lookup returns null and the page simply leaves them out; the
  * review form rechecks the purchase when it's submitted.
  */
-export async function getReviewSuggestions({ session, findRecent, reviewedLines, productCards, accountUrl = null }: {
+export async function getReviewSuggestions({ session, findRecent, reviewedLines, dismissedLines, productCards, accountUrl = null }: {
   session: CustomerAccountSession;
   /** Shopify's customer account address; order links are built under it. */
   accountUrl?: string | null;
   findRecent: (session: CustomerAccountSession) => Promise<RecentPurchases>;
   reviewedLines: (subject: string, lineIds: string[]) => Promise<string[]>;
+  dismissedLines: (subject: string, lineIds: string[]) => Promise<string[]>;
   productCards: (productIds: string[]) => Promise<Record<string, ProductCard>>;
 }): Promise<ReviewSuggestions | null> {
   const recent = await findRecent(session).catch((): RecentPurchases => ({ status: "unavailable" }));
@@ -61,10 +64,14 @@ export async function getReviewSuggestions({ session, findRecent, reviewedLines,
   if (!reviewed) return null;
   const open = recent.purchases.filter((purchase) => !reviewed.includes(purchase.lineId));
   if (!open.length) return { buyer: recent.buyer, items: [] };
-  const cards = await productCards(open.map((purchase) => purchase.productId)).catch(() => null);
-  if (!cards) return null;
+  const [cards, dismissedLineIds] = await Promise.all([
+    productCards(open.map((purchase) => purchase.productId)).catch(() => null),
+    dismissedLines(session.subject, open.map((purchase) => purchase.lineId)).catch(() => null),
+  ]);
+  if (!cards || !dismissedLineIds) return null;
   return {
     buyer: recent.buyer,
+    dismissedLineIds,
     items: open.flatMap((purchase) => {
       const card = cards[purchase.productId];
       return card ? [{
