@@ -281,6 +281,7 @@ const TeamFinder = ({ teams }: TeamFinderProps) => {
           <DropdownSelect
             className={FILTER_HEIGHT}
             label="State/province"
+            menuWidth="wide"
             value={state}
             active={state !== ALL}
             options={[filterOption("All"), ...stateOptions]}
