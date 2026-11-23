@@ -1,10 +1,20 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import { currencyStorageKey } from "../lib/currency";
+import { currentPromotion, getSitewidePercentOff, isPromotionLive } from "../lib/promotion";
 
 const rates = { date: "2026-11-04", rates: { USD: 1, EUR: 0.9, GBP: 0.75, CAD: 1.4, AUD: 1.5 } };
 const currencyButton = { name: /currenc/i };
 const option = (page: Page, code: string) => page.getByRole("menuitem", { name: new RegExp(`^${code}`) });
+
+// The server renders with the real date, so expectations follow any running
+// sitewide sale (such as Black RYDay) rather than freezing the browser clock.
+const percentOff = isPromotionLive(currentPromotion, Date.now()) ? getSitewidePercentOff(currentPromotion) : null;
+/** A USD list price as badges show it, after any sitewide sale, at `rate`. */
+const shown = (usd: number, rate = 1) => {
+  const sale = percentOff ? Math.round(usd * (100 - percentOff)) / 100 : usd;
+  return (Math.round(sale * rate * 100) / 100).toFixed(2);
+};
 
 test("homepage currency menus switch all badges without following links and remember the choice", async ({ page }) => {
   let requests = 0;
@@ -31,23 +41,27 @@ test("homepage currency menus switch all badges without following links and reme
     await expect(page).toHaveURL(/\/$/);
   }
   const info = badges.first().getByRole("button", { name: "About converted prices" });
+  // Clicking the info icon never follows the card link; the tooltip itself
+  // opens on hover or keyboard focus, and a click closes it.
   await info.click();
-  await expect(page.getByRole("tooltip")).toContainText("Approximate conversion from USD");
   await expect(page).toHaveURL(/\/$/);
+  await page.mouse.move(0, 0);
+  await info.hover();
+  await expect(page.getByRole("tooltip")).toContainText("Approximate conversion from USD");
   expect(requests).toBe(1);
   expect(await page.evaluate((key) => localStorage.getItem(key), currencyStorageKey)).toBe("EUR");
 
   await page.getByRole("main").getByRole("link", { name: /Official Ryan Meetup Tee/ }).first().click();
   await expect(page).toHaveURL(/\/products\/ryan-meetup-tee$/);
   const price = page.getByRole("main").locator('[aria-live="polite"] > p');
-  await expect(price).toContainText("≈€26.10 EUR");
+  await expect(price).toContainText(`≈€${shown(29, 0.9)} EUR`);
   await expect(price.getByText("Approximate conversion · exact price at checkout")).toBeAttached();
   await price.getByRole("button", { name: "About converted prices" }).hover();
   await expect(page.getByRole("tooltip")).toContainText("Approximate conversion from USD");
   expect(requests).toBe(1);
 
   await page.reload();
-  await expect(price).toContainText("≈€26.10 EUR");
+  await expect(price).toContainText(`≈€${shown(29, 0.9)} EUR`);
   expect(requests).toBe(2);
   expect(errors).toEqual([]);
 });
@@ -62,7 +76,7 @@ test("keyboard currency selection converts both sale prices and leaves cart mone
   await expect(option(page, "USD")).toHaveAttribute("data-focus");
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Enter");
-  await expect(price).toContainText("≈€23.40 EUR, originally €28.80");
+  await expect(price).toContainText(`≈€${shown(26, 0.9)} EUR, originally €28.80`);
   await expect(currency).toBeFocused();
   await expect(page.getByRole("menu")).toBeHidden();
   await page.keyboard.press("Enter");
@@ -70,7 +84,7 @@ test("keyboard currency selection converts both sale prices and leaves cart mone
   await page.keyboard.type("g");
   await expect(option(page, "GBP")).toHaveAttribute("data-focus");
   await page.keyboard.press("Enter");
-  await expect(price).toContainText("≈£19.50 GBP, originally £24.00");
+  await expect(price).toContainText(`≈£${shown(26, 0.75)} GBP, originally £24.00`);
   await expect(currency).toBeFocused();
 
   await page.getByRole("main").getByRole("button", { name: "Add to cart" }).click();
@@ -100,15 +114,15 @@ test("loading and failed requests keep the original amounts and allow retry", as
   await option(page, "EUR").click();
   await expect(currency).toHaveAttribute("aria-busy", "true");
   await expect(price).toHaveAttribute("aria-busy", "true");
-  await expect(price).toContainText("$26.00 USD, originally $32.00");
+  await expect(price).toContainText(`$${shown(26)} USD, originally $32.00`);
   release();
   await expect(page.getByText("Currency conversion is unavailable right now. Please try again.")).toBeVisible();
   await expect(currency).not.toHaveAttribute("aria-busy");
-  await expect(price).toContainText("$26.00 USD, originally $32.00");
+  await expect(price).toContainText(`$${shown(26)} USD, originally $32.00`);
   expect(await page.evaluate((key) => localStorage.getItem(key), currencyStorageKey)).toBeNull();
   await currency.click();
   await option(page, "EUR").click();
-  await expect(price).toContainText("≈€23.40 EUR, originally €28.80");
+  await expect(price).toContainText(`≈€${shown(26, 0.9)} EUR, originally €28.80`);
 });
 
 test("an unsupported saved currency is ignored without requesting rates", async ({ page }) => {
@@ -119,7 +133,9 @@ test("an unsupported saved currency is ignored without requesting rates", async 
     return route.fulfill({ json: rates });
   });
   await page.goto("/products/ryan-society-cap");
-  await expect(page.getByRole("main").locator('[aria-live="polite"] > p')).toHaveText("$26.00 USD, originally $32.00");
-  await expect(page.getByRole("button", { name: "Prices in USD. Choose a currency" })).toBeEnabled();
+  const price = page.getByRole("main").locator('[aria-live="polite"] > p');
+  await expect(price).toHaveText(`$${shown(26)} USD, originally $32.00`);
+  // Scoped to the product's own price: related listings below carry their own badges.
+  await expect(price.getByRole("button", { name: "Prices in USD. Choose a currency" })).toBeEnabled();
   expect(requests).toBe(0);
 });
