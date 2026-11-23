@@ -20,7 +20,7 @@ export type WallTile = {
 };
 
 // One tile changes at a time, so the wall shifts gently instead of all at once.
-const STEP_MS = 2500;
+const STEP_MS = 4000;
 
 const prefersReducedMotion = () =>
   typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -84,7 +84,7 @@ export function PhotoWall({ tiles, className, wrapperClassName, children }: { ti
                   fill
                   sizes={sizes}
                   preload={tileIndex === 0 && photoIndex === 0}
-                  className={`object-cover transition-opacity duration-1000 motion-reduce:transition-none ${shown ? "opacity-100" : "opacity-0"}`}
+                  className={`object-cover transition-opacity duration-1500 motion-reduce:transition-none ${shown ? "opacity-100" : "opacity-0"}`}
                   style={objectPosition ? { objectPosition } : undefined}
                 />
               );
