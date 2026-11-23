@@ -68,7 +68,7 @@ const TAKEOVER_WALL: WallTile[] = [
  * The home page opener (or the running sale's takeover, when it asks for one): community photos edge to edge, the name tag and headline set large
  * over a dark fade, and the marquee underneath.
  */
-export function HomeHero() {
+export function HomeHero({ bandFacts }: { bandFacts: string[] }) {
   return (
     <section data-analytics-placement="home_hero" data-analytics-section="home_hero" aria-label="Ryan Meetup merch" className="relative">
       <SaleTakeoverSwitch backdrop={TAKEOVER_BACKDROP} tiles={TAKEOVER_WALL}>
@@ -122,7 +122,7 @@ export function HomeHero() {
           </div>
         </PhotoWall>
       </SaleTakeoverSwitch>
-      <HomeMarquee />
+      <HomeMarquee facts={bandFacts} />
     </section>
   );
 }

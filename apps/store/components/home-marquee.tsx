@@ -2,22 +2,21 @@
 
 import { TextMarquee } from "@ryanmeetup/ui";
 import { usePromotion } from "@/components/promotion";
+import { buildHomeBand } from "@/lib/home-band";
 
 /**
- * One band under the home hero. While a sale runs it says only the three things worth a
- * glance (its name, the best discount, the last day); the banner above carries the details.
- * Otherwise, and during a takeover sale (whose hero already says all of it), it is just the
- * name on a loop.
+ * One band under the home hero: a regular sale's essentials while it runs, then the shop rating
+ * and shipping headlines with the name between each. The facts arrive from the server, so the
+ * band never claims something the reviews or policies don't say.
  */
-export function HomeMarquee() {
-  const running = usePromotion();
-  const promotion = running?.takeover ? null : running;
-  const bestOff = promotion ? Math.max(...promotion.tiers.map(({ percentOff }) => percentOff)) : 0;
+export function HomeMarquee({ facts }: { facts: string[] }) {
+  const { items, spoken } = buildHomeBand(usePromotion(), facts);
   return (
     <TextMarquee
-      items={promotion ? [promotion.name, `Up to ${bestOff}% off`, `Ends ${promotion.endsLabel}`] : ["Ryan"]}
+      items={items}
+      spokenItems={spoken}
       separator="✦"
-      decorative={!promotion}
+      decorative={!spoken.length}
       speed={45}
       className="bg-nametag py-2 text-white sm:py-3"
       itemClassName="font-cooper text-2xl tracking-wider sm:text-3xl"
