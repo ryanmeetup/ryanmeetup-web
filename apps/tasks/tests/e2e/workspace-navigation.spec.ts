@@ -225,7 +225,11 @@ test("opens project details from the sidebar detail button", async ({
     page.getByRole("heading", { level: 2, name: "Attention & dates" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { level: 3, name: "Needs attention" }),
+    page.getByRole("heading", {
+      level: 3,
+      name: "Needs attention",
+      exact: true,
+    }),
   ).toBeVisible();
   await expect(
     page.getByRole("heading", { level: 3, name: "Next 90 days" }),

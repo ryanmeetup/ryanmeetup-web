@@ -12,7 +12,7 @@ test("replaces archive rows with ten placeholders while closed-date sorting load
   const table = page.locator("main table").first();
   await expect(table).toBeVisible();
   await expect(
-    table.getByText("Nothing archived yet.", { exact: false }),
+    table.getByRole("heading", { name: "Nothing archived yet" }),
   ).toBeVisible();
 
   let releaseRequest!: () => void;
@@ -29,7 +29,7 @@ test("replaces archive rows with ten placeholders while closed-date sorting load
     table.locator("tbody > tr[data-task-list-skeleton]"),
   ).toHaveCount(10);
   await expect(
-    table.getByText("Nothing archived yet.", { exact: false }),
+    table.getByRole("heading", { name: "Nothing archived yet" }),
   ).toHaveCount(0);
 
   for (const width of [375, 1024, 1280, 1536]) {
@@ -47,6 +47,6 @@ test("replaces archive rows with ten placeholders while closed-date sorting load
     table.locator("tbody > tr[data-task-list-skeleton]"),
   ).toHaveCount(0);
   await expect(
-    table.getByText("Nothing archived yet.", { exact: false }),
+    table.getByRole("heading", { name: "Nothing archived yet" }),
   ).toBeVisible();
 });
