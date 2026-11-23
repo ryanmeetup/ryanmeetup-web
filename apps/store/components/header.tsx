@@ -59,7 +59,7 @@ export function Header({ collections, garments, accountUrl }: { collections: Sto
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_80%_at_20%_10%,rgba(0,0,0,0.06),transparent_60%),radial-gradient(45%_70%_at_80%_0%,rgba(0,0,0,0.04),transparent_55%)] dark:bg-[radial-gradient(60%_80%_at_20%_10%,rgba(255,255,255,0.08),transparent_60%),radial-gradient(45%_70%_at_80%_0%,rgba(255,255,255,0.05),transparent_55%)]"
       />
-      <div className="store-container relative flex min-h-16 items-center gap-4 py-3">
+      <div className="store-container relative flex min-h-16 items-center gap-1 py-3 sm:gap-4">
         <Link
           href="/"
           className="w-fit rounded-sm transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/40"
@@ -97,7 +97,7 @@ export function Header({ collections, garments, accountUrl }: { collections: Sto
         {/* Labels drop wherever they would wrap the wordmark or push the main
             navigation into scrolling. Breakpoints sit on wrappers so they win
             over inline-flex. The account menu holds sign-in and Shopify orders. */}
-        <div className="ml-auto flex flex-none items-center gap-2 sm:gap-4 xl:gap-2">
+        <div className="ml-auto flex flex-none items-center gap-1 sm:gap-4 xl:gap-2">
           <AccountMenu accountUrl={accountUrl} />
           {/* Opens the drawer rather than /cart: the page still works but stays
               unlinked while we hear which of the two shoppers prefer. */}
