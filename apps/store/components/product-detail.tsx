@@ -6,7 +6,7 @@ import { trackStoreEvent } from "@/lib/analytics";
 import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Button, DropdownSelect, ErrorCallout, IconButton, Kicker, getFieldLabelClasses } from "@ryanmeetup/ui";
-import { FiCheck, FiChevronLeft, FiChevronRight, FiHeart, FiPenTool, FiShield, FiShoppingBag } from "react-icons/fi";
+import { FiCheck, FiChevronLeft, FiChevronRight, FiGlobe, FiHeart, FiInfo, FiPackage, FiPenTool, FiShield, FiShoppingBag } from "react-icons/fi";
 import { getCompareAtPrice, getListingSale } from "@/lib/money";
 import { findVariant, getOptionChoices, getSelections, isDefaultTitleOption, isSizeOption, oneSize } from "@/lib/product-options";
 import { getColorOption, getColorSlug, getVariantForColor } from "@/lib/product-colors";
@@ -42,6 +42,7 @@ export function ProductDetail({ product, title = product.title, breadcrumbs, des
   shipsTo?: string | null;
 }) {
   const { addItem, error, loading, setDrawerOpen } = useCart();
+  const shippingDetails = <Link href="/policies/shipping-policy" className="whitespace-nowrap rounded-sm underline decoration-black/30 underline-offset-4 transition hover:decoration-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:decoration-white/30 dark:hover:decoration-white dark:focus-visible:ring-white/40">Shipping details</Link>;
   const initialVariant = getVariantForColor(product, initialColor)
     ?? getVariantForImage(product, initialImage ?? product.featuredImage)
     ?? product.variants.find((variant) => variant.availableForSale) ?? product.variants[0];
@@ -283,13 +284,18 @@ export function ProductDetail({ product, title = product.title, breadcrumbs, des
           <Button fullWidth size="lg" variant="secondary" onClick={() => setDrawerOpen(true, "product_page")}>View cart</Button>
         </div>
         {error && <ErrorCallout className="mt-4">{error}</ErrorCallout>}
-        <div className="mt-4 space-y-1 text-sm text-black/70 dark:text-white/70">
-          <p>
-            {productionTime ? `Made to order in ${productionTime}.` : "Made to order."}{shipsTo && ` ${shipsTo}.`}{" "}
-            <Link href="/policies/shipping-policy" className="whitespace-nowrap rounded-sm underline decoration-black/30 underline-offset-4 transition hover:decoration-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:decoration-white/30 dark:hover:decoration-white dark:focus-visible:ring-white/40">Shipping details</Link>
-          </p>
-          <p><FinalSaleNote /></p>
-        </div>
+        <ul className="mt-4 space-y-2 text-sm text-black/70 dark:text-white/70">
+          {[
+            { id: "production", icon: FiPackage, content: <>{productionTime ? `Made to order in ${productionTime}` : "Made to order"}{!shipsTo && <>{" "}{shippingDetails}</>}</> },
+            ...(shipsTo ? [{ id: "countries", icon: FiGlobe, content: <>{shipsTo}{" "}{shippingDetails}</> }] : []),
+            { id: "final-sale", icon: FiInfo, content: <FinalSaleNote /> },
+          ].map(({ id, icon: Icon, content }) => (
+            <li key={id} className="flex items-start gap-2">
+              <Icon aria-hidden className="mt-0.5 shrink-0 text-black dark:text-white" />
+              <span>{content}</span>
+            </li>
+          ))}
+        </ul>
         <div className="mt-8 border-t border-black/10 dark:border-white/10">
           <ProductDescription description={product.description} descriptionHtml={product.descriptionHtml} part="details" />
           <div className="grid gap-6 pt-6 text-sm text-black/70 sm:grid-cols-2 dark:text-white/70">
