@@ -19,7 +19,6 @@ type BaseballHeroProps = {
   teams: BaseballTeam[];
   /** Computed from announced game dates; null until a team is announced. */
   seasonRange: string | null;
-  hasMerch: boolean;
   /** The map only renders once a team is announced. */
   hasMap: boolean;
 };
@@ -113,7 +112,6 @@ const SeamEdge = ({ side }: { side: "left" | "right" }) => (
 const BaseballHero = ({
   teams,
   seasonRange,
-  hasMerch,
   hasMap,
 }: BaseballHeroProps) => {
   const stats = getSeasonStats(teams);
@@ -193,17 +191,15 @@ const BaseballHero = ({
               See the map
             </Button.Link>
           )}
-          {hasMerch && (
-            <Button.Link
-              href="#merch"
-              size="md"
-              variant="outline"
-              fullWidth
-              className="sm:w-auto"
-            >
-              Shop the merch
-            </Button.Link>
-          )}
+          <Button.Link
+            href="#merch"
+            size="md"
+            variant="outline"
+            fullWidth
+            className="sm:w-auto"
+          >
+            Shop the merch
+          </Button.Link>
           {/* One trigger for every past album, so the row doesn't grow a
               button each year. Menu renders no wrapper, so the trigger stays
               a direct child of this row. */}

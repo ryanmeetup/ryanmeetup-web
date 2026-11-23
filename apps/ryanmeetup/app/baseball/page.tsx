@@ -12,6 +12,7 @@ import {
 // Types
 import type { BaseballTeam } from "@/lib/types";
 import type { MerchCollection } from "@/actions/fetchShopify";
+import type { MerchPlaceholder } from "@/components/baseball";
 
 // Utilities
 import { fetchBaseballTeams } from "@/actions/fetchContent";
@@ -23,8 +24,19 @@ import {
 import { getSeasonRange } from "@/utils/baseball";
 import { buildPageMetadata, SITE_URL } from "@/utils/metadata";
 import { layoutPaddingX } from "@/lib/constants";
+import { STORE_URL } from "@/lib/store";
 
 const MERCH_COLLECTION_HANDLE = "baseball-classic";
+
+// Reserved tiles shown until the `baseball-classic` Shopify collection has
+// products; real products replace them automatically. Point each `href` at a
+// product page (`${STORE_URL}/products/<handle>`) once it exists. They go to
+// the store home for now because the collection page 404s until it's created.
+const MERCH_PLACEHOLDERS: MerchPlaceholder[] = [1, 2, 3, 4].map((slot) => ({
+  id: `merch-slot-${slot}`,
+  title: "Classic merch",
+  href: STORE_URL,
+}));
 
 // Unlisted until launch: reachable by URL, but noindexed and left out of the
 // sitemap and navigation. To launch, drop `robots` here, add "/baseball" to
@@ -67,7 +79,6 @@ const loadMerch = async (): Promise<MerchCollection | null> => {
 
 const BaseballPage = async () => {
   const [teams, merch] = await Promise.all([loadTeams(), loadMerch()]);
-  const hasMerch = Boolean(merch && merch.products.length > 0);
 
   return (
     // Full-bleed like the home page, so the team logos can run edge to edge;
@@ -79,7 +90,6 @@ const BaseballPage = async () => {
             teams={teams}
             hasMap={teams.length > 0}
             seasonRange={getSeasonRange(teams)}
-            hasMerch={hasMerch}
           />
         </div>
         <TeamLogoMarquee teams={teams} />
@@ -88,7 +98,11 @@ const BaseballPage = async () => {
       <div className={`space-y-12 pb-8 pt-12 ${layoutPaddingX}`}>
         <NightIncludes />
 
-        {merch && hasMerch && <MerchStrip collection={merch} />}
+        <MerchStrip
+          collection={merch}
+          fallbackHref={STORE_URL}
+          placeholders={MERCH_PLACEHOLDERS}
+        />
 
         {teams.length > 0 ? (
           <TeamFinder teams={teams} />
