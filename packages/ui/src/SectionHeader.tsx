@@ -8,6 +8,8 @@ export type SectionHeaderProps = {
   description?: ReactNode;
   meta?: ReactNode;
   actions?: ReactNode;
+  /** Classes for the meta/actions container, e.g. `max-sm:hidden` to drop it at a breakpoint without leaving its gap behind. */
+  actionsClassName?: string;
   className?: string;
   headingClassName?: string;
   align?: "left" | "center" | "responsive";
@@ -20,6 +22,7 @@ const SectionHeader = ({
   description,
   meta,
   actions,
+  actionsClassName,
   className,
   headingClassName = "text-3xl title sm:text-4xl",
   align = "responsive",
@@ -46,7 +49,7 @@ const SectionHeader = ({
           {title}
         </Heading>
         {(metaNode || actions) && (
-          <div className={`flex flex-wrap items-center gap-3 ${layout === "split" ? "ml-auto justify-end text-right" : metaAlignment}`}>
+          <div className={`flex flex-wrap items-center gap-3 ${layout === "split" ? "ml-auto justify-end text-right" : metaAlignment} ${actionsClassName ?? ""}`}>
             {metaNode}
             {actions}
           </div>

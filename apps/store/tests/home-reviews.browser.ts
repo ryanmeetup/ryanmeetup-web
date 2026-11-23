@@ -71,6 +71,12 @@ for (const theme of ["light", "dark"]) for (const width of [390, 1024, 1280, 153
     await page.setViewportSize({ width, height: 1000 }); await page.goto("/");
     const section = page.getByRole("region", { name: "Recent reviews", exact: true });
     await section.scrollIntoViewIfNeeded(); await expect(section.getByRole("article")).toHaveCount(6);
+    // Phones reach "See all reviews" after the batch; wider screens see it beside the heading.
+    const seeAll = section.getByRole("link", { name: "See all reviews", exact: true });
+    await expect(seeAll).toHaveCount(1);
+    const [link, last] = [(await seeAll.boundingBox())!, (await section.getByRole("article").last().boundingBox())!];
+    if (width < 640) expect(link.y).toBeGreaterThan(last.y + last.height);
+    else expect(link.y).toBeLessThan(last.y);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await section.screenshot({ path: testInfo.outputPath(`home-reviews-${theme}-${width}.png`) });
   });
