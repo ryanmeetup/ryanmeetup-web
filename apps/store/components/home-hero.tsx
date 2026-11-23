@@ -2,81 +2,78 @@ import { Button, Heading, Text } from "@ryanmeetup/ui";
 import Image from "next/image";
 import { FiArrowRight } from "react-icons/fi";
 import { HomeMarquee } from "@/components/home-marquee";
+import { PhotoWall } from "@/components/photo-wall";
+import type { WallTile } from "@/components/photo-wall";
 
-type WallPhoto = {
-  src: string;
-  alt: string;
-  objectPosition?: string;
-  /** Grid placement for the tile, phone first. */
-  className: string;
-  sizes: string;
-};
-
-// Desktop is a six-column, two-row wall: the booth photo takes half, the portrait tee stands
-// full height beside it, and three smaller shots fill the rest. Phones keep four tiles in two
-// columns with the booth photo across the top.
-const WALL: WallPhoto[] = [
+// Desktop is a six-column, two-row wall: a big landscape takes half, the portrait tile stands
+// full height beside it, and three smaller landscapes fill the rest. Phones keep the first four
+// tiles in two columns with the big one across the top. Each tile cycles through its own
+// photos, so a new photo only needs adding to the tile whose shape it suits.
+const WALL: WallTile[] = [
   {
-    src: "/hero/ryan-merch-booth.jpg",
-    alt: "Ryan Meetup shirts hanging above a merch table, with a volunteer in a Ryan’s Father tee",
-    objectPosition: "35% 50%",
     className: "col-span-2 md:col-span-3 md:row-span-2",
     sizes: "(min-width: 768px) 50vw, 100vw",
+    photos: [
+      { src: "/hero/ryan-merch-booth.jpg", alt: "Ryan Meetup shirts hanging above a merch table, with a volunteer in a Ryan’s Father tee", objectPosition: "35% 50%" },
+      { src: "/hero/ryans-game-show.jpg", alt: "A packed theater of Ryans cheering behind a hand-painted Ryans Game Show banner" },
+      { src: "/hero/ryan-baseball-classic.jpg", alt: "Ryans in Twins jerseys and Ryan Baseball Classic tees cheering in the stands, holding Let’s go Ryan signs" },
+    ],
   },
   {
-    src: "/hero/ryan-super-tee.jpg",
-    alt: "A Ryan tearing open a dress shirt to reveal a superhero-style R logo tee",
-    objectPosition: "50% 40%",
     className: "row-span-2",
     sizes: "(min-width: 768px) 17vw, 50vw",
+    photos: [
+      { src: "/hero/ryan-name-tag-tee.jpg", alt: "A Ryan in sunglasses and a Ryans beanie, wearing a white tee with a Hello my name is Ryan name tag", objectPosition: "50% 40%" },
+      { src: "/hero/ryan-super-tee.jpg", alt: "A Ryan tearing open a dress shirt to reveal a superhero-style R logo tee", objectPosition: "50% 40%" },
+    ],
   },
   {
-    src: "/hero/ryan-hammock-crewneck.jpg",
-    alt: "A Ryan in red heart sunglasses lounging in a hammock in a Ryan Meetup crewneck, phone in one hand and cash in the other",
-    objectPosition: "65% 50%",
     className: "md:col-span-2",
     sizes: "(min-width: 768px) 33vw, 50vw",
+    photos: [
+      { src: "/hero/ryan-hammock-crewneck.jpg", alt: "A Ryan in red heart sunglasses lounging in a hammock in a Ryan Meetup crewneck, phone in one hand and cash in the other", objectPosition: "65% 50%" },
+      { src: "/hero/rytoberfest.jpg", alt: "A crowd of Ryans raising beers under a Welcome to the Ryan Meetup sign at Rytoberfest" },
+    ],
   },
   {
-    src: "/hero/ryan-philadelphia-tee.jpg",
-    alt: "A Ryan in mirrored sunglasses showing off an It’s Always Ryan in Philadelphia tee",
     className: "",
     sizes: "(min-width: 768px) 17vw, 50vw",
+    photos: [
+      { src: "/hero/ryan-philadelphia-tee.jpg", alt: "A Ryan in mirrored sunglasses showing off an It’s Always Ryan in Philadelphia tee" },
+      { src: "/hero/ryan-merch-table.jpg", alt: "A volunteer in a Ryan’s Father tee unpacking a shirt for a shopper at the merch table" },
+    ],
   },
   {
-    src: "/hero/ryan-family-merch-table.jpg",
-    alt: "Three volunteers in Ryan’s Mother, Ryan’s Sister, and Ryan’s Father tees behind a table of Ryan Meetup shirts and hats",
     className: "hidden md:block",
     sizes: "17vw",
+    photos: [
+      { src: "/hero/ryan-family-merch-table.jpg", alt: "Three volunteers in Ryan’s Mother, Ryan’s Sister, and Ryan’s Father tees behind a table of Ryan Meetup shirts and hats" },
+    ],
   },
 ];
 
 /**
- * The home page opener: community photos edge to edge, the headline set large over a dark
- * fade on wider screens (below the wall on phones), and the marquee bands underneath.
+ * The home page opener: community photos edge to edge, the name tag and headline set large
+ * over a dark fade on wider screens (below the wall on phones), and the marquee underneath.
  */
-export function HomeHero({ facts }: { facts: string[] }) {
+export function HomeHero() {
   return (
     <section data-analytics-placement="home_hero" data-analytics-section="home_hero" aria-label="Ryan Meetup merch" className="relative">
-      <div className="relative">
-        <div className="grid grid-cols-2 grid-rows-[48vw_36vw_36vw] gap-1 bg-black md:grid-cols-6 md:grid-rows-[repeat(2,clamp(11rem,21vw,20rem))]">
-          {WALL.map(({ src, alt, objectPosition, className, sizes }, index) => (
-            <div key={src} className={`relative overflow-hidden ${className}`}>
-              <Image
-                src={src}
-                alt={alt}
-                fill
-                sizes={sizes}
-                preload={index === 0}
-                className="object-cover"
-                style={objectPosition ? { objectPosition } : undefined}
-              />
-            </div>
-          ))}
-        </div>
+      <PhotoWall
+        tiles={WALL}
+        className="grid grid-cols-2 grid-rows-[48vw_36vw_36vw] gap-1 bg-black md:grid-cols-6 md:grid-rows-[repeat(2,clamp(11rem,21vw,20rem))]"
+      >
         <div className="bg-black md:absolute md:inset-x-0 md:bottom-0 md:bg-transparent md:bg-gradient-to-t md:from-black/90 md:via-black/60 md:to-transparent md:pt-32">
           <div className="store-container flex flex-col gap-5 py-6 sm:py-8 md:flex-row md:items-end md:justify-between md:gap-8 lg:py-10">
             <div className="min-w-0">
+              <Image
+                src="/hero/ryan-name-tag.png"
+                alt=""
+                width={2264}
+                height={1442}
+                sizes="(min-width: 768px) 96px, 64px"
+                className="pointer-events-none mb-4 ml-1 h-auto w-16 -rotate-6 select-none drop-shadow-lg sm:mb-5 md:w-24"
+              />
               <Heading
                 size="h1"
                 ignoreColorMode
@@ -103,8 +100,8 @@ export function HomeHero({ facts }: { facts: string[] }) {
             </div>
           </div>
         </div>
-      </div>
-      <HomeMarquee facts={facts} />
+      </PhotoWall>
+      <HomeMarquee />
     </section>
   );
 }

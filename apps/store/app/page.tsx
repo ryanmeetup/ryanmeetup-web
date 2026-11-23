@@ -43,7 +43,7 @@ export default async function HomePage() {
   return (
     <main className="flex flex-col gap-8 pb-6 sm:gap-12 sm:pb-8 lg:pb-10">
       <JsonLd data={buildStoreSchema(shippingCountries)} />
-      <HomeHero facts={shipping.map(({ title }) => title)} />
+      <HomeHero />
 
       <section data-analytics-placement="home_support" data-analytics-section="home_support" aria-label="Support Ryan Meetup" className="store-container">
         <SupportNote />
