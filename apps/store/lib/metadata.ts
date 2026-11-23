@@ -9,10 +9,10 @@ export const SITE_DESCRIPTION = "Official Ryan Meetup shirts, sweatshirts, hats,
 
 // The social card for pages without their own image.
 export const DEFAULT_IMAGE: PageMetadataImage = {
-  url: "/hero/ryan-merch-table.jpg",
-  width: 1800,
-  height: 1199,
-  alt: "Ryans browsing official Ryan Meetup shirts and hats at a merch table",
+  url: "/share/ryan-meetup-store.jpg",
+  width: 1200,
+  height: 630,
+  alt: "Two Ryans posing deadpan in name tags, one in an I heart RY tee and cap, the other in a Ryan Meetup crewneck holding a pool cue",
 };
 
 export const buildPageMetadata = createPageMetadataBuilder({ siteName: SITE_NAME, siteUrl: SITE_URL });
