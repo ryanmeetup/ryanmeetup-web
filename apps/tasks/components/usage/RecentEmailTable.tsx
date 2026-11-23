@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import type { EditorTriggers } from "@/components/global";
 import { useEffect, useState } from "react";
 import { usePagination, useSearchFilter } from "@ryanmeetup/hooks";
 import {
@@ -46,7 +48,24 @@ const emailTiming = (email: ResendEmailSummary) => {
   };
 };
 
-export function RecentEmailTable({ emails }: { emails: ResendEmailSummary[] }) {
+export const emailDetailPath = (id: string) =>
+  `/admin/usage/emails/${encodeURIComponent(id)}`;
+
+const noTriggers: EditorTriggers = {
+  route: false,
+  dialog: true,
+  routeClassName: "",
+  dialogClassName: "",
+};
+
+export function RecentEmailTable({
+  emails,
+  triggers = noTriggers,
+}: {
+  emails: ResendEmailSummary[];
+  /** Whether a subject opens the email's page, its dialog, or each at its breakpoint. */
+  triggers?: EditorTriggers;
+}) {
   const [selectedEmail, setSelectedEmail] = useState<ResendEmailSummary | null>(
     null,
   );
@@ -107,13 +126,23 @@ export function RecentEmailTable({ emails }: { emails: ResendEmailSummary[] }) {
             {visibleEmails.map((email) => (
               <article key={email.id} className="space-y-3 p-4">
                 <div className="flex items-start justify-between gap-3">
-                  <button
-                    type="button"
-                    className="min-w-0 text-left font-semibold underline decoration-black/20 underline-offset-4 transition hover:decoration-black focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/70 dark:decoration-white/25 dark:hover:decoration-white dark:focus-visible:ring-white/70"
-                    onClick={() => setSelectedEmail(email)}
-                  >
-                    {email.subject}
-                  </button>
+                  {triggers.route && (
+                    <Link
+                      href={emailDetailPath(email.id)}
+                      className={`min-w-0 text-left font-semibold underline decoration-black/20 underline-offset-4 transition hover:decoration-black focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/70 dark:decoration-white/25 dark:hover:decoration-white dark:focus-visible:ring-white/70 ${triggers.routeClassName}`}
+                    >
+                      {email.subject}
+                    </Link>
+                  )}
+                  {triggers.dialog && (
+                    <button
+                      type="button"
+                      className={`min-w-0 text-left font-semibold underline decoration-black/20 underline-offset-4 transition hover:decoration-black focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/70 dark:decoration-white/25 dark:hover:decoration-white dark:focus-visible:ring-white/70 ${triggers.dialogClassName ? "max-sm:hidden" : ""}`}
+                      onClick={() => setSelectedEmail(email)}
+                    >
+                      {email.subject}
+                    </button>
+                  )}
                   <span className="shrink-0">
                     <EmailStatusBadge status={email.lastEvent} />
                   </span>
@@ -164,14 +193,25 @@ export function RecentEmailTable({ emails }: { emails: ResendEmailSummary[] }) {
                     className="transition hover:bg-black/[0.025] dark:hover:bg-white/[0.025]"
                   >
                     <td className="px-4 py-3 font-semibold">
-                      <button
-                        type="button"
-                        className="block max-w-full truncate text-left underline decoration-black/20 underline-offset-4 transition hover:decoration-black focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/70 dark:decoration-white/25 dark:hover:decoration-white dark:focus-visible:ring-white/70"
-                        title={email.subject}
-                        onClick={() => setSelectedEmail(email)}
-                      >
-                        {email.subject}
-                      </button>
+                      {/* The table shows from `xl`, past the phone breakpoint, so only a profile pinned to pages takes the route here. */}
+                      {triggers.dialog ? (
+                        <button
+                          type="button"
+                          className="block max-w-full truncate text-left underline decoration-black/20 underline-offset-4 transition hover:decoration-black focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/70 dark:decoration-white/25 dark:hover:decoration-white dark:focus-visible:ring-white/70"
+                          title={email.subject}
+                          onClick={() => setSelectedEmail(email)}
+                        >
+                          {email.subject}
+                        </button>
+                      ) : (
+                        <Link
+                          href={emailDetailPath(email.id)}
+                          className="block max-w-full truncate text-left underline decoration-black/20 underline-offset-4 transition hover:decoration-black focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/70 dark:decoration-white/25 dark:hover:decoration-white dark:focus-visible:ring-white/70"
+                          title={email.subject}
+                        >
+                          {email.subject}
+                        </Link>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <EmailStatusBadge status={email.lastEvent} />

@@ -123,6 +123,7 @@ export function UsagePageClient({
   digestRuns: DigestRun[];
 }) {
   const [data, setData] = useState(initialData);
+  const triggers = editorTriggers(data.currentProfile.editor_surface);
   const [settings, setSettings] = useState(digestSettings);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [refreshing, startRefresh] = useTransition();
@@ -222,12 +223,12 @@ export function UsagePageClient({
           settings={settings}
           setSettings={setSettings}
           demoMode={demoMode}
-          triggers={editorTriggers(data.currentProfile.editor_surface)}
+          triggers={triggers}
         />
 
         <DigestRunLedger runs={digestRuns} />
 
-        <RecentEmailTable emails={usage.recentEmails} />
+        <RecentEmailTable emails={usage.recentEmails} triggers={triggers} />
         <p className="text-xs text-black/50 dark:text-white/50">
           Last checked {formatTimestamp(usage.checkedAt)}. Resend counts every
           To, CC, and BCC recipient toward email quota.
