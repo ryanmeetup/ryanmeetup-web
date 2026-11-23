@@ -61,13 +61,18 @@ const WALL: WallTile[] = [
 ];
 
 // The takeover fades the merch booth behind the sale and keeps three cycling tiles beside it, so
-// it still looks like the store. The backdrop stays out of the tiles: one photo, one place.
+// it still looks like the store. Its tiles come from the wall above, so a photo added there shows
+// in both: every portrait in the tall tile, and every other landscape dealt between the two
+// small tiles. The backdrop stays out of the tiles: one photo, one place.
+const PORTRAIT_TILE = WALL[1];
 const TAKEOVER_BACKDROP = WALL[0].photos[0];
+const TAKEOVER_LANDSCAPES = WALL.filter((tile) => tile !== PORTRAIT_TILE)
+  .flatMap((tile) => tile.photos)
+  .filter((photo) => photo !== TAKEOVER_BACKDROP);
 const TAKEOVER_WALL: WallTile[] = [
-  // Every portrait shares the one tall tile, here as on the regular wall.
-  { className: "row-span-2", sizes: "18vw", photos: WALL[1].photos },
-  { className: "", sizes: "26vw", photos: [WALL[0].photos[1], WALL[3].photos[1]] },
-  { className: "", sizes: "26vw", photos: [WALL[2].photos[0], WALL[3].photos[0]] },
+  { className: "row-span-2", sizes: "18vw", photos: PORTRAIT_TILE.photos },
+  { className: "", sizes: "26vw", photos: TAKEOVER_LANDSCAPES.filter((_, index) => index % 2 === 0) },
+  { className: "", sizes: "26vw", photos: TAKEOVER_LANDSCAPES.filter((_, index) => index % 2 === 1) },
 ];
 
 /**
