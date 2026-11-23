@@ -2,42 +2,23 @@
 
 import { TextMarquee } from "@ryanmeetup/ui";
 import { usePromotion } from "@/components/promotion";
-import { describeTiers } from "@/lib/promotion";
-
-// One is enough: the band repeats its run until it fills the width.
-const NAME_RUN = ["Ryan"];
 
 /**
- * Two straight bands under the home hero: the name on a loop, then what a shopper should know,
- * led by the running sale while it lasts. The facts arrive from the server (production time,
- * where it ships), so the band never claims something the policies don't say.
+ * One band under the home hero. While a sale runs it says only the three things worth a
+ * glance (its name, the best discount, the last day); the banner above carries the details.
+ * Otherwise it is just the name on a loop.
  */
-export function HomeMarquee({ facts }: { facts: string[] }) {
+export function HomeMarquee() {
   const promotion = usePromotion();
-  const offer = promotion
-    ? [`${promotion.name}: ${describeTiers(promotion.tiers)}`, `Ends ${promotion.endsLabel}`]
-    : [];
-  const items = [...offer, ...facts];
+  const bestOff = promotion ? Math.max(...promotion.tiers.map(({ percentOff }) => percentOff)) : 0;
   return (
-    <div>
-      <TextMarquee
-        items={NAME_RUN}
-        separator="✦"
-        decorative
-        speed={45}
-        className="bg-nametag py-2 text-white sm:py-3"
-        itemClassName="font-cooper text-2xl tracking-wider sm:text-3xl"
-      />
-      {items.length > 0 && (
-        <TextMarquee
-          items={items}
-          separator="/"
-          direction="right"
-          speed={35}
-          className="bg-white py-2.5 text-black sm:py-3"
-          itemClassName="text-sm font-semibold sm:text-base"
-        />
-      )}
-    </div>
+    <TextMarquee
+      items={promotion ? [promotion.name, `Up to ${bestOff}% off`, `Ends ${promotion.endsLabel}`] : ["Ryan"]}
+      separator="✦"
+      decorative={!promotion}
+      speed={45}
+      className="bg-nametag py-2 text-white sm:py-3"
+      itemClassName="font-cooper text-2xl tracking-wider sm:text-3xl"
+    />
   );
 }
