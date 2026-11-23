@@ -53,7 +53,8 @@ test("home ends with the six newest reviews across products, including low ratin
 test("empty or failed public reads omit the showcase without losing the catalog", async ({ page, request }) => {
   for (const data of [{}, { [numeric(tee.id)]: { unavailable: true } }]) {
     await request.post(`${fixture}/__configure`, { data }); await page.goto("/");
-    await expect(page.getByRole("heading", { name: /Merch with your/ })).toBeVisible();
+    // The hero region survives a sale takeover, unlike its regular headline.
+    await expect(page.getByRole("region", { name: "Ryan Meetup merch", exact: true })).toBeVisible();
     await expect(page.getByRole("region", { name: "Recent reviews", exact: true })).toHaveCount(0);
   }
 });
