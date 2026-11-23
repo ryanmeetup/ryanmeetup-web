@@ -217,7 +217,8 @@ test("a garment page lists only its garment under a department breadcrumb", asyn
   const main = page.getByRole("main");
   await expect(page.getByRole("navigation", { name: "Breadcrumb" }).getByRole("listitem")).toHaveText([/^Store/, /^Apparel/, /^T-Shirts/]);
   await expect(main.getByRole("heading", { level: 3 })).toHaveText(["Official Ryan Meetup Tee", "Name Tag Shirt"]);
-  await main.getByRole("link", { name: /Ryan Meetup Tee/ }).first().click();
+  // Click the title: a sale's taller price badge can cover the link's center.
+  await main.getByRole("link", { name: /Ryan Meetup Tee/ }).first().getByRole("heading").click();
   await expect(page.getByRole("navigation", { name: "Breadcrumb" }).getByRole("listitem")).toHaveText([/^Store/, /^Apparel/, /^T-Shirts/, "Official Ryan Meetup Tee"]);
 });
 
@@ -420,7 +421,8 @@ test("the home page opens doors to collections, spotlights one listing, and keep
   await page.goto("/");
   const main = page.getByRole("main");
   const lanes = main.getByRole("region", { name: "Shop by collection" });
-  await expect(lanes.getByRole("listitem")).toHaveCount(3);
+  // RY-Ds lives on the membership site, so only the two type pages are tiles.
+  await expect(lanes.getByRole("listitem")).toHaveCount(2);
   await expect(lanes.getByRole("link", { name: /Apparel/ })).toHaveAttribute("href", "/apparel");
 
   const spotlight = main.getByRole("region", { name: "New arrival" });
@@ -490,7 +492,7 @@ test("customer can read about the store and get back to shopping", async ({ page
   await expect(page).toHaveURL(/\/about$/);
   await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toHaveText("Official goods. Unmistakably Ryan.");
   await expect(page.getByText("We can’t accept returns or exchanges", { exact: false })).toBeVisible();
-  await expect(page.getByText("We ship to most of the world.", { exact: false })).toBeVisible();
+  await expect(page.getByText("We ship to 28 countries and regions", { exact: false })).toBeVisible();
   await expect(page.getByText(/printful/i)).toHaveCount(0);
   await page.screenshot({ path: screenshotPath("store-about-desktop.png"), fullPage: true });
 
@@ -507,11 +509,13 @@ test("apparel, accessories, and collections are header menus ending in shop all"
   await expect(mainNavigation.getByRole("link", { name: "Shop All" })).toHaveCount(0);
   // The shared NavMenu opens on hover, as it does on ryanmeetup.com.
   await mainNavigation.getByRole("button", { name: "Collections" }).hover();
-  await expect(page.getByRole("link", { name: "Shop All" })).toHaveAttribute("href", "/collections/all");
+  // Case-sensitive, so a running sale banner's "Shop all" button doesn't match.
+  await expect(page.getByRole("link", { name: /^Shop All\b/ })).toHaveAttribute("href", "/collections/all");
   await expect(page.getByRole("link", { name: /RY-Ds/ })).toHaveAttribute("href", "https://ryanmeetup.com/cards");
   await page.mouse.move(0, 0);
   await mainNavigation.getByRole("button", { name: "Apparel" }).hover();
-  await expect(page.getByRole("link", { name: /^Hats/ })).toHaveAttribute("href", "/apparel/hats");
+  // Empty groupings are hidden, and the demo catalog's apparel is shirts and sweatshirts.
+  await expect(page.getByRole("link", { name: /^T-Shirts/ })).toHaveAttribute("href", "/apparel/t-shirts");
   await page.getByRole("link", { name: "Shop All Apparel" }).click();
   await expect(page).toHaveURL(/\/apparel$/);
 
@@ -537,14 +541,14 @@ test("apparel, accessories, and collections are header menus ending in shop all"
 test("product breadcrumbs name the page the customer came from", async ({ page }) => {
   const breadcrumb = page.getByRole("navigation", { name: "Breadcrumb" });
   await page.goto("/apparel");
-  await page.getByRole("main").getByRole("link", { name: /Ryan Meetup Tee/ }).first().click();
+  await page.getByRole("main").getByRole("link", { name: /Ryan Meetup Tee/ }).first().getByRole("heading").click();
   await expect(page).toHaveURL(/\/products\/ryan-meetup-tee\?(.+&)?from=apparel/);
   await expect(breadcrumb.getByRole("listitem")).toHaveText([/^Store/, /^Apparel/, "Official Ryan Meetup Tee"]);
   await breadcrumb.getByRole("link", { name: "Apparel" }).click();
   await expect(page).toHaveURL(/\/apparel$/);
 
   await page.goto("/");
-  await page.getByRole("main").getByRole("link", { name: /Ryan Meetup Tee/ }).first().click();
+  await page.getByRole("main").getByRole("link", { name: /Ryan Meetup Tee/ }).first().getByRole("heading").click();
   await expect(page).toHaveURL(/\/products\/ryan-meetup-tee(\?|$)/);
   await expect(breadcrumb.getByRole("listitem")).toHaveText([/^Store/, "Official Ryan Meetup Tee"]);
 
@@ -556,12 +560,13 @@ test("product breadcrumbs name the page the customer came from", async ({ page }
 test("store navigation and breadcrumbs use icons", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/products/ryan-meetup-tee");
-  // About and Contact are links; Apparel, Accessories, and Collections are menus.
+  // Desktop labels are text only, since six labels with icons overflow the pill at
+  // 1280px; Apparel, Accessories, and Collections keep their menu chevrons.
   await expect(
     page.getByRole("navigation", { name: "Main navigation" }).locator("a svg"),
-  ).toHaveCount(2);
+  ).toHaveCount(0);
   await expect(
-    page.getByRole("navigation", { name: "Main navigation" }).locator("button svg:first-child"),
+    page.getByRole("navigation", { name: "Main navigation" }).locator("button svg"),
   ).toHaveCount(3);
   await expect(
     page.getByRole("navigation", { name: "Breadcrumb" }).locator("li svg"),
@@ -573,11 +578,12 @@ test("store navigation and breadcrumbs use icons", async ({ page }) => {
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("button", { name: "Open navigation" }).click();
-  await expect(
-    page
-      .getByRole("navigation", { name: "Mobile navigation" })
-      .locator("a svg"),
-  ).toHaveCount(16); // About and Contact, plus every menu link: 5 apparel, 7 accessories, RY-Ds, and Shop All
+  // Every mobile link keeps its icon, however many groupings the catalog fills.
+  const mobileLinks = page.getByRole("navigation", { name: "Mobile navigation" }).getByRole("link");
+  await expect(mobileLinks.first()).toBeVisible();
+  const icons = await mobileLinks.evaluateAll((links) => links.filter((link) => link.checkVisibility()).map((link) => [link.textContent, Boolean(link.querySelector("svg"))]));
+  expect(icons.length).toBeGreaterThanOrEqual(5);
+  expect(icons.filter(([, icon]) => !icon)).toEqual([]);
   await page.screenshot({
     path: screenshotPath("store-mobile-navigation.png"),
     fullPage: false,
