@@ -7,7 +7,12 @@ import { Heading } from "@ryanmeetup/ui";
 
 import "mapbox-gl/dist/mapbox-gl.css";
 import type { BaseballTeam } from "@/lib/types";
-import { formatGameDate, getStateName, getTeamLogoSrc } from "@/utils/baseball";
+import {
+  formatGameDate,
+  getStateName,
+  getTeamLogoSrc,
+  hasTicketLink,
+} from "@/utils/baseball";
 
 type TeamMapProps = {
   teams: BaseballTeam[];
@@ -150,15 +155,25 @@ const TeamMap = ({ teams }: TeamMapProps) => {
                 <br />
                 {selected.city}, {getStateName(selected.state)}
               </p>
-              <a
-                href={selected.ticketUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm font-semibold text-black underline underline-offset-4 transition hover:text-black/70"
-              >
-                Get tickets
-                <span className="sr-only"> for {selected.name} (opens in a new tab)</span>
-              </a>
+              {hasTicketLink(selected) ? (
+                <a
+                  href={selected.ticketUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-semibold text-black underline underline-offset-4 transition hover:text-black/70"
+                >
+                  Get tickets
+                  <span className="sr-only"> for {selected.name} (opens in a new tab)</span>
+                </a>
+              ) : (
+                <span
+                  aria-disabled="true"
+                  className="cursor-not-allowed text-sm font-semibold text-black/50"
+                >
+                  Tickets soon
+                  <span className="sr-only"> for {selected.name}: not on sale yet</span>
+                </span>
+              )}
             </div>
           </Popup>
         )}
