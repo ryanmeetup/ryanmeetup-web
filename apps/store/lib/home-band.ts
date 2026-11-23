@@ -3,8 +3,6 @@ import { MIN_LISTING_RATING_REVIEWS } from "./listing-ratings";
 import type { ShippingExpectation } from "./product-guidance";
 import type { Promotion } from "./promotion";
 
-const NAME = "Ryan";
-
 /**
  * The shop-wide rating in a few words, or null while there are too few reviews to trust it
  * (the same floor product cards use) or the read failed.
@@ -26,15 +24,13 @@ export function getHomeBandFacts(summary: Pick<ReviewSummary, "average" | "count
 }
 
 /**
- * The band's run: a regular sale's name, best discount, and last day up front, then the name
- * between each fact, so it still reads as the name band at a glance. A takeover sale is left
- * out because its hero already says it. Screen readers get the phrases without the name.
+ * The band's run: a regular sale's name, best discount, and last day up front, then the facts.
+ * A takeover sale is left out because its hero already says it. Every phrase is real
+ * information; "Made to order" is always among the facts, so the run is never empty.
  */
 export function buildHomeBand(promotion: Promotion | null, facts: string[]) {
   const sale = promotion && !promotion.takeover
     ? [promotion.name, `Up to ${Math.max(...promotion.tiers.map(({ percentOff }) => percentOff))}% off`, `Ends ${promotion.endsLabel}`]
     : [];
-  const spoken = [...sale, ...facts];
-  if (!spoken.length) return { items: [NAME], spoken };
-  return { items: [...sale, ...facts.flatMap((fact) => [NAME, fact])], spoken };
+  return [...sale, ...facts];
 }

@@ -29,13 +29,9 @@ test("band facts lead with the rating, then the production and shipping headline
   expect(getHomeBandFacts(null, [shipping[0]])).toEqual(["Made to order"]);
 });
 
-test("the band puts the name between facts, a regular sale up front, and skips a takeover sale", () => {
+test("the band is only facts, with a regular sale up front and a takeover sale left out", () => {
   const facts = ["4.8 stars from 52 reviews", "Made to order"];
-  expect(buildHomeBand(null, facts)).toEqual({ items: ["Ryan", facts[0], "Ryan", facts[1]], spoken: facts });
-  expect(buildHomeBand(sale, facts)).toEqual({
-    items: ["Black RYDay", "Up to 20% off", "Ends Nov 30", "Ryan", facts[0], "Ryan", facts[1]],
-    spoken: ["Black RYDay", "Up to 20% off", "Ends Nov 30", ...facts],
-  });
-  expect(buildHomeBand({ ...sale, takeover: true }, facts).items).toEqual(["Ryan", facts[0], "Ryan", facts[1]]);
-  expect(buildHomeBand(null, [])).toEqual({ items: ["Ryan"], spoken: [] });
+  expect(buildHomeBand(null, facts)).toEqual(facts);
+  expect(buildHomeBand(sale, facts)).toEqual(["Black RYDay", "Up to 20% off", "Ends Nov 30", ...facts]);
+  expect(buildHomeBand({ ...sale, takeover: true }, facts)).toEqual(facts);
 });
