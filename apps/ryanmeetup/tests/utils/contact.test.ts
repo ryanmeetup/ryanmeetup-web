@@ -43,6 +43,9 @@ test.describe("contact topics", () => {
 
   test("prebuilt CTA links point at real topics and details", () => {
     for (const href of Object.values(contactHrefs)) {
+      // Some CTAs email a partner directly (RY-D order help goes to the
+      // fulfillment inbox); only contact-form links carry topics.
+      if (href.startsWith("mailto:")) continue;
       const params = new URLSearchParams(href.split("?")[1]);
       const topic = findTopic(params.get("topic") ?? "");
       expect(topic, `unknown topic in ${href}`).toBeTruthy();
