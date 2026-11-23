@@ -19,6 +19,11 @@ type GalleryItem = {
   city?: string;
   /** CSS object-position for the photo's focal point, e.g. "50% 40%". */
   objectPosition?: string;
+  /**
+   * "contain" shows the whole photo over a blurred copy of itself, for shots
+   * whose orientation fights the frame (portraits in a landscape gallery).
+   */
+  fit?: "cover" | "contain";
 };
 
 type RotatingGalleryProps = {
@@ -148,6 +153,19 @@ const RotatingGallery = (props: RotatingGalleryProps) => {
           leaveTo={animationStyle.leaveTo}
         >
           <div className="absolute inset-0 z-10 [transform-style:preserve-3d] [backface-visibility:hidden]">
+            {slide.fit === "contain" && (
+              // Blur fades to transparent at its edges; the opaque base keeps
+              // the peek thumbnails behind the slide from showing through.
+              <div className="absolute inset-0 overflow-hidden bg-neutral-900" aria-hidden="true">
+                <NextImage
+                  className="scale-125 object-cover blur-2xl brightness-75"
+                  src={slide.src}
+                  fill
+                  sizes="128px"
+                  alt=""
+                />
+              </div>
+            )}
             <NextImage
               className="rounded-3xl"
               src={slide.src}
@@ -157,7 +175,7 @@ const RotatingGallery = (props: RotatingGalleryProps) => {
               preload={index === 0 && preload}
               alt={slide.alt}
               style={{
-                objectFit: "cover",
+                objectFit: slide.fit ?? "cover",
                 objectPosition: slide.objectPosition,
               }}
             />
