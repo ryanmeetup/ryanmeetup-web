@@ -56,6 +56,10 @@ const redirectRoutes = [
       "https://docs.google.com/document/d/1DfDD3iyrQMUHTt4EzbfPytfOOh-de1vk9pHRqqM8obs/edit?tab=t.0",
   },
   { path: "/chapter-lead", location: "https://form.typeform.com/to/TZkv7rua" },
+  {
+    path: "/hockey",
+    location: "https://partiful.com/e/P5vBoqdijeznyyCOVfTp?",
+  },
   { path: "/join", location: "https://partiful.com/u/sJG4HpH0wS3ZA3YkzaL5" },
   { path: "/merch", location: "https://ryanmeetup.etsy.com" },
   {
