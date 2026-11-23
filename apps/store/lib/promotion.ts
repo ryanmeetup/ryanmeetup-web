@@ -16,6 +16,10 @@ export type Promotion = {
   endsLabel: string;
   /** Ascending by `minQuantity`. */
   tiers: PromotionTier[];
+  /** Swap the home hero for the sale's own takeover while it runs. Big sales only. */
+  takeover?: boolean;
+  /** Part of `name` set in name-tag red in the takeover headline, such as "RY". */
+  accent?: string;
 };
 
 // Mirrors the "Black RYDay: 10% off everything", "Black RYDay: 3+ items, 15% off" and
@@ -31,6 +35,8 @@ export const currentPromotion: Promotion | null = {
     { minQuantity: 3, percentOff: 15 },
     { minQuantity: 5, percentOff: 20 },
   ],
+  takeover: true,
+  accent: "RY",
 };
 
 /** The discount every item gets, from a tier with no real minimum, or null when the sale is tiered only. */
@@ -48,10 +54,15 @@ export function isPromotionLive(promotion: Promotion | null, now: number): promo
   return Boolean(promotion) && now >= Date.parse(promotion!.startsAt) && now <= Date.parse(promotion!.endsAt);
 }
 
+/** "off everything" or "off 3+ items": what one tier's percentage applies to. */
+export function describeTierScope({ minQuantity }: PromotionTier) {
+  return minQuantity <= 1 ? "off everything" : `off ${minQuantity}+ items`;
+}
+
 /** "10% off everything, 15% off 3+ items, 20% off 5+ items" */
 export function describeTiers(tiers: PromotionTier[]) {
   return tiers
-    .map(({ minQuantity, percentOff }) => `${percentOff}% off ${minQuantity <= 1 ? "everything" : `${minQuantity}+ items`}`)
+    .map((tier) => `${tier.percentOff}% ${describeTierScope(tier)}`)
     .join(", ");
 }
 

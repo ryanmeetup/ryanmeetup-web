@@ -30,7 +30,7 @@ const prefersReducedMotion = () =>
  * focusing inside the wall (including whatever sits over it) pauses it, and reduced motion
  * keeps every tile on its first photo.
  */
-export function PhotoWall({ tiles, className, children }: { tiles: WallTile[]; className?: string; children?: ReactNode }) {
+export function PhotoWall({ tiles, className, wrapperClassName, children }: { tiles: WallTile[]; className?: string; wrapperClassName?: string; children?: ReactNode }) {
   const [active, setActive] = useState(() => tiles.map(() => 0));
   // How far each tile has got, so later photos load just before they're needed, not with the page.
   const [reached, setReached] = useState(() => tiles.map(() => 0));
@@ -51,7 +51,7 @@ export function PhotoWall({ tiles, className, children }: { tiles: WallTile[]; c
 
   return (
     <div
-      className="relative"
+      className={`relative ${wrapperClassName ?? ""}`}
       // Only a real mouse pauses on hover: a tap fires an enter with no leave, which would stop
       // the wall for good on a phone.
       onPointerEnter={(event) => { if (event.pointerType === "mouse") setPaused(true); }}

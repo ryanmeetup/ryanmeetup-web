@@ -6,10 +6,12 @@ import { usePromotion } from "@/components/promotion";
 /**
  * One band under the home hero. While a sale runs it says only the three things worth a
  * glance (its name, the best discount, the last day); the banner above carries the details.
- * Otherwise it is just the name on a loop.
+ * Otherwise, and during a takeover sale (whose hero already says all of it), it is just the
+ * name on a loop.
  */
 export function HomeMarquee() {
-  const promotion = usePromotion();
+  const running = usePromotion();
+  const promotion = running?.takeover ? null : running;
   const bestOff = promotion ? Math.max(...promotion.tiers.map(({ percentOff }) => percentOff)) : 0;
   return (
     <TextMarquee

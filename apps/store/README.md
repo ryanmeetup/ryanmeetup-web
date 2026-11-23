@@ -120,7 +120,15 @@ shape suits it (the tall second tile takes portraits). The wall pauses while a m
 at it or focus is inside it (a tap never pauses it), and stays on each tile's first photo under reduced motion.
 “Shop all merch” opens Shop All, and “Browse collections” jumps to the collection
 tiles. One red marquee band runs under it: during a sale, just the sale's name, its
-best discount, and its last day; otherwise the name on a loop. Below it:
+best discount, and its last day; otherwise the name on a loop.
+
+A sale with `takeover: true` in [lib/promotion.ts](lib/promotion.ts) replaces that
+hero while it runs: its name set huge (with any `accent`, like the “RY” in Black
+RYDay, in name-tag red), each tier as a price tag, a countdown to `endsAt`, and
+“Shop the sale”, beside three cycling photo tiles on wider screens. The marquee goes
+back to the name on a loop, since the takeover already says everything. It appears
+and leaves on the sale's own start and end times; smaller sales leave `takeover` off
+and keep the regular hero. Below the hero:
 
 1. **Best Sellers** shows up to six listings (four on phones) from Shopify's built-in home page
    collection (`frontpage`), in its curated order. An empty or unpublished

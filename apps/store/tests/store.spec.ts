@@ -409,11 +409,29 @@ test("customer can browse a product and manage the preview cart", async ({
 });
 
 test("customer can shop from the hero", async ({ page }) => {
+  // After Black RYDay, so the regular hero shows rather than the sale's takeover.
+  await page.clock.setFixedTime(new Date("2026-12-15T17:00:00Z"));
   await page.goto("/");
   const hero = page.getByRole("region", { name: "Ryan Meetup merch", exact: true });
   await expect(hero.getByRole("heading", { level: 1 })).toHaveText("Merch with your name on it.");
   await expect(hero.getByRole("link", { name: "Browse collections" })).toHaveAttribute("href", "#collections");
   await hero.getByRole("link", { name: "Shop all merch" }).click();
+  await expect(page).toHaveURL(/\/collections\/all$/);
+});
+
+test("a takeover sale replaces the hero with its tiers, countdown, and shop link", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-11-25T17:00:00Z"));
+  await page.goto("/");
+  const hero = page.getByRole("region", { name: "Ryan Meetup merch", exact: true });
+  await expect(hero.getByRole("heading", { level: 1 })).toHaveText("Black RYDay");
+  await expect(hero.getByText("Sale ends Monday, Nov 30")).toBeVisible();
+  await expect(hero.getByRole("list", { name: "Black RYDay discounts" }).getByRole("listitem")).toHaveText([
+    "10%off everything", "15%off 3+ items", "20%off 5+ items",
+  ]);
+  // Nov 25 17:00 UTC is noon in New York, so 5 days, 11 hours, 59 minutes, 59 seconds remain.
+  await expect(hero.getByRole("timer", { name: "Time left in the sale" })).toHaveText("5Days11Hrs59Min59Sec");
+  await expect(hero.getByRole("heading", { name: "Merch with your name on it." })).toHaveCount(0);
+  await hero.getByRole("link", { name: "Shop the sale" }).click();
   await expect(page).toHaveURL(/\/collections\/all$/);
 });
 
@@ -613,6 +631,8 @@ for (const viewport of [
   { name: "wide", width: 1536, height: 960 },
 ]) {
   test(`home layout at ${viewport.name}`, async ({ page }) => {
+    // After Black RYDay, so these capture the regular hero rather than the sale's takeover.
+    await page.clock.setFixedTime(new Date("2026-12-15T17:00:00Z"));
     await page.setViewportSize({
       width: viewport.width,
       height: viewport.height,
