@@ -249,9 +249,9 @@ export function ProductDetail({ product, title = product.title, breadcrumbs, des
         {designField && <div className="mt-8">{designField({ selections, selectOption })}</div>}
 
         <div className="mt-8 space-y-5">
-          {!sizeOption && <SizeDisplay value={oneSize} guide={sizeGuide && <ProductSizeGuide html={sizeGuide} title={product.title} />} />}
+          {!sizeOption && <SizeDisplay value={oneSize} guide={sizeGuide && <ProductSizeGuide html={sizeGuide} />} />}
           {product.options.filter((option) => !isDefaultTitleOption(option) && !(hideColorOption && option === getColorOption(product))).map((option) => isSizeOption(option) && option.values.length === 1 ? (
-            <SizeDisplay key={option.id} value={option.values[0]} guide={sizeGuide && <ProductSizeGuide html={sizeGuide} title={product.title} />} />
+            <SizeDisplay key={option.id} value={option.values[0]} guide={sizeGuide && <ProductSizeGuide html={sizeGuide} />} />
           ) : (
             <div key={option.id} className="space-y-2">
               <DropdownSelect
@@ -261,7 +261,7 @@ export function ProductDetail({ product, title = product.title, breadcrumbs, des
                 value={selections[option.name] ?? ""}
                 onChange={(value) => selectOption(option.name, value)}
                 options={[...(isSizeOption(option) ? [{ label: "Choose a size", value: "" }] : []), ...getOptionChoices(product, option, selections)]}
-                labelAction={isSizeOption(option) && sizeGuide ? <ProductSizeGuide html={sizeGuide} title={product.title} /> : undefined}
+                labelAction={isSizeOption(option) && sizeGuide ? <ProductSizeGuide html={sizeGuide} /> : undefined}
               />
             </div>
           ))}

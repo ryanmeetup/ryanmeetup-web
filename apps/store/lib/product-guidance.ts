@@ -62,3 +62,45 @@ export function getSizeGuideHtml(descriptionHtml: string) {
   const tables = remaining.match(/^\s*((?:(?:<div\b[^>]*>\s*<table\b[\s\S]*?<\/table>\s*<\/div>|<table\b[\s\S]*?<\/table>)\s*)+)/i)?.[1];
   return tables?.trim() || null;
 }
+
+export type SizeGuideTables = { inches: string | null; centimeters: string | null };
+
+const fractions: Record<string, number> = { "¼": 0.25, "½": 0.5, "¾": 0.75, "⅛": 0.125, "⅜": 0.375, "⅝": 0.625, "⅞": 0.875 };
+const measurement = new RegExp(`^(\\d+(?:\\.\\d+)?)?\\s*([${Object.keys(fractions).join("")}])?$`);
+
+/** "15 ⅝" → "39.7"; anything that is not purely a measurement, such as "2XL", is left alone. */
+function inchesToCentimeters(text: string) {
+  const parts = text.split(/(\s*[–-]\s*)/);
+  const converted = parts.map((part, index) => {
+    if (index % 2) return part;
+    const match = part.trim().match(measurement);
+    if (!match || (!match[1] && !match[2])) return null;
+    const inches = Number(match[1] ?? 0) + (match[2] ? fractions[match[2]] : 0);
+    return String(Math.round(inches * 25.4) / 10);
+  });
+  return converted.includes(null) ? text : converted.join("");
+}
+
+/** The inch table with every measurement cell in centimetres and "inches" headings renamed. */
+function convertTableToCentimeters(html: string) {
+  return html.replace(/>([^<]+)</g, (whole, text: string) => {
+    if (!text.trim()) return whole;
+    const renamed = text.replace(/\binch(?:es)?\b/gi, "cm");
+    if (renamed !== text) return `>${renamed}<`;
+    const converted = inchesToCentimeters(text.trim());
+    return converted === text.trim() ? whole : `>${text.replace(text.trim(), converted)}<`;
+  });
+}
+
+/**
+ * Splits Printful's size guide into its inch and centimetre tables. Shopify often carries only
+ * the inch table, so the centimetre one is converted from it when missing. A guide with no
+ * stated unit comes back as-is under inches, with no centimetres to switch to.
+ */
+export function getSizeGuideTables(html: string): SizeGuideTables {
+  const table = (unit: string) => html.match(new RegExp(`<div\\b[^>]*data-unit-system="${unit}"[^>]*>[\\s\\S]*?<\\/table>\\s*<\\/div>`, "i"))?.[0] ?? null;
+  const imperial = table("imperial");
+  const metric = table("metric");
+  if (!imperial && !metric) return { inches: html, centimeters: /\binch(?:es)?\b/i.test(html) ? convertTableToCentimeters(html) : null };
+  return { inches: imperial, centimeters: metric ?? (imperial ? convertTableToCentimeters(imperial) : null) };
+}
