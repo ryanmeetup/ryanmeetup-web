@@ -10,7 +10,9 @@ import { SaleTakeoverSwitch } from "@/components/sale-takeover";
 // full height beside it, and three smaller landscapes fill the rest. Phones use two columns:
 // the big one across the top, the portrait and two landscapes beneath, and the last tile across
 // the bottom, so the copy laid over the lower wall still has photos above it. Each tile cycles
-// through its own photos, so a new photo only needs adding to the tile whose shape it suits.
+// through its own photos, so a new photo only needs adding to the tile whose shape it suits. Every
+// portrait goes in the tall tile. Check orientation as displayed: some files are stored sideways
+// with an EXIF rotation, so their raw pixel size reads landscape.
 const WALL: WallTile[] = [
   {
     className: "col-span-2 md:col-span-3 md:row-span-2",
@@ -30,6 +32,7 @@ const WALL: WallTile[] = [
       { src: "/hero/ryan-ryan-ryan-cap.jpg", alt: "A Ryan pulling down a black cap embroidered with Ryan three times in red, yellow, and blue", objectPosition: "50% 30%" },
       { src: "/hero/ryans-not-a-cult-beanie.jpg", alt: "A Ryan with a skateboard on one shoulder, wearing a black beanie stitched with Ryans and Not a cult", objectPosition: "50% 40%" },
       { src: "/hero/ryan-beanie-and-cap-pair.jpg", alt: "Two smiling Ryans by a chain-link fence, one in a name tag tee and beanie, the other in a yellow Ryan Meetup chain tee and cap", objectPosition: "50% 35%" },
+      { src: "/hero/i-heart-ry-tee.jpg", alt: "A Ryan grinning from a velvet couch in an I heart RY tee, holding a Ryan Meetup cap", objectPosition: "50% 30%" },
     ],
   },
   {
@@ -37,7 +40,6 @@ const WALL: WallTile[] = [
     sizes: "(min-width: 768px) 33vw, 50vw",
     photos: [
       { src: "/hero/ryan-hammock-crewneck.jpg", alt: "A Ryan in red heart sunglasses lounging in a hammock in a Ryan Meetup crewneck, phone in one hand and cash in the other", objectPosition: "65% 50%" },
-      { src: "/hero/i-heart-ry-tee.jpg", alt: "A Ryan grinning from a velvet couch in an I heart RY tee, holding a Ryan Meetup cap", objectPosition: "50% 30%" },
     ],
   },
   {
@@ -62,9 +64,10 @@ const WALL: WallTile[] = [
 // it still looks like the store. The backdrop stays out of the tiles: one photo, one place.
 const TAKEOVER_BACKDROP = WALL[0].photos[0];
 const TAKEOVER_WALL: WallTile[] = [
-  { className: "row-span-2", sizes: "18vw", photos: [WALL[1].photos[0], WALL[1].photos[1]] },
+  // Every portrait shares the one tall tile, here as on the regular wall.
+  { className: "row-span-2", sizes: "18vw", photos: WALL[1].photos },
   { className: "", sizes: "26vw", photos: [WALL[0].photos[1], WALL[3].photos[1]] },
-  { className: "", sizes: "26vw", photos: [WALL[2].photos[0], WALL[2].photos[1]] },
+  { className: "", sizes: "26vw", photos: [WALL[2].photos[0], WALL[3].photos[0]] },
 ];
 
 /**
