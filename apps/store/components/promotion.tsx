@@ -1,11 +1,12 @@
 "use client";
 
 import { createContext, useContext, useSyncExternalStore } from "react";
-import { FiTag } from "react-icons/fi";
-import { Banner, Button, Text } from "@ryanmeetup/ui";
+import { FiTag, FiX } from "react-icons/fi";
+import { Banner, Button, IconButton, Text } from "@ryanmeetup/ui";
 import { formatMoney, getCartSavings } from "@/lib/money";
 import { currentPromotion, describeTierProgress, describeTiers, isPromotionLive, type Promotion } from "@/lib/promotion";
 import type { Money } from "@/lib/types";
+import { useDismissed } from "./use-dismissed";
 
 const PromotionContext = createContext<Promotion | null>(null);
 
@@ -32,7 +33,9 @@ export function usePromotion() {
 
 export function PromotionBanner() {
   const promotion = usePromotion();
-  if (!promotion) return null;
+  // Keyed by sale, so dismissing this one doesn't hide the next.
+  const [dismissed, dismiss] = useDismissed(`store:promotion-dismissed:${promotion?.name ?? ""}`);
+  if (!promotion || dismissed) return null;
   return (
     <Banner
       variant="brand"
@@ -42,7 +45,15 @@ export function PromotionBanner() {
       iconAlign="center"
       aria-label={`${promotion.name} sale`}
       title={`${promotion.name} sale is live now.`}
-      action={<Button.Link href="/collections/all" variant="secondary" size="sm" className="whitespace-nowrap">Shop all</Button.Link>}
+      actionClassName="max-sm:self-stretch"
+      action={
+        <div className="flex items-center gap-2">
+          <Button.Link href="/collections/all" variant="secondary" size="sm" className="flex-1 whitespace-nowrap sm:flex-none">Shop all</Button.Link>
+          <IconButton label={`Dismiss ${promotion.name} banner`} tooltip={false} onClick={dismiss}>
+            <FiX aria-hidden />
+          </IconButton>
+        </div>
+      }
     >
       {/* Phones get the offer and the deadline; the reassurance waits for the room to say it. */}
       <p className="font-normal">{describeTiers(promotion.tiers)} through {promotion.endsLabel}.<span className="hidden sm:inline"> Mix and match anything; the discount applies at checkout.</span></p>

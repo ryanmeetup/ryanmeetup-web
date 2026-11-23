@@ -9,6 +9,8 @@ export type BannerProps = Omit<HTMLAttributes<HTMLElement>, "title"> & {
   iconAlign?: "center" | "start";
   title?: ReactNode;
   action?: ReactNode;
+  /** Classes for the action container, e.g. `max-sm:self-stretch` to give a phone-width action the full row. */
+  actionClassName?: string;
   compact?: boolean;
   mobileInline?: boolean;
   contentClassName?: string;
@@ -29,6 +31,7 @@ export function Banner({
   iconAlign = "center",
   title,
   action,
+  actionClassName,
   compact = false,
   mobileInline = false,
   children,
@@ -53,7 +56,7 @@ export function Banner({
         </div>
         {action && (
           <div
-            className={`shrink-0 ${mobileInline ? "self-center" : "self-end sm:self-auto"}`}
+            className={`shrink-0 ${mobileInline ? "self-center" : "self-end sm:self-auto"} ${actionClassName ?? ""}`}
           >
             {action}
           </div>
