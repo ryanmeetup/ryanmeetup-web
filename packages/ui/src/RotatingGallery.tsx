@@ -10,6 +10,13 @@ import {
   FaChevronRight as ChevronRight,
 } from "react-icons/fa6";
 
+type GalleryPhoto = {
+  src: string;
+  alt: string;
+  /** CSS object-position for the photo's focal point, e.g. "50% 40%". */
+  objectPosition?: string;
+};
+
 type GalleryItem = {
   src: string;
   alt: string;
@@ -24,6 +31,11 @@ type GalleryItem = {
    * whose orientation fights the frame (portraits in a landscape gallery).
    */
   fit?: "cover" | "contain";
+  /**
+   * A second photo shown beside this one. Two portraits side by side fill a
+   * landscape frame with little cropping; `fit` is ignored for a pair.
+   */
+  pairedWith?: GalleryPhoto;
 };
 
 type RotatingGalleryProps = {
@@ -153,32 +165,58 @@ const RotatingGallery = (props: RotatingGalleryProps) => {
           leaveTo={animationStyle.leaveTo}
         >
           <div className="absolute inset-0 z-10 [transform-style:preserve-3d] [backface-visibility:hidden]">
-            {slide.fit === "contain" && (
-              // Blur fades to transparent at its edges; the opaque base keeps
-              // the peek thumbnails behind the slide from showing through.
-              <div className="absolute inset-0 overflow-hidden bg-neutral-900" aria-hidden="true">
+            {slide.pairedWith ? (
+              // The base colour shows through the gap as a thin divider.
+              <div className="absolute inset-0 grid grid-cols-2 gap-1 bg-neutral-900">
+                {[slide, slide.pairedWith].map((photo, photoIndex) => (
+                  <div key={photo.src} className="relative">
+                    <NextImage
+                      src={photo.src}
+                      fill
+                      // A half-width cell still needs the full height, so the
+                      // gallery's sizes is a fair upper bound for each photo.
+                      sizes={sizes}
+                      loading={index === 0 && !preload ? "eager" : undefined}
+                      preload={index === 0 && preload && photoIndex === 0}
+                      alt={photo.alt}
+                      style={{
+                        objectFit: "cover",
+                        objectPosition: photo.objectPosition,
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <>
+                {slide.fit === "contain" && (
+                  // Blur fades to transparent at its edges; the opaque base keeps
+                  // the peek thumbnails behind the slide from showing through.
+                  <div className="absolute inset-0 overflow-hidden bg-neutral-900" aria-hidden="true">
+                    <NextImage
+                      className="scale-125 object-cover blur-2xl brightness-75"
+                      src={slide.src}
+                      fill
+                      sizes="128px"
+                      alt=""
+                    />
+                  </div>
+                )}
                 <NextImage
-                  className="scale-125 object-cover blur-2xl brightness-75"
+                  className="rounded-3xl"
                   src={slide.src}
                   fill
-                  sizes="128px"
-                  alt=""
+                  sizes={sizes}
+                  loading={index === 0 && !preload ? "eager" : undefined}
+                  preload={index === 0 && preload}
+                  alt={slide.alt}
+                  style={{
+                    objectFit: slide.fit ?? "cover",
+                    objectPosition: slide.objectPosition,
+                  }}
                 />
-              </div>
+              </>
             )}
-            <NextImage
-              className="rounded-3xl"
-              src={slide.src}
-              fill
-              sizes={sizes}
-              loading={index === 0 && !preload ? "eager" : undefined}
-              preload={index === 0 && preload}
-              alt={slide.alt}
-              style={{
-                objectFit: slide.fit ?? "cover",
-                objectPosition: slide.objectPosition,
-              }}
-            />
             {/* The scrim keeps caption pills legible; uncaptioned photos stay untinted. */}
             {(slide.title || slide.city) && (
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
@@ -262,4 +300,8 @@ const RotatingGallery = (props: RotatingGalleryProps) => {
 };
 
 export { RotatingGallery };
-export type { GalleryItem as RotatingGalleryItem, RotatingGalleryProps };
+export type {
+  GalleryItem as RotatingGalleryItem,
+  GalleryPhoto as RotatingGalleryPhoto,
+  RotatingGalleryProps,
+};
