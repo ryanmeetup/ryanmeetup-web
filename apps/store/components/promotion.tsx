@@ -78,14 +78,14 @@ export function PromotionNote({ className }: { className?: string }) {
   );
 }
 
-/** Where the cart stands against the sale's tiers. */
-export function PromotionProgress({ quantity, className }: { quantity: number; className?: string }) {
+/** Where the cart stands against the sale's tiers. `compact` drops the card chrome on phones, where the cart drawer is short on room. */
+export function PromotionProgress({ quantity, compact = false, className }: { quantity: number; compact?: boolean; className?: string }) {
   const promotion = usePromotion();
   if (!promotion) return null;
   const top = promotion.tiers.at(-1)!.minQuantity;
   return (
-    <div className={`rounded-lg border border-black/10 p-3 dark:border-white/10 ${className ?? ""}`}>
-      <Text className="flex items-start gap-2 text-sm" aria-live="polite">
+    <div className={`${compact ? "sm:rounded-lg sm:border sm:p-3" : "rounded-lg border p-3"} border-black/10 dark:border-white/10 ${className ?? ""}`}>
+      <Text className={`flex items-start gap-2 ${compact ? "text-xs sm:text-sm" : "text-sm"}`} aria-live="polite">
         <FiTag aria-hidden className="mt-0.5 shrink-0" />
         <span><strong className="font-semibold">{promotion.name}:</strong> {describeTierProgress(promotion.tiers, quantity)}</span>
       </Text>

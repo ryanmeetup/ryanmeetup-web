@@ -33,13 +33,17 @@ export function CartDrawer() {
       headerActions={cart?.lines.length ? <EmptyCartButton iconOnly /> : undefined}
       footer={cart?.lines.length ? (
         <>
-          <PromotionProgress quantity={itemCount} className="mb-4" />
+          {/* Phones keep only what it takes to check out, so the footer doesn't crowd out the cart it summarizes. */}
+          <PromotionProgress quantity={itemCount} compact className="mb-3 sm:mb-4" />
           <div className="flex justify-between"><Text>Subtotal</Text><strong>{formatMoney(cart.cost.subtotalAmount)}</strong></div>
           <CartSavings cart={cart} className="mt-2" />
           <CurrencyEstimateNote subtotal={cart.cost.subtotalAmount} className="mt-3" />
-          <Text className="mt-3 text-sm">Shipping and taxes are calculated at checkout. <FinalSaleNote onNavigate={close} /></Text>
-          <Text className="mt-3 text-sm"><SupportLine /></Text>
-          <Button className="mt-4" variant="secondary" size="md" fullWidth onClick={close}>Keep shopping</Button>
+          <Text className="mt-2 text-xs sm:mt-3 sm:text-sm">Shipping and taxes are calculated at checkout. <FinalSaleNote onNavigate={close} /></Text>
+          {/* The header's close button already keeps shoppers shopping, so these wait for a wider screen. Breakpoints sit on wrappers because Button's base display wins over `hidden`. */}
+          <Text className="mt-3 hidden text-sm sm:block"><SupportLine /></Text>
+          <div className="mt-4 hidden sm:block">
+            <Button variant="secondary" size="md" fullWidth onClick={close}>Keep shopping</Button>
+          </div>
           <CheckoutButton placement="cart_drawer" className="mt-3" />
         </>
       ) : undefined}
