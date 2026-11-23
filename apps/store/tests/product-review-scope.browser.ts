@@ -19,7 +19,8 @@ function review(product: Product, rating: number) {
 }
 
 async function schema(page: Page) {
-  const scripts = page.locator('script[type="application/ld+json"]');
+  // The page also carries a breadcrumb JSON-LD block; only the product schema holds ratings.
+  const scripts = page.locator('script#product-structured-data[type="application/ld+json"]');
   await expect(scripts).toHaveCount(1);
   return JSON.parse((await scripts.textContent())!);
 }
@@ -37,7 +38,7 @@ test("server HTML and hydrated style changes keep ratings scoped to the selected
   const html = await response.text();
   const source = html.match(/<script id="product-structured-data" type="application\/ld\+json">([^<]+)<\/script>/);
   expect(source).not.toBeNull();
-  expect(JSON.parse(source![1]).aggregateRating).toEqual({ "@type": "AggregateRating", ratingValue: "2.0", reviewCount: 3 });
+  expect(JSON.parse(source![1]).aggregateRating).toEqual({ "@type": "AggregateRating", ratingValue: "2.0", reviewCount: 3, bestRating: 5, worstRating: 0.5 });
 
   await page.goto("/products/name-tag-shirt");
   await expect(page.locator("#reviews")).toContainText("Average rating from 25 reviews");
@@ -46,7 +47,10 @@ test("server HTML and hydrated style changes keep ratings scoped to the selected
   await page.getByRole("option", { name: "Ryan’s Dad", exact: true }).click();
   await expect(page.locator("#reviews")).toContainText("Average rating from 3 reviews");
   await expect.poll(async () => (await schema(page)).aggregateRating).toMatchObject({ ratingValue: "2.0", reviewCount: 3 });
-  expect((await schema(page)).offers.url).toContain(`design=${dad.handle}`);
+  const selected = await schema(page);
+  const offers = selected.offers ? [selected.offers] : selected.hasVariant.map((variant: { offers: unknown }) => variant.offers);
+  expect(offers.length).toBeGreaterThan(0);
+  for (const offer of offers) expect(offer.url).toContain(`design=${dad.handle}`);
   await page.goBack();
   await expect(page.locator("#reviews")).toContainText("Average rating from 25 reviews");
   await expect.poll(async () => (await schema(page)).aggregateRating.reviewCount).toBe(25);
