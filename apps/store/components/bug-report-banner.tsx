@@ -1,53 +1,20 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import { FiTool, FiX } from "react-icons/fi";
 import { LuBug } from "react-icons/lu";
 import { Banner, Button, IconButton } from "@ryanmeetup/ui";
 import { getBugReportHref } from "@/lib/support";
 import { usePromotion } from "./promotion";
+import { useDismissed } from "./use-dismissed";
 
 // Launch-window notice. Remove the <BugReportBanner /> line in the root layout to retire
 // it; the footer's "Report a bug" link stays as the permanent way in.
 const DISMISSED_KEY = "store:bug-banner-dismissed";
-const listeners = new Set<() => void>();
-
-function subscribe(listener: () => void) {
-  listeners.add(listener);
-  window.addEventListener("storage", listener);
-  return () => {
-    listeners.delete(listener);
-    window.removeEventListener("storage", listener);
-  };
-}
-
-// Storage can be blocked (private windows, cleared site data); the banner just shows again.
-function isDismissed() {
-  try {
-    return window.localStorage.getItem(DISMISSED_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
-function dismiss() {
-  try {
-    window.localStorage.setItem(DISMISSED_KEY, "1");
-  } catch {
-    // Nothing to remember it in; it still hides for this visit below.
-  }
-  sessionDismissed = true;
-  listeners.forEach((listener) => listener());
-}
-
-let sessionDismissed = false;
 
 export function BugReportBanner() {
   const pathname = usePathname();
-  // The server renders it for everyone: most visitors are new, so returning ones who
-  // dismissed it get a brief flash instead of everyone getting a late pop-in.
-  const dismissed = useSyncExternalStore(subscribe, () => sessionDismissed || isDismissed(), () => false);
+  const [dismissed, dismiss] = useDismissed(DISMISSED_KEY);
   // A running sale takes the top of the page; two stacked banners bury the header.
   const promotion = usePromotion();
 
