@@ -35,9 +35,10 @@ export const metadata = buildPageMetadata({
     "Find a Ryan Baseball Classic game near you, get tickets, and gear up with Classic merch.",
   canonical: `${SITE_URL}/baseball`,
   image: {
-    url: `${SITE_URL}/meta/map.png`,
-    width: 1355,
-    height: 692,
+    url: `${SITE_URL}/meta/baseball.png`,
+    width: 944,
+    height: 521,
+    alt: "Map of Ryan Baseball Classic teams across the United States and Canada",
   },
   keywords: ["ryan baseball classic", "ryan meetup baseball", "ryan night"],
   robots: {
