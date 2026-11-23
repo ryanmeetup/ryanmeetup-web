@@ -111,7 +111,9 @@ Three rules keep the dual-surface editors from diverging:
   preference has no breakpoint left to honour — the answer came from the profile
   the server rendered — so `editorTriggers` drops the losing half from the tree
   instead of hiding it. That is not just cheaper: a plain `hidden` would not
-  even work, for the reason `editor-routes.ts` documents at length.
+  even work, for the reason `surfaceTriggerClassNames` in `@ryanmeetup/ui` documents. The
+  store's review form uses the same pair to open `/products/[handle]/review` and
+  `/reviews/mine/[reviewId]/edit` on a phone.
 - **The trail is canonical; the return is not.** `parents` names the screens the
   editor sits under — always the list itself, plus the record's own page where
   there is one. Where cancelling *returns* to is a separate question answered by

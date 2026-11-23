@@ -1,3 +1,4 @@
+import { surfaceTriggerClassNames } from "@ryanmeetup/ui";
 import {
   editorSurface,
   type EditorSurfacePreference,
@@ -15,26 +16,12 @@ import {
  * Pair these two on the same trigger, always. A control that renders only the
  * route half leaves a dialog reader with no way in.
  *
- * The desktop half hides with `max-sm:hidden` rather than a plain `hidden`.
- * Tailwind v4 emits the display utilities in alphabetical order, so `.hidden`
- * is written before `.inline-flex` and loses to it at equal specificity -- and
- * `Button`, `Button.Link`, and `IconButton` all carry `inline-flex` in their
- * base classes, so a plain `hidden` on one of those never took effect and a
- * phone showed the route trigger and the dialog trigger side by side. A
- * media-query variant is emitted after the unprefixed utilities and wins
- * whatever display the component asks for. This is also why the pinned
- * preferences drop a trigger from the tree instead of hiding it: there is no
- * breakpoint to hang a variant off, and a plain `hidden` would not stick.
- *
- * On `IconButton` these go to `tooltipTriggerClassName`, not `className`.
- * `IconButton` wraps its control in a tooltip trigger span, and hiding the
- * control leaves that span in the row as a zero-width flex item — so a `gap`
- * row pays the gap on both sides of nothing and the surviving trigger drifts
- * away from its neighbours. Hiding the wrapper removes the flex item outright.
- * `Button` has no such wrapper, so `className` is right there.
+ * The class names, and why the desktop half hides with `max-sm:hidden`
+ * rather than a plain `hidden`, live with `surfaceTriggerClassNames` in
+ * `@ryanmeetup/ui`. The same trap is why the pinned preferences drop a trigger
+ * from the tree instead of hiding it: there is no breakpoint to hang a variant
+ * off, and a plain `hidden` would not stick.
  */
-const mobileEditorTrigger = "sm:hidden";
-const desktopEditorTrigger = "max-sm:hidden sm:inline-flex";
 
 export type EditorTriggers = {
   /** Render the anchor to the dedicated editor route. */
@@ -76,8 +63,8 @@ export function editorTriggers(preference: unknown): EditorTriggers {
   return {
     route: true,
     dialog: true,
-    routeClassName: mobileEditorTrigger,
-    dialogClassName: desktopEditorTrigger,
+    routeClassName: surfaceTriggerClassNames.route,
+    dialogClassName: surfaceTriggerClassNames.dialog,
   };
 }
 

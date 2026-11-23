@@ -24,6 +24,7 @@ export {
   type EditorHeaderProps,
 } from "./editorChrome";
 export * from "./EmptyState";
+export * from "./surfaceTriggers";
 export * from "./ErrorCallout";
 export * from "./FileDropField";
 export * from "./FilterBar";
