@@ -42,6 +42,14 @@ const STATE_NAMES: Record<string, string> = {
   WV: "West Virginia", WI: "Wisconsin", WY: "Wyoming",
 };
 
+// Teams north of the border store their province's postal code in `state`.
+const PROVINCE_NAMES: Record<string, string> = {
+  AB: "Alberta", BC: "British Columbia", MB: "Manitoba", NB: "New Brunswick",
+  NL: "Newfoundland and Labrador", NS: "Nova Scotia", NT: "Northwest Territories",
+  NU: "Nunavut", ON: "Ontario", PE: "Prince Edward Island", QC: "Quebec",
+  SK: "Saskatchewan", YT: "Yukon",
+};
+
 const normalize = (value: string) => value.trim().toLowerCase();
 
 /** Readable, shareable query value for a city: "St. Paul" → "st-paul". */
@@ -50,8 +58,13 @@ const toCitySlug = (city: string) =>
     .replace(/[^a-z0-9\s-]/g, "")
     .replace(/\s+/g, "-");
 
-const getStateName = (code: string) =>
-  STATE_NAMES[code.trim().toUpperCase()] ?? code;
+/** Full name for a US state or Canadian province code; unknown codes pass through. */
+const getStateName = (code: string) => {
+  const key = code.trim().toUpperCase();
+  return STATE_NAMES[key] ?? PROVINCE_NAMES[key] ?? code;
+};
+
+const isProvince = (code: string) => code.trim().toUpperCase() in PROVINCE_NAMES;
 
 const matchesState = (team: BaseballTeam, state: string) => {
   const code = state.trim().toUpperCase();
@@ -76,8 +89,22 @@ const filterTeams = (teams: BaseballTeam[], filters: BaseballFilters) =>
     return true;
   });
 
-/** True when a free-text search looks like the start of a zip code. */
-const isPartialZip = (value: string) => /^\d{1,4}$/.test(value.trim());
+// Canadian postal codes ("V6B 1A1") skip letters that read like digits: the
+// first letter never uses D F I O Q U W Z, later ones never D F I O Q U.
+const POSTAL_FIRST = "[ABCEGHJ-NPRSTVXY]";
+const POSTAL_LETTER = "[ABCEGHJ-NPRSTV-Z]";
+const POSTAL_CODE = new RegExp(`^${POSTAL_FIRST}\\d${POSTAL_LETTER}[ -]?\\d${POSTAL_LETTER}\\d$`, "i");
+// Two to five characters of one, e.g. "V6" or "V6B 1A".
+const PARTIAL_POSTAL_CODE = new RegExp(
+  `^${POSTAL_FIRST}\\d(?:${POSTAL_LETTER}(?:[ -]?(?:\\d${POSTAL_LETTER}?)?)?)?$`,
+  "i",
+);
+
+/** True when a free-text search looks like the start of a zip or postal code. */
+const isPartialZip = (value: string) => {
+  const next = value.trim();
+  return /^\d{1,4}$/.test(next) || PARTIAL_POSTAL_CODE.test(next);
+};
 
 /**
  * Free-text search across a team's name, stadium, city, and state, including
@@ -104,12 +131,20 @@ const matchesSearch = (team: BaseballTeam, query: string) => {
   return words.every((word) => haystack.includes(word));
 };
 
-/** Headline counts for the hero, all derived from announced teams. */
-const getSeasonStats = (teams: BaseballTeam[]) => ({
-  teams: teams.length,
-  states: new Set(teams.map((team) => team.state.trim().toUpperCase())).size,
-  gameNights: new Set(teams.map((team) => team.gameDate.slice(0, 10))).size,
-});
+/**
+ * Headline counts for the hero, all derived from announced teams. `states`
+ * counts US states only; a province adds to `countries` instead.
+ */
+const getSeasonStats = (teams: BaseballTeam[]) => {
+  const regions = new Set(teams.map((team) => team.state.trim().toUpperCase()));
+  const codes = Array.from(regions);
+  return {
+    teams: teams.length,
+    states: codes.filter((code) => !isProvince(code)).length,
+    countries: new Set(codes.map((code) => (isProvince(code) ? "CA" : "US"))).size,
+    nights: new Set(teams.map((team) => team.gameDate.slice(0, 10))).size,
+  };
+};
 
 const sortByDate = (teams: BaseballTeam[]) =>
   [...teams].sort(
@@ -117,7 +152,10 @@ const sortByDate = (teams: BaseballTeam[]) =>
       a.gameDate.localeCompare(b.gameDate) || a.name.localeCompare(b.name),
   );
 
-/** States with a team, plus states a team covers, so Vermont is selectable without a Vermont team. */
+/**
+ * States and provinces with a team, plus those a team covers, so Vermont is
+ * selectable without a Vermont team. Grouped by country once both appear.
+ */
 const getStateOptions = (teams: BaseballTeam[]) => {
   const codes = new Set<string>();
   teams.forEach((team) => {
@@ -125,9 +163,27 @@ const getStateOptions = (teams: BaseballTeam[]) => {
     (team.servesStates ?? []).forEach((state) => codes.add(state.toUpperCase()));
   });
 
-  return Array.from(codes)
-    .map((code) => ({ value: code, label: getStateName(code) }))
-    .sort((a, b) => a.label.localeCompare(b.label));
+  const options = Array.from(codes)
+    .map((code) => ({
+      value: code,
+      label: getStateName(code),
+      province: isProvince(code),
+    }))
+    // US states first, then provinces, each alphabetical.
+    .sort(
+      (a, b) =>
+        Number(a.province) - Number(b.province) || a.label.localeCompare(b.label),
+    );
+
+  // Country headers only earn their place once both countries are listed.
+  const grouped = new Set(options.map((option) => option.province)).size > 1;
+  return options.map(({ value, label, province }) => ({
+    value,
+    label,
+    ...(grouped
+      ? { group: { label: province ? "Canada" : "United States" } }
+      : {}),
+  }));
 };
 
 const getCityOptions = (teams: BaseballTeam[]) => {
@@ -228,7 +284,23 @@ const teamsNearPoint = (
   };
 };
 
-const isValidZip = (zip: string) => /^\d{5}$/.test(zip.trim());
+/** A five-digit US zip code or a full Canadian postal code. */
+const isValidZip = (zip: string) => {
+  const next = zip.trim();
+  return /^\d{5}$/.test(next) || POSTAL_CODE.test(next);
+};
+
+/** Which country a valid code belongs to, so the geocoder looks in the right place. */
+const getZipCountry = (zip: string): "us" | "ca" =>
+  /^\d{5}$/.test(zip.trim()) ? "us" : "ca";
+
+/** One spelling per code, so "v6b1a1" and "V6B 1A1" share a lookup: "V6B 1A1". */
+const normalizeZip = (zip: string) => {
+  const next = zip.trim().toUpperCase();
+  return POSTAL_CODE.test(next)
+    ? `${next.slice(0, 3)} ${next.slice(-3)}`
+    : next;
+};
 
 /** Contentful asset URLs are protocol-relative; local fixture paths are not. */
 const getTeamLogoSrc = (team: BaseballTeam) => {
@@ -269,6 +341,7 @@ export {
   getStateOptions,
   getTeamLogoSrc,
   getTeamOptions,
+  getZipCountry,
   hasTicketLink,
   haversineMiles,
   isPartialZip,
@@ -276,6 +349,7 @@ export {
   matchesCity,
   matchesSearch,
   matchesState,
+  normalizeZip,
   sortByDate,
   teamsNearPoint,
   toCitySlug,

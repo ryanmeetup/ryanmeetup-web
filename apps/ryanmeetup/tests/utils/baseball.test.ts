@@ -7,12 +7,15 @@ import {
   getCityOptions,
   getSeasonRange,
   getSeasonStats,
+  getStateName,
   getStateOptions,
+  getZipCountry,
   hasTicketLink,
   haversineMiles,
   isPartialZip,
   isValidZip,
   matchesSearch,
+  normalizeZip,
   sortByDate,
   teamsNearPoint,
   toCitySlug,
@@ -104,11 +107,24 @@ test("zip search falls back to the nearest teams when none are in range", () => 
   expect(results[0].distance).toBeGreaterThan(120);
 });
 
-test("zip validation accepts five digits only", () => {
+test("zip validation accepts five digits or a full postal code", () => {
   expect(isValidZip("05401")).toBe(true);
   expect(isValidZip(" 05401 ")).toBe(true);
   expect(isValidZip("5401")).toBe(false);
   expect(isValidZip("05401-1234")).toBe(false);
+  expect(isValidZip("V6B 1A1")).toBe(true);
+  expect(isValidZip("v6b1a1")).toBe(true);
+  expect(isValidZip("V6B 1A")).toBe(false);
+  // D never starts a postal code.
+  expect(isValidZip("D6B 1A1")).toBe(false);
+});
+
+test("postal codes share one spelling and look up in Canada", () => {
+  expect(normalizeZip("v6b1a1")).toBe("V6B 1A1");
+  expect(normalizeZip(" V6B-1A1 ")).toBe("V6B 1A1");
+  expect(normalizeZip(" 05401 ")).toBe("05401");
+  expect(getZipCountry("V6B 1A1")).toBe("ca");
+  expect(getZipCountry("05401")).toBe("us");
 });
 
 test("tbd.com and blank ticket links don't count as real tickets", () => {
@@ -134,13 +150,43 @@ test("free-text search needs every word to match a name or place", () => {
   expect(find("worcester vermont")).toEqual([]);
 });
 
-test("a few digits read as a zip code still being typed", () => {
+test("a few digits or a postal prefix read as a code still being typed", () => {
   expect(isPartialZip("031")).toBe(true);
   expect(isPartialZip("03101")).toBe(false);
   expect(isPartialZip("ryan")).toBe(false);
+  expect(isPartialZip("V6B")).toBe(true);
+  expect(isPartialZip("V6B 1A")).toBe(true);
+  expect(isPartialZip("V6B 1A1")).toBe(false);
+  expect(isPartialZip("Vancouver")).toBe(false);
 });
 
-test("season stats count teams, host states, and distinct game nights", () => {
-  expect(getSeasonStats(teams)).toEqual({ teams: 6, states: 6, gameNights: 5 });
-  expect(getSeasonStats([])).toEqual({ teams: 0, states: 0, gameNights: 0 });
+test("season stats count teams, host states, countries, and distinct nights", () => {
+  expect(getSeasonStats(teams)).toEqual({ teams: 6, states: 6, countries: 1, nights: 5 });
+  expect(getSeasonStats([])).toEqual({ teams: 0, states: 0, countries: 0, nights: 0 });
+  // A Canadian team adds a country, not a state.
+  const vancouver = { ...teams[0], slug: "vancouver", state: "BC" };
+  expect(getSeasonStats([...teams, vancouver])).toMatchObject({ states: 6, countries: 2 });
+});
+
+test("provinces read as their full names", () => {
+  expect(getStateName("BC")).toBe("British Columbia");
+  expect(getStateName("nh")).toBe("New Hampshire");
+  expect(getStateOptions([{ ...teams[0], state: "BC", servesStates: [] }])).toEqual([
+    { value: "BC", label: "British Columbia" },
+  ]);
+});
+
+test("states and provinces group by country once both are listed", () => {
+  const options = getStateOptions([
+    ...teams,
+    { ...teams[0], slug: "vancouver", state: "BC", servesStates: [] },
+  ]);
+  expect(options.at(-1)).toEqual({
+    value: "BC",
+    label: "British Columbia",
+    group: { label: "Canada" },
+  });
+  expect(options[0].group).toEqual({ label: "United States" });
+  // Without a province, there's nothing to group.
+  expect(getStateOptions(teams).every((option) => !("group" in option))).toBe(true);
 });

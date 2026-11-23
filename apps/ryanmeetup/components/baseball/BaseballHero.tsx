@@ -121,7 +121,7 @@ const BaseballHero = ({ teams, seasonRange, hasMerch }: BaseballHeroProps) => {
         </div>
 
         {stats.teams > 0 && (
-          <dl className="flex flex-wrap justify-center gap-x-10 gap-y-4">
+          <dl className="grid grid-cols-2 gap-x-10 gap-y-4 sm:flex sm:flex-wrap sm:justify-center">
             {[
               {
                 label: stats.teams === 1 ? "Team" : "Teams",
@@ -131,9 +131,13 @@ const BaseballHero = ({ teams, seasonRange, hasMerch }: BaseballHeroProps) => {
                 label: stats.states === 1 ? "State" : "States",
                 value: stats.states,
               },
+              // Only worth saying once the Classic crosses a border.
+              ...(stats.countries > 1
+                ? [{ label: "Countries", value: stats.countries }]
+                : []),
               {
-                label: stats.gameNights === 1 ? "Game night" : "Game nights",
-                value: stats.gameNights,
+                label: stats.nights === 1 ? "Night" : "Nights",
+                value: stats.nights,
               },
             ].map((stat) => (
               <div

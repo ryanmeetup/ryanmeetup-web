@@ -99,6 +99,7 @@ const baseballZipFixtures: Record<string, { lat: number; lon: number; label: str
   "01608": { lat: 42.2626, lon: -71.8023, label: "Worcester, Massachusetts" },
   "05401": { lat: 44.4759, lon: -73.2121, label: "Burlington, Vermont" },
   "95814": { lat: 38.5806, lon: -121.4936, label: "Sacramento, California" },
+  "V6B 1A1": { lat: 49.2839, lon: -123.1055, label: "Vancouver, British Columbia, Canada" },
 };
 
 const getBaseballMerchFixture = (): MerchCollection => ({

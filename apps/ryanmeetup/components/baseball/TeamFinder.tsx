@@ -24,6 +24,7 @@ import {
   isPartialZip,
   isValidZip,
   matchesSearch,
+  normalizeZip,
   sortByDate,
   teamsNearPoint,
   toCitySlug,
@@ -52,8 +53,9 @@ const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
 const DEFAULT_PAGE_SIZE = PAGE_SIZE_OPTIONS[0];
 
 /**
- * The `q` value for the search field, or null while a zip code is half typed.
- * Five digits run the nearby search; anything else matches names and places.
+ * The `q` value for the search field, or null while a zip or postal code is
+ * half typed. A full code runs the nearby search; anything else matches names
+ * and places.
  */
 const getSearchQuery = (value: string): string | null => {
   const next = value.trim();
@@ -85,7 +87,7 @@ const TeamFinder = ({ teams }: TeamFinderProps) => {
   const setDate = withPageReset(setDateParam);
   const [searchInput, setSearchInput] = useState(urlQuery || legacyZip);
   const [geocode, setGeocode] = useState<GeocodeResult | null>(null);
-  const urlZip = isValidZip(urlQuery) ? urlQuery.trim() : "";
+  const urlZip = isValidZip(urlQuery) ? normalizeZip(urlQuery) : "";
   const textQuery = urlZip ? "" : urlQuery;
 
   const applySearch = (query: string) => {
@@ -138,7 +140,7 @@ const TeamFinder = ({ teams }: TeamFinderProps) => {
           error?: string;
         };
         if (!response.ok || body.lat === undefined || body.lon === undefined) {
-          setGeocode({ zip: urlZip, error: body.error ?? "We couldn't find that zip code." });
+          setGeocode({ zip: urlZip, error: body.error ?? "We couldn't find that code." });
           return;
         }
         setGeocode({ zip: urlZip, point: { lat: body.lat, lon: body.lon }, label: body.label });
@@ -146,7 +148,7 @@ const TeamFinder = ({ teams }: TeamFinderProps) => {
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
         console.error(error);
-        setGeocode({ zip: urlZip, error: "Zip search isn't available right now." });
+        setGeocode({ zip: urlZip, error: "Location search isn't available right now." });
       });
 
     return () => controller.abort();
@@ -228,7 +230,11 @@ const TeamFinder = ({ teams }: TeamFinderProps) => {
   };
 
   const zipStatus = (() => {
-    if (typedPartialZip) return "Enter all five digits of your zip code.";
+    if (typedPartialZip) {
+      return /^\d/.test(searchInput.trim())
+        ? "Enter all five digits of your zip code."
+        : "Enter your full postal code, like V6B 1A1.";
+    }
     if (activeGeocode?.error) return activeGeocode.error;
     if (!activeGeocode?.point) return null;
     const place = activeGeocode.label ?? urlZip;
@@ -244,10 +250,10 @@ const TeamFinder = ({ teams }: TeamFinderProps) => {
     <section id="find" className="scroll-mt-28 space-y-6">
       <SectionHeader
         title="Find your Ryan night"
-        description="Search by team, city, state, or zip code, or narrow the list with the filters. Nearby states without a team show the closest one."
+        description="Search by team, city, state, or zip/postal code, or narrow the list with the filters. Nearby states without a team show the closest one."
       />
 
-      {/* Zip search and filters share a row once there is room for both. */}
+      {/* Search and filters share a row once there is room for both. */}
       <div className="flex flex-col gap-4 xl:flex-row xl:flex-wrap xl:items-center">
         <form
           role="search"
@@ -262,7 +268,7 @@ const TeamFinder = ({ teams }: TeamFinderProps) => {
             label="Search teams"
             name="q"
             autoComplete="off"
-            placeholder="Search by team, city, state, or zip code..."
+            placeholder="Search by team, city, state, or zip/postal code..."
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
             inputClassName={FILTER_HEIGHT}
@@ -274,10 +280,10 @@ const TeamFinder = ({ teams }: TeamFinderProps) => {
         <div className="grid grid-cols-2 gap-3 lg:flex lg:flex-wrap lg:items-center xl:min-w-0 xl:flex-1 xl:basis-0">
           <DropdownSelect
             className={FILTER_HEIGHT}
-            label="State"
+            label="State/province"
             value={state}
             active={state !== ALL}
-            options={[filterOption("All states"), ...stateOptions]}
+            options={[filterOption("All"), ...stateOptions]}
             onChange={setState}
           />
           <DropdownSelect

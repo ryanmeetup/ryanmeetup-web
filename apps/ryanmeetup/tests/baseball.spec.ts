@@ -84,6 +84,21 @@ test("zip search far from every team offers the closest ones", async ({ page }) 
   await expect(teamCards(page)).toHaveCount(2);
 });
 
+test("a Canadian postal code searches near it", async ({ page }) => {
+  await page.goto("/baseball");
+
+  const search = page.getByLabel("Search teams");
+  await search.fill("V6B");
+  await expect(page.getByText("Enter your full postal code, like V6B 1A1.")).toBeVisible();
+
+  await search.fill("v6b1a1");
+  await expect(page).toHaveURL(/q=v6b1a1/);
+  await expect(
+    page.getByText(/No teams within 120 miles of Vancouver, British Columbia, Canada/),
+  ).toBeVisible();
+  await expect(teamCards(page)).toHaveCount(2);
+});
+
 test("teams still on a tbd.com ticket link can't be clicked through", async ({
   page,
 }) => {
