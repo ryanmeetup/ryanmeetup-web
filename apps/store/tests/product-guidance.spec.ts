@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { describeShippingRegions, getProductionSummary, getShippingExpectations, getSizeGuideHtml, getSizeGuideTables } from "../lib/product-guidance";
+import { describeShippingRegions, getProductionSummary, getShippingExpectations, getSizeGuideHtml, getSizeGuideTables, mergeSizeGuideUnits } from "../lib/product-guidance";
 
 test("production guidance follows the maintained policy and preserves seasonal caveats", () => {
   const policy = { handle: "shipping-policy", title: "Shipping Policy", body: '<h2>Where we ship</h2><p>28 regions.</p><h2>Production time</h2><p>Allow <strong>2–7 business days</strong> before shipping.</p><p>Busy periods &amp; holidays may take longer.</p><h2>Tracking</h2><p>Tracking is emailed.</p>' };
@@ -53,4 +53,12 @@ test("the size guide offers centimetres, converting the inch table when Shopify 
   expect(getSizeGuideTables(`${inches}\n${cm}`)).toEqual({ inches, centimeters: cm });
   expect(getSizeGuideTables(inches).centimeters).toBe('<div class="table-responsive dynamic" data-unit-system="imperial"><table><tbody><tr><td> </td><td><strong>LENGTH (cm)</strong></td></tr><tr><td><strong>2XL</strong></td><td>39.7</td></tr><tr><td><strong>3XL</strong></td><td>71.1 - 76.2</td></tr></tbody></table></div>');
   expect(getSizeGuideTables("<table><tr><td>S</td><td>28</td></tr></table>")).toEqual({ inches: "<table><tr><td>S</td><td>28</td></tr></table>", centimeters: null });
+});
+
+test("both size guide units share one table so columns hold their width", () => {
+  const inches = "<table><tr><td>S</td><td>28</td></tr></table>";
+  const centimeters = "<table><tr><td>S</td><td>71.1</td></tr></table>";
+  expect(mergeSizeGuideUnits({ inches, centimeters }, "centimeters")).toBe('<table><tr><td>S</td><td><span class="grid"><span class="col-start-1 row-start-1 invisible" aria-hidden="true">28</span><span class="col-start-1 row-start-1">71.1</span></span></td></tr></table>');
+  expect(mergeSizeGuideUnits({ inches, centimeters: "<table><tr><td>71.1</td></tr></table>" }, "inches")).toBeNull();
+  expect(mergeSizeGuideUnits({ inches, centimeters: null }, "inches")).toBeNull();
 });

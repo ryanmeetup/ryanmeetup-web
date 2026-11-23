@@ -104,3 +104,24 @@ export function getSizeGuideTables(html: string): SizeGuideTables {
   if (!imperial && !metric) return { inches: html, centimeters: /\binch(?:es)?\b/i.test(html) ? convertTableToCentimeters(html) : null };
   return { inches: imperial, centimeters: metric ?? (imperial ? convertTableToCentimeters(imperial) : null) };
 }
+
+const cellPattern = /(<t[dh]\b[^>]*>)([\s\S]*?)(<\/t[dh]>)/gi;
+
+/**
+ * One table holding both units: each cell that differs stacks its inch and centimetre values in
+ * one grid cell, the hidden one invisible, so columns keep the wider value's width in either
+ * unit. Null when the two tables' cells do not line up.
+ */
+export function mergeSizeGuideUnits({ inches, centimeters }: SizeGuideTables, shown: keyof SizeGuideTables) {
+  if (!inches || !centimeters) return null;
+  const metricCells = [...centimeters.matchAll(cellPattern)].map((match) => match[2]);
+  if (metricCells.length !== [...inches.matchAll(cellPattern)].length) return null;
+  let index = 0;
+  return inches.replace(cellPattern, (whole, open: string, inchCell: string, close: string) => {
+    const metricCell = metricCells[index++];
+    if (inchCell === metricCell) return whole;
+    const value = (unit: keyof SizeGuideTables, content: string) =>
+      `<span class="col-start-1 row-start-1${unit === shown ? "" : " invisible"}"${unit === shown ? "" : ' aria-hidden="true"'}>${content}</span>`;
+    return `${open}<span class="grid">${value("inches", inchCell)}${value("centimeters", metricCell)}</span>${close}`;
+  });
+}
