@@ -21,7 +21,8 @@ export function ProductSizeGuide({ html }: { html: string }) {
   const [open, setOpen] = useState(false);
   const [unit, setUnit] = useState<Unit>("inches");
   const tables = useMemo(() => getSizeGuideTables(html), [html]);
-  const shown = (unit === "centimeters" && tables.centimeters) || tables.inches || tables.centimeters || html;
+  const options = units.flatMap(({ value }) => (tables[value] ? [{ value, html: tables[value] }] : []));
+  const shown = options.some((option) => option.value === unit) ? unit : options[0]?.value;
 
   function openGuide() {
     setUnit(preferredUnit());
@@ -43,7 +44,19 @@ export function ProductSizeGuide({ html }: { html: string }) {
         )}
         <p className="mb-4 text-sm text-black/70 sm:hidden dark:text-white/70">Scroll sideways to see every measurement.</p>
         {/* The same Shopify-authored tables remain in Product details. */}
-        <div role="region" aria-label="Size measurements" tabIndex={0} className="rich-text overflow-x-auto rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/40 [&_table]:table [&_table]:max-w-none" dangerouslySetInnerHTML={{ __html: shown }} />
+        <div role="region" aria-label="Size measurements" tabIndex={0} className="overflow-x-auto rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/40">
+          {/* Both tables share one grid cell, so the dialog keeps the wider one's width when the unit changes. */}
+          <div className="grid">
+            {options.map((option) => (
+              <div
+                key={option.value}
+                aria-hidden={option.value !== shown || undefined}
+                className={`rich-text col-start-1 row-start-1 [&_table]:table [&_table]:max-w-none ${option.value === shown ? "" : "invisible"}`}
+                dangerouslySetInnerHTML={{ __html: option.html }}
+              />
+            ))}
+          </div>
+        </div>
       </Modal>
     </>
   );
