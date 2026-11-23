@@ -43,12 +43,21 @@ import {
 import type { Profile, WorkspaceData } from "@/lib/workspace/workspace-types";
 import { CategoriesModal } from "@/components/categories";
 import { categoryController } from "@/components/categories/category-workspace";
-import { CountBadge, PageHeader, useInstance } from "@/components/global";
+import {
+  CountBadge,
+  editorTriggers,
+  PageHeader,
+  useInstance,
+} from "@/components/global";
 import { AdminPageShell } from "@/components/admin";
 import { ProjectsModal } from "@/components/projects";
 import { InviteTeammateModal, RemoveTeammateDialog } from "./TeamDialogs";
 import { ProfileAccessModal } from "./ProfileAccessModal";
-import { CreateAccessGroupModal } from "./CreateAccessGroupModal";
+import {
+  CreateAccessGroupModal,
+  newAccessGroupPath,
+  type AccessGroupKind,
+} from "./CreateAccessGroupModal";
 import {
   TeamAccessGroups,
   TeamAccountStatus,
@@ -156,15 +165,7 @@ export function AccessPageClient({
     ],
   );
   const [teamMetadata, setTeamMetadata] = useState(userMetadata);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [color, setColor] = useState("");
-  const [groupKind, setGroupKind] = useState<"tier" | "team">("team");
-  const [hierarchyRank, setHierarchyRank] = useState("0");
-  const [grantsGlobalContent, setGrantsGlobalContent] = useState(false);
-  const [guest, setGuest] = useState(false);
-  const [calendarAccess, setCalendarAccess] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [groupKind, setGroupKind] = useState<AccessGroupKind>("team");
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteName, setInviteName] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
@@ -236,37 +237,11 @@ export function AccessPageClient({
     if (page > totalTeamPages) setPage(totalTeamPages);
   }, [page, setPage, totalTeamPages]);
 
-  function openGroupCreate(kind: "tier" | "team") {
+  const triggers = editorTriggers(data.currentProfile.editor_surface);
+
+  function openGroupCreate(kind: AccessGroupKind) {
     setGroupKind(kind);
     setGroupCreateOpen(true);
-  }
-
-  async function createGroup(event: FormEvent) {
-    event.preventDefault();
-    if (!name.trim() || !color) return;
-    setSaving(true);
-    const data = await access.createGroup({
-      name: name.trim(),
-      description: description.trim() || null,
-      color,
-      kind: groupKind,
-      hierarchy_rank: groupKind === "tier" ? Number(hierarchyRank) : null,
-      grants_global_content:
-        groupKind === "tier" && !guest && grantsGlobalContent,
-      calendar_access: calendarAccess,
-      guest: groupKind === "tier" && guest,
-    });
-    setSaving(false);
-    setName("");
-    setDescription("");
-    setColor("");
-    setGroupKind("team");
-    setHierarchyRank("0");
-    setGrantsGlobalContent(false);
-    setGuest(false);
-    setCalendarAccess(false);
-    setGroupCreateOpen(false);
-    toast.success(`${data.name} created.`);
   }
 
   // Starts where the signup trigger would put them, so sending without
@@ -515,14 +490,26 @@ export function AccessPageClient({
                 tier reaches nothing open to the workspace.
               </p>
             </div>
-            <Button
-              size="sm"
-              leftIcon={<FiPlus />}
-              className="w-full shrink-0 sm:w-auto"
-              onClick={() => openGroupCreate("tier")}
-            >
-              New tier
-            </Button>
+            {triggers.route && (
+              <Button.Link
+                href={newAccessGroupPath("tier")}
+                size="sm"
+                leftIcon={<FiPlus aria-hidden />}
+                className={`w-full shrink-0 ${triggers.routeClassName}`}
+              >
+                New tier
+              </Button.Link>
+            )}
+            {triggers.dialog && (
+              <Button
+                size="sm"
+                leftIcon={<FiPlus aria-hidden />}
+                className={`w-full shrink-0 sm:w-auto ${triggers.dialogClassName}`}
+                onClick={() => openGroupCreate("tier")}
+              >
+                New tier
+              </Button>
+            )}
           </div>
           <AccessGroupGrid
             groups={tiers}
@@ -548,14 +535,26 @@ export function AccessPageClient({
                 between them.
               </p>
             </div>
-            <Button
-              size="sm"
-              leftIcon={<FiPlus />}
-              className="w-full shrink-0 sm:w-auto"
-              onClick={() => openGroupCreate("team")}
-            >
-              New team
-            </Button>
+            {triggers.route && (
+              <Button.Link
+                href={newAccessGroupPath("team")}
+                size="sm"
+                leftIcon={<FiPlus aria-hidden />}
+                className={`w-full shrink-0 ${triggers.routeClassName}`}
+              >
+                New team
+              </Button.Link>
+            )}
+            {triggers.dialog && (
+              <Button
+                size="sm"
+                leftIcon={<FiPlus aria-hidden />}
+                className={`w-full shrink-0 sm:w-auto ${triggers.dialogClassName}`}
+                onClick={() => openGroupCreate("team")}
+              >
+                New team
+              </Button>
+            )}
           </div>
           <AccessGroupGrid
             groups={teams}
@@ -951,27 +950,18 @@ export function AccessPageClient({
         setAppRole={setAccessRole}
         setSelections={setAccessSelections}
       />
-      <CreateAccessGroupModal
-        calendarAccess={calendarAccess}
-        color={color}
-        description={description}
-        grantsGlobalContent={grantsGlobalContent}
-        guest={guest}
-        hierarchyRank={hierarchyRank}
-        kind={groupKind}
-        name={name}
-        onSubmit={createGroup}
-        open={groupCreateOpen}
-        saving={saving}
-        setColor={setColor}
-        setCalendarAccess={setCalendarAccess}
-        setDescription={setDescription}
-        setGrantsGlobalContent={setGrantsGlobalContent}
-        setGuest={setGuest}
-        setHierarchyRank={setHierarchyRank}
-        setName={setName}
-        setOpen={setGroupCreateOpen}
-      />
+      {groupCreateOpen && (
+        <CreateAccessGroupModal
+          key={groupKind}
+          kind={groupKind}
+          onCreate={access.createGroup}
+          onCreated={(group) => {
+            setGroupCreateOpen(false);
+            toast.success(`${group.name} created.`);
+          }}
+          setOpen={setGroupCreateOpen}
+        />
+      )}
       <RemoveTeammateDialog
         onConfirm={removeTeammate}
         pending={teamPending}

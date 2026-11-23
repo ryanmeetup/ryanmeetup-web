@@ -1,4 +1,5 @@
 import "server-only";
+import { isReservedAccessGroupName } from "@/lib/access/access-groups";
 import { isJsonObject, isUuid } from "@/lib/api-schema/shared";
 
 export type AccessGroupOperation =
@@ -66,6 +67,7 @@ export function accessGroupOperationSchema(
     typeof body.name === "string" &&
     body.name.trim() &&
     body.name.length <= 100 &&
+    !isReservedAccessGroupName(body.name) &&
     hexColor(body.color) &&
     groupShape(body) &&
     typeof body.calendarAccess === "boolean" &&

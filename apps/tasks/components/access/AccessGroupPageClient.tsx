@@ -18,6 +18,7 @@ import { FiShield, FiTrash2, FiUsers } from "react-icons/fi";
 import {
   ACCESS_GROUP_COLOR_OPTIONS,
   accessGroupSlug,
+  isReservedAccessGroupName,
 } from "@/lib/access/access-groups";
 import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import { useAccessManagement } from "@/hooks/useAccessManagement";
@@ -70,6 +71,7 @@ export function AccessGroupPageClient({
   const [calendarAccess, setCalendarAccess] = useState(group.calendar_access);
   const [guest, setGuest] = useState(group.guest);
   const [saving, setSaving] = useState(false);
+  const reserved = isReservedAccessGroupName(name);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [projectCreateOpen, setProjectCreateOpen] = useState(false);
@@ -77,7 +79,7 @@ export function AccessGroupPageClient({
 
   async function saveGroup(event: FormEvent) {
     event.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim() || reserved) return;
     setSaving(true);
     const updated = await access.updateGroup(group.id, {
       name: name.trim(),
@@ -174,7 +176,18 @@ export function AccessGroupPageClient({
                 onChange={(event) => setName(event.target.value)}
                 required
                 disabled={saving}
+                error={reserved}
+                aria-describedby={reserved ? "group-name-reserved" : undefined}
               />
+              {reserved && (
+                <p
+                  id="group-name-reserved"
+                  className="-mt-2 text-sm text-red-700 dark:text-red-300"
+                >
+                  “{name.trim()}” is the address of the new-group form. Pick
+                  another name.
+                </p>
+              )}
               <Textarea
                 id="group-description"
                 label="Description"
@@ -305,6 +318,7 @@ export function AccessGroupPageClient({
               <Button
                 type="submit"
                 className="w-full sm:w-auto sm:shrink-0"
+                disabled={reserved}
                 loading={saving}
                 loadingText="Saving..."
               >

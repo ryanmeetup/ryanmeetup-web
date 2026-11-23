@@ -24,6 +24,14 @@ export function accessGroupTextColor(color: string) {
     : "#ffffff";
 }
 
+/**
+ * `/admin/access/new` is the create route, which shadows a group page at the
+ * same address, so no group may be named into that slug.
+ */
+export function isReservedAccessGroupName(name: string) {
+  return accessGroupSlug(name) === "new";
+}
+
 export function accessGroupSlug(name: string) {
   return name
     .toLowerCase()
