@@ -65,7 +65,7 @@ test("a size is chosen deliberately and photos cannot supply it", async ({ page 
   await page.goto("/products/name-tag-shirt");
   await expect(page.getByLabel("Size")).toContainText("Choose a size");
   await expect(page.getByRole("button", { name: "Choose a size", exact: true })).toBeDisabled();
-  await page.getByRole("group", { name: "Product photos" }).getByRole("button", { name: "View Ryan’s Dad image 1", exact: true }).click();
+  await page.getByRole("group", { name: "Product photos" }).getByRole("button", { name: "View Ryan image 2", exact: true }).click();
   await expect(page.getByLabel("Size")).toContainText("Choose a size");
   await page.getByLabel("Size").click();
   await page.getByRole("option", { name: "M", exact: true }).click();

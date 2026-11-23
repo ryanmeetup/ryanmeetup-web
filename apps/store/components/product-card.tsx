@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import { RatingStars, Tooltip } from "@ryanmeetup/ui";
 import { getListingSale } from "@/lib/money";
-import { getListingColorPreviews } from "@/lib/product-colors";
+import { getListingColorPreviews, getListingStyleCount } from "@/lib/product-colors";
 import { withProductOrigin } from "@/lib/product-origin";
 import type { ListingRating, ProductListing } from "@/lib/types";
 import { MediaCard } from "./media-card";
@@ -70,6 +70,7 @@ function CardFewReviews({ count }: { count: number }) {
 /** `from` is the collection the card is listed on, named in the product page's breadcrumb. */
 export function ProductCard({ product, eager = false, from }: { product: ProductListing; eager?: boolean; from?: string }) {
   const colors = getListingColorPreviews(product);
+  const styleCount = getListingStyleCount(product);
   const swatchRow = useRef<HTMLDivElement>(null);
   const [slots, setSlots] = useState<number | null>(null);
   useEffect(() => {
@@ -98,7 +99,7 @@ export function ProductCard({ product, eager = false, from }: { product: Product
       media={image ? (
         <Image
           src={image.url}
-          alt={color ? `${product.title} in ${color.label ?? color.value}` : image.altText || product.title}
+          alt={color ? `${product.title} in ${color.value}` : image.altText || product.title}
           fill
           loading={eager ? "eager" : "lazy"}
           sizes="(max-width: 1024px) 50vw, 33vw"
@@ -123,18 +124,20 @@ export function ProductCard({ product, eager = false, from }: { product: Product
       }
       title={<>{product.title}{product.externalUrl && <span className="sr-only"> (opens in a new tab)</span>}</>}
       after={<>
-      {/* One row only; padding inside the clip keeps focus and pressed rings visible. */}
-      {colors.length > 0 && (
-        <div ref={swatchRow} role="group" aria-label={`${product.title} colors`} className="mx-2.5 -mt-2.5 mb-2.5 flex flex-nowrap items-center gap-1 overflow-hidden p-0.5 sm:mx-3.5 sm:-mt-3.5 sm:mb-3.5">
+      {/* One row only; padding inside the clip keeps focus and pressed rings visible.
+          Styles are counted apart from colors, so "+N" only ever means more colors. */}
+      {(colors.length > 0 || styleCount > 0) && (
+        <div className="mx-2.5 -mt-2.5 mb-2.5 flex items-center gap-2 sm:mx-3.5 sm:-mt-3.5 sm:mb-3.5">
+        {colors.length > 0 && <div ref={swatchRow} role="group" aria-label={`${product.title} colors`} className="flex min-w-0 flex-1 flex-nowrap items-center gap-1 overflow-hidden p-0.5">
           {swatches.map((preview) => {
             const pressed = preview.href === color?.href;
             return (
-              <Tooltip key={preview.href} content={preview.label ?? preview.value} placement="bottom">
+              <Tooltip key={preview.href} content={preview.value} placement="bottom">
                 <button
                   type="button"
-                  aria-label={`Preview ${preview.label ?? preview.value}`}
+                  aria-label={`Preview ${preview.value}`}
                   aria-pressed={pressed}
-                  onClick={() => { setSelectedColor(pressed ? null : preview.href); trackStoreEvent("card_color_previewed", { product: product.handle, color: pressed ? "default" : preview.label ?? preview.value }); }}
+                  onClick={() => { setSelectedColor(pressed ? null : preview.href); trackStoreEvent("card_color_previewed", { product: product.handle, color: pressed ? "default" : preview.value }); }}
                   className={`grid h-8 w-8 shrink-0 place-items-center rounded-full transition hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40 dark:hover:bg-white/10 dark:focus-visible:ring-white/40 ${pressed ? "ring-2 ring-black dark:ring-white" : ""}`}
                 >
                   <span
@@ -151,7 +154,9 @@ export function ProductCard({ product, eager = false, from }: { product: Product
               +{hiddenColors}<span className="sr-only"> more colors</span>
             </Link>
           )}
-          <span className="sr-only" aria-live="polite">{color ? `Showing ${color.label ?? color.value}` : ""}</span>
+          <span className="sr-only" aria-live="polite">{color ? `Showing ${color.value}` : ""}</span>
+        </div>}
+        {styleCount > 0 && <p className="ml-auto shrink-0 text-xs text-black/70 dark:text-white/70">{styleCount} styles</p>}
         </div>
       )}
       {product.availableForSale && !product.externalUrl && (

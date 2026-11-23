@@ -9,7 +9,7 @@ export type ColorPreview = {
 
 type ProductColorOption = Omit<ColorPreview, "image"> & { image: StoreImage | null };
 
-export type ListingColorPreview = ProductColorOption & { href: string; label?: string };
+export type ListingColorPreview = ProductColorOption & { href: string };
 
 // Shopify swatches win when they are set in Admin. These cover the Printful
 // colors the catalog uses today when Shopify has no swatch configured.
@@ -99,7 +99,6 @@ export function getListingColorPreviews(product: ProductListing): ListingColorPr
         ...preview,
         swatch: preview.swatch,
         href: `${href}?${query ? `${query}&` : ""}color=${encodeURIComponent(preview.slug)}`,
-        designLabel: source.label,
       }));
     }
     // Compatibility for older size-only products whose style names a color.
@@ -107,16 +106,27 @@ export function getListingColorPreviews(product: ProductListing): ListingColorPr
     const swatch = Object.hasOwn(fallbackSwatches, slug) ? fallbackSwatches[slug] : undefined;
     const image = source.product.featuredImage ?? source.product.images[0] ?? source.product.variants.find((variant) => variant.image)?.image ?? null;
     return source.value && swatch ? [{
-      value: source.label, slug, image, swatch, href: `${href}?${query || `color=${encodeURIComponent(slug)}`}`, designLabel: source.label,
+      value: source.label, slug, image, swatch, href: `${href}?${query || `color=${encodeURIComponent(slug)}`}`,
     }] : [];
   });
+  // A card previews fabric colors, not every style printed on them: sixteen
+  // name tag styles in the same six colors are six swatches, each opening on
+  // the first style (the listing's lead) that offers it.
+  const bySlug = new Map<string, ListingColorPreview>();
+  for (const preview of previews) if (!bySlug.has(preview.slug)) bySlug.set(preview.slug, preview);
+  const colors = [...bySlug.values()];
   // Choices come from catalog options, even when photos or swatches are missing.
-  if (previews.length < 2) return [];
-  return previews.map(({ designLabel, ...preview }) => {
-    // The same fabric color can carry different prints; retain both choices.
-    const repeatedColor = previews.some((other) => other.href !== preview.href && other.slug === preview.slug);
-    return repeatedColor ? { ...preview, label: `${designLabel} · ${preview.value}` } : preview;
-  });
+  return colors.length < 2 ? [] : colors;
+}
+
+/**
+ * How many styles a shopper chooses between on the product page, counted
+ * apart from its colors. Zero for a single product or a listing chosen by
+ * color alone, whose members are colors rather than styles.
+ */
+export function getListingStyleCount(product: Pick<ProductListing, "designs">) {
+  const designs = product.designs ?? [];
+  return designs.length > 1 && !getListingColors(designs) ? designs.length : 0;
 }
 
 function hasDistinctPhotos(previews: ColorPreview[]) {

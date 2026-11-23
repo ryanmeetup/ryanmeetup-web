@@ -20,8 +20,9 @@ for (const viewport of [
     await expect(photos.first()).toHaveAttribute("aria-pressed", "true");
     const photoCount = await photos.count();
     const groups = strip.getByRole("group");
-    await expect(groups).toHaveCount(2);
-    for (const label of ["Ryan", "Ryan’s Dad"]) {
+    // Only the chosen style's photos appear; each demo style comes in one color.
+    await expect(groups).toHaveCount(1);
+    for (const label of ["Ryan"]) {
       const group = strip.getByRole("group", { name: `${label} photos`, exact: true });
       await expect(group.getByText(label, { exact: true })).toHaveCount(1);
       // Only the strip scrolls; a design's photos never scroll inside their frame.

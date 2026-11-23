@@ -27,6 +27,8 @@ const makeProduct = (input: {
   compareAtPrice?: string;
   createdAt: string;
   imageUrl: string;
+  /** Further photos of the same color, such as the back. */
+  moreImageUrls?: string[];
   color: string;
   type: string;
   /** Shopify category path, most specific first, as in ["T-Shirts", "Clothing Tops"]. */
@@ -44,7 +46,7 @@ const makeProduct = (input: {
     availableForSale: true,
     createdAt: input.createdAt,
     featuredImage: productImage,
-    images: [productImage],
+    images: [productImage, ...(input.moreImageUrls ?? []).map((url, index) => image(url, `${input.title}, photo ${index + 2}`))],
     options: [
       { id: `${input.handle}-size`, name: "Size", values: sizes },
       { id: `${input.handle}-color`, name: "Color", values: [input.color] },
@@ -122,6 +124,7 @@ export const demoProducts: Product[] = [
     price: "12.00",
     createdAt: "2026-10-01T00:00:00Z",
     imageUrl: "https://cdn.shopify.com/s/files/1/0718/7005/4511/files/unisex-classic-tee-white-front-6acd5a66edb8c.jpg?v=1791842937",
+    moreImageUrls: ["https://cdn.shopify.com/s/files/1/0718/7005/4511/files/unisex-classic-tee-white-back-6aed00da13314.jpg?v=1793917155"],
     color: "White",
     type: "Apparel",
     category: ["T-Shirts", "Clothing Tops", "Clothing"],
@@ -134,6 +137,7 @@ export const demoProducts: Product[] = [
     price: "30.00",
     createdAt: "2026-09-12T00:00:00Z",
     imageUrl: "https://cdn.shopify.com/s/files/1/0718/7005/4511/files/unisex-classic-tee-white-front-6acd5bf343e98.jpg?v=1791843327",
+    moreImageUrls: ["https://cdn.shopify.com/s/files/1/0718/7005/4511/files/unisex-classic-tee-natural-back-6acd5bf349141.jpg?v=1791843327"],
     color: "Natural",
     type: "Apparel",
     category: ["T-Shirts", "Clothing Tops", "Clothing"],

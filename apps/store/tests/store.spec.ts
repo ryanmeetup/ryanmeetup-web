@@ -234,19 +234,24 @@ test("the header cart button opens the cart drawer instead of the cart page", as
   await expect(page).toHaveURL(/\/collections\/all$/);
 });
 
-test("name tag gallery shows every design and thumbnails choose the matching cart item", async ({ page }) => {
+test("name tag gallery shows only the chosen style and its photos keep that style's cart item", async ({ page }) => {
   await page.goto("/products/name-tag-shirt");
   const gallery = page.getByRole("group", { name: "Product photos" });
   await expect(gallery.getByRole("button")).toHaveCount(2);
   const ryanPhoto = gallery.getByRole("button", { name: "View Ryan image 1", exact: true });
-  const momPhoto = gallery.getByRole("button", { name: "View Ryan’s Dad image 1", exact: true });
   await expect(ryanPhoto).toHaveAttribute("aria-pressed", "true");
-  await momPhoto.click();
+  await expect(gallery.getByRole("button", { name: /Ryan’s Dad/ })).toHaveCount(0);
+  await page.getByLabel("Style").click();
+  await page.getByRole("option", { name: "Ryan’s Dad", exact: true }).click();
+  const dadFront = gallery.getByRole("button", { name: "View Ryan’s Dad image 1", exact: true });
+  const dadBack = gallery.getByRole("button", { name: "View Ryan’s Dad image 2", exact: true });
+  await expect(dadFront).toHaveAttribute("aria-pressed", "true");
+  await expect(gallery.getByRole("button", { name: /^View Ryan image/ })).toHaveCount(0);
+  await dadBack.click();
   await expect(page.getByLabel("Style")).toContainText("Ryan’s Dad");
   await expect(page.getByLabel("Color")).toContainText("Natural");
-  await expect(momPhoto).toHaveAttribute("aria-pressed", "true");
-  await expect(ryanPhoto).toHaveAttribute("aria-pressed", "false");
-  await expect(gallery.getByRole("button")).toHaveCount(2);
+  await expect(dadBack).toHaveAttribute("aria-pressed", "true");
+  await expect(dadFront).toHaveAttribute("aria-pressed", "false");
   await page.getByLabel("Size").click();
   await page.getByRole("option", { name: "S", exact: true }).click();
   await page.getByRole("button", { name: "Add to cart", exact: true }).click();
@@ -254,8 +259,8 @@ test("name tag gallery shows every design and thumbnails choose the matching car
   await keepShopping(page);
   const cart = await page.evaluate(() => JSON.parse(localStorage.getItem("ryan-store-cart")!));
   expect(cart.lines[0].merchandise.id).toBe("gid://shopify/ProductVariant/demo-ryans-dad-name-tag-shirt-0");
-  await ryanPhoto.click();
-  await expect(page.getByLabel("Style")).toContainText("Ryan");
+  await page.getByLabel("Style").click();
+  await page.getByRole("option", { name: "Ryan", exact: true }).click();
   await expect(page.getByLabel("Color")).toContainText("White");
   await expect(ryanPhoto).toHaveAttribute("aria-pressed", "true");
 });

@@ -12,8 +12,9 @@ export type ProductGalleryImage = {
 
 export function getProductGallery(product: Product, designs?: ProductDesign[]): ProductGalleryImage[] {
   const sources = designs ?? [{ product, label: product.title, value: undefined }];
-  // A listing chosen by color alone labels photos by color, as its Color field does.
-  const colorsOnly = Boolean(designs && getListingColors(designs));
+  // A listing chosen by color alone labels photos by color, as its Color field
+  // does, and so does a gallery showing one style: its frames name only colors.
+  const colorsOnly = !designs || designs.length < 2 || Boolean(getListingColors(designs));
   return sources.flatMap(({ product: source, label, value }) => {
     const images = new Map<string, StoreImage>();
     for (const image of [source.featuredImage, ...source.images, ...source.variants.map((variant) => variant.image)]) {

@@ -251,14 +251,19 @@ individually, use a collection and keep their standalone pages.
 
 ### Photos, prices, reviews, and links
 
-- The shared gallery combines every member's product and variant images,
-  removing duplicate image URLs within each member. Selecting a photo selects
-  its member and, when assigned to a variant, updates the variant selection.
+- A listing chosen by **Style** (Name Tag Shirt's sixteen relationships) shows
+  only the selected style's product and variant images; changing the style
+  swaps them. A listing chosen by color alone combines every member's images,
+  since each member is a color choice. Duplicate image URLs are removed within
+  each member. Selecting a photo selects its member and, when assigned to a
+  variant, updates the variant selection.
   A member's native **Color** options take precedence over its style label:
-  a style named “Blue” can contain Royal, Sapphire, and White. Cards show all
-  photographed colors across the members and link with both `design` and
-  `color` when needed. Gallery frames split multicolor members by their actual
-  color. Variant photo assignments identify colors first; Printful's named
+  a style named “Blue” can contain Royal, Sapphire, and White. Cards show each
+  distinct fabric color once, opening on the first style that offers it, and
+  link with both `design` and `color` when needed. A style-chosen listing's card
+  states its style count separately (“16 styles”), so the **+N** link only ever
+  counts colors. Gallery frames split multicolor members by their actual
+  color, named by color alone when one style is shown. Variant photo assignments identify colors first; Printful's named
   companion mockups are matched against the naming patterns of that product's
   assigned variant photos, including alternate views. Unmatched and ambiguous
   photos stay in the general gallery rather than selecting a guessed color.

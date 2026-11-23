@@ -64,7 +64,7 @@ test("group discovery follows every tag search page and includes a third design'
   const listing = await getProduct("name-tag-shirt");
   expect(listing?.designs?.map((design) => design.label)).toEqual(["Ryan", "Ryan’s Dad", "Ryan’s Mom"]);
   expect(listing?.variants.map((variant) => variant.id)).toEqual([...ryan.variants, ...dad.variants, ...mom.variants].map((variant) => variant.id));
-  expect(getProductGallery(listing!, listing!.designs).map((entry) => entry.image.url)).toEqual([ryan.featuredImage!.url, dad.featuredImage!.url, mom.featuredImage!.url]);
+  expect(getProductGallery(listing!, listing!.designs).map((entry) => entry.image.url)).toEqual([ryan, dad, mom].flatMap((product) => product.images.map((image) => image.url)));
   expect(requests.filter((request) => request.query.includes("CatalogProductSummaries")).map((request) => request.variables.after)).toEqual([null, "catalog-page-1"]);
 });
 

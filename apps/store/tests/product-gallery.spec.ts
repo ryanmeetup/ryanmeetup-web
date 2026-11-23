@@ -12,11 +12,12 @@ test("gallery includes every design and variant-only image without repeating siz
     { product, label: "Ryan", value: "ryan" },
     { product: mom, label: "Ryan’s Mom", value: "ryans-mom" },
   ]);
-  expect(gallery.map((entry) => entry.image.url)).toEqual([ryan.featuredImage!.url, extraImage.url, mom.featuredImage!.url]);
-  expect(gallery.map((entry) => entry.design)).toEqual(["ryan", "ryan", "ryans-mom"]);
+  const ryanPhotos = [...ryan.images.map((image) => image.url), extraImage.url];
+  expect(gallery.map((entry) => entry.image.url)).toEqual([...ryanPhotos, mom.featuredImage!.url]);
+  expect(gallery.map((entry) => entry.design)).toEqual([...ryanPhotos.map(() => "ryan"), "ryans-mom"]);
   expect(groupProductGallery(gallery)).toEqual([
-    { productId: product.id, label: "Ryan", images: gallery.slice(0, 2) },
-    { productId: mom.id, label: "Ryan’s Mom", images: gallery.slice(2) },
+    { productId: product.id, label: "Ryan", images: gallery.slice(0, ryanPhotos.length) },
+    { productId: mom.id, label: "Ryan’s Mom", images: gallery.slice(ryanPhotos.length) },
   ]);
   expect(new Set(gallery.map((entry) => entry.key)).size).toBe(gallery.length);
 });
@@ -26,11 +27,17 @@ test("shared photo URLs retain each design's identity", () => {
     { product: ryan, label: "Ryan", value: "ryan" },
     { product: { ...mom, featuredImage: ryan.featuredImage, images: ryan.images, variants: [] }, label: "Ryan’s Mom", value: "ryans-mom" },
   ]);
-  expect(gallery).toHaveLength(2);
-  expect(gallery[0].key).not.toBe(gallery[1].key);
-  expect(gallery[0].productId).toBe(ryan.id);
-  expect(gallery[1].productId).toBe(mom.id);
+  expect(gallery).toHaveLength(ryan.images.length * 2);
+  expect(new Set(gallery.map((entry) => entry.key)).size).toBe(gallery.length);
+  expect(gallery.map((entry) => entry.productId)).toEqual([...ryan.images.map(() => ryan.id), ...ryan.images.map(() => mom.id)]);
   expect(groupProductGallery(gallery).map((group) => group.label)).toEqual(["Ryan", "Ryan’s Mom"]);
+});
+
+test("a single chosen style's frames name only its colors", () => {
+  const groups = groupProductGallery(getProductGallery(superBlue, [{ product: superBlue, label: "Blue", value: superBlue.handle }]));
+  expect(groups.map((group) => group.label)).toEqual(["Royal", "Sapphire", "White"]);
+  const single = groupProductGallery(getProductGallery(ryan, [{ product: ryan, label: "Ryan", value: "ryan" }]));
+  expect(single.map((group) => group.label)).toEqual(["Ryan"]);
 });
 
 test("selecting a color photo preserves the chosen size and its actual availability", () => {
@@ -107,7 +114,7 @@ test("product details fetch all image and variant pages", async () => {
   };
   try {
     const product = await getProduct(ryan.handle);
-    expect(product?.images.map((image) => image.url)).toEqual([ryan.featuredImage!.url, extraImage.url]);
+    expect(product?.images.map((image) => image.url)).toEqual([...ryan.images.map((image) => image.url), extraImage.url]);
     expect(product?.variants.map((variant) => variant.id)).toEqual([ryan.variants[0].id, ryan.variants[1].id]);
     expect(requests.filter((request) => !request.query.includes("CatalogProductSummaries"))).toHaveLength(3);
   } finally {

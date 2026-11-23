@@ -27,13 +27,19 @@ export function ProductGroupDetail({ title, handle, url, breadcrumbs, designs, d
   const searchParams = useSearchParams();
   const navigationFocus = useRef<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<{ design: string; image: StoreImage } | null>(null);
-  const gallery = useMemo(() => designs.length ? getProductGallery(designs[0].product, designs) : [], [designs]);
   const colors = useMemo(() => getListingColors(designs), [designs]);
   // The listing's default color applies only to a bare link; a chosen design keeps its own colors.
   const color = searchParams.get("color") ?? (searchParams.has("design") ? null : defaultColor ?? null);
   // Which product prints a color is a printing detail, so a color-split listing's URL names only the color.
   const colorDesign = colors && color ? colors.find((entry) => entry.slug === getColorSlug(color))?.design : undefined;
   const selected = designs.find((design) => design.value === (colorDesign ?? searchParams.get("design"))) ?? designs[0];
+  // A color-split listing's members are its colors, so every member's photos are
+  // choices. Styles are chosen in the Style field, so the gallery shows only the
+  // chosen one: sixteen name tag styles would otherwise stack ~180 photos.
+  const gallery = useMemo(
+    () => !selected ? [] : colors ? getProductGallery(selected.product, designs) : getProductGallery(selected.product, [selected]),
+    [colors, designs, selected],
+  );
 
   useLayoutEffect(() => {
     const direction = navigationFocus.current;

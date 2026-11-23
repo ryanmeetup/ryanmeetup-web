@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { getColorListingHref, getColorOption, getColorPreview, getColorPreviews, getColorSlug, getListingColors, getImageColor, getListingColorPreviews, getVariantForColor } from "../lib/product-colors";
+import { getColorListingHref, getColorOption, getColorPreview, getColorPreviews, getColorSlug, getListingColors, getImageColor, getListingColorPreviews, getListingStyleCount, getVariantForColor } from "../lib/product-colors";
 import { groupProductListings } from "../lib/product-groups";
 import type { Product, StoreImage } from "../lib/types";
 import { dad, ryan, superBlack, superBlue, superRed, tee } from "./fixtures/products";
@@ -222,12 +222,30 @@ test("a listing keeps its styles when a member is a design or a color repeats", 
   expect(getListingColors(named.designs!)).toBeUndefined();
 });
 
-test("a fabric color shared by different prints keeps separate, labelled previews", () => {
+test("a fabric color shared by different styles is one preview, counted apart from the styles", () => {
   const secondPrint = { ...superBlue, id: "second-print", handle: "second-print", title: "Super Ryan Shirt - Other print" };
   const [listing] = groupProductListings([superBlue, secondPrint]);
-  const white = getListingColorPreviews(listing).filter((preview) => preview.value === "White");
-  expect(white.map((preview) => preview.label)).toEqual(["Blue · White", "Other print · White"]);
-  expect(new Set(white.map((preview) => preview.href)).size).toBe(2);
+  const previews = getListingColorPreviews(listing);
+  // Each color appears once and opens on the first style that offers it.
+  expect(previews.map(({ value, href }) => [value, href])).toEqual([
+    ["Royal", "/products/super-ryan-shirt?design=super-ryan-blue&color=royal"],
+    ["Sapphire", "/products/super-ryan-shirt?design=super-ryan-blue&color=sapphire"],
+    ["White", "/products/super-ryan-shirt?design=super-ryan-blue&color=white"],
+  ]);
+  expect(getListingStyleCount(listing)).toBe(2);
+  // Two styles in one shared color still differ by style, but offer no color choice.
+  const [oneColor] = groupProductListings([ryan, { ...dad, options: ryan.options, variants: ryan.variants }]);
+  expect(getListingColorPreviews(oneColor)).toEqual([]);
+  expect(getListingStyleCount(oneColor)).toBe(2);
+});
+
+test("only listings chosen by style count styles", () => {
+  const [single] = groupProductListings([ryan]);
+  expect(getListingStyleCount(single)).toBe(0);
+  const [byColor] = groupProductListings([superBlack, { ...superBlue, title: "Super Ryan Shirt" }, superRed]);
+  expect(getListingStyleCount(byColor)).toBe(0);
+  const [mixed] = groupProductListings([superBlack, superBlue, superRed]);
+  expect(getListingStyleCount(mixed)).toBe(3);
 });
 
 test("native assignments take precedence over filenames and shared photos stay unclassified", () => {

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("floating photo controls wrap across designs and keep keyboard focus", async ({ page }) => {
+test("floating photo controls wrap within the chosen style and keep keyboard focus", async ({ page }) => {
   await page.goto("/products/name-tag-shirt");
   const gallery = page.getByRole("region", { name: "Product gallery" });
   const next = gallery.getByRole("button", { name: "Next photo", exact: true });
@@ -12,8 +12,9 @@ test("floating photo controls wrap across designs and keep keyboard focus", asyn
 
   await next.click();
   await expect(status).toHaveText("Photo 2 of 2");
-  await expect(page.getByLabel("Style")).toContainText("Ryan’s Dad");
-  await expect(page.getByLabel("Color")).toContainText("Natural");
+  // The gallery holds only the chosen style, so browsing never switches it.
+  await expect(page.getByLabel("Style")).toContainText("Ryan");
+  await expect(page.getByLabel("Color")).toContainText("White");
   await expect(next).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(status).toHaveText("Photo 1 of 2");
