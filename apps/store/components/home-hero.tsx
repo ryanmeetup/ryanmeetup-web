@@ -17,8 +17,7 @@ const WALL: WallTile[] = [
     sizes: "(min-width: 768px) 50vw, 100vw",
     photos: [
       { src: "/hero/ryan-merch-booth.jpg", alt: "Ryan Meetup shirts hanging above a merch table, with a volunteer in a Ryan’s Father tee", objectPosition: "35% 50%" },
-      { src: "/hero/ryans-game-show.jpg", alt: "A packed theater of Ryans cheering behind a hand-painted Ryans Game Show banner" },
-      { src: "/hero/ryan-baseball-classic.jpg", alt: "Ryans in Twins jerseys and Ryan Baseball Classic tees cheering in the stands, holding Let’s go Ryan signs" },
+      { src: "/hero/i-heart-ry-crewneck-pair.jpg", alt: "Two Ryans posing deadpan in name tags, one in an I heart RY tee and cap, the other in a Ryan Meetup crewneck holding a pool cue", objectPosition: "50% 30%" },
     ],
   },
   {
@@ -31,7 +30,6 @@ const WALL: WallTile[] = [
       { src: "/hero/ryan-ryan-ryan-cap.jpg", alt: "A Ryan pulling down a black cap embroidered with Ryan three times in red, yellow, and blue", objectPosition: "50% 30%" },
       { src: "/hero/ryans-not-a-cult-beanie.jpg", alt: "A Ryan with a skateboard on one shoulder, wearing a black beanie stitched with Ryans and Not a cult", objectPosition: "50% 40%" },
       { src: "/hero/ryan-beanie-and-cap-pair.jpg", alt: "Two smiling Ryans by a chain-link fence, one in a name tag tee and beanie, the other in a yellow Ryan Meetup chain tee and cap", objectPosition: "50% 35%" },
-      { src: "/hero/i-heart-ry-tee.jpg", alt: "A Ryan grinning from a velvet couch in an I heart RY tee, holding a Ryan Meetup cap", objectPosition: "50% 30%" },
     ],
   },
   {
@@ -39,8 +37,7 @@ const WALL: WallTile[] = [
     sizes: "(min-width: 768px) 33vw, 50vw",
     photos: [
       { src: "/hero/ryan-hammock-crewneck.jpg", alt: "A Ryan in red heart sunglasses lounging in a hammock in a Ryan Meetup crewneck, phone in one hand and cash in the other", objectPosition: "65% 50%" },
-      { src: "/hero/rytoberfest.jpg", alt: "A crowd of Ryans raising beers under a Welcome to the Ryan Meetup sign at Rytoberfest" },
-      { src: "/hero/i-heart-ry-crewneck-pair.jpg", alt: "Two Ryans posing deadpan in name tags, one in an I heart RY tee and cap, the other in a Ryan Meetup crewneck holding a pool cue", objectPosition: "50% 30%" },
+      { src: "/hero/i-heart-ry-tee.jpg", alt: "A Ryan grinning from a velvet couch in an I heart RY tee, holding a Ryan Meetup cap", objectPosition: "50% 30%" },
     ],
   },
   {
@@ -66,7 +63,7 @@ const WALL: WallTile[] = [
 const TAKEOVER_BACKDROP = WALL[0].photos[0];
 const TAKEOVER_WALL: WallTile[] = [
   { className: "row-span-2", sizes: "18vw", photos: [WALL[1].photos[0], WALL[1].photos[1]] },
-  { className: "", sizes: "26vw", photos: [WALL[0].photos[1], WALL[0].photos[2]] },
+  { className: "", sizes: "26vw", photos: [WALL[0].photos[1], WALL[3].photos[1]] },
   { className: "", sizes: "26vw", photos: [WALL[2].photos[0], WALL[2].photos[1]] },
 ];
 
