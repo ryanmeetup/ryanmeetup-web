@@ -12,12 +12,9 @@ import type { ReactNode } from "react";
 export const ScrollRegion = ({
   children,
   contentClassName,
-  after,
 }: {
   children: ReactNode;
   contentClassName?: string;
-  /** Unpadded content that scrolls in after the body, such as a footer. */
-  after?: ReactNode;
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const scrollContentRef = useRef<HTMLDivElement>(null);
@@ -65,7 +62,6 @@ export const ScrollRegion = ({
         <div ref={scrollContentRef} className={`p-6 ${contentClassName ?? ""}`}>
           {children}
         </div>
-        {after}
       </div>
       {scrollState.canScrollUp && (
         <div

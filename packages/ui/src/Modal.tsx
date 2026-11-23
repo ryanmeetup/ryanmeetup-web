@@ -37,12 +37,6 @@ export type ModalProps = {
   supportingActions?: ReactNode;
   /** Footer content that sits above the button rows. */
   footerContent?: ReactNode;
-  /**
-   * Below `sm`, let the footer scroll in after the body instead of staying
-   * pinned, so a long form on a phone keeps its fields in view while it's
-   * filled in. The footer stays pinned from `sm` up.
-   */
-  scrollFooterOnMobile?: boolean;
   panelClassName?: string;
   /** Classes for the padded body, including full-height column layouts. */
   bodyClassName?: string;
@@ -78,7 +72,6 @@ const Modal = ({
   actions,
   supportingActions,
   footerContent,
-  scrollFooterOnMobile = false,
   panelClassName,
   bodyClassName,
   maxHeight,
@@ -96,14 +89,6 @@ const Modal = ({
       : undefined;
   const cardClassName = `mx-auto flex ${size === "fit" ? "w-fit" : "w-full"} min-h-0 flex-col ${maxWidth ? "" : sizeStyles[size]} ${maxHeight ? "" : "max-h-[min(42rem,calc(100dvh-max(1rem,env(safe-area-inset-top))-max(1rem,env(safe-area-inset-bottom))))] sm:max-h-[calc(100dvh-max(1rem,env(safe-area-inset-top))-max(1rem,env(safe-area-inset-bottom)))]"} overflow-hidden rounded-2xl border border-black/15 bg-white shadow-overlay ring-1 ring-black/5 dark:border-white/20 dark:bg-[#181818] dark:ring-white/10 ${panelClassName ?? ""}`;
 
-  const footer = (
-    <EditorFooter
-      actions={actions}
-      supportingActions={supportingActions}
-      footerContent={footerContent}
-    />
-  );
-
   const cardContent = (
     <>
       <EditorHeader
@@ -119,14 +104,12 @@ const Modal = ({
           )
         }
       />
-      <ScrollRegion
-        contentClassName={bodyClassName}
-        after={scrollFooterOnMobile && <div className="sm:hidden">{footer}</div>}
-      >
-        {children}
-      </ScrollRegion>
-      {/* Hidden copies are display:none, so only one footer is ever focusable or announced. */}
-      {scrollFooterOnMobile ? <div className="max-sm:hidden">{footer}</div> : footer}
+      <ScrollRegion contentClassName={bodyClassName}>{children}</ScrollRegion>
+      <EditorFooter
+        actions={actions}
+        supportingActions={supportingActions}
+        footerContent={footerContent}
+      />
     </>
   );
 
