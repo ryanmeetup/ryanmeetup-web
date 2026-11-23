@@ -1,6 +1,16 @@
-import { Button, Heading, Kicker, Text } from "@ryanmeetup/ui";
+import {
+  Button,
+  DropdownMenu,
+  DropdownMenuButton,
+  DropdownMenuItemLink,
+  DropdownMenuItems,
+  Heading,
+  Kicker,
+  Text,
+  getButtonClasses,
+} from "@ryanmeetup/ui";
 import { FaCamera as Camera } from "react-icons/fa";
-import { FiArrowUpRight, FiMap } from "react-icons/fi";
+import { FiArrowUpRight, FiChevronDown, FiMap } from "react-icons/fi";
 
 import type { BaseballTeam } from "@/lib/types";
 import { getSeasonStats } from "@/utils/baseball";
@@ -15,7 +25,7 @@ type BaseballHeroProps = {
 };
 
 // Albums from earlier installments, copied from their Contentful `gallery`
-// entries (also listed on /gallery). Oldest first.
+// entries (also listed on /gallery). Oldest first; the menu lists newest first.
 const PAST_ALBUMS = [
   {
     year: 2025,
@@ -194,22 +204,42 @@ const BaseballHero = ({
               Shop the merch
             </Button.Link>
           )}
-          {PAST_ALBUMS.map((album) => (
-            <Button.Link
-              key={album.href}
-              href={album.href}
-              newTab
-              size="md"
-              variant="secondary"
-              leftIcon={<Camera aria-hidden />}
-              rightIcon={<FiArrowUpRight aria-hidden />}
-              fullWidth
-              className="sm:w-auto"
-              aria-label={`${album.year} photo album: ${album.title} (opens in a new tab)`}
+          {/* One trigger for every past album, so the row doesn't grow a
+              button each year. Menu renders no wrapper, so the trigger stays
+              a direct child of this row. */}
+          <DropdownMenu>
+            <DropdownMenuButton
+              unstyled
+              className={`${getButtonClasses("secondary", "md", true)} sm:w-auto`}
             >
-              {album.year} photo album
-            </Button.Link>
-          ))}
+              <span className="text-base">
+                <Camera aria-hidden />
+              </span>
+              <span>Photo albums</span>
+              <span className="text-base">
+                <FiChevronDown aria-hidden />
+              </span>
+            </DropdownMenuButton>
+            <DropdownMenuItems align="end" aria-label="Past photo albums">
+              {[...PAST_ALBUMS].reverse().map((album) => (
+                <DropdownMenuItemLink
+                  key={album.href}
+                  href={album.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span className="flex flex-1 flex-col">
+                    <span className="font-semibold">{album.year}</span>
+                    <span className="text-xs text-black/70 dark:text-white/70">
+                      {album.title}
+                    </span>
+                  </span>
+                  <FiArrowUpRight aria-hidden />
+                  <span className="sr-only">(opens in a new tab)</span>
+                </DropdownMenuItemLink>
+              ))}
+            </DropdownMenuItems>
+          </DropdownMenu>
         </div>
       </div>
     </section>
