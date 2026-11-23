@@ -3,6 +3,7 @@ import { Layout } from "@/components/navigation";
 import { Button, Card, Heading, Kicker, Text } from "@ryanmeetup/ui";
 import QRCode from "react-qr-code";
 import NextLink from "next/link";
+import { STORE_URL } from "@/lib/store";
 import NextImage from "next/image";
 import { FaShirt as Shirt } from "react-icons/fa6";
 
@@ -149,7 +150,7 @@ const DonatePage = async () => {
               and community growth.
             </Text>
             <Button.Link
-              href="/merch"
+              href={STORE_URL}
               variant="secondary"
               size="sm"
               fullWidth

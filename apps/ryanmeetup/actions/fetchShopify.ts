@@ -3,8 +3,9 @@
 // apps/store/lib/shopify.ts; this deliberately stays one query against the
 // same env vars rather than a copy of that client.
 
+import { STORE_URL } from "@/lib/store";
+
 const API_VERSION = "2026-04";
-const STORE_URL = "https://store.ryanmeetup.com";
 const REVALIDATE_SECONDS = 600;
 
 type MerchProduct = {
@@ -133,5 +134,5 @@ const fetchMerchCollection = async (
   }
 };
 
-export { fetchMerchCollection, STORE_URL };
+export { fetchMerchCollection };
 export type { MerchCollection, MerchProduct };

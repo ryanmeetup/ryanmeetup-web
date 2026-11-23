@@ -61,7 +61,7 @@ const redirectRoutes = [
     location: "https://partiful.com/e/P5vBoqdijeznyyCOVfTp?",
   },
   { path: "/join", location: "https://partiful.com/u/sJG4HpH0wS3ZA3YkzaL5" },
-  { path: "/merch", location: "https://ryanmeetup.etsy.com" },
+  { path: "/merch", location: "https://store.ryanmeetup.com/" },
   {
     path: "/newsletter",
     location:

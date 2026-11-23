@@ -1,3 +1,5 @@
+import { STORE_URL } from "@/lib/store";
+
 // Components
 import {
   FaFacebook as Facebook,
@@ -146,7 +148,7 @@ export const routes = [
   {
     icon: <Shirt />,
     text: "Merch",
-    href: "https://ryanmeetup.etsy.com",
+    href: STORE_URL,
     description: "Official Ryan Meetup merch and essentials.",
   },
   {

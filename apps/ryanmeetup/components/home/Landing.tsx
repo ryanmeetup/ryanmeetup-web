@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { STORE_URL } from "@/lib/store";
 
 // Components
 import NextLink from "next/link";
@@ -266,7 +267,7 @@ const Landing = (props: LandingProps) => {
       icon: <FaShirt className="h-5 w-5" />,
       title: "Support with merch",
       body: "Grab official Ryan Meetup gear and help power upcoming gatherings.",
-      href: "/merch",
+      href: STORE_URL,
       cta: "Shop the store",
     },
   ];
