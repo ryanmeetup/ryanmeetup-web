@@ -51,7 +51,9 @@
     ".next-e2e/card-ratings/types/**/*.ts",
     ".next-e2e/card-ratings/dev/types/**/*.ts",
     ".next-promo-check/types/**/*.ts",
-    ".next-promo-check/dev/types/**/*.ts"
+    ".next-promo-check/dev/types/**/*.ts",
+    ".next-e2e/home-compact-build/types/**/*.ts",
+    ".next-e2e/home-compact-build/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"
