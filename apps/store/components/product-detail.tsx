@@ -5,7 +5,7 @@ import Link from "next/link";
 import { trackStoreEvent } from "@/lib/analytics";
 import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { Button, DisclosureCard, DropdownSelect, ErrorCallout, IconButton, Kicker, getFieldLabelClasses } from "@ryanmeetup/ui";
+import { Button, DropdownSelect, ErrorCallout, IconButton, Kicker, getFieldLabelClasses } from "@ryanmeetup/ui";
 import { FiCheck, FiChevronLeft, FiChevronRight, FiHeart, FiPenTool, FiShield, FiShoppingBag } from "react-icons/fi";
 import { getCompareAtPrice, getListingSale } from "@/lib/money";
 import { findVariant, getOptionChoices, getSelections, isDefaultTitleOption, isSizeOption, oneSize } from "@/lib/product-options";
@@ -23,7 +23,7 @@ import { PromotionNote } from "./promotion";
 import { FinalSaleNote } from "./final-sale-note";
 import { ProductSizeGuide } from "./product-size-guide";
 
-export function ProductDetail({ product, title = product.title, breadcrumbs, designField, hideColorOption = false, gallery, initialImage, initialColor, onSelectGalleryImage, productionSummary, shipsTo }: {
+export function ProductDetail({ product, title = product.title, breadcrumbs, designField, hideColorOption = false, gallery, initialImage, initialColor, onSelectGalleryImage, productionTime, shipsTo }: {
   product: Product;
   title?: string;
   // Rides along above the gallery so the trail stays in view while it sticks.
@@ -36,7 +36,8 @@ export function ProductDetail({ product, title = product.title, breadcrumbs, des
   initialImage?: StoreImage;
   initialColor?: string | null;
   onSelectGalleryImage?: (image: ProductGalleryImage) => void;
-  productionSummary?: string | null;
+  /** How long making takes, such as "2–7 business days"; left out when the policy names no span. */
+  productionTime?: string | null;
   /** Where checkout ships, such as "Ships to 28 countries and regions"; left out when unknown. */
   shipsTo?: string | null;
 }) {
@@ -282,19 +283,15 @@ export function ProductDetail({ product, title = product.title, breadcrumbs, des
           <Button fullWidth size="lg" variant="secondary" onClick={() => setDrawerOpen(true, "product_page")}>View cart</Button>
         </div>
         {error && <ErrorCallout className="mt-4">{error}</ErrorCallout>}
+        <div className="mt-4 space-y-1 text-sm text-black/70 dark:text-white/70">
+          <p>
+            {productionTime ? `Made to order in ${productionTime}.` : "Made to order."}{shipsTo && ` ${shipsTo}.`}{" "}
+            <Link href="/policies/shipping-policy" className="whitespace-nowrap rounded-sm underline decoration-black/30 underline-offset-4 transition hover:decoration-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:decoration-white/30 dark:hover:decoration-white dark:focus-visible:ring-white/40">Shipping details</Link>
+          </p>
+          <p><FinalSaleNote /></p>
+        </div>
         <div className="mt-8 border-t border-black/10 dark:border-white/10">
           <ProductDescription description={product.description} descriptionHtml={product.descriptionHtml} part="details" />
-          <DisclosureCard
-            summary="Shipping and returns"
-            data-analytics-disclosure="shipping_and_returns"
-            className="border-b border-black/10 dark:border-white/10"
-            buttonClassName="flex w-full items-center justify-between gap-4 rounded-sm py-5 text-left font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:focus-visible:ring-white/40"
-            panelClassName="space-y-2 pb-5 text-sm text-black/70 dark:text-white/70"
-          >
-            <p><FinalSaleNote /></p>
-            {shipsTo && <p>{shipsTo}; shipping costs are shown at checkout.</p>}
-            <p>{productionSummary ?? "Made to order. Production happens before shipping."}{" "}<Link href="/policies/shipping-policy" className="rounded-sm underline decoration-black/30 underline-offset-4 transition hover:decoration-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:decoration-white/30 dark:hover:decoration-white dark:focus-visible:ring-white/40">Shipping details</Link></p>
-          </DisclosureCard>
           <div className="grid gap-6 pt-6 text-sm text-black/70 sm:grid-cols-2 dark:text-white/70">
             {[
               { icon: FiPenTool, title: "Designed by Ryan", text: getProductDesignerCredit(product) || "Designed in-house by one of our Ryans." },

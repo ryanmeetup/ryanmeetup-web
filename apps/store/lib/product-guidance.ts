@@ -16,6 +16,11 @@ export function getProductionSummary(policies: ShopPolicy[]) {
   return getShippingPolicySection(policies, "Production time");
 }
 
+/** How long making takes, such as "2–7 business days", from the policy's Production time section; null when it names no span. */
+export function getProductionTime(policies: ShopPolicy[]) {
+  return getProductionSummary(policies)?.match(/\b\d+(?:\s*[–-]\s*\d+)?\s+business days\b/i)?.[0].replace(/\s*[–-]\s*/, "–") ?? null;
+}
+
 /** Where checkout can ship, from the countries Shopify Markets offers; null when that list is unknown. */
 export function describeShippingRegions(countries: string[]) {
   const regions = [...new Set(countries)];
@@ -34,7 +39,7 @@ export type ShippingExpectation = { id: "production" | "countries" | "tracking";
  */
 export function getShippingExpectations(policies: ShopPolicy[], countries: string[]): ShippingExpectation[] {
   const production = getProductionSummary(policies);
-  const days = production?.match(/\b\d+(?:\s*[–-]\s*\d+)?\s+business days\b/i)?.[0].replace(/\s*[–-]\s*/, "–");
+  const days = getProductionTime(policies);
   const holidays = Boolean(production && /holiday/i.test(production));
   const items: ShippingExpectation[] = [{
     id: "production",

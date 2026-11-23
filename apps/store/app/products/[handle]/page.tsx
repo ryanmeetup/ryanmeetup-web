@@ -19,7 +19,7 @@ import { decodeRouteHandle } from "@/lib/handles";
 import { getColorListingHref, getColorPreview } from "@/lib/product-colors";
 import { getProductGroupForMember, getProductHref, resolveProductDesignValue } from "@/lib/product-groups";
 import { getCustomReviews } from "@/lib/custom-reviews";
-import { describeShippingRegions, getProductionSummary } from "@/lib/product-guidance";
+import { describeShippingRegions, getProductionTime } from "@/lib/product-guidance";
 import { getCustomReviewAccessByProduct } from "@/lib/custom-review-access";
 import { cartOrigin, withProductOrigin } from "@/lib/product-origin";
 import { getCanonicalProductHrefs, getCollections, getPolicies, getProduct, getProductHandles, getShippingCountries } from "@/lib/shopify";
@@ -79,7 +79,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
       return [];
     }),
   ]);
-  const productionSummary = getProductionSummary(policies);
+  const productionTime = getProductionTime(policies);
   const shipsTo = describeShippingRegions(shippingCountries);
   const reviewsByProduct = Object.fromEntries(reviewEntries);
   const originCrumbs = await getOriginCrumbs(query.from);
@@ -95,11 +95,11 @@ export default async function ProductPage({ params, searchParams }: Props) {
         { name: product.title, path: `/products/${product.handle}` },
       ])} />
       {product.designs ? (
-        <ProductGroupDetail title={product.title} handle={product.handle} url={productUrl} breadcrumbs={breadcrumbs} designs={product.designs} defaultColor={product.defaultColor} reviewsByProduct={reviewsByProduct} reviewAccessByProduct={reviewAccess} productionSummary={productionSummary} shipsTo={shipsTo} />
+        <ProductGroupDetail title={product.title} handle={product.handle} url={productUrl} breadcrumbs={breadcrumbs} designs={product.designs} defaultColor={product.defaultColor} reviewsByProduct={reviewsByProduct} reviewAccessByProduct={reviewAccess} productionTime={productionTime} shipsTo={shipsTo} />
       ) : (
         <>
           <ProductSchema product={product} reviews={reviewsByProduct[product.id]} url={productUrl} />
-          <ProductDetail product={product} breadcrumbs={breadcrumbs} initialColor={query.color} initialImage={getColorPreview(product, query.color)?.image} productionSummary={productionSummary} shipsTo={shipsTo} />
+          <ProductDetail product={product} breadcrumbs={breadcrumbs} initialColor={query.color} initialImage={getColorPreview(product, query.color)?.image} productionTime={productionTime} shipsTo={shipsTo} />
           <Reviews data={reviewsByProduct[product.id]} product={product} access={reviewAccess[product.id]} />
         </>
       )}
