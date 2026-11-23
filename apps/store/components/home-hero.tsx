@@ -55,10 +55,12 @@ const WALL: WallTile[] = [
   },
 ];
 
-// The takeover keeps three cycling tiles beside the sale, so it still looks like the store.
+// The takeover fades the merch booth behind the sale and keeps three cycling tiles beside it, so
+// it still looks like the store. The backdrop stays out of the tiles: one photo, one place.
+const TAKEOVER_BACKDROP = WALL[0].photos[0];
 const TAKEOVER_WALL: WallTile[] = [
   { className: "row-span-2", sizes: "18vw", photos: [WALL[1].photos[0], WALL[1].photos[1]] },
-  { className: "", sizes: "26vw", photos: [WALL[0].photos[0], WALL[0].photos[1]] },
+  { className: "", sizes: "26vw", photos: [WALL[0].photos[1], WALL[0].photos[2]] },
   { className: "", sizes: "26vw", photos: [WALL[2].photos[0], WALL[2].photos[1]] },
 ];
 
@@ -69,7 +71,7 @@ const TAKEOVER_WALL: WallTile[] = [
 export function HomeHero() {
   return (
     <section data-analytics-placement="home_hero" data-analytics-section="home_hero" aria-label="Ryan Meetup merch" className="relative">
-      <SaleTakeoverSwitch tiles={TAKEOVER_WALL}>
+      <SaleTakeoverSwitch backdrop={TAKEOVER_BACKDROP} tiles={TAKEOVER_WALL}>
         <PhotoWall
           tiles={WALL}
           className="grid grid-cols-2 grid-rows-[min(44vw,15rem)_min(36vw,12rem)_min(36vw,12rem)_min(48vw,14rem)] gap-1 bg-black md:grid-cols-6 md:grid-rows-[repeat(2,clamp(11rem,21vw,20rem))]"

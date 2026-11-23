@@ -2,11 +2,11 @@
 
 import { Button, Heading, Kicker, Text } from "@ryanmeetup/ui";
 import Image from "next/image";
-import { useSyncExternalStore } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
 import { FiArrowRight } from "react-icons/fi";
 import { PhotoWall } from "@/components/photo-wall";
-import type { WallTile } from "@/components/photo-wall";
+import type { WallPhoto, WallTile } from "@/components/photo-wall";
 import { usePromotion } from "@/components/promotion";
 import { describeTierScope } from "@/lib/promotion";
 import type { Promotion } from "@/lib/promotion";
@@ -16,22 +16,32 @@ import type { Promotion } from "@/lib/promotion";
  * running sale comes from the shared promotion clock, so the takeover appears and leaves on
  * the sale's own start and end times without a deploy.
  */
-export function SaleTakeoverSwitch({ tiles, children }: { tiles: WallTile[]; children: ReactNode }) {
+export function SaleTakeoverSwitch({ backdrop, tiles, children }: { backdrop: WallPhoto; tiles: WallTile[]; children: ReactNode }) {
   const promotion = usePromotion();
   if (!promotion?.takeover) return children;
-  return <SaleTakeover promotion={promotion} tiles={tiles} />;
+  return <SaleTakeover promotion={promotion} backdrop={backdrop} tiles={tiles} />;
 }
 
-function SaleTakeover({ promotion, tiles }: { promotion: Promotion; tiles: WallTile[] }) {
+function SaleTakeover({ promotion, backdrop, tiles }: { promotion: Promotion; backdrop: WallPhoto; tiles: WallTile[] }) {
+  // A photo shows in one place only, so the backdrop never also cycles through a tile.
+  const wall = useMemo(
+    () =>
+      tiles.flatMap((tile) => {
+        const photos = tile.photos.filter((photo) => photo.src !== backdrop.src);
+        return photos.length ? [{ ...tile, photos }] : [];
+      }),
+    [backdrop.src, tiles],
+  );
   return (
     <div className="grid bg-black md:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
       <div className="relative overflow-hidden">
         <Image
-          src="/hero/ryan-merch-booth.jpg"
+          src={backdrop.src}
           alt=""
           fill
           sizes="(min-width: 768px) 56vw, 100vw"
           className="object-cover opacity-20 grayscale contrast-125"
+          style={backdrop.objectPosition ? { objectPosition: backdrop.objectPosition } : undefined}
         />
         <div className="store-container relative flex flex-col items-start gap-5 py-8 sm:gap-6 sm:py-10 md:!pr-8 lg:py-12 lg:!pr-12">
           <Image
@@ -82,7 +92,7 @@ function SaleTakeover({ promotion, tiles }: { promotion: Promotion; tiles: WallT
         </div>
       </div>
       <PhotoWall
-        tiles={tiles}
+        tiles={wall}
         wrapperClassName="hidden h-full md:block"
         className="grid h-full grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] grid-rows-2 gap-1 pl-1"
       />
