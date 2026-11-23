@@ -65,7 +65,7 @@ for (const state of ["unavailable", "empty"] as const) {
       [numericId(dad)]: state === "unavailable" ? { unavailable: true } : { summary: empty, reviews: [] },
     } });
     await page.goto(`/products/name-tag-shirt?design=${dad.handle}`);
-    await expect(page.locator("#reviews")).toContainText(state === "unavailable" ? "Reviews are temporarily unavailable." : "No reviews yet");
+    await expect(page.locator("#reviews")).toContainText(state === "unavailable" ? "Reviews are temporarily unavailable." : "The Ryans have not spoken... yet");
     expect(await schema(page)).not.toHaveProperty("aggregateRating");
     await page.getByRole("button", { name: /^Style/ }).click();
     await page.getByRole("option", { name: "Ryan", exact: true }).click();
