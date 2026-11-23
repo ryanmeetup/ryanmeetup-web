@@ -16,10 +16,10 @@ export function PublicReviewCard({ review, product }: { review: Review; product?
     <article id={reviewAnchorId(review.id)} tabIndex={-1} aria-label={`Review by ${review.reviewerName}`}
       className="flex min-w-0 flex-1 scroll-mt-24 flex-col rounded-lg target:outline-2 target:outline-offset-8 target:outline-black/40 focus-visible:outline-2 focus-visible:outline-offset-8 focus-visible:outline-black/40 dark:target:outline-white/50 dark:focus-visible:outline-white/50">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        {/* Where the review came from leads the row, so it reads before the rating it vouches for. */}
+        {/* The rating leads the row; where the review came from follows it. */}
         <div className="flex flex-wrap items-center gap-2">
-          {review.verification && <ReviewVerificationBadge kind={review.verification} />}
           <RatingStars rating={review.rating} />
+          {review.verification && <ReviewVerificationBadge kind={review.verification} />}
         </div>
         <time className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs text-black/70 dark:text-white/70" dateTime={review.createdAt}><FiCalendar className="size-3.5 shrink-0" aria-hidden />{new Date(review.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}</time>
       </div>
