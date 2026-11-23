@@ -39,7 +39,7 @@ test("a state without a team shows the team that covers it", async ({ page }) =>
 
   await expect(teamCards(page)).toHaveCount(1);
   await expect(teamCards(page).first()).toContainText("Manchester Ryanlanders");
-  await expect(teamCards(page).first()).toContainText("Closest team for Vermont");
+  await expect(teamCards(page).first()).toContainText("Serving Vermont");
   await expect(page.getByTestId("baseball-marker")).toHaveCount(1);
 });
 
@@ -59,7 +59,7 @@ test("filters stay in the URL and clear together", async ({ page }) => {
   await expect(teamCards(page)).toHaveCount(6);
 });
 
-test("zip search lists nearby teams, closest first", async ({ page }) => {
+test("zip search lists nearby teams, nearest first", async ({ page }) => {
   await page.goto("/baseball");
 
   await page.getByLabel("Search teams").fill("01608");
@@ -72,7 +72,7 @@ test("zip search lists nearby teams, closest first", async ({ page }) => {
   await expect(page.getByText("Columbus Clip-Ryans")).toHaveCount(0);
 });
 
-test("zip search far from every team offers the closest ones", async ({ page }) => {
+test("zip search far from every team offers the nearest ones", async ({ page }) => {
   // An old ?zip= link still works, and moves to ?q=.
   await page.goto("/baseball?zip=05401");
   await expect(page).toHaveURL(/q=05401/);

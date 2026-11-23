@@ -220,11 +220,11 @@ const TeamFinder = ({ teams }: TeamFinderProps) => {
 
   const servesNoteFor = (entry: BaseballTeam) => {
     if (state !== ALL && entry.state.toUpperCase() !== state.toUpperCase()) {
-      return `Closest team for ${getStateName(state)}`;
+      return `Serving ${getStateName(state)}`;
     }
     if (city !== ALL && toCitySlug(entry.city) !== city) {
       const label = cityOptions.find((option) => option.value === city)?.label ?? city;
-      return `Closest team for ${label}`;
+      return `Serving ${label}`;
     }
     return undefined;
   };
@@ -239,9 +239,9 @@ const TeamFinder = ({ teams }: TeamFinderProps) => {
     if (!activeGeocode?.point) return null;
     const place = activeGeocode.label ?? urlZip;
     if (outOfRange) {
-      return `No teams within ${ZIP_SEARCH_RADIUS_MILES} miles of ${place}. These are the closest.`;
+      return `No teams within ${ZIP_SEARCH_RADIUS_MILES} miles of ${place}. Here are the nearest ones.`;
     }
-    return `Teams within ${ZIP_SEARCH_RADIUS_MILES} miles of ${place}, closest first.`;
+    return `Teams within ${ZIP_SEARCH_RADIUS_MILES} miles of ${place}.`;
   })();
 
   const filterOption = (label: string) => ({ label, value: ALL });
@@ -250,7 +250,7 @@ const TeamFinder = ({ teams }: TeamFinderProps) => {
     <section id="find" className="scroll-mt-28 space-y-6">
       <SectionHeader
         title="Find your Ryan night"
-        description="Search by team, city, state, or zip/postal code, or narrow the list with the filters. Nearby states without a team show the closest one."
+        description="Search by team, city, state, or zip/postal code, or narrow the list with the filters."
       />
 
       {/* Search and filters share a row once there is room for both. */}

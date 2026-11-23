@@ -118,8 +118,10 @@ const BaseballHero = ({ teams, seasonRange, hasMerch }: BaseballHeroProps) => {
           >
             The Ryan Baseball Classic
           </Heading>
-          <Text className="max-w-3xl text-lg text-black/70 dark:text-white/70">
-            Ryans are taking over the ballpark. No Bryans in the bleachers.
+          <Text className="max-w-3xl text-balance text-lg text-black/70 dark:text-white/70">
+            Ryans are taking over dozens of ballparks all over North America.
+            Find the official Ryan Baseball Classic night nearest you and get
+            tickets today. No Bryans in the bleachers.
           </Text>
         </div>
 
