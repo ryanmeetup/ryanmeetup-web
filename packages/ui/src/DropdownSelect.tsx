@@ -54,6 +54,8 @@ export type DropdownSelectProps = {
   stackLabelOnMobile?: boolean;
   /** A compact control's menu is narrow; `wide` leaves room for details. */
   menuWidth?: "default" | "wide";
+  /** A small action, such as a size guide, beside a field's label. */
+  labelAction?: ReactNode;
 };
 
 const DropdownSelect = ({
@@ -71,6 +73,7 @@ const DropdownSelect = ({
   searchPlaceholder = `Search by ${label.toLocaleLowerCase()}...`,
   stackLabelOnMobile = false,
   menuWidth = "default",
+  labelAction,
 }: DropdownSelectProps) => {
   const buttonId = useId();
   const searchId = useId();
@@ -190,10 +193,13 @@ const DropdownSelect = ({
       className={field ? "flex min-w-0 flex-col gap-2" : "contents"}
     >
       {field && (
-        <label className={getFieldLabelClasses()} htmlFor={buttonId}>
-          <span>{label}</span>
-          {required && <span className="shrink-0 text-red-500">*</span>}
-        </label>
+        <div className="flex items-center justify-between gap-3">
+          <label className={getFieldLabelClasses()} htmlFor={buttonId}>
+            <span>{label}</span>
+            {required && <span className="shrink-0 text-red-500">*</span>}
+          </label>
+          {labelAction}
+        </div>
       )}
       <ListboxButton
         id={buttonId}

@@ -260,8 +260,8 @@ export function ProductDetail({ product, title = product.title, breadcrumbs, des
                 value={selections[option.name] ?? ""}
                 onChange={(value) => selectOption(option.name, value)}
                 options={[...(isSizeOption(option) ? [{ label: "Choose a size", value: "" }] : []), ...getOptionChoices(product, option, selections)]}
+                labelAction={isSizeOption(option) && sizeGuide ? <ProductSizeGuide html={sizeGuide} title={product.title} /> : undefined}
               />
-              {isSizeOption(option) && sizeGuide && <ProductSizeGuide html={sizeGuide} title={product.title} />}
             </div>
           ))}
           <DropdownSelect
@@ -317,9 +317,11 @@ export function ProductDetail({ product, title = product.title, breadcrumbs, des
 function SizeDisplay({ value, guide }: { value: string; guide?: ReactNode }) {
   return (
     <div>
-      <p className={getFieldLabelClasses()}>Size</p>
+      <div className="flex items-center justify-between gap-3">
+        <p className={getFieldLabelClasses()}>Size</p>
+        {guide}
+      </div>
       <p className="mt-2 text-sm text-black/70 dark:text-white/70">{value}</p>
-      {guide}
     </div>
   );
 }

@@ -1,13 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { LuRuler } from "react-icons/lu";
 import { Button, Modal } from "@ryanmeetup/ui";
 
+/** Sits beside the Size label; the negative margin keeps the tap target without growing the row. */
 export function ProductSizeGuide({ html, title }: { html: string; title: string }) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Button size="sm" variant="link" className="w-full sm:w-auto" aria-haspopup="dialog" onClick={() => setOpen(true)}>Size guide</Button>
+      <span className="-my-2 flex shrink-0">
+        <Button size="sm" variant="link" leftIcon={<LuRuler />} aria-haspopup="dialog" onClick={() => setOpen(true)}>Size guide</Button>
+      </span>
       <Modal open={open} setIsOpen={setOpen} title="Size guide" description={title} size="lg" dismissOnOutsideClick>
         <p className="mb-4 text-sm text-black/70 sm:hidden dark:text-white/70">Scroll sideways to see every measurement.</p>
         {/* The same Shopify-authored tables remain in Product details. */}
