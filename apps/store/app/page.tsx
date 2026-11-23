@@ -24,8 +24,8 @@ import { buildStoreSchema } from "@/lib/structured-data";
 
 export const revalidate = 300;
 
-// Portraits show whole over a blurred fill rather than being cropped to the
-// landscape frame. They are spaced out so the rotation alternates shapes.
+// Portraits pair up side by side so two of them fill the landscape frame. An
+// unpaired portrait shows whole over a blurred fill until it gets a partner.
 const HERO_PHOTOS: RotatingGalleryItem[] = [
   {
     src: "/hero/ryan-merch-booth.jpg",
@@ -35,17 +35,17 @@ const HERO_PHOTOS: RotatingGalleryItem[] = [
   {
     src: "/hero/ryan-super-tee.jpg",
     alt: "A Ryan tearing open a dress shirt to reveal a superhero-style R logo tee",
-    fit: "contain",
+    objectPosition: "50% 40%",
+    pairedWith: {
+      src: "/hero/ryan-heart-ry-tee.jpg",
+      alt: "Two Ryans at a crowded meetup, one in an I ♥ RY tee and one pointing to a superhero-style R logo tee",
+      objectPosition: "50% 35%",
+    },
   },
   {
     src: "/hero/ryan-hammock-crewneck.jpg",
     alt: "A Ryan in red heart sunglasses lounging in a hammock in a Ryan Meetup crewneck, phone in one hand and cash in the other",
     objectPosition: "65% 50%",
-  },
-  {
-    src: "/hero/ryan-heart-ry-tee.jpg",
-    alt: "Two Ryans at a crowded meetup, one in an I ♥ RY tee and one pointing to a superhero-style R logo tee",
-    fit: "contain",
   },
   {
     src: "/hero/ryan-family-merch-table.jpg",
