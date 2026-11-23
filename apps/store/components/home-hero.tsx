@@ -91,7 +91,8 @@ export function HomeHero() {
                 Shirts, hats, and everyday goods for the world’s most organized first name.
               </Text>
             </div>
-            <div className="flex shrink-0 flex-col items-start gap-3 sm:flex-row sm:items-center">
+            {/* Phones stack the pair at full width, with the link centred under the button. */}
+            <div className="flex shrink-0 flex-col items-stretch gap-3 sm:flex-row sm:items-center">
               <Button.Link
                 href="/collections/all"
                 size="lg"
@@ -100,7 +101,7 @@ export function HomeHero() {
               >
                 Shop all merch
               </Button.Link>
-              <Button.Link href="#collections" size="lg" variant="link">
+              <Button.Link href="#collections" size="lg" variant="link" className="!w-full sm:!w-auto">
                 Browse collections
               </Button.Link>
             </div>
