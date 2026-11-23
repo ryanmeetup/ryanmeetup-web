@@ -47,7 +47,7 @@ function mockBackend(seed: BuyerReview[], products: Record<string, MyReviewProdu
     }, ...reviews];
     return { ok: true, message: "Thanks! Your review is waiting for approval." };
   }
-  return { view, client, submit };
+  return { view, client, submit, changeSuggestion: async () => { await pause(); } };
 }
 
 /**
@@ -61,5 +61,5 @@ export function MyReviewsMock({ reviews, products, suggestions, failFirstLoad = 
 }) {
   const [backend] = useState(() => mockBackend(reviews, products, suggestions?.buyer ?? null));
   const [initial] = useState(() => failFirstLoad ? null : backend.view());
-  return <MyReviews initial={initial} suggestions={suggestions} client={backend.client} submitReview={backend.submit} />;
+  return <MyReviews initial={initial} suggestions={suggestions} client={backend.client} submitReview={backend.submit} changeSuggestion={backend.changeSuggestion} />;
 }

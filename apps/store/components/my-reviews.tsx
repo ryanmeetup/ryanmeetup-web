@@ -16,6 +16,7 @@ import { ReviewSuggestions, SectionTitle, reviewSectionToggle } from "./review-s
 import { useMyReviews, type MyReviewsClient } from "./use-my-reviews";
 import type { CustomReviewResult, CustomReviewSubmission } from "./custom-review-composer";
 import type { ReviewSuggestion } from "@/lib/review-suggestions";
+import type { ChangeReviewSuggestion } from "./use-review-suggestions";
 
 type Tone = "info" | "success" | "danger" | "warning" | "neutral";
 type StatusStyle = { label: string; note: string; tone: Tone; icon: IconType };
@@ -102,10 +103,11 @@ function RejectionReason({ reason, editRejected }: { reason: string; editRejecte
 
 
 /** Only canonical reloaded data enables another buyer action. */
-export function MyReviews({ initial, suggestions, client, submitReview }: {
+export function MyReviews({ initial, suggestions, client, submitReview, changeSuggestion }: {
   initial: MyReviewView | null; suggestions?: Suggestions | null;
   /** Dev-only mock transports; the live API is used when omitted. */
   client?: MyReviewsClient; submitReview?: (item: ReviewSuggestion, review: CustomReviewSubmission) => Promise<CustomReviewResult>;
+  changeSuggestion?: ChangeReviewSuggestion;
 }) {
   const mine=useMyReviews(initial,client);
   const editing=mine.editing;
@@ -113,7 +115,7 @@ export function MyReviews({ initial, suggestions, client, submitReview }: {
   const hasSuggestions=Boolean(currentSuggestions?.items.length);
   const reviewCount=mine.view?.page.reviews.length ?? 0;
   return <div className="space-y-6">
-    {currentSuggestions && mine.view && <ReviewSuggestions key={mine.view.viewerKey} suggestions={currentSuggestions} photoViewerKey={mine.view.photosEnabled ? mine.view.viewerKey : undefined} onReviewed={(notice)=>void mine.reloadWith(notice)} submitReview={submitReview} />}
+    {currentSuggestions && mine.view && <ReviewSuggestions key={mine.view.viewerKey} suggestions={currentSuggestions} viewerKey={mine.view.viewerKey} photoViewerKey={mine.view.photosEnabled ? mine.view.viewerKey : undefined} onReviewed={(notice)=>void mine.reloadWith(notice)} submitReview={submitReview} changeSuggestion={changeSuggestion} />}
     <section aria-labelledby="your-reviews">
     <DisclosureCard
       id="your-reviews"

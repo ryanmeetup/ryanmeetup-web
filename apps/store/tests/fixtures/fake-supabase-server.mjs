@@ -6,7 +6,7 @@ const port=Number(process.env.FAKE_SUPABASE_PORT??54359);
 const key="synthetic-supabase-secret";
 const id=(n)=>`00000000-0000-4000-8000-${String(n).padStart(12,"0")}`;
 const stamp=(n)=>new Date(Date.UTC(2026,10,18,12,0,n)).toISOString().replace(".000Z",".123456Z");
-let records,sessions,calls,options,tick;
+let records,sessions,calls,options,tick,dismissals;
 function row(n,status="pending",subject="buyer-a") {
   const content={rating:4,title:"Ryan approved",body:`Review ${n}.`,nameStyle:"first-initial",displayName:"Ryan F."};
   return {subject,published:status==="published"?{...content,body:"Approved original text."}:null,
@@ -18,6 +18,7 @@ function row(n,status="pending",subject="buyer-a") {
 function reset(config={}) {
   const {records:given,keepSessions,...rest}=config;
   options=rest;if(!keepSessions||!sessions)sessions=new Map();calls=[];tick=0;
+  dismissals=[];
   records=config.many?Array.from({length:125},(_,i)=>row(i+1)):[row(1),row(2,"published"),row(3,"rejected"),row(4,"hidden"),row(5,"withdrawn"),row(201,"published","buyer-b")];
   if(config.many)records.push(row(201,"published","buyer-b"));
   if(config.empty)records=[];
@@ -102,12 +103,25 @@ createServer(async(req,res)=>{
     if(url.pathname==="/health")return json(res,200,{ok:true});
     if(url.pathname==="/__reset"){reset(await body(req));return json(res,200,{ok:true});}
     if(url.pathname==="/__configure"){options={...options,...await body(req)};return json(res,200,{ok:true});}
-    if(url.pathname==="/__state")return json(res,200,{calls,records});
+    if(url.pathname==="/__state")return json(res,200,{calls,records,dismissals});
     if(url.pathname==="/__revoke"){sessions.clear();return json(res,200,{ok:true});}
     if(url.pathname==="/__discovery")return json(res,200,{graphql_api:"https://shopify.com/123456/account/customer/api/2026-10/graphql"});
     if(url.pathname==="/__customer"){const {query,variables}=await body(req);return json(res,200,{data:customerApi(query??"",variables??{})});}
     if(req.headers.apikey!==key)return json(res,401,{message:"Synthetic Supabase key required"});
     const args=await body(req);
+    if(url.pathname==="/rest/v1/store_review_suggestion_dismissals"){
+      if(options.failDismissals)return json(res,503,{message:"Synthetic preference failure"});
+      const matches=(row)=>["shop_id","customer_subject","line_id"].every((field)=>{
+        const filter=url.searchParams.get(field);
+        return !filter||(filter.startsWith("eq.")?row[field]===filter.slice(3):filter.startsWith("in.(")?filter.slice(4,-1).split(",").includes(row[field]):false);
+      });
+      if(req.method==="GET")return json(res,200,dismissals.filter(matches).map(({line_id})=>({line_id})));
+      if(req.method==="DELETE"){dismissals=dismissals.filter((row)=>!matches(row));return json(res,204);}
+      if(req.method==="POST"){
+        if(!dismissals.some((row)=>["shop_id","customer_subject","line_id"].every((field)=>row[field]===args[field])))dismissals.push(args);
+        return json(res,201);
+      }
+    }
     if(url.pathname==="/rest/v1/store_customer_sessions"){sessions.set(args.session_hash,{...args,revision:0});return json(res,201);}
     const name=url.pathname.replace(/^\/rest\/v1\/rpc\//,"");
     if(name==="store_latest_reviews")return json(res,200,[]);

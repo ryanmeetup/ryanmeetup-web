@@ -6,7 +6,115 @@ import { screenshotPath } from "./fixtures/screenshots";
 
 const id=(n:number)=>`00000000-0000-4000-8000-${String(n).padStart(12,"0")}`;
 const card=(page:Page,n:number)=>page.getByTestId(`my-review-${id(n)}`);
+function reminderPurchase(orderId = "100", lineId = "101") {
+  const purchase = customerPurchasePage();
+  purchase.order.customer.id = "gid://shopify/Customer/123";
+  purchase.order.id = `gid://shopify/Order/${orderId}`;
+  purchase.order.name = `#${orderId}`;
+  purchase.order.lineItems.nodes[0].id = `gid://shopify/LineItem/${lineId}`;
+  purchase.order.lineItems.nodes[0].productId = demoProductId("ryan-meetup-tee");
+  purchase.order.fulfillments.nodes[0].fulfillmentLineItems.nodes[0].lineItem.id = `gid://shopify/LineItem/${lineId}`;
+  return purchase;
+}
 test.beforeEach(async({page,request,baseURL})=>{await reset(request);await signIn(page,baseURL!);});
+
+test("review reminder dismissals survive reloads and sessions, preserve other purchases and can be restored", async ({ page, request, baseURL }) => {
+  await configure(request, { purchases: [reminderPurchase(), reminderPurchase("200", "202")] });
+  await page.goto("/reviews/mine");
+  const ready = page.getByRole("region", { name: /^Ready to Review/ });
+  const first = ready.getByRole("listitem").filter({ hasText: "#100" });
+  const second = ready.getByRole("listitem").filter({ hasText: "#200" });
+  await first.getByRole("button", { name: /^Dismiss review reminder/ }).click();
+  await expect(ready.getByRole("button", { name: "Dismissed (1)", exact: true })).toBeVisible();
+  await expect(ready.getByRole("button", { name: /^Write a review of/ })).toHaveCount(1);
+  await expect(second.getByRole("button", { name: /^Write a review of/ })).toBeVisible();
+  await page.reload();
+  await expect(ready.getByRole("button", { name: /^Write a review of/ })).toHaveCount(1);
+  await signIn(page, baseURL!, "buyer-b");
+  await page.reload();
+  await expect(ready.getByRole("button", { name: /^Write a review of/ })).toHaveCount(2);
+  await signIn(page, baseURL!);
+  await page.reload();
+  await expect(ready.getByRole("button", { name: /^Write a review of/ })).toHaveCount(1);
+  await ready.getByRole("button", { name: "Dismissed (1)", exact: true }).click();
+  await first.getByRole("button", { name: /^Restore review reminder/ }).click();
+  await expect(ready.getByRole("button", { name: /^Write a review of/ })).toHaveCount(2);
+  await page.reload();
+  await expect(ready.getByRole("button", { name: /^Write a review of/ })).toHaveCount(2);
+  expect((await state(request)).dismissals).toEqual([]);
+});
+
+test("a dismissed purchase can still be reviewed from its product page", async ({ page, request }) => {
+  await configure(request, { purchase: reminderPurchase() });
+  await page.goto("/reviews/mine");
+  await page.getByRole("button", { name: /^Dismiss review reminder/ }).click();
+  await page.getByRole("button", { name: "Dismissed (1)", exact: true }).click();
+  await page.getByRole("region", { name: /^Ready to Review/ }).getByRole("link", { name: "Official Ryan Meetup Tee", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Write a review", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Write a review", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Write a review", exact: true });
+  await expect(dialog.getByRole("button", { name: "Submit review", exact: true })).toBeVisible();
+  await dialog.getByRole("radio", { name: "5 stars", exact: true }).check();
+  await dialog.getByLabel(/^Title/).fill("Still worth a review");
+  await dialog.getByLabel(/^Review/).fill("I changed my mind after dismissing the reminder.");
+  await dialog.getByRole("button", { name: "Submit review", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await page.goto("/reviews/mine");
+  await expect(page.getByRole("heading", { name: /^Ready to Review/ })).toHaveCount(0);
+});
+
+test("review reminder failures preserve the item and pending changes cannot be submitted twice", async ({ page, request }) => {
+  await configure(request, { purchase: reminderPurchase() });
+  await page.goto("/reviews/mine");
+  const dismiss = page.getByRole("button", { name: /^Dismiss review reminder/ });
+  await configure(request, { failDismissals: true });
+  await dismiss.click();
+  await expect(page.getByRole("alert").filter({ hasText: "could not be updated" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Write a review of/ })).toBeEnabled();
+  await configure(request, { failDismissals: false });
+  let release = () => {};
+  const held = new Promise<void>((resolve) => { release = resolve; });
+  await page.route("**/api/reviews/suggestions", async (route) => { await held; await route.continue(); });
+  await dismiss.click();
+  await expect(dismiss).toBeDisabled();
+  await expect(page.getByRole("button", { name: /^Write a review of/ })).toBeDisabled();
+  await expect(page.getByRole("status").filter({ hasText: "Updating your review reminders" })).toBeVisible();
+  release();
+  await expect(page.getByRole("button", { name: "Dismissed (1)", exact: true })).toBeVisible();
+  await page.unroute("**/api/reviews/suggestions");
+  expect((await state(request)).dismissals).toHaveLength(1);
+});
+
+test("review reminders keep dismiss and restore usable at mobile and desktop boundaries in both themes", async ({ page, request }, testInfo) => {
+  await configure(request, { purchase: reminderPurchase() });
+  for (const theme of ["light", "dark"]) {
+    await page.addInitScript((value) => localStorage.setItem("theme", value), theme);
+    // The Store forces dark mode. Override only the hydrated test DOM to
+    // exercise the shared light-theme classes without changing the product setting.
+    const showTheme = () => page.evaluate((value) => {
+      document.documentElement.classList.toggle("dark", value === "dark");
+      document.documentElement.classList.toggle("light", value === "light");
+      document.documentElement.style.colorScheme = value;
+    }, theme);
+    for (const width of [390, 1024, 1280, 1536]) {
+      await page.setViewportSize({ width, height: 1000 });
+      await page.goto("/reviews/mine");
+      await page.getByRole("button", { name: /^Dismiss review reminder/ }).focus();
+      await page.getByRole("button", { name: /^Dismiss review reminder/ }).press("Enter");
+      await expect(page.getByRole("heading", { name: /^Ready to Review/ })).toContainText("0 items");
+      await page.getByRole("button", { name: "Dismissed (1)", exact: true }).click();
+      const restore = page.getByRole("button", { name: /^Restore review reminder/ });
+      await expect(restore).toBeVisible();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await showTheme();
+      await page.getByRole("region", { name: /^Ready to Review/ }).screenshot({ path: testInfo.outputPath(`reminders-dismissed-${theme}-${width}.png`) });
+      await restore.click();
+      await expect(page.getByRole("button", { name: /^Dismiss review reminder/ })).toBeVisible();
+      await showTheme();
+      await page.getByRole("region", { name: /^Ready to Review/ }).screenshot({ path: testInfo.outputPath(`reminders-ready-${theme}-${width}.png`) });
+    }
+  }
+});
 
 test("published reviews link to their exact public review, including a waiting edit", async ({ page, request }, testInfo) => {
   const snapshot = await state(request);

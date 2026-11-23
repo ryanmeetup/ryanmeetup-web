@@ -95,6 +95,22 @@ omits reviewed lines and products no longer on the storefront. Failed suggestion
 reads omit suggestions; they do not remove the independent My reviews list or
 authorize a write. Each submitted suggestion is checked again.
 
+Each purchase reminder offers **Dismiss**. The preference is saved per shop,
+authenticated buyer and order line, so it survives sign-ins and devices. A
+dismissed line stays out of the ready count until restored from the collapsed
+**Dismissed** list; new purchases, including another purchase of the same
+product, still appear. The buyer can still review a dismissed purchase from
+its product page. Reviewed lines remain excluded from both reminder lists.
+This is not a global review opt-out or an email unsubscribe; this flow sends
+no review-request emails. A future request sender must honor these purchase
+dismissals separately from any account-wide email preference.
+
+`POST /api/reviews/suggestions` accepts only a line ID and `dismiss`/`restore`.
+It checks origin, the current session and its viewer marker, verifies ownership
+through recent eligible purchases before dismissal, and rechecks the session
+before writing. Preference failures leave reminders unchanged with a retryable
+error; failed preference reads omit suggestions rather than reshowing dismissals.
+
 ## Verification
 
 Use the [operations rehearsal](../how-to/review-operations.md#live-lifecycle-rehearsal)
