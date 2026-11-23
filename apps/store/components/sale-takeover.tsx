@@ -58,8 +58,8 @@ function SaleTakeover({ promotion, tiles }: { promotion: Promotion; tiles: WallT
               return (
                 <li
                   key={tier.minQuantity}
-                  // A price tag: a hole punched near the pointed end, each tag hung a little crooked.
-                  className={`relative flex items-baseline gap-2 rounded-l-lg rounded-r-[1.75rem] py-2.5 pl-3.5 pr-8 shadow-drop after:absolute after:right-3 after:top-1/2 after:h-2 after:w-2 after:-translate-y-1/2 after:rounded-full after:bg-black ${top ? "bg-nametag text-white" : "bg-white text-black"} ${["-rotate-2", "rotate-1", "-rotate-1"][index % 3]}`}
+                  // A price tag, with a hole punched near the rounded end.
+                  className={`relative flex items-baseline gap-2 rounded-l-lg rounded-r-[1.75rem] py-2.5 pl-3.5 pr-8 shadow-drop after:absolute after:right-3 after:top-1/2 after:h-2 after:w-2 after:-translate-y-1/2 after:rounded-full after:bg-black ${top ? "bg-nametag text-white" : "bg-white text-black"}`}
                 >
                   <span className={`font-cooper text-3xl leading-none ${top ? "text-white" : "text-nametag"}`}>{tier.percentOff}%</span>
                   <span className="text-sm font-semibold">{describeTierScope(tier)}</span>
