@@ -24,8 +24,8 @@ import { buildStoreSchema } from "@/lib/structured-data";
 
 export const revalidate = 300;
 
-// Portrait shots sit a little above center so faces and chest prints share
-// the landscape crop. The 3:2 tablet frame (not 2:1) leaves room for both.
+// Portraits show whole over a blurred fill rather than being cropped to the
+// landscape frame. They are spaced out so the rotation alternates shapes.
 const HERO_PHOTOS: RotatingGalleryItem[] = [
   {
     src: "/hero/ryan-merch-booth.jpg",
@@ -33,27 +33,32 @@ const HERO_PHOTOS: RotatingGalleryItem[] = [
     objectPosition: "35% 50%",
   },
   {
+    src: "/hero/ryan-super-tee.jpg",
+    alt: "A Ryan tearing open a dress shirt to reveal a superhero-style R logo tee",
+    fit: "contain",
+  },
+  {
     src: "/hero/ryan-hammock-crewneck.jpg",
     alt: "A Ryan in red heart sunglasses lounging in a hammock in a Ryan Meetup crewneck, phone in one hand and cash in the other",
     objectPosition: "65% 50%",
+  },
+  {
+    src: "/hero/ryan-heart-ry-tee.jpg",
+    alt: "Two Ryans at a crowded meetup, one in an I ♥ RY tee and one pointing to a superhero-style R logo tee",
+    fit: "contain",
   },
   {
     src: "/hero/ryan-family-merch-table.jpg",
     alt: "Three volunteers in Ryan’s Mother, Ryan’s Sister, and Ryan’s Father tees behind a table of Ryan Meetup shirts and hats",
   },
   {
-    src: "/hero/ryan-philadelphia-tee.jpg",
-    alt: "A Ryan in mirrored sunglasses showing off an It’s Always Ryan in Philadelphia tee",
-  },
-  {
-    src: "/hero/ryan-super-tee.jpg",
-    alt: "A Ryan tearing open a dress shirt to reveal a superhero-style R logo tee",
-    objectPosition: "50% 40%",
-  },
-  {
     src: "/hero/ryan-name-tag-tee.jpg",
     alt: "A Ryan in a Ryans beanie and a white tee with a Hello my name is Ryan name tag",
-    objectPosition: "50% 40%",
+    fit: "contain",
+  },
+  {
+    src: "/hero/ryan-philadelphia-tee.jpg",
+    alt: "A Ryan in mirrored sunglasses showing off an It’s Always Ryan in Philadelphia tee",
   },
 ];
 
