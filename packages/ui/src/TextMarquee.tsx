@@ -20,11 +20,6 @@ export type TextMarqueeProps = {
    * Otherwise screen readers get the phrases once, as a list, instead of the moving copies.
    */
   decorative?: boolean;
-  /**
-   * What screen readers get instead of `items`, for a band that pads its run with filler
-   * (a repeated name between facts). Defaults to `items`.
-   */
-  spokenItems?: string[];
 };
 
 /** A full-width band of phrases scrolling on a loop, like a ticker. */
@@ -36,13 +31,12 @@ const TextMarquee = ({
   className,
   itemClassName,
   decorative = false,
-  spokenItems = items,
 }: TextMarqueeProps) => (
   <div className={clsx("overflow-hidden", className)}>
     {!decorative && (
       <ul className="sr-only">
         {/* Phrases may repeat on purpose, and the run never reorders, so position is the identity. */}
-        {spokenItems.map((item, index) => <li key={`${index}-${item}`}>{item}</li>)}
+        {items.map((item, index) => <li key={`${index}-${item}`}>{item}</li>)}
       </ul>
     )}
     <Marquee
