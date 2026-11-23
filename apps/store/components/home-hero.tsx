@@ -69,7 +69,7 @@ const TAKEOVER_WALL: WallTile[] = [
  */
 export function HomeHero() {
   return (
-    <section data-analytics-placement="home_hero" data-analytics-section="home_hero" aria-label="Ryan Meetup merch" className="relative">
+    <section data-analytics-placement="home_hero" data-analytics-section="home_hero" aria-label="Ryan Meetup merch" className="relative border-b border-black/10 dark:border-white/10">
       <SaleTakeoverSwitch backdrop={TAKEOVER_BACKDROP} tiles={TAKEOVER_WALL}>
         <PhotoWall
           tiles={WALL}
