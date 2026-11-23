@@ -32,7 +32,6 @@ const WALL: WallTile[] = [
       { src: "/hero/ryan-ryan-ryan-cap.jpg", alt: "A Ryan pulling down a black cap embroidered with Ryan three times in red, yellow, and blue", objectPosition: "50% 30%" },
       { src: "/hero/ryans-not-a-cult-beanie.jpg", alt: "A Ryan with a skateboard on one shoulder, wearing a black beanie stitched with Ryans and Not a cult", objectPosition: "50% 40%" },
       { src: "/hero/ryan-beanie-and-cap-pair.jpg", alt: "Two smiling Ryans by a chain-link fence, one in a name tag tee and beanie, the other in a yellow Ryan Meetup chain tee and cap", objectPosition: "50% 35%" },
-      { src: "/hero/i-heart-ry-tee.jpg", alt: "A Ryan grinning from a velvet couch in an I heart RY tee, holding a Ryan Meetup cap", objectPosition: "50% 30%" },
     ],
   },
   {
