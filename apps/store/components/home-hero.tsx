@@ -1,7 +1,6 @@
 import { Button, Heading, Text } from "@ryanmeetup/ui";
 import Image from "next/image";
 import { FiArrowRight } from "react-icons/fi";
-import { HomeMarquee } from "@/components/home-marquee";
 import { PhotoWall } from "@/components/photo-wall";
 import type { WallTile } from "@/components/photo-wall";
 import { SaleTakeoverSwitch } from "@/components/sale-takeover";
@@ -66,9 +65,9 @@ const TAKEOVER_WALL: WallTile[] = [
 
 /**
  * The home page opener (or the running sale's takeover, when it asks for one): community photos edge to edge, the name tag and headline set large
- * over a dark fade, and the marquee underneath.
+ * over a dark fade. The band under it (HomeMarquee) is parked for now; see components/home-marquee.tsx.
  */
-export function HomeHero({ bandFacts }: { bandFacts: string[] }) {
+export function HomeHero() {
   return (
     <section data-analytics-placement="home_hero" data-analytics-section="home_hero" aria-label="Ryan Meetup merch" className="relative">
       <SaleTakeoverSwitch backdrop={TAKEOVER_BACKDROP} tiles={TAKEOVER_WALL}>
@@ -122,7 +121,6 @@ export function HomeHero({ bandFacts }: { bandFacts: string[] }) {
           </div>
         </PhotoWall>
       </SaleTakeoverSwitch>
-      <HomeMarquee facts={bandFacts} />
     </section>
   );
 }
