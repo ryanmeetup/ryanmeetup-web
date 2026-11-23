@@ -439,7 +439,7 @@ test("the home page opens doors to collections, spotlights one listing, and keep
   await expect(main.getByRole("link", { name: "Shop All", exact: true })).toHaveCount(0);
   // The demo store has no policy or Markets, so the strip keeps only the always-true production line.
   const shipping = main.getByRole("region", { name: "Shipping and production" });
-  await expect(shipping.getByRole("listitem")).toHaveText([/^Made to order:? ?Made for you, then it ships$/]);
+  await expect(shipping.getByRole("listitem")).toHaveText([/^Made to order:? ?Made for you, then it ships ?Shipping details$/]);
   await expect(shipping.getByRole("link", { name: "Shipping details" })).toHaveAttribute("href", "/policies/shipping-policy");
   await expect(main.locator("section[data-analytics-section]").nth(2)).toHaveAttribute("data-analytics-section", "home_favorites");
   await expect(main.locator("section[data-analytics-section]").nth(3)).toHaveAttribute("data-analytics-section", "home_shipping");
