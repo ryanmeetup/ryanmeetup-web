@@ -31,10 +31,14 @@ export function usePromotion() {
   return useContext(PromotionContext);
 }
 
+// Keyed by sale, so dismissing this one doesn't hide the next.
+function useBannerDismissed(promotion: Promotion | null) {
+  return useDismissed(`store:promotion-dismissed:${promotion?.name ?? ""}`);
+}
+
 export function PromotionBanner() {
   const promotion = usePromotion();
-  // Keyed by sale, so dismissing this one doesn't hide the next.
-  const [dismissed, dismiss] = useDismissed(`store:promotion-dismissed:${promotion?.name ?? ""}`);
+  const [dismissed, dismiss] = useBannerDismissed(promotion);
   if (!promotion || dismissed) return null;
   return (
     <Banner
@@ -61,7 +65,7 @@ export function PromotionBanner() {
   );
 }
 
-/** The running sale's offer and deadline, beside a product's price or in the home hero. */
+/** The running sale's offer and deadline, beside a product's price. */
 export function PromotionNote({ className }: { className?: string }) {
   const promotion = usePromotion();
   if (!promotion) return null;
@@ -72,6 +76,17 @@ export function PromotionNote({ className }: { className?: string }) {
       <span><strong className="font-semibold">{promotion.name}:</strong> {describeTiers(promotion.tiers)} through {promotion.endsLabel}.</span>
     </p>
   );
+}
+
+/**
+ * The home hero's copy of the offer, shown only once the banner is dismissed: closing the
+ * banner quiets the sale rather than hiding it, and phones never get the offer twice.
+ */
+export function HeroPromotionNote({ className }: { className?: string }) {
+  const promotion = usePromotion();
+  const [dismissed] = useBannerDismissed(promotion);
+  if (!dismissed) return null;
+  return <PromotionNote className={className} />;
 }
 
 /** Where the cart stands against the sale's tiers. */
