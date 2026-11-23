@@ -117,6 +117,9 @@ test("reviewed products carry storefront links and thumbnails, and a failed look
   const grouped = await loadMyReviewPage(null, { ...setup().deps, productCards: async () => ({ "100": { ...card, href: "/products/name-tag-shirt?design=ryan" } }) });
   expect(grouped.status === "ready" && grouped.view.products["100"].href).toBe("/products/name-tag-shirt?design=ryan#reviews");
   expect(grouped.status === "ready" && myReviewViewSchema(JSON.parse(JSON.stringify(grouped.view)))).toBeTruthy();
+  // A color-split listing is linked by color; the client must accept it or reloading after a change fails.
+  const colored = await loadMyReviewPage(null, { ...setup().deps, productCards: async () => ({ "100": { ...card, href: "/products/super-ryan-shirt?color=black" } }) });
+  expect(colored.status === "ready" && myReviewViewSchema(JSON.parse(JSON.stringify(colored.view)))).toBeTruthy();
   const failed=await loadMyReviewPage(null,{...setup().deps,productCards:async()=>{throw new Error("Shopify down");}});
   expect(failed.status==="ready" && failed.view.products).toEqual({});
   const view=found.status==="ready" ? found.view : null;

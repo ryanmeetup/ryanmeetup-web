@@ -10,7 +10,7 @@ const short = (value: unknown, max: number) => typeof value === "string" && [...
 function productSchema(value: unknown): value is MyReviewProduct {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const { href, image, options, ...rest } = value as Record<string, unknown>;
-  if (Object.keys(rest).length || typeof href !== "string" || !/^\/products\/[^/?#\s]{1,255}(?:\?design=[^&#\s]{1,255})?#reviews$/.test(href)) return false;
+  if (Object.keys(rest).length || typeof href !== "string" || !/^\/products\/[^/?#\s]{1,255}(?:\?(?:design|color)=[^&#\s]{1,255})?#reviews$/.test(href)) return false;
   if (!Array.isArray(options) || options.length > 3 || !options.every((option) => short(option, 255))) return false;
   if (image === null) return true;
   if (!image || typeof image !== "object" || Array.isArray(image) || Object.keys(image).length !== 2) return false;
