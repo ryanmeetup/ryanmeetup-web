@@ -1,5 +1,6 @@
 import { Button, Heading, Kicker, Text } from "@ryanmeetup/ui";
 import { FaCamera as Camera } from "react-icons/fa";
+import { FiArrowUpRight } from "react-icons/fi";
 
 import type { BaseballTeam } from "@/lib/types";
 import { getSeasonStats } from "@/utils/baseball";
@@ -12,15 +13,17 @@ type BaseballHeroProps = {
 };
 
 // Albums from earlier installments, copied from their Contentful `gallery`
-// entries (also listed on /gallery).
+// entries (also listed on /gallery). Oldest first.
 const PAST_ALBUMS = [
   {
-    title: "Ryan Baseball Classic",
-    href: "https://photos.app.goo.gl/e91wbBpxYyCcaudV9",
-  },
-  {
+    year: 2025,
     title: "Ryans @ Rockies",
     href: "https://photos.app.goo.gl/rTSW8pzCw6TgczcC9",
+  },
+  {
+    year: 2026,
+    title: "Ryan Baseball Classic",
+    href: "https://photos.app.goo.gl/e91wbBpxYyCcaudV9",
   },
 ];
 
@@ -178,11 +181,12 @@ const BaseballHero = ({ teams, seasonRange, hasMerch }: BaseballHeroProps) => {
               size="md"
               variant="secondary"
               leftIcon={<Camera aria-hidden />}
+              rightIcon={<FiArrowUpRight aria-hidden />}
               fullWidth
               className="sm:w-auto"
-              aria-label={`${album.title} photo album (opens in a new tab)`}
+              aria-label={`${album.year} photo album: ${album.title} (opens in a new tab)`}
             >
-              {album.title}
+              {album.year} photo album
             </Button.Link>
           ))}
         </div>
