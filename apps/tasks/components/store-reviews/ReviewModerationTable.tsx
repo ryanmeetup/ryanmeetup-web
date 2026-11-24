@@ -41,7 +41,8 @@ function reviewVersions(review: ModerationReview): { revision: ModerationRevisio
 function ReviewCell({ review }: { review: ModerationReview }) {
   const versions = reviewVersions(review);
   const labelled = versions.length > 1;
-  return <div className="space-y-3">
+  // A table cell ignores max-width, so the cap lives here; long text wraps instead of widening the column.
+  return <div className="space-y-3 @min-[54rem]:max-w-md">
     {versions.map(({ revision, label }, index) => <section key={revision.id} aria-label={label}
       className={`min-w-0 space-y-1 ${index > 0 ? "border-t border-black/10 pt-3 dark:border-white/10" : ""}`}>
       {labelled && <p className="text-[10px] font-semibold uppercase tracking-caps-tight text-black/60 dark:text-white/60">{label}</p>}
@@ -77,7 +78,7 @@ function RowActions({ review, disabled, onSelect, onHistory }: Pick<RowProps, "r
   const { everyday, destructive } = reviewSecondaryActions(review);
   // A lone "Submitted" event repeats what the row already shows.
   const history = review.recentEvents.length > 1;
-  return <div className="flex flex-wrap items-center gap-2 @min-[54rem]:flex-nowrap @min-[54rem]:justify-end">
+  return <div className="flex flex-wrap items-center gap-2 @min-[54rem]:flex-nowrap @min-[54rem]:justify-end @min-[54rem]:gap-1.5">
     {reviewDecisions(review).map((action) => <Button key={action} size="xs" variant={action === "approve" ? "primary" : "secondary"}
       aria-label={`${moderationActionLabel(action, review)} for ${review.item.productTitle}`} disabled={disabled} onClick={() => onSelect(review, action)}>
       {shortDecision(action, review)}
@@ -103,7 +104,7 @@ function ReviewRow({ review, disabled, selectedIds, onToggleReview, onSelect, on
   const photoRevision = review.pending ?? review.rejected ?? review.published ?? review.latest;
   return <ResponsiveTableRow data-testid={`review-${review.id}`}>
     {/* Selection stays at the start of the row, whichever column comes first. */}
-    <ResponsiveTableCell className="@min-[54rem]:max-w-xl">
+    <ResponsiveTableCell>
       <div className="flex items-start gap-3">
         <span className="inline-flex h-5 items-center">
           <ReviewSelectionCheckbox label={`Select review for ${review.item.productTitle}`} checked={selectedIds.has(review.id)}
@@ -122,7 +123,7 @@ function ReviewRow({ review, disabled, selectedIds, onToggleReview, onSelect, on
     </ResponsiveTableCell>
     <ResponsiveTableCell>
       <p className="font-semibold wrap-anywhere">{photoRevision.displayName}</p>
-      <p className="text-xs text-black/70 dark:text-white/70"><time dateTime={photoRevision.submittedAt}>{formatTimestamp(photoRevision.submittedAt)}</time></p>
+      <p className="text-xs text-black/70 @min-[54rem]:whitespace-nowrap dark:text-white/70"><time dateTime={photoRevision.submittedAt}>{formatTimestamp(photoRevision.submittedAt)}</time></p>
     </ResponsiveTableCell>
     <ResponsiveTableCell><StatusCell review={review} /></ResponsiveTableCell>
     <ResponsiveTableCell><RowActions review={review} disabled={disabled} onSelect={onSelect} onHistory={onHistory} /></ResponsiveTableCell>
@@ -130,9 +131,9 @@ function ReviewRow({ review, disabled, selectedIds, onToggleReview, onSelect, on
 }
 
 const columns = [
-  // Review text takes the remaining space; product names set their own width.
+  // Auto layout sizes columns to content: the review text is capped in its cell, the reviewer date stays on one line.
   { label: "Review" }, { label: "Product" }, { label: "Photos", width: "w-20" },
-  { label: "Reviewer", width: "w-32" }, { label: "Status", width: "w-28" }, { label: "Actions", width: "w-48", hideLabel: true },
+  { label: "Reviewer" }, { label: "Status" }, { label: "Actions", hideLabel: true },
 ];
 
 /** The moderation queue: one row per review, every detail in its own column. */
