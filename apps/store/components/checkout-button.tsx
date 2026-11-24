@@ -16,7 +16,11 @@ export function CheckoutButton({ className = "", placement }: { className?: stri
   }
   return (
     <div className={className}>
-      <a href={cart.checkoutUrl} data-analytics-ignore onClick={() => trackStoreEvent("checkout_clicked", { placement, subtotal: `${cart.cost.subtotalAmount.currencyCode} ${cart.cost.subtotalAmount.amount}` })} aria-describedby={assuranceId} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-black/60 bg-black px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-black/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:border-white/10 dark:bg-white dark:text-black dark:hover:bg-white/90">Checkout <FiArrowRight aria-hidden /></a>
+      {/* Shopify's hosted checkout is another origin, so this is a full page load, not a client navigation. */}
+      <Button.Link href={cart.checkoutUrl} size="lg" fullWidth rightIcon={<FiArrowRight aria-hidden />} data-analytics-ignore aria-describedby={assuranceId}
+        onClick={() => trackStoreEvent("checkout_clicked", { placement, subtotal: `${cart.cost.subtotalAmount.currencyCode} ${cart.cost.subtotalAmount.amount}` })}>
+        Checkout
+      </Button.Link>
       <p id={assuranceId} className="mt-2 flex items-center justify-center gap-1.5 text-xs font-semibold uppercase tracking-caps-tight text-black/70 dark:text-white/70">
         <FiLock aria-hidden /> Secure checkout by Shopify
       </p>
