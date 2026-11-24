@@ -128,7 +128,7 @@ export function ProductCard({ product, eager = false, from }: { product: Product
         />
       }
       // The earned label reads above the title, leaving the photo to its sticker, quick add and price.
-      kicker={<HighlightLabel highlight={product.highlight} />}
+      kicker={product.highlight && <HighlightLabel highlight={product.highlight} />}
       title={<>{product.title}{product.externalUrl && <span className="sr-only"> (opens in a new tab)</span>}</>}
       after={<>
       {/* One row only; padding inside the clip keeps focus and pressed rings visible.
