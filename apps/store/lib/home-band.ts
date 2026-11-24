@@ -1,5 +1,5 @@
 import type { ReviewSummary } from "@ryanmeetup/reviews";
-import { MIN_LISTING_RATING_REVIEWS } from "./listing-ratings";
+import { MIN_LISTING_RATING_REVIEWS } from "./rating-threshold";
 import { describeShippingRegions, getProductionTime } from "./product-guidance";
 import type { ShopPolicy } from "./types";
 import type { Promotion } from "./promotion";

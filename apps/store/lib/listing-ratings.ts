@@ -1,14 +1,8 @@
 import type { ReviewSummary } from "@ryanmeetup/reviews";
 import { numericProductId } from "./custom-reviews";
+import { MIN_LISTING_RATING_REVIEWS } from "./rating-threshold";
 import { getReviewBackend } from "./review-backend";
 import type { CatalogSections, ListingRating, ProductListing } from "./types";
-
-/**
- * Cards show a rating only from this many published reviews. Below it, one
- * outlier moves the average too far: a single 1-star among 5-stars still
- * leaves five reviews at 4.2, where three would sink to 3.7.
- */
-export const MIN_LISTING_RATING_REVIEWS = 5;
 
 const SUMMARY_BATCH = 50;
 

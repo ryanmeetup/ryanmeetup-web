@@ -1,7 +1,8 @@
 import { expect, test } from "@playwright/test";
 import { reviewResultSchema } from "@ryanmeetup/reviews";
 import { createReviewBackend, ReviewBackendError } from "../lib/review-backend";
-import { MIN_LISTING_RATING_REVIEWS, poolListingRating, withListingRatings } from "../lib/listing-ratings";
+import { poolListingRating, withListingRatings } from "../lib/listing-ratings";
+import { MIN_LISTING_RATING_REVIEWS } from "../lib/rating-threshold";
 import type { ProductListing } from "../lib/types";
 import { fakeSupabase, supabaseCall, type SupabaseCall } from "./fixtures/customer-auth-backend";
 
