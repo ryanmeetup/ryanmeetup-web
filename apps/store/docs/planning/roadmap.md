@@ -1,7 +1,7 @@
 # Store readiness and remaining work
 
-Reviewed November 23, 2026 against the repository and the prior dated operating
-records. The store already accepts orders; this is a remaining-work list, not
+Reviewed November 24, 2026 against the repository, the live storefront and the
+prior dated operating records. The store launched publicly and accepts orders; this is a remaining-work list, not
 an assertion that checkout is still waiting to launch. Etsy stays alongside it
 until Ryan chooses otherwise.
 
@@ -41,6 +41,17 @@ old "not started" or "done" label.
   from Shopify's `productRecommendations` (intent `RELATED`), then shared
   collections, then the same product type; grouped designs collapse into one
   listing and never recommend their own listing, with a browse fallback.
+- Lighter, cached storefront (November 24): product cards receive only the
+  fields they read and share one image object per photo, cutting live-catalog
+  pages by about 35–40% (`/apparel` 141 → 89 KB gzipped). Public review reads
+  that pages render are cached for a minute, so the home page is served from
+  the CDN again; Tasks moderation reaches it within that minute (see
+  [moderation](../reference/review-moderation.md#when-decisions-reach-the-storefront)).
+  Product pages stay per-request because they check the visitor's review
+  sign-in and render the `?color=` choice on the server.
+- Offer-level structured data (November 24): every product offer states the
+  no-returns policy for checkout's countries. Shipping is not marked up, since
+  rates come from checkout's weight tiers; see item 15.
 - Six newest published reviews on the home page, with ratings, approved photos
   and links to their product reviews.
 - A paginated shop-wide review feed at `/reviews` with debounced search,
@@ -76,7 +87,10 @@ Item numbers remain stable for existing references.
 | --- | --- | --- |
 | 4 | [Shopify/Printful operating setup](#4-shopify-and-printful-operating-setup) | NY sales tax (registration pending), accountant questions and January rate cleanup. |
 | 8 | [Note to seller and personalization](#8-note-to-seller-and-personalization) | Neither storefront input is implemented; confirm which personalization is actually needed. |
-| 14 | [Store reviews](#14-store-reviews) | Text and photo publication and cleanup built; live proof, monitoring, retention and recovery remain. |
+| 14 | [Store reviews](#14-store-reviews) | Text and photo publication and cleanup built; set `CRON_SECRET` first (the daily cleanup refuses every run without it), then live proof, monitoring, retention and recovery. |
+| 15 | [Search and shopping discovery](#15-search-and-shopping-discovery) | Sitemap and structured data are live; submit them to Search Console and decide on free Shopping listings. |
+| 16 | [Checkout email recovery](#16-checkout-email-recovery) | No storefront email capture; confirm abandoned-checkout emails and decide on checkout marketing consent. |
+| 17 | [Black RYDay wind-down](#17-black-ryday-wind-down) | Due after the sale ends November 30, 2026 (ET). |
 
 ### 4. Shopify and Printful operating setup
 
@@ -183,6 +197,52 @@ unverified product feedback. All submissions wait for approval.
 **Complete when:** the selected text/media scope has live lifecycle and recovery
 proof. A photo requirement is not met merely by private uploads or text approval.
 Judge.me cannot be used as a recovery provider; see [operations](../how-to/review-operations.md).
+
+### 15. Search and shopping discovery
+
+The sitemap lists every indexable page and product pages carry `ProductGroup`
+data with per-offer return policies (see [metadata](../reference/metadata.md#structured-data)).
+
+- [ ] Add `store.ryanmeetup.com` to Google Search Console and submit
+      `https://store.ryanmeetup.com/sitemap.xml`.
+- [ ] Enter shipping (and the no-returns policy) in Search Console's shipping
+      and returns settings. Google uses these ahead of page markup, and they are
+      the only place shipping costs are stated, because the markup omits rates
+      that only checkout quotes.
+- [ ] Decide whether to add Shopify's Google & YouTube channel for free Shopping
+      listings. Before relying on it, confirm Merchant Center accepts product
+      links that land on `checkout.ryanmeetup.com/products/…` and redirect here
+      by script, with `noindex`; see [hosted pages](../how-to/shopify-hosted-pages.md).
+
+**Complete when:** the sitemap is processed without errors, the Rich Results
+Test passes for a deployed product, and the Shopping-channel decision is recorded.
+
+### 16. Checkout email recovery
+
+The storefront collects no email addresses. The RyanMeetup.com newsletter covers
+events and general news and stays separate.
+
+- [ ] Confirm abandoned-checkout emails are on in Shopify Admin (Marketing
+      automations or Settings → Notifications), branded like the other notifications.
+- [ ] Decide whether checkout shows Shopify's "email me with news and offers"
+      checkbox. It collects only buyers who opt in, kept in Shopify.
+
+**Complete when:** both settings are confirmed and recorded here.
+
+### 17. Black RYDay wind-down
+
+After the sale ends at 11:59 p.m. ET on Monday, November 30, 2026:
+
+- [ ] Remove the three Black RYDay automatic discounts in Shopify Admin.
+- [ ] Set `currentPromotion` to `null` in `lib/promotion.ts`; the storefront
+      already stops advertising the sale at its end time.
+- [ ] Decide on the launch bug banner (`<BugReportBanner />` in the root
+      layout). It is hidden while a sale runs and reappears on December 1 with
+      "Ryan-tested, not yet Ryan-proofed" and a promise of a discount code for
+      reports. Keep it, rewrite it, or retire it; the footer's Report a bug link stays either way.
+
+**Complete when:** the discounts are gone, the promotion is null, and the
+banner decision is deployed.
 
 ## Decisions retained
 
