@@ -11,7 +11,7 @@ import {
   RichTextarea,
 } from "@ryanmeetup/ui";
 import { FiClock, FiEdit2, FiFileText } from "react-icons/fi";
-import { EditorSurface } from "@/components/global";
+import { EditorSurface, editorTriggers } from "@/components/global";
 import { formatTimestamp } from "@/lib/date-format";
 import { noteTitle } from "@/lib/resources/notes";
 import type {
@@ -24,9 +24,12 @@ import type { Task } from "@/lib/tasks/task-types";
 import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import { NoteComments } from "./NoteComments";
 import { NoteLinks } from "./NoteLinks";
+import { NoteActions } from "./NoteItemParts";
+import type { NoteActionHandlers } from "./useNoteActions";
 
 export function NoteModal({
   note,
+  actions,
   category,
   profiles,
   demoMode,
@@ -48,6 +51,7 @@ export function NoteModal({
    */
   presentation?: "modal" | "page";
   note: Note;
+  actions: NoteActionHandlers;
   category: Category | null;
   profiles: WorkspaceData["profiles"];
   demoMode: boolean;
@@ -86,15 +90,24 @@ export function NoteModal({
   const page = presentation === "page";
   const surface = {
     open: true,
-    closable: !saving,
+    closable: !saving && !actions.disabled,
     title: editing ? `Edit ${noteTitle(note)}` : noteTitle(note),
     description: editing
       ? "Give the note a title worth scanning and keep the details in the body."
       : undefined,
     size: "lg" as const,
     setOpen: (open: boolean) => {
-      if (!open && !saving) onClose();
+      if (!open && !saving && !actions.disabled) onClose();
     },
+    supportingActions: !editing ? (
+      <NoteActions
+        {...actions}
+        note={note}
+        // The detail surface is already selected; Edit stays on that surface.
+        triggers={editorTriggers("modal")}
+        onEdit={startEditing}
+      />
+    ) : undefined,
     actions: editing ? (
       <ModalActions
         cancelLabel="Cancel"
@@ -113,13 +126,20 @@ export function NoteModal({
           size="sm"
           className="w-full sm:w-auto"
           leftIcon={<FiEdit2 aria-hidden />}
+          disabled={actions.disabled}
           onClick={startEditing}
         >
           Edit note
         </Button>
       )
     ) : archived ? (
-      <Button type="button" variant="secondary" size="sm" onClick={onClose}>
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        disabled={actions.disabled}
+        onClick={onClose}
+      >
         Close
       </Button>
     ) : (
@@ -127,6 +147,8 @@ export function NoteModal({
         cancelLabel="Close"
         confirmIcon={<FiEdit2 />}
         confirmLabel="Edit note"
+        cancelDisabled={actions.disabled}
+        confirmDisabled={actions.disabled}
         onCancel={onClose}
         onConfirm={startEditing}
       />

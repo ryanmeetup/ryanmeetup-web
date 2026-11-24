@@ -12,6 +12,8 @@ import { noteEditPath, notePath } from "@/lib/resources/notes";
 import type { Note, NoteComment } from "@/lib/resources/resource-types";
 import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import { NoteModal } from "./NoteModal";
+import { NoteActionDialogs } from "./NoteActionDialogs";
+import { useNoteActions } from "./useNoteActions";
 import { saveNoteDraft } from "./note-requests";
 
 /**
@@ -40,6 +42,14 @@ export function NotePageClient({
     initialEditing && !initialNote.archived_at,
   );
   const router = useRouter();
+  const noteActions = useNoteActions({
+    demoMode,
+    canConvertToProject: demoMode || data.currentProfile.app_role === "owner",
+    onUpdate: setNote,
+    onRemove: (_removed, reason) => {
+      if (reason === "deleted") router.push("/notes");
+    },
+  });
 
   function setEditing(next: boolean) {
     setEditingState(next);
@@ -62,9 +72,11 @@ export function NotePageClient({
       <NoteModal
         presentation="page"
         note={note}
+        actions={noteActions.menuActions}
         category={
-          data.categories.find((category) => category.id === note.category_id) ??
-          null
+          data.categories.find(
+            (category) => category.id === note.category_id,
+          ) ?? null
         }
         profiles={data.profiles}
         demoMode={demoMode}
@@ -90,6 +102,12 @@ export function NotePageClient({
           }
         }}
         onClose={() => router.push("/notes")}
+      />
+      <NoteActionDialogs
+        actions={noteActions}
+        data={data}
+        setData={setData}
+        demoMode={demoMode}
       />
     </WorkspacePageShell>
   );

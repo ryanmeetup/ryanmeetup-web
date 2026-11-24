@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useQueryParamState, useSearchFilter } from "@ryanmeetup/hooks";
 import {
   Button,
-  ConfirmationDialog,
   DropdownSelect,
   EmptyState,
   ManagementSurface,
@@ -20,29 +18,20 @@ import {
   ResponsiveTable,
   WorkspacePageShell,
 } from "@/components/global";
-import { NewTaskModal } from "@/components/tasks";
-import { ProjectsModal } from "@/components/projects";
 import {
   filterNotes,
   groupNotesByCategory,
-  linkNoteToProject,
-  noteConversionDraft,
-  noteConversionProjectDraft,
   noteTitle,
 } from "@/lib/resources/notes";
-import type {
-  Note,
-  NoteComment,
-  Project,
-} from "@/lib/resources/resource-types";
-import type { Task } from "@/lib/tasks/task-types";
-import { taskPath } from "@/lib/tasks/task-key";
+import type { Note, NoteComment } from "@/lib/resources/resource-types";
 import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import { mutate } from "@/lib/mutation-client";
 import { archiveFilter } from "@/lib/resources/resource-management";
 import { NoteRow, noteColumns } from "./NoteRow";
 import { NoteCard } from "./NoteCard";
 import { NoteModal } from "./NoteModal";
+import { NoteActionDialogs } from "./NoteActionDialogs";
+import { useNoteActions } from "./useNoteActions";
 import { saveNoteDraft } from "./note-requests";
 import { NewNoteModal, type NewNoteDraft } from "./NewNoteModal";
 import { errorMessage } from "@/lib/presentation";
@@ -57,7 +46,6 @@ export function NotesPageClient({
   initialComments: NoteComment[];
   demoMode: boolean;
 }) {
-  const router = useRouter();
   const [data, setData] = useState(initialData);
   const [notes, setNotes] = useState(initialNotes);
   const [comments, setComments] = useState(initialComments);
@@ -77,14 +65,21 @@ export function NotesPageClient({
   const showArchived = archiveFilter(noteStatusParam) === "archived";
   const [openNoteId, setOpenNoteId] = useState<string | null>(null);
   const [editingNote, setEditingNote] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<Note | null>(null);
-  const [convertTarget, setConvertTarget] = useState<Note | null>(null);
-  const [convertProjectTarget, setConvertProjectTarget] = useState<Note | null>(
-    null,
-  );
   const triggers = editorTriggers(data.currentProfile.editor_surface);
-  const canConvertToProject =
-    demoMode || data.currentProfile.app_role === "owner";
+  const noteActions = useNoteActions({
+    demoMode,
+    canConvertToProject: demoMode || data.currentProfile.app_role === "owner",
+    onUpdate: (updated) =>
+      setNotes((current) =>
+        current.map((note) => (note.id === updated.id ? updated : note)),
+      ),
+    onRemove: (removed) => {
+      setNotes((current) => current.filter((note) => note.id !== removed.id));
+      setComments((current) =>
+        current.filter((comment) => comment.note_id !== removed.id),
+      );
+    },
+  });
 
   async function createNote({ title, body, categoryId }: NewNoteDraft) {
     if (!title.trim() || !body.trim()) return false;
@@ -131,61 +126,6 @@ export function NotesPageClient({
     }
   }
 
-  function toggleArchived(note: Note) {
-    void updateNote({
-      ...note,
-      archived_at: note.archived_at ? null : new Date().toISOString(),
-    });
-  }
-
-  async function updateNote(next: Note) {
-    const previous = notes.find((item) => item.id === next.id);
-    setNotes((current) =>
-      current.map((item) => (item.id === next.id ? next : item)),
-    );
-    if (demoMode || previous?.archived_at === next.archived_at) return;
-    try {
-      const result = await mutate<{ note: Note }>("/api/notes", {
-        method: "PATCH",
-        body: JSON.stringify({
-          id: next.id,
-          archived: Boolean(next.archived_at),
-        }),
-      });
-      setNotes((current) =>
-        current.map((item) => (item.id === next.id ? result.note : item)),
-      );
-      toast.success(next.archived_at ? "Note archived." : "Note restored.");
-    } catch (error) {
-      if (previous)
-        setNotes((current) =>
-          current.map((item) => (item.id === next.id ? previous : item)),
-        );
-      toast.error(errorMessage(error, "The note could not be updated."));
-    }
-  }
-
-  async function deleteNote() {
-    if (!deleteTarget) return;
-    try {
-      if (!demoMode)
-        await mutate("/api/notes", {
-          method: "DELETE",
-          body: JSON.stringify({ id: deleteTarget.id }),
-        });
-      setNotes((current) =>
-        current.filter((note) => note.id !== deleteTarget.id),
-      );
-      setComments((current) =>
-        current.filter((comment) => comment.note_id !== deleteTarget.id),
-      );
-      setDeleteTarget(null);
-      toast.success("Note deleted.");
-    } catch (error) {
-      toast.error(errorMessage(error, "The note could not be deleted."));
-    }
-  }
-
   const openNote = notes.find((note) => note.id === openNoteId) ?? null;
   const activeNotes = filterNotes(notes, showArchived);
   const noteGroups = groupNotesByCategory(activeNotes, data.categories);
@@ -215,69 +155,6 @@ export function NotesPageClient({
         .toLowerCase(),
     queryParam: "note-search",
   });
-  const conversionDraft = convertTarget
-    ? noteConversionDraft(convertTarget, data.statuses, data.currentProfile.id)
-    : null;
-
-  async function markConverted(task: Task) {
-    if (!convertTarget) return;
-    const convertedNote = convertTarget;
-    try {
-      if (!demoMode)
-        await mutate("/api/notes", {
-          method: "DELETE",
-          body: JSON.stringify({ id: convertedNote.id }),
-        });
-      setNotes((current) =>
-        current.filter((note) => note.id !== convertedNote.id),
-      );
-      setComments((current) =>
-        current.filter((comment) => comment.note_id !== convertedNote.id),
-      );
-      toast.success("Note converted to a task and deleted.");
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? `The task was created, but the note could not be deleted: ${error.message}`
-          : "The task was created, but the note could not be deleted.",
-      );
-    } finally {
-      setConvertTarget(null);
-      router.push(taskPath(task));
-    }
-  }
-
-  const projectConversionDraft = convertProjectTarget
-    ? noteConversionProjectDraft(convertProjectTarget)
-    : null;
-
-  async function markConvertedProject(project: Project) {
-    if (!convertProjectTarget) return;
-    try {
-      const updated = demoMode
-        ? linkNoteToProject(convertProjectTarget, project)
-        : (
-            await mutate<{ note: Note }>("/api/notes", {
-              method: "PATCH",
-              body: JSON.stringify({
-                id: convertProjectTarget.id,
-                convertedProjectId: project.id,
-              }),
-            })
-          ).note;
-      setNotes((current) =>
-        current.map((note) => (note.id === updated.id ? updated : note)),
-      );
-      toast.success("Note converted to a project.");
-    } catch {
-      toast.error(
-        "The project was created, but the note could not be linked to it.",
-      );
-    } finally {
-      setConvertProjectTarget(null);
-    }
-  }
-
   const noteItems = visibleNotes.map((note) => {
     const item = (
       <NoteItem
@@ -289,7 +166,7 @@ export function NotesPageClient({
           ) ?? null
         }
         profiles={data.profiles}
-        canConvertToProject={canConvertToProject}
+        {...noteActions.menuActions}
         commentCount={
           comments.filter((comment) => comment.note_id === note.id).length
         }
@@ -307,10 +184,6 @@ export function NotesPageClient({
           setEditingNote(true);
           setOpenNoteId(next.id);
         }}
-        onArchive={toggleArchived}
-        onConvert={setConvertTarget}
-        onConvertToProject={setConvertProjectTarget}
-        onDelete={setDeleteTarget}
         triggers={triggers}
       />
     );
@@ -508,6 +381,7 @@ export function NotesPageClient({
         <NoteModal
           key={openNote.id}
           note={openNote}
+          actions={noteActions.menuActions}
           category={
             data.categories.find(
               (category) => category.id === openNote.category_id,
@@ -548,41 +422,12 @@ export function NotesPageClient({
         onCreate={createNote}
       />
 
-      <ConfirmationDialog
-        open={Boolean(deleteTarget)}
-        setOpen={(open) => !open && setDeleteTarget(null)}
-        title="Delete this note?"
-        description="This permanently removes the shared note. This cannot be undone."
-        confirmLabel="Delete note"
-        destructive
-        onConfirm={() => void deleteNote()}
+      <NoteActionDialogs
+        actions={noteActions}
+        data={data}
+        setData={setData}
+        demoMode={demoMode}
       />
-
-      {convertTarget && conversionDraft && (
-        <NewTaskModal
-          key={convertTarget.id}
-          data={data}
-          setData={setData}
-          demoMode={demoMode}
-          open
-          setOpen={(open) => !open && setConvertTarget(null)}
-          initialDraft={conversionDraft}
-          onCreated={markConverted}
-        />
-      )}
-
-      {convertProjectTarget && projectConversionDraft && (
-        <ProjectsModal
-          key={convertProjectTarget.id}
-          modal={{
-            open: true,
-            setOpen: (open) => !open && setConvertProjectTarget(null),
-          }}
-          workspace={{ data, setData, demoMode }}
-          options={{ createOnly: true, initialDraft: projectConversionDraft }}
-          events={{ onCreated: markConvertedProject }}
-        />
-      )}
     </>
   );
 }

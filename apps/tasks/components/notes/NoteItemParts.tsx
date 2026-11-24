@@ -43,7 +43,21 @@ export type NoteItemProps = {
   onConvert: (note: Note) => void;
   onConvertToProject: (note: Note) => void;
   onDelete: (note: Note) => void;
+  disabled?: boolean;
 };
+
+export type NoteActionsProps = Pick<
+  NoteItemProps,
+  | "note"
+  | "canConvertToProject"
+  | "onEdit"
+  | "onArchive"
+  | "onConvert"
+  | "onConvertToProject"
+  | "onDelete"
+  | "triggers"
+  | "disabled"
+>;
 
 export function NoteTitle({
   note,
@@ -85,14 +99,18 @@ export function NoteActions({
   onConvertToProject,
   onDelete,
   triggers,
-}: NoteItemProps) {
+  disabled,
+}: NoteActionsProps) {
   const title = noteTitle(note);
   const archived = Boolean(note.archived_at);
   const convertible =
     !note.converted_task_id && !note.converted_project_id && !archived;
   return (
     <DropdownMenu>
-      <ResponsiveTableMenuButton label={`More actions for “${title}”`} />
+      <ResponsiveTableMenuButton
+        label={`More actions for “${title}”`}
+        disabled={disabled}
+      />
       <DropdownMenuItems align="end">
         {convertible && (
           <>
