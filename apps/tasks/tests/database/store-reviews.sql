@@ -158,6 +158,11 @@ insert into ids select 'mod-high', review_id from pg_temp.submit('802', shop => 
 update public.store_reviews set created_at = now() - interval '1 day' where id = (select id from ids where name = 'mod-low');
 select is((select count(*) from pg_temp.queue()), 2::bigint, 'the queue includes low and high ratings');
 select is((select r->>'id' from pg_temp.queue() r limit 1), (select id::text from ids where name = 'mod-low'), 'oldest first, independent of rating');
+select is((select r->>'id' from public.store_review_moderation_page_v5('00000000-0000-4000-8000-000000000901', '345', 'pending', null, 21) r limit 1),
+  (select id::text from ids where name = 'mod-high'), 'the staff queue lists the newest review first');
+select is((select array_agg(r->>'id') from public.store_review_moderation_page_v5('00000000-0000-4000-8000-000000000901', '345', 'all', null, 21,
+  (select created_at from public.store_reviews where id = (select id from ids where name = 'mod-high')), (select id from ids where name = 'mod-high')) r),
+  array[(select id::text from ids where name = 'mod-low')], 'newest-first paging continues with older reviews');
 select is((select count(*) from public.store_review_moderation_page('00000000-0000-4000-8000-000000000901', '999', 'all', 21)), 0::bigint, 'staff reads pin the shop');
 select ok((select bool_and(r::text !~ 'customer_subject|buyer-a|order_id|9000') from pg_temp.queue() r), 'staff queue omits order and buyer identity');
 select is((select count(*) from public.store_review_moderation_page('00000000-0000-4000-8000-000000000901', '345', 'all', 21,

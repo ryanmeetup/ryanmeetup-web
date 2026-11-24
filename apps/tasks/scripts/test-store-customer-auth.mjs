@@ -40,6 +40,7 @@ const halfStarRatingsMigration = fileURLToPath(new URL("../supabase/migrations/2
 const etsyImportMigration = fileURLToPath(new URL("../supabase/migrations/20261121150000_store_etsy_review_import.sql", import.meta.url));
 const reviewSearchMigration = fileURLToPath(new URL("../supabase/migrations/20261121160000_store_review_search_pages.sql", import.meta.url));
 const cleanupMigration = fileURLToPath(new URL("../supabase/migrations/20261121180000_store_review_cleanup.sql", import.meta.url));
+const moderationNewestFirstMigration = fileURLToPath(new URL("../supabase/migrations/20261123010000_store_review_moderation_newest_first.sql", import.meta.url));
 const photoRejectionReasonsMigration = fileURLToPath(new URL("../supabase/migrations/20261121070000_store_review_photo_rejection_reasons.sql", import.meta.url));
 
 function run(command, args, input, inherit = false) {
@@ -132,6 +133,8 @@ try {
     // After the Etsy replay, which restores store_public_reviews with its own projection.
     sql(readFileSync(reviewSearchMigration, "utf8"));
     sql(readFileSync(cleanupMigration, "utf8"));
+    // After the Etsy replay, which restores the oldest-first moderation queue.
+    sql(readFileSync(moderationNewestFirstMigration, "utf8"));
     console.log("PASS: full migration reset and idempotent auth and review migration replay");
     run("supabase", ["test", "db", "--workdir", testRoot, join(appRoot, "tests/database/store-customer-auth.sql"), join(appRoot, "tests/database/store-reviews.sql"), join(appRoot, "tests/database/store-buyer-reviews.sql"), join(appRoot, "tests/database/store-review-photo-staging.sql"), join(appRoot, "tests/database/store-review-photo-attachments.sql"), join(appRoot, "tests/database/store-review-photo-reads.sql"), join(appRoot, "tests/database/store-review-deletions.sql"), join(appRoot, "tests/database/store-review-photo-publication.sql"), join(appRoot, "tests/database/store-latest-reviews.sql"), join(appRoot, "tests/database/store-review-feed.sql"), join(appRoot, "tests/database/store-review-write-budgets.sql"), join(appRoot, "tests/database/store-review-half-stars.sql"), join(appRoot, "tests/database/store-etsy-reviews.sql"), join(appRoot, "tests/database/store-review-search.sql"), join(appRoot, "tests/database/store-review-cleanup.sql"), join(appRoot, "tests/database/store-review-suggestion-dismissals.sql"), join(appRoot, "supabase/tests/access_control.sql")], undefined, true);
     const integration = spawnSync("npx", ["playwright", "test", "tests/customer-account-storage.spec.ts", "--workers=1"], {

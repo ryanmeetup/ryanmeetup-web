@@ -73,7 +73,7 @@ export function ReviewModerationQueue({ initial, staffNames }: { initial: Modera
       </div>} />
     <Text className="text-sm">{queue.filter === "rejected"
       ? "Rejected text is kept, never deleted. Publish anyway puts it live, as long as the buyer has not written a newer version."
-      : "Oldest first, across every rating. Approve text and photos separately; published content stays live while edits wait."}</Text>
+      : "Newest first, across every rating. Approve text and photos separately; published content stays live while edits wait."}</Text>
     <div role="status" aria-live="polite" className="text-sm text-black/70 empty:hidden dark:text-white/70">
       {/* A saved decision is announced by its toast; repeating it here only left a stale line behind. */}
       {queue.busy && <span className="inline-flex items-center gap-2"><Spinner size={16} />{queue.bulkProgress

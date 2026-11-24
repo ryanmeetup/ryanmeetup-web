@@ -645,7 +645,7 @@ test("fits mobile and desktop boundary widths in both themes", async ({ page }, 
       const second = await card(page, 2).boundingBox();
       expect(first).not.toBeNull();
       expect(second).not.toBeNull();
-      // One review per row, oldest first, at every width.
+      // One review per row at every width.
       expect(second!.y).toBeGreaterThanOrEqual(first!.y + first!.height);
       // Wide screens line the cells up under real column headers.
       if (width >= 1280) await expect(page.getByRole("columnheader", { name: "Reviewer" })).toBeVisible();
