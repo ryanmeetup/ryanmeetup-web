@@ -1,4 +1,5 @@
 import type { PublicReviewReply } from "@ryanmeetup/reviews";
+import type { ListingHighlight } from "./listing-highlights";
 
 export type Money = {
   amount: string;
@@ -81,6 +82,8 @@ export type ProductListing = Product & {
   unreviewed?: true;
   /** Every published review pooled across the listing's designs, below the rating threshold too; absent when they couldn't be read. */
   reviewCount?: number;
+  /** An earned label such as "Best seller"; see `lib/listing-highlights`. */
+  highlight?: ListingHighlight;
 };
 
 export type ListingRating = { average: number; count: number };
