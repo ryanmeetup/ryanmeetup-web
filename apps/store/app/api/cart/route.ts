@@ -8,6 +8,7 @@ import {
   removeCartLine,
   ShopifyUserError,
   updateCartLine,
+  updateCartNote,
 } from "@/lib/shopify";
 import type { Cart } from "@/lib/types";
 
@@ -36,6 +37,8 @@ async function runCartAction(body: NonNullable<ReturnType<typeof parseCartAction
       return withLiveCart(body.cartId, () => updateCartLine(body.cartId, body.lineId, body.quantity), async () => null);
     case "remove":
       return withLiveCart(body.cartId, () => removeCartLine(body.cartId, body.lineId), async () => null);
+    case "note":
+      return withLiveCart(body.cartId, () => updateCartNote(body.cartId, body.note), async () => null);
   }
 }
 

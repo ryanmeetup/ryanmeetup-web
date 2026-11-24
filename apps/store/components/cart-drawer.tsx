@@ -3,6 +3,7 @@
 import { Button, Drawer, ErrorCallout, Pill, Text } from "@ryanmeetup/ui";
 import { formatMoney } from "@/lib/money";
 import { CartLineItem } from "./cart-line";
+import { CartNote } from "./cart-note";
 import { useCart } from "./cart-provider";
 import { CheckoutButton } from "./checkout-button";
 import { CurrencyEstimateNote } from "./currency-estimate-note";
@@ -52,6 +53,8 @@ export function CartDrawer() {
         <div data-analytics-placement="cart_drawer" className="space-y-4" aria-busy={loading}>
           {cart.lines.map((line) => <CartLineItem key={line.id} line={line} compact highlighted={line.merchandise.id === justAdded} />)}
           {error && <ErrorCallout>{error}</ErrorCallout>}
+          {/* In the scrolling body, not the footer, so phones keep checkout in view. */}
+          <CartNote compact className="pt-2" />
         </div>
       ) : (
         <EmptyCartPrompt onNavigate={close} />

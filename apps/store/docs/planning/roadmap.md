@@ -86,7 +86,7 @@ Item numbers remain stable for existing references.
 | # | Work | Current evidence / next action |
 | --- | --- | --- |
 | 4 | [Shopify/Printful operating setup](#4-shopify-and-printful-operating-setup) | NY sales tax (registration pending), accountant questions and January rate cleanup. |
-| 8 | [Note to seller and personalization](#8-note-to-seller-and-personalization) | Neither storefront input is implemented; confirm which personalization is actually needed. |
+| 8 | [Note to seller and personalization](#8-note-to-seller-and-personalization) | Order note built (November 24); confirm it on the first real order, and which personalization is actually needed. |
 | 14 | [Store reviews](#14-store-reviews) | Text and photo publication and cleanup built; set `CRON_SECRET` first (the daily cleanup refuses every run without it), then live proof, monitoring, retention and recovery. |
 | 15 | [Search and shopping discovery](#15-search-and-shopping-discovery) | Sitemap and structured data are live; submit them to Search Console and decide on free Shopping listings. |
 | 16 | [Checkout email recovery](#16-checkout-email-recovery) | No storefront email capture; confirm abandoned-checkout emails and decide on checkout marketing consent. |
@@ -129,10 +129,16 @@ permanent completion criterion.
 
 ### 8. Note to seller and personalization
 
-The cart has no editable order note and the product form has no personalization
-input. Confirm the Etsy listings that need personalization before adding it.
+Since November 24 the cart drawer and cart page share a "Note for Ryan" field
+(500 characters) saved to Shopify's cart note with `cartNoteUpdate`; checkout
+waits for a note still saving. Its copy promises only that Ryan sees it with
+the order, not that it reaches the package. The product form still has no
+personalization input. Confirm the Etsy listings that need personalization
+before adding it.
 
-- Add an order-level note in the cart page/drawer and persist it in Shopify.
+- [ ] On the first real order with a note, confirm it appears on the Shopify
+      order, and record whether Printful receives it (for example on a packing slip)
+      before any copy calls it a gift message.
 - For products that actually require it, model per-line personalization through
   product configuration and cart line attributes, with clear required fields.
 - Verify the data reaches the Shopify order and the fulfillment process; do not

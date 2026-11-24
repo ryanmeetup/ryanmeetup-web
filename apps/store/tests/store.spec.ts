@@ -382,6 +382,26 @@ test("name tag design URLs survive redirects, reloads, and browser history", asy
   await expect(page).toHaveURL(/\/products\/name-tag-shirt\?design=ryan$/);
 });
 
+test("an order note saves from the drawer and follows the cart to the cart page", async ({ page }) => {
+  await seedCart(page);
+  await page.goto("/collections/all");
+  await page.getByRole("button", { name: "Cart with 2 items" }).click();
+  const drawer = page.getByRole("dialog", { name: "Your cart" });
+  const note = drawer.getByRole("textbox", { name: "Note for Ryan" });
+  await note.fill("  Running a Ryan relay on Saturday.\nThanks!  ");
+  await note.blur();
+  await expect(drawer.getByText("Saved. Ryan sees it with your order.")).toBeVisible();
+
+  // Saved trimmed, and kept through a quantity change and a reload.
+  await page.goto("/cart");
+  const pageNote = page.getByRole("textbox", { name: "Note for Ryan" });
+  await expect(pageNote).toHaveValue("Running a Ryan relay on Saturday.\nThanks!");
+  await page.getByRole("button", { name: /^Increase .* quantity$/ }).first().click();
+  await page.reload();
+  await expect(pageNote).toHaveValue("Running a Ryan relay on Saturday.\nThanks!");
+  await expect(pageNote).toHaveAttribute("maxlength", "500");
+});
+
 test("customer can browse a product and manage the preview cart", async ({
   page,
 }) => {

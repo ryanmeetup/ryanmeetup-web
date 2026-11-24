@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { cartUnavailableMessage, maxCartLineQuantity, parseCartAction, readCartResponse } from "../lib/cart-action";
+import { cartUnavailableMessage, maxCartLineQuantity, maxCartNoteLength, parseCartAction, readCartResponse } from "../lib/cart-action";
 
 const cartId = "gid://shopify/Cart/c1-abc?key=secret";
 const lineId = "gid://shopify/CartLine/line-1?cart=c1-abc";
@@ -24,6 +24,18 @@ test("junk quantities, foreign IDs, and malformed bodies never reach Shopify", (
   expect(parseCartAction({ action: "get", cartId: `${cartId}\n` })).toBeNull();
   expect(parseCartAction({ action: "get", cartId: `gid://shopify/Cart/${"x".repeat(600)}` })).toBeNull();
   for (const body of [null, [], "get", { action: "delete", cartId }]) expect(parseCartAction(body)).toBeNull();
+});
+
+test("order notes keep line breaks, can be cleared, and stay within the cap", () => {
+  const note = "Please double-check the size.\r\nThanks, Ryan\tF.";
+  expect(parseCartAction({ action: "note", cartId, note })).toEqual({ action: "note", cartId, note });
+  expect(parseCartAction({ action: "note", cartId, note: "" })).toEqual({ action: "note", cartId, note: "" });
+  expect(parseCartAction({ action: "note", cartId, note: "R".repeat(maxCartNoteLength) })).not.toBeNull();
+  expect(parseCartAction({ action: "note", cartId, note: "R".repeat(maxCartNoteLength + 1) })).toBeNull();
+  for (const junk of ["bell\u0007", "nul\u0000", "esc\u001b[31m", "del\u007f", 42, null, undefined]) {
+    expect(parseCartAction({ action: "note", cartId, note: junk })).toBeNull();
+  }
+  expect(parseCartAction({ action: "note", cartId: "demo-cart", note: "hi" })).toBeNull();
 });
 
 test("cart responses yield the cart, or a message written for shoppers", async () => {

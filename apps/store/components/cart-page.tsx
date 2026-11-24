@@ -4,6 +4,7 @@ import { Card, ErrorCallout, Heading, Text } from "@ryanmeetup/ui";
 import { formatMoney } from "@/lib/money";
 import { cartOrigin } from "@/lib/product-origin";
 import { CartLineItem } from "./cart-line";
+import { CartNote } from "./cart-note";
 import { useCart } from "./cart-provider";
 import { CheckoutButton } from "./checkout-button";
 import { CurrencyEstimateNote } from "./currency-estimate-note";
@@ -43,6 +44,7 @@ export function CartPage() {
           <CurrencyEstimateNote subtotal={cart.cost.subtotalAmount} className="mt-4" />
           <Text className="mt-4 text-sm">Shipping, discounts, and taxes are calculated securely at checkout. <FinalSaleNote /></Text>
           <Text className="mt-4 text-sm"><SupportLine /></Text>
+          <CartNote className="mt-6" />
           <CheckoutButton placement="cart_page" className="mt-6" />
         </Card>
       </div>

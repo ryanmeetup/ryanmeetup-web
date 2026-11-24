@@ -96,6 +96,7 @@ const cartFragment = `
   fragment CartFields on Cart {
     id
     checkoutUrl
+    note
     totalQuantity
     cost {
       subtotalAmount { amount currencyCode }
@@ -847,6 +848,18 @@ export async function updateCartLine(cartId: string, lineId: string, quantity: n
     { cartId, lines: [{ id: lineId, quantity }] },
   );
   return readCartPayload(data.cartLinesUpdate);
+}
+
+/** Replaces the cart's order note; an empty string clears it. */
+export async function updateCartNote(cartId: string, note: string) {
+  const data = await storefrontRequest<{ cartNoteUpdate: CartPayload }>(
+    `${cartFragment}
+      mutation CartNoteUpdate($cartId: ID!, $note: String!) {
+        cartNoteUpdate(cartId: $cartId, note: $note) { cart { ...CartFields } userErrors { message } }
+      }`,
+    { cartId, note },
+  );
+  return readCartPayload(data.cartNoteUpdate);
 }
 
 export async function removeCartLine(cartId: string, lineId: string) {

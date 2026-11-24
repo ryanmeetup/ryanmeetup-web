@@ -20,14 +20,25 @@ type CartContextValue = {
   /** The variant id of the most recent addition, while the drawer shows it. */
   justAdded: string | null;
   loading: boolean;
+  /** The order note as the shopper sees it: their unsaved typing, else the cart's saved note. */
+  note: string;
+  /** True while the note field holds text the cart hasn't saved yet. */
+  noteChanged: boolean;
   removeItem: (lineId: string) => Promise<void>;
+  /**
+   * Saves the note when it changed and resolves with the cart that has it, so
+   * checkout can wait for a note typed just before the click. Failures set
+   * `error` and reject.
+   */
+  saveNote: () => Promise<Cart | null>;
+  setNote: (note: string) => void;
   setDrawerOpen: (open: boolean, source?: "navigation" | "product_page") => void;
   updateItem: (lineId: string, quantity: number) => Promise<void>;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
 
-function demoCart(lines: CartLine[]): Cart {
+function demoCart(lines: CartLine[], note?: string | null): Cart {
   const amount = lines.reduce(
     (total, line) => total + Number(line.merchandise.price.amount) * line.quantity,
     0,
@@ -36,6 +47,7 @@ function demoCart(lines: CartLine[]): Cart {
   return {
     id: "demo-cart",
     checkoutUrl: "",
+    note: note ?? null,
     lines,
     totalQuantity: lines.reduce((total, line) => total + line.quantity, 0),
     cost: {
@@ -57,6 +69,8 @@ export function CartProvider({
   const [error, setError] = useState("");
   const [drawerOpen, setDrawerOpenState] = useState(false);
   const [justAdded, setJustAdded] = useState<string | null>(null);
+  // Null until the shopper edits the note; then their text wins over refreshes until it's saved.
+  const [noteDraft, setNoteDraft] = useState<string | null>(null);
   // Counts cart changes, so a refresh that started before one doesn't overwrite its result.
   const changes = useRef(0);
   // Development uses Vercel's logging-only script; production demo carts aren't sales signals.
@@ -150,6 +164,7 @@ export function CartProvider({
     changes.current += 1;
     setError("");
     setJustAdded(null);
+    setNoteDraft(null);
     saveCart(null);
   }, [cart, recordCommerce, saveCart]);
 
@@ -182,7 +197,7 @@ export function CartProvider({
                   },
                 },
               ];
-          saveCart(demoCart(lines));
+          saveCart(demoCart(lines, cart?.note));
         }
         if (recordCommerce && added) trackStoreEvent("add_to_cart", { product: product.handle, source });
         if (!drawerOpen && added) trackStoreEvent("cart_drawer_opened", { quantity: nextQuantity, source: "add_to_cart" });
@@ -210,7 +225,7 @@ export function CartProvider({
           saveCart(next);
           savedQuantity = next?.lines.find((entry) => entry.id === lineId)?.quantity ?? 0;
         } else {
-          saveCart(demoCart((cart?.lines ?? []).map((line) => (line.id === lineId ? { ...line, quantity } : line))));
+          saveCart(demoCart((cart?.lines ?? []).map((line) => (line.id === lineId ? { ...line, quantity } : line)), cart?.note));
         }
         if (recordCommerce && line && line.quantity !== savedQuantity) trackStoreEvent("cart_quantity_changed", { product: line.merchandise.product.handle, quantity: savedQuantity });
       } catch (caught) {
@@ -231,7 +246,7 @@ export function CartProvider({
           saveCart(await request({ action: "remove", cartId: cart.id, lineId }));
         } else {
           const lines = (cart?.lines ?? []).filter((line) => line.id !== lineId);
-          saveCart(lines.length ? demoCart(lines) : null);
+          saveCart(lines.length ? demoCart(lines, cart?.note) : null);
         }
         if (recordCommerce && line) trackStoreEvent("remove_from_cart", { product: line.merchandise.product.handle, quantity: line.quantity });
       } catch (caught) {
@@ -243,9 +258,43 @@ export function CartProvider({
     [cart, commerceConfigured, recordCommerce, request, saveCart, startChange],
   );
 
+  const savedNote = cart?.note ?? "";
+  const note = noteDraft ?? savedNote;
+  const noteChanged = noteDraft !== null && noteDraft.trim() !== savedNote;
+
+  // Leaving the note field and pressing Checkout both save it; they share one request.
+  const pendingNote = useRef<Promise<Cart | null> | null>(null);
+  const saveNote = useCallback((): Promise<Cart | null> => {
+    if (pendingNote.current) return pendingNote.current;
+    if (!cart || !noteChanged) {
+      setNoteDraft(null);
+      return Promise.resolve(cart);
+    }
+    const next = note.trim();
+    startChange();
+    const save = (async () => {
+      try {
+        const saved = commerceConfigured && !cart.id.startsWith("demo-")
+          ? await request({ action: "note", cartId: cart.id, note: next })
+          : { ...cart, note: next };
+        saveCart(saved);
+        setNoteDraft(null);
+        return saved;
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : cartUnavailableMessage);
+        throw caught;
+      } finally {
+        setLoading(false);
+        pendingNote.current = null;
+      }
+    })();
+    pendingNote.current = save;
+    return save;
+  }, [cart, commerceConfigured, note, noteChanged, request, saveCart, startChange]);
+
   const value = useMemo(
-    () => ({ addItem, cart, clearCart, commerceConfigured, drawerOpen, error, justAdded, loading, removeItem, setDrawerOpen, updateItem }),
-    [addItem, cart, clearCart, commerceConfigured, drawerOpen, error, justAdded, loading, removeItem, setDrawerOpen, updateItem],
+    () => ({ addItem, cart, clearCart, commerceConfigured, drawerOpen, error, justAdded, loading, note, noteChanged, removeItem, saveNote, setDrawerOpen, setNote: setNoteDraft, updateItem }),
+    [addItem, cart, clearCart, commerceConfigured, drawerOpen, error, justAdded, loading, note, noteChanged, removeItem, saveNote, setDrawerOpen, updateItem],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
