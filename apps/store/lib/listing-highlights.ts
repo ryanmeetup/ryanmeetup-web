@@ -1,3 +1,4 @@
+import { MIN_LISTING_RATING_REVIEWS } from "./rating-threshold";
 import type { CatalogSections, ProductListing } from "./types";
 
 /**
@@ -36,8 +37,8 @@ export const highlightRules = {
   trending: { minUnits: 4, ratio: 2 },
   /** Distinct carts in the last 24 hours. */
   hot: { minCarts: 5 },
-  /** The listing's pooled rating, which cards only show from five reviews. */
-  topRated: { minAverage: 4.8 },
+  /** The listing's pooled rating, from enough reviews that one can't swing it. */
+  topRated: { minAverage: 4.8, minReviews: MIN_LISTING_RATING_REVIEWS },
   /**
    * The launch catalog was created through November 13, 2026, all at once, so only
    * products added after it are new drops. Each stays new for `days`.
@@ -88,7 +89,7 @@ export function pickListingHighlight(listing: ProductListing, activity: Record<s
   if (designProducts(listing).some((product) => bestSellers.has(numericProductId(product.id) ?? ""))) return "best-seller";
   if (pooled && pooled.sold7 >= highlightRules.trending.minUnits && pooled.sold7 >= highlightRules.trending.ratio * pooled.soldPrior7) return "trending";
   if (pooled && pooled.carts24h >= highlightRules.hot.minCarts) return "hot";
-  if (listing.rating && listing.rating.average >= highlightRules.topRated.minAverage) return "top-rated";
+  if (listing.rating && listing.rating.count >= highlightRules.topRated.minReviews && listing.rating.average >= highlightRules.topRated.minAverage) return "top-rated";
   const after = Date.parse(highlightRules.new.after);
   const newest = Math.max(...designProducts(listing).map((product) => product.createdAt ? Date.parse(product.createdAt) : Number.NaN).filter((time) => !Number.isNaN(time)));
   if (newest >= after && now - newest <= highlightRules.new.days * 86_400_000) return "new";

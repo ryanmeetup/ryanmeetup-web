@@ -12,7 +12,7 @@ seed, pad or fake a figure, and never claim scarcity: everything is made to orde
 | Best seller | Top 5 products by units sold in 30 days, each with 5+ | Order webhook |
 | Trending | 4+ units this week and at least double the week before | Order webhook |
 | Hot right now | 5+ distinct carts added it in 24 hours | Cart route |
-| Top rated | Pooled rating of 4.8+ (cards need 5+ reviews to rate) | Reviews |
+| Top rated | Pooled rating of 4.8+ from 5+ reviews | Reviews |
 | New | Created after the launch catalog (November 13, 2026), for 30 days | Shopify |
 
 A listing gets one label, strongest first, as a small label above the title on cards

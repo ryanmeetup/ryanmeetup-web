@@ -1,6 +1,5 @@
 import type { ReviewSummary } from "@ryanmeetup/reviews";
 import { numericProductId } from "./custom-reviews";
-import { MIN_LISTING_RATING_REVIEWS } from "./rating-threshold";
 import { getReviewBackend } from "./review-backend";
 import type { CatalogSections, ListingRating, ProductListing } from "./types";
 
@@ -12,7 +11,7 @@ function reviewProductIds(listing: ProductListing) {
   return products.map((product) => numericProductId(product.id)).filter((id): id is string => id !== null);
 }
 
-/** Pools per-product totals into one rating, or null while there are too few to trust. */
+/** Pools per-product totals into one rating, or null while there are none. */
 export function poolListingRating(summaries: (ReviewSummary | undefined)[]): ListingRating | null {
   let count = 0;
   let total = 0;
@@ -21,13 +20,13 @@ export function poolListingRating(summaries: (ReviewSummary | undefined)[]): Lis
     count += summary.count;
     total += summary.average * summary.count;
   }
-  return count >= MIN_LISTING_RATING_REVIEWS ? { average: total / count, count } : null;
+  return count > 0 ? { average: total / count, count } : null;
 }
 
 type Catalog = { products: ProductListing[] } & Partial<CatalogSections>;
 
 /**
- * Adds a rating to every listing with enough published reviews, and marks
+ * Adds a rating to every listing with published reviews, and marks
  * listings confirmed to have none, across the catalog's products, sections,
  * and leftovers alike. Reviews are a garnish here: if they can't be read, the
  * catalog comes back unchanged, so a missing read never claims "no reviews".

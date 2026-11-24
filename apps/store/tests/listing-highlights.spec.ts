@@ -29,6 +29,8 @@ test("a listing earns its strongest label, and only from real signals", () => {
   expect(pickListingHighlight(listing(1), { 1: { ...quiet, carts24h: 5 } }, none, now)).toBe("hot");
   expect(pickListingHighlight(listing(1, { rating: { average: 4.8, count: 5 } }), null, none, now)).toBe("top-rated");
   expect(pickListingHighlight(listing(1, { rating: { average: 4.7, count: 50 } }), null, none, now)).toBeNull();
+  // Too few reviews to judge, however high.
+  expect(pickListingHighlight(listing(1, { rating: { average: 5, count: 4 } }), null, none, now)).toBeNull();
   // The launch catalog isn't "new"; a later drop is, for 30 days.
   expect(pickListingHighlight(listing(1, { createdAt: "2026-11-13T12:00:00Z" }), null, none, now)).toBeNull();
   expect(pickListingHighlight(listing(1, { createdAt: "2026-11-20T12:00:00Z" }), null, none, now)).toBe("new");

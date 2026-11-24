@@ -76,7 +76,7 @@ export type ProductListing = Product & {
   defaultColor?: string;
   /** Sold off Shopify; the card links here instead of a product page and can't be quick added. */
   externalUrl?: string;
-  /** Published review totals, present only once there are enough that one review can't swing the average. */
+  /** Published review totals, present from the first review; see `MIN_LISTING_RATING_REVIEWS` before judging one. */
   rating?: ListingRating;
   /** Reviews were read and none are published yet; absent when they couldn't be read. */
   unreviewed?: true;

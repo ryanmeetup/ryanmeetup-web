@@ -2,7 +2,6 @@ import { expect, test } from "@playwright/test";
 import { reviewResultSchema } from "@ryanmeetup/reviews";
 import { createReviewBackend, ReviewBackendError } from "../lib/review-backend";
 import { poolListingRating, withListingRatings } from "../lib/listing-ratings";
-import { MIN_LISTING_RATING_REVIEWS } from "../lib/rating-threshold";
 import type { ProductListing } from "../lib/types";
 import { fakeSupabase, supabaseCall, type SupabaseCall } from "./fixtures/customer-auth-backend";
 
@@ -51,9 +50,11 @@ test("summaries reject malformed commands and inconsistent or failed responses",
   expect(reviewResultSchema("reviews.summaries", { data: { "gid://shopify/Product/1": summary([0, 0, 0, 0, 1]) } })).toBeNull();
 });
 
-test("a rating appears only once enough reviews pool together", () => {
-  expect(poolListingRating([summary([1, 0, 0, 0, MIN_LISTING_RATING_REVIEWS - 2])])).toBeNull();
-  expect(poolListingRating([summary([1, 0, 0, 0, MIN_LISTING_RATING_REVIEWS - 1])])).toEqual({ average: 4.2, count: 5 });
+test("a rating appears from the first pooled review", () => {
+  expect(poolListingRating([undefined])).toBeNull();
+  expect(poolListingRating([summary([0, 0, 0, 0, 0])])).toBeNull();
+  expect(poolListingRating([summary([0, 0, 0, 0, 1])])).toEqual({ average: 5, count: 1 });
+  expect(poolListingRating([summary([1, 0, 0, 0, 4])])).toEqual({ average: 4.2, count: 5 });
   // Weighted by count, not a mean of averages.
   expect(poolListingRating([summary([0, 0, 0, 0, 4]), summary([2, 0, 0, 0, 0]), undefined])).toEqual({ average: 22 / 6, count: 6 });
 });
@@ -63,10 +64,10 @@ test("catalogs gain ratings across products, sections, and design groups, and su
   const group = listing("300", { designs: [{ label: "A", value: "a", product: listing("300") }, { label: "B", value: "b", product: listing("200") }] });
   const catalog = { products: [listing("100"), listing("200"), group], sections: [{ collection: { id: "c", handle: "c", title: "C", description: "", image: null }, products: [listing("100")], total: 1 }], more: [listing("400")] };
   const rated = await withListingRatings(catalog, backend);
-  expect(rated.products.map((product) => product.rating)).toEqual([{ average: 28 / 6, count: 6 }, undefined, { average: 5, count: 5 }]);
+  expect(rated.products.map((product) => product.rating)).toEqual([{ average: 28 / 6, count: 6 }, { average: 5, count: 2 }, { average: 5, count: 5 }]);
   expect(rated.sections[0].products[0].rating).toEqual({ average: 28 / 6, count: 6 });
-  expect(rated.more[0].rating).toBeUndefined();
-  // Only a confirmed zero reads as unreviewed; a few reviews below the threshold do not.
+  expect(rated.more[0].rating).toEqual({ average: 3, count: 1 });
+  // Only a confirmed zero reads as unreviewed.
   expect(rated.products.map((product) => product.unreviewed)).toEqual([undefined, undefined, undefined]);
   expect(rated.more[0].unreviewed).toBeUndefined();
   // Counts cover every listing that was read, below the rating threshold and across design groups.
