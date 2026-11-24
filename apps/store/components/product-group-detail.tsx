@@ -7,13 +7,14 @@ import type { ReactNode } from "react";
 import { DropdownSelect } from "@ryanmeetup/ui";
 import { getColorOption, getColorPreview, getColorSlug, getColorValue, getImageColor, getListingColors } from "@/lib/product-colors";
 import { getProductGallery } from "@/lib/product-gallery";
+import type { ListingHighlight } from "@/lib/listing-highlights";
 import type { ProductDesign, ReviewsData, StoreImage } from "@/lib/types";
 import type { CustomReviewAccess } from "@/lib/custom-review-access";
 import { ProductDetail } from "./product-detail";
 import { ProductSchema } from "./product-schema";
 import { Reviews } from "./reviews";
 
-export function ProductGroupDetail({ title, handle, url, breadcrumbs, designs, defaultColor, reviewsByProduct, reviewAccessByProduct, productionTime, shipsTo, shippingCountries }: {
+export function ProductGroupDetail({ title, handle, url, breadcrumbs, designs, defaultColor, reviewsByProduct, reviewAccessByProduct, productionTime, shipsTo, shippingCountries, highlight, milestone }: {
   title: string;
   url: string;
   breadcrumbs?: ReactNode;
@@ -23,6 +24,8 @@ export function ProductGroupDetail({ title, handle, url, breadcrumbs, designs, d
   reviewsByProduct: Record<string, ReviewsData>;
   reviewAccessByProduct: Record<string, CustomReviewAccess>;
   productionTime?: string | null;
+  highlight?: ListingHighlight | null;
+  milestone?: string | null;
   shipsTo?: string | null;
   shippingCountries?: string[];
 }) {
@@ -76,6 +79,8 @@ export function ProductGroupDetail({ title, handle, url, breadcrumbs, designs, d
         key={`product-${selected.product.id}`}
         product={selected.product}
         productionTime={productionTime}
+        highlight={highlight}
+        milestone={milestone}
         shipsTo={shipsTo}
         title={title}
         breadcrumbs={breadcrumbs}

@@ -6,7 +6,7 @@ import { trackStoreEvent } from "@/lib/analytics";
 import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Button, DropdownSelect, ErrorCallout, IconButton, Kicker, getFieldLabelClasses } from "@ryanmeetup/ui";
-import { FiCheck, FiChevronLeft, FiChevronRight, FiGlobe, FiHeart, FiInfo, FiPackage, FiPenTool, FiShield, FiShoppingBag } from "react-icons/fi";
+import { FiCheck, FiChevronLeft, FiChevronRight, FiGlobe, FiHeart, FiInfo, FiPackage, FiPenTool, FiShield, FiShoppingBag, FiTrendingUp } from "react-icons/fi";
 import { getCompareAtPrice, getListingSale } from "@/lib/money";
 import { findVariant, getOptionChoices, getSelections, isDefaultTitleOption, isSizeOption, oneSize } from "@/lib/product-options";
 import { getColorOption, getColorSlug, getVariantForColor } from "@/lib/product-colors";
@@ -14,6 +14,7 @@ import { getProductGallery, getVariantForImage, groupProductGallery } from "@/li
 import type { ProductGalleryImage } from "@/lib/product-gallery";
 import { getProductDesignerCredit } from "@/lib/product-designers";
 import { getSizeGuideHtml } from "@/lib/product-guidance";
+import type { ListingHighlight } from "@/lib/listing-highlights";
 import type { Product, StoreImage } from "@/lib/types";
 import { useCart } from "./cart-provider";
 import { PriceBadge } from "./price-badge";
@@ -21,9 +22,10 @@ import { ProductDescription } from "./product-description";
 import { SaleBadge } from "./sale-badge";
 import { PromotionNote } from "./promotion";
 import { FinalSaleNote } from "./final-sale-note";
+import { HighlightChip } from "./highlight-chip";
 import { ProductSizeGuide } from "./product-size-guide";
 
-export function ProductDetail({ product, title = product.title, breadcrumbs, designField, hideColorOption = false, gallery, initialImage, initialColor, onSelectGalleryImage, productionTime, shipsTo }: {
+export function ProductDetail({ product, title = product.title, breadcrumbs, designField, hideColorOption = false, gallery, initialImage, initialColor, onSelectGalleryImage, productionTime, shipsTo, highlight, milestone }: {
   product: Product;
   title?: string;
   // Rides along above the gallery so the trail stays in view while it sticks.
@@ -40,6 +42,10 @@ export function ProductDetail({ product, title = product.title, breadcrumbs, des
   productionTime?: string | null;
   /** Where checkout ships, such as "Ships to 28 countries and regions"; left out when unknown. */
   shipsTo?: string | null;
+  /** The listing's earned label, such as "Best seller"; see `lib/listing-highlights`. */
+  highlight?: ListingHighlight | null;
+  /** A rounded, real figure such as "25+ sold this month", or null below every floor. */
+  milestone?: string | null;
 }) {
   const { addItem, error, loading, setDrawerOpen } = useCart();
   const shippingDetails = <Link href="/policies/shipping-policy" className="whitespace-nowrap rounded-sm underline decoration-black/30 underline-offset-4 transition hover:decoration-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 dark:decoration-white/30 dark:hover:decoration-white dark:focus-visible:ring-white/40">Shipping details</Link>;
@@ -240,12 +246,19 @@ export function ProductDetail({ product, title = product.title, breadcrumbs, des
         </div>
       </div>
       <div data-analytics-section="product" className="min-w-0">
+        {highlight && <HighlightChip highlight={highlight} size="md" className="mb-3" />}
         <h1 className="font-cooper text-4xl leading-[1.05] tracking-wide text-black dark:text-white sm:text-5xl">{title}</h1>
         <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2" aria-live="polite">
           <PriceBadge price={variant ? variant.price : product.priceRange.minVariantPrice} compareAt={compareAtPrice} size="lg" />
           <SaleBadge markedDown={Boolean(compareAtPrice)} size="lg" />
         </div>
         <PromotionNote className="mt-3" />
+        {milestone && (
+          <p className="mt-3 flex items-center gap-2 text-sm font-semibold text-black dark:text-white">
+            <FiTrendingUp aria-hidden className="shrink-0" />
+            {milestone}
+          </p>
+        )}
         <ProductDescription description={product.description} descriptionHtml={product.descriptionHtml} part="intro" />
         {designField && <div className="mt-8">{designField({ selections, selectOption })}</div>}
 

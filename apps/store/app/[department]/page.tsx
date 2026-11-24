@@ -6,6 +6,7 @@ import { JsonLd } from "@/components/json-ld";
 import { departments, getCollectionPath, isDepartment } from "@/lib/catalog-collections";
 import { toCardCatalog } from "@/lib/listing-card";
 import { withListingRatings } from "@/lib/listing-ratings";
+import { withListingHighlights } from "@/lib/product-activity";
 import { buildPageMetadata, DEFAULT_IMAGE, toMetadataImage, toMetaDescription } from "@/lib/metadata";
 import { getStoreCollectionIcon, StoreHomeIcon } from "@/lib/navigation";
 import { getCollection } from "@/lib/shopify";
@@ -43,7 +44,7 @@ export default async function DepartmentPage({ params }: Props) {
   const { department } = await params;
   const found = await getDepartment(department);
   if (!found) notFound();
-  const result = toCardCatalog(await withListingRatings(found));
+  const result = toCardCatalog(await withListingHighlights(await withListingRatings(found)));
   return (
     <main className="store-container py-10 sm:py-14">
       <JsonLd data={buildBreadcrumbSchema([{ name: "Store", path: "/" }, { name: result.collection.title, path: getCollectionPath(department) }])} />

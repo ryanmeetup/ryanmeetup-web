@@ -19,6 +19,7 @@ import { decodeRouteHandle } from "@/lib/handles";
 import { getColorListingHref, getColorPreview } from "@/lib/product-colors";
 import { getProductGroupForMember, getProductHref, resolveProductDesignValue } from "@/lib/product-groups";
 import { getCustomReviews } from "@/lib/custom-reviews";
+import { getProductHighlight } from "@/lib/product-activity";
 import { describeShippingRegions, getProductionTime } from "@/lib/product-guidance";
 import { getCustomReviewAccessByProduct } from "@/lib/custom-review-access";
 import { cartOrigin, withProductOrigin } from "@/lib/product-origin";
@@ -66,7 +67,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
   const colorHref = requestedDesign ? getColorListingHref(product, requestedDesign, query.color) : undefined;
   if (colorHref) permanentRedirect(withProductOrigin(colorHref, query.from));
   const reviewProducts = product.designs?.map((design) => design.product) ?? [product];
-  const [reviewEntries, reviewAccess, policies, shippingCountries] = await Promise.all([
+  const [reviewEntries, reviewAccess, policies, shippingCountries, { highlight, milestone }] = await Promise.all([
     Promise.all(reviewProducts.map(async (item) => [item.id, await getCustomReviews(item.id)] as const)),
     getCustomReviewAccessByProduct(reviewProducts, `/products/${product.handle}`),
     getPolicies().catch((error: unknown) => {
@@ -78,6 +79,8 @@ export default async function ProductPage({ params, searchParams }: Props) {
       console.error("Could not load shipping countries for the product page.", error);
       return [];
     }),
+    // A garnish: it falls back to no label and no milestone rather than failing the page.
+    getProductHighlight(product),
   ]);
   const productionTime = getProductionTime(policies);
   const shipsTo = describeShippingRegions(shippingCountries);
@@ -95,11 +98,11 @@ export default async function ProductPage({ params, searchParams }: Props) {
         { name: product.title, path: `/products/${product.handle}` },
       ])} />
       {product.designs ? (
-        <ProductGroupDetail title={product.title} handle={product.handle} url={productUrl} breadcrumbs={breadcrumbs} designs={product.designs} defaultColor={product.defaultColor} reviewsByProduct={reviewsByProduct} reviewAccessByProduct={reviewAccess} productionTime={productionTime} shipsTo={shipsTo} shippingCountries={shippingCountries} />
+        <ProductGroupDetail title={product.title} handle={product.handle} url={productUrl} breadcrumbs={breadcrumbs} designs={product.designs} defaultColor={product.defaultColor} reviewsByProduct={reviewsByProduct} reviewAccessByProduct={reviewAccess} productionTime={productionTime} shipsTo={shipsTo} shippingCountries={shippingCountries} highlight={highlight} milestone={milestone} />
       ) : (
         <>
           <ProductSchema product={product} reviews={reviewsByProduct[product.id]} url={productUrl} shippingCountries={shippingCountries} />
-          <ProductDetail product={product} breadcrumbs={breadcrumbs} initialColor={query.color} initialImage={getColorPreview(product, query.color)?.image} productionTime={productionTime} shipsTo={shipsTo} />
+          <ProductDetail product={product} breadcrumbs={breadcrumbs} initialColor={query.color} initialImage={getColorPreview(product, query.color)?.image} productionTime={productionTime} shipsTo={shipsTo} highlight={highlight} milestone={milestone} />
           <Reviews data={reviewsByProduct[product.id]} product={product} access={reviewAccess[product.id]} />
         </>
       )}

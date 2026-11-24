@@ -13,6 +13,7 @@ import { SupportNote } from "@/components/support-note";
 import { getHomeBandFacts } from "@/lib/home-band";
 import { toCardCatalog } from "@/lib/listing-card";
 import { withListingRatings } from "@/lib/listing-ratings";
+import { withListingHighlights } from "@/lib/product-activity";
 import { buildPageMetadata, DEFAULT_IMAGE, SITE_DESCRIPTION, SITE_NAME } from "@/lib/metadata";
 import { getShippingExpectations } from "@/lib/product-guidance";
 import { getReviewBackend } from "@/lib/review-backend";
@@ -47,7 +48,7 @@ export default async function HomePage() {
     getShopReviewSummary(getReviewBackend()),
   ]);
   const shipping = getShippingExpectations(policies, shippingCountries);
-  const favorites = toCardCatalog(await withListingRatings(shelf));
+  const favorites = toCardCatalog(await withListingHighlights(await withListingRatings(shelf)));
   return (
     <main className="flex flex-col gap-8 pb-6 sm:gap-12 sm:pb-8 lg:pb-10">
       <JsonLd data={buildStoreSchema(shippingCountries)} />

@@ -7,6 +7,7 @@ import { getCatalogCollection, getCollectionPath } from "@/lib/catalog-collectio
 import { getGarmentParams, getGarmentPath } from "@/lib/garments";
 import { toCardCatalog } from "@/lib/listing-card";
 import { withListingRatings } from "@/lib/listing-ratings";
+import { withListingHighlights } from "@/lib/product-activity";
 import { buildPageMetadata, DEFAULT_IMAGE, toMetadataImage, toMetaDescription } from "@/lib/metadata";
 import { getGarmentIcon, getStoreCollectionIcon, StoreHomeIcon } from "@/lib/navigation";
 import { getGarmentCollection } from "@/lib/shopify";
@@ -47,7 +48,7 @@ export default async function GarmentPage({ params }: Props) {
   const department = getCatalogCollection(handle);
   const found = await getStockedGarmentCollection(handle, garment);
   if (!department || !found) notFound();
-  const result = toCardCatalog(await withListingRatings(found));
+  const result = toCardCatalog(await withListingHighlights(await withListingRatings(found)));
   return (
     <main className="store-container py-10 sm:py-14">
       <JsonLd data={buildBreadcrumbSchema([{ name: "Store", path: "/" }, { name: department.title, path: getCollectionPath(handle) }, { name: result.collection.title, path: getGarmentPath(handle, garment) }])} />
