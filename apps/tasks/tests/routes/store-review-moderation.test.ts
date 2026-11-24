@@ -40,6 +40,7 @@ const products = [{ productId: "100", productTitle: "Shirt" }, { productId: "200
 // GET reads the page and the product list together; each answers its own RPC.
 let pageResult: { data: unknown; error: unknown };
 let productResult: { data: unknown; error: unknown };
+let countResult: { data: unknown; error: unknown };
 
 describe("owner review moderation", () => {
   beforeEach(() => {
@@ -53,7 +54,8 @@ describe("owner review moderation", () => {
     mocks.remove.mockResolvedValue({ data: [], error: null });
     pageResult = { data: [row], error: null };
     productResult = { data: products, error: null };
-    mocks.rpc.mockImplementation(async (name: string) => name === "store_review_moderation_products" ? productResult : pageResult);
+    countResult = { data: 34, error: null };
+    mocks.rpc.mockImplementation(async (name: string) => name === "store_review_moderation_products" ? productResult : name === "store_review_moderation_count" ? countResult : pageResult);
   });
   afterEach(() => { vi.unstubAllEnvs(); vi.restoreAllMocks(); });
 
@@ -90,11 +92,12 @@ describe("owner review moderation", () => {
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(response.headers.get("referrer-policy")).toBe("no-referrer");
     // A backend from before the Etsy import sends no source; those are all store reviews.
-    expect(await response.json()).toEqual({ reviews: [{ ...row, source: "store" }], next: null, products });
+    expect(await response.json()).toEqual({ reviews: [{ ...row, source: "store" }], next: null, products, total: 34 });
     expect(mocks.rpc).toHaveBeenCalledWith("store_review_moderation_page_v5", {
       p_actor: actor, p_shop_id: "123", p_filter: "pending", p_product_id: null, p_limit: 21, p_after_created_at: null, p_after_id: null,
     });
     expect(mocks.rpc).toHaveBeenCalledWith("store_review_moderation_products", { p_actor: actor, p_shop_id: "123" });
+    expect(mocks.rpc).toHaveBeenCalledWith("store_review_moderation_count", { p_actor: actor, p_shop_id: "123", p_filter: "pending", p_product_id: null });
   });
 
   it("shows imported Etsy reviews without a title, but never a store review without one", async () => {
@@ -146,6 +149,18 @@ describe("owner review moderation", () => {
     expect(page.next).toEqual({ id: "00000000-0000-4000-8000-000000000020", createdAt: time });
     await GET(get(`?filter=published&afterCreatedAt=${encodeURIComponent(time)}&afterId=${reviewId}`));
     expect(mocks.rpc).toHaveBeenCalledWith("store_review_moderation_page_v5", expect.objectContaining({ p_filter: "published", p_after_created_at: time, p_after_id: reviewId }));
+  });
+
+  it("reports the queue total on the first page only, and refuses a malformed count", async () => {
+    expect((await (await GET(get("?filter=rejected&productId=100"))).json()).total).toBe(34);
+    expect(mocks.rpc).toHaveBeenCalledWith("store_review_moderation_count", expect.objectContaining({ p_filter: "rejected", p_product_id: "100" }));
+    mocks.rpc.mockClear();
+    expect((await (await GET(get(`?afterCreatedAt=${encodeURIComponent(time)}&afterId=${reviewId}`))).json()).total).toBeNull();
+    expect(mocks.rpc).not.toHaveBeenCalledWith("store_review_moderation_count", expect.anything());
+    for (const data of [-1, 1.5, "34", null]) {
+      countResult = { data, error: null };
+      expect((await GET(get())).status).toBe(500);
+    }
   });
 
   it("rejects unknown fields, caller shops/actors, rating filters, and malformed cursor dates", async () => {
@@ -202,7 +217,7 @@ describe("owner review moderation", () => {
     const response = await POST(post());
     expect(response.status).toBe(500);
     expect(JSON.stringify(await response.json())).not.toContain("private");
-    mocks.rpc.mockImplementation(async (name: string) => name === "store_review_moderation_products" ? productResult : pageResult);
+    mocks.rpc.mockImplementation(async (name: string) => name === "store_review_moderation_products" ? productResult : name === "store_review_moderation_count" ? countResult : pageResult);
     for (const data of [[{ ...row, customerSubject: "secret" }], [{ ...row, recentEvents: [{ ...row.recentEvents[0], actor: "buyer-secret" }] }], [{ ...row, pending: { ...revision, rating: 8 } }], null]) {
       pageResult = { data, error: null };
       expect((await GET(get())).status).toBe(500);

@@ -77,7 +77,11 @@ export type ModerationReview = {
   recentEvents: ModerationEvent[];
   reply: ModerationReply | null;
 };
-export type ModerationPage = { reviews: ModerationReview[]; next: ModerationCursor | null; products: ModerationProduct[] };
+export type ModerationPage = {
+  reviews: ModerationReview[]; next: ModerationCursor | null; products: ModerationProduct[];
+  /** Every review in the queue, loaded or not; only the first page reports it. */
+  total: number | null;
+};
 export type ModerationInitialState =
   | { status: "ready"; page: ModerationPage }
   | { status: "disabled" }

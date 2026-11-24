@@ -44,7 +44,7 @@ export function useReviewModeration(initial: ModerationInitialState) {
         const next = await fetchModerationPage(nextFilter, nextProduct, result?.next ?? null);
         const reviews = result ? [...result.reviews, ...next.reviews.filter((row) => !result!.reviews.some((existing) => existing.id === row.id))] : next.reviews;
         if (result && next.next && reviews.length === result.reviews.length) throw new Error("Review page did not advance");
-        result = { ...next, reviews };
+        result = { ...next, reviews, total: result ? result.total : next.total };
       } while (result.next && result.reviews.length < minimumReviews);
       setPage(result);
       if (!more) notifyStoreReviewsChanged();

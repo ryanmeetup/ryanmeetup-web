@@ -163,6 +163,13 @@ select is((select r->>'id' from public.store_review_moderation_page_v5('00000000
 select is((select array_agg(r->>'id') from public.store_review_moderation_page_v5('00000000-0000-4000-8000-000000000901', '345', 'all', null, 21,
   (select created_at from public.store_reviews where id = (select id from ids where name = 'mod-high')), (select id from ids where name = 'mod-high')) r),
   array[(select id::text from ids where name = 'mod-low')], 'newest-first paging continues with older reviews');
+select is(public.store_review_moderation_count('00000000-0000-4000-8000-000000000901', '345', 'pending', null),
+  (select count(*) from public.store_review_moderation_page_v5('00000000-0000-4000-8000-000000000901', '345', 'pending', null, 51)), 'the queue count matches the pending page');
+select is(public.store_review_moderation_count('00000000-0000-4000-8000-000000000901', '345', 'all', '100'), 2::bigint, 'the queue count includes every review for the product');
+select is(public.store_review_moderation_count('00000000-0000-4000-8000-000000000901', '345', 'all', '999'), 0::bigint, 'the queue count honours the product filter');
+select is(public.store_review_moderation_count('00000000-0000-4000-8000-000000000901', '999', 'all', null), 0::bigint, 'the queue count pins the shop');
+select throws_ok($$select public.store_review_moderation_count('00000000-0000-4000-8000-000000000902', '345', 'all', null)$$, '42501', null, 'the queue count rechecks the actor');
+select throws_ok($$select public.store_review_moderation_count('00000000-0000-4000-8000-000000000901', '345', 'nope', null)$$, '22023', null, 'the queue count rejects an unknown filter');
 select is((select count(*) from public.store_review_moderation_page('00000000-0000-4000-8000-000000000901', '999', 'all', 21)), 0::bigint, 'staff reads pin the shop');
 select ok((select bool_and(r::text !~ 'customer_subject|buyer-a|order_id|9000') from pg_temp.queue() r), 'staff queue omits order and buyer identity');
 select is((select count(*) from public.store_review_moderation_page('00000000-0000-4000-8000-000000000901', '345', 'all', 21,

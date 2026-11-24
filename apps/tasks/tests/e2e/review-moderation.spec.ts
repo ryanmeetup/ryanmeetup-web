@@ -424,7 +424,8 @@ test("distinguishes failed initial reads from an empty queue and supports paging
   await page.getByRole("button", { name: "Refresh queue" }).click();
   await expect(rows(page)).toHaveCount(10);
   const pagination = page.getByRole("navigation", { name: "reviews pagination" });
-  await expect(pagination).toContainText("Showing 1–10 reviews");
+  // The total comes from the database before older cursor pages load.
+  await expect(pagination).toContainText("Showing 1–10 of 23 reviews");
   await expect(pagination.getByRole("button", { name: "Previous page", exact: true })).toBeDisabled();
   await selectLoaded(page).check();
   await pagination.getByRole("button", { name: "Next page", exact: true }).click();

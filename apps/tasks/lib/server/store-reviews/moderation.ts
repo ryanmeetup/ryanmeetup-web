@@ -89,18 +89,30 @@ async function loadModerationProducts(admin: SupabaseClient, actor: string, shop
   return rows as ModerationProduct[];
 }
 
+/** How many reviews the whole queue holds, with the same filter as its pages. */
+async function countModerationReviews(admin: SupabaseClient, actor: string, shopId: string, query: ModerationQuery): Promise<number> {
+  const { data, error } = await admin.rpc("store_review_moderation_count", {
+    p_actor: actor, p_shop_id: shopId, p_filter: query.filter, p_product_id: query.productId,
+  });
+  if (error) throw new StoreReviewDatabaseError(error.code);
+  if (typeof data !== "number" || !Number.isSafeInteger(data) || data < 0) throw new StoreReviewDatabaseError();
+  return data;
+}
+
 export async function loadReviewModerationPage(admin: SupabaseClient, actor: string, shopId: string, query: ModerationQuery): Promise<ModerationPage> {
-  const [{ data, error }, products] = await Promise.all([admin.rpc("store_review_moderation_page_v5", {
+  const [{ data, error }, products, total] = await Promise.all([admin.rpc("store_review_moderation_page_v5", {
     p_actor: actor, p_shop_id: shopId, p_filter: query.filter, p_product_id: query.productId, p_limit: 21,
     p_after_created_at: query.after?.createdAt ?? null, p_after_id: query.after?.id ?? null,
-  }), loadModerationProducts(admin, actor, shopId)]);
+  }), loadModerationProducts(admin, actor, shopId),
+  // Later pages continue a queue whose total the first page already reported.
+  query.after ? null : countModerationReviews(admin, actor, shopId, query)]);
   if (error) throw new StoreReviewDatabaseError(error.code);
   if (!Array.isArray(data) || data.length > 21) throw new StoreReviewDatabaseError();
   const rows = data.map(review);
   if (rows.some((row) => !row)) throw new StoreReviewDatabaseError();
   const reviews = (rows as ModerationReview[]).slice(0, 20);
   const last = reviews.at(-1);
-  return { reviews, products, next: rows.length > 20 && last ? { id: last.id, createdAt: last.createdAt } : null };
+  return { reviews, products, total, next: rows.length > 20 && last ? { id: last.id, createdAt: last.createdAt } : null };
 }
 
 export async function moderateReview(admin: SupabaseClient, actor: string, shopId: string, decision: ModerationDecision): Promise<boolean> {

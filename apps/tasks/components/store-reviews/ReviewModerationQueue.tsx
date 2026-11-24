@@ -37,6 +37,8 @@ export function ReviewModerationQueue({ initial, staffNames }: { initial: Modera
   if (queue.disabled) return <Card><Text>Store review moderation is not enabled for this workspace.</Text></Card>;
   const products = queue.page?.products ?? [];
   const locked = Boolean(queue.busy || queue.selection || queue.bulkSelection);
+  // The queue's own count, unless a search narrows it to the loaded matches.
+  const total = searching ? null : queue.page?.total ?? null;
   async function changePage(next: number) {
     if (locked || searchPending) return;
     queue.clearSelected();
@@ -95,7 +97,7 @@ export function ReviewModerationQueue({ initial, staffNames }: { initial: Modera
     </PendingResults>
     {/* Search runs over the reviews already loaded; say so while more pages exist so a miss is not read as "none". */}
     {searching && queue.page?.next && <Text className="text-sm">Searching loaded reviews only. Use Next page to search further back.</Text>}
-    {queue.page && <Pagination page={page} pageSize={pageSize} totalCount={filtered.length} hasMore={Boolean(queue.page.next)}
+    {queue.page && <Pagination page={page} pageSize={pageSize} totalCount={total ?? filtered.length} hasMore={total === null && Boolean(queue.page.next)}
       itemLabel="reviews" itemLabelSingular="review" disabled={locked || searchPending} onPageChange={(next) => void changePage(next)} onPageSizeChange={(next) => void changePageSize(next)} />}
     {queue.selection && "photo" in queue.selection ? <ReviewPhotoDecisionDialog selection={queue.selection} saving={Boolean(queue.busy)} onClose={queue.dismiss} onSubmit={queue.decide} /> :
     queue.selection?.action === "delete" ? <ReviewDeletionDialog key={`${queue.selection.review.id}-delete`} reviews={[queue.selection.review]}

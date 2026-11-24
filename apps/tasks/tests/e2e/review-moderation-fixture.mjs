@@ -31,6 +31,11 @@ export function createReviewModerationFixture(json, readBody, profile) {
   reset();
   const isOwner = () => profile.app_role === "owner";
   const waiting = (r) => r.state !== "withdrawn" && (r.pending || [r.pending,r.published].some((v) => v?.photos?.some((p) => p.state === "pending")));
+  const inQueue = (command) => reviews.filter((r) => (!command.p_product_id || r.item.productId === command.p_product_id) && (command.p_filter === "all" ||
+    (command.p_filter === "pending" && waiting(r)) ||
+    (command.p_filter === "published" && r.published && r.state === "active") ||
+    (command.p_filter === "hidden" && r.state === "hidden") ||
+    (command.p_filter === "rejected" && r.rejected && r.state !== "withdrawn")));
   return async (request, response, url) => {
     if (url.pathname.startsWith("/storage/v1/object/store-review-photos/123/")) {
       if (request.headers.apikey !== "sb_secret_test") { json(response,403,{}); return true; }
@@ -53,7 +58,7 @@ export function createReviewModerationFixture(json, readBody, profile) {
       response.writeHead(200, { "content-range": count ? `0-${count - 1}/${count}` : `*/0`, "access-control-allow-origin": "*", "access-control-expose-headers": "*" });
       response.end(); return true;
     }
-    if (!["/rest/v1/rpc/store_review_moderation_page_v5", "/rest/v1/rpc/store_review_moderation_products", "/rest/v1/rpc/store_moderate_review", "/rest/v1/rpc/store_save_review_reply", "/rest/v1/rpc/store_delete_review", "/rest/v1/rpc/store_staff_review_photo", "/rest/v1/rpc/store_moderate_review_photo", "/rest/v1/rpc/store_pending_review_count"].includes(url.pathname)) return false;
+    if (!["/rest/v1/rpc/store_review_moderation_page_v5", "/rest/v1/rpc/store_review_moderation_products", "/rest/v1/rpc/store_moderate_review", "/rest/v1/rpc/store_save_review_reply", "/rest/v1/rpc/store_delete_review", "/rest/v1/rpc/store_staff_review_photo", "/rest/v1/rpc/store_moderate_review_photo", "/rest/v1/rpc/store_pending_review_count", "/rest/v1/rpc/store_review_moderation_count"].includes(url.pathname)) return false;
     const command = await readBody(request);
     if (!isOwner() || command.p_actor !== profile.id || command.p_shop_id !== "123" || request.headers.apikey !== "sb_secret_test") {
       json(response, 403, { code: "42501", message: "Owner required" }); return true;
@@ -74,13 +79,13 @@ export function createReviewModerationFixture(json, readBody, profile) {
       const products = new Map(reviews.map((r) => [r.item.productId, { productId: r.item.productId, productTitle: r.item.productTitle }]));
       json(response, 200, [...products.values()].sort((a, b) => a.productTitle.localeCompare(b.productTitle))); return true;
     }
+    if (url.pathname.endsWith("store_review_moderation_count")) {
+      if (options.failRead) { json(response, 500, { code: "P0001", message: "Synthetic read failure" }); return true; }
+      json(response, 200, inQueue(command).length); return true;
+    }
     if (url.pathname.endsWith("store_review_moderation_page_v5")) {
       if (options.failRead) { json(response, 500, { code: "P0001", message: "Synthetic read failure" }); return true; }
-      const selected = reviews.filter((r) => (!command.p_product_id || r.item.productId === command.p_product_id) && (command.p_filter === "all" ||
-        (command.p_filter === "pending" && waiting(r)) ||
-        (command.p_filter === "published" && r.published && r.state === "active") ||
-        (command.p_filter === "hidden" && r.state === "hidden") ||
-        (command.p_filter === "rejected" && r.rejected && r.state !== "withdrawn")));
+      const selected = inQueue(command);
       const after = command.p_after_created_at;
       json(response, 200, selected.filter((r) => !after || r.createdAt > after ||
         (r.createdAt === after && r.id > command.p_after_id)).slice(0, command.p_limit)); return true;
