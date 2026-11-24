@@ -6,7 +6,7 @@ and its history is in Git. Item numbers stay stable for existing links.
 
 | # | Work | Next action |
 | --- | --- | --- |
-| 4 | [Shopify/Printful operating setup](#4-shopify-and-printful-operating-setup) | NY sales tax, accountant questions, product contact details, January rate cleanup. |
+| 4 | [Shopify/Printful operating setup](#4-shopify-and-printful-operating-setup) | Printful certificate approval, accountant questions, product contact details, January rate cleanup. |
 | 8 | [Note to seller and personalization](#8-note-to-seller-and-personalization) | Confirm a note on the first real order; decide which personalization is needed. |
 | 14 | [Store reviews](#14-store-reviews) | Edge-case orders, recovery drills, monitoring and retention. |
 | 15 | [Search and shopping discovery](#15-search-and-shopping-discovery) | Submit to Search Console; decide on free Shopping listings. |
@@ -20,12 +20,9 @@ and its history is in Git. Item numbers stay stable for existing links.
       Ryan does not authorize publishing his apartment address. Removing the
       placeholder text from descriptions did not complete Printful's seller
       contact request; see [Printful's GPSR guidance](https://help.printful.com/hc/en-us/articles/50262212333329-What-is-the-General-Product-Safety-Regulation-for-the-EU).
-- [ ] Turn on New York sales tax once the Certificate of Authority arrives
-      (applied November 21 for Ryan Meetup Incorporated). Enter the ID under
-      Settings → Taxes and duties → United States → New York; quote a hoodie
-      and a mug to a New York address (clothing under $110 an item is exempt
-      from the 4% state rate and fully in NYC; other products are taxed); give
-      Printful a NY resale certificate (ST-120). See [sales tax](../how-to/sales-tax.md).
+- [ ] Confirm Printful approves the NY resale certificate (about two business
+      days), then that a New York checkout quote taxes a mug but not a hoodie.
+      See [sales tax](../how-to/sales-tax.md).
 - [ ] Ask an accountant how to report the New York orders shipped before
       registration, and whether UK VAT applies to orders of £135 or less.
 - [ ] Remove the custom-rate $0.40 holiday allowance after January 17, 2027,
