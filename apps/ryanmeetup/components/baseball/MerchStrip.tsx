@@ -45,7 +45,7 @@ const MerchStrip = ({
     <section id="merch" className="scroll-mt-28 space-y-6">
       <SectionHeader
         title="Suit up for the Classic"
-        description="Official Baseball Classic gear, made for wearing your name to the ballpark."
+        description="Official Ryan Baseball Classic gear, made for wearing your name to the ballpark."
         actions={
           <div className="hidden lg:block">
             <Button.Link href={collectionHref} variant="outline">
