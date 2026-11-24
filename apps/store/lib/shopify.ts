@@ -7,7 +7,7 @@ import { getColorListingHref } from "./product-colors";
 import type { GroupableProduct } from "./product-groups";
 import { createProductGroup, getListingHandles, getProductGroupForMember, getProductHref, groupProductListings, resolveListingHandle, resolveProductHandle } from "./product-groups";
 import { sortOptionValues } from "./product-options";
-import { shopifyCatalogTag } from "./shopify-cache";
+import { shopifyCatalogTag } from "./cache-tags";
 import { getListingMemberHandles, pickRelatedListings } from "./related-listings";
 import { recommendListings } from "./sort";
 import type {
@@ -206,7 +206,31 @@ async function storefrontRequest<T>(
   return payload.data;
 }
 
-function reshapeProduct(product: ProductNode): Product {
+/**
+ * Every size of a color repeats that color's photo, so a parsed product holds one
+ * copy of the same image object per variant. React's server payload writes a
+ * repeated object once and refers back to it after that, so sharing one object per
+ * URL keeps product cards from sending the same photo and alt text dozens of times.
+ */
+function shareImages(product: ProductNode): ProductNode {
+  const byUrl = new Map<string, StoreImage>();
+  const share = (image: StoreImage | null) => {
+    if (!image) return image;
+    const known = byUrl.get(image.url);
+    if (known) return known;
+    byUrl.set(image.url, image);
+    return image;
+  };
+  return {
+    ...product,
+    featuredImage: share(product.featuredImage),
+    images: { ...product.images, edges: product.images.edges.map(({ node }) => ({ node: share(node)! })) },
+    variants: { ...product.variants, edges: product.variants.edges.map(({ node }) => ({ node: { ...node, image: share(node.image) } })) },
+  };
+}
+
+function reshapeProduct(node: ProductNode): Product {
+  const product = shareImages(node);
   return {
     ...product,
     handle: normalizeHandle(product.handle),
