@@ -80,6 +80,18 @@ current filter from its first page. Conflicts close the dialog and reload;
 unknown outcomes remove stale rows until manual refresh. A saved change whose
 reload fails is reported as saved, with further writes blocked until refresh.
 
+### When decisions reach the storefront
+
+Tasks writes to RMT directly and does not notify the Store. The Store caches
+the public reads its pages render (home reviews, the shop-wide rating, catalog
+ratings, and the first page of a product's reviews) for one minute
+(`storeReviewsRevalidate` in `lib/cache-tags.ts`), so an approval, hide,
+restore, reply or deletion reaches those pages within about a minute. A
+buyer's own submission, edit or withdrawal clears that cache at once. The
+`/reviews` list, review searches and later pages always read live, and a
+revoked photo stops loading immediately because media requests are checked
+per request.
+
 ## Photo decisions
 
 Each current text version shows its ordered photos and their status. Photos

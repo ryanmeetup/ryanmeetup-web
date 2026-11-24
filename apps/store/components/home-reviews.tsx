@@ -1,4 +1,3 @@
-import { connection } from "next/server";
 import { Button, SectionHeader } from "@ryanmeetup/ui";
 import { FiArrowRight } from "react-icons/fi";
 import { getHomeReviews } from "@/lib/home-reviews";
@@ -7,9 +6,8 @@ import { getShopReviewSummary } from "@/lib/review-feed";
 import { PublicReviewCard } from "./public-review-card";
 
 export async function HomeReviews() {
-  // Review visibility changes must reach the next page request. The catalog
-  // keeps its existing cache; review text is never frozen into the home shell.
-  await connection();
+  // Served from the home page's cache like the catalog: the backend caches these
+  // reads for a minute and clears them when a buyer changes a review.
   const backend = getReviewBackend();
   const [reviews, summary] = await Promise.all([getHomeReviews({ backend }), getShopReviewSummary(backend)]);
   if (!reviews.length) return null;

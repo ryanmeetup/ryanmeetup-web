@@ -20,7 +20,9 @@ import { getShopReviewSummary } from "@/lib/review-feed";
 import { favoritesPhoneLimit, getHomeCatalog, getPolicies, getShippingCountries } from "@/lib/shopify";
 import { buildStoreSchema } from "@/lib/structured-data";
 
-export const revalidate = 300;
+// Matches the review cache (`storeReviewsRevalidate`), so a moderation change in Tasks
+// reaches the home page within a minute. Catalog reads keep their own five-minute cache.
+export const revalidate = 60;
 
 export const metadata = {
   ...buildPageMetadata({ title: SITE_NAME, description: SITE_DESCRIPTION, canonical: "/", image: DEFAULT_IMAGE }),
@@ -41,7 +43,7 @@ export default async function HomePage() {
       console.error("Could not load policies for the home shipping strip.", error);
       return [];
     }),
-    // The phone band's rating; null (and left out) when it can't be read. Five minutes stale is fine for an average.
+    // The phone band's rating; null (and left out) when it can't be read.
     getShopReviewSummary(getReviewBackend()),
   ]);
   const shipping = getShippingExpectations(policies, shippingCountries);

@@ -1,5 +1,5 @@
 import { revalidateTag } from "next/cache";
-import { shopifyCatalogTag } from "@/lib/shopify-cache";
+import { shopifyCatalogTag } from "@/lib/cache-tags";
 import { handleCatalogWebhook } from "@/lib/shopify-webhook";
 
 export const runtime = "nodejs";

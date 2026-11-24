@@ -1,4 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { revalidateTag, unstable_cache } from "next/cache";
+import { storeReviewsRevalidate, storeReviewsTag } from "./cache-tags";
 import {
   buyerReviewRow, decodeBuyerReviewCursor, decodeReviewCursor, encodeBuyerReviewCursor, encodeReviewCursor, publicReviewPageSchema, publicReviewSearchPageSchema,
   reviewCommandSchema, reviewResultSchema,
@@ -158,9 +160,42 @@ export function createReviewBackend({ database, shopId }: { database: SupabaseCl
 
 export type ReviewBackend = ReturnType<typeof createReviewBackend>;
 
+/**
+ * Public reads that pages render: the home page's latest reviews and ratings,
+ * catalog ratings, and the first page of a product's reviews. Their inputs come
+ * from the catalog, so the cache stays bounded; searches and later pages carry
+ * visitor-chosen text or cursors and always go to the database.
+ */
+function isCachedRead(command: ReviewCommand) {
+  return command.operation === "reviews.latest" || command.operation === "reviews.shopSummary" || command.operation === "reviews.summaries"
+    || (command.operation === "reviews.page" && command.cursor === null);
+}
+
+/** A buyer's own write that can change what the public reads show. */
+function changesPublicReviews(command: ReviewCommand) {
+  return command.operation === "review.submit" || command.operation === "review.edit" || command.operation === "review.withdraw";
+}
+
+/**
+ * Lets the home page be served from the CDN and spares every product view a
+ * database round trip. Moderation in Tasks writes to RMT directly, so an approval
+ * or a hidden review reaches these pages within `storeReviewsRevalidate` seconds;
+ * a buyer's own change clears the cache at once.
+ */
+function withPublicReadCache(backend: ReviewBackend): ReviewBackend {
+  return (async (command: ReviewCommand) => {
+    if (isCachedRead(command)) {
+      return unstable_cache(() => backend(command), ["store-review-read", JSON.stringify(command)], { tags: [storeReviewsTag], revalidate: storeReviewsRevalidate })();
+    }
+    const result = await backend(command);
+    if (changesPublicReviews(command)) revalidateTag(storeReviewsTag, { expire: 0 });
+    return result;
+  }) as ReviewBackend;
+}
+
 /** The configured review storage, or null when the database or shop isn't set up here. */
 export function getReviewBackend() {
   const database = getStoreDatabase();
   const shopId = getStoreShopId();
-  return database && shopId ? createReviewBackend({ database, shopId }) : null;
+  return database && shopId ? withPublicReadCache(createReviewBackend({ database, shopId })) : null;
 }
