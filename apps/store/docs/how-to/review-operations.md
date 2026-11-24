@@ -124,7 +124,8 @@ SQL rolled back.
 
 Vercel Cron calls the Store's `/api/cron/review-cleanup` daily at 08:41 UTC
 (`apps/store/vercel.json`). It needs `CRON_SECRET` in the Store project's
-Vercel environment; without it every call is refused with 401. The route runs
+Vercel environment (set for Production on November 24, 2026, as a sensitive
+value); without it every call is refused with 401. The route runs
 `store_review_cleanup` against RMT, which deletes, per category and at most 500
 rows a run:
 

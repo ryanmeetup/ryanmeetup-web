@@ -52,6 +52,14 @@ old "not started" or "done" label.
 - Offer-level structured data (November 24): every product offer states the
   no-returns policy for checkout's countries. Shipping is not marked up, since
   rates come from checkout's weight tiers; see item 15.
+- Listing highlights (November 24): earned "Top rated", "New", "Best seller",
+  "Trending" and "Hot right now" chips on cards and product pages, rounded
+  milestones such as "25+ sold this month", and a "Last 3 days" / "Ends
+  tomorrow" / "Ends tonight" sale countdown. Sales come from order webhooks and
+  cart adds are counted by the cart route, both stored anonymously in RMT;
+  orders through November 24 were backfilled. Every signal clears a floor, so
+  most products show nothing until real volume exists. See
+  [listing highlights](../reference/listing-highlights.md).
 - Six newest published reviews on the home page, with ratings, approved photos
   and links to their product reviews.
 - A paginated shop-wide review feed at `/reviews` with debounced search,
@@ -138,7 +146,8 @@ personalization input. Confirm the Etsy listings that need personalization
 before adding it.
 
 - [ ] On the first real order with a note, confirm it appears on the Shopify
-      order, and record whether Printful receives it (for example on a packing slip)
+      order (on November 24 a Storefront API cart kept its note and checked out
+      through `checkout.ryanmeetup.com`; only the order side is unproven), and record whether Printful receives it (for example on a packing slip)
       before any copy calls it a gift message.
 - For products that actually require it, model per-line personalization through
   product configuration and cart line attributes, with clear required fields.
