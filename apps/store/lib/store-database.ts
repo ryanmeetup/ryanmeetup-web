@@ -17,6 +17,14 @@ export function getStoreDatabase(env: NodeJS.ProcessEnv = process.env): Supabase
   return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
 }
 
+/**
+ * True when the store database is a local stack or test fake rather than RMT.
+ * Those are reconfigured between requests, so their reads are never cached.
+ */
+export function isLocalStoreDatabase(env: NodeJS.ProcessEnv = process.env) {
+  return env.NODE_ENV !== "production" && loopback.test(env.SUPABASE_URL?.trim() ?? "");
+}
+
 /** The Shopify shop whose reviews this store reads and writes. */
 export function getStoreShopId(env: NodeJS.ProcessEnv = process.env) {
   const id = env.SHOPIFY_CUSTOMER_ACCOUNT_SHOP_ID;

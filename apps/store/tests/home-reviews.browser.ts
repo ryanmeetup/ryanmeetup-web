@@ -59,7 +59,7 @@ test("empty or failed public reads omit the showcase without losing the catalog"
   }
 });
 
-test("a new request reflects moderation removal without a cached home feed", async ({ page, request }) => {
+test("a local review database is read live, so the next request reflects moderation removal", async ({ page, request }) => {
   await page.goto("/"); await expect(page.getByRole("heading", { name: "Latest review 8", exact: true })).toBeVisible();
   await request.post(`${fixture}/__configure`, { data: { [numeric(tee.id)]: { summary, reviews: [review(1)] } } });
   await page.reload(); await expect(page.getByRole("heading", { name: "Latest review 8", exact: true })).toHaveCount(0);

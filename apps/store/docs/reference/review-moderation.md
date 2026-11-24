@@ -92,6 +92,10 @@ buyer's own submission, edit or withdrawal clears that cache at once. The
 revoked photo stops loading immediately because media requests are checked
 per request.
 
+A local Supabase stack or test fake (a loopback `SUPABASE_URL` outside
+production) skips this cache, so the review browser suites see each fixture
+change on the next request.
+
 ## Photo decisions
 
 Each current text version shows its ordered photos and their status. Photos

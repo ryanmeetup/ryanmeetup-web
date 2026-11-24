@@ -6,7 +6,7 @@ import {
   reviewCommandSchema, reviewResultSchema,
 } from "@ryanmeetup/reviews";
 import type { BuyerReview, PublicReview, ReviewCommand, ReviewResults } from "@ryanmeetup/reviews";
-import { getStoreDatabase, getStoreShopId } from "./store-database";
+import { getStoreDatabase, getStoreShopId, isLocalStoreDatabase } from "./store-database";
 import { reportReviewStorageFailure } from "./review-diagnostics";
 import type { ReviewStorageFailure } from "./review-diagnostics";
 
@@ -193,9 +193,14 @@ function withPublicReadCache(backend: ReviewBackend): ReviewBackend {
   }) as ReviewBackend;
 }
 
-/** The configured review storage, or null when the database or shop isn't set up here. */
+/**
+ * The configured review storage, or null when the database or shop isn't set up here.
+ * A local stack or test fake is read live, so a fixture change shows on the next request.
+ */
 export function getReviewBackend() {
   const database = getStoreDatabase();
   const shopId = getStoreShopId();
-  return database && shopId ? withPublicReadCache(createReviewBackend({ database, shopId })) : null;
+  if (!database || !shopId) return null;
+  const backend = createReviewBackend({ database, shopId });
+  return isLocalStoreDatabase() ? backend : withPublicReadCache(backend);
 }
