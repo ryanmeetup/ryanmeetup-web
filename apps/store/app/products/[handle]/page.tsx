@@ -95,10 +95,10 @@ export default async function ProductPage({ params, searchParams }: Props) {
         { name: product.title, path: `/products/${product.handle}` },
       ])} />
       {product.designs ? (
-        <ProductGroupDetail title={product.title} handle={product.handle} url={productUrl} breadcrumbs={breadcrumbs} designs={product.designs} defaultColor={product.defaultColor} reviewsByProduct={reviewsByProduct} reviewAccessByProduct={reviewAccess} productionTime={productionTime} shipsTo={shipsTo} />
+        <ProductGroupDetail title={product.title} handle={product.handle} url={productUrl} breadcrumbs={breadcrumbs} designs={product.designs} defaultColor={product.defaultColor} reviewsByProduct={reviewsByProduct} reviewAccessByProduct={reviewAccess} productionTime={productionTime} shipsTo={shipsTo} shippingCountries={shippingCountries} />
       ) : (
         <>
-          <ProductSchema product={product} reviews={reviewsByProduct[product.id]} url={productUrl} />
+          <ProductSchema product={product} reviews={reviewsByProduct[product.id]} url={productUrl} shippingCountries={shippingCountries} />
           <ProductDetail product={product} breadcrumbs={breadcrumbs} initialColor={query.color} initialImage={getColorPreview(product, query.color)?.image} productionTime={productionTime} shipsTo={shipsTo} />
           <Reviews data={reviewsByProduct[product.id]} product={product} access={reviewAccess[product.id]} />
         </>

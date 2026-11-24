@@ -1,5 +1,5 @@
 import { htmlToText } from "./metadata";
-import { BRAND, SELLER } from "./structured-data";
+import { BRAND, buildReturnPolicy, SELLER } from "./structured-data";
 import type { Product, ProductVariant, ReviewsData } from "./types";
 
 export type ProductSchemaInput = {
@@ -7,7 +7,11 @@ export type ProductSchemaInput = {
   reviews: ReviewsData;
   url: string;
   title?: string;
+  /** Where checkout ships, from Shopify Markets; each offer states the final-sale policy for them. */
+  shippingCountries?: string[];
 };
+
+type ReturnPolicy = ReturnType<typeof buildReturnPolicy>;
 
 // Option names schema.org has a property for; any other option is an additionalProperty.
 const variantProperties: Record<string, "size" | "color" | "material" | "pattern"> = {
@@ -23,7 +27,9 @@ function getSchemaDescription(product: Pick<Product, "description" | "descriptio
   return text.replace(/\s+/g, " ").trim();
 }
 
-function buildOffer(variant: ProductVariant, url: string) {
+// Google's product test checks each offer, not the store's own node on the home page.
+// Shipping is not marked up: rates come from weight tiers quoted only at checkout.
+function buildOffer(variant: ProductVariant, url: string, returnPolicy: ReturnPolicy) {
   return {
     "@type": "Offer",
     price: variant.price.amount,
@@ -32,10 +38,11 @@ function buildOffer(variant: ProductVariant, url: string) {
     itemCondition: "https://schema.org/NewCondition",
     url,
     seller: SELLER,
+    ...(returnPolicy ? { hasMerchantReturnPolicy: returnPolicy } : {}),
   };
 }
 
-function buildVariant(product: Product, variant: ProductVariant, title: string, url: string) {
+function buildVariant(product: Product, variant: ProductVariant, title: string, url: string, returnPolicy: ReturnPolicy) {
   const known: Record<string, string> = {};
   const additionalProperty: { "@type": "PropertyValue"; name: string; value: string }[] = [];
   for (const option of variant.selectedOptions) {
@@ -49,7 +56,7 @@ function buildVariant(product: Product, variant: ProductVariant, title: string, 
     image: variant.image?.url ?? product.featuredImage?.url,
     ...known,
     ...(additionalProperty.length ? { additionalProperty } : {}),
-    offers: buildOffer(variant, url),
+    offers: buildOffer(variant, url, returnPolicy),
   };
 }
 
@@ -58,7 +65,8 @@ function buildVariant(product: Product, variant: ProductVariant, title: string, 
  * A product with options is a ProductGroup with one variant per Shopify variant, the
  * shape Google's merchant listings read sizes, colors, and per-size stock from.
  */
-export function buildProductSchema({ product, reviews, url, title = product.title }: ProductSchemaInput) {
+export function buildProductSchema({ product, reviews, url, title = product.title, shippingCountries = [] }: ProductSchemaInput) {
+  const returnPolicy = buildReturnPolicy(shippingCountries);
   const shared = {
     "@context": "https://schema.org",
     name: title,
@@ -80,7 +88,7 @@ export function buildProductSchema({ product, reviews, url, title = product.titl
   const [only] = product.variants;
   // "Default Title" is Shopify's lone variant for a product without options.
   if (product.variants.length <= 1) {
-    return { ...shared, "@type": "Product", ...(only ? { offers: buildOffer(only, url) } : {}) };
+    return { ...shared, "@type": "Product", ...(only ? { offers: buildOffer(only, url, returnPolicy) } : {}) };
   }
   const variesBy = [...new Set(product.variants.flatMap((variant) => variant.selectedOptions.map((option) => variantProperties[option.name.toLowerCase()])))]
     .filter(Boolean)
@@ -90,6 +98,6 @@ export function buildProductSchema({ product, reviews, url, title = product.titl
     "@type": "ProductGroup",
     productGroupID: product.id.split("/").pop(),
     ...(variesBy.length ? { variesBy } : {}),
-    hasVariant: product.variants.map((variant) => buildVariant(product, variant, title, url)),
+    hasVariant: product.variants.map((variant) => buildVariant(product, variant, title, url, returnPolicy)),
   };
 }

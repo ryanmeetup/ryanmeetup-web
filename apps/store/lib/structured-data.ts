@@ -22,12 +22,28 @@ const sameAs = [
   "https://www.threads.net/@ryanmeetup",
 ];
 
+/** Google reads at most this many countries in one return policy. */
+const maxPolicyCountries = 50;
+
 /**
- * Who runs the store and what the site is called, for search results and knowledge panels.
- * All sales are final, so the return policy is "not permitted" wherever the store ships;
- * without the country list (demo mode, or Shopify down) the policy is left out.
+ * All sales are final, so the return policy is "not permitted" wherever the store ships.
+ * Without the country list (demo mode, or Shopify down), or with more countries than
+ * Google reads, the policy is left out rather than stated for the wrong places.
  */
+export function buildReturnPolicy(shippingCountries: string[]) {
+  const applicableCountry = [...new Set(shippingCountries)];
+  if (!applicableCountry.length || applicableCountry.length > maxPolicyCountries) return null;
+  return {
+    "@type": "MerchantReturnPolicy",
+    applicableCountry,
+    returnPolicyCategory: "https://schema.org/MerchantReturnNotPermitted",
+    merchantReturnLink: `${SITE_URL}/policies/refund-policy`,
+  } as const;
+}
+
+/** Who runs the store and what the site is called, for search results and knowledge panels. */
 export function buildStoreSchema(shippingCountries: string[] = []) {
+  const returnPolicy = buildReturnPolicy(shippingCountries);
   return {
     "@context": "https://schema.org",
     "@graph": [
@@ -40,14 +56,7 @@ export function buildStoreSchema(shippingCountries: string[] = []) {
         parentOrganization: ryanMeetup,
         brand: BRAND,
         sameAs,
-        ...(shippingCountries.length ? {
-          hasMerchantReturnPolicy: {
-            "@type": "MerchantReturnPolicy",
-            applicableCountry: shippingCountries,
-            returnPolicyCategory: "https://schema.org/MerchantReturnNotPermitted",
-            merchantReturnLink: `${SITE_URL}/policies/refund-policy`,
-          },
-        } : {}),
+        ...(returnPolicy ? { hasMerchantReturnPolicy: returnPolicy } : {}),
       },
       {
         "@type": "WebSite",

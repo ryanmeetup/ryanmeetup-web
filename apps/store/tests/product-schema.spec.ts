@@ -96,3 +96,23 @@ test("the store's no-returns policy covers exactly the countries it ships to", (
   expect(store).toMatchObject({ hasMerchantReturnPolicy: { "@type": "MerchantReturnPolicy", applicableCountry: ["US", "CA"], returnPolicyCategory: "https://schema.org/MerchantReturnNotPermitted", merchantReturnLink: "https://store.ryanmeetup.com/policies/refund-policy" } });
   expect(buildStoreSchema()["@graph"][0]).not.toHaveProperty("hasMerchantReturnPolicy");
 });
+
+test("Google reads at most 50 countries, so a longer list leaves the policy out instead of stating part of it", () => {
+  const countries = Array.from({ length: 51 }, (_, index) => `C${index}`);
+  expect(buildStoreSchema(countries)["@graph"][0]).not.toHaveProperty("hasMerchantReturnPolicy");
+  expect(buildStoreSchema([...countries.slice(0, 50), "C0"])["@graph"][0]).toHaveProperty("hasMerchantReturnPolicy");
+});
+
+test("every offer carries the no-returns policy, since product pages don't include the store's own node", () => {
+  const policy = { "@type": "MerchantReturnPolicy", applicableCountry: ["US", "CA"], returnPolicyCategory: "https://schema.org/MerchantReturnNotPermitted" };
+  const group = buildProductSchema({ product: ryan, reviews, url, shippingCountries: ["US", "CA"] });
+  if (!("hasVariant" in group)) throw new Error("expected a ProductGroup");
+  for (const variant of group.hasVariant) expect(variant.offers).toMatchObject({ hasMerchantReturnPolicy: policy });
+  const single = buildProductSchema({ product: { ...ryan, variants: ryan.variants.slice(0, 1) }, reviews, url, shippingCountries: ["US", "CA"] });
+  if (!("offers" in single) || !single.offers) throw new Error("expected a single offer");
+  expect(single.offers).toMatchObject({ hasMerchantReturnPolicy: policy });
+  // Without Markets' country list the policy can't say where it applies.
+  const unknown = buildProductSchema({ product: ryan, reviews, url });
+  if (!("hasVariant" in unknown)) throw new Error("expected a ProductGroup");
+  for (const variant of unknown.hasVariant) expect(variant.offers).not.toHaveProperty("hasMerchantReturnPolicy");
+});

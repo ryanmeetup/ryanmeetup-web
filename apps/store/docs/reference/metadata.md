@@ -41,14 +41,21 @@ payload cannot close its script early.
 The store's `MerchantReturnPolicy` is `MerchantReturnNotPermitted`, since all
 sales are final, and its countries come live from Shopify Markets
 (`getShippingCountries`), so adding or removing a market needs no code change.
-If Shopify can't be reached, the policy is left out rather than guessed.
+`buildReturnPolicy` builds it for both the store node and every product offer.
+If Shopify can't be reached, or Markets lists more than the 50 countries Google
+reads, the policy is left out rather than guessed or cut short.
 
 Product schema rules:
 
 - Size and color options map to schema.org `size`/`color` and `variesBy`; any
   other option becomes an `additionalProperty`.
-- Each offer carries its own price, stock, `NewCondition`, and the store as
-  seller, inlined by name because only the home page has the full store node.
+- Each offer carries its own price, stock, `NewCondition`, the store as
+  seller and the no-returns policy, inlined because only the home page has the
+  full store node.
+- Offers have no `shippingDetails`. Google requires a rate and a delivery time
+  there, and rates come from weight tiers that only checkout quotes; set
+  shipping in Search Console or Merchant Center instead, which Google ranks
+  above page markup.
 - `aggregateRating` appears only when reviews loaded and at least one exists,
   with the half-star scale (`worstRating` 0.5, `bestRating` 5).
 - A grouped listing describes the design rendered on the server; its `url` is

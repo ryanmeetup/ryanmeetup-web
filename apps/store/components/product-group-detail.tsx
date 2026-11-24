@@ -13,7 +13,7 @@ import { ProductDetail } from "./product-detail";
 import { ProductSchema } from "./product-schema";
 import { Reviews } from "./reviews";
 
-export function ProductGroupDetail({ title, handle, url, breadcrumbs, designs, defaultColor, reviewsByProduct, reviewAccessByProduct, productionTime, shipsTo }: {
+export function ProductGroupDetail({ title, handle, url, breadcrumbs, designs, defaultColor, reviewsByProduct, reviewAccessByProduct, productionTime, shipsTo, shippingCountries }: {
   title: string;
   url: string;
   breadcrumbs?: ReactNode;
@@ -24,6 +24,7 @@ export function ProductGroupDetail({ title, handle, url, breadcrumbs, designs, d
   reviewAccessByProduct: Record<string, CustomReviewAccess>;
   productionTime?: string | null;
   shipsTo?: string | null;
+  shippingCountries?: string[];
 }) {
   const searchParams = useSearchParams();
   const navigationFocus = useRef<string | null>(null);
@@ -70,7 +71,7 @@ export function ProductGroupDetail({ title, handle, url, breadcrumbs, designs, d
 
   return (
     <>
-      <ProductSchema product={selected.product} title={title} reviews={reviewsByProduct[selected.product.id]} url={`${url}?${new URLSearchParams(colors ? { color: colorDesign && color ? getColorSlug(color) : colors.find((entry) => entry.design === selected.value)?.slug ?? "" } : { design: selected.value })}`} />
+      <ProductSchema product={selected.product} title={title} reviews={reviewsByProduct[selected.product.id]} shippingCountries={shippingCountries} url={`${url}?${new URLSearchParams(colors ? { color: colorDesign && color ? getColorSlug(color) : colors.find((entry) => entry.design === selected.value)?.slug ?? "" } : { design: selected.value })}`} />
       <ProductDetail
         key={`product-${selected.product.id}`}
         product={selected.product}
