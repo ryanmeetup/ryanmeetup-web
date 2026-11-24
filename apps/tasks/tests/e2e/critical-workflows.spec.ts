@@ -61,7 +61,7 @@ test("filters notes by category and keeps note actions in the row menu", async (
 }) => {
   await enterDemoWorkspace(page, baseURL);
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.goto("/notes");
+  await page.goto("/notes?note-view=table");
   await page.waitForLoadState("networkidle");
   // Each title holds a phone link and a desktop button; role queries skip
   // whichever one the breakpoint hides, so read the control that shows.

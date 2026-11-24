@@ -59,8 +59,8 @@ export function NotesPageClient({
     "note-category",
     "all",
   );
-  const [noteViewParam, setNoteView] = useQueryParamState("note-view", "table");
-  const cardsView = noteViewParam === "cards";
+  const [noteViewParam, setNoteView] = useQueryParamState("note-view", "cards");
+  const cardsView = noteViewParam !== "table";
   const NoteItem = cardsView ? NoteCard : NoteRow;
   const showArchived = archiveFilter(noteStatusParam) === "archived";
   const [openNoteId, setOpenNoteId] = useState<string | null>(null);

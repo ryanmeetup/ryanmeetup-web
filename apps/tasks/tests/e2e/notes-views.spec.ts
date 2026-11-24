@@ -25,9 +25,15 @@ test("switches layouts without losing search or category filters and reloads the
 }) => {
   await page.goto("/notes");
   await page.waitForLoadState("networkidle");
+  await expect(page.getByRole("list", { name: "Note cards" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "View Cards", exact: true }),
+  ).toBeVisible();
+  await chooseView(page, "Table");
   await expect(
     page.getByRole("table", { name: "Notes", exact: true }),
   ).toBeVisible();
+  await expect(page).toHaveURL(/note-view=table/);
 
   await page.getByRole("button", { name: /^Category/ }).click();
   await page.getByRole("option", { name: /^Events/ }).click();
@@ -39,13 +45,13 @@ test("switches layouts without losing search or category filters and reloads the
   await expect(cards.getByRole("listitem")).toHaveCount(1);
   await expect(
     cards.getByRole("heading", { level: 3 }).getByRole("button"),
-  ).toHaveText("Vendor shortlist");
+  ).toHaveText(["Vendor shortlist"]);
   await expect(page.getByRole("table")).toHaveCount(0);
 
   await page.reload();
   await expect(
     cards.getByRole("heading", { level: 3 }).getByRole("button"),
-  ).toHaveText("Vendor shortlist");
+  ).toHaveText(["Vendor shortlist"]);
   await expect(page.getByLabel("Search notes")).toHaveValue("lantern");
   await expect(page.getByRole("button", { name: /^Category/ })).toContainText(
     "Events",
@@ -57,10 +63,13 @@ test("switches layouts without losing search or category filters and reloads the
       .getByRole("table")
       .getByRole("heading", { level: 3 })
       .getByRole("button"),
-  ).toHaveText("Vendor shortlist");
-  await expect(page).not.toHaveURL(/note-view=/);
+  ).toHaveText(["Vendor shortlist"]);
+  await expect(page).toHaveURL(/note-view=table/);
   await expect(page).toHaveURL(/note-category=Events/);
   await expect(page).toHaveURL(/note-search=lantern/);
+  await chooseView(page, "Cards");
+  await expect(page).not.toHaveURL(/note-view=/);
+  await expect(cards).toBeVisible();
 });
 
 test("card actions edit, archive, and restore the same note across views", async ({
