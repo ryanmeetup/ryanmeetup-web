@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { parseCartAction } from "@/lib/cart-action";
+import { recordCartAdd } from "@/lib/product-activity";
 import {
   addCartLine,
   createCart,
@@ -51,7 +52,13 @@ export async function POST(request: Request) {
   if (!body) return NextResponse.json({ error: "That cart change could not be read. Please refresh and try again." }, { status: 400 });
 
   try {
-    return NextResponse.json({ cart: await runCartAction(body) });
+    const cart = await runCartAction(body);
+    if (body.action === "add" && cart) {
+      // Counted after the response, so the shopper never waits on it; one row per cart and product.
+      const productId = cart.lines.find((line) => line.merchandise.id === body.merchandiseId)?.merchandise.product.id;
+      if (productId) after(() => recordCartAdd(cart.id, productId));
+    }
+    return NextResponse.json({ cart });
   } catch (error) {
     // Shopify's own refusals (stock limits, unavailable items) are written for shoppers.
     if (error instanceof ShopifyUserError) return NextResponse.json({ error: error.message }, { status: 422 });

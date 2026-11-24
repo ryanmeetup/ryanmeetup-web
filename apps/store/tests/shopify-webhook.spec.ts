@@ -112,3 +112,34 @@ test("cache failures are not acknowledged as successful deliveries", async () =>
     throw new Error("Cache unavailable");
   })).rejects.toThrow("Cache unavailable");
 });
+
+test.describe("order topics", () => {
+  const calls: string[] = [];
+  const orders = {
+    record: async (order: unknown) => { calls.push(`record:${(order as { id: number }).id}`); return { recorded: true }; },
+    forget: async (order: unknown) => { calls.push(`forget:${(order as { id: number }).id}`); return { recorded: true }; },
+  };
+  test.beforeEach(() => { calls.length = 0; });
+
+  test("signed order deliveries record and forget sales without touching the catalog", async () => {
+    const payload = '{"id": 77, "line_items": []}';
+    const created = await handleCatalogWebhook(delivery("orders/create", payload), () => { invalidations++; }, orders);
+    expect(await created.json()).toEqual({ recorded: true });
+    const cancelled = await handleCatalogWebhook(delivery("orders/cancelled", payload), () => { invalidations++; }, orders);
+    expect(cancelled.status).toBe(200);
+    expect(calls).toEqual(["record:77", "forget:77"]);
+    expect(invalidations).toBe(0);
+  });
+
+  test("an unsigned order delivery records nothing", async () => {
+    const response = await handleCatalogWebhook(delivery("orders/create", '{"id": 77}', sign("other")), () => {}, orders);
+    expect(response.status).toBe(401);
+    expect(calls).toEqual([]);
+  });
+
+  test("an unreadable order payload is refused", async () => {
+    const response = await handleCatalogWebhook(delivery("orders/create", "not json"), () => {}, orders);
+    expect(response.status).toBe(400);
+    expect(calls).toEqual([]);
+  });
+});

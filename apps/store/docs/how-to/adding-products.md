@@ -15,7 +15,9 @@ the store's catalog cache; a five-minute refresh is the fallback. The subscripti
 live in Shopify Admin under **Settings → Notifications → Webhooks**, and their
 signing secret is `SHOPIFY_WEBHOOK_SECRET` in the Vercel **store** project. If
 the store's domain changes, update each subscription's URL; if the secret is
-rotated, update Vercel and redeploy.
+rotated, update Vercel and redeploy. The same URL also receives **Order
+creation** and **Order cancellation**, which feed the anonymous sales counts
+behind [listing highlights](../reference/listing-highlights.md).
 
 The store pulls everything from Shopify. These settings on each product decide
 what customers see:

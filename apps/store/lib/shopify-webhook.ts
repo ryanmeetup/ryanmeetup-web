@@ -9,12 +9,18 @@ const catalogTopics = new Set([
   "collection_listings/add", "collection_listings/update", "collection_listings/remove",
 ]);
 
+/** Order topics that feed anonymous sales activity; see `lib/product-activity`. */
+export type OrderActivityHandlers = {
+  record: (order: unknown) => Promise<{ recorded: boolean }>;
+  forget: (order: unknown) => Promise<{ recorded: boolean }>;
+};
+
 function respond(body: Record<string, unknown>, status = 200) {
   return NextResponse.json(body, { status, headers: { "Cache-Control": "no-store" } });
 }
 
 /** The callback keeps cache mutation behind authentication and permits direct route tests. */
-export async function handleCatalogWebhook(request: Request, invalidateCatalog: () => void) {
+export async function handleCatalogWebhook(request: Request, invalidateCatalog: () => void, orders?: OrderActivityHandlers) {
   const secret = process.env.SHOPIFY_WEBHOOK_SECRET;
   if (!secret) return respond({ error: "Shopify webhooks are not configured." }, 503);
 
@@ -34,6 +40,17 @@ export async function handleCatalogWebhook(request: Request, invalidateCatalog: 
 
   const topic = request.headers.get("x-shopify-topic");
   if (!topic) return respond({ error: "Missing webhook topic." }, 400);
+  if (orders && (topic === "orders/create" || topic === "orders/cancelled")) {
+    let order: unknown;
+    try {
+      order = JSON.parse(body.toString("utf8"));
+    } catch {
+      return respond({ error: "Unreadable order payload." }, 400);
+    }
+    // Storage failures propagate as 500s so Shopify retries; a redelivery is recorded once.
+    const result = await (topic === "orders/create" ? orders.record(order) : orders.forget(order));
+    return respond(result);
+  }
   if (!catalogTopics.has(topic)) return respond({ revalidated: false });
 
   // Repeated or out-of-order deliveries are harmless: fetch the current catalog

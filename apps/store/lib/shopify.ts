@@ -117,7 +117,7 @@ const cartFragment = `
               compareAtPrice { amount currencyCode }
               image { url altText width height }
               selectedOptions { name value }
-              product { handle title tags }
+              product { id handle title tags }
             }
           }
         }

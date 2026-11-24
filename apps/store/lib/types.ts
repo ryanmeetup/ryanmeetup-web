@@ -111,7 +111,7 @@ export type CartLine = {
   id: string;
   merchandise: ProductVariant & {
     /** `href` is the canonical product link, resolved on the server; older saved carts lack it. */
-    product: Pick<Product, "handle" | "title"> & { tags?: string[]; href?: string };
+    product: Pick<Product, "handle" | "title"> & { id?: string; tags?: string[]; href?: string };
   };
   quantity: number;
 };

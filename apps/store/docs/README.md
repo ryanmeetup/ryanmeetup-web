@@ -31,6 +31,7 @@ describes the current owner screen and decisions.
 | [Purchase verification](reference/review-purchase-verification.md) | Exact-line eligibility, bounded lookups, unverified feedback and suggestions. |
 | [Review media](reference/review-media.md) | Processing, staging, buyer controls, staff decisions, public delivery and current limits. |
 | [Review moderation](reference/review-moderation.md) | Owner authorization, queue/API contracts, decisions, replies and policy deletion. |
+| [Listing highlights](reference/listing-highlights.md) | Earned labels, rounded milestones, the sale countdown and the activity data behind them. |
 | [Analytics](reference/analytics.md) | Vercel events, privacy rules, placements and how to read them for design decisions. |
 | [Metadata](reference/metadata.md) | Page titles, canonicals, social cards, JSON-LD, sitemap and Shopify content cleanup. |
 
