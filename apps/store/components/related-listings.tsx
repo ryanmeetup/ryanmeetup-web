@@ -1,5 +1,6 @@
 import { Button, EmptyState, SectionHeader } from "@ryanmeetup/ui";
 import { FiArrowRight } from "react-icons/fi";
+import { toCardCatalog } from "@/lib/listing-card";
 import { withListingRatings } from "@/lib/listing-ratings";
 import { getRelatedBrowseLink } from "@/lib/related-listings";
 import { getRelatedListings } from "@/lib/shopify";
@@ -14,7 +15,7 @@ import { ProductGrid } from "./product-grid";
 export async function RelatedListings({ product }: { product: ProductListing }) {
   let related: ProductListing[];
   try {
-    related = (await withListingRatings({ products: await getRelatedListings(product) })).products;
+    related = toCardCatalog(await withListingRatings({ products: await getRelatedListings(product) })).products;
   } catch (error) {
     console.error("Could not load related listings", error);
     return null;

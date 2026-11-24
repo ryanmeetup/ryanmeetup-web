@@ -5,6 +5,7 @@ import { CollectionGrid } from "@/components/collection-grid";
 import { JsonLd } from "@/components/json-ld";
 import { getCatalogCollection, getCollectionPath } from "@/lib/catalog-collections";
 import { getGarmentParams, getGarmentPath } from "@/lib/garments";
+import { toCardCatalog } from "@/lib/listing-card";
 import { withListingRatings } from "@/lib/listing-ratings";
 import { buildPageMetadata, DEFAULT_IMAGE, toMetadataImage, toMetaDescription } from "@/lib/metadata";
 import { getGarmentIcon, getStoreCollectionIcon, StoreHomeIcon } from "@/lib/navigation";
@@ -46,7 +47,7 @@ export default async function GarmentPage({ params }: Props) {
   const department = getCatalogCollection(handle);
   const found = await getStockedGarmentCollection(handle, garment);
   if (!department || !found) notFound();
-  const result = await withListingRatings(found);
+  const result = toCardCatalog(await withListingRatings(found));
   return (
     <main className="store-container py-10 sm:py-14">
       <JsonLd data={buildBreadcrumbSchema([{ name: "Store", path: "/" }, { name: department.title, path: getCollectionPath(handle) }, { name: result.collection.title, path: getGarmentPath(handle, garment) }])} />

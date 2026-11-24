@@ -5,6 +5,7 @@ import { CollectionGrid } from "@/components/collection-grid";
 import { JsonLd } from "@/components/json-ld";
 import { isDepartment } from "@/lib/catalog-collections";
 import { decodeRouteHandle, normalizeHandle } from "@/lib/handles";
+import { toCardCatalog } from "@/lib/listing-card";
 import { withListingRatings } from "@/lib/listing-ratings";
 import { buildPageMetadata, DEFAULT_IMAGE, toMetadataImage, toMetaDescription } from "@/lib/metadata";
 import { getStoreCollectionIcon, StoreHomeIcon } from "@/lib/navigation";
@@ -39,7 +40,7 @@ export default async function CollectionPage({ params }: Props) {
   if (handle !== requested) permanentRedirect(`/collections/${handle}`);
   const found = await getCollection(handle);
   if (!found) notFound();
-  const result = await withListingRatings(found);
+  const result = toCardCatalog(await withListingRatings(found));
   return (
     <main className="store-container py-10 sm:py-14">
       <JsonLd data={buildBreadcrumbSchema([{ name: "Store", path: "/" }, { name: result.collection.title, path: `/collections/${handle}` }])} />
