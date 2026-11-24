@@ -1,6 +1,8 @@
 import type { HTMLAttributes, ReactNode, TdHTMLAttributes } from "react";
 import { DropdownMenuButton } from "@ryanmeetup/ui";
 import { FiMoreHorizontal } from "react-icons/fi";
+import { SortHeader } from "./SortHeader";
+import type { SortChoice, TableSort } from "./SortHeader";
 
 export type ResponsiveTableColumn = {
   label: string;
@@ -8,6 +10,12 @@ export type ResponsiveTableColumn = {
   width?: string;
   /** Keep the header for screen readers only, as for an actions column. */
   hideLabel?: boolean;
+  /** Makes the header a sort menu. Stacked rows hide headers, so offer the same choices elsewhere there. */
+  sort?: {
+    groups: SortChoice<string>[][];
+    current: TableSort<string>;
+    onSort: (sort: TableSort<string>) => void;
+  };
 };
 
 /*
@@ -59,19 +67,30 @@ export function ResponsiveTable({
         {/* Stacked rows read top to bottom, so the header row is only for screen readers there. */}
         <thead className={wide.head}>
           <tr>
-            {columns.map((column) => (
-              <th
-                key={column.label}
-                scope="col"
-                className="px-3 py-3 font-semibold first:pl-4 last:pr-4"
-              >
-                {column.hideLabel ? (
-                  <span className="sr-only">{column.label}</span>
-                ) : (
-                  column.label
-                )}
-              </th>
-            ))}
+            {columns.map((column) =>
+              column.sort ? (
+                <SortHeader
+                  key={column.label}
+                  label={column.label}
+                  groups={column.sort.groups}
+                  sort={column.sort.current}
+                  onSort={column.sort.onSort}
+                  className="px-3 py-3 first:pl-4 last:pr-4"
+                />
+              ) : (
+                <th
+                  key={column.label}
+                  scope="col"
+                  className="px-3 py-3 font-semibold first:pl-4 last:pr-4"
+                >
+                  {column.hideLabel ? (
+                    <span className="sr-only">{column.label}</span>
+                  ) : (
+                    column.label
+                  )}
+                </th>
+              ),
+            )}
           </tr>
         </thead>
         <tbody className={wide.body}>{children}</tbody>

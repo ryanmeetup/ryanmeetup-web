@@ -1,25 +1,8 @@
-import { Fragment, type ReactNode } from "react";
-import {
-  FiAlertTriangle,
-  FiArrowDown,
-  FiArrowUp,
-  FiCalendar,
-  FiCheck,
-  FiChevronDown,
-  FiMail,
-  FiX,
-} from "react-icons/fi";
-import {
-  Button,
-  CopyText,
-  DropdownMenu,
-  DropdownMenuButton,
-  DropdownMenuItem,
-  DropdownMenuItems,
-  DropdownMenuSeparator,
-  DropdownSelect,
-  Tooltip,
-} from "@ryanmeetup/ui";
+import type { ReactNode } from "react";
+import { SortHeader, sortBoth } from "@/components/global";
+import type { SortChoice } from "@/components/global";
+import { FiAlertTriangle, FiCalendar, FiMail } from "react-icons/fi";
+import { Button, CopyText, DropdownSelect, Tooltip } from "@ryanmeetup/ui";
 import { formatRydDay } from "@/lib/ryd/form-responses";
 import { rydCardComplete, rydCardProblems } from "@/lib/ryd/card";
 import {
@@ -42,24 +25,13 @@ import {
 import { RydEmailLink } from "./RydEmailLink";
 import { RydSelectCheckbox } from "./RydSelection";
 
-type SortChoice = { key: RydSortKey; descending: boolean; label: string };
-
-const both = (
-  key: RydSortKey,
-  ascending: string,
-  descending: string,
-): SortChoice[] => [
-  { key, descending: false, label: ascending },
-  { key, descending: true, label: descending },
-];
-
 /** Each column's choices, in groups the menu separates. */
 const SORT_CHOICES: Record<
   "name" | "status" | "form" | "ordered" | "production",
-  SortChoice[][]
+  SortChoice<RydSortKey>[][]
 > = {
   name: [
-    both("name", "A to Z by surname", "Z to A by surname"),
+    sortBoth("name", "A to Z by surname", "Z to A by surname"),
     [
       { key: "ryan", descending: false, label: "First-name Ryans first" },
       {
@@ -70,102 +42,14 @@ const SORT_CHOICES: Record<
       { key: "ryan", descending: true, label: "Non-Ryans first" },
     ],
   ],
-  status: [both("status", "Pending first", "Cancelled first")],
-  form: [both("form", "Surest match first", "No submission first")],
-  ordered: [both("ordered", "Oldest first", "Newest first")],
+  status: [sortBoth("status", "Pending first", "Cancelled first")],
+  form: [sortBoth("form", "Surest match first", "No submission first")],
+  ordered: [sortBoth("ordered", "Oldest first", "Newest first")],
   production: [
-    both("production", "Ready to send first", "Done first"),
-    both("production-sent", "Oldest sent first", "Newest sent first"),
+    sortBoth("production", "Ready to send first", "Done first"),
+    sortBoth("production-sent", "Oldest sent first", "Newest sent first"),
   ],
 };
-
-/**
- * A header that opens its column's sort choices: each one picked outright,
- * or back to the queue's own order. `aria-sort` and the arrow say which is on.
- */
-function SortHeader({
-  column,
-  label,
-  sort,
-  onSort,
-  className,
-}: {
-  column: keyof typeof SORT_CHOICES;
-  label: string;
-  sort: RydSort;
-  onSort: (sort: RydSort) => void;
-  className: string;
-}) {
-  const groups = SORT_CHOICES[column].map((group) =>
-    group.map((choice) => ({
-      ...choice,
-      icon: choice.descending ? FiArrowDown : FiArrowUp,
-      current:
-        sort?.key === choice.key && sort.descending === choice.descending,
-    })),
-  );
-  const active = groups.flat().some((choice) => choice.key === sort?.key);
-  // At rest a chevron says the header opens a menu; once sorted, the arrow
-  // says which way.
-  const Indicator = active
-    ? sort?.descending
-      ? FiArrowDown
-      : FiArrowUp
-    : FiChevronDown;
-  return (
-    <th
-      className={className}
-      aria-sort={
-        active ? (sort?.descending ? "descending" : "ascending") : "none"
-      }
-    >
-      <DropdownMenu>
-        <DropdownMenuButton
-          unstyled
-          aria-label={`Sort by ${label.toLowerCase()}`}
-          className={`-mx-1.5 -my-1 inline-flex items-center gap-1 whitespace-nowrap rounded px-1.5 py-1 font-semibold uppercase tracking-caps-tight transition hover:bg-black/5 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40 data-open:bg-black/5 data-open:text-black dark:hover:bg-white/10 dark:hover:text-white dark:focus-visible:ring-white/50 dark:data-open:bg-white/10 dark:data-open:text-white ${active ? "text-black dark:text-white" : ""}`}
-        >
-          {label}
-          <Indicator
-            aria-hidden
-            className={`h-3 w-3 shrink-0 ${active ? "" : "opacity-70"}`}
-          />
-        </DropdownMenuButton>
-        <DropdownMenuItems align="start">
-          {groups.map((group, index) => (
-            <Fragment key={group[0].label}>
-              {index > 0 && <DropdownMenuSeparator />}
-              {group.map(({ key, descending, label, icon: Icon, current }) => (
-                <DropdownMenuItem
-                  key={label}
-                  onClick={() => onSort({ key, descending })}
-                >
-                  <Icon aria-hidden className="h-4 w-4 opacity-60" />
-                  <span className="flex-1">{label}</span>
-                  {current && (
-                    <>
-                      <FiCheck aria-hidden className="h-4 w-4" />
-                      <span className="sr-only">(current)</span>
-                    </>
-                  )}
-                </DropdownMenuItem>
-              ))}
-            </Fragment>
-          ))}
-          {active && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => onSort(null)}>
-                <FiX aria-hidden className="h-4 w-4 opacity-60" />
-                Clear sort
-              </DropdownMenuItem>
-            </>
-          )}
-        </DropdownMenuItems>
-      </DropdownMenu>
-    </th>
-  );
-}
 
 /** Column widths; the production view trades Form's room for its own column. */
 const COLUMNS = ["w-[24%]", "w-[13%]", "w-[27%]", "w-[18%]", "w-[18%]"];
@@ -455,28 +339,28 @@ export function RydOrderTable({
                 </th>
               )}
               <SortHeader
-                column="name"
+                groups={SORT_CHOICES.name}
                 label="Ryan"
                 sort={sort}
                 onSort={onSort}
                 className="px-4 py-3"
               />
               <SortHeader
-                column="status"
+                groups={SORT_CHOICES.status}
                 label="Status"
                 sort={sort}
                 onSort={onSort}
                 className="px-3 py-3"
               />
               <SortHeader
-                column="form"
+                groups={SORT_CHOICES.form}
                 label="Form"
                 sort={sort}
                 onSort={onSort}
                 className="px-3 py-3"
               />
               <SortHeader
-                column="ordered"
+                groups={SORT_CHOICES.ordered}
                 label="Order"
                 sort={sort}
                 onSort={onSort}
@@ -484,7 +368,7 @@ export function RydOrderTable({
               />
               {production && (
                 <SortHeader
-                  column="production"
+                  groups={SORT_CHOICES.production}
                   label="Progress"
                   sort={sort}
                   onSort={onSort}

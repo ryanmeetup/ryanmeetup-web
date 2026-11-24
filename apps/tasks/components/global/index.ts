@@ -32,6 +32,14 @@ export {
   ResponsiveTableRow,
   type ResponsiveTableColumn,
 } from "./ResponsiveTable";
+export {
+  SortHeader,
+  parseTableSort,
+  sortBoth,
+  tableSortValue,
+  type SortChoice,
+  type TableSort,
+} from "./SortHeader";
 export { TaskBanners } from "./TaskBanners";
 export {
   PersistentWorkspaceShell,
