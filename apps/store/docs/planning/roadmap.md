@@ -91,6 +91,7 @@ Item numbers remain stable for existing references.
 | 15 | [Search and shopping discovery](#15-search-and-shopping-discovery) | Sitemap and structured data are live; submit them to Search Console and decide on free Shopping listings. |
 | 16 | [Checkout email recovery](#16-checkout-email-recovery) | No storefront email capture; confirm abandoned-checkout emails and decide on checkout marketing consent. |
 | 17 | [Black RYDay wind-down](#17-black-ryday-wind-down) | Due after the sale ends November 30, 2026 (ET). |
+| 18 | [Listing highlight webhooks](#18-listing-highlight-webhooks) | Code, table and backfill live (November 24); add the two order webhooks in Shopify Admin. |
 
 ### 4. Shopify and Printful operating setup
 
@@ -249,6 +250,20 @@ After the sale ends at 11:59 p.m. ET on Monday, November 30, 2026:
 
 **Complete when:** the discounts are gone, the promotion is null, and the
 banner decision is deployed.
+
+### 18. Listing highlight webhooks
+
+[Listing highlights](../reference/listing-highlights.md) count sales from Shopify
+order webhooks. Orders through November 24, 2026 were backfilled into RMT.
+
+- [ ] In Shopify Admin → **Settings → Notifications → Webhooks**, add **Order
+      creation** and **Order cancellation** (JSON, latest API version) pointing at
+      `https://store.ryanmeetup.com/api/webhooks/shopify`, the same URL as the
+      catalog webhooks, so they share `SHOPIFY_WEBHOOK_SECRET`.
+- [ ] Place or confirm a real order and check that a `sale` row appears in
+      `store_product_activity`.
+
+**Complete when:** both subscriptions exist and one live order has been recorded.
 
 ## Decisions retained
 
