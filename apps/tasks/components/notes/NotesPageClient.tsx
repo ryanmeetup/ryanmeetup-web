@@ -41,6 +41,7 @@ import type { WorkspaceData } from "@/lib/workspace/workspace-types";
 import { mutate } from "@/lib/mutation-client";
 import { archiveFilter } from "@/lib/resources/resource-management";
 import { NoteRow, noteColumns } from "./NoteRow";
+import { NoteCard } from "./NoteCard";
 import { NoteModal } from "./NoteModal";
 import { saveNoteDraft } from "./note-requests";
 import { NewNoteModal, type NewNoteDraft } from "./NewNoteModal";
@@ -70,6 +71,9 @@ export function NotesPageClient({
     "note-category",
     "all",
   );
+  const [noteViewParam, setNoteView] = useQueryParamState("note-view", "table");
+  const cardsView = noteViewParam === "cards";
+  const NoteItem = cardsView ? NoteCard : NoteRow;
   const showArchived = archiveFilter(noteStatusParam) === "archived";
   const [openNoteId, setOpenNoteId] = useState<string | null>(null);
   const [editingNote, setEditingNote] = useState(false);
@@ -274,6 +278,51 @@ export function NotesPageClient({
     }
   }
 
+  const noteItems = visibleNotes.map((note) => {
+    const item = (
+      <NoteItem
+        key={note.id}
+        note={note}
+        category={
+          data.categories.find(
+            (category) => category.id === note.category_id,
+          ) ?? null
+        }
+        profiles={data.profiles}
+        canConvertToProject={canConvertToProject}
+        commentCount={
+          comments.filter((comment) => comment.note_id === note.id).length
+        }
+        convertedTask={data.tasks.find(
+          (task) => task.id === note.converted_task_id,
+        )}
+        convertedProject={data.projects.find(
+          (project) => project.id === note.converted_project_id,
+        )}
+        onOpen={(next) => {
+          setEditingNote(false);
+          setOpenNoteId(next.id);
+        }}
+        onEdit={(next) => {
+          setEditingNote(true);
+          setOpenNoteId(next.id);
+        }}
+        onArchive={toggleArchived}
+        onConvert={setConvertTarget}
+        onConvertToProject={setConvertProjectTarget}
+        onDelete={setDeleteTarget}
+        triggers={triggers}
+      />
+    );
+    return cardsView ? (
+      <li key={note.id} className="min-w-0">
+        {item}
+      </li>
+    ) : (
+      item
+    );
+  });
+
   return (
     <>
       <WorkspacePageShell
@@ -327,10 +376,10 @@ export function NotesPageClient({
               </h2>
             )}
 
-            {activeNotes.length ? (
-              <div>
-                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <div className="min-w-0 flex-1">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+              {activeNotes.length > 0 && (
+                <>
+                  <div className="min-w-0 flex-1 sm:min-w-64">
                     <SearchInput
                       label="Search notes"
                       name="note-search"
@@ -362,54 +411,40 @@ export function NotesPageClient({
                       })),
                     ]}
                   />
-                </div>
+                </>
+              )}
+              <DropdownSelect
+                label="View"
+                variant="compact"
+                value={cardsView ? "cards" : "table"}
+                onChange={setNoteView}
+                options={[
+                  { label: "Cards", value: "cards" },
+                  { label: "Table", value: "table" },
+                ]}
+              />
+            </div>
 
+            {activeNotes.length ? (
+              <div>
                 <PendingResults pending={searchPending} label="Loading notes">
                   {visibleNotes.length ? (
-                    <ResponsiveTable
-                      caption={showArchived ? "Archived notes" : "Notes"}
-                      columns={noteColumns}
-                      layout="auto"
-                    >
-                      {visibleNotes.map((note) => (
-                        <NoteRow
-                          key={note.id}
-                          note={note}
-                          category={
-                            data.categories.find(
-                              (category) => category.id === note.category_id,
-                            ) ?? null
-                          }
-                          profiles={data.profiles}
-                          canConvertToProject={canConvertToProject}
-                          commentCount={
-                            comments.filter(
-                              (comment) => comment.note_id === note.id,
-                            ).length
-                          }
-                          convertedTask={data.tasks.find(
-                            (task) => task.id === note.converted_task_id,
-                          )}
-                          convertedProject={data.projects.find(
-                            (project) =>
-                              project.id === note.converted_project_id,
-                          )}
-                          onOpen={(next) => {
-                            setEditingNote(false);
-                            setOpenNoteId(next.id);
-                          }}
-                          onEdit={(next) => {
-                            setEditingNote(true);
-                            setOpenNoteId(next.id);
-                          }}
-                          onArchive={toggleArchived}
-                          onConvert={setConvertTarget}
-                          onConvertToProject={setConvertProjectTarget}
-                          onDelete={setDeleteTarget}
-                          triggers={triggers}
-                        />
-                      ))}
-                    </ResponsiveTable>
+                    cardsView ? (
+                      <ul
+                        aria-label="Note cards"
+                        className="grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-3"
+                      >
+                        {noteItems}
+                      </ul>
+                    ) : (
+                      <ResponsiveTable
+                        caption={showArchived ? "Archived notes" : "Notes"}
+                        columns={noteColumns}
+                        layout="auto"
+                      >
+                        {noteItems}
+                      </ResponsiveTable>
+                    )
                   ) : (
                     <EmptyState
                       icon={<FiSearch />}
