@@ -11,6 +11,7 @@ import {
   getButtonClasses,
 } from "@ryanmeetup/ui";
 import { FaCamera as Camera } from "react-icons/fa";
+import { FaShirt } from "react-icons/fa6";
 import { FiArrowUpRight, FiChevronDown, FiMap, FiMic } from "react-icons/fi";
 
 import type { BaseballTeam } from "@/lib/types";
@@ -249,6 +250,7 @@ const BaseballHero = ({
             href="#merch"
             size="md"
             variant="outline"
+            leftIcon={<FaShirt aria-hidden />}
             fullWidth
             className="sm:w-auto"
           >
