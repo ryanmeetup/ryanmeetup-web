@@ -173,3 +173,42 @@ export function moderationReviewSearchText(review: ModerationReview): string {
     ...revisions.flatMap((revision) => [revision.displayName, revision.title, revision.body])]
     .filter(Boolean).join(" ").toLowerCase();
 }
+
+/** The version a row shows its reviewer, date, and photos from: waiting, rejected, live, then last submitted. */
+export function moderationDisplayRevision(review: ModerationReview): ModerationRevision {
+  return review.pending ?? review.rejected ?? review.published ?? review.latest;
+}
+
+export const MODERATION_SORT_KEYS = ["product", "status", "submitted"] as const;
+export type ModerationSortKey = (typeof MODERATION_SORT_KEYS)[number];
+export type ModerationSort = { key: ModerationSortKey; descending: boolean } | null;
+
+/** The workflow's order, in step with the status chip: decisions first, closed reviews last. */
+function moderationStatusRank(review: ModerationReview) {
+  if (review.state === "hidden") return 4;
+  if (review.state === "withdrawn") return 5;
+  if (review.pending) return 0;
+  if (review.rejected) return 1;
+  return review.published ? 2 : 3;
+}
+
+const titleOrder = new Intl.Collator("en", { sensitivity: "base", numeric: true });
+const comparators: Record<ModerationSortKey, (a: ModerationReview, b: ModerationReview) => number> = {
+  product: (a, b) => titleOrder.compare(a.item.productTitle, b.item.productTitle) ||
+    titleOrder.compare(a.item.variantTitle ?? "", b.item.variantTitle ?? ""),
+  status: (a, b) => moderationStatusRank(a) - moderationStatusRank(b),
+  // Staff timestamps share one fixed-width UTC format, so text order is time order.
+  submitted: (a, b) => {
+    const left = moderationDisplayRevision(a).submittedAt, right = moderationDisplayRevision(b).submittedAt;
+    return left < right ? -1 : left > right ? 1 : 0;
+  },
+};
+
+/** Ties keep the queue's newest-first order, whichever direction is chosen. */
+export function sortModerationReviews(reviews: ModerationReview[], sort: ModerationSort): ModerationReview[] {
+  if (!sort) return reviews;
+  const compare = comparators[sort.key];
+  return reviews.map((review, index) => ({ review, index }))
+    .sort((a, b) => (sort.descending ? -compare(a.review, b.review) : compare(a.review, b.review)) || a.index - b.index)
+    .map(({ review }) => review);
+}

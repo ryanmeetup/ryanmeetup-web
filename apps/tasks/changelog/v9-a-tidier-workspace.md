@@ -54,6 +54,10 @@ text.
 Move between review pages and choose the number of rows with the same
 pagination controls used elsewhere in the workspace. Previous pages stay
 available, and bulk selection applies to the reviews on the displayed page.
+The pagination bar counts every review in the queue, not only the ones loaded so
+far. Sort the queue by product, status, or submission time from the column
+headers, or from the Sort menu on narrow screens; the sort stays in the page
+link.
 
 Reviews brought over from the Etsy shop arrive already published, dated when
 they were left on Etsy. They carry a Verified Etsy purchase badge instead of

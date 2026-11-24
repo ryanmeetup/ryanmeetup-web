@@ -446,6 +446,37 @@ test("distinguishes failed initial reads from an empty queue and supports paging
   await expect(pagination).toContainText("Page 1 of 1");
 });
 
+test("column sorts order the whole queue, persist in the URL, and keep the reviewer date on one line", async ({ page, request }) => {
+  expect((await request.post(`${fixture}/__reviews/reset`, { data: { many: true } })).ok()).toBeTruthy();
+  await signIn(page); await page.setViewportSize({ width: 1280, height: 1000 }); await page.goto("/store-reviews");
+  const pagination = page.getByRole("navigation", { name: "reviews pagination" });
+  const product = page.getByRole("columnheader", { name: "Sort by product" });
+  await expect(product).toHaveAttribute("aria-sort", "none");
+  await product.getByRole("button", { name: "Sort by product" }).click();
+  await page.getByRole("menuitem", { name: "Z to A" }).click();
+  // Sorting loads every cursor page first, so the last product leads.
+  await expect(card(page, 23)).toBeVisible();
+  await expect(rows(page).first()).toHaveAttribute("data-testid", `review-${id(23)}`);
+  await expect(product).toHaveAttribute("aria-sort", "descending");
+  await expect(pagination).toContainText("Showing 1–10 of 23 reviews");
+  expect(new URL(page.url()).searchParams.get("sort")).toBe("product-desc");
+  await page.reload();
+  await expect(rows(page).first()).toHaveAttribute("data-testid", `review-${id(23)}`);
+  const date = rows(page).first().locator("time").first();
+  expect(await date.evaluate((element) => element.getClientRects().length)).toBe(1);
+  // At the laptop boundary the one-line date still fits without scrolling the table sideways.
+  expect(await page.locator("table").evaluate((table) => table.scrollWidth <= table.parentElement!.clientWidth)).toBe(true);
+  await product.getByRole("button", { name: "Sort by product" }).click();
+  await page.getByRole("menuitem", { name: "Clear sort" }).click();
+  await expect(rows(page).first()).toHaveAttribute("data-testid", `review-${id(1)}`);
+  expect(new URL(page.url()).searchParams.has("sort")).toBe(false);
+  // Stacked rows have no headers, so the same choices sit beside the filters.
+  await page.setViewportSize({ width: 390, height: 1000 });
+  await page.getByRole("button", { name: /^Sort (?!by)/ }).click();
+  await page.getByRole("option", { name: "Z to A", exact: true }).click();
+  await expect(rows(page).first()).toHaveAttribute("data-testid", `review-${id(23)}`);
+});
+
 test("review page sizes load enough cursor rows and persist across reloads", async ({ page, request }) => {
   expect((await request.post(`${fixture}/__reviews/reset`, { data: { many: true } })).ok()).toBeTruthy();
   await signIn(page); await page.goto("/store-reviews");

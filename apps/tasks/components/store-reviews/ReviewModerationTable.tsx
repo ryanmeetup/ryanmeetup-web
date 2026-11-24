@@ -4,10 +4,11 @@ import { useState } from "react";
 import { FiClock } from "react-icons/fi";
 import { Button, DropdownMenu, DropdownMenuItem, DropdownMenuItems, DropdownMenuSeparator, RatingStars } from "@ryanmeetup/ui";
 import { ReviewVerificationBadge } from "@ryanmeetup/reviews/ui";
-import { ResponsiveTable, ResponsiveTableCell, ResponsiveTableMenuButton, ResponsiveTableRow } from "@/components/global";
+import { ResponsiveTable, ResponsiveTableCell, ResponsiveTableMenuButton, ResponsiveTableRow, sortBoth } from "@/components/global";
+import type { ResponsiveTableColumn, SortChoice, TableSort } from "@/components/global";
 import { formatTimestamp } from "@/lib/date-format";
-import { moderationActionLabel, moderationVerification } from "@/lib/store-reviews/moderation";
-import type { ModerationReview, ModerationRevision, StaffReviewAction } from "@/lib/store-reviews/moderation";
+import { moderationActionLabel, moderationDisplayRevision, moderationVerification } from "@/lib/store-reviews/moderation";
+import type { ModerationReview, ModerationRevision, ModerationSort, ModerationSortKey, StaffReviewAction } from "@/lib/store-reviews/moderation";
 
 import { ReviewModerationPhotos } from "./ReviewModerationPhotos";
 import { ReviewSelectionCheckbox } from "./ReviewSelectionCheckbox";
@@ -18,8 +19,9 @@ type TableProps = {
   reviews: ModerationReview[]; disabled: boolean; staffNames: Record<string, string>;
   selectedIds: ReadonlySet<string>; onToggleReview: (id: string) => void;
   onSelect: (review: ModerationReview, action: StaffReviewAction) => void; onPhotoSelect: PhotoChoice;
+  sort: ModerationSort; onSort: (sort: ModerationSort) => void;
 };
-type RowProps = Omit<TableProps, "reviews" | "staffNames"> & { review: ModerationReview; onHistory: (review: ModerationReview) => void };
+type RowProps = Omit<TableProps, "reviews" | "staffNames" | "sort" | "onSort"> & { review: ModerationReview; onHistory: (review: ModerationReview) => void };
 
 /** The status column already says edit or new review, so a row's buttons can drop that word. */
 function shortDecision(action: StaffReviewAction, review: ModerationReview) {
@@ -101,7 +103,7 @@ function RowActions({ review, disabled, onSelect, onHistory }: Pick<RowProps, "r
 }
 
 function ReviewRow({ review, disabled, selectedIds, onToggleReview, onSelect, onPhotoSelect, onHistory }: RowProps) {
-  const photoRevision = review.pending ?? review.rejected ?? review.published ?? review.latest;
+  const photoRevision = moderationDisplayRevision(review);
   return <ResponsiveTableRow data-testid={`review-${review.id}`}>
     {/* Selection stays at the start of the row, whichever column comes first. */}
     <ResponsiveTableCell>
@@ -130,17 +132,30 @@ function ReviewRow({ review, disabled, selectedIds, onToggleReview, onSelect, on
   </ResponsiveTableRow>;
 }
 
-const columns = [
+/** Every sort choice, by the column that offers it; stacked rows list them all in one menu. */
+export const moderationSortChoices: Record<ModerationSortKey, SortChoice<ModerationSortKey>[]> = {
+  product: sortBoth("product", "A to Z", "Z to A"),
+  status: sortBoth("status", "Waiting first", "Withdrawn first"),
+  submitted: sortBoth("submitted", "Oldest submission first", "Newest submission first"),
+};
+
+function moderationColumns(sort: ModerationSort, onSort: (sort: ModerationSort) => void): ResponsiveTableColumn[] {
+  const sortable = (key: ModerationSortKey) => ({
+    groups: [moderationSortChoices[key]] as SortChoice<string>[][], current: sort as TableSort<string>,
+    onSort: (next: TableSort<string>) => onSort(next as ModerationSort),
+  });
   // Auto layout sizes columns to content: the review text is capped in its cell, the reviewer date stays on one line.
-  { label: "Review" }, { label: "Product" }, { label: "Photos", width: "w-20" },
-  { label: "Reviewer" }, { label: "Status" }, { label: "Actions", hideLabel: true },
-];
+  return [
+    { label: "Review" }, { label: "Product", sort: sortable("product") }, { label: "Photos", width: "w-20" },
+    { label: "Reviewer", sort: sortable("submitted") }, { label: "Status", sort: sortable("status") }, { label: "Actions", hideLabel: true },
+  ];
+}
 
 /** The moderation queue: one row per review, every detail in its own column. */
-export function ReviewModerationTable({ reviews, staffNames, ...props }: TableProps) {
+export function ReviewModerationTable({ reviews, staffNames, sort, onSort, ...props }: TableProps) {
   const [history, setHistory] = useState<ModerationReview | null>(null);
   return <>
-    <ResponsiveTable caption="Store reviews" columns={columns} layout="auto" className="relative overflow-x-auto">
+    <ResponsiveTable caption="Store reviews" columns={moderationColumns(sort, onSort)} layout="auto" className="relative overflow-x-auto">
       {reviews.map((review) => <ReviewRow key={`${review.id}-${review.updatedAt}`} review={review} onHistory={setHistory} {...props} />)}
     </ResponsiveTable>
     <ReviewHistoryDialog review={history} staffNames={staffNames} onClose={() => setHistory(null)} />

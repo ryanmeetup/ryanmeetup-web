@@ -2,13 +2,14 @@
 
 import { useEffect, useEffectEvent } from "react";
 import { FiMessageSquare, FiRefreshCw } from "react-icons/fi";
-import { usePagination, useSearchFilter } from "@ryanmeetup/hooks";
+import { usePagination, useQueryParamState, useSearchFilter } from "@ryanmeetup/hooks";
 import { Button, Card, DropdownSelect, EmptyState, ErrorCallout, FilterBar, ManagementSurface, Pagination, PendingResults, SearchInput, Spinner, Text } from "@ryanmeetup/ui";
 import { derivePagination } from "@ryanmeetup/utils";
-import { isModerationFilter, moderationReviewSearchText } from "@/lib/store-reviews/moderation";
-import type { ModerationAction, ModerationInitialState, PublishAction } from "@/lib/store-reviews/moderation";
+import { parseTableSort, tableSortValue } from "@/components/global";
+import { MODERATION_SORT_KEYS, isModerationFilter, moderationReviewSearchText, sortModerationReviews } from "@/lib/store-reviews/moderation";
+import type { ModerationAction, ModerationInitialState, ModerationSort, PublishAction } from "@/lib/store-reviews/moderation";
 import { useReviewModeration } from "./useReviewModeration";
-import { ReviewModerationTable } from "./ReviewModerationTable";
+import { ReviewModerationTable, moderationSortChoices } from "./ReviewModerationTable";
 import { ReviewPhotoDecisionDialog } from "./ReviewPhotoDecisionDialog";
 import { ReviewDeletionDialog } from "./ReviewDeletionDialog";
 import { ReviewModerationDialog } from "./ReviewModerationDialog";
@@ -17,6 +18,8 @@ import { ReviewBulkActions } from "./ReviewBulkActions";
 
 // Not a Shopify product ID, which is always numeric.
 const ALL_PRODUCTS = "all";
+const sortOptions = [{ value: "", label: "Newest first" },
+  ...Object.values(moderationSortChoices).flat().map((choice) => ({ value: tableSortValue(choice), label: choice.label }))];
 
 export function ReviewModerationQueue({ initial, staffNames }: { initial: ModerationInitialState; staffNames: Record<string, string> }) {
   const queue = useReviewModeration(initial);
@@ -24,35 +27,46 @@ export function ReviewModerationQueue({ initial, staffNames }: { initial: Modera
   const { query, setQuery, filtered, isPending: searchPending } = useSearchFilter({
     data: queue.page?.reviews ?? [], buildHaystack: moderationReviewSearchText, queryParam: "search",
   });
-  const { page, from, to } = derivePagination(requestedPage, pageSize, filtered.length);
-  const reviews = filtered.slice(from, to + 1);
+  const [sortParam, setSortParam] = useQueryParamState("sort");
+  const sort: ModerationSort = parseTableSort(sortParam, MODERATION_SORT_KEYS);
+  const sorted = sortModerationReviews(filtered, sort);
+  const { page, from, to } = derivePagination(requestedPage, pageSize, sorted.length);
+  const reviews = sorted.slice(from, to + 1);
   const searching = query.trim().length > 0;
+  // A sort orders the whole queue, so it waits for every page, as a search does.
+  const wholeQueue = searching || sort !== null;
   const fillPage = useEffectEvent(() => {
     if (!searching && queue.page?.next && !queue.busy && !queue.error &&
-      queue.page.reviews.length < requestedPage * pageSize) {
-      void queue.load({ more: true, minimumReviews: requestedPage * pageSize });
+      (sort || queue.page.reviews.length < requestedPage * pageSize)) {
+      void queue.load({ more: true, minimumReviews: sort ? Infinity : requestedPage * pageSize });
     }
   });
-  useEffect(() => { fillPage(); }, [requestedPage, pageSize, queue.page]);
+  useEffect(() => { fillPage(); }, [requestedPage, pageSize, queue.page, sortParam]);
   if (queue.disabled) return <Card><Text>Store review moderation is not enabled for this workspace.</Text></Card>;
   const products = queue.page?.products ?? [];
   const locked = Boolean(queue.busy || queue.selection || queue.bulkSelection);
   // The queue's own count, unless a search narrows it to the loaded matches.
   const total = searching ? null : queue.page?.total ?? null;
+  function changeSort(next: ModerationSort) {
+    if (locked || searchPending) return;
+    queue.clearSelected();
+    setPage(1);
+    setSortParam(tableSortValue(next));
+  }
   async function changePage(next: number) {
     if (locked || searchPending) return;
     queue.clearSelected();
     if (next * pageSize > filtered.length && queue.page?.next) {
       // The API uses cursors. Fetch enough rows for the requested display page;
       // a search needs the remaining rows before it can locate the next matches.
-      if (!await queue.load({ more: true, minimumReviews: searching ? Infinity : next * pageSize })) return;
+      if (!await queue.load({ more: true, minimumReviews: wholeQueue ? Infinity : next * pageSize })) return;
     }
     setPage(next);
   }
   async function changePageSize(next: number) {
     if (locked || searchPending) return;
     queue.clearSelected();
-    if (next > filtered.length && queue.page?.next && !await queue.load({ more: true, minimumReviews: searching ? Infinity : next })) return;
+    if (next > filtered.length && queue.page?.next && !await queue.load({ more: true, minimumReviews: wholeQueue ? Infinity : next })) return;
     setPageSize(next);
   }
   return <ManagementSurface
@@ -64,6 +78,11 @@ export function ReviewModerationQueue({ initial, staffNames }: { initial: Modera
       <FilterBar inlineFrom="xl" search={<SearchInput label="Search reviews" name="search" value={query} onChange={(event) => { setPage(1); setQuery(event.target.value); }}
         placeholder="Search by product, reviewer, or review text..." pending={searchPending} pendingLabel="Loading review results" />}
         actions={<div className="flex flex-col gap-3 sm:flex-row">
+        {/* Stacked rows have no column headers to sort from. */}
+        <div className="@min-[54rem]:hidden">
+          <DropdownSelect label="Sort" variant="compact" className="w-full sm:w-auto" value={tableSortValue(sort)} disabled={locked || searchPending}
+            options={sortOptions} onChange={(value) => changeSort(parseTableSort(value, MODERATION_SORT_KEYS))} />
+        </div>
         <DropdownSelect label="Queue" variant="compact" value={queue.filter} disabled={locked}
           options={[{ value: "pending", label: "Waiting for review" }, { value: "published", label: "Published" },
             { value: "hidden", label: "Hidden" }, { value: "rejected", label: "Rejected" }, { value: "all", label: "All reviews" }]}
@@ -75,7 +94,7 @@ export function ReviewModerationQueue({ initial, staffNames }: { initial: Modera
       </div>} />
     <Text className="text-sm">{queue.filter === "rejected"
       ? "Rejected text is kept, never deleted. Publish anyway puts it live, as long as the buyer has not written a newer version."
-      : "Newest first, across every rating. Approve text and photos separately; published content stays live while edits wait."}</Text>
+      : `${sort ? "Across" : "Newest first, across"} every rating. Approve text and photos separately; published content stays live while edits wait.`}</Text>
     <div role="status" aria-live="polite" className="text-sm text-black/70 empty:hidden dark:text-white/70">
       {/* A saved decision is announced by its toast; repeating it here only left a stale line behind. */}
       {queue.busy && <span className="inline-flex items-center gap-2"><Spinner size={16} />{queue.bulkProgress
@@ -89,7 +108,7 @@ export function ReviewModerationQueue({ initial, staffNames }: { initial: Modera
     <PendingResults pending={searchPending} label="Loading reviews">
     <div aria-label="Review queue" aria-busy={Boolean(queue.busy) || searchPending} className={queue.busy ? "opacity-60" : ""}>
       {reviews.length > 0 && <ReviewModerationTable reviews={reviews} staffNames={staffNames}
-        disabled={locked} selectedIds={queue.selectedIds} onToggleReview={queue.toggleReview} onSelect={queue.select} onPhotoSelect={queue.selectPhoto} />}
+        disabled={locked} sort={sort} onSort={changeSort} selectedIds={queue.selectedIds} onToggleReview={queue.toggleReview} onSelect={queue.select} onPhotoSelect={queue.selectPhoto} />}
       {queue.page && reviews.length === 0 && <EmptyState message={searching ? `No loaded reviews match “${query.trim()}”` :
         queue.filter === "pending" ? "No reviews waiting for a decision" :
         queue.filter === "rejected" ? "No rejected reviews" : "No reviews in this queue"} />}
@@ -97,7 +116,7 @@ export function ReviewModerationQueue({ initial, staffNames }: { initial: Modera
     </PendingResults>
     {/* Search runs over the reviews already loaded; say so while more pages exist so a miss is not read as "none". */}
     {searching && queue.page?.next && <Text className="text-sm">Searching loaded reviews only. Use Next page to search further back.</Text>}
-    {queue.page && <Pagination page={page} pageSize={pageSize} totalCount={total ?? filtered.length} hasMore={total === null && Boolean(queue.page.next)}
+    {queue.page && <Pagination page={page} pageSize={pageSize} totalCount={total ?? sorted.length} hasMore={total === null && Boolean(queue.page.next)}
       itemLabel="reviews" itemLabelSingular="review" disabled={locked || searchPending} onPageChange={(next) => void changePage(next)} onPageSizeChange={(next) => void changePageSize(next)} />}
     {queue.selection && "photo" in queue.selection ? <ReviewPhotoDecisionDialog selection={queue.selection} saving={Boolean(queue.busy)} onClose={queue.dismiss} onSubmit={queue.decide} /> :
     queue.selection?.action === "delete" ? <ReviewDeletionDialog key={`${queue.selection.review.id}-delete`} reviews={[queue.selection.review]}
