@@ -50,10 +50,8 @@ const CLASSIC_LOGO = null as ClassicLogo | null;
 
 const CLASSIC_TITLE = "The Ryan Baseball Classic";
 
-// Ryan's Google Form for national anthem singers. Until it exists, the button
-// sends singers to the Classic contact topic instead; paste the form's share
-// link here and the button opens it in a new tab.
-const ANTHEM_SINGER_FORM_URL = null as string | null;
+// Ryan's Google Form for national anthem singer auditions.
+const ANTHEM_SINGER_FORM_URL = "https://forms.gle/1i7iNp52M7Dfzp966";
 
 const ClassicLogoPlaceholder = () => (
   <div
@@ -233,8 +231,8 @@ const BaseballHero = ({
             </Button.Link>
           )}
           <Button.Link
-            href={ANTHEM_SINGER_FORM_URL ?? "/contact?topic=baseball-classic"}
-            newTab={Boolean(ANTHEM_SINGER_FORM_URL)}
+            href={ANTHEM_SINGER_FORM_URL}
+            newTab
             size="md"
             variant="outline"
             leftIcon={<FiMic aria-hidden />}
@@ -242,9 +240,7 @@ const BaseballHero = ({
             className="sm:w-auto"
           >
             Sing the anthem
-            {ANTHEM_SINGER_FORM_URL && (
-              <span className="sr-only"> (opens in a new tab)</span>
-            )}
+            <span className="sr-only"> (opens in a new tab)</span>
           </Button.Link>
           <Button.Link
             href="#merch"
