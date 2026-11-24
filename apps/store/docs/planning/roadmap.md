@@ -97,7 +97,7 @@ Item numbers remain stable for existing references.
 | 8 | [Note to seller and personalization](#8-note-to-seller-and-personalization) | Order note built (November 24); confirm it on the first real order, and which personalization is actually needed. |
 | 14 | [Store reviews](#14-store-reviews) | Live reviews verified working (November 24) and `CRON_SECRET` set; edge-case orders, recovery drills, monitoring and retention remain. |
 | 15 | [Search and shopping discovery](#15-search-and-shopping-discovery) | Sitemap and structured data are live; submit them to Search Console and decide on free Shopping listings. |
-| 16 | [Checkout email recovery](#16-checkout-email-recovery) | No storefront email capture; confirm abandoned-checkout emails and decide on checkout marketing consent. |
+| 16 | [Checkout email recovery](#16-checkout-email-recovery) | Abandoned-checkout emails confirmed on (November 24); decide on checkout marketing consent. |
 | 17 | [Black RYDay wind-down](#17-black-ryday-wind-down) | Due after the sale ends November 30, 2026 (ET). |
 | 18 | [Listing highlight webhooks](#18-listing-highlight-webhooks) | Code, table, backfill and both order webhooks live (November 24); confirm one live order is recorded. |
 
@@ -177,8 +177,9 @@ did not cover.
       RMT or nonproduction loopback, while Tasks moderation expects a pinned
       HTTPS project origin. Do not use production RMT or PRD as a Preview test.
 - [ ] Verify owned/foreign orders, normal/split fulfillment, partial payment,
-      cancellation, edits, refunds before/after receipt, deleted products,
-      nullable variants and bounded order histories. Record Printful delivery
+      cancellation, edits, nullable variants and bounded order histories.
+      Refunds are out of scope (sales are final), and reviews of products that
+      leave the store already stay up. Record Printful delivery
       evidence before using it to time review requests.
 - [ ] Prove separate database/object restore and collection pause/resume with
       in-flight-write reconciliation, using the
@@ -239,12 +240,12 @@ Test passes for a deployed product, and the Shopping-channel decision is recorde
 The storefront collects no email addresses. The RyanMeetup.com newsletter covers
 events and general news and stays separate.
 
-- [ ] Confirm abandoned-checkout emails are on in Shopify Admin (Marketing
-      automations or Settings → Notifications), branded like the other notifications.
 - [ ] Decide whether checkout shows Shopify's "email me with news and offers"
       checkbox. It collects only buyers who opt in, kept in Shopify.
 
-**Complete when:** both settings are confirmed and recorded here.
+Abandoned-checkout emails were confirmed on by Ryan on November 24, 2026.
+
+**Complete when:** the marketing-consent decision is recorded here.
 
 ### 17. Black RYDay wind-down
 
