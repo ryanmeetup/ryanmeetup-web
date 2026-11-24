@@ -82,3 +82,20 @@ export function describeTierProgress(tiers: PromotionTier[], quantity: number) {
   if (current) return `You’ve unlocked ${current.percentOff}% off, the biggest Ryan discount there is.`;
   return "";
 }
+
+// Sale dates are announced in the store's own time zone, so "tonight" means midnight Eastern.
+const storeDay = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" });
+const dayNumber = (time: number) => Date.parse(`${storeDay.format(time)}T00:00:00Z`) / 86_400_000;
+
+/**
+ * How close the sale's last day is, in calendar days in the store's time zone, or null while
+ * it is further off than three days (or over). Real deadlines only: this is the sale's own end.
+ */
+export function describeSaleDeadline(promotion: Promotion | null, now: number) {
+  if (!isPromotionLive(promotion, now)) return null;
+  const days = dayNumber(Date.parse(promotion.endsAt)) - dayNumber(now);
+  if (days <= 0) return "Ends tonight";
+  if (days === 1) return "Ends tomorrow";
+  if (days === 2) return "Last 3 days";
+  return null;
+}

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { getCartSavings } from "../lib/money";
-import { applyPercentOff, describeTierProgress, describeTiers, getSitewidePercentOff, getTierProgress, isPromotionLive, type Promotion } from "../lib/promotion";
+import { applyPercentOff, describeSaleDeadline, describeTierProgress, describeTiers, getSitewidePercentOff, getTierProgress, isPromotionLive, type Promotion } from "../lib/promotion";
 
 const tiers = [{ minQuantity: 3, percentOff: 10 }, { minQuantity: 5, percentOff: 15 }];
 const promotion: Promotion = { name: "Sale", startsAt: "2026-11-27T00:00:00-05:00", endsAt: "2026-11-30T23:59:59-05:00", endsLabel: "Monday", tiers };
@@ -43,4 +43,16 @@ test("a sitewide tier discounts every item's shown price", () => {
   expect(applyPercentOff({ amount: "35.00", currencyCode: "USD" }, 10)).toEqual({ amount: "31.50", currencyCode: "USD" });
   expect(applyPercentOff({ amount: "30.0", currencyCode: "USD" }, 10)).toEqual({ amount: "27.00", currencyCode: "USD" });
   expect(applyPercentOff({ amount: "32.99", currencyCode: "USD" }, 10)).toEqual({ amount: "29.69", currencyCode: "USD" });
+});
+
+test("the deadline counts down in the store's calendar days, and only near the end", () => {
+  const at = (time: string) => describeSaleDeadline(promotion, Date.parse(time));
+  expect(at("2026-11-27T09:00:00-05:00")).toBeNull();
+  expect(at("2026-11-28T00:00:00-05:00")).toBe("Last 3 days");
+  expect(at("2026-11-29T23:30:00-05:00")).toBe("Ends tomorrow");
+  // 11:30 p.m. Eastern is already the next day in UTC; the store's day decides.
+  expect(at("2026-11-30T00:00:00-05:00")).toBe("Ends tonight");
+  expect(at("2026-11-30T23:59:00-05:00")).toBe("Ends tonight");
+  expect(at("2026-12-01T00:00:00-05:00")).toBeNull();
+  expect(describeSaleDeadline(null, Date.parse("2026-11-30T12:00:00-05:00"))).toBeNull();
 });

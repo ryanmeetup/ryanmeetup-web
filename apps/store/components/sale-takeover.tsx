@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 import { FiArrowRight } from "react-icons/fi";
 import { PhotoWall } from "@/components/photo-wall";
 import type { WallPhoto, WallTile } from "@/components/photo-wall";
-import { usePromotion } from "@/components/promotion";
+import { usePromotion, useSaleDeadline } from "@/components/promotion";
 import { describeTierScope } from "@/lib/promotion";
 import type { Promotion } from "@/lib/promotion";
 
@@ -23,6 +23,7 @@ export function SaleTakeoverSwitch({ backdrop, tiles, children }: { backdrop: Wa
 }
 
 function SaleTakeover({ promotion, backdrop, tiles }: { promotion: Promotion; backdrop: WallPhoto; tiles: WallTile[] }) {
+  const deadline = useSaleDeadline();
   // A photo shows in one place only, so the backdrop never also cycles through a tile.
   const wall = useMemo(
     () =>
@@ -53,7 +54,7 @@ function SaleTakeover({ promotion, backdrop, tiles }: { promotion: Promotion; ba
             className="pointer-events-none ml-1 h-auto w-28 -rotate-6 select-none drop-shadow-lg xl:w-32"
           />
           <div>
-            <Kicker className="!text-nametag">Sale ends {promotion.endsLabel}</Kicker>
+            <Kicker className="!text-nametag">{deadline ? `${deadline} · ${promotion.endsLabel}` : `Sale ends ${promotion.endsLabel}`}</Kicker>
             <Heading
               size="h1"
               ignoreColorMode

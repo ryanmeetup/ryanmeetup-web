@@ -4,7 +4,7 @@ import { createContext, useContext, useSyncExternalStore } from "react";
 import { FiTag, FiX } from "react-icons/fi";
 import { Banner, Button, IconButton, Text } from "@ryanmeetup/ui";
 import { formatMoney, getCartSavings } from "@/lib/money";
-import { currentPromotion, describeTierProgress, describeTiers, isPromotionLive, type Promotion } from "@/lib/promotion";
+import { currentPromotion, describeSaleDeadline, describeTierProgress, describeTiers, isPromotionLive, type Promotion } from "@/lib/promotion";
 import type { Money } from "@/lib/types";
 import { useDismissed } from "./use-dismissed";
 
@@ -31,6 +31,15 @@ export function usePromotion() {
   return useContext(PromotionContext);
 }
 
+/**
+ * "Ends tomorrow" and the like once the sale's last day is close. Only the browser's clock
+ * says it: pages are cached, so a server-rendered countdown could be days stale.
+ */
+export function useSaleDeadline() {
+  const promotion = usePromotion();
+  return useSyncExternalStore(subscribe, () => describeSaleDeadline(promotion, Date.now()), () => null);
+}
+
 // Keyed by sale, so dismissing this one doesn't hide the next.
 function useBannerDismissed(promotion: Promotion | null) {
   return useDismissed(`store:promotion-dismissed:${promotion?.name ?? ""}`);
@@ -39,6 +48,7 @@ function useBannerDismissed(promotion: Promotion | null) {
 export function PromotionBanner() {
   const promotion = usePromotion();
   const [dismissed, dismiss] = useBannerDismissed(promotion);
+  const deadline = useSaleDeadline();
   if (!promotion || dismissed) return null;
   return (
     <Banner
@@ -48,7 +58,7 @@ export function PromotionBanner() {
       icon={<FiTag className="h-6 w-6 sm:h-8 sm:w-8" aria-hidden />}
       iconAlign="center"
       aria-label={`${promotion.name} sale`}
-      title={`${promotion.name} sale is live now.`}
+      title={deadline ? `${promotion.name} sale: ${deadline.toLowerCase()}.` : `${promotion.name} sale is live now.`}
       actionClassName="max-sm:self-stretch"
       action={
         <div className="flex items-center gap-2">
@@ -68,12 +78,13 @@ export function PromotionBanner() {
 /** The running sale's offer and deadline, beside a product's price. */
 export function PromotionNote({ className }: { className?: string }) {
   const promotion = usePromotion();
+  const deadline = useSaleDeadline();
   if (!promotion) return null;
   return (
     // Tinted like the site-wide sale banner, so the offer reads as part of the price rather than fine print.
     <p className={`flex w-fit max-w-full items-center gap-3 rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-4 py-3 text-sm text-indigo-950 dark:border-indigo-400/30 dark:bg-indigo-400/15 dark:text-indigo-50 ${className ?? ""}`}>
       <FiTag aria-hidden className="h-5 w-5 shrink-0 text-indigo-600 dark:text-indigo-300" />
-      <span><strong className="font-semibold">{promotion.name}:</strong> {describeTiers(promotion.tiers)} through {promotion.endsLabel}.</span>
+      <span><strong className="font-semibold">{promotion.name}:</strong> {deadline && <strong className="font-semibold">{deadline}. </strong>}{describeTiers(promotion.tiers)} through {promotion.endsLabel}.</span>
     </p>
   );
 }
