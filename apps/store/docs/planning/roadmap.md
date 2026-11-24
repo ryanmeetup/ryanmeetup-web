@@ -87,7 +87,7 @@ Item numbers remain stable for existing references.
 | --- | --- | --- |
 | 4 | [Shopify/Printful operating setup](#4-shopify-and-printful-operating-setup) | NY sales tax (registration pending), accountant questions and January rate cleanup. |
 | 8 | [Note to seller and personalization](#8-note-to-seller-and-personalization) | Order note built (November 24); confirm it on the first real order, and which personalization is actually needed. |
-| 14 | [Store reviews](#14-store-reviews) | Text and photo publication and cleanup built; set `CRON_SECRET` first (the daily cleanup refuses every run without it), then live proof, monitoring, retention and recovery. |
+| 14 | [Store reviews](#14-store-reviews) | Live reviews verified working (November 24) and `CRON_SECRET` set; edge-case orders, recovery drills, monitoring and retention remain. |
 | 15 | [Search and shopping discovery](#15-search-and-shopping-discovery) | Sitemap and structured data are live; submit them to Search Console and decide on free Shopping listings. |
 | 16 | [Checkout email recovery](#16-checkout-email-recovery) | No storefront email capture; confirm abandoned-checkout emails and decide on checkout marketing consent. |
 | 17 | [Black RYDay wind-down](#17-black-ryday-wind-down) | Due after the sale ends November 30, 2026 (ET). |
@@ -160,18 +160,17 @@ unverified product feedback. All submissions wait for approval.
 
 #### Release verification
 
+Ryan verified reviews working live on November 24, 2026: sign-in and return,
+submission, moderation and public display. The items below are what that pass
+did not cover.
+
 - [ ] Establish a supported isolated HTTPS buyer/owner target. The Store accepts
       RMT or nonproduction loopback, while Tasks moderation expects a pinned
       HTTPS project origin. Do not use production RMT or PRD as a Preview test.
-- [ ] Record real client permissions and sign-in/return, denial/failure,
-      encrypted persistence, renewal/rotation/reuse, logout and account switching.
 - [ ] Verify owned/foreign orders, normal/split fulfillment, partial payment,
       cancellation, edits, refunds before/after receipt, deleted products,
       nullable variants and bounded order histories. Record Printful delivery
       evidence before using it to time review requests.
-- [ ] Record the complete buyer → owner → public lifecycle, unverified feedback,
-      duplicate protection, stale/uncertain writes, policy deletion and public
-      totals/JSON-LD. Follow the [rehearsal](../how-to/review-operations.md#live-lifecycle-rehearsal).
 - [ ] Prove separate database/object restore and collection pause/resume with
       in-flight-write reconciliation, using the
       [recovery procedure](../how-to/review-operations.md#recovery-within-the-custom-system).
@@ -184,8 +183,10 @@ unverified product feedback. All submissions wait for approval.
       an observation window and response ownership. Cover auth, Shopify reads,
       text writes, moderation and standalone media in addition to current
       sanitized backend failures.
-- [ ] Confirm hosted photo collection settings, set `CRON_SECRET` in the Store's
-      Vercel project, and record lifecycle, cleanup and recovery evidence.
+- [ ] Confirm hosted photo collection settings and record cleanup and recovery
+      evidence. `CRON_SECRET` was set in the Store's Vercel production
+      environment on November 24, 2026; confirm the first scheduled run (08:41 UTC)
+      succeeds.
 
 #### Conditional and optional features
 
