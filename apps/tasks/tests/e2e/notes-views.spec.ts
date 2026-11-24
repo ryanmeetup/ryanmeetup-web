@@ -68,8 +68,81 @@ test("switches layouts without losing search or category filters and reloads the
   await expect(page).toHaveURL(/note-category=Events/);
   await expect(page).toHaveURL(/note-search=lantern/);
   await chooseView(page, "Cards");
-  await expect(page).not.toHaveURL(/note-view=/);
+  await expect(page).toHaveURL(/note-view=cards/);
   await expect(cards).toBeVisible();
+});
+
+test("remembers the last selected view when returning to Notes or opening a new tab", async ({
+  page,
+  context,
+}) => {
+  await page.goto("/notes");
+  await page.waitForLoadState("networkidle");
+  await chooseView(page, "Table");
+  await page.goto("/contacts");
+  await page.getByRole("link", { name: "Notes", exact: true }).click();
+  await expect(
+    page.getByRole("table", { name: "Notes", exact: true }),
+  ).toBeVisible();
+
+  const nextTab = await context.newPage();
+  await nextTab.goto("/notes");
+  await expect(
+    nextTab.getByRole("table", { name: "Notes", exact: true }),
+  ).toBeVisible();
+  await chooseView(nextTab, "Cards");
+  await nextTab.close();
+
+  await page.goto("/notes");
+  await expect(page.getByRole("list", { name: "Note cards" })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("list", { name: "Note cards" })).toBeVisible();
+});
+
+test("an explicit shared view overrides the visit without replacing the browser preference", async ({
+  page,
+}) => {
+  await page.goto("/notes");
+  await page.waitForLoadState("networkidle");
+  await chooseView(page, "Table");
+  await page.goto("/notes?note-view=cards&note-category=Events");
+  await page.waitForLoadState("networkidle");
+  await expect(page.getByRole("list", { name: "Note cards" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Category/ })).toContainText(
+    "Events",
+  );
+  await page.goto("/notes?note-category=Events");
+  await expect(
+    page.getByRole("table", { name: "Notes", exact: true }),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/note-category=Events/);
+});
+
+test("keeps the view picker working when browser storage is blocked", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const read = Storage.prototype.getItem;
+    const write = Storage.prototype.setItem;
+    Storage.prototype.getItem = function (key) {
+      if (key === "ryanmeetup.tasks.notes-view")
+        throw new DOMException("Storage blocked", "SecurityError");
+      return read.call(this, key);
+    };
+    Storage.prototype.setItem = function (key, value) {
+      if (key === "ryanmeetup.tasks.notes-view")
+        throw new DOMException("Storage blocked", "SecurityError");
+      write.call(this, key, value);
+    };
+  });
+  await page.goto("/notes");
+  await page.waitForLoadState("networkidle");
+  await chooseView(page, "Table");
+  await expect(
+    page.getByRole("table", { name: "Notes", exact: true }),
+  ).toBeVisible();
+  await chooseView(page, "Cards");
+  await expect(page.getByRole("list", { name: "Note cards" })).toBeVisible();
 });
 
 test("card actions edit, archive, and restore the same note across views", async ({

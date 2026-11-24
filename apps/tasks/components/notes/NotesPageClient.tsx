@@ -32,6 +32,7 @@ import { NoteCard } from "./NoteCard";
 import { NoteModal } from "./NoteModal";
 import { NoteActionDialogs } from "./NoteActionDialogs";
 import { useNoteActions } from "./useNoteActions";
+import { useNotesView } from "./useNotesView";
 import { saveNoteDraft } from "./note-requests";
 import { NewNoteModal, type NewNoteDraft } from "./NewNoteModal";
 import { errorMessage } from "@/lib/presentation";
@@ -59,8 +60,8 @@ export function NotesPageClient({
     "note-category",
     "all",
   );
-  const [noteViewParam, setNoteView] = useQueryParamState("note-view", "cards");
-  const cardsView = noteViewParam !== "table";
+  const [noteView, setNoteView] = useNotesView();
+  const cardsView = noteView === "cards";
   const NoteItem = cardsView ? NoteCard : NoteRow;
   const showArchived = archiveFilter(noteStatusParam) === "archived";
   const [openNoteId, setOpenNoteId] = useState<string | null>(null);
