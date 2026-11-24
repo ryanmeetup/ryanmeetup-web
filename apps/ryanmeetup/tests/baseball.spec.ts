@@ -37,6 +37,9 @@ test("lists every team with tickets and merch", async ({ page }) => {
     "#map",
   );
   await expect(
+    page.getByRole("link", { name: "Sing the anthem" }),
+  ).toBeVisible();
+  await expect(
     page.getByRole("link", { name: "Ask a question" }),
   ).toHaveAttribute("href", "/contact?topic=baseball-classic");
 });

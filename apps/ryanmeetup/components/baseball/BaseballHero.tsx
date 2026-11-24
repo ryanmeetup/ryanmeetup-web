@@ -11,7 +11,7 @@ import {
   getButtonClasses,
 } from "@ryanmeetup/ui";
 import { FaCamera as Camera } from "react-icons/fa";
-import { FiArrowUpRight, FiChevronDown, FiMap } from "react-icons/fi";
+import { FiArrowUpRight, FiChevronDown, FiMap, FiMic } from "react-icons/fi";
 
 import type { BaseballTeam } from "@/lib/types";
 import { getSeasonStats } from "@/utils/baseball";
@@ -48,6 +48,11 @@ type ClassicLogo = { src: string; width: number; height: number };
 const CLASSIC_LOGO = null as ClassicLogo | null;
 
 const CLASSIC_TITLE = "The Ryan Baseball Classic";
+
+// Ryan's Google Form for national anthem singers. Until it exists, the button
+// sends singers to the Classic contact topic instead; paste the form's share
+// link here and the button opens it in a new tab.
+const ANTHEM_SINGER_FORM_URL = null as string | null;
 
 const ClassicLogoPlaceholder = () => (
   <div
@@ -226,6 +231,20 @@ const BaseballHero = ({
               See the map
             </Button.Link>
           )}
+          <Button.Link
+            href={ANTHEM_SINGER_FORM_URL ?? "/contact?topic=baseball-classic"}
+            newTab={Boolean(ANTHEM_SINGER_FORM_URL)}
+            size="md"
+            variant="outline"
+            leftIcon={<FiMic aria-hidden />}
+            fullWidth
+            className="sm:w-auto"
+          >
+            Sing the anthem
+            {ANTHEM_SINGER_FORM_URL && (
+              <span className="sr-only"> (opens in a new tab)</span>
+            )}
+          </Button.Link>
           <Button.Link
             href="#merch"
             size="md"
