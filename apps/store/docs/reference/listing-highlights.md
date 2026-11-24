@@ -15,8 +15,8 @@ seed, pad or fake a figure, and never claim scarcity: everything is made to orde
 | Top rated | Pooled rating of 4.8+ (cards need 5+ reviews to rate) | Reviews |
 | New | Created after the launch catalog (November 13, 2026), for 30 days | Shopify |
 
-A listing gets one label, strongest first, as a black chip stacked under the
-sale sticker on cards and above the title on its page. Sold-out and off-Shopify
+A listing gets one label, strongest first, as a small label above the title on cards
+and a black chip above the title on its page. Sold-out and off-Shopify
 listings get none. Rules and floors live in `highlightRules` in
 `lib/listing-highlights.ts`.
 

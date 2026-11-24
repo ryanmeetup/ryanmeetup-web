@@ -29,3 +29,20 @@ export function HighlightChip({ highlight, size = "sm", className = "" }: { high
     </span>
   );
 }
+
+/**
+ * The same label as quiet text for a card body, where a black chip would compete with the
+ * photo's own overlays. Read-only, so uppercase like any metadata label. Without a
+ * highlight it keeps the line's height, so titles in a row of cards still line up.
+ */
+export function HighlightLabel({ highlight, className = "" }: { highlight: ListingHighlight | null | undefined; className?: string }) {
+  const Icon = highlight ? icons[highlight] : null;
+  return (
+    <p className={`flex h-3 items-center gap-1 text-[10px] font-bold uppercase leading-none tracking-caps-tight text-black/70 sm:h-3.5 sm:text-xs dark:text-white/70 ${className}`}>
+      {highlight && Icon && <>
+        <Icon aria-hidden className="size-3 shrink-0 sm:size-3.5" />
+        {highlightLabels[highlight]}
+      </>}
+    </p>
+  );
+}

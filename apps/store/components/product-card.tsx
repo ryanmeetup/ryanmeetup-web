@@ -9,7 +9,7 @@ import { getListingSale } from "@/lib/money";
 import { getListingColorPreviews, getListingStyleCount } from "@/lib/product-colors";
 import { withProductOrigin } from "@/lib/product-origin";
 import type { ListingRating, ProductListing } from "@/lib/types";
-import { HighlightChip } from "./highlight-chip";
+import { HighlightLabel } from "./highlight-chip";
 import { MediaCard } from "./media-card";
 import { PriceBadge } from "./price-badge";
 import { QuickAdd } from "./quick-add";
@@ -111,10 +111,8 @@ export function ProductCard({ product, eager = false, from }: { product: Product
         <div className="grid h-full place-items-center font-cooper text-5xl text-black/10 dark:text-white/10">R</div>
       )}
       badges={product.availableForSale ? (
-        // The earned label stacks under the sale sticker, clear of quick add and the price.
-        <div className="absolute left-1 top-1 flex flex-col items-start gap-1 sm:left-2 sm:top-2">
+        <div className="absolute left-1 top-1 sm:left-2 sm:top-2">
           <SaleBadge markedDown={sale.onSale} promotable={!product.externalUrl} />
-          {product.highlight && <HighlightChip highlight={product.highlight} className="ml-1" />}
         </div>
       ) : <span className="absolute left-3 top-3 rounded-full bg-black px-3 py-1 text-[10px] font-bold uppercase tracking-caps-tight text-white">Sold out</span>}
       // The currency action is a sibling of the link, so switching never opens the product.
@@ -129,6 +127,8 @@ export function ProductCard({ product, eager = false, from }: { product: Product
           className="absolute bottom-2 left-2 max-w-[calc(100%-1rem)] sm:bottom-3 sm:left-3 sm:max-w-[calc(100%-1.5rem)]"
         />
       }
+      // The earned label reads above the title, leaving the photo to its sticker, quick add and price.
+      kicker={<HighlightLabel highlight={product.highlight} />}
       title={<>{product.title}{product.externalUrl && <span className="sr-only"> (opens in a new tab)</span>}</>}
       after={<>
       {/* One row only; padding inside the clip keeps focus and pressed rings visible.

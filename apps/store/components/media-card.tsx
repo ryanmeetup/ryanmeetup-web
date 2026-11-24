@@ -13,6 +13,7 @@ export function MediaCard({
   media,
   badges,
   mediaOverlay,
+  kicker,
   title,
   children,
   after,
@@ -25,6 +26,8 @@ export function MediaCard({
   badges?: ReactNode;
   /** Positioned over the frame but outside the link, for controls that must not navigate. */
   mediaOverlay?: ReactNode;
+  /** A short read-only label above the title, such as an earned highlight. */
+  kicker?: ReactNode;
   title: ReactNode;
   /** Extra body content under the title, still inside the link. */
   children?: ReactNode;
@@ -44,6 +47,7 @@ export function MediaCard({
             {badges}
           </div>
           <div className="flex flex-1 flex-col gap-2 p-3 sm:p-5">
+            {kicker}
             <h3 className="flex items-center gap-2 font-cooper text-base leading-tight tracking-wide text-black sm:text-xl dark:text-white">{title}</h3>
             {children}
           </div>
