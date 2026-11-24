@@ -31,14 +31,28 @@ export function HighlightChip({ highlight, size = "sm", className = "" }: { high
 }
 
 /**
- * The same label as quiet text for a card body, where a black chip would compete with the
- * photo's own overlays. Read-only, so uppercase like any metadata label.
+ * Text tints for card labels, each readable on the card in both themes. Top rated's
+ * filled star matches the rating stars beneath it.
+ */
+const labelTones: Record<ListingHighlight, { text: string; icon: string }> = {
+  "best-seller": { text: "text-amber-700 dark:text-amber-300", icon: "" },
+  trending: { text: "text-emerald-700 dark:text-emerald-300", icon: "" },
+  hot: { text: "text-orange-700 dark:text-orange-300", icon: "" },
+  "top-rated": { text: "text-amber-700 dark:text-amber-300", icon: "fill-amber-400 text-amber-400" },
+  new: { text: "text-sky-700 dark:text-sky-300", icon: "" },
+};
+
+/**
+ * The same label as tinted text for a card body, where a black chip would compete with
+ * the photo's own overlays. Worded as well as tinted, so color is never the only signal.
+ * Read-only, so uppercase like any metadata label.
  */
 export function HighlightLabel({ highlight, className = "" }: { highlight: ListingHighlight; className?: string }) {
   const Icon = icons[highlight];
+  const tone = labelTones[highlight];
   return (
-    <p className={`flex items-center gap-1 text-[10px] font-bold uppercase leading-none tracking-caps-tight text-black/70 sm:text-xs dark:text-white/70 ${className}`}>
-      <Icon aria-hidden className="size-3 shrink-0 sm:size-3.5" />
+    <p className={`flex items-center gap-1 text-[10px] font-bold uppercase leading-none tracking-caps-tight sm:text-xs ${tone.text} ${className}`}>
+      <Icon aria-hidden className={`size-3 shrink-0 sm:size-3.5 ${tone.icon}`} />
       {highlightLabels[highlight]}
     </p>
   );
