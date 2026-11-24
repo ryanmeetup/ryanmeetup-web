@@ -1,6 +1,6 @@
 # Sales tax
 
-Reviewed November 21, 2026. General operating notes, not tax advice: confirm
+Reviewed November 24, 2026. General operating notes, not tax advice: confirm
 filing questions with the accountant. The open setup steps are tracked in the
 [roadmap](../planning/roadmap.md#4-shopify-and-printful-operating-setup).
 
@@ -27,21 +27,25 @@ Report only the store's own sales on New York returns.
 
 1. **Register.** A free Certificate of Authority from the NY Department of
    Taxation and Finance (tax.ny.gov → Register for sales tax, through NY
-   Business Express). The application, tied to the corporation's EIN, was
-   submitted November 21, 2026. New York mails the certificate and assigns a
-   filing frequency in the online account.
+   Business Express). Done: the corporation's certificate was issued after its
+   November 21, 2026 application. Keep it displayed at the place of business;
+   New York assigns the filing frequency in the online account.
 2. **Collect.** In Shopify Admin → **Settings → Taxes and duties → United
-   States → Collect sales tax → New York**, enter the sales tax ID. Shopify
-   calculates the rate for each New York address (about 7% to 8.875% in NYC).
+   States → Collect sales tax → New York**, enter the sales tax ID (done
+   November 24, 2026). Shopify calculates the rate for each New York address
+   (about 7% to 8.875% in NYC).
 3. **Check the clothing exemption.** Clothing under $110 an item is exempt from
    the 4% state rate and, in NYC, from local tax too; some counties still charge
    their local share. Doormats, mugs, flags, pins and stickers are taxed.
    Shopify applies the exemption from each product's category, so keep
    categories accurate (see [adding products](adding-products.md)). After
    enabling collection, quote a hoodie and a mug to a New York address.
-4. **Stop paying tax on resold goods.** Give Printful a New York resale
-   certificate (Form ST-120) once the certificate number exists; otherwise
-   Printful may charge the corporation sales tax on New York-bound orders.
+4. **Stop paying tax on resold goods.** Printful holds a New York resale
+   certificate (Form ST-120, submitted November 24, 2026) under **Billing → Tax
+   information → Resale certificate**, so it stops charging the corporation
+   sales tax on New York-bound orders once approved. Only orders after approval
+   are exempt. Its legal name and address under **Billing → Legal info** must
+   keep matching the certificate.
 5. **File.** File every period New York assigns, including periods with no tax
    due. Shopify's tax reports supply the totals.
 
