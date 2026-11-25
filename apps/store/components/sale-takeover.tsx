@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Heading, Kicker, Text } from "@ryanmeetup/ui";
+import { Button, Heading, Kicker, NameTagSticker, Text } from "@ryanmeetup/ui";
 import Image from "next/image";
 import { useMemo, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
@@ -45,14 +45,7 @@ function SaleTakeover({ promotion, backdrop, tiles }: { promotion: Promotion; ba
           style={backdrop.objectPosition ? { objectPosition: backdrop.objectPosition } : undefined}
         />
         <div className="store-container relative flex flex-col items-start gap-4 py-6 sm:gap-6 sm:py-10 md:!pr-8 lg:py-12 lg:!pr-12">
-          <Image
-            src="/hero/ryan-name-tag.png"
-            alt=""
-            width={2264}
-            height={1442}
-            sizes="(min-width: 1280px) 128px, 112px"
-            className="pointer-events-none ml-1 h-auto w-28 -rotate-6 select-none drop-shadow-lg xl:w-32"
-          />
+          <NameTagSticker sizes="(min-width: 1280px) 128px, 112px" className="ml-1 w-28 xl:w-32" />
           <div>
             <Kicker className="!text-nametag">{deadline ? `${deadline} · ${promotion.endsLabel}` : `Sale ends ${promotion.endsLabel}`}</Kicker>
             <Heading

@@ -1,5 +1,4 @@
-import { Button, Heading, Text } from "@ryanmeetup/ui";
-import Image from "next/image";
+import { Button, Heading, NameTagSticker, Text } from "@ryanmeetup/ui";
 import { FiArrowRight } from "react-icons/fi";
 import { HomeMarquee } from "@/components/home-marquee";
 import { PhotoWall } from "@/components/photo-wall";
@@ -96,13 +95,9 @@ export function HomeHero({ bandFacts }: { bandFacts: string[] }) {
           <div className="absolute inset-x-0 bottom-0">
             <div className="store-container flex flex-col gap-5 py-6 sm:py-8 md:flex-row md:items-end md:justify-between md:gap-8 lg:py-10 xl:flex-col xl:items-start xl:gap-6">
               <div className="min-w-0">
-                <Image
-                  src="/hero/ryan-name-tag.png"
-                  alt=""
-                  width={2264}
-                  height={1442}
+                <NameTagSticker
                   sizes="(min-width: 1536px) 144px, (min-width: 1280px) 112px, (min-width: 768px) 96px, 80px"
-                  className="pointer-events-none mb-4 ml-1 h-auto w-20 -rotate-6 select-none drop-shadow-lg sm:mb-5 md:w-24 xl:w-28 2xl:w-36"
+                  className="mb-4 ml-1 w-20 sm:mb-5 md:w-24 xl:w-28 2xl:w-36"
                 />
                 <Heading
                   size="h1"
