@@ -1,6 +1,7 @@
 import { spawn, spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -50,6 +51,24 @@ function run(command, args, input, inherit = false) {
   return result.stdout?.trim();
 }
 
+const portFree = (port) => new Promise((resolve) => {
+  const server = createServer();
+  server.once("error", () => resolve(false));
+  server.listen(port, "0.0.0.0", () => server.close(() => resolve(true)));
+});
+
+// Below 32768, outside the Linux (32768-60999) and macOS (49152-65535) ephemeral
+// ranges, so an outbound connection (e.g. image pulls) cannot already hold the
+// port when Docker binds it. Random so concurrent local runs do not collide.
+async function freePortBlock() {
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const base = 20000 + Math.floor(Math.random() * 1200) * 10;
+    const ports = [base, base + 1, base + 2];
+    if ((await Promise.all(ports.map(portFree))).every(Boolean)) return ports;
+  }
+  throw new Error("No free port block for the isolated Supabase stack");
+}
+
 const sql = (text, target = database) => run("docker", ["exec", "-i", container, "psql", "-U", "supabase_admin", "-XAt", "-v", "ON_ERROR_STOP=1", "-d", target], text);
 
 function connection(name) {
@@ -91,12 +110,14 @@ async function race(first, second) {
 try {
   const selected = copyScopedMigrationSources(join(testRoot, "supabase"), target);
   const configPath = join(testRoot, "supabase/config.toml");
+  const [shadowPort, apiPort, dbPort] = await freePortBlock();
   const config = readFileSync(configPath, "utf8")
     .replace('project_id = "ryanmeetup-tasks"', `project_id = "${projectId}"`)
-    .replace("port = 54321", "port = 55421")
-    .replace("port = 54322", "port = 55422")
-    .replace("shadow_port = 54320", "shadow_port = 55420");
+    .replace("shadow_port = 54320", `shadow_port = ${shadowPort}`)
+    .replace(/^port = 54321$/m, `port = ${apiPort}`)
+    .replace(/^port = 54322$/m, `port = ${dbPort}`);
   if (!config.startsWith(`project_id = "${projectId}"`) || projectId === "ryanmeetup-tasks") throw new Error("Refusing to use the app's Supabase project");
+  if (/\b5432[0-2]\b/.test(config)) throw new Error("Isolated stack still uses the app's default ports");
   writeFileSync(configPath, config);
   run("supabase", ["start", "--workdir", testRoot, "--exclude", "realtime,storage-api,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor"], undefined, true);
   run("supabase", ["db", "reset", "--local", "--no-seed", "--yes", "--workdir", testRoot], undefined, true);
