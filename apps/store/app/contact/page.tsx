@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Card, Heading, Kicker, Text } from "@ryanmeetup/ui";
+import { Card, Heading, Kicker, NameTagSticker, Text } from "@ryanmeetup/ui";
 import { FiHash, FiMail, FiMonitor, FiMousePointer, FiNavigation, FiPackage } from "react-icons/fi";
 import { StoreContactForm } from "@/components/store-contact-form";
 import { buildPageMetadata, DEFAULT_IMAGE } from "@/lib/metadata";
@@ -84,6 +84,7 @@ export default async function ContactPage({ searchParams }: Props) {
           </div>
 
           <Card variant="solid" size="lg" className="bg-white/95 shadow-drop dark:border-white/15 dark:bg-black/80 sm:p-8">
+            <NameTagSticker sizes="(min-width: 1280px) 96px, 80px" className="mb-5 ml-1 w-20 xl:w-24" />
             <Heading size="h2" className="text-2xl sm:text-3xl">{isProductReturn ? "Request an item’s return" : "Contact customer service"}</Heading>
             <Text className="mt-2 text-sm sm:text-base">Give us the clearest clues you have. We’ll route everything through the Ryan Meetup contact team.</Text>
             <div className="mt-6 border-t border-black/10 pt-6 dark:border-white/10">

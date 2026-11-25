@@ -2,7 +2,7 @@ import { Suspense } from "react";
 
 // Components
 import { Layout } from "@/components/navigation";
-import { Card, Heading, Text } from "@ryanmeetup/ui";
+import { Card, Heading, NameTagSticker, Text } from "@ryanmeetup/ui";
 import { ContactForm, FollowUs } from "@/components/contact";
 
 // Utilities
@@ -79,6 +79,7 @@ const ContactPage = async ({ searchParams }: ContactPageProps) => {
             size="lg"
             className="bg-white/95 shadow-drop dark:border-white/15 dark:bg-black/80 xl:bg-gradient-to-br xl:from-white/95 xl:to-white/75 xl:p-8 xl:shadow-drop-lg dark:xl:from-white/10 dark:xl:to-white/[0.03]"
           >
+            <NameTagSticker sizes="(min-width: 1280px) 96px, 80px" className="mb-5 ml-1 w-20 xl:w-24" />
             <Heading className="text-2xl title xl:text-3xl" size="h2">
               Send a message
             </Heading>
