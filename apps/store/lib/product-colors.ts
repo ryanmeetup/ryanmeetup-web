@@ -22,6 +22,8 @@ const fallbackSwatches: Record<string, string> = {
   forest: "#223e25",
   "forest-green": "#273b33",
   gold: "#ffcc00",
+  // Sampled from the All Over Print Christmas sweater's knit, a custom print.
+  green: "#2e3f2c",
   leaf: "#5c9346",
   maroon: "#5b1a2a",
   "military-green": "#4b5132",
