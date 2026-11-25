@@ -166,7 +166,7 @@ const BaseballPage = async () => {
           <SectionHeader
             align="center"
             title="Got a question?"
-            description="Tickets, group outings, or bringing your team into the Classic: send it our way and a Ryan will get back to you."
+            description="Tickets, outings for a group of Ryans, or partnering as a baseball team: send it our way and a Ryan will get back to you."
           />
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
             <Button.Link
@@ -187,7 +187,7 @@ const BaseballPage = async () => {
               fullWidth
               className="sm:w-auto"
             >
-              Get your team involved
+              Partner as a baseball team
             </Button.Link>
           </div>
         </section>

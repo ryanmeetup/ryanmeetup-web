@@ -44,7 +44,7 @@ test("paginates teams with tickets and merch on mobile", async ({ page }) => {
     page.getByRole("link", { name: "Ask a question" }),
   ).toHaveAttribute("href", "/contact?topic=baseball-classic");
   await expect(
-    page.getByRole("link", { name: "Get your team involved" }),
+    page.getByRole("link", { name: "Partner as a baseball team" }),
   ).toHaveAttribute(
     "href",
     "/contact?topic=baseball-classic&detail=team-partner&source=baseball",
