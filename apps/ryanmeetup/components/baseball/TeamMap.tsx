@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map, { Marker, Popup, type MapRef } from "react-map-gl/mapbox";
 import NextImage from "next/image";
-import { Heading, IconButton } from "@ryanmeetup/ui";
-import { FiCrosshair } from "react-icons/fi";
+import { Heading, IconButton, Modal } from "@ryanmeetup/ui";
+import { FiCalendar, FiCrosshair, FiMapPin, FiMaximize2 } from "react-icons/fi";
 
 import "mapbox-gl/dist/mapbox-gl.css";
 import type { BaseballTeam } from "@/lib/types";
@@ -19,7 +19,17 @@ type TeamMapProps = {
   teams: BaseballTeam[];
 };
 
+type TeamMapViewProps = TeamMapProps & {
+  /** Sizes the map; the inline map is fixed, the full-screen one fills its dialog. */
+  className: string;
+  /** Shows the full-screen control. The full-screen map leaves it out. */
+  onExpand?: () => void;
+};
+
 const MAP_HEIGHT = "h-[420px] sm:h-[520px]";
+// The shared Modal's overlay keeps this inset from each viewport edge.
+const FULLSCREEN_HEIGHT =
+  "h-[calc(100dvh-max(1rem,env(safe-area-inset-top))-max(1rem,env(safe-area-inset-bottom)))]";
 const MARKER_SIZE = 40;
 const US_VIEW = { latitude: 39.5, longitude: -98.35, zoom: 3 };
 
@@ -31,9 +41,8 @@ const prefersReducedMotion = () =>
   typeof window !== "undefined" &&
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-const TeamMap = ({ teams }: TeamMapProps) => {
+const TeamMapView = ({ teams, className, onExpand }: TeamMapViewProps) => {
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
-  const isTestMode = process.env.NEXT_PUBLIC_E2E_TESTS === "true";
   const mapRef = useRef<MapRef>(null);
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
 
@@ -71,22 +80,8 @@ const TeamMap = ({ teams }: TeamMapProps) => {
 
   useEffect(() => recenter(true), [recenter]);
 
-  if (isTestMode) {
-    return (
-      <div data-testid="baseball-map" className="space-y-1 rounded-2xl border border-black/10 p-4 dark:border-white/10">
-        {teams.map((team) => (
-          <div key={team.slug} data-testid="baseball-marker">
-            {team.name}
-          </div>
-        ))}
-      </div>
-    );
-  }
-
   return (
-    <div
-      className={`relative w-full overflow-hidden rounded-2xl border border-black/10 shadow-drop dark:border-white/10 ${MAP_HEIGHT}`}
-    >
+    <div className={`relative w-full overflow-hidden ${className}`}>
       <p className="sr-only">
         Map of Baseball Classic teams. The list of teams on this page has the
         same information.
@@ -155,11 +150,16 @@ const TeamMap = ({ teams }: TeamMapProps) => {
               <Heading className="text-base text-black" size="h3" ignoreColorMode>
                 {selected.name}
               </Heading>
-              <p className="text-xs leading-relaxed text-black/70">
-                {formatGameDate(selected.gameDate)}
-                <br />
-                {selected.city}, {getStateName(selected.state)}
-              </p>
+              <ul className="space-y-1 text-xs text-black/70">
+                <li className="flex items-center gap-2">
+                  <FiCalendar aria-hidden className="h-3.5 w-3.5 shrink-0" />
+                  {formatGameDate(selected.gameDate)}
+                </li>
+                <li className="flex items-center gap-2">
+                  <FiMapPin aria-hidden className="h-3.5 w-3.5 shrink-0" />
+                  {selected.city}, {getStateName(selected.state)}
+                </li>
+              </ul>
               {hasTicketLink(selected) ? (
                 <a
                   href={selected.ticketUrl}
@@ -183,7 +183,18 @@ const TeamMap = ({ teams }: TeamMapProps) => {
           </Popup>
         )}
       </Map>
-      <div className="absolute right-3 top-3 z-10">
+      <div className="absolute right-3 top-3 z-10 flex flex-col gap-2">
+        {onExpand && (
+          <IconButton
+            label="View map full screen"
+            variant="overlay"
+            size="md"
+            tooltipPlacement="left"
+            onClick={onExpand}
+          >
+            <FiMaximize2 aria-hidden className="h-5 w-5" />
+          </IconButton>
+        )}
         <IconButton
           label="Recenter map"
           variant="overlay"
@@ -195,6 +206,47 @@ const TeamMap = ({ teams }: TeamMapProps) => {
         </IconButton>
       </div>
     </div>
+  );
+};
+
+const TeamMap = ({ teams }: TeamMapProps) => {
+  const isTestMode = process.env.NEXT_PUBLIC_E2E_TESTS === "true";
+  const [fullscreen, setFullscreen] = useState(false);
+
+  if (isTestMode) {
+    return (
+      <div data-testid="baseball-map" className="space-y-1 rounded-2xl border border-black/10 p-4 dark:border-white/10">
+        {teams.map((team) => (
+          <div key={team.slug} data-testid="baseball-marker">
+            {team.name}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <TeamMapView
+        teams={teams}
+        className={`rounded-2xl border border-black/10 shadow-drop dark:border-white/10 ${MAP_HEIGHT}`}
+        onExpand={() => setFullscreen(true)}
+      />
+      {/* A dialog rather than the Fullscreen API, which iPhone Safari only grants to video. */}
+      <Modal
+        open={fullscreen}
+        setIsOpen={setFullscreen}
+        title="Team map"
+        description={`${teams.length} ${teams.length === 1 ? "team" : "teams"} on the map`}
+        size="full"
+        maxHeight="none"
+        panelClassName={FULLSCREEN_HEIGHT}
+        bodyClassName="h-full !p-0"
+        dismissOnOutsideClick
+      >
+        {fullscreen && <TeamMapView teams={teams} className="h-full" />}
+      </Modal>
+    </>
   );
 };
 
