@@ -42,6 +42,9 @@ for (const viewport of [
         .getByRole("button", { name: "Assign to me", exact: true })
         .click();
       await expect(assignees).toContainText("Taylor Brooks");
+      await expect(
+        page.getByText("Task assigned to you.", { exact: true }),
+      ).toBeVisible();
       await expect(assignees).not.toContainText("Unassigned");
       await expect(
         page.getByRole("button", { name: "Assign to me", exact: true }),

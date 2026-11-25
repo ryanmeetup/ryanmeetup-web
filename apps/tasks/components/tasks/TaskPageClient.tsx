@@ -15,6 +15,7 @@ import {
   DropdownMenuItems,
   DropdownMenuSeparator,
   FormattedText,
+  SkeletonBar,
   toast,
 } from "@ryanmeetup/ui";
 import {
@@ -222,7 +223,9 @@ export function TaskPageClient({
       mutations.applySaved(saved, true);
       toast.success("Task assigned to you.");
     } catch (error) {
-      toast.error(errorMessage(error, "The task could not be assigned to you."));
+      toast.error(
+        errorMessage(error, "The task could not be assigned to you."),
+      );
     } finally {
       setAssigningToMe(false);
     }
@@ -554,37 +557,56 @@ export function TaskPageClient({
                   <dt className="flex items-center gap-1.5 text-black/50 dark:text-white/50">
                     <FiUserCheck aria-hidden /> Assignees
                   </dt>
-                  <dd className="mt-1 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-                    {assignees.length === 0 && (
-                      <span className="flex items-center gap-2 whitespace-nowrap font-semibold">
-                        <Avatar name="Unassigned" size="sm" />
-                        Unassigned
-                      </span>
-                    )}
-                    {assignees.map((person) => (
-                      <div
-                        key={person.id}
-                        className="flex w-full min-w-0 items-center gap-2 break-words font-semibold"
-                      >
-                        <Avatar
-                          name={person.full_name}
-                          src={person.avatar_url}
-                          size="sm"
-                        />
-                        <span className="min-w-0">{person.full_name}</span>
+                  <dd
+                    className="relative mt-1 min-w-0"
+                    aria-busy={assigningToMe}
+                  >
+                    <div
+                      className={`flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1${assigningToMe ? " invisible" : ""}`}
+                      inert={assigningToMe}
+                      aria-hidden={assigningToMe || undefined}
+                    >
+                      {assignees.length === 0 && (
+                        <span className="flex items-center gap-2 whitespace-nowrap font-semibold">
+                          <Avatar name="Unassigned" size="sm" />
+                          Unassigned
+                        </span>
+                      )}
+                      {assignees.map((person) => (
+                        <div
+                          key={person.id}
+                          className="flex w-full min-w-0 items-center gap-2 break-words font-semibold"
+                        >
+                          <Avatar
+                            name={person.full_name}
+                            src={person.avatar_url}
+                            size="sm"
+                          />
+                          <span className="min-w-0">{person.full_name}</span>
+                        </div>
+                      ))}
+                      {!assigneeIds.has(data.currentProfile.id) && (
+                        <Button
+                          variant="link"
+                          size="xs"
+                          className="whitespace-nowrap"
+                          onClick={() => void assignToMe()}
+                        >
+                          Assign to me
+                        </Button>
+                      )}
+                    </div>
+                    {assigningToMe && (
+                      <div role="status" className="absolute inset-0 space-y-2">
+                        <span className="sr-only">Updating assignees</span>
+                        <div
+                          aria-hidden="true"
+                          className="flex items-center gap-2"
+                        >
+                          <SkeletonBar round className="h-6 w-6 shrink-0" />
+                          <SkeletonBar className="h-4 w-20" />
+                        </div>
                       </div>
-                    ))}
-                    {!assigneeIds.has(data.currentProfile.id) && (
-                      <Button
-                        variant="link"
-                        size="xs"
-                        className="whitespace-nowrap"
-                        loading={assigningToMe}
-                        loadingText="Assigning..."
-                        onClick={() => void assignToMe()}
-                      >
-                        Assign to me
-                      </Button>
                     )}
                   </dd>
                 </div>
