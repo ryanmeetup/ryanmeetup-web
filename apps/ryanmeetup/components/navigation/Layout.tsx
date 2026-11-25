@@ -102,6 +102,7 @@ const Layout = (props: LayoutProps) => {
           "/rpr",
           "/sunsoaked",
           "/awards",
+          "/baseball",
           "/name-change",
         ]}
         theme={{
