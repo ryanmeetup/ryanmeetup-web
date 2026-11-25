@@ -237,6 +237,31 @@ test("creates projects and categories from the header's New menu on desktop", as
   ).toBeVisible();
 });
 
+test("offers every create option on pages without their own create dialogs", async ({
+  page,
+  baseURL,
+}) => {
+  await enterDemoWorkspace(page, baseURL);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  for (const path of ["/notes", "/contacts", "/calendar", "/changelog"]) {
+    await page.goto(path);
+    await page.waitForLoadState("networkidle");
+    await page.getByRole("button", { name: "Create new" }).click();
+    for (const name of ["New task", "New project", "New category"])
+      await expect(page.getByRole("menuitem", { name })).toBeVisible();
+    await page.keyboard.press("Escape");
+  }
+
+  await page.getByRole("button", { name: "Create new" }).click();
+  await page.getByRole("menuitem", { name: "New project" }).click();
+  await expect(page.getByRole("dialog", { name: "New project" })).toBeVisible();
+  await page.keyboard.press("Escape");
+
+  await page.getByRole("button", { name: "Create new" }).click();
+  await page.getByRole("menuitem", { name: "New category" }).click();
+  await expect(page.getByRole("dialog", { name: "New category" })).toBeVisible();
+});
+
 test("returns a directly opened new task page to the board", async ({
   page,
   baseURL,

@@ -27,6 +27,9 @@ import {
 import { TaskBanners } from "./TaskBanners";
 import { InstanceWordmark } from "./InstanceWordmark";
 import { NewTaskModal } from "@/components/tasks/NewTaskModal";
+import { ProjectsModal } from "@/components/projects/ProjectsModal";
+import { CategoriesModal } from "@/components/categories/CategoriesModal";
+import { categoryController } from "@/components/categories/category-workspace";
 import { useAccessPreviewGuard } from "./useAccessPreviewGuard";
 import { guestHasProjectWork } from "@/lib/access/workspace-areas";
 
@@ -106,6 +109,11 @@ function WorkspaceChrome({
   sidebarOpen,
 }: WorkspacePageShellProps) {
   const [newTaskOpen, setNewTaskOpen] = useState(false);
+  // The header's create menu offers every option on every page. A page that
+  // owns its own create dialogs passes handlers; any other page falls back to
+  // these, as it already does for a new task.
+  const [projectCreateOpen, setProjectCreateOpen] = useState(false);
+  const [categoryCreateOpen, setCategoryCreateOpen] = useState(false);
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useDesktopSidebarOpen();
   useAccessPreviewGuard(data.accessPreview);
   return (
@@ -176,8 +184,12 @@ function WorkspaceChrome({
             }
             canCreateCategories={demoMode || data.canManageCategories}
             onNewTask={onNewTask ?? (() => setNewTaskOpen(true))}
-            onCreateProject={onCreateProject}
-            onCreateCategory={onCreateCategory}
+            onCreateProject={
+              onCreateProject ?? (() => setProjectCreateOpen(true))
+            }
+            onCreateCategory={
+              onCreateCategory ?? (() => setCategoryCreateOpen(true))
+            }
           />
         </header>
         <div className="hidden h-16 lg:block" aria-hidden="true" />
@@ -200,6 +212,23 @@ function WorkspaceChrome({
           setOpen={setNewTaskOpen}
         />
       )}
+      {!onCreateProject && projectCreateOpen && !data.accessPreview && (
+        <ProjectsModal
+          modal={{ open: projectCreateOpen, setOpen: setProjectCreateOpen }}
+          workspace={{ data, setData, demoMode }}
+          options={{ createOnly: true }}
+        />
+      )}
+      {!onCreateCategory &&
+        categoryCreateOpen &&
+        !data.accessPreview &&
+        (demoMode || data.canManageCategories) && (
+          <CategoriesModal
+            modal={{ open: categoryCreateOpen, setOpen: setCategoryCreateOpen }}
+            controller={categoryController(data, setData, demoMode)}
+            options={{ createOnly: true }}
+          />
+        )}
     </div>
   );
 }
