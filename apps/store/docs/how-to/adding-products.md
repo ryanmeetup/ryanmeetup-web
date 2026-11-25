@@ -76,7 +76,10 @@ Create and sync the product through Printful as usual, then open it in Shopify
    <design>` for the back. For example, "Ryan Hat in stone: “RYAN” embroidered
    across the front". Screen readers and link previews read this text.
 11. **Check the store** after about 5 minutes: the product's page, its collection
-   page, and the Apparel or Accessories page.
+   page, and the Apparel or Accessories page. Then run
+   `npm run audit:purchase-options` from `apps/store`: it fails if any active
+   product is off the Headless channel or any variant, such as a color, can't
+   be picked on its page.
 
 ## Designer credits
 

@@ -23,6 +23,8 @@ Playwright starts its own demo-catalog dev server on `localhost:3102` (override 
 
 `npm run quote:shipping` (from `apps/store`) is a live check, not a test: it quotes shipping for each category's heaviest variant against the real Shopify store and fails if any enabled zone has no rate. See [shipping setup](docs/how-to/shipping-setup.md#live-quote-check).
 
+`npm run audit:purchase-options` is another read-only live check: it compares every active Shopify variant with what the product pages let a shopper pick, and fails on any product missing from the Headless channel or any variant no dropdown reaches.
+
 ## Store support
 
 The `/contact` form uses `@ryanmeetup/contact` and the main Ryan Meetup site's
