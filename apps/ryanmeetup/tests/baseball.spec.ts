@@ -43,6 +43,12 @@ test("paginates teams with tickets and merch on mobile", async ({ page }) => {
   await expect(
     page.getByRole("link", { name: "Ask a question" }),
   ).toHaveAttribute("href", "/contact?topic=baseball-classic");
+  await expect(
+    page.getByRole("link", { name: "Get your team involved" }),
+  ).toHaveAttribute(
+    "href",
+    "/contact?topic=baseball-classic&detail=team-partner&source=baseball",
+  );
 
   const pagination = page.getByRole("navigation", { name: "teams pagination" });
   await expect(pagination).toContainText("Showing 1–5 of 6 teams");

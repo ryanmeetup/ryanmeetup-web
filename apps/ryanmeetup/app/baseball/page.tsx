@@ -7,6 +7,7 @@ import {
   EmptyState,
   SectionHeader,
 } from "@ryanmeetup/ui";
+import { buildContactHref } from "@ryanmeetup/contact";
 import { FaBaseballBall } from "react-icons/fa";
 import { FaShirt } from "react-icons/fa6";
 import { FiGift, FiHelpCircle, FiMap } from "react-icons/fi";
@@ -167,14 +168,28 @@ const BaseballPage = async () => {
             title="Got a question?"
             description="Tickets, group outings, or bringing your team into the Classic: send it our way and a Ryan will get back to you."
           />
-          <Button.Link
-            href="/contact?topic=baseball-classic"
-            size="md"
-            fullWidth
-            className="sm:w-auto"
-          >
-            Ask a question
-          </Button.Link>
+          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+            <Button.Link
+              href="/contact?topic=baseball-classic"
+              size="md"
+              fullWidth
+              className="sm:w-auto"
+            >
+              Ask a question
+            </Button.Link>
+            <Button.Link
+              href={buildContactHref("baseball-classic", {
+                detail: "team-partner",
+                source: "baseball",
+              })}
+              variant="secondary"
+              size="md"
+              fullWidth
+              className="sm:w-auto"
+            >
+              Get your team involved
+            </Button.Link>
+          </div>
         </section>
       </div>
     </Layout>
