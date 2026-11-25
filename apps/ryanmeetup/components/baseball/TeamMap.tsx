@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map, { Marker, Popup, type MapRef } from "react-map-gl/mapbox";
 import NextImage from "next/image";
-import { Heading } from "@ryanmeetup/ui";
+import { Heading, IconButton } from "@ryanmeetup/ui";
+import { FiCrosshair } from "react-icons/fi";
 
 import "mapbox-gl/dist/mapbox-gl.css";
 import type { BaseballTeam } from "@/lib/types";
@@ -52,17 +53,23 @@ const TeamMap = ({ teams }: TeamMapProps) => {
     ] as [[number, number], [number, number]];
   }, [teams]);
 
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-    const duration = prefersReducedMotion() ? 0 : 800;
+  // Frames every team the filters leave, or the whole US when none are left.
+  const recenter = useCallback(
+    (animate: boolean) => {
+      const map = mapRef.current;
+      if (!map) return;
+      const duration = animate && !prefersReducedMotion() ? 800 : 0;
 
-    if (!bounds) {
-      map.flyTo({ center: [US_VIEW.longitude, US_VIEW.latitude], zoom: US_VIEW.zoom, duration });
-      return;
-    }
-    map.fitBounds(bounds, { padding: 64, maxZoom: 7, duration });
-  }, [bounds]);
+      if (!bounds) {
+        map.flyTo({ center: [US_VIEW.longitude, US_VIEW.latitude], zoom: US_VIEW.zoom, duration });
+        return;
+      }
+      map.fitBounds(bounds, { padding: 64, maxZoom: 7, duration });
+    },
+    [bounds],
+  );
+
+  useEffect(() => recenter(true), [recenter]);
 
   if (isTestMode) {
     return (
@@ -89,9 +96,7 @@ const TeamMap = ({ teams }: TeamMapProps) => {
         mapboxAccessToken={token}
         initialViewState={US_VIEW}
         mapStyle="mapbox://styles/mapbox/streets-v9"
-        onLoad={() => {
-          if (bounds) mapRef.current?.fitBounds(bounds, { padding: 64, maxZoom: 7, duration: 0 });
-        }}
+        onLoad={() => recenter(false)}
       >
         {teams.map((team) => {
           const logo = getTeamLogoSrc(team);
@@ -178,6 +183,17 @@ const TeamMap = ({ teams }: TeamMapProps) => {
           </Popup>
         )}
       </Map>
+      <div className="absolute right-3 top-3 z-10">
+        <IconButton
+          label="Recenter map"
+          variant="overlay"
+          size="md"
+          tooltipPlacement="left"
+          onClick={() => recenter(true)}
+        >
+          <FiCrosshair aria-hidden className="h-5 w-5" />
+        </IconButton>
+      </div>
     </div>
   );
 };
