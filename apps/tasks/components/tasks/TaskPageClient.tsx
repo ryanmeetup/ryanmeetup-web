@@ -34,6 +34,7 @@ import {
   FiTrash2,
   FiUser,
   FiUserCheck,
+  FiUserPlus,
 } from "react-icons/fi";
 import {
   editorTriggers,
@@ -554,40 +555,34 @@ export function TaskPageClient({
                   <dt className="flex items-center gap-1.5 text-black/50 dark:text-white/50">
                     <FiUserCheck aria-hidden /> Assignees
                   </dt>
-                  {assignees.length === 0 ? (
-                    <dd className="mt-1 flex min-w-0 items-center gap-2 break-words font-semibold">
-                      <Avatar name="Unassigned" size="sm" />
-                      Unassigned
-                    </dd>
-                  ) : (
-                    assignees.map((person) => (
-                      <dd
+                  <dd className="mt-1 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+                    {assignees.map((person) => (
+                      <div
                         key={person.id}
-                        className="mt-1 flex min-w-0 items-center gap-2 break-words font-semibold"
+                        className="flex w-full min-w-0 items-center gap-2 break-words font-semibold"
                       >
                         <Avatar
                           name={person.full_name}
                           src={person.avatar_url}
                           size="sm"
                         />
-                        {person.full_name}
-                      </dd>
-                    ))
-                  )}
-                  {!assigneeIds.has(data.currentProfile.id) && (
-                    <dd className="mt-2">
+                        <span className="min-w-0">{person.full_name}</span>
+                      </div>
+                    ))}
+                    {!assigneeIds.has(data.currentProfile.id) && (
                       <Button
-                        variant="secondary"
+                        variant="link"
                         size="xs"
-                        className="w-full sm:w-auto"
+                        className="whitespace-nowrap"
+                        leftIcon={<FiUserPlus aria-hidden />}
                         loading={assigningToMe}
                         loadingText="Assigning..."
                         onClick={() => void assignToMe()}
                       >
                         Assign to me
                       </Button>
-                    </dd>
-                  )}
+                    )}
+                  </dd>
                 </div>
                 <div className="col-span-2 min-w-0">
                   <dt className="flex items-center gap-1.5 text-black/50 dark:text-white/50">
