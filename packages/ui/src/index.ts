@@ -47,6 +47,7 @@ export * from "./ModalActions";
 export * from "./MultiSelect";
 export * from "./NavControls";
 export * from "./NameTag";
+export * from "./NameTagSticker";
 export * from "./NotFoundCard";
 export * from "./Pill";
 export * from "./RotatingGallery";
