@@ -15,10 +15,14 @@ export type ListingColorPreview = ProductColorOption & { href: string };
 // colors the catalog uses today when Shopify has no swatch configured.
 const fallbackSwatches: Record<string, string> = {
   black: "#111111",
+  // Printful prints Cardinal as #9e1510 on sweatshirts and #890c1e on tees.
+  cardinal: "#9e1510",
   cream: "#f3ead8",
   "dark-chocolate": "#382d29",
+  forest: "#223e25",
   "forest-green": "#273b33",
   gold: "#ffcc00",
+  leaf: "#5c9346",
   maroon: "#5b1a2a",
   "military-green": "#4b5132",
   natural: "#eee6d3",
@@ -28,6 +32,8 @@ const fallbackSwatches: Record<string, string> = {
   sand: "#d6cdbb",
   sapphire: "#007ead",
   "steel-grey": "#6e7378",
+  "team-red": "#ff2d41",
+  "vintage-black": "#151515",
   white: "#ffffff",
 };
 
