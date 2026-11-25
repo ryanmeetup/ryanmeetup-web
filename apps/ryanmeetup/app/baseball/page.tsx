@@ -175,7 +175,7 @@ const BaseballPage = async () => {
               fullWidth
               className="sm:w-auto"
             >
-              Ask a question
+              Ryans: ask a question
             </Button.Link>
             <Button.Link
               href={buildContactHref("baseball-classic", {
@@ -187,7 +187,7 @@ const BaseballPage = async () => {
               fullWidth
               className="sm:w-auto"
             >
-              Partner as a baseball team
+              Teams: get involved
             </Button.Link>
           </div>
         </section>

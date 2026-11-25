@@ -41,10 +41,10 @@ test("paginates teams with tickets and merch on mobile", async ({ page }) => {
     page.getByRole("link", { name: "Sing the anthem" }),
   ).toHaveAttribute("href", "https://forms.gle/1i7iNp52M7Dfzp966");
   await expect(
-    page.getByRole("link", { name: "Ask a question" }),
+    page.getByRole("link", { name: "Ryans: ask a question" }),
   ).toHaveAttribute("href", "/contact?topic=baseball-classic");
   await expect(
-    page.getByRole("link", { name: "Partner as a baseball team" }),
+    page.getByRole("link", { name: "Teams: get involved" }),
   ).toHaveAttribute(
     "href",
     "/contact?topic=baseball-classic&detail=team-partner&source=baseball",
