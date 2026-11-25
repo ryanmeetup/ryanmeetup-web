@@ -194,6 +194,12 @@ test("a listing of color one-offs and multicolor members is chosen by color alon
   ]);
 });
 
+test("a member titled with a color family offers its Color option's shades, not the title color", () => {
+  // Like "Ryan Christmas Sweater 2025 - Red" selling Cardinal and Team Red.
+  const [listing] = groupProductListings([superBlack, { ...superBlue, title: "Super Ryan Shirt - Red" }]);
+  expect(getListingColors(listing.designs!)?.map(({ color }) => color).sort()).toEqual(["Black", "Royal", "Sapphire", "White"]);
+});
+
 test("links naming a color-split listing's printing product resolve to its color alone", () => {
   const [listing] = groupProductListings([superBlack, { ...superBlue, title: "Super Ryan Shirt" }, superRed]);
   const href = (design: string, color?: string | string[]) => getColorListingHref({ ...listing, defaultColor: "royal" }, design, color);

@@ -220,7 +220,10 @@ export function getListingColors(designs: ProductDesign[]): ListingColor[] | und
     // A design's label falls back to the full title when the title is just the listing name.
     const unlabelled = label === product.title;
     const labelColor = getColorSlug(label);
-    if (option && (unlabelled || option.values.some((color) => getColorSlug(color) === labelColor))) {
+    // A title color such as "- Red" names the family; the Color option's shades
+    // ("Cardinal", "Team Red") are what the shopper actually chooses between.
+    const labelIsColor = Object.hasOwn(fallbackSwatches, labelColor) || option?.values.some((color) => getColorSlug(color) === labelColor);
+    if (option && (unlabelled || labelIsColor)) {
       for (const color of option.values) {
         const available = product.variants.some((variant) => variant.availableForSale && variant.selectedOptions.some((selected) => selected.name === option.name && selected.value === color));
         colors.push({ color, slug: getColorSlug(color), design: value, available });
