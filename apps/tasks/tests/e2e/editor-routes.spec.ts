@@ -254,12 +254,23 @@ test("offers every create option on pages without their own create dialogs", asy
 
   await page.getByRole("button", { name: "Create new" }).click();
   await page.getByRole("menuitem", { name: "New project" }).click();
-  await expect(page.getByRole("dialog", { name: "New project" })).toBeVisible();
+  // Assert on the heading, not the dialog: Headless UI's dialog root only
+  // holds fixed-position children, so its own box is empty and Playwright
+  // reports it hidden even while the dialog is open.
+  await expect(
+    page
+      .getByRole("dialog", { name: "New project" })
+      .getByRole("heading", { name: "New Project" }),
+  ).toBeVisible();
   await page.keyboard.press("Escape");
 
   await page.getByRole("button", { name: "Create new" }).click();
   await page.getByRole("menuitem", { name: "New category" }).click();
-  await expect(page.getByRole("dialog", { name: "New category" })).toBeVisible();
+  await expect(
+    page
+      .getByRole("dialog", { name: "New category" })
+      .getByRole("heading", { name: "New Category" }),
+  ).toBeVisible();
 });
 
 test("returns a directly opened new task page to the board", async ({

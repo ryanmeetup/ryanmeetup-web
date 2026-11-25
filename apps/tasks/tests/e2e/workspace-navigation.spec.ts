@@ -673,7 +673,10 @@ test("holds a column's chrome still while its own tasks scroll", async ({
         bottomGutter: round(
           inner.bottom - borderBottom - list.getBoundingClientRect().bottom,
         ),
-        rule: round(rule.bottom),
+        // Relative to the column, so a late shift in the page chrome above the
+        // board (fonts, banners) can't read as the rule moving. Page scroll is
+        // checked separately through window.scrollY.
+        rule: round(rule.bottom - inner.top),
         // The room the first task rests in belongs to the scroller, so it
         // travels with the task rather than holding it off the rule.
         cardOffset: round(card.getBoundingClientRect().top - rule.bottom),
