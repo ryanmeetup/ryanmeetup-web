@@ -34,7 +34,6 @@ import {
   FiTrash2,
   FiUser,
   FiUserCheck,
-  FiUserPlus,
 } from "react-icons/fi";
 import {
   editorTriggers,
@@ -555,7 +554,13 @@ export function TaskPageClient({
                   <dt className="flex items-center gap-1.5 text-black/50 dark:text-white/50">
                     <FiUserCheck aria-hidden /> Assignees
                   </dt>
-                  <dd className="mt-1 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+                  <dd className="mt-1 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+                    {assignees.length === 0 && (
+                      <span className="flex items-center gap-2 whitespace-nowrap font-semibold">
+                        <Avatar name="Unassigned" size="sm" />
+                        Unassigned
+                      </span>
+                    )}
                     {assignees.map((person) => (
                       <div
                         key={person.id}
@@ -574,7 +579,6 @@ export function TaskPageClient({
                         variant="link"
                         size="xs"
                         className="whitespace-nowrap"
-                        leftIcon={<FiUserPlus aria-hidden />}
                         loading={assigningToMe}
                         loadingText="Assigning..."
                         onClick={() => void assignToMe()}

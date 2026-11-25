@@ -31,7 +31,9 @@ for (const viewport of [
       const assignees = details
         .getByText("Assignees", { exact: true })
         .locator("..");
-      if (taskNumber === 4) {
+      if (taskNumber === 3) {
+        await expect(assignees.getByText("Unassigned")).toBeVisible();
+      } else {
         await expect(assignees).toContainText("Jordan Lee");
         await expect(assignees).toContainText("Alex Morgan");
       }
