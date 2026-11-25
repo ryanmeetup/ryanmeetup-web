@@ -32,7 +32,7 @@ import {
   type TeamWithDistance,
 } from "@/utils/baseball";
 import { TeamCard } from "./TeamCard";
-import { TeamMap } from "./TeamMap";
+import { TeamMapPanel } from "./TeamMapPanel";
 
 type TeamFinderProps = {
   teams: BaseballTeam[];
@@ -49,7 +49,7 @@ const ALL = "all";
 const SEARCH_DEBOUNCE_MS = 400;
 // The search field and filter buttons share one height so the row lines up.
 const FILTER_HEIGHT = "h-10";
-const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
+const PAGE_SIZE_OPTIONS = [5, 10, 25, 50] as const;
 const DEFAULT_PAGE_SIZE = PAGE_SIZE_OPTIONS[0];
 
 /**
@@ -268,7 +268,7 @@ const TeamFinder = ({ teams }: TeamFinderProps) => {
             label="Search teams"
             name="q"
             autoComplete="off"
-            placeholder="Search by team, city, state, or zip/postal code..."
+            placeholder="Search by team or city..."
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
             inputClassName={FILTER_HEIGHT}
@@ -359,11 +359,7 @@ const TeamFinder = ({ teams }: TeamFinderProps) => {
             </div>
           )}
         </PendingResults>
-        {/* Above the list on narrower screens, so "See the map" lands on it
-            rather than past every team card. */}
-        <div id="map" className="order-first scroll-mt-28 xl:sticky xl:top-28 xl:order-none">
-          <TeamMap teams={results.map((entry) => entry.team)} />
-        </div>
+        <TeamMapPanel teams={results.map((entry) => entry.team)} />
       </div>
     </section>
   );

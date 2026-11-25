@@ -1,6 +1,15 @@
 // Components
 import { Layout } from "@/components/navigation";
-import { Button, Divider, EmptyState, SectionHeader } from "@ryanmeetup/ui";
+import {
+  AnchorNav,
+  Button,
+  Divider,
+  EmptyState,
+  SectionHeader,
+} from "@ryanmeetup/ui";
+import { FaBaseballBall } from "react-icons/fa";
+import { FaShirt } from "react-icons/fa6";
+import { FiGift, FiHelpCircle, FiMap } from "react-icons/fi";
 import {
   BaseballHero,
   MerchStrip,
@@ -79,11 +88,45 @@ const loadMerch = async (): Promise<MerchCollection | null> => {
 
 const BaseballPage = async () => {
   const [teams, merch] = await Promise.all([loadTeams(), loadMerch()]);
+  const iconStyle = "h-5 w-5";
+  const anchors = [
+    {
+      icon: <FaBaseballBall className={iconStyle} aria-hidden />,
+      href: "#find",
+      tooltip: "Find your game",
+    },
+    ...(teams.length > 0
+      ? [
+          {
+            icon: <FiMap className={iconStyle} aria-hidden />,
+            href: "#map",
+            tooltip: "Team map",
+          },
+        ]
+      : []),
+    {
+      icon: <FiGift className={iconStyle} aria-hidden />,
+      href: "#includes",
+      tooltip: "Night details",
+    },
+    {
+      icon: <FaShirt className={iconStyle} aria-hidden />,
+      href: "#merch",
+      tooltip: "Classic merch",
+    },
+    {
+      icon: <FiHelpCircle className={iconStyle} aria-hidden />,
+      href: "#questions",
+      tooltip: "Questions",
+    },
+  ];
 
   return (
     // Full-bleed like the home page, so the team logos can run edge to edge;
     // every other section brings its own layout padding.
     <Layout fullscreen>
+      <AnchorNav items={anchors} />
+
       <div className="space-y-8 pt-8">
         <div className={layoutPaddingX}>
           <BaseballHero
@@ -96,6 +139,15 @@ const BaseballPage = async () => {
       </div>
 
       <div className={`space-y-12 pb-8 pt-12 ${layoutPaddingX}`}>
+        {teams.length > 0 ? (
+          <TeamFinder teams={teams} />
+        ) : (
+          <section id="find" className="scroll-mt-28 space-y-6">
+            <SectionHeader title="Find your Ryan Meetup" />
+            <EmptyState message="Teams are still warming up. Check back soon." />
+          </section>
+        )}
+
         <NightIncludes />
 
         <MerchStrip
@@ -104,18 +156,12 @@ const BaseballPage = async () => {
           placeholders={MERCH_PLACEHOLDERS}
         />
 
-        {teams.length > 0 ? (
-          <TeamFinder teams={teams} />
-        ) : (
-          <section id="find" className="space-y-6">
-            <SectionHeader title="Find your Ryan Meetup" />
-            <EmptyState message="Teams are still warming up. Check back soon." />
-          </section>
-        )}
-
         <Divider margins="lg" />
 
-        <section className="flex flex-col items-center gap-4 text-center">
+        <section
+          id="questions"
+          className="flex scroll-mt-28 flex-col items-center gap-4 text-center"
+        >
           <SectionHeader
             align="center"
             title="Got a question?"

@@ -18,13 +18,14 @@ test("baseball page is unlisted", async ({ page, request }) => {
   expect(await sitemap.text()).not.toContain("/baseball");
 });
 
-test("lists every team with tickets and merch", async ({ page }) => {
+test("paginates teams with tickets and merch on mobile", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/baseball");
 
   await expect(
     page.getByRole("heading", { level: 1, name: "The Ryan Baseball Classic" }),
   ).toBeVisible();
-  await expect(teamCards(page)).toHaveCount(6);
+  await expect(teamCards(page)).toHaveCount(5);
   await expect(
     page.getByRole("link", { name: /Tickets for Manchester Ryanlanders/ }),
   ).toHaveAttribute("href", "https://example.com/tickets/manchester");
@@ -42,6 +43,24 @@ test("lists every team with tickets and merch", async ({ page }) => {
   await expect(
     page.getByRole("link", { name: "Ask a question" }),
   ).toHaveAttribute("href", "/contact?topic=baseball-classic");
+
+  const pagination = page.getByRole("navigation", { name: "teams pagination" });
+  await expect(pagination).toContainText("Showing 1–5 of 6 teams");
+  await pagination.getByRole("button", { name: "Next page", exact: true }).click();
+  await expect(page).toHaveURL(/page=2/);
+  await expect(teamCards(page)).toHaveCount(1);
+  await expect(teamCards(page).first()).toContainText("Sacramento River Ryans");
+
+  await pagination.getByRole("button", { name: /Rows/ }).click();
+  await page.getByRole("option", { name: "10", exact: true }).click();
+  await expect(page).toHaveURL(/perPage=10/);
+  await expect(teamCards(page)).toHaveCount(6);
+  await expect(pagination).toContainText("Page 1 of 1");
+
+  await pagination.getByRole("button", { name: /Rows/ }).click();
+  await page.getByRole("option", { name: "5", exact: true }).click();
+  await expect(teamCards(page)).toHaveCount(5);
+  await expect(pagination).toContainText("Page 1 of 2");
 });
 
 test("a state without a team shows the team that covers it", async ({ page }) => {
@@ -52,6 +71,111 @@ test("a state without a team shows the team that covers it", async ({ page }) =>
   await expect(teamCards(page).first()).toContainText("Near Vermont");
   await expect(page.getByTestId("baseball-marker")).toHaveCount(1);
 });
+
+test("mobile puts game results before night details, merch, and the map", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/baseball");
+
+  await expect(
+    page.locator('a[href="#find"]').filter({ hasText: "Find your game" }),
+  ).toBeInViewport();
+  await expect(page.getByRole("link", { name: "Sing the anthem" })).toBeInViewport();
+  await expect(page.getByRole("button", { name: "Photo albums" })).toBeInViewport();
+
+  const topOf = async (selector: string) => {
+    const box = await page.locator(selector).boundingBox();
+    expect(box).not.toBeNull();
+    return box!.y;
+  };
+  expect(await topOf("#find")).toBeLessThan(await topOf("#includes"));
+  expect(await topOf("#includes")).toBeLessThan(await topOf("#merch"));
+  expect(await topOf("#find-results")).toBeLessThan(await topOf("#map"));
+
+  await page.getByRole("button", { name: "Photo albums" }).click();
+  await expect(page.getByRole("menuitem")).toHaveCount(2);
+});
+
+test("mobile map shows by default, toggles, and reopens from repeated or shared map links", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/baseball?state=VT");
+
+  await expect(page.getByTestId("baseball-marker")).toHaveCount(1);
+  await page.getByRole("button", { name: "Hide team map" }).click();
+  await expect(page.getByTestId("baseball-map")).toHaveCount(0);
+  await page.getByRole("button", { name: "Show team map" }).click();
+  await expect(page.getByTestId("baseball-marker")).toHaveCount(1);
+  await page.getByRole("button", { name: "Hide team map" }).click();
+  await expect(page.getByTestId("baseball-map")).toHaveCount(0);
+
+  const mapLink = page
+    .getByRole("navigation", { name: "Jump to section" })
+    .getByRole("link", { name: "Team map", exact: true });
+  await page.getByRole("link", { name: "See the map", exact: true }).click();
+  await expect(page).toHaveURL("/baseball?state=VT#map");
+  await expect(page.getByTestId("baseball-map")).toBeInViewport();
+
+  await page.getByRole("button", { name: "Hide team map" }).click();
+  await mapLink.click();
+  await expect(page.getByTestId("baseball-marker")).toHaveCount(1);
+
+  await page.reload();
+  await expect(page.getByTestId("baseball-map")).toBeInViewport();
+  await expect(teamCards(page)).toHaveCount(1);
+});
+
+test("desktop map stays visible when the mobile map is collapsed", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/baseball");
+  await expect(page.getByTestId("baseball-map")).toBeVisible();
+  await page.getByRole("button", { name: "Hide team map" }).click();
+  await expect(page.getByTestId("baseball-map")).toHaveCount(0);
+
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await expect(page.getByTestId("baseball-map")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Show team map" })).toBeHidden();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.getByTestId("baseball-map")).toHaveCount(0);
+});
+
+for (const width of [390, 1280]) {
+  test(`floating navigation jumps to baseball sections at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/baseball?state=VT");
+
+    const nav = page.getByRole("navigation", { name: "Jump to section" });
+    await expect(nav).toBeInViewport();
+
+    for (const [name, hash] of [
+      ["Night details", "#includes"],
+      ["Classic merch", "#merch"],
+      ["Find your game", "#find"],
+      ["Team map", "#map"],
+      ["Questions", "#questions"],
+    ]) {
+      await nav.getByRole("link", { name, exact: true }).click();
+      await expect(page).toHaveURL(`/baseball?state=VT${hash}`);
+      await expect(page.locator(hash)).toBeInViewport();
+      await expect(nav).toBeInViewport();
+    }
+
+    const details = nav.getByRole("link", { name: "Night details", exact: true });
+    await details.focus();
+    await details.press("Enter");
+    await expect(page).toHaveURL("/baseball?state=VT#includes");
+    await expect(teamCards(page)).toHaveCount(1);
+  });
+}
 
 test("filters stay in the URL and clear together", async ({ page }) => {
   await page.goto("/baseball");
@@ -66,7 +190,7 @@ test("filters stay in the URL and clear together", async ({ page }) => {
 
   await page.getByRole("button", { name: "Clear filters" }).click();
   await expect(page).not.toHaveURL(/date=/);
-  await expect(teamCards(page)).toHaveCount(6);
+  await expect(teamCards(page)).toHaveCount(5);
 });
 
 test("zip search lists nearby teams, nearest first", async ({ page }) => {

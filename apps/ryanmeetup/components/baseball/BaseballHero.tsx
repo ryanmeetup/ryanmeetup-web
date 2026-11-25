@@ -10,9 +10,7 @@ import {
   Text,
   getButtonClasses,
 } from "@ryanmeetup/ui";
-import { FaCamera as Camera } from "react-icons/fa";
-import { FaShirt } from "react-icons/fa6";
-import { FiArrowUpRight, FiChevronDown, FiMap, FiMic } from "react-icons/fi";
+import { FiArrowUpRight, FiChevronDown } from "react-icons/fi";
 
 import type { BaseballTeam } from "@/lib/types";
 import { getSeasonStats } from "@/utils/baseball";
@@ -41,9 +39,9 @@ const PAST_ALBUMS = [
 ];
 
 // The official Ryan Baseball Classic logo. Until the artwork lands this stays
-// null and the hero shows a dashed placeholder where it will sit. To swap it
-// in, drop the file in public/baseball/ and fill in its real pixel size; the
-// logo then stands in for the visible title (which stays as its alt text).
+// null and larger screens show a dashed placeholder where it will sit. To
+// swap it in, drop the file in public/baseball/ and fill in its real pixel size;
+// the logo then stands in for the visible title (which stays as its alt text).
 type ClassicLogo = { src: string; width: number; height: number };
 // Cast so TypeScript doesn't narrow to `null` and flag the logo branch.
 const CLASSIC_LOGO = null as ClassicLogo | null;
@@ -56,7 +54,7 @@ const ANTHEM_SINGER_FORM_URL = "https://forms.gle/1i7iNp52M7Dfzp966";
 const ClassicLogoPlaceholder = () => (
   <div
     aria-hidden
-    className="flex aspect-[2/1] w-48 items-center justify-center rounded-2xl border-2 border-dashed border-black/20 bg-black/[0.03] text-xs font-semibold uppercase tracking-caps text-black/70 sm:w-64 dark:border-white/20 dark:bg-white/5 dark:text-white/70"
+    className="hidden aspect-[2/1] w-64 items-center justify-center rounded-2xl border-2 border-dashed border-black/20 bg-black/[0.03] text-xs font-semibold uppercase tracking-caps text-black/70 sm:flex dark:border-white/20 dark:bg-white/5 dark:text-white/70"
   >
     Official logo
   </div>
@@ -148,7 +146,7 @@ const BaseballHero = ({
       />
       <SeamEdge side="left" />
       <SeamEdge side="right" />
-      <div className="relative flex flex-col items-center gap-6">
+      <div className="relative flex flex-col items-center gap-4 sm:gap-6">
         <div className="flex flex-col items-center gap-4">
           {!CLASSIC_LOGO && <ClassicLogoPlaceholder />}
           {seasonRange && <Kicker>{seasonRange}</Kicker>}
@@ -172,15 +170,14 @@ const BaseballHero = ({
               {CLASSIC_TITLE}
             </Heading>
           )}
-          <Text className="max-w-3xl text-balance text-lg text-black/70 dark:text-white/70">
-            Ryans are taking over dozens of ballparks all over North America.
+          <Text className="max-w-3xl text-balance text-base text-black/70 sm:text-lg dark:text-white/70">
             Find the official Ryan Baseball Classic night nearest you and get
             tickets today. No Bryans in the bleachers.
           </Text>
         </div>
 
         {stats.teams > 0 && (
-          <dl className="grid grid-cols-2 gap-x-10 gap-y-4 sm:flex sm:flex-wrap sm:justify-center">
+          <dl className="flex flex-wrap justify-center gap-x-6 gap-y-3 sm:gap-x-10 sm:gap-y-4">
             {[
               {
                 label: stats.teams === 1 ? "Team" : "Teams",
@@ -206,7 +203,7 @@ const BaseballHero = ({
                 <dt className="text-xs font-semibold uppercase tracking-caps text-black/70 dark:text-white/70">
                   {stat.label}
                 </dt>
-                <dd className="font-cooper text-3xl leading-none text-black dark:text-white">
+                <dd className="font-cooper text-2xl leading-none text-black sm:text-3xl dark:text-white">
                   {stat.value}
                 </dd>
               </div>
@@ -218,76 +215,72 @@ const BaseballHero = ({
           <Button.Link href="#find" size="md" fullWidth className="sm:w-auto">
             Find your game
           </Button.Link>
-          {hasMap && (
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-center">
+            {hasMap && (
+              <Button.Link
+                href="#map"
+                size="sm"
+                variant="secondary"
+                fullWidth
+                className="min-h-11 sm:w-auto"
+              >
+                See the map
+              </Button.Link>
+            )}
             <Button.Link
-              href="#map"
-              size="md"
-              variant="outline"
-              leftIcon={<FiMap aria-hidden />}
+              href={ANTHEM_SINGER_FORM_URL}
+              newTab
+              size="sm"
+              variant="secondary"
               fullWidth
-              className="sm:w-auto"
+              className="min-h-11 sm:w-auto"
             >
-              See the map
+              Sing the anthem
+              <span className="sr-only"> (opens in a new tab)</span>
             </Button.Link>
-          )}
-          <Button.Link
-            href={ANTHEM_SINGER_FORM_URL}
-            newTab
-            size="md"
-            variant="outline"
-            leftIcon={<FiMic aria-hidden />}
-            fullWidth
-            className="sm:w-auto"
-          >
-            Sing the anthem
-            <span className="sr-only"> (opens in a new tab)</span>
-          </Button.Link>
-          <Button.Link
-            href="#merch"
-            size="md"
-            variant="outline"
-            leftIcon={<FaShirt aria-hidden />}
-            fullWidth
-            className="sm:w-auto"
-          >
-            Shop the merch
-          </Button.Link>
-          {/* One trigger for every past album, so the row doesn't grow a
-              button each year. Menu renders no wrapper, so the trigger stays
-              a direct child of this row. */}
-          <DropdownMenu>
-            <DropdownMenuButton
-              unstyled
-              className={`${getButtonClasses("secondary", "md", true)} sm:w-auto`}
+            <Button.Link
+              href="#merch"
+              size="sm"
+              variant="secondary"
+              fullWidth
+              className="min-h-11 sm:w-auto"
             >
-              <span className="text-base">
-                <Camera aria-hidden />
-              </span>
-              <span>Photo albums</span>
-              <span className="text-base">
-                <FiChevronDown aria-hidden />
-              </span>
-            </DropdownMenuButton>
-            <DropdownMenuItems align="end" aria-label="Past photo albums">
-              {[...PAST_ALBUMS].reverse().map((album) => (
-                <DropdownMenuItemLink
-                  key={album.href}
-                  href={album.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <span className="flex flex-1 flex-col">
-                    <span className="font-semibold">{album.year}</span>
-                    <span className="text-xs text-black/70 dark:text-white/70">
-                      {album.title}
+              Shop the merch
+            </Button.Link>
+            {/* One trigger for every past album, so the row doesn't grow a
+                button each year. Menu renders no wrapper, so the trigger stays
+                a direct child of this row. */}
+            <DropdownMenu>
+              <DropdownMenuButton
+                unstyled
+                className={`${getButtonClasses("secondary", "sm", true)} min-h-11 px-3! sm:w-auto sm:px-4!`}
+              >
+                <span>Photo albums</span>
+                <span className="text-base">
+                  <FiChevronDown aria-hidden />
+                </span>
+              </DropdownMenuButton>
+              <DropdownMenuItems align="end" aria-label="Past photo albums">
+                {[...PAST_ALBUMS].reverse().map((album) => (
+                  <DropdownMenuItemLink
+                    key={album.href}
+                    href={album.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <span className="flex flex-1 flex-col">
+                      <span className="font-semibold">{album.year}</span>
+                      <span className="text-xs text-black/70 dark:text-white/70">
+                        {album.title}
+                      </span>
                     </span>
-                  </span>
-                  <FiArrowUpRight aria-hidden />
-                  <span className="sr-only">(opens in a new tab)</span>
-                </DropdownMenuItemLink>
-              ))}
-            </DropdownMenuItems>
-          </DropdownMenu>
+                    <FiArrowUpRight aria-hidden />
+                    <span className="sr-only">(opens in a new tab)</span>
+                  </DropdownMenuItemLink>
+                ))}
+              </DropdownMenuItems>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
     </section>

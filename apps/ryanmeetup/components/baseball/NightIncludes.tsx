@@ -14,7 +14,7 @@ const INCLUDES: { icon: ReactNode; text: string }[] = [
 
 /** What every official Classic night comes with, whichever ballpark it's at. */
 const NightIncludes = () => (
-  <section className="space-y-6">
+  <section id="includes" className="scroll-mt-28 space-y-6">
     <SectionHeader title="Every Ryan Baseball Classic night includes..." />
     <ul className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
       {INCLUDES.map((item) => (
