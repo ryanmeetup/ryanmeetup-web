@@ -84,6 +84,7 @@ export function TaskPageClient({
   const [taskOpen, setTaskOpen] = useState(false);
   const [taskDetailsOpen, setTaskDetailsOpen] = useState(true);
   const [taskSaving, setTaskSaving] = useState(false);
+  const [assigningToMe, setAssigningToMe] = useState(false);
   const [taskMessage, setTaskMessage] = useState("");
   const [taskPendingDelete, setTaskPendingDelete] = useState<Task | null>(null);
   const [duplicateSource, setDuplicateSource] = useState<{
@@ -204,6 +205,26 @@ export function TaskPageClient({
       toast.error(errorMessage(error, "The task could not be deleted."));
     } finally {
       setTaskDeleting(false);
+    }
+  }
+
+  async function assignToMe() {
+    if (assigningToMe || assigneeIds.has(data.currentProfile.id)) return;
+    setAssigningToMe(true);
+    try {
+      const saved = await mutations.save(
+        {
+          ...makeDraft(),
+          assignee_ids: [...assigneeIds, data.currentProfile.id],
+        },
+        task,
+      );
+      mutations.applySaved(saved, true);
+      toast.success("Task assigned to you.");
+    } catch (error) {
+      toast.error(errorMessage(error, "The task could not be assigned to you."));
+    } finally {
+      setAssigningToMe(false);
     }
   }
 
@@ -552,6 +573,20 @@ export function TaskPageClient({
                         {person.full_name}
                       </dd>
                     ))
+                  )}
+                  {!assigneeIds.has(data.currentProfile.id) && (
+                    <dd className="mt-2">
+                      <Button
+                        variant="secondary"
+                        size="xs"
+                        className="w-full sm:w-auto"
+                        loading={assigningToMe}
+                        loadingText="Assigning..."
+                        onClick={() => void assignToMe()}
+                      >
+                        Assign to me
+                      </Button>
+                    </dd>
                   )}
                 </div>
                 <div className="col-span-2 min-w-0">

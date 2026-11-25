@@ -364,6 +364,8 @@ Web addresses pasted into a task description now appear as clickable links on th
 
 A task's page now has a Mark complete button beside Edit task. It moves the task straight to your workspace's first finished status, without opening the editor. The task's menu offers the same shortcut for declining work as Will Not Do. Either one asks for a reason first when its status requires one.
 
+Use Assign to me beside a task's assignees to add yourself without opening the editor. Anyone already assigned stays on the task.
+
 ### Lists keep their shape in previews
 
 Bulleted, numbered, and checklist lines in a task description or note now stay as list rows on board and note cards. Long text is shortened by whole lines and ends with an ellipsis, rather than spilling past the preview or stopping mid-list without one. Comments on tasks and notes pick up the same formatting, including lists, bold and italic text, and clickable links, and task keys in a comment still link to their tasks.
