@@ -32,7 +32,7 @@ export const metadata = {
 } satisfies Metadata;
 
 export default async function HomePage() {
-  const [{ spotlight, favorites: shelf, collections }, shippingCountries, policies, shopRating] = await Promise.all([
+  const [{ spotlight, favorites: shelf, newArrivals: arrivals, collections }, shippingCountries, policies, shopRating] = await Promise.all([
     getHomeCatalog(),
     // The return policy and the shipping strip's country count are never a reason to fail the home page.
     getShippingCountries().catch((error: unknown) => {
@@ -48,7 +48,9 @@ export default async function HomePage() {
     getShopReviewSummary(getReviewBackend()),
   ]);
   const shipping = getShippingExpectations(policies, shippingCountries);
-  const favorites = toCardCatalog(await withListingHighlights(await withListingRatings(shelf)));
+  const [favorites, newArrivals] = await Promise.all(
+    [shelf, arrivals].map(async (section) => toCardCatalog(await withListingHighlights(await withListingRatings(section)))),
+  );
   return (
     <main className="flex flex-col gap-8 pb-6 sm:gap-12 sm:pb-8 lg:pb-10">
       <JsonLd data={buildStoreSchema(shippingCountries)} />
@@ -68,6 +70,22 @@ export default async function HomePage() {
             )}
           />
           <ProductGrid products={favorites.products} eagerCount={0} evenRows phoneLimit={favoritesPhoneLimit} className="mt-8" />
+        </section>
+      )}
+
+      {newArrivals.products.length > 0 && (
+        <section data-analytics-placement="home_new_arrivals" data-analytics-section="home_new_arrivals" aria-labelledby="home-new-arrivals" className="store-container">
+          <SectionHeader
+            align="left"
+            title={<span id="home-new-arrivals">{newArrivals.collection.title}</span>}
+            description={newArrivals.collection.description}
+            actions={newArrivals.total > Math.min(newArrivals.products.length, favoritesPhoneLimit) && (
+              <Button.Link href="/collections/all?sort=newest" size="md" variant="secondary" className="!w-full sm:!w-auto" rightIcon={<FiArrowRight />}>
+                See all new
+              </Button.Link>
+            )}
+          />
+          <ProductGrid products={newArrivals.products} eagerCount={0} evenRows phoneLimit={favoritesPhoneLimit} className="mt-8" />
         </section>
       )}
 

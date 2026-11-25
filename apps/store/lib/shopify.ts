@@ -45,6 +45,7 @@ export type HomeCollectionTile = { collection: CollectionSummary; image: StoreIm
 export type HomeCatalog = {
   spotlight: HomeSpotlight | null;
   favorites: CollectionSection;
+  newArrivals: CollectionSection;
   collections: HomeCollectionTile[];
 };
 
@@ -457,6 +458,11 @@ export async function getHomeCatalog(): Promise<HomeCatalog> {
   // A popular listing stays in this row even when it also has the spotlight.
   const featured = curated ? picks : listings;
   const { sections } = sectionListings(listings, memberships);
+  const shelf = featured.slice(0, favoritesLimit);
+  // In-stock listings, newest first, minus any the Best Sellers row already shows.
+  const newest = listings
+    .filter((listing) => listing.availableForSale && listing.createdAt && !shelf.includes(listing))
+    .sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
 
   return {
     spotlight,
@@ -468,8 +474,13 @@ export async function getHomeCatalog(): Promise<HomeCatalog> {
         description: description && description !== shopifyPlaceholderDescription ? description : "Popular picks, pulled straight from the official catalog.",
         image: null,
       },
-      products: featured.slice(0, favoritesLimit),
+      products: shelf,
       total: featured.length,
+    },
+    newArrivals: {
+      collection: { id: "new-arrivals", handle: "new-arrivals", title: "New arrivals", description: "Fresh off the press, newest first.", image: null },
+      products: newest.slice(0, favoritesLimit),
+      total: newest.length,
     },
     collections: (sections.length ? sections : getTypeCollectionSections(listings)).map(getCollectionTile),
   };
