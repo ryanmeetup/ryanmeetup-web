@@ -24,12 +24,12 @@ export type Promotion = {
 
 // Mirrors the "Black RYDay: 10% off everything", "Black RYDay: 3+ items, 15% off" and
 // "Black RYDay: 5+ items, 20% off" automatic discounts. They don't combine, so Shopify applies
-// the biggest one a cart qualifies for (started early on Nov 21; end time in America/New_York).
+// the biggest one a cart qualifies for (started early on Nov 21, extended from Nov 30 to Dec 2; end time in America/New_York).
 export const currentPromotion: Promotion | null = {
   name: "Black RYDay",
   startsAt: "2026-11-21T12:32:24-05:00",
-  endsAt: "2026-11-30T23:59:59-05:00",
-  endsLabel: "Monday, Nov 30",
+  endsAt: "2026-12-02T23:59:59-05:00",
+  endsLabel: "Wednesday, Dec 2",
   tiers: [
     { minQuantity: 1, percentOff: 10 },
     { minQuantity: 3, percentOff: 15 },
